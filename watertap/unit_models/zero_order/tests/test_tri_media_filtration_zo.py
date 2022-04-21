@@ -17,19 +17,28 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import TriMediaFiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
+
 
 class TestTriMediaFiltrationZO:
     @pytest.fixture(scope="class")
@@ -39,11 +48,12 @@ class TestTriMediaFiltrationZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["eeq", "nonvolatile_toc", "toc", "nitrate", "tss"]})
+            default={"solute_list": ["eeq", "nonvolatile_toc", "toc", "nitrate", "tss"]}
+        )
 
-        m.fs.unit = TriMediaFiltrationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = TriMediaFiltrationZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "eeq"].fix(1)
@@ -69,17 +79,20 @@ class TestTriMediaFiltrationZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
-
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -106,54 +119,74 @@ class TestTriMediaFiltrationZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.5e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(66.6667, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(66.6667, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(66.6667, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(66.6667, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(66.6667, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.01165, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(68.6695, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(68.6695, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(68.6695, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(17.1674, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(4.29185, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(3.35e-3, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(59.7015, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(59.7014, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(59.7014, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(238.806, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(283.582, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.0243, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(1.5e-2, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(66.6667, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(66.6667, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(66.6667, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(66.6667, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(66.6667, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0.01165, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(68.6695, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(68.6695, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(68.6695, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(17.1674, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(4.29185, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(3.35e-3, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(59.7015, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(59.7014, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(59.7014, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(238.806, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(283.582, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0.0243, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -170,7 +203,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :   0.024300 : False : (None, None)
+                  Electricity Demand :   0.024300 : False : (0, None)
                Electricity Intensity : 0.00045000 :  True : (None, None)
                 Solute Removal [eeq] :    0.20000 :  True : (0, None)
             Solute Removal [nitrate] :    0.80000 :  True : (0, None)
@@ -194,6 +227,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 class TestTriMediaFiltrationZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
@@ -202,11 +236,21 @@ class TestTriMediaFiltrationZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["eeq", "nonvolatile_toc", "toc", "nitrate", "tss", "foo"]})
+            default={
+                "solute_list": [
+                    "eeq",
+                    "nonvolatile_toc",
+                    "toc",
+                    "nitrate",
+                    "tss",
+                    "foo",
+                ]
+            }
+        )
 
-        m.fs.unit = TriMediaFiltrationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = TriMediaFiltrationZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "eeq"].fix(1)
@@ -233,8 +277,10 @@ class TestTriMediaFiltrationZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -244,8 +290,10 @@ class TestTriMediaFiltrationZO_w_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -272,50 +320,70 @@ class TestTriMediaFiltrationZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.6e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(62.5, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.01265, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(63.2411, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(63.2411, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(63.2411, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(15.8103, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(3.95257, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(79.0514, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(3.35e-3, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(59.7015, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]))
-        assert (pytest.approx(59.7014, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(59.7014, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(238.806, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(283.582, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(2.38806e-7, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.02592, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(1.6e-2, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(62.5, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.01265, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(63.2411, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(63.2411, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(63.2411, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(15.8103, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(3.95257, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(79.0514, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(3.35e-3, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(59.7015, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]
+        )
+        assert pytest.approx(59.7014, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(59.7014, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(238.806, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(283.582, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(2.38806e-7, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.02592, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -332,7 +400,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :   0.025920 : False : (None, None)
+                  Electricity Demand :   0.025920 : False : (0, None)
                Electricity Intensity : 0.00045000 :  True : (None, None)
                 Solute Removal [eeq] :    0.20000 :  True : (0, None)
                 Solute Removal [foo] :     0.0000 :  True : (0, None)
@@ -357,3 +425,42 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = TriMediaFiltrationZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+
+    assert isinstance(m.fs.costing.tri_media_filtration, Block)
+    assert isinstance(m.fs.costing.tri_media_filtration.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.tri_media_filtration.capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.tri_media_filtration.reference_state, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

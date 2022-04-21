@@ -1,0 +1,62 @@
+###############################################################################
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#
+###############################################################################
+"""
+This module contains a zero-order representation of a cooling tower unit.
+"""
+
+from pyomo.environ import Constraint, units as pyunits, Var
+from idaes.core import declare_process_block_class
+
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
+
+# Some more information about this module
+__author__ = "Chenyu Wang"
+
+
+@declare_process_block_class("CoolingTowerZO")
+class CoolingTowerZOData(ZeroOrderBaseData):
+    """
+    Zero-Order model for a cooling tower unit operation.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "cooling_tower"
+
+        build_sido(self)
+        constant_intensity(self)
+
+        self.cycles = Var(units=pyunits.dimensionless, doc="Cycles of concentration")
+
+        self.blowdown = Var(
+            self.flowsheet().time,
+            units=pyunits.m**3 / pyunits.hour,
+            doc="Flowrate of blowdown",
+        )
+
+        self._fixed_perf_vars.append(self.cycles)
+
+        @self.Constraint(self.flowsheet().time, doc="Blowdown constraint")
+        def blowdown_constraint(b, t):
+            q_in = pyunits.convert(
+                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+            )
+            return b.blowdown[t] == pyunits.convert(
+                q_in * b.cycles, to_units=pyunits.m**3 / pyunits.hour
+            )
+
+        self._perf_var_dict["Cycles"] = self.cycles
+        self._perf_var_dict["Blowdown flowrate (m^3/hr)"] = self.blowdown

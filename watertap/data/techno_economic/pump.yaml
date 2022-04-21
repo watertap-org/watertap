@@ -2,137 +2,95 @@ default:
   energy_electric_flow_vol_inlet:
     value: 0.051
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 15772.5491
       units: m^3/hr
-    cap_basis_par:
-      value: 7.381985478
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 7.381985478e6
+      units: USD_2020
+    capital_b_parameter:
       value: 0.8657
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2020
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $
 abmet:
   energy_electric_flow_vol_inlet:
     value: 0.025599666
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 15772.5491
       units: m^3/hr
-    cap_basis_par:
-      value: 4.488923561
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 4.488923561e6
+      units: USD_2018
+    capital_b_parameter:
       value: 0.8671
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2018
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $
 gac_feed:
   energy_electric_flow_vol_inlet:
     value: 0.0
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 15772.5491
       units: m^3/hr
-    cap_basis_par:
-      value: 4.488923561
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 4.488923561e6
+      units: USD_2018
+    capital_b_parameter:
       value: 0.8671
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2018
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $
 raw_water:
   energy_electric_flow_vol_inlet:
     value: 0.102398663
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 15772.5491
       units: m^3/hr
-    cap_basis_par:
-      value: 4.488923561
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 4.488923561e6
+      units: USD_2018
+    capital_b_parameter:
       value: 0.8671
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2018
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $
 recharge_well:
   energy_electric_flow_vol_inlet:
     value: 0.076798998
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 3154.50982
       units: m^3/hr
-    cap_basis_par:
-      value: 34.04395077
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 34.04395077e6
+      units: USD_2015
+    capital_b_parameter:
       value: 0.7
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2015
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $
 ultrafiltration_feed:
   energy_electric_flow_vol_inlet:
     value: 0.025599666
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
       value: 15772.5491
       units: m^3/hr
-    cap_basis_par:
-      value: 4.488923561
-      units: M$
-    cap_exp_par:
+    capital_a_parameter:
+      value: 4.488923561e6
+      units: USD_2018
+    capital_b_parameter:
       value: 0.7
       units: dimensionless
-    vol units:
-      value: m^3/hr
-    capital cost units:
-      value: M$
-    year:
-      value: 2018
-    cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      units: $

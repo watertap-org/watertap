@@ -19,16 +19,19 @@ import yaml
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep_input_parser import (_yaml_to_dict,
-                                                         get_sweep_params_from_yaml,
-                                                         set_defaults_from_yaml)
+from watertap.tools.parameter_sweep_input_parser import (
+    _yaml_to_dict,
+    get_sweep_params_from_yaml,
+    set_defaults_from_yaml,
+)
 
 # Imports for conditional fails
 from idaes.config import bin_directory as idaes_bin_directory
 
 # -----------------------------------------------------------------------------
 
-class TestInputParser():
+
+class TestInputParser:
     @pytest.fixture(scope="class")
     def model(self):
         m = pyo.ConcreteModel()
@@ -36,52 +39,66 @@ class TestInputParser():
         m.fs.x = pyo.Var(initialize=-0.5)
         m.fs.a = pyo.Param(initialize=1.0, mutable=True)
         m.fs.b = pyo.Param(initialize=2.0, mutable=False)
-        m.fs.sum = pyo.Expression(expr = m.fs.a + m.fs.x)
-        m.fs.lim = pyo.Constraint(expr = m.fs.sum >= 0.0)
-        m.fs.obj = pyo.Objective(expr = m.fs.x, sense=pyo.minimize)
+        m.fs.sum = pyo.Expression(expr=m.fs.a + m.fs.x)
+        m.fs.lim = pyo.Constraint(expr=m.fs.sum >= 0.0)
+        m.fs.obj = pyo.Objective(expr=m.fs.x, sense=pyo.minimize)
 
         return m
 
-
     @pytest.fixture(scope="class")
     def get_simple_yaml_file(self):
-        filename = 'temp.yaml'
-        dict_to_write = {'a_val': 1.1, 'b_val': 2.2, 'c_val': 3.3, 'd_val': 4.4}
+        filename = "temp.yaml"
+        dict_to_write = {"a_val": 1.1, "b_val": 2.2, "c_val": 3.3, "d_val": 4.4}
 
-        with open(filename, 'w') as fp:
+        with open(filename, "w") as fp:
             yaml.dump(dict_to_write, fp, sort_keys=False)
 
         return filename, dict_to_write
-
 
     @pytest.fixture(scope="class")
     def get_param_yaml_file(self):
-        filename = 'temp.yaml'
-        dict_to_write = {'a_val': {'type':'LinearSample',         'param':'fs.a', 'lower_limit':10, 'upper_limit':20, 'num_samples':5},
-                         'b_val': {'type':'UniformSample',        'param':'fs.a', 'lower_limit':10, 'upper_limit':20},
-                         'c_val': {'type':'NormalSample',         'param':'fs.a', 'mean':10, 'std':2},
-                         'd_val': {'type':'LatinHypercubeSample', 'param':'fs.a', 'lower_limit':10, 'upper_limit':20},}
+        filename = "temp.yaml"
+        dict_to_write = {
+            "a_val": {
+                "type": "LinearSample",
+                "param": "fs.a",
+                "lower_limit": 10,
+                "upper_limit": 20,
+                "num_samples": 5,
+            },
+            "b_val": {
+                "type": "UniformSample",
+                "param": "fs.a",
+                "lower_limit": 10,
+                "upper_limit": 20,
+            },
+            "c_val": {"type": "NormalSample", "param": "fs.a", "mean": 10, "std": 2},
+            "d_val": {
+                "type": "LatinHypercubeSample",
+                "param": "fs.a",
+                "lower_limit": 10,
+                "upper_limit": 20,
+            },
+        }
 
-        with open(filename, 'w') as fp:
+        with open(filename, "w") as fp:
             yaml.dump(dict_to_write, fp, sort_keys=False)
 
         return filename, dict_to_write
-
 
     @pytest.fixture(scope="class")
     def get_param_yaml_file_error(self):
-        filename = 'temp.yaml'
-        dict_to_write = {'a_val': {'param':'nonexistent_variable'}}
+        filename = "temp.yaml"
+        dict_to_write = {"a_val": {"param": "nonexistent_variable"}}
 
-        with open(filename, 'w') as fp:
+        with open(filename, "w") as fp:
             yaml.dump(dict_to_write, fp, sort_keys=False)
 
         return filename, dict_to_write
 
-
     @pytest.fixture(scope="class")
     def get_default_yaml_file(self, model):
-        filename = 'temp.yaml'
+        filename = "temp.yaml"
 
         m = model
 
@@ -91,23 +108,21 @@ class TestInputParser():
             for k in range(10):
                 dict_to_write[pyo_obj.name] = np.random.rand()
 
-        with open(filename, 'w') as fp:
+        with open(filename, "w") as fp:
             yaml.dump(dict_to_write, fp, sort_keys=False)
 
         return filename, dict_to_write
-
 
     @pytest.fixture(scope="class")
     def get_default_yaml_file_error(self, model):
-        filename = 'temp.yaml'
+        filename = "temp.yaml"
 
-        dict_to_write = {'nonexistent_variable': 1.0}
+        dict_to_write = {"nonexistent_variable": 1.0}
 
-        with open(filename, 'w') as fp:
+        with open(filename, "w") as fp:
             yaml.dump(dict_to_write, fp, sort_keys=False)
 
         return filename, dict_to_write
-
 
     @pytest.mark.unit
     def test_yaml_to_dict(self, get_simple_yaml_file):
@@ -119,12 +134,10 @@ class TestInputParser():
             assert key in values
             assert values[key] == truth_value
 
-
     @pytest.mark.unit
     def test_yaml_to_dict_error(self):
         with pytest.raises(Exception):
-            values = _yaml_to_dict('nonexistent_file.yaml')
-
+            values = _yaml_to_dict("nonexistent_file.yaml")
 
     @pytest.mark.unit
     def test_get_sweep_params_from_yaml(self, model, get_param_yaml_file):
@@ -136,7 +149,6 @@ class TestInputParser():
         for key, truth_value in truth_values.items():
             assert key in values
 
-
     @pytest.mark.unit
     def test_get_sweep_params_from_yaml_error(self, model, get_param_yaml_file_error):
         m = model
@@ -144,7 +156,6 @@ class TestInputParser():
 
         with pytest.raises(ValueError):
             get_sweep_params_from_yaml(m, filename)
-
 
     @pytest.mark.unit
     def test_set_defaults_from_yaml(self, model, get_default_yaml_file):
@@ -155,11 +166,10 @@ class TestInputParser():
 
         for key, truth_value in truth_values.items():
             component = m.find_component(key)
-            if component is m.fs.b: # don't set non-mutable params
+            if component is m.fs.b:  # don't set non-mutable params
                 assert value(component) == 2.0
             else:
                 assert value(component) == truth_value
-
 
     @pytest.mark.unit
     def test_set_defaults_from_yaml_error(self, model, get_default_yaml_file_error):

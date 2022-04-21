@@ -1,8 +1,0 @@
-default:
-  recovery_frac_mass_H2O:
-    value: 0.999
-    units: dimensionless
-    reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless

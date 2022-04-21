@@ -2,27 +2,15 @@ default:
   energy_electric_flow_vol_inlet:
     value: 0
     units: kWh/m^3
-  specific_capital_cost_flow_vol_inlet:
-    cap_intercept:
-      value: 570
-      units: $
-    cap_basis_par:
-      value: 1170
-      units: $/(L/s)
-    cap_exp_par:
-      value: 0.4
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TPEC
+    capital_a_parameter:
+      value: 1065.7
+      units: USD_2014
+    capital_b_parameter:
+      value: 0.336
       units: dimensionless
-    vol units:
-      value: L/s
-    capital cost units:
-      value: $
-    number_units:
-      value: 2
-      units: dimensionless
-    year:
-      value: 2010
-    cost_function_form:
-      function f(flow_vol_in): (cap_intercept+cap_basis_par*flow_vol_in^cap_exp_par)*number_units
-      units: $
-    reference: Table 7.2 - Chemical Engineering Design, 2nd Edition. Principles, Practice and
-      Economics of Plant and Process Design, https://www.elsevier.com/books/chemical-engineering-design/towler/978-0-08-096659-5
+    reference_state:
+      value: 1
+      units: m^3/hr

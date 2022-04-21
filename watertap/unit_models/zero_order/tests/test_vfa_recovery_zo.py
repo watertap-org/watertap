@@ -17,7 +17,12 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -31,6 +36,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
+
 class TestVFARecoveryZO_no_default:
     @pytest.fixture(scope="class")
     def model(self):
@@ -39,11 +45,12 @@ class TestVFARecoveryZO_no_default:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod"]})
+            default={"solute_list": ["nonbiodegradable_cod"]}
+        )
 
-        m.fs.unit = VFARecoveryZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = VFARecoveryZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1)
@@ -65,16 +72,20 @@ class TestVFARecoveryZO_no_default:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -101,30 +112,38 @@ class TestVFARecoveryZO_no_default:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.011, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(90.909090, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(0.0105, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(47.619047, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(0.0005, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(1000.0, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(0.011, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(90.909090, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(0.0105, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(47.619047, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(0.0005, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(1000.0, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -140,11 +159,11 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                   : Value   : Fixed : Bounds
-                       Electricity Demand :  0.0000 : False : (None, None)
-                    Electricity Intensity :  0.0000 :  True : (None, None)
-    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
-                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value      : Fixed : Bounds
+                       Electricity Demand : 8.0000e-10 : False : (0, None)
+                    Electricity Intensity :     0.0000 :  True : (None, None)
+    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
+                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -157,6 +176,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 class TestVFARecoveryZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
@@ -165,11 +185,12 @@ class TestVFARecoveryZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod", "foo"]})
+            default={"solute_list": ["nonbiodegradable_cod", "foo"]}
+        )
 
-        m.fs.unit = VFARecoveryZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = VFARecoveryZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1)
@@ -192,8 +213,10 @@ class TestVFARecoveryZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -203,8 +226,10 @@ class TestVFARecoveryZO_w_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -231,36 +256,47 @@ class TestVFARecoveryZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.012, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(83.333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(83.333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.0115, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(43.478261, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(86.95652, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.0005, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(1000.0, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]))
-        assert (pytest.approx(1.6e-06, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(0.012, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(83.333, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(83.333, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.0115, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(43.478261, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(86.95652, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.0005, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(1000.0, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
+        )
+        assert pytest.approx(1.6e-06, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -276,12 +312,12 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                   : Value   : Fixed : Bounds
-                       Electricity Demand :  0.0000 : False : (None, None)
-                    Electricity Intensity :  0.0000 :  True : (None, None)
-                     Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
-                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value      : Fixed : Bounds
+                       Electricity Demand : 8.0000e-10 : False : (0, None)
+                    Electricity Intensity :     0.0000 :  True : (None, None)
+                     Solute Removal [foo] :     0.0000 :  True : (0, None)
+    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
+                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -295,6 +331,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 db = Database()
 params = db._get_technology("vfa_recovery")
 
@@ -306,11 +343,12 @@ class Test_VFARecovery_ZOsubtype:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod"]})
+            default={"solute_list": ["nonbiodegradable_cod"]}
+        )
 
-        m.fs.unit = VFARecoveryZO(default={
-            "property_package": m.fs.params,
-            "database": db})
+        m.fs.unit = VFARecoveryZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
 
         return m
 

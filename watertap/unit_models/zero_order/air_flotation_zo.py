@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an air flotation unit.
+This module contains a zero-order representation of an air flotation unit
 operation.
 """
 

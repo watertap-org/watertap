@@ -19,24 +19,30 @@ from io import StringIO
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           Param,
-                           units as pyunits,
-                           value,
-                           Var)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Param,
+    units as pyunits,
+    value,
+    Var,
+)
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core import (constant_intensity, pump_electricity,
-                           WaterParameterBlock, ZeroOrderBaseData)
+from watertap.core import (
+    constant_intensity,
+    pump_electricity,
+    WaterParameterBlock,
+    ZeroOrderBaseData,
+)
 
 solver = get_solver()
 
 
 def get_Q(self, t):
     # Dummy method to return a flow rate for electricity intensity
-    return 42*pyunits.m**3/pyunits.hr
+    return 42 * pyunits.m**3 / pyunits.hr
 
 
 @declare_process_block_class("DerivedZO")
@@ -54,11 +60,9 @@ class TestConstantIntensity:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedZO(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedZO(default={"property_package": m.fs.water_props})
 
         constant_intensity(m.fs.unit)
 
@@ -81,14 +85,15 @@ class TestConstantIntensity:
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is False
         assert model.fs.unit._fixed_perf_vars == [
-            model.fs.unit.energy_electric_flow_vol_inlet]
+            model.fs.unit.energy_electric_flow_vol_inlet
+        ]
         assert model.fs.unit._initialize is None
         assert model.fs.unit._scaling is None
         assert model.fs.unit._get_Q is get_Q
         assert model.fs.unit._perf_var_dict == {
             "Electricity Demand": model.fs.unit.electricity,
-            "Electricity Intensity":
-                model.fs.unit.energy_electric_flow_vol_inlet}
+            "Electricity Intensity": model.fs.unit.energy_electric_flow_vol_inlet,
+        }
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -107,8 +112,7 @@ class TestConstantIntensity:
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(42*10, rel=1e-5) == value(
-            model.fs.unit.electricity[0])
+        assert pytest.approx(42 * 10, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -125,7 +129,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value  : Fixed : Bounds
-       Electricity Demand : 420.00 : False : (None, None)
+       Electricity Demand : 420.00 : False : (0, None)
     Electricity Intensity : 10.000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
@@ -146,15 +150,13 @@ class TestPumpElectricity:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedZO(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedZO(default={"property_package": m.fs.water_props})
 
-        m.fs.unit.flow = Param(m.fs.time,
-                               initialize=1,
-                               units=pyunits.gallon/pyunits.minute)
+        m.fs.unit.flow = Param(
+            m.fs.time, initialize=1, units=pyunits.gallon / pyunits.minute
+        )
 
         pump_electricity(m.fs.unit, m.fs.unit.flow)
 
@@ -183,7 +185,8 @@ class TestPumpElectricity:
         assert model.fs.unit._scaling is None
         assert model.fs.unit._get_Q is get_Q
         assert model.fs.unit._perf_var_dict == {
-            "Electricity Demand": model.fs.unit.electricity}
+            "Electricity Demand": model.fs.unit.electricity
+        }
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -203,7 +206,8 @@ class TestPumpElectricity:
     @pytest.mark.component
     def test_solution(self, model):
         assert pytest.approx(2.32479e-2, rel=1e-5) == value(
-            model.fs.unit.electricity[0])
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -220,7 +224,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                : Value    : Fixed : Bounds
-    Electricity Demand : 0.023248 : False : (None, None)
+    Electricity Demand : 0.023248 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

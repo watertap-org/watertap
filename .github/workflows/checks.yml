@@ -20,6 +20,27 @@ env:
   PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
+
+  code-formatting:
+    name: Check code is formatted (Black)
+    # OS and/or Python version don't make a difference, so we choose ubuntu and 3.8 as defaults
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install Black
+        # unlike the other jobs, we don't need to install WaterTAP and/or all the dev dependencies,
+        # but we still want to specify the Black version to use in requirements-dev.txt for local development
+        # so we extract the relevant line and pass it to a simple `pip install`
+        run: |
+          black_requirement="$(grep '^black==' requirements-dev.txt)"
+          pip --no-cache-dir install --progress-bar off "$black_requirement"
+      - name: Run Black to verify that the committed code is formatted
+        run: |
+          black --check .
+
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
@@ -48,10 +69,6 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
-          - python-version: '3.9'
-            os: linux
-            # same for link-checking in the HTML docs so we don't slam external sites
-            check_docs_links: true
           - os: linux
             # supercharge/mongodb-github-action is a container action, that's only available for Linux
             mongodb_server: true
@@ -128,10 +145,10 @@ jobs:
     - name: Test documentation code
       run: |
         make -C docs doctest -d
-    # just run the linkcheck on one of the jobs
-    # so we don't slam external sites
+    # TODO: this should be moved to a dedicated job/workflow
+    # until then, we can leave this here as a reminder
     - name: Test documentation links
-      if: matrix.check_docs_links
+      if: 'false'
       run: |
         make -C docs linkcheck -d
 
@@ -209,6 +226,11 @@ jobs:
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        # TODO: COSTING_UPDATE: 6.3.0 isn't bundled on PyPI with some files
+        #       need for PyNumero. For now, we'll install 6.3.1.dev0 from GitHub
+        echo '::group::Install Pyomo from GitHub'
+        pip install pyomo https://github.com/pyomo/pyomo/archive/043b2a5.zip
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list

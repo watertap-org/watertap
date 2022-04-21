@@ -14,7 +14,10 @@ class MarkerSpec(enum.Enum):
     component = "Quick tests that may require a solver"
     integration = "Long duration tests"
     build = "FIXME for building stuff?"
-    requires_idaes_solver = "Tests that require a solver from the IDEAS extensions to pass"
+    solver = "Tests that require a solver"
+    requires_idaes_solver = (
+        "Tests that require a solver from the IDEAS extensions to pass"
+    )
 
     @property
     def description(self) -> str:
@@ -29,7 +32,9 @@ class MarkerSpec(enum.Enum):
         return found
 
 
-def _handle_requires_idaes_solver(solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail) -> None:
+def _handle_requires_idaes_solver(
+    solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail
+) -> None:
     from idaes.core.util import get_solver
     from idaes.config import bin_directory
 
@@ -38,15 +43,15 @@ def _handle_requires_idaes_solver(solver: Optional = None, action: Optional[Call
     solver_bin_path = Path(solver.executable()).resolve()
 
     if not idaes_bin_dir in solver_bin_path.parents:
-        action(
-            f"This test is known to be failing with {solver_bin_path}"
-        )
+        action(f"This test is known to be failing with {solver_bin_path}")
 
 
 def pytest_configure(config: Config):
 
     for marker_spec in MarkerSpec:
-        config.addinivalue_line("markers", f"{marker_spec.name}: {marker_spec.description}")
+        config.addinivalue_line(
+            "markers", f"{marker_spec.name}: {marker_spec.description}"
+        )
 
 
 def pytest_runtest_setup(item: Item):
@@ -62,7 +67,7 @@ def pytest_addoption(parser: Parser):
     parser.addoption(
         "--edb-no-mock",
         help="Force the `edb` fixture to connect to a running MongoDB instance "
-             "instead of falling back to mongomock",
+        "instead of falling back to mongomock",
         action="store_true",
         default=False,
         dest="edb_no_mock",

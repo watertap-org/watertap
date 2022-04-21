@@ -1,8 +1,0 @@
-default:
-  recovery_vol:
-    value: calculated
-    units: dimensionless
-    reference: Calculated value for total TDS removal from DEEP 5.1 model from IAEA
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless

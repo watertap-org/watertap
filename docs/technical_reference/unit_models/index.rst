@@ -8,4 +8,6 @@ Unit Models
    reverse_osmosis_1D
    nanofiltration_ZO
    nanofiltration_0D
+   nanofiltration_dspmde_0D
    pressure_exchanger
+   crystallizer_0D

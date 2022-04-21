@@ -1,7 +1,30 @@
-default:
+default:  # holding tank
   storage_time:
     value: 24
     units: hours
   surge_capacity:
     value: 0
     units: dimensionless
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 0.1482075293096916e3
+      units: USD_2007
+    capital_b_parameter:
+      value: 1.0143391604819805
+      units: dimensionless
+treated_storage:
+  storage_time:
+    value: 24
+    units: hours
+  surge_capacity:
+    value: 0
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 3.44e3
+      units: USD_2002
+    capital_b_parameter:
+      value: 0.72093
+      units: dimensionless

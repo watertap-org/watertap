@@ -25,7 +25,7 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml"]
+exclude_files = ["water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
 
 tech_list = []
 for f in os.listdir(dbpath):
@@ -44,71 +44,62 @@ def test_unit_parameter_files(tech):
 
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
-    pass_through = ["buffer_tank",
-                    "chemical_addition",
-                    "cooling_supply",
-                    "feed_water_tank",
-                    "landfill",
-                    "municipal_drinking",
-                    "pump",
-                    "storage_tank",
-                    "static_mixer",
-                    "co2_addition",
-                    "sw_onshore_intake",
-                    "landfill_zld",
-                    ]
+    pass_through = [
+        "blending_reservoir",
+        "buffer_tank",
+        "chemical_addition",
+        "co2_addition",
+        "cooling_supply",
+        "energy_recovery",
+        "feed_water_tank",
+        "injection_well_disposal",
+        "intrusion_mitigation",
+        "landfill",
+        "municipal_drinking",
+        "municipal_wwtp",
+        "pump_electricity",
+        "pump",
+        "smp",
+        "static_mixer",
+        "storage_tank",
+        "surface_discharge",
+        "sw_onshore_intake",
+        "tramp_oil_tank",
+        "water_pumping_station",
+        "well_field",
+    ]
 
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
+    siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
-    no_energy_electric_flow_vol_inlet = ["energy_recovery",
-                                         "mbr_denitrification",
-                                         "mbr_nitrification",
-                                         "multi_stage_bubble_aeration",
-                                         "tri_media_filtration",
-                                         "cartridge_filtration_with_backflush",
-                                         "landfill",
-                                         "well_field",
-                                         "ion_exchange",
-                                         "ozone_aop",
-                                         "fixed_bed",
-                                         "holding_tank",
-                                         "heap_leaching",
-                                         "nuclear_cooling_tower",
-                                         "lime_softening",
-                                         "ozonation",
-                                         "cooling_tower",
-                                         "gac",
-                                         "tri_media_filtration_with_backflush",
-                                         "sedimentation",
-                                         "backwash_solids_handling",
-                                         "ph_decrease",
-                                         "ph_increase",
-                                         "co2_addition",
-                                         "coag_and_floc",
-                                         "crystallizer",
-                                         "iron_and_manganese_removal",
-                                         "fluidized_bed",
-                                         "surface_discharge",
-                                         "solution_distribution_and_recovery_plant",
-                                         "chemical_addition",
-                                         "cartridge_filtration",
-                                         "injection_well",
-                                         "sw_onshore_intake",
-                                         "filter_press",
-                                         "municipal_drinking",
-                                         "gac_pressure_30_min",
-                                         "packed_tower_aeration",
-                                         "treated_storage",
-                                         "gac_gravity_60_min",
-                                         "evaporation_pond",
-                                         "lime_addition",
-                                         "brine_concentrator",
-                                         "agglom_stacking",
-                                         "landfill_zld",
-                                         "storage_tank"]
+    no_energy_electric_flow_vol_inlet = [
+        "backwash_solids_handling",
+        "brine_concentrator",
+        "CANDO_P",
+        "chemical_addition",
+        "coag_and_floc",
+        "constructed_wetlands",
+        "deep_well_injection",
+        "energy_recovery",
+        "evaporation_pond",
+        "filter_press",
+        "gac",
+        "gas_sparged_membrane",
+        "ion_exchange",
+        "iron_and_manganese_removal",
+        "metab",
+        "municipal_drinking",
+        "ozonation",
+        "ozone_aop",
+        "photothermal_membrane",
+        "pump_electricity",
+        "storage_tank",
+        "surface_discharge",
+        "sw_onshore_intake",
+        "water_pumping_station",
+        "well_field",
+    ]
 
-    expected = ["recovery_frac_mass_H2O",
-                "default_removal_frac_mass_solute"]
+    expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
 
     for k in data.values():
 
@@ -116,8 +107,7 @@ def test_unit_parameter_files(tech):
             if tech not in pass_through and tech not in siso_full_recovery:
                 assert e in k.keys()
                 assert "units" in k[e].keys()
-                assert_units_equivalent(
-                    k[e]["units"], units.dimensionless)
+                assert_units_equivalent(k[e]["units"], units.dimensionless)
                 assert "value" in k[e].keys()
                 assert k[e]["value"] >= 0
                 assert k[e]["value"] <= 1
@@ -131,18 +121,15 @@ def test_unit_parameter_files(tech):
             e = "energy_electric_flow_vol_inlet"
             assert e in k.keys()
             assert "units" in k[e].keys()
-            assert_units_equivalent(
-                k[e]["units"], units.dimensionless)
+            assert_units_equivalent(k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():
             for (j, c_data) in k["removal_frac_mass_solute"].items():
                 assert "units" in c_data.keys()
-                assert_units_equivalent(
-                    c_data["units"], units.dimensionless)
+                assert_units_equivalent(c_data["units"], units.dimensionless)
                 assert "value" in c_data.keys()
                 assert c_data["value"] >= 0
                 assert c_data["value"] <= 1

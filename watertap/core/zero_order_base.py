@@ -13,7 +13,7 @@
 """
 This module contains the base class for all zero order unit models.
 """
-from idaes.core import UnitModelBlockData, useDefault
+from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
@@ -30,6 +30,7 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+@declare_process_block_class("ZeroOrderBase")
 class ZeroOrderBaseData(UnitModelBlockData):
     """
     Standard base class for zero order unit models.
@@ -39,37 +40,59 @@ class ZeroOrderBaseData(UnitModelBlockData):
     """
 
     CONFIG = ConfigBlock()
-    CONFIG.declare('dynamic', ConfigValue(
-        domain=In([False]),
-        default=False,
-        description='Dynamic model flag - must be False',
-        doc='''All zero-order models are steady-state only'''))
-    CONFIG.declare('has_holdup', ConfigValue(
-        default=False,
-        domain=In([False]),
-        description='Holdup construction flag - must be False',
-        doc='''Zero order models do not include holdup'''))
-    CONFIG.declare('property_package', ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description='Property package to use for control volume',
-        doc='''Property parameter object used to define property  calculations,
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([False]),
+            default=False,
+            description="Dynamic model flag - must be False",
+            doc="""All zero-order models are steady-state only""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Holdup construction flag - must be False",
+            doc="""Zero order models do not include holdup""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property  calculations,
         **default** - useDefault.
         **Valid values:** {
         **useDefault** - use default package from parent model or flowsheet,
-        **PhysicalParameterObject** - a PhysicalParameterBlock object.}'''))
-    CONFIG.declare('property_package_args', ConfigBlock(
-        implicit=True,
-        description='Arguments to use for constructing property packages',
-        doc='''A ConfigBlock with arguments to be passed to a property block(s)
+        **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
         and used when constructing these, **default** - None.
-        **Valid values:** {see property package for documentation.}'''))
-    CONFIG.declare('database', ConfigValue(
-        description='An instance of a WaterTAP Database to use for parameters.'
-        ))
-    CONFIG.declare('process_subtype', ConfigValue(
-        description=
-        'Process subtype to use when looking up parameters from database.'))
+        **Valid values:** {see property package for documentation.}""",
+        ),
+    )
+    CONFIG.declare(
+        "database",
+        ConfigValue(
+            description="An instance of a WaterTAP Database to use for parameters."
+        ),
+    )
+    CONFIG.declare(
+        "process_subtype",
+        ConfigValue(
+            description="Process subtype to use when looking up parameters from database."
+        ),
+    )
 
     def build(self):
         super().build()
@@ -96,40 +119,49 @@ class ZeroOrderBaseData(UnitModelBlockData):
             raise ConfigurationError(
                 f"{self.name} configured with invalid property package. "
                 f"Zero-order models only support property packages with a "
-                f"single phase named 'Liq'.")
-        if (not hasattr(self.config.property_package, "solvent_set") or
-                self.config.property_package.solvent_set != ["H2O"]):
+                f"single phase named 'Liq'."
+            )
+        if not hasattr(
+            self.config.property_package, "solvent_set"
+        ) or self.config.property_package.solvent_set != ["H2O"]:
             raise ConfigurationError(
                 f"{self.name} configured with invalid property package. "
                 f"Zero-order models only support property packages which "
-                f"include 'H2O' as the only Solvent.")
+                f"include 'H2O' as the only Solvent."
+            )
         if not hasattr(self.config.property_package, "solute_set"):
             raise ConfigurationError(
                 f"{self.name} configured with invalid property package. "
                 f"Zero-order models require property packages to declare all "
-                f"dissolved species as Solutes.")
-        if (len(self.config.property_package.solute_set) !=
-                len(self.config.property_package.component_list)-1):
+                f"dissolved species as Solutes."
+            )
+        if (
+            len(self.config.property_package.solute_set)
+            != len(self.config.property_package.component_list) - 1
+        ):
             raise ConfigurationError(
                 f"{self.name} configured with invalid property package. "
                 f"Zero-order models only support `H2O` as a solvent and all "
-                f"other species as Solutes.")
+                f"other species as Solutes."
+            )
 
-    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
-        '''
+    def initialize_build(
+        self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+    ):
+        """
         Placeholder initialization routine, raises NotImplementedError
-        '''
+        """
         if self._initialize is None or not callable(self._initialize):
             raise NotImplementedError()
         else:
-            self._initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
-                             solver=None, optarg=None)
+            self._initialize(
+                self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+            )
 
     def calculate_scaling_factors(self):
-        '''
+        """
         Placeholder scaling routine, should be overloaded by derived classes
-        '''
+        """
         super().calculate_scaling_factors()
 
         if callable(self._scaling):
@@ -152,11 +184,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
             raise NotImplementedError(
                 f"{self.name} derived zero order unit model has not "
                 f"implemented the _tech_type attribute. This is required "
-                f"to identify the database file to load parameters from.")
+                f"to identify the database file to load parameters from."
+            )
 
         # Get parameter dict from database
         pdict = self.config.database.get_unit_operation_parameters(
-            self._tech_type, subtype=self.config.process_subtype)
+            self._tech_type, subtype=self.config.process_subtype
+        )
 
         if self._has_recovery_removal:
             self.set_recovery_and_removal(pdict, use_default_removal)
@@ -191,10 +225,12 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 self.removal_frac_mass_solute[t, j],
                 data,
                 index=j,
-                use_default_removal=use_default_removal)
+                use_default_removal=use_default_removal,
+            )
 
     def set_param_from_data(
-            self, parameter, data, index=None, use_default_removal=False):
+        self, parameter, data, index=None, use_default_removal=False
+    ):
         """
         General method for setting parameter values from a dict of data
         returned from a database.
@@ -222,7 +258,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
         except KeyError:
             raise KeyError(
                 f"{self.name} - database provided does not contain an entry "
-                f"for {pname} for technology.")
+                f"for {pname} for technology."
+            )
 
         if index is not None:
             try:
@@ -237,27 +274,31 @@ class ZeroOrderBaseData(UnitModelBlockData):
                             f"{self.name} - database provided does not "
                             f"contain an entry for {pname} with index {index} "
                             f"for technology and no default removal was "
-                            f"specified.")
+                            f"specified."
+                        )
                 else:
                     raise KeyError(
                         f"{self.name} - database provided does not contain "
                         f"an entry for {pname} with index {index} for "
-                        f"technology.")
+                        f"technology."
+                    )
 
         try:
             val = pdata["value"]
         except KeyError:
             raise KeyError(
                 f"{self.name} - no value provided for {pname} (index: "
-                f"{index}) in database.")
+                f"{index}) in database."
+            )
         try:
             units = getattr(pyunits, pdata["units"])
         except KeyError:
             raise KeyError(
                 f"{self.name} - no units provided for {pname} (index: "
-                f"{index}) in database.")
+                f"{index}) in database."
+            )
 
-        parameter.fix(val*units)
+        parameter.fix(val * units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
 
     def get_inlet_flow(self, t):
@@ -265,14 +306,14 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
-            self._stream_table_dict,
-            time_point=time_point)
+            self._stream_table_dict, time_point=time_point
+        )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
 
         for k, v in self._perf_var_dict.items():
-            if k in ["Solute Removal", "Reaction Extent"]:
+            if k in ["Solute Removal", "Reaction Extent", "Rejection"]:
                 for j, vd in v[time_point, :].wildcard_items():
                     var_dict[f"{k} [{j}]"] = vd
             elif v.is_indexed():

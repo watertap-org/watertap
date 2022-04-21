@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a landfill unit
-operation.
+This module contains a zero-order representation of a landfill unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var
@@ -40,21 +39,28 @@ class LandfillZOData(ZeroOrderBaseData):
         build_pt(self)
         constant_intensity(self)
 
-        self.capacity_basis = Var(self.flowsheet().time,
-                                units=pyunits.kg/pyunits.hr,
-                                doc="capacity basis for capital cost")
+        self.capacity_basis = Var(
+            self.flowsheet().time,
+            units=pyunits.kg / pyunits.hr,
+            doc="capacity basis for capital cost",
+        )
 
-        self.total_mass = Var(self.flowsheet().time,
-                                units=pyunits.kg/pyunits.hr,
-                                doc="total mass flow rate")
+        self.total_mass = Var(
+            self.flowsheet().time,
+            units=pyunits.kg / pyunits.hr,
+            doc="total mass flow rate",
+        )
 
         self._fixed_perf_vars.append(self.capacity_basis)
 
-        @self.Constraint(self.flowsheet().time,
-                    doc='Total mass constraint')
+        @self.Constraint(self.flowsheet().time, doc="Total mass constraint")
         def total_mass_constraint(b, t):
-            return b.total_mass[t] == sum(pyunits.convert(b.inlet.flow_mass_comp[t, m], to_units=pyunits.kg/pyunits.hr)
-                                          for m in b.config.property_package.component_list)
+            return b.total_mass[t] == sum(
+                pyunits.convert(
+                    b.inlet.flow_mass_comp[t, m], to_units=pyunits.kg / pyunits.hr
+                )
+                for m in b.config.property_package.component_list
+            )
 
         self._perf_var_dict["Capacity Basis (kg/hr)"] = self.capacity_basis
         self._perf_var_dict["Total Mass (kg/hr)"] = self.total_mass
