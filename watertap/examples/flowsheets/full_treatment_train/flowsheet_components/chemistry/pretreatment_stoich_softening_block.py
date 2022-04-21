@@ -113,8 +113,8 @@ from idaes.generic_models.unit_models.stoichiometric_reactor import (
     StoichiometricReactor,
 )
 
-# Import the WaterTAP objects inherited (includes for the Mixer and Separator unit model
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+# Import the Mixer and Separator unit model
+from idaes.generic_models.unit_models import (
     Separator,
     Mixer,
 )
