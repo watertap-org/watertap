@@ -17,7 +17,7 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
@@ -327,13 +327,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             ro_type - ROType Enum indicating reverse osmosis type,
                       default = ROType.standard
         """
-        # Validate arguments
-        if ro_type not in ROType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for ro_type:"
-                f" {ro_type}. Argument must be a member of the ROType Enum."
-            )
-
         if ro_type == ROType.standard:
             membrane_cost = blk.costing_package.reverse_osmosis_membrane_cost
         elif ro_type == ROType.high_pressure:
@@ -341,7 +334,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.costing_package.reverse_osmosis_high_pressure_membrane_cost
             )
         else:
-            raise BurntToast(f"Unrecognized ro_type: {ro_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for ro_type:"
+                f" {ro_type}. Argument must be a member of the ROType Enum."
+            )
         cost_membrane(
             blk, membrane_cost, blk.costing_package.factor_membrane_replacement
         )
@@ -357,18 +353,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             pump_type - PumpType Enum indicating pump type,
                         default = PumpType.high_pressure
         """
-        if pump_type not in PumpType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for pump_type:"
-                f" {pump_type}. Argument must be a member of the PumpType Enum."
-            )
-
         if pump_type == PumpType.high_pressure:
             WaterTAPCostingData.cost_high_pressure_pump(blk)
         elif pump_type == PumpType.low_pressure:
             WaterTAPCostingData.cost_low_pressure_pump(blk)
         else:
-            raise BurntToast(f"Unrecognized pump_type: {pump_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for pump_type:"
+                f" {pump_type}. Argument must be a member of the PumpType Enum."
+            )
 
     @staticmethod
     def cost_energy_recovery_device(
@@ -383,18 +376,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             energy_recovery_device_type - EnergyRecoveryDeviceType Enum indicating ERD type,
                                           default = EnergyRecoveryDeviceType.default
         """
-        if energy_recovery_device_type not in EnergyRecoveryDeviceType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for energy_recovery_device_type:"
-                f" {energy_recovery_device_type}. Argument must be a member of the EnergyRecoveryDeviceType Enum."
-            )
         if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
             WaterTAPCostingData.cost_default_energy_recovery_device(blk)
         elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
             WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
         else:
-            raise BurntToast(
-                f"Unrecognized energy_recovery_device_type: {energy_recovery_device_type}"
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for energy_recovery_device_type:"
+                f" {energy_recovery_device_type}. Argument must be a member of the EnergyRecoveryDeviceType Enum."
             )
 
     @staticmethod
@@ -498,12 +487,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             mixer_type - MixerType Enum indicating mixer type,
                         default = MixerType.default
         """
-        if mixer_type not in MixerType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for mixer_type:"
-                f" {mixer_type}. Argument must be a member of the MixerType Enum."
-            )
-
         if mixer_type == MixerType.default:
             WaterTAPCostingData.cost_default_mixer(blk)
         elif mixer_type == MixerType.NaOCl:
@@ -511,7 +494,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         elif mixer_type == MixerType.CaOH2:
             WaterTAPCostingData.cost_caoh2_mixer(blk)
         else:
-            raise BurntToast(f"Unrecognized mixer_type: {mixer_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for mixer_type:"
+                f" {mixer_type}. Argument must be a member of the MixerType Enum."
+            )
 
     @staticmethod
     def cost_default_mixer(blk):
