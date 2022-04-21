@@ -10,3 +10,4 @@ Unit Models
    nanofiltration_0D
    nanofiltration_dspmde_0D
    pressure_exchanger
+   crystallizer_0D
