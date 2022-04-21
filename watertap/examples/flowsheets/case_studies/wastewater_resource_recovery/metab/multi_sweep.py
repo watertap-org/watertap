@@ -52,7 +52,6 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         )
 
     elif case_num == 2:
-        pass
         # bead replacement rate
         # baseline corresponds to replacement rate of 0.3 years; sensitivity on replacement_factor corresponding
         # to 0.3 yr to 5 yr
@@ -105,6 +104,15 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
             2e-1,
             nx,
         )
+    elif case_num == 7:
+        # Recovered resource selling price:
+        sweep_params["Hydrogen selling price"] = LinearSample(
+            m.fs.costing.hydrogen_product_cost, -2, -10, nx
+        )
+        sweep_params["Methane selling price"] = LinearSample(
+            m.fs.costing.methane_product_cost, -0.305, -1, nx
+        )
+
 
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
@@ -115,8 +123,7 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         m,
         sweep_params,
         outputs,
-        results_file_name=output_filename,
-        write_csv=True,
+        csv_results_file_name=output_filename,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         # debugging_data_dir=os.path.split(output_filename)[0] + '/local',

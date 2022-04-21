@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of municipal drinking water unit
-operation.
+This module contains a zero-order representation of municipal drinking water unit.
 """
 
 from pyomo.environ import Reference, units as pyunits

@@ -11,8 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a general unit that recovers volatile fatty acids (VFAs).
-operation.
+This module contains a zero-order representation of a general unit that recovers
+volatile fatty acids (VFAs).
 """
 
 from pyomo.environ import units as pyunits, Var

@@ -21,7 +21,6 @@ from pyomo.environ import value
 
 from watertap.tools.parameter_sweep import (
     _init_mpi,
-    _strip_extension,
     _build_combinations,
     _divide_combinations,
     _update_model_values,
@@ -78,21 +77,6 @@ class TestParallelManager:
         assert type(rank) == int
         assert type(num_procs) == int
         assert 0 <= rank < num_procs
-
-    @pytest.mark.unit
-    def test_strip_extension(self):
-        input_list = ["/my_dir/my_file.h5", "my_file.csv", "/my_dir/myfile"]
-        extension_list = [".h5", ".csv", ".h5"]
-        true_list = [
-            ("/my_dir/my_file", ".h5"),
-            ("my_file", ".csv"),
-            ("/my_dir/myfile", None),
-        ]
-        output_list = [
-            _strip_extension(fname, ext)
-            for fname, ext in zip(input_list, extension_list)
-        ]
-        assert true_list == output_list
 
     @pytest.mark.unit
     def test_single_index_unrolled(self):
@@ -452,7 +436,9 @@ class TestParallelManager:
         reference_dict["sweep_params"]["fs.input[a]"]["upper bound"] = np.finfo("d").max
 
         h5_fname = "h5_test_{0}.h5".format(rank)
-        _write_output_to_h5(input_dict, output_directory=tmp_path, fname=h5_fname)
+        _write_output_to_h5(
+            input_dict, h5_results_file_name=os.path.join(tmp_path, h5_fname)
+        )
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
 
@@ -616,17 +602,16 @@ class TestParallelManager:
         }
 
         results_fname = os.path.join(tmp_path, "global_results")
-        csv_results_file = str(results_fname) + ".csv"
-        h5_results_file = str(results_fname) + ".h5"
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         parameter_sweep(
             m,
             sweep_params,
             outputs=outputs,
-            results_file_name=results_fname,
-            write_csv=True,
-            write_h5=True,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             debugging_data_dir=tmp_path,
             interpolate_nan_outputs=True,
@@ -639,7 +624,7 @@ class TestParallelManager:
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile(csv_results_file_name)
             assert os.path.isfile(
                 os.path.join(tmp_path, "interpolated_global_results.csv")
             )
@@ -654,7 +639,7 @@ class TestParallelManager:
                 )
 
             # Attempt to read in the data
-            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
             truth_data = [0.9, 0.5, np.nan, np.nan, np.nan]
@@ -737,10 +722,9 @@ class TestParallelManager:
                 },
             }
 
-            # h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
-            read_dict = _read_output_h5(h5_results_file)
+            read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(csv_results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
             # Check if there is a text file created
             import ast
@@ -750,7 +734,7 @@ class TestParallelManager:
                 "sweep_params": ["fs.input[a]", "fs.input[b]"],
             }
 
-            txt_fpath = os.path.join(tmp_path, "{0}.txt".format(results_fname))
+            txt_fpath = h5_results_file_name + ".txt"
             assert os.path.exists(txt_fpath)
             f = open(txt_fpath)
             f_contents = f.read()
@@ -778,17 +762,16 @@ class TestParallelManager:
             "objective": m.objective,
         }
         results_fname = os.path.join(tmp_path, "global_results")
-        csv_results_file = str(results_fname) + ".csv"
-        h5_results_file = str(results_fname) + ".h5"
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         parameter_sweep(
             m,
             sweep_params,
             outputs=outputs,
-            results_file_name=results_fname,
-            write_csv=True,
-            write_h5=True,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             optimize_kwargs={"relax_feasibility": True},
             mpi_comm=comm,
@@ -800,10 +783,10 @@ class TestParallelManager:
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile(csv_results_file_name)
 
             # Attempt to read in the data
-            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
             # Compare the last row of the imported data to truth
             truth_data = [
                 0.9,
@@ -888,10 +871,9 @@ class TestParallelManager:
                 },
             }
 
-            # h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_results_file))
-            read_dict = _read_output_h5(h5_results_file)
+            read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(csv_results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
@@ -906,17 +888,16 @@ class TestParallelManager:
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
         results_fname = os.path.join(tmp_path, "global_results_recover")
-        csv_results_file = str(results_fname) + ".csv"
-        h5_results_file = str(results_fname) + ".h5"
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            results_file_name=csv_results_file,
-            write_csv=False,
-            write_h5=True,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             reinitialize_function=_reinitialize,
             reinitialize_kwargs={"slack_penalty": 10.0},
@@ -929,10 +910,10 @@ class TestParallelManager:
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile(csv_results_file_name)
 
             # Attempt to read in the data
-            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
@@ -1026,10 +1007,9 @@ class TestParallelManager:
                 },
             }
 
-            # h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
-            read_dict = _read_output_h5(h5_results_file)
+            read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(csv_results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
@@ -1044,17 +1024,16 @@ class TestParallelManager:
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
         results_fname = os.path.join(tmp_path, "global_results_bad_recover")
-        csv_results_file = str(results_fname) + ".csv"
-        h5_results_file = str(results_fname) + ".h5"
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            results_file_name=h5_results_file,
-            write_csv=True,
-            write_h5=False,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             reinitialize_function=_bad_reinitialize,
             reinitialize_kwargs={"slack_penalty": 10.0},
@@ -1067,10 +1046,10 @@ class TestParallelManager:
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile(csv_results_file_name)
 
             # Attempt to read in the data
-            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
             truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
@@ -1183,9 +1162,9 @@ class TestParallelManager:
                 },
             }
 
-            read_dict = _read_output_h5(h5_results_file)
+            read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(csv_results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
@@ -1200,17 +1179,16 @@ class TestParallelManager:
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
         results_fname = os.path.join(tmp_path, "global_results_force_initialize")
-        csv_results_file = str(results_fname) + ".csv"
-        h5_results_file = str(results_fname) + ".h5"
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
         parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            results_file_name=results_fname,
-            write_csv=True,
-            write_h5=True,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             reinitialize_before_sweep=True,
             reinitialize_function=_reinitialize,
@@ -1224,10 +1202,10 @@ class TestParallelManager:
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile(csv_results_file_name)
 
             # Attempt to read in the data
-            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
@@ -1321,9 +1299,9 @@ class TestParallelManager:
                 },
             }
 
-            read_dict = _read_output_h5(h5_results_file)
+            read_dict = _read_output_h5(h5_results_file_name)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(csv_results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
@@ -1344,9 +1322,8 @@ class TestParallelManager:
                 m,
                 sweep_params,
                 outputs=None,
-                results_file_name=None,
-                write_csv=False,
-                write_h5=False,
+                csv_results_file_name=None,
+                h5_results_file_name=None,
                 optimize_function=_optimization,
                 reinitialize_before_sweep=True,
                 reinitialize_function=None,
