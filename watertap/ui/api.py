@@ -10,6 +10,7 @@ from typing import Dict, Iterable, Union, List
 import functools
 from pyomo.environ import ConcreteModel
 from pyomo.environ import Block, Var, value
+from pyomo.common.config import ConfigValue, ConfigDict, ConfigList
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
@@ -46,27 +47,141 @@ def _get_method_classname(m):
             return v
     return "<unknown>"
 
+
 # End logging utility functions
 
-# Interface to get exported variables
+# Utility function to automate documentation of something with a CONFIG that is not a ProcessBlock subclass
 
 
-class BlockInterface:
-    """Interface to a block.
+def config_docs(cls):
+    """Class decorator to insert documentation for the accepted configuration options in the constructor's docstring.
+
+    Returns:
+        Decorator function
     """
-    def __init__(self, block: Block, config: Dict = None):
+    doc_lines = []
+    tab_spc = " " * 4
+
+    def format_list(item, depth):
+        """Append to `doc_lines` during recursive walk of `item`."""
+        if isinstance(item, tuple):
+            indent = tab_spc * (depth + 3)
+            bullet = ("-", "*")[depth == 1]
+            name = item[0]
+            desc = "(no description provided)" if len(item) == 1 else item[1]
+            doc_lines.append(f"{indent}{bullet} `{name}`: {desc}")
+        else:
+            doc_lines.append("")
+            for i in item:
+                format_list(i, depth + 1)
+            if depth > 0:
+                doc_lines.append("")
+
+    # Wrap in try/except so if something goes wrong no harm is done
+    try:
+        # Get Pyomo to generate 'documentation' that is parseable as a Python list
+        s = cls.CONFIG.generate_documentation(
+            indent_spacing=0,
+            block_start="[",
+            block_end="]",
+            item_start="('%s',",
+            item_body="'%s',",
+            item_end="),",
+        )
+        # Parse the list then re-generate documentation as nested bulleted lists
+        doc_list = eval(s)
+        format_list(doc_list, 0)
+    except Exception as err:
+        _log.warning(f"Generating configuration docstring: {err}")
+    # Add to the class constructor docstring. Assume that you can just append, i.e. the configuration
+    # argument is the last entry in the "Args" section, which is the last section.
+    if doc_lines:
+        doc_str = "\n".join(doc_lines)
+        cls.__init__.__doc__ = cls.__init__.__doc__.rstrip() + "\n" + doc_str
+    # Return modified class
+    return cls
+
+
+# Interface to get exported variables
+# ------------------------------------
+
+
+def add_block_interface(block, data):
+    """Add interface information to a block.
+
+    Args:
+        args: Either a BlockInterface
+        data: The interface information to add
+
+    Returns:
+        None
+    """
+    block.ui = BlockInterface(block, data)
+
+
+def get_block_interface(block: Block) -> Union["BlockInterface", None]:
+    """Retrieve attached block interface, if any. Use with :func:`add_block_interface`.
+
+    Args:
+        block: The block to access.
+
+    Return:
+        The interface, or None.
+    """
+    return getattr(block, "ui", None)
+
+
+@config_docs
+class BlockInterface:
+    """Interface to a block."""
+
+    _var_config = ConfigDict()
+    _var_config.declare(
+        "display_name",
+        ConfigValue(description="Display name for the variable", domain=str),
+    )
+    _var_config.declare(
+        "description",
+        ConfigValue(description="Description for the variable", domain=str),
+    )
+    _var_config.declare(
+        "name", ConfigValue(description="Name of the variable", domain=str)
+    )
+
+    CONFIG = ConfigDict()
+    CONFIG.declare(
+        "display_name",
+        ConfigValue(description="Display name for the block", domain=str),
+    )
+    CONFIG.declare(
+        "description", ConfigValue(description="Description for the block", domain=str)
+    )
+    CONFIG.declare(
+        "variables",
+        ConfigList(description="List of variables to export", domain=_var_config),
+    )
+
+    def __init__(self, block: Block, options: Dict = None):
+        """Constructor.
+
+        Args:
+            block: The block to add an interface to.
+            options: Configuration options
+        """
+        options = options or {}
         self._block = block
-        config = config or {}
-        self.display_name = config.get("display_name", block.name)
-        self.description = config.get("description", block.doc)
-        self._variables = config.get("variables", {})
+        # dynamically set defaults
+        if "display_name" not in options:
+            options["display_name"] = block.name
+        if "description" not in options:
+            options["description"] = block.doc
+        self.config = self.CONFIG(options)
 
     def get_exported_variables(self) -> Iterable[Var]:
-        """"Called by client to get variables exported by the block.
-        """
+        """ "Called by client to get variables exported by the block."""
         result = {}
-        for name, data in self._variables.items():
-            c = data.copy()
+        for c in self.config.variables.value():
+            name = c["name"]
             v = getattr(self._block, name)
             if v.is_indexed():
                 c["indexed_values"] = {}
@@ -84,10 +199,9 @@ class BlockInterface:
 
 
 class FlowsheetInterface(BlockInterface):
-
-    def __init__(self, flowsheet, **kwargs):
-        super().__init__(flowsheet, **kwargs)
-        self.flowsheet = flowsheet
+    """This is a special BlockInterface that has an added method to get
+    all the sub-blocks that also have a BlockInterface in them.
+    """
 
     @log_meth
     def as_dict(self):
@@ -95,27 +209,31 @@ class FlowsheetInterface(BlockInterface):
         return {"blocks": block_map}
 
     def _get_block_map(self):
-        stack, mapping = [(["fs"], self.flowsheet)], {}
+        stack, mapping = [(["flowsheet"], self._block)], {}
         while stack:
             key, val = stack.pop()
             if hasattr(val, "component_map"):
                 for key2, val2 in val.component_map(ctype=Block).items():
                     qkey = key + [key2]
-                    self._add_mapping_key(mapping, qkey, val2)
+                    ui = get_block_interface(val2)
+                    if ui:
+                        self._add_mapping_key(mapping, qkey, ui)
                     stack.append((qkey, val2))
         return mapping
 
     @staticmethod
-    def _add_mapping_key(m, keys, value):
+    def _add_mapping_key(m, keys, block_ui: BlockInterface):
         node_keys, leaf_key = keys[:-1], keys[-1]
         for k in node_keys:
             if k not in m:
                 m[k] = {}
             m = m[k]  # descend
-        if hasattr(value, "ui"):
-            m[leaf_key] = {"variables": value.ui.get_exported_variables()}
+        m[leaf_key] = {"variables": block_ui.get_exported_variables()}
+
 
 # Workflow interface
+# ------------------
+
 
 class Steps:
     setup = "flowsheet_setup"
@@ -293,8 +411,7 @@ class AnalysisWorkflow:
 
     @property
     def optimize_result(self):
-        """Get the result of the ``optimize`` step.
-        """
+        """Get the result of the ``optimize`` step."""
         return self.get_step_result(Steps.optimize)
 
     # end of syntactic sugar
@@ -369,6 +486,3 @@ class AnalysisWorkflow:
             message = f"Bad step name. input-name={name}, normalized-name={norm_name}, expected={name_list}"
             raise KeyError(message)
         return norm_name
-
-
-
