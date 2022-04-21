@@ -163,8 +163,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
             }
         )
         m.fs.costing.cost_flow(
-            m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
-            * m.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"],
+            m.fs.stoich_softening_mixer_unit.dosing_rate,
             "CaOH2",
         )
 
@@ -178,8 +177,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
             }
         )
         m.fs.costing.cost_flow(
-            m.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0]
-            * m.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"],
+            m.fs.ideal_naocl_mixer_unit.dosing_rate,
             "NaOCl",
         )
 
