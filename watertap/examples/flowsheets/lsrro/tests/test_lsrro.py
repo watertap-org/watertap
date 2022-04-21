@@ -24,7 +24,7 @@ from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
-from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
 from watertap.examples.flowsheets.lsrro.lsrro import (
@@ -79,7 +79,7 @@ class _TestLSRRO:
         assert len(fs.PrimaryPumps) == self.number_of_stages
         assert isinstance(fs.BoosterPumps, Pump)
         assert len(fs.BoosterPumps) == self.number_of_stages - 1
-        assert isinstance(fs.EnergyRecoveryDevice, Pump)
+        assert isinstance(fs.EnergyRecoveryDevice, EnergyRecoveryDevice)
         assert len(fs.EnergyRecoveryDevice) == 1
 
         assert isinstance(fs.ROUnits, ReverseOsmosis0D)
@@ -326,8 +326,8 @@ class TestLSRRO_1Stage(_TestLSRRO):
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.180 kg/s, 1592 ppm
 Volumetric water recovery: 18.0%
-Energy Consumption: 3.8 kWh/m3
-Levelized cost of water: 1.73 $/m3
+Energy Consumption: 7.6 kWh/m3
+Levelized cost of water: 2.00 $/m3
 """
     display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
@@ -353,7 +353,7 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.286037e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.750668
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697139e-1
-        data[fs.costing.LCOW] = 1.73465
+        data[fs.costing.LCOW] = 2.00482
         data[fs.water_recovery] = 0.5
 
         return data
@@ -367,7 +367,7 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.286037e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.750668
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697139e-1
-        data[fs.costing.LCOW] = 1.73465
+        data[fs.costing.LCOW] = 2.00482
         data[fs.water_recovery] = 0.179618
 
         return data
@@ -381,7 +381,7 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.4824263e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.544077
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695177e-1
-        data[fs.costing.LCOW] = 1.02780
+        data[fs.costing.LCOW] = 1.13407
         data[fs.water_recovery] = 0.386405
 
         return data
@@ -398,8 +398,8 @@ class TestLSRRO_2Stage(_TestLSRRO):
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.297 kg/s, 926 ppm
 Volumetric water recovery: 29.7%
-Energy Consumption: 6.3 kWh/m3
-Levelized cost of water: 1.59 $/m3
+Energy Consumption: 8.3 kWh/m3
+Levelized cost of water: 1.73 $/m3
 """
     display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
@@ -435,7 +435,7 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.274413e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.633927
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697161e-1
-        data[fs.costing.LCOW] = 1.52640
+        data[fs.costing.LCOW] = 1.66663
         data[fs.water_recovery] = 0.5
 
         return data
@@ -449,7 +449,7 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.274578e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.633730
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697254e-1
-        data[fs.costing.LCOW] = 1.59283
+        data[fs.costing.LCOW] = 1.73385
         data[fs.water_recovery] = 0.296544
 
         return data
@@ -460,10 +460,10 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         fs = model.fs
 
         data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.732053
-        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.456208e-3
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.454317e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.197952
-        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695438e-1
-        data[fs.costing.LCOW] = 1.17018
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695457e-1
+        data[fs.costing.LCOW] = 1.18849
         data[fs.water_recovery] = 0.732504
 
         return data
@@ -480,8 +480,8 @@ class TestLSRRO_3Stage(_TestLSRRO):
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.330 kg/s, 823 ppm
 Volumetric water recovery: 33.0%
-Energy Consumption: 7.8 kWh/m3
-Levelized cost of water: 1.74 $/m3
+Energy Consumption: 9.5 kWh/m3
+Levelized cost of water: 1.86 $/m3
 """
     display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
@@ -527,7 +527,7 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.269335e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.606601
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695767e-1
-        data[fs.costing.LCOW] = 1.54711
+        data[fs.costing.LCOW] = 1.66166
         data[fs.water_recovery] = 0.5
 
         return data
@@ -541,7 +541,7 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.271454e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.600609
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697285e-1
-        data[fs.costing.LCOW] = 1.74197
+        data[fs.costing.LCOW] = 1.86314
         data[fs.water_recovery] = 0.329661
 
         return data
@@ -552,10 +552,10 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         fs = model.fs
 
         data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.732036
-        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.448848e-3
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.446025e-3
         data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.197967
-        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695512e-1
-        data[fs.costing.LCOW] = 1.46933
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695539e-1
+        data[fs.costing.LCOW] = 1.48679
         data[fs.water_recovery] = 0.732481
 
         return data
