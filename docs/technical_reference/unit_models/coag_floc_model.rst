@@ -61,9 +61,9 @@ Sets
 
 Degrees of Freedom and Variables
 --------------------------------
-Aside from the inlet feed state variables (i.e. temperature, pressure, component mass flowrates),
-the Coagulation-Flocculation model has at least an additional 13 degrees of freedom that
+Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
 
+the Coagulation-Flocculation model has at least an additional 13 degrees of freedom that
 the user must specify. The table below gives an outline of these.
 
 .. csv-table::
@@ -91,7 +91,8 @@ the user must specify. The table below gives an outline of these.
 
 **Users must provide values for and 'fix' these variables to solve the model**
 
-**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013)**
+**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013) but can be substituted as needed to match any data available relating turbidity to TSS.**
+
 
 
 Chemical Dosing Parameters

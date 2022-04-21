@@ -50,7 +50,8 @@ Parameters
  "First viscosity temperature coefficient", ":math:`\mu_B`", "mu_B", "None", ":math:`\text{K}`"
  "Second viscosity temperature coefficient", ":math:`\mu_C`", "mu_C", "None", ":math:`\text{K}`"
 
-**The parameters provided are valid between 0 and 350 oC and up to 600 bar.**
+**The parameters provided are valid between 0 and 350 °C and up to 600 bar.**
+
 
 Properties
 ----------
