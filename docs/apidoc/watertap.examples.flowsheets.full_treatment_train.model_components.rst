@@ -12,13 +12,6 @@ Subpackages
 Submodules
 ----------
 
-watertap.examples.flowsheets.full\_treatment\_train.model\_components.mixer module
-----------------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.full_treatment_train.model_components.mixer
-   :members:
-   :show-inheritance:
-
 watertap.examples.flowsheets.full\_treatment\_train.model\_components.property\_models module
 ---------------------------------------------------------------------------------------------
 
@@ -37,13 +30,6 @@ watertap.examples.flowsheets.full\_treatment\_train.model\_components.seawater\_
 -------------------------------------------------------------------------------------------------------
 
 .. automodule:: watertap.examples.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack
-   :members:
-   :show-inheritance:
-
-watertap.examples.flowsheets.full\_treatment\_train.model\_components.separator module
---------------------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.full_treatment_train.model_components.separator
    :members:
    :show-inheritance:
 

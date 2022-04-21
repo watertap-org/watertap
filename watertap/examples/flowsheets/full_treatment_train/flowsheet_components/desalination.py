@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+from idaes.generic_models.unit_models import Mixer
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     set_scaling_factor,
