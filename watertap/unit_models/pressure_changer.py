@@ -12,6 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import Constraint
+from pyomo.common.config import In
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.pressure_changer import PumpData
@@ -48,3 +49,16 @@ class PumpIsothermalData(PumpData):
                 self.control_volume.properties_in[0].temperature
             )
             iscale.constraint_scaling_transform(c, sf)
+
+
+@declare_process_block_class("EnergyRecoveryDevice")
+class EnergyRecoveryDeviceData(PumpIsothermalData):
+    """
+    Turbine-type isothermal energy recovery device
+    """
+
+    # switch compressor to False
+    CONFIG = PumpIsothermalData.CONFIG()
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
+    CONFIG.compressor = False
