@@ -41,6 +41,8 @@ from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 _log = idaeslog.getLogger(__name__)
 
 
@@ -377,7 +379,7 @@ class PressureExchangerData(UnitModelBlockData):
             state_args=state_args,
             hold_state=True,
         )
-
+        print("intializing pxr")
         init_log.info_high("Initialize inlets complete")
 
         # check that inlets are feasible
@@ -390,24 +392,25 @@ class PressureExchangerData(UnitModelBlockData):
                 "than the high pressure side inlet"
             )
         # only needed when there is no mass trnasfer
-        if self.config.has_mass_transfer == False:
-            if (
-                abs(
-                    value(self.low_pressure_side.properties_in[0].flow_vol)
-                    - value(self.high_pressure_side.properties_in[0].flow_vol)
-                )
-                / value(self.high_pressure_side.properties_in[0].flow_vol)
-                > 1e-4
-            ):  # flow_vol values are not within 0.1%
-                raise ConfigurationError(
-                    "Initializing pressure exchanger failed because "
-                    "the volumetric flow rates are not equal for both inlets "
-                    + str(value(self.high_pressure_side.properties_out[0].flow_vol))
-                    + ","
-                    + str(value(self.low_pressure_side.properties_in[0].flow_vol))
-                )
-            else:  # volumetric flow is equal, deactivate flow constraint for the solve
-                self.eq_equal_flow_vol.deactivate()
+
+        if (
+            abs(
+                value(self.low_pressure_side.properties_in[0].flow_vol)
+                - value(self.high_pressure_side.properties_in[0].flow_vol)
+            )
+            / value(self.high_pressure_side.properties_in[0].flow_vol)
+            > 1e-4
+            and not self.config.has_mass_transfer
+        ):  # flow_vol values are not within 0.1%
+            raise ConfigurationError(
+                "Initializing pressure exchanger failed because "
+                "the volumetric flow rates are not equal for both inlets "
+                + str(value(self.high_pressure_side.properties_out[0].flow_vol))
+                + ","
+                + str(value(self.low_pressure_side.properties_in[0].flow_vol))
+            )
+        else:  # volumetric flow is equal, deactivate flow constraint for the solve
+            self.eq_equal_flow_vol.deactivate()
 
         # initialize outlets from inlets and update pressure
         def propogate_state(sb1, sb2):
@@ -446,6 +449,7 @@ class PressureExchangerData(UnitModelBlockData):
         init_log.info_high("Initialize outlets complete")
 
         # Solve unit
+        print("PXR init:", degrees_of_freedom(self))
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
