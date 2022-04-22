@@ -89,7 +89,8 @@ the user must specify. The table below gives an outline of these.
    "Number of rotating paddle wheels", ":math:`n_w`", "num_paddle_wheels", "None", "None"
    "Number of paddles per wheel", ":math:`n_p`", "num_paddles_per_wheel", "None", "None"
 
-**Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, user's may also leave unfixed for optimization purposes.**
+**Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
+
 
 **NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013) but can be substituted as needed to match any data available relating turbidity to TSS.**
 
