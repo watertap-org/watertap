@@ -1,126 +1,103 @@
 """
-API for the UI
+API for the UI.
+
+The main entry point is the class FlowsheetInterface. An existing module that created and ran
+a flowsheet should define a function that returns an instance of this class.
+It should also define functions that perform the ``build`` and ```solve`` actions on the flowsheet.
+The name of this module-level function is define in this module in the variable ENTRY_POINT.
+
+For example::
+
+    from watertap.ui.api import FlowsheetInterface, WorkflowActions
+
+    def flowsheet_for_ui(fs):
+        fsi = FlowsheetInterface(fs, {
+            "display_name": "My flowsheet",
+            "description": "This is a flowsheet",
+            "variables": [
+                {"display_name": "Flowsheet-level variable",
+                 "name": "some_var"}
+            ]})
+        fsi.set_action(WorkflowActions.build, build_flowsheet)
+        fsi.set_action(WorkflowActions.solve, solve)
+        return fsi
+
+Unit models should use ``set_block_interface`` in their ``build()`` method to export variables to the UI.
+All the unit models (blocks) in the flowsheet that do this will have their exported variables shown in the UI.
+
+For example::
+
+    from watertap.ui.api import set_block_interface
+
+    @declare_process_block_class("MyUnitModel")
+    class MyUnitModelData(..):
+        def build(self):
+           # ..
+           # body of the method
+           # ..
+           set_block_interface(self, {
+              "display_name": "My unit model",
+              "variables": [
+                  {"name": "flow_mass_comp",
+                   "description": "Flow mass composition"},
+                   ...etc..
+              ]
+           })
+
+
+
 """
-import abc
-import inspect
 import logging
-from typing import Dict, Iterable, Union, List
+from typing import Dict, Iterable, Union
 
 # third-party
-import functools
-from pyomo.environ import ConcreteModel
 from pyomo.environ import Block, Var, value
 from pyomo.common.config import ConfigValue, ConfigDict, ConfigList
-from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
-# Set up logger
+# local
+from . import api_util
+from .api_util import log_meth, config_docs
+
+# Global variables
+# ----------------
+
+#: Function name to look for in modules, to get FlowsheetInterface objects
+ENTRY_POINT = "flowsheet_for_ui"
+
+# Logging
+# -------
+
 _log = idaeslog.getLogger(__name__)
 
 _log.setLevel(logging.DEBUG)
 
-
-# Utility functions to wrap the 'algorithm' methods in a begin/end logging message
-
-
-def log_meth(meth):
-    @functools.wraps(meth)
-    def wrapper(*args, **kwargs):
-        name = _get_method_classname(meth)
-        _log.debug(f"Begin {name}")
-        try:
-            result = meth(*args, **kwargs)
-        except Exception as e:
-            error_msg = f"Error in {name}"
-            _log.exception(error_msg)
-            raise e
-        _log.debug(f"End {name}")
-        return result
-
-    return wrapper
+api_util.util_logger = _log
 
 
-def _get_method_classname(m):
-    """Get class name for method, assuming method is bound and class has __dict__."""
-    for k, v in inspect.getmembers(m):
-        if k == "__qualname__":
-            return v
-    return "<unknown>"
+# Functions and classes
+# ---------------------
 
-
-# End logging utility functions
-
-# Utility function to automate documentation of something with a CONFIG that is not a ProcessBlock subclass
-
-
-def config_docs(cls):
-    """Class decorator to insert documentation for the accepted configuration options in the constructor's docstring.
-
-    Returns:
-        Decorator function
-    """
-    doc_lines = []
-    tab_spc = " " * 4
-
-    def format_list(item, depth):
-        """Append to `doc_lines` during recursive walk of `item`."""
-        if isinstance(item, tuple):
-            indent = tab_spc * (depth + 3)
-            bullet = ("-", "*")[depth == 1]
-            name = item[0]
-            desc = "(no description provided)" if len(item) == 1 else item[1]
-            doc_lines.append(f"{indent}{bullet} `{name}`: {desc}")
-        else:
-            doc_lines.append("")
-            for i in item:
-                format_list(i, depth + 1)
-            if depth > 0:
-                doc_lines.append("")
-
-    # Wrap in try/except so if something goes wrong no harm is done
-    try:
-        # Get Pyomo to generate 'documentation' that is parseable as a Python list
-        s = cls.CONFIG.generate_documentation(
-            indent_spacing=0,
-            block_start="[",
-            block_end="]",
-            item_start="('%s',",
-            item_body="'%s',",
-            item_end="),",
-        )
-        # Parse the list then re-generate documentation as nested bulleted lists
-        doc_list = eval(s)
-        format_list(doc_list, 0)
-    except Exception as err:
-        _log.warning(f"Generating configuration docstring: {err}")
-    # Add to the class constructor docstring. Assume that you can just append, i.e. the configuration
-    # argument is the last entry in the "Args" section, which is the last section.
-    if doc_lines:
-        doc_str = "\n".join(doc_lines)
-        cls.__init__.__doc__ = cls.__init__.__doc__.rstrip() + "\n" + doc_str
-    # Return modified class
-    return cls
-
-
-# Interface to get exported variables
-# ------------------------------------
-
-
-def add_block_interface(block, data):
-    """Add interface information to a block.
+def set_block_interface(block, data: Union["BlockInterface", Dict]):
+    """Set the interface information to a block.
 
     Args:
-        args: Either a BlockInterface
-        data: The interface information to add
+        block: Block to wrap
+        data: The interface information to set, either as a :class:`BlockInterface` object or
+              as the config dict needed to create one.
 
     Returns:
         None
     """
-    block.ui = BlockInterface(block, data)
+    if isinstance(data, BlockInterface):
+        obj = data
+    else:
+        obj = BlockInterface(block, data)
+    block.ui = obj
 
 
 def get_block_interface(block: Block) -> Union["BlockInterface", None]:
-    """Retrieve attached block interface, if any. Use with :func:`add_block_interface`.
+    """Retrieve attached block interface, if any. Use with :func:`set_block_interface`.
 
     Args:
         block: The block to access.
@@ -133,7 +110,11 @@ def get_block_interface(block: Block) -> Union["BlockInterface", None]:
 
 @config_docs
 class BlockInterface:
-    """Interface to a block."""
+    """Interface to a block.
+
+    Attrs:
+        config (ConfigDict): Configuration for the interface. See constructor documentation.
+    """
 
     _var_config = ConfigDict()
     _var_config.declare(
@@ -165,8 +146,8 @@ class BlockInterface:
         """Constructor.
 
         Args:
-            block: The block to add an interface to.
-            options: Configuration options
+            block: The block associated with this interface.
+            # options: Configuration options
         """
         options = options or {}
         self._block = block
@@ -178,7 +159,7 @@ class BlockInterface:
         self.config = self.CONFIG(options)
 
     def get_exported_variables(self) -> Iterable[Var]:
-        """ "Called by client to get variables exported by the block."""
+        """Called by client to get variables exported by the block."""
         result = {}
         for c in self.config.variables.value():
             name = c["name"]
@@ -198,15 +179,63 @@ class BlockInterface:
         return result
 
 
+class WorkflowActions:
+    build = "build"
+    solve = "solve"
+
+
 class FlowsheetInterface(BlockInterface):
-    """This is a special BlockInterface that has an added method to get
-    all the sub-blocks that also have a BlockInterface in them.
+    """Interface to the UI for a flowsheet.
     """
+    # Actions in the flowsheet workflow
+    ACTIONS = [
+        WorkflowActions.build,
+        WorkflowActions.solve
+    ]
+
+    def __init__(self, flowsheet: Block, options):
+        """Constructor.
+
+        Args:
+            flowsheet: The flowsheet block
+            options: Options for the :class:`BlockInterface` constructor
+        """
+        super().__init__(flowsheet, options)
+        self._actions = {a: (None, None) for a in self.ACTIONS}
+
+    # Public methods
 
     @log_meth
-    def as_dict(self):
+    def get_variables(self) -> Dict:
+        """Get all the variables exported by this flowsheet and its subblocks."""
         block_map = self._get_block_map()
         return {"blocks": block_map}
+
+    def set_action(self, name, func, **kwargs):
+        """Set a function to call for a named action on the flowsheet."""
+        self._check_action(name)
+        self._actions[name] = (func, kwargs)
+
+    def get_action(self, name):
+        """Get the action that was set with :meth:`set_action`."""
+        self._check_action(name)
+        return self._actions[name]
+
+    @log_meth
+    def run_action(self, name):
+        """Run the named action's function."""
+        self._check_action(name)
+        func, kwargs = self._actions[name]
+        if func is None:
+            raise ValueError("Undefined action. name={name}")
+        return func(self._block, **kwargs)
+
+    # Private methods
+
+    def _check_action(self, name):
+        if name not in self.ACTIONS:
+            all_actions = ", ".join(self._actions.keys())
+            raise KeyError(f"Unknown action. name={name}, known actions={all_actions}")
 
     def _get_block_map(self):
         stack, mapping = [(["flowsheet"], self._block)], {}
@@ -229,260 +258,3 @@ class FlowsheetInterface(BlockInterface):
                 m[k] = {}
             m = m[k]  # descend
         m[leaf_key] = {"variables": block_ui.get_exported_variables()}
-
-
-# Workflow interface
-# ------------------
-
-
-class Steps:
-    setup = "flowsheet_setup"
-    build = "perf_build"
-    init = "perf_init"
-    optimize = "perf_opt"
-    build_costing = "cost_build"
-    init_costing = "cost_init"
-    optimize_costing = "cost_opt"
-
-
-STEP_NAMES = (
-    Steps.setup,
-    Steps.build,
-    Steps.init,
-    Steps.optimize,
-    Steps.build_costing,
-    Steps.init_costing,
-    Steps.optimize_costing,
-)
-SCHEMA = {k: {} for k in STEP_NAMES}
-
-
-class WorkflowStep(abc.ABC):
-    """Subclasses are an implementation of the Strategy Pattern where the algorithm is, e.g., building
-    or initializing or solving the model. For API friendliness, the
-    word 'strategy' is replaced with 'action' in names and documentation.
-    """
-
-    def __init__(self, workflow: "AnalysisWorkflow", name: str):
-        """Constructor."""
-        self.workflow = workflow
-        self.flowsheet_data = {}
-        self.name = name
-
-    @abc.abstractmethod
-    def algorithm(self, data: Dict) -> Dict:
-        pass
-
-    @staticmethod
-    def _flowsheet_data(data):
-        return data[AnalysisWorkflow.FLOWSHEET_DATA]
-
-
-class Build(WorkflowStep):
-    @log_meth
-    def algorithm(self, data):
-        return {"model": self.build_model(data)}
-
-    @abc.abstractmethod
-    def build_model(self, data: Dict) -> ConcreteModel:
-        pass
-
-
-class Initialize(WorkflowStep):
-    @log_meth
-    def algorithm(self, data) -> Dict:
-        self.initialize_model(data)
-        return {}
-
-    @abc.abstractmethod
-    def initialize_model(self, data: Dict) -> None:
-        pass
-
-
-class Optimize(WorkflowStep):
-    @log_meth
-    def algorithm(self, data):
-        return self.solve(data)
-
-    @abc.abstractmethod
-    def solve(self, data):
-        model = data["model"]
-        solver = data["solver"]
-        if solver is None:
-            solver = get_solver()
-        results = solver.solve(model)
-        # if check_terminaton:
-        #     assert_optimal_termination(results)
-        return results
-
-
-class AnalysisWorkflow:
-    """A set of analysis workflow 'steps', each associated with a named chunk of data
-    from the global `schema`.
-    """
-
-    FLOWSHEET_DATA = "fs_data"
-
-    def __init__(self, has_costing=True) -> None:
-        self._has_costing = has_costing
-        # information about each step
-        self._steps = {
-            k: {"data": {}, "action": None, "changed": False, "result": {}}
-            for k in STEP_NAMES
-        }
-        # steps in this workflow
-        self._wf = []
-        self._set_standard_workflow()
-
-    def _set_standard_workflow(self):
-        steps = (Steps.build, Steps.init, Steps.optimize)
-        self._set_workflow_steps(steps)
-
-    def _set_workflow_steps(self, step_names: Iterable[str]) -> Iterable[str]:
-        seen_names, wf = {}, []
-        for name in step_names:
-            name = self._normalize_step_name(name)
-            if name in seen_names:
-                raise KeyError(f"Duplicate step name: {name}")
-            seen_names[name] = True
-            wf.append(name)
-        self._wf = wf
-        return wf
-
-    def get_step_input(self, name: str) -> Dict:
-        """Set inputs to be used for the step.
-
-        Args:
-            name: Name of step
-
-        Returns
-            The value previously provided to `set_step_input`, or an empty dict if no value
-        """
-        name = self._normalize_step_name(name)
-        return self._steps[name]["data"]
-
-    def set_step_input(self, name: str, d: Dict):
-        """Set input data for a step.
-
-        Args:
-            name: Name of step
-            d: Input values
-
-        Returns:
-            None
-        """
-        name = self._normalize_step_name(name)
-        self._steps[name]["data"] = d
-        self._steps[name]["changed"] = True
-
-    def set_flowsheet_data(self, d: Dict):
-        """Set flowsheet-level metadata.
-
-        Args:
-            d: The metadata
-
-        Returns:
-            None
-        """
-        self._steps[Steps.setup]["data"] = d
-
-    def get_step_result(self, name: str) -> Dict:
-        """Get result from a previously executed step ``name``.
-
-        Args:
-            name: Name of the step (for which the result is retrieved)
-
-        Return:
-            The result of that step (always an empty dictionary if not yet run)
-        """
-        name = self._normalize_step_name(name)
-        return self._steps[name]["result"]
-
-    # some syntactic sugar for common step/result combinations
-
-    @property
-    def model(self):
-        """Get the model.
-
-        Returns:
-            Built model, or None if the build step has not yet been executed
-        """
-        return self.get_step_result(Steps.build)["model"]
-
-    @property
-    def optimize_result(self):
-        """Get the result of the ``optimize`` step."""
-        return self.get_step_result(Steps.optimize)
-
-    # end of syntactic sugar
-
-    def set_step_action(self, name: str, clazz: type, **kwargs):
-        """Set the action to use for one of the workflow steps.
-
-        Args:
-            name: Name of the workflow step
-            clazz: Class of action for this step. This should be a subclass of WorkflowStep.
-            kwargs: Additional arguments to initialize the action class
-
-        Raises:
-            KeyError: If the step name is invalid
-
-        Returns:
-            None
-        """
-        name = self._normalize_step_name(name)
-        obj = clazz(self, name, **kwargs)  # instantiate the step
-        self._steps[name]["action"] = obj
-        self._steps[name]["input"] = {}
-        self._steps[name]["_kwargs"] = kwargs  # just for debugging
-
-    def get_step_action(self, name: str) -> Union[WorkflowStep, None]:
-        """Get defined action for step.
-
-        Returns:
-            Action
-
-        Raises:
-            KeyError if step name is unknown
-        """
-        name = self._normalize_step_name(name)
-        if name not in self._steps:
-            raise KeyError(f"Unknown name for step: {name}")
-        return self._steps[name]["action"]
-
-    def run_all(self) -> None:
-        for step_name in self._wf:
-            step = self._steps[step_name]
-            self._run_step(step, step_name)
-
-    def run_one(self, name: str) -> Dict:
-        """Run a single workflow step."""
-        name = self._normalize_step_name(name)
-        if name not in self._wf:
-            name_list = "->".join(self._wf)
-            raise KeyError(
-                f"Step name not in current workflow. name={name} workflow={name_list}"
-            )
-        step = self._steps[name]
-        self._run_step(step, name)
-        return step["result"]
-
-    def _run_step(self, step: Dict, name: str) -> None:
-        action = step["action"]
-        if action is None:
-            _log.warning(f"No action for step. name={name}")
-            return
-        action.flowsheet_data = self._steps[Steps.setup]["data"]
-        input = step["data"]
-        step["result"] = action.algorithm(input)
-
-    def _normalize_step_name(self, name: str) -> str:
-        try:
-            norm_name = name.lower().strip()
-        except AttributeError:
-            raise KeyError(f"Step name is not a string")
-        if norm_name not in STEP_NAMES:
-            name_list = "|".join(STEP_NAMES)
-            message = f"Bad step name. input-name={name}, normalized-name={norm_name}, expected={name_list}"
-            raise KeyError(message)
-        return norm_name
