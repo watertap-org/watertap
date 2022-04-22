@@ -47,8 +47,11 @@ For example::
 
 
 """
+import json
+import importlib
 import logging
-from typing import Dict, Iterable, Union
+from pathlib import Path
+from typing import Dict, Iterable, Union, TextIO
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -202,8 +205,59 @@ class FlowsheetInterface(BlockInterface):
         """
         super().__init__(flowsheet, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
+        self._vis = None
 
     # Public methods
+
+    @log_meth
+    def as_dict(self, include_vis=True):
+        d = {"variables": self.get_variables(), "block_qname": self._block.name}
+        if include_vis:
+            d["vis"] = self._vis.copy()
+        return d
+
+    @log_meth
+    def save(self, file_or_stream: Union[str, Path, TextIO]):
+        """Save the current state of this instance to a file.
+        """
+        fp = self._open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
+        json.dump(self.as_dict(), fp)
+
+    @classmethod
+    def load(cls, file_or_stream: Union[str, Path, TextIO]) -> "FlowsheetInterface":
+        """Create new instance of this class from saved state in a file.
+        """
+        fp = cls._open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
+        data = json.load(fp)
+        try:
+            block_class = cls._import_block(data["block_qname"])
+        except ImportError as err:
+            raise RuntimeError(f"Load failed; cannot import block. name={data['block_qname']} message={err}")
+        try:
+            block = block_class()
+        except Exception as err:
+            raise RuntimeError(f"Load failed; cannot construct block. name={data['block_qname']} message={err}")
+        obj = FlowsheetInterface(block, data["variables"])
+        obj.set_visualization(data["vis"])
+        return obj
+
+    @classmethod
+    def _import_block(cls, qualified_module_name: str) -> type:
+        parts = qualified_module_name.split(".")
+        package_name = ".".join(parts[:-2])
+        module_name = parts[-2]
+        class_name = parts[-1]
+        module = importlib.import_module(module_name, package_name)
+        clazz = getattr(module, class_name)
+        return clazz
+
+    @classmethod
+    def _open_file_or_stream(cls, fos, attr, **kwargs):
+        if hasattr(fos, attr):
+            output = fos
+        else:
+            output = open(fos, **kwargs)
+        return output
 
     @log_meth
     def get_variables(self) -> Dict:
@@ -229,6 +283,15 @@ class FlowsheetInterface(BlockInterface):
         if func is None:
             raise ValueError("Undefined action. name={name}")
         return func(self._block, **kwargs)
+
+    def set_visualization(self, vis: Dict):
+        """Set the visualization information.
+
+        Args:
+            vis: Visualization data dict
+        """
+        self._vis = vis
+
 
     # Private methods
 
