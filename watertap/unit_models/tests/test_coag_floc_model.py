@@ -104,10 +104,41 @@ class TestCoagulation_withChemicals:
         assert isinstance(model.fs.unit.tss_loss_rate, Var)
         assert isinstance(model.fs.unit.eq_tss_loss_rate, Constraint)
 
+        assert isinstance(model.fs.unit.rapid_mixing_retention_time, Var)
+        assert isinstance(model.fs.unit.num_rapid_mixing_basins, Var)
+        assert isinstance(model.fs.unit.rapid_mixing_vel_grad, Var)
+
+        assert isinstance(model.fs.unit.floc_retention_time, Var)
+        assert isinstance(model.fs.unit.single_paddle_length, Var)
+        assert isinstance(model.fs.unit.single_paddle_width, Var)
+        assert isinstance(model.fs.unit.paddle_rotational_speed, Var)
+        assert isinstance(model.fs.unit.paddle_drag_coef, Var)
+        assert isinstance(model.fs.unit.vel_fraction, Var)
+        assert isinstance(model.fs.unit.num_paddle_wheels, Var)
+        assert isinstance(model.fs.unit.num_paddles_per_wheel, Var)
+
         assert isinstance(model.fs.unit.tds_gain_rate, Var)
         assert isinstance(model.fs.unit.eq_tds_gain_rate, Constraint)
 
         assert isinstance(model.fs.unit.eq_mass_transfer_term, Constraint)
+
+        assert isinstance(model.fs.unit.eq_rapid_mixing_basin_vol, Constraint)
+        assert isinstance(model.fs.unit.rapid_mixing_basin_vol, Var)
+
+        assert isinstance(model.fs.unit.eq_rapid_mixing_power, Constraint)
+        assert isinstance(model.fs.unit.rapid_mixing_power, Var)
+
+        assert isinstance(model.fs.unit.eq_floc_basin_vol, Constraint)
+        assert isinstance(model.fs.unit.floc_basin_vol, Var)
+
+        assert isinstance(model.fs.unit.eq_floc_wheel_speed, Constraint)
+        assert isinstance(model.fs.unit.floc_wheel_speed, Var)
+
+        assert isinstance(model.fs.unit.eq_flocculation_power, Constraint)
+        assert isinstance(model.fs.unit.flocculation_power, Var)
+
+        assert isinstance(model.fs.unit.eq_total_power, Constraint)
+        assert isinstance(model.fs.unit.total_power, Var)
 
     @pytest.mark.unit
     def test_stats(self, coag_obj_w_chems):
@@ -116,7 +147,7 @@ class TestCoagulation_withChemicals:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(model)
-        assert degrees_of_freedom(model) == 11
+        assert degrees_of_freedom(model) == 22
 
         # set the operational parameters
         model.fs.unit.fix_tss_turbidity_relation_defaults()
@@ -126,13 +157,28 @@ class TestCoagulation_withChemicals:
         model.fs.unit.chemical_doses[0, "Poly"].fix(5)
 
         # set the inlet streams
-        assert degrees_of_freedom(model) == 6
+        assert degrees_of_freedom(model) == 17
         model.fs.unit.inlet.pressure.fix(101325)
         model.fs.unit.inlet.temperature.fix(298.15)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.01)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"].fix(0.01)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"].fix(0.0)
+
+        # set performance vars
+        model.fs.unit.rapid_mixing_retention_time[0].fix(60)
+        model.fs.unit.num_rapid_mixing_basins.fix(4)
+        model.fs.unit.rapid_mixing_vel_grad[0].fix(750)
+
+        model.fs.unit.floc_retention_time[0].fix(1800)
+        model.fs.unit.single_paddle_length.fix(4)
+        model.fs.unit.single_paddle_width.fix(0.5)
+        model.fs.unit.paddle_rotational_speed[0].fix(0.03)
+
+        model.fs.unit.paddle_drag_coef[0].fix(1.5)
+        model.fs.unit.vel_fraction.fix(0.7)
+        model.fs.unit.num_paddle_wheels.fix(4)
+        model.fs.unit.num_paddles_per_wheel.fix(4)
 
         assert degrees_of_freedom(model) == 0
 
@@ -153,6 +199,22 @@ class TestCoagulation_withChemicals:
         model.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1e2, index=("Liq", "Sludge")
         )
+
+        # set scaling factors for performance
+        iscale.set_scaling_factor(model.fs.unit.rapid_mixing_retention_time, 1e-1)
+        iscale.set_scaling_factor(model.fs.unit.num_rapid_mixing_basins, 1)
+        iscale.set_scaling_factor(model.fs.unit.rapid_mixing_vel_grad, 1e-2)
+
+        iscale.set_scaling_factor(model.fs.unit.floc_retention_time, 1e-3)
+        iscale.set_scaling_factor(model.fs.unit.single_paddle_length, 1)
+        iscale.set_scaling_factor(model.fs.unit.single_paddle_width, 1)
+        iscale.set_scaling_factor(model.fs.unit.paddle_rotational_speed, 10)
+
+        iscale.set_scaling_factor(model.fs.unit.paddle_drag_coef, 1)
+        iscale.set_scaling_factor(model.fs.unit.vel_fraction, 1)
+        iscale.set_scaling_factor(model.fs.unit.num_paddle_wheels, 1)
+        iscale.set_scaling_factor(model.fs.unit.num_paddles_per_wheel, 1)
+
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
@@ -210,6 +272,27 @@ class TestCoagulation_withChemicals:
             model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]
         ) == pytest.approx(9.36352e-06, rel=1e-4)
 
+    @pytest.mark.component
+    def test_performance_contents(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+
+        dict = model.fs.unit._get_performance_contents()
+
+        assert "vars" in dict
+        assert "Total Power Usage  (kW)" in dict["vars"]
+        assert "Rapid Mixing Power (kW)" in dict["vars"]
+        assert "Flocc Mixing Power (kW)" in dict["vars"]
+
+        assert value(dict["vars"]["Total Power Usage  (kW)"]) == pytest.approx(
+            0.56798, rel=1e-4
+        )
+        assert value(dict["vars"]["Rapid Mixing Power (kW)"]) == pytest.approx(
+            0.12115, rel=1e-4
+        )
+        assert value(dict["vars"]["Flocc Mixing Power (kW)"]) == pytest.approx(
+            0.44684, rel=1e-4
+        )
+
 
 # -----------------------------------------------------------------------------
 # Start test class without chemicals added
@@ -257,7 +340,7 @@ class TestCoagulation_withNoChemicals:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(model)
-        assert degrees_of_freedom(model) == 9
+        assert degrees_of_freedom(model) == 20
 
         # set the operational parameters
         model.fs.unit.fix_tss_turbidity_relation_defaults()
@@ -265,7 +348,7 @@ class TestCoagulation_withNoChemicals:
         model.fs.unit.final_turbidity_ntu.fix(100)
 
         # set the inlet streams
-        assert degrees_of_freedom(model) == 6
+        assert degrees_of_freedom(model) == 17
 
         tss_in = value(model.fs.unit.compute_inlet_tss_mass_flow(0))
         assert tss_in == pytest.approx(0.0093, rel=1e-4)
@@ -275,6 +358,21 @@ class TestCoagulation_withNoChemicals:
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.01)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"].fix(tss_in)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"].fix(0.0)
+
+        # set performance vars
+        model.fs.unit.rapid_mixing_retention_time[0].fix(60)
+        model.fs.unit.num_rapid_mixing_basins.fix(4)
+        model.fs.unit.rapid_mixing_vel_grad[0].fix(750)
+
+        model.fs.unit.floc_retention_time[0].fix(1800)
+        model.fs.unit.single_paddle_length.fix(4)
+        model.fs.unit.single_paddle_width.fix(0.5)
+        model.fs.unit.paddle_rotational_speed[0].fix(0.03)
+
+        model.fs.unit.paddle_drag_coef[0].fix(1.5)
+        model.fs.unit.vel_fraction.fix(0.7)
+        model.fs.unit.num_paddle_wheels.fix(4)
+        model.fs.unit.num_paddles_per_wheel.fix(4)
 
         assert degrees_of_freedom(model) == 0
 
@@ -295,7 +393,10 @@ class TestCoagulation_withNoChemicals:
         model.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1e2, index=("Liq", "Sludge")
         )
-        # iscale.set_scaling_factor(model.fs.unit.tss_loss_rate, 100)
+
+        # Here we are skipping setting scaling factors for performance to test the
+        #   effectiveness of the defaults AND get better test coverage
+
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
