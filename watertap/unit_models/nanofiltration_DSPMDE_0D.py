@@ -200,7 +200,7 @@ class NanofiltrationData(UnitModelBlockData):
             :header: "Configuration Options", "Description"
 
             "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-            "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on 
+            "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on
             spiral wound module correlation"
         """,
         ),
@@ -745,7 +745,7 @@ class NanofiltrationData(UnitModelBlockData):
             return b.flux_vol_water[t, x] == (
                 prop_feed.pressure
                 - prop_perm.pressure
-                - (prop_feed_inter.pressure_osm - prop_perm.pressure_osm)
+                - (prop_feed_inter.pressure_osm_phase["Liq"] - prop_perm.pressure_osm_phase["Liq"])
             ) * (b.radius_pore**2) / (
                 8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective
             )
@@ -1558,17 +1558,17 @@ class NanofiltrationData(UnitModelBlockData):
             ] = self.mixed_permeate[time_point].conc_mol_phase_comp["Liq", j]
 
             if self.feed_side.properties_in[time_point].is_property_constructed(
-                "pressure_osm"
+                "pressure_osm_phase"
             ):
                 var_dict[
                     f"Osmotic Pressure @ Bulk Feed, Inlet (Pa)"
-                ] = self.feed_side.properties_in[time_point].pressure_osm
+                ] = self.feed_side.properties_in[time_point].pressure_osm_phase["Liq"]
             if self.feed_side.properties_out[time_point].is_property_constructed(
-                "pressure_osm"
+                "pressure_osm_phase"
             ):
                 var_dict[
                     f"Osmotic Pressure @ Bulk Feed, Outlet (Pa)"
-                ] = self.feed_side.properties_out[time_point].pressure_osm
+                ] = self.feed_side.properties_out[time_point].pressure_osm_phase["Liq"]
 
             for x in self.io_list:
                 if not x:
@@ -1597,17 +1597,17 @@ class NanofiltrationData(UnitModelBlockData):
 
                 var_dict[
                     f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"
-                ] = self.feed_side.properties_interface[time_point, x].pressure_osm
+                ] = self.feed_side.properties_interface[time_point, x].pressure_osm_phase["Liq"]
 
                 var_dict[
                     f"Osmotic Pressure @ Permeate, {io} (Pa)"
-                ] = self.permeate_side[time_point, x].pressure_osm
+                ] = self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
                 expr_dict[f"Net Driving Pressure, {io} (Pa)"] = (
                     prop_feed.pressure
                     - self.permeate_side[0, x].pressure
                     - (
-                        self.feed_side.properties_interface[0, x].pressure_osm
-                        - self.permeate_side[0, x].pressure_osm
+                        self.feed_side.properties_interface[0, x].pressure_osm_phase["Liq"]
+                        - self.permeate_side[0, x].pressure_osm_phase["Liq"]
                     )
                 )
                 var_dict[

@@ -126,12 +126,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             description="Activity coefficient model construction flag",
             doc="""
            Options to account for activity coefficient model.
-    
+
            **default** - ``ActivityCoefficientModel.ideal``
-    
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-    
+
            "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
        """,
@@ -145,12 +145,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             description="Solution density calculation construction flag",
             doc="""
            Options to account for solution density.
-    
+
            **default** - ``DensityCalculation.seawater``
-    
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-    
+
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
@@ -335,7 +335,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "molality_comp": {"method": "_molality_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
-                "pressure_osm": {"method": "_pressure_osm"},
+                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
                 "charge_comp": {"method": "_charge_comp"},
@@ -936,23 +936,24 @@ class DSPMDEStateBlockData(StateBlockData):
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
 
     # TODO: change osmotic pressure calc
-    def _pressure_osm(self):
-        self.pressure_osm = Var(
+    def _pressure_osm_phase(self):
+        self.pressure_osm_phase = Var(
+            self.params.phase_list,
             initialize=1e6,
             bounds=(5e2, 5e7),
             units=pyunits.Pa,
             doc="van't Hoff Osmotic pressure",
         )
 
-        def rule_pressure_osm(b):
+        def rule_pressure_osm_phase(b):
             return (
-                b.pressure_osm
+                b.pressure_osm_phase["Liq"]
                 == sum(b.conc_mol_phase_comp["Liq", j] for j in self.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )
 
-        self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
+        self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1247,10 +1248,10 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        if self.is_property_constructed("pressure_osm"):
-            if iscale.get_scaling_factor(self.pressure_osm) is None:
+        if self.is_property_constructed("pressure_osm_phase"):
+            if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 sf = iscale.get_scaling_factor(self.pressure)
-                iscale.set_scaling_factor(self.pressure_osm, sf)
+                iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1296,7 +1297,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        for v_str in ("pressure_osm", "dens_mass_solvent"):
+        for v_str in ["dens_mass_solvent"]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
@@ -1304,7 +1305,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # # property relationships with phase index, but simple constraint
-        for v_str in ("flow_vol_phase", "dens_mass_phase"):
+        for v_str in ["pressure_osm_phase", "flow_vol_phase", "dens_mass_phase"]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)

@@ -134,7 +134,7 @@ def test_property_ions(model):
     m.fs.stream[0].flow_mass_phase_comp
 
     m.fs.stream[0].molality_comp
-    m.fs.stream[0].pressure_osm
+    m.fs.stream[0].pressure_osm_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
@@ -161,7 +161,7 @@ def test_property_ions(model):
         2.2829e-2, rel=1e-3
     )
 
-    assert value(m.fs.stream[0].pressure_osm) == pytest.approx(60.546e5, rel=1e-3)
+    assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(60.546e5, rel=1e-3)
 
     assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
         1001.76, rel=1e-3
@@ -226,7 +226,7 @@ def test_property_ions(model2):
     stream[0].flow_mass_phase_comp
 
     stream[0].molality_comp
-    stream[0].pressure_osm
+    stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
     stream[0].conc_mol_phase_comp
     stream[0].flow_vol
@@ -307,7 +307,7 @@ def test_build(model3):
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
         "molality_comp",
-        "pressure_osm",
+        "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
 
@@ -525,7 +525,7 @@ def test_seawater_data():
     )
 
     assert value(stream[0].dens_mass_phase["Liq"]) == pytest.approx(1023.816, rel=1e-3)
-    assert value(stream[0].pressure_osm) == pytest.approx(29.132e5, rel=1e-3)
+    assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(29.132e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(
@@ -687,16 +687,16 @@ def test_assert_electroneutrality_get_property():
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
 
-    assert not stream[0].is_property_constructed("pressure_osm")
+    assert not stream[0].is_property_constructed("pressure_osm_phase")
     assert not stream[0].is_property_constructed("mass_frac_phase_comp")
 
     stream[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
-        get_property=["mass_frac_phase_comp", "pressure_osm"],
+        get_property=["mass_frac_phase_comp", "pressure_osm_phase"],
     )
     assert stream[0].is_property_constructed("mass_frac_phase_comp")
-    assert stream[0].is_property_constructed("pressure_osm")
+    assert stream[0].is_property_constructed("pressure_osm_phase")
     assert not hasattr(stream, "charge_balance")
 
     assert not stream[0].is_property_constructed("flow_vol")
@@ -774,7 +774,7 @@ def test_assert_electroneutrality_get_property():
     stream[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
-        get_property=("mass_frac_phase_comp", "pressure_osm"),
+        get_property=("mass_frac_phase_comp", "pressure_osm_phase"),
     )
     # check error when adjust_by_ion is not in solute list
     with pytest.raises(
