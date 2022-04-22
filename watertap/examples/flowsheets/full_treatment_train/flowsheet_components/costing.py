@@ -191,6 +191,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
 
     # call get_system_costing for whole flowsheet
     m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.treated_flow_vol)
     m.fs.costing.add_LCOW(m.fs.treated_flow_vol)
 
     if hasattr(m.fs, "stoich_softening_mixer_unit"):
