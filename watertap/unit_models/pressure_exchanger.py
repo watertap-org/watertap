@@ -379,7 +379,7 @@ class PressureExchangerData(UnitModelBlockData):
             state_args=state_args,
             hold_state=True,
         )
-        print("intializing pxr")
+
         init_log.info_high("Initialize inlets complete")
 
         # check that inlets are feasible
@@ -449,7 +449,6 @@ class PressureExchangerData(UnitModelBlockData):
         init_log.info_high("Initialize outlets complete")
 
         # Solve unit
-        print("PXR init:", degrees_of_freedom(self))
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
