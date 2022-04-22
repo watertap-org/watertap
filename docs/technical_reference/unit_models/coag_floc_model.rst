@@ -142,7 +142,7 @@ one of the configuration options as shown below.
             }
         )
 
-**NOTE: The above example assumes you have already constructed a pyomo model named 'model' and attached an IDAES flowsheet named 'fs' to it, as well as a properties block named 'properties' **
+**NOTE: The above example assumes you have already constructed a pyomo model named 'model' and attached an IDAES flowsheet named 'fs' to it, as well as a properties block named 'properties'**
 
 Equations and Relationships
 ---------------------------
@@ -166,7 +166,7 @@ Equations and Relationships
 
 **Relationships for power usage all come from Mines (2014)**
 
-**NOTE: :math:`Q` is defined as the total volumetric flow rate and :math:`S_{j}` is the source/sink term for component :math:`j` **
+**NOTE: :math:`Q` is defined as the total volumetric flow rate and :math:`S_{j}` is the source/sink term for component :math:`j`**
 
 References
 ----------
