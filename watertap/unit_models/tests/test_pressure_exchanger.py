@@ -88,7 +88,6 @@ def test_config_mass_transfer():
     m.fs.unit = PressureExchanger(
         default={"property_package": m.fs.properties, "has_mass_transfer": True}
     )
-
     # check mass_transfer is added
     assert m.fs.unit.config.has_mass_transfer
 
@@ -422,9 +421,19 @@ class TestPressureExchanger_with_ion_prop_pack:
             ].fix(feed_flow_mass * lowP_mass_frac[s])
         m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
         m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
+
+        ### NOTE THE PRESSURE EXHCANGER EXPECTS EQUAL VOLUMETRIC FLOW RATES
+        # so one of mass fraction (here we unfix H2O mass fraction)
+        # s on high pressure or low pressure sides
+        # should be left unfixed, as other wise you are fixing all the mass fractions,
+        # and forcing equal flow, which leaves no degrees of freedom
+        # to satisfy the equal flow constriants, which will lead to
+        # a -1 DOF error and should not occur in practice where typicly at least one of
+        # the inlet mass flow rates is colaculated.
+
         m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp[
             "Liq", "H2O"
-        ].fix(feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values())))
+        ] = feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))
 
         for s in highP_mass_frac:
             m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp[
