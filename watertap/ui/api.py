@@ -211,6 +211,8 @@ class FlowsheetInterface(BlockInterface):
 
     @log_meth
     def as_dict(self, include_vis=True):
+        """Return current state serialized as a dictionary.
+        """
         d = {"variables": self.get_variables(), "block_qname": self._block.name}
         if include_vis:
             d["vis"] = self._vis.copy()
