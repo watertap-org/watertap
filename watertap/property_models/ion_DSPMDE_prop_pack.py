@@ -49,8 +49,8 @@ from idaes.core import (
     StateBlock,
     MaterialBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.components import Component, Solute, Solvent, Cation, Anion
+from idaes.core.phases import LiquidPhase, AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
@@ -166,14 +166,25 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         self._state_block_class = DSPMDEStateBlock
 
+        # phases
+        self.Liq = AqueousPhase()
+
         # components
         self.H2O = Solvent()
 
         for j in self.config.solute_list:
-            self.add_component(str(j), Solute())
-
-        # phases
-        self.Liq = LiquidPhase()
+            if j in self.config.charge:
+                if self.config.charge[j] > 0:
+                    # # TODO: Figure out why IDAES won't allow this 
+                    #self.add_component(str(j), Cation())
+                    self.add_component(str(j), Solute())
+                elif self.config.charge[j] < 0:
+                    #self.add_component(str(j), Anion())
+                    self.add_component(str(j), Solute())
+                else:
+                    self.add_component(str(j), Solute())
+            else:
+                self.add_component(str(j), Solute())
 
         # reference
         # Todo: enter any relevant references
