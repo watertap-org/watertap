@@ -166,7 +166,7 @@ Equations and Relationships
 
 **Relationships for power usage all come from Mines (2014)**
 
-**NOTE: :math:`Q` is defined as the total volumetric flow rate and :math:`S_{j}` is the source/sink term for component :math:`j`**
+**NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
 
 References
 ----------
