@@ -69,9 +69,9 @@ the user must specify. The table below gives an outline of these.
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Fluid temperature", ":math:`T`", "inlet.temperature", "[t]", ":math:`\text{K}`"
-   "Fluid pressure", ":math:`P`", "inlet.pressure", "[t]", ":math:`\text{Pa}`"
-   "Mass flowrate of components", ":math:`M_j`", "inlet.flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
+   "Fluid temperature", ":math:`T`", "temperature", "[t]", ":math:`\text{K}`"
+   "Fluid pressure", ":math:`P`", "pressure", "[t]", ":math:`\text{Pa}`"
+   "Mass flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
    "Slope relationship between measured Turbidity and TSS", ":math:`a`", "slope", "[t]", ":math:`\text{mg/L/NTU}`"
    "Intercept relationship between measured Turbidity and TSS", ":math:`b`", "intercept", "[t]", ":math:`\text{mg/L}`"
    "Turbidity measured before Jar Test", ":math:`Turb_o`", "initial_turbidity_ntu", "[t]", ":math:`\text{NTU}`"
@@ -89,10 +89,11 @@ the user must specify. The table below gives an outline of these.
    "Number of rotating paddle wheels", ":math:`n_w`", "num_paddle_wheels", "None", "None"
    "Number of paddles per wheel", ":math:`n_p`", "num_paddles_per_wheel", "None", "None"
 
-**Users must provide values for and 'fix' these variables to solve the model**
+**Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, user's may also leave unfixed for optimization purposes.**
 
 **NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013) but can be substituted as needed to match any data available relating turbidity to TSS.**
 
+**NOTE: Variables for 'temperature', 'pressure', and 'flow_mass_phase_comp' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
 
 
 Chemical Dosing Parameters
@@ -129,6 +130,19 @@ following format.
                   }
               }
 
+For example, this 'chem_dict' would be passed into the model on construction as
+one of the configuration options as shown below.
+
+.. code-block::
+
+    model.fs.unit = CoagulationFlocculation(
+            default={
+                "property_package": model.fs.properties,
+                "chemical_additives": chem_dict,
+            }
+        )
+
+**NOTE: The above example assumes you have already constructed a pyomo model named 'model' and attached an IDAES flowsheet named 'fs' to it, as well as a properties block named 'properties' **
 
 Equations and Relationships
 ---------------------------
@@ -151,6 +165,8 @@ Equations and Relationships
    "Total Power Usage", ":math:`P_T = P_p + P_r`"
 
 **Relationships for power usage all come from Mines (2014)**
+
+**NOTE: :math:`Q` is defined as the total volumetric flow rate and :math:`S_{j}` is the source/sink term for component :math:`j` **
 
 References
 ----------
