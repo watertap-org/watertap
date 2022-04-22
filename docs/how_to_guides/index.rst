@@ -18,3 +18,4 @@ How To Guides
    how_to_use_parameter_sweep_monte_carlo
    how_to_use_EDB
    how_to_contribute_development
+   how_to_use_a_property_model
