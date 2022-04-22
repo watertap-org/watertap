@@ -161,7 +161,9 @@ def test_property_ions(model):
         2.2829e-2, rel=1e-3
     )
 
-    assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(60.546e5, rel=1e-3)
+    assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
+        60.546e5, rel=1e-3
+    )
 
     assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
         1001.76, rel=1e-3
@@ -525,7 +527,9 @@ def test_seawater_data():
     )
 
     assert value(stream[0].dens_mass_phase["Liq"]) == pytest.approx(1023.816, rel=1e-3)
-    assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(29.132e5, rel=1e-3)
+    assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
+        29.132e5, rel=1e-3
+    )
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(

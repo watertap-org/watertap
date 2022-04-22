@@ -745,7 +745,10 @@ class NanofiltrationData(UnitModelBlockData):
             return b.flux_vol_water[t, x] == (
                 prop_feed.pressure
                 - prop_perm.pressure
-                - (prop_feed_inter.pressure_osm_phase["Liq"] - prop_perm.pressure_osm_phase["Liq"])
+                - (
+                    prop_feed_inter.pressure_osm_phase["Liq"]
+                    - prop_perm.pressure_osm_phase["Liq"]
+                )
             ) * (b.radius_pore**2) / (
                 8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective
             )
@@ -1597,7 +1600,11 @@ class NanofiltrationData(UnitModelBlockData):
 
                 var_dict[
                     f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"
-                ] = self.feed_side.properties_interface[time_point, x].pressure_osm_phase["Liq"]
+                ] = self.feed_side.properties_interface[
+                    time_point, x
+                ].pressure_osm_phase[
+                    "Liq"
+                ]
 
                 var_dict[
                     f"Osmotic Pressure @ Permeate, {io} (Pa)"
@@ -1606,7 +1613,9 @@ class NanofiltrationData(UnitModelBlockData):
                     prop_feed.pressure
                     - self.permeate_side[0, x].pressure
                     - (
-                        self.feed_side.properties_interface[0, x].pressure_osm_phase["Liq"]
+                        self.feed_side.properties_interface[0, x].pressure_osm_phase[
+                            "Liq"
+                        ]
                         - self.permeate_side[0, x].pressure_osm_phase["Liq"]
                     )
                 )
