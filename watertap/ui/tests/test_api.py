@@ -1,6 +1,12 @@
 """
 Tests for api module.
 """
+# standard library
+from io import StringIO
+import os
+from pathlib import Path
+
+# third-party
 import pytest
 
 # from pyomo.environ import units as pyunits
@@ -78,8 +84,8 @@ def test_get_block_interface(mock_block):
 def test_blockinterface_constructor(mock_block):
     for i in range(4):  # combinations of display_name and description
         disp, desc = (i % 2) == 0, ((i // 2) % 2) == 0
-        BlockInterface(mock_block, build_options(display_name=disp, description=desc))
-
+        obj = BlockInterface(mock_block, build_options(display_name=disp, description=desc))
+        obj.get_exported_variables()  # force looking at contents
 
 @pytest.mark.unit
 def test_blockinterface_get_exported_variables(mock_block):
@@ -95,3 +101,49 @@ def test_blockinterface_get_exported_variables(mock_block):
     # 2 variables
     obj = BlockInterface(mock_block, build_options(variables=2))
     assert len(list(obj.get_exported_variables())) == 2
+
+
+def test_workflow_actions():
+    wfa = WorkflowActions
+    assert wfa.build is not None
+    assert wfa.solve is not None
+
+
+def test_flowsheet_interface_constructor(mock_block):
+    FlowsheetInterface(mock_block, build_options(variables=2))
+
+
+def test_flowsheet_interface_as_dict(mock_block):
+    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj.set_visualization({})
+    d = obj.as_dict(include_vis=False)
+    assert "vis" not in d
+    assert "variables" in d
+    assert "block_qname" in d
+    d = obj.as_dict(include_vis=True)
+    assert "vis" in d
+
+
+def test_flowsheet_interface_save(mock_block, tmpdir):
+    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj.set_visualization({})
+    # string
+    filename = "test-str.json"
+    str_path = os.path.join(tmpdir, filename)
+    obj.save(str_path)
+    assert os.path.exists(os.path.join(tmpdir, filename))
+    # path
+    filename = "test-path.json"
+    path_path = Path(tmpdir) / filename
+    obj.save(path_path)
+    assert os.path.exists(os.path.join(tmpdir, filename))
+    # stream
+    strm = StringIO()
+    obj.save(strm)
+    assert strm.getvalue() != ""
+
+
+def test_flowsheet_interface_load(mock_block):
+    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj.set_visualization({})
+
