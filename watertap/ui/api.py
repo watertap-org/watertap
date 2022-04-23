@@ -51,7 +51,7 @@ import json
 import importlib
 import logging
 from pathlib import Path
-from typing import Dict, Iterable, Union, TextIO
+from typing import Dict, Iterable, Union, TextIO, Generator
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -161,12 +161,13 @@ class BlockInterface:
             options["description"] = block.doc
         self.config = self.CONFIG(options)
 
-    def get_exported_variables(self) -> Iterable[Var]:
+    def get_exported_variables(self) -> Generator[Var, None, None]:
         """Called by client to get variables exported by the block."""
-        result = {}
-        for c in self.config.variables.value():
-            name = c["name"]
-            v = getattr(self._block, name)
+        for item in self.config.variables.value():
+            c = {}  # one result
+            # get the Pyomo Var from the block
+            v = getattr(self._block, item["name"])
+            # copy contents of Var into result
             if v.is_indexed():
                 c["indexed_values"] = {}
                 for idx in v.index_set():
@@ -178,8 +179,8 @@ class BlockInterface:
             if "description" not in c:
                 c["description"] = v.doc
             c["units"] = str(v.get_units())
-            result[name] = c
-        return result
+            # generate one result
+            yield c
 
 
 class WorkflowActions:
@@ -293,7 +294,6 @@ class FlowsheetInterface(BlockInterface):
             vis: Visualization data dict
         """
         self._vis = vis
-
 
     # Private methods
 

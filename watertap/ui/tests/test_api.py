@@ -1,130 +1,97 @@
 """
 Tests for api module.
 """
-import abc
 import pytest
-from watertap.ui.api import (WorkflowStep, Build, Initialize, Optimize, AnalysisWorkflow, Steps, STEP_NAMES,
-                              UIBlock)
-from pyomo.environ import units as pyunits
-from pyomo.environ import value
-from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
-    seawater_RO_desalination as srd
-)
 
-def test_workflowstep_flowsheetdata():
-    with pytest.raises(KeyError):
-        WorkflowStep._flowsheet_data({})
-    WorkflowStep._flowsheet_data({AnalysisWorkflow.FLOWSHEET_DATA: None})
+# from pyomo.environ import units as pyunits
+from pyomo.environ import Var, Set, Reals
+from watertap.ui.api import *
+
+# Mocking and fixtures
 
 
-@pytest.mark.unit
-@pytest.mark.parametrize("clazz", (WorkflowStep, Build, Initialize, Optimize))
-def test_abstract_classes(clazz):
-    with pytest.raises(TypeError):
-        obj = clazz()
+class MockBlock:
+    name = "default block name"
+    doc = "default block doc"
+    foo_var = Var(name="foo_var", initialize=0.0, within=Reals)
+    foo_var.construct()
+    bar_idx = Set(initialize=[0, 1, 2])
+    bar_idx.construct()
+    bar_var = Var(bar_idx, name="bar_var", initialize=[0.0, 0.0, 0.0], within=Reals)
+    bar_var.construct()
 
 
-class BuildNothing(Build):
-    invoked = False
-
-    def build_model(self, data):
-        self.invoked = True
-        return None
+@pytest.fixture
+def mock_block():
+    return MockBlock()
 
 
-@pytest.mark.unit
-def test_analysisworkflow():
-    obj = AnalysisWorkflow()
-    # get/set input
-    for n in STEP_NAMES:
-        assert obj.get_step_input(n) == {}
-        obj.set_step_input(n, {"foo": 1})
-        assert obj.get_step_input(n) == {"foo": 1}
-    # get_step_result
-    assert obj.get_step_result(Steps.build) == {}
-    # set_step_action
-    step = Steps.build.upper()
-    nop = BuildNothing()
-    obj.set_step_action(step, nop)
-    # set_workflow
-    obj.set_workflow((step,))
-    # run_all
-    nop.invoked = False
-    obj.run_all()
-    assert nop.invoked
-    # run_one
-    nop.invoked = False
-    obj.run_one(step)
-    assert nop.invoked
+def build_options(display_name=False, description=False, variables=0):
+    opts = {}
+    if display_name:
+        opts["display_name"] = "foo"
+    if description:
+        opts["description"] = "This is a foo"
+    if variables >= 0:
+        v = []
+        for i in range(min(variables, 2)):
+            name = "foo" if i == 0 else "bar"
+            v.append({"display_name": f"{name} variable", "name": f"{name}_var"})
+        opts["variables"] = v
+    return opts
+
+
+# Tests
+# -----
 
 
 @pytest.mark.unit
-def test_analysisworkflow_stepname():
-    obj = AnalysisWorkflow()
-    step = Steps.build
-    obj.get_step_input(step)
-    with pytest.raises(KeyError):
-        obj.get_step_input(None)
-    with pytest.raises(KeyError):
-        obj.get_step_input("")
-    with pytest.raises(KeyError):
-        obj.get_step_input(step + "!")
+def test_set_block_interface(mock_block):
+    # no keys
+    set_block_interface(mock_block, {})
+    # invalid key
+    data = {"test": "data"}
+    with pytest.raises(ValueError):
+        set_block_interface(mock_block, data)
+    # ok key
+    data = {"display_name": "foo"}
+    set_block_interface(mock_block, data)
+    # existing object
+    obj = BlockInterface(mock_block, data)
+    set_block_interface(mock_block, obj)
 
 
 @pytest.mark.unit
-def test_analysisworkflow_setworkflow():
-    obj = AnalysisWorkflow()
-    step = Steps.init
-    with pytest.raises(KeyError):
-        obj.set_workflow((step, step))
+def test_get_block_interface(mock_block):
+    # data
+    data = {"display_name": "foo"}
+    set_block_interface(mock_block, data)
+    assert get_block_interface(mock_block) is not None
+    # existing object
+    obj = BlockInterface(mock_block, data)
+    set_block_interface(mock_block, obj)
+    obj2 = get_block_interface(mock_block)
+    assert obj2 is obj
 
 
 @pytest.mark.unit
-def test_attr_dict():
-    ad = AttrDict({})
-    with pytest.raises(KeyError):
-        x = ad.foo
-    ad = AttrDict({"foo": 1})
-    assert ad.foo == 1
-    with pytest.raises(KeyError):
-        x = ad.bar
+def test_blockinterface_constructor(mock_block):
+    for i in range(4):  # combinations of display_name and description
+        disp, desc = (i % 2) == 0, ((i // 2) % 2) == 0
+        BlockInterface(mock_block, build_options(display_name=disp, description=desc))
 
 
 @pytest.mark.unit
-def test_block_variables():
-    model = srd.build(erd_type="pressure_exchanger")
-    srd.set_operating_conditions(model)
-    feed = UIBlock(model.fs.feed)
-    feed.select_variables(["flow_*", "conc_*"], ["*constraint*"])
-    print(f"@@ variables from feed: {feed.variables}")
-
-
-# @pytest.mark.unit
-# def test_step_inputs():
-#     sp = StepInputs({})
-#     with pytest.raises(KeyError):
-#         x = sp.foo
-#     sp = StepInputs({
-#         "foo": {
-#             "bar": {
-#                 "value": 1,
-#                 "units": "m/s"
-#             },
-#             "baz": {
-#                 "value": 2,
-#                 "units": "g/mol"
-#             }
-#         },
-#         "trees": {
-#             "apple": {
-#                 "shape": "round"
-#             }
-#         }
-#     })
-#     assert value(sp.foo.bar.value) == value(1 * (pyunits.m / pyunits.s))
-#     assert sp.foo.bar.units == "m/s"
-#     assert sp.foo.baz.value == 2
-#     assert sp.foo.baz.units == "g/mol"
-#     assert sp.trees.apple.shape == "round"
-#     with pytest.raises(KeyError):
-#         x = sp.foo.whatever
+def test_blockinterface_get_exported_variables(mock_block):
+    # no variables section
+    obj = BlockInterface(mock_block, build_options(variables=-1))
+    assert len(list(obj.get_exported_variables())) == 0
+    # empty variables section
+    obj = BlockInterface(mock_block, build_options(variables=0))
+    assert len(list(obj.get_exported_variables())) == 0
+    # 1 variable
+    obj = BlockInterface(mock_block, build_options(variables=1))
+    assert len(list(obj.get_exported_variables())) == 1
+    # 2 variables
+    obj = BlockInterface(mock_block, build_options(variables=2))
+    assert len(list(obj.get_exported_variables())) == 2
