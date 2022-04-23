@@ -224,7 +224,9 @@ class FlowsheetInterface(BlockInterface):
         """Save the current state of this instance to a file.
         """
         fp = self._open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
-        json.dump(self.as_dict(), fp)
+        data = self.as_dict()
+        print(f"@@ save saving data: {data}")
+        json.dump(data, fp)
 
     @classmethod
     def load(cls, file_or_stream: Union[str, Path, TextIO]) -> "FlowsheetInterface":
@@ -232,6 +234,8 @@ class FlowsheetInterface(BlockInterface):
         """
         fp = cls._open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
+        print(f"@@ load got data: {data}")
+        # TODO: walk down the tree loading up each block!!
         try:
             block_class = cls._import_block(data["block_qname"])
         except ImportError as err:
