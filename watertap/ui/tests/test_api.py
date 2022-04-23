@@ -17,7 +17,7 @@ from watertap.ui.api import *
 
 
 class MockBlock:
-    name = "default block name"
+    name = "watertap.ui.tests.test_api.MockBlock"
     doc = "default block doc"
     foo_var = Var(name="foo_var", initialize=0.0, within=Reals)
     foo_var.construct()
@@ -143,7 +143,10 @@ def test_flowsheet_interface_save(mock_block, tmpdir):
     assert strm.getvalue() != ""
 
 
-def test_flowsheet_interface_load(mock_block):
+def test_flowsheet_interface_load(mock_block, tmpdir):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
     obj.set_visualization({})
-
+    filename = "saved.json"
+    obj.save(Path(tmpdir) / filename)
+    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename)
+    assert obj2 == obj
