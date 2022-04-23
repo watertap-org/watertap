@@ -215,7 +215,7 @@ class FlowsheetInterface(BlockInterface):
         """Return current state serialized as a dictionary.
         """
         d = {"variables": self.get_variables(), "block_qname": self._block.name}
-        if include_vis:
+        if include_vis and self._vis is not None:
             d["vis"] = self._vis.copy()
         return d
 
