@@ -81,6 +81,7 @@ api_util.util_logger = _log
 # Functions and classes
 # ---------------------
 
+
 def set_block_interface(block, data: Union["BlockInterface", Dict]):
     """Set the interface information to a block.
 
@@ -164,7 +165,7 @@ class BlockInterface:
     def get_exported_variables(self) -> Generator[Var, None, None]:
         """Called by client to get variables exported by the block."""
         for item in self.config.variables.value():
-            c = {}  # one result
+            c = {"name": item["name"]}   # one result
             # get the Pyomo Var from the block
             v = getattr(self._block, item["name"])
             # copy contents of Var into result
@@ -189,13 +190,12 @@ class WorkflowActions:
 
 
 class FlowsheetInterface(BlockInterface):
-    """Interface to the UI for a flowsheet.
-    """
+    """Interface to the UI for a flowsheet."""
+
     # Actions in the flowsheet workflow
-    ACTIONS = [
-        WorkflowActions.build,
-        WorkflowActions.solve
-    ]
+    ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
+
+    VARS_KEY = "variables"
 
     def __init__(self, flowsheet: Block, options):
         """Constructor.
@@ -212,51 +212,69 @@ class FlowsheetInterface(BlockInterface):
 
     @log_meth
     def as_dict(self, include_vis=True):
-        """Return current state serialized as a dictionary.
-        """
-        d = {"variables": self.get_variables(), "block_qname": self._block.name}
+        """Return current state serialized as a dictionary."""
+        d = self.get_variables()
         if include_vis and self._vis is not None:
             d["vis"] = self._vis.copy()
         return d
 
     @log_meth
     def save(self, file_or_stream: Union[str, Path, TextIO]):
-        """Save the current state of this instance to a file.
-        """
-        fp = self._open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
+        """Save the current state of this instance to a file."""
+        fp = self._open_file_or_stream(
+            file_or_stream, "write", mode="w", encoding="utf-8"
+        )
         data = self.as_dict()
         print(f"@@ save saving data: {data}")
         json.dump(data, fp)
 
     @classmethod
-    def load(cls, file_or_stream: Union[str, Path, TextIO]) -> "FlowsheetInterface":
-        """Create new instance of this class from saved state in a file.
-        """
-        fp = cls._open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
+    def load(
+        cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
+    ) -> "FlowsheetInterface":
+        """Create new instance of this class from saved state in a file."""
+        fp = cls._open_file_or_stream(
+            file_or_stream, "read", mode="r", encoding="utf-8"
+        )
         data = json.load(fp)
         print(f"@@ load got data: {data}")
-        # TODO: walk down the tree loading up each block!!
-        try:
-            block_class = cls._import_block(data["block_qname"])
-        except ImportError as err:
-            raise RuntimeError(f"Load failed; cannot import block. name={data['block_qname']} message={err}")
-        try:
-            block = block_class()
-        except Exception as err:
-            raise RuntimeError(f"Load failed; cannot construct block. name={data['block_qname']} message={err}")
-        obj = FlowsheetInterface(block, data["variables"])
+        root = data["blocks"]
+        all_vars = []
+        cls._load_into_blocks(root, fs_block, all_vars)
+        config = {
+            "display_name": root["display_name"],
+            "description": root["description"],
+            "variables": all_vars,
+        }
+        obj = FlowsheetInterface(fs_block, config)
         obj.set_visualization(data["vis"])
         return obj
 
     @classmethod
-    def _import_block(cls, qualified_module_name: str) -> type:
-        parts = qualified_module_name.split(".")
-        package_name = ".".join(parts[:-2])
-        module_name = parts[-2]
-        class_name = parts[-1]
-        module = importlib.import_module(module_name, package_name)
-        clazz = getattr(module, class_name)
-        return clazz
+    def _load_into_blocks(cls, block_data, cur_block, vars_list):
+        if "variables" in block_data:
+            ui = get_block_interface(cur_block)
+            cls._load_variables(block_data["variables"], ui)
+            vars_list.extend(block_data["variables"])
+        if "subblocks" in block_data:
+            for sb_name, sb_data in block_data["subblocks"].items():
+                sb_block = getattr(cur_block, sb_name)
+                cls._load_into_blocks(sb_data, sb_block, vars_list)
+
+    @classmethod
+    def _load_variables(cls, variables, ui: BlockInterface):
+        block_var_dict = {v["name"]: v for v in ui.config.variables.value()}
+        for v in variables:
+            name = v["name"]
+            if name in block_var_dict:
+                # TODO: Set UI variable info from saved
+                pass
+            else:
+                # TODO: Warn that saved info is not in the UI of the block
+                pass
+
+
+
 
     @classmethod
     def _open_file_or_stream(cls, fos, attr, **kwargs):
@@ -268,7 +286,7 @@ class FlowsheetInterface(BlockInterface):
 
     @log_meth
     def get_variables(self) -> Dict:
-        """Get all the variables exported by this flowsheet and its subblocks."""
+        """Get all the variables exported by this flowsheet and its sub-blocks."""
         block_map = self._get_block_map()
         return {"blocks": block_map}
 
@@ -307,23 +325,48 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError(f"Unknown action. name={name}, known actions={all_actions}")
 
     def _get_block_map(self):
-        stack, mapping = [(["flowsheet"], self._block)], {}
+        """Builds a tree like:
+
+        {"variables": [{"name": "conc_mol", "display_name": ..},],
+         "subblocks": {
+           "block-name": {
+                    "variables": [..],
+                    "subblocks": { }
+                },
+                "block2-name": {
+                },
+            }
+        }
+
+        """
+        stack = [([], self._block)]  # start at root
+        mapping = {"display_name": "flowsheet", "description": "flowsheet"}
+        # walk sub-blocks
         while stack:
             key, val = stack.pop()
+            ui = get_block_interface(val)
+            if ui:
+                self._add_mapping_key(mapping, key, ui)
+            # add all sub-blocks
             if hasattr(val, "component_map"):
                 for key2, val2 in val.component_map(ctype=Block).items():
-                    qkey = key + [key2]
-                    ui = get_block_interface(val2)
-                    if ui:
-                        self._add_mapping_key(mapping, qkey, ui)
-                    stack.append((qkey, val2))
+                    stack.append((key + [key2], val2))
         return mapping
 
     @staticmethod
     def _add_mapping_key(m, keys, block_ui: BlockInterface):
-        node_keys, leaf_key = keys[:-1], keys[-1]
-        for k in node_keys:
-            if k not in m:
-                m[k] = {}
-            m = m[k]  # descend
-        m[leaf_key] = {"variables": block_ui.get_exported_variables()}
+        section = {
+            "display_name": block_ui.config.display_name,
+            "description": block_ui.config.description,
+            "variables": block_ui.get_exported_variables(),
+            "subblocks": {},
+        }
+        if len(keys) == 0:
+            m.update(section)
+        else:
+            node_keys, leaf_key = keys[:-1], keys[-1]
+            for k in node_keys:
+                if k not in m["subblocks"]:
+                    m["subblocks"][k] = {"subblocks": {}}
+                m = m["subblocks"][k]  # descend
+            m[leaf_key] = section
