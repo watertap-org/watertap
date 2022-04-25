@@ -25,7 +25,7 @@
 """
 
 # Importing the object for units from pyomo
-from pyomo.environ import units as pyunits, assert_optimal_termination
+from pyomo.environ import units as pyunits, assert_optimal_termination, NonNegativeReals
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
@@ -98,8 +98,8 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import the WaterTAP object inherited for the Mixer unit model
-from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+# Import the Mixer unit model
+from idaes.generic_models.unit_models import Mixer
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     costing,
 )
@@ -512,20 +512,26 @@ def build_ideal_naocl_mixer_unit(model):
     )
 
     # add new constraint for dosing rate (deactivate constraint for OCl_-)
-    dr = (
-        model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].value
-        * model.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"].value
+    dr = value(
+        model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0]
+        * model.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"]
+        * model.fs.ideal_naocl_thermo_params.get_component("OCl_-").mw
     )
-    dr = dr * 74.44 * 1000
-    model.fs.ideal_naocl_mixer_unit.dosing_rate = Var(initialize=dr)
+    model.fs.ideal_naocl_mixer_unit.dosing_rate = Var(
+        initialize=dr,
+        domain=NonNegativeReals,
+        units=pyunits.kg / pyunits.s,
+    )
 
     def _dosing_rate_cons(blk):
-        return (
-            blk.dosing_rate
-            == blk.naocl_stream.flow_mol[0]
+        return blk.dosing_rate == (
+            blk.naocl_stream.flow_mol[0]
             * blk.naocl_stream.mole_frac_comp[0, "OCl_-"]
-            * 74.44
-            * 1000
+            * blk.naocl_stream_state[0].params.get_component("OCl_-").mw
+        ) + (
+            blk.naocl_stream.flow_mol[0]
+            * blk.naocl_stream.mole_frac_comp[0, "Na_+"]
+            * blk.naocl_stream_state[0].params.get_component("Na_+").mw
         )
 
     model.fs.ideal_naocl_mixer_unit.dosing_cons = Constraint(rule=_dosing_rate_cons)

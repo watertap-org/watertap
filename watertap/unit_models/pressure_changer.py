@@ -29,10 +29,6 @@ class PumpIsothermalData(PumpData):
     Standard Isothermal Pump Unit Model Class
     """
 
-    CONFIG = PumpData.CONFIG()
-    CONFIG.get("compressor")._domain = In([True, False])
-    # "compressor": False, operate as an ERD (multiply hydraulic power by efficiency)
-
     def build(self):
         super().build()
 
@@ -52,3 +48,16 @@ class PumpIsothermalData(PumpData):
                 self.control_volume.properties_in[0].temperature
             )
             iscale.constraint_scaling_transform(c, sf)
+
+
+@declare_process_block_class("EnergyRecoveryDevice")
+class EnergyRecoveryDeviceData(PumpIsothermalData):
+    """
+    Turbine-type isothermal energy recovery device
+    """
+
+    # switch compressor to False
+    CONFIG = PumpIsothermalData.CONFIG()
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
+    CONFIG.compressor = False

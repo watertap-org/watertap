@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+from idaes.generic_models.unit_models import Mixer
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     set_scaling_factor,
@@ -24,7 +24,7 @@ from idaes.core.util.scaling import (
     constraint_scaling_transform,
 )
 from idaes.core.util.initialization import propagate_state
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
 )
@@ -96,12 +96,7 @@ def build_desalination(
                 "Unexpected model type {RO_type} provided to build_desalination when has_ERD is True"
                 "".format(RO_type=RO_type)
             )
-        m.fs.ERD = Pump(default={"property_package": prop})
-        m.fs.ERD.actual_work.deactivate()  # this constraint is for pumps, not turbines
-        m.fs.ERD.turbine_work = Constraint(
-            expr=m.fs.ERD.work_fluid[0] * m.fs.ERD.efficiency_pump[0]
-            == m.fs.ERD.control_volume.work[0]
-        )
+        m.fs.ERD = EnergyRecoveryDevice(default={"property_package": prop})
 
     # auxiliary units
     if RO_type == "Sep":
@@ -250,9 +245,6 @@ def scale_desalination(m, **kwargs):
         set_scaling_factor(
             m.fs.ERD.ratioP, 1
         )  # TODO: IDAES should have a default and link to the constraint
-        constraint_scaling_transform(
-            m.fs.ERD.turbine_work, get_scaling_factor(m.fs.ERD.control_volume.work)
-        )
         calculate_scaling_factors(m.fs.ERD)
 
 

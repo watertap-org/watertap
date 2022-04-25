@@ -43,7 +43,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_no_degrees_of_freedom, check_dof
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
@@ -183,15 +183,15 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
             ro_stage.get_costing(module=financials, membrane_type="ro")
 
     # Add EnergyRecoveryDevices
-    m.fs.EnergyRecoveryDevice = Pump(
-        default={"property_package": m.fs.properties, "compressor": False}
+    m.fs.EnergyRecoveryDevice = EnergyRecoveryDevice(
+        default={"property_package": m.fs.properties,}
     )
     m.fs.EnergyRecoveryDevice.get_costing(
         module=financials, pump_type="Pressure exchanger"
     )
     if number_of_stages > 1:
-        m.fs.ERD_first_stage = Pump(
-            default={"property_package": m.fs.properties, "compressor": False}
+        m.fs.ERD_first_stage = EnergyRecoveryDevice(
+            default={"property_package": m.fs.properties,}
         )
         m.fs.ERD_first_stage.get_costing(
             module=financials, pump_type="Pressure exchanger"
