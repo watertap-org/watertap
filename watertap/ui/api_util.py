@@ -1,8 +1,15 @@
 """
 Utility functions for the ``api`` module.
 """
+# standard library
 import inspect
+import json
 import functools
+from string import Template
+from typing import Dict, Union, Optional
+
+# third-party
+import fastjsonschema
 
 #: Set this logger from the api module
 util_logger = None
@@ -32,8 +39,16 @@ def _get_method_classname(m):
             return v
     return "<unknown>"
 
-
 # End logging
+
+
+def open_file_or_stream(fos, attr, **kwargs):
+    if hasattr(fos, attr):
+        output = fos
+    else:
+        output = open(fos, **kwargs)
+    return output
+
 
 # Utility function to automate documentation of something with a CONFIG that is not a ProcessBlock subclass
 
@@ -87,3 +102,97 @@ def config_docs(cls):
     return cls
 
 
+# Schema validation
+# -----------------
+
+class SchemaException(Exception):
+    """Exception for problems with schema definition."""
+    pass
+
+
+class JSONException(Exception):
+    """Exception for problems encoding or decoding JSON."""
+    pass
+
+
+class Schema:
+    """Lightweight wrapper for schema validation.
+    """
+    def __init__(self, definition: Union[Dict, str], **kwargs):
+        """Constructor.
+
+        Args:
+            definition: Schema definition supported by underlying `fastjsonschema` parser. As of this writing,
+                        this supports drafts 04, 06, and 07. This may be a string, which can be parsed as JSON,
+                        or it can be a Python dict.
+            kwargs: If present, ``Template.substutute()`` will be applied to the JSON-string version of the input
+                    (which will be created if it starts as a Python dict), to substitute values in the
+                    schema dynamically. This uses '$var' style substitution, so be sure to escape '$schema' and
+                    any other '$' in the schema definition like '$$schema' instead.
+
+        Raises:
+            ValueError: Substitution of kwargs in schema fails
+            JSONException: Parsing or formatting JSON fails (including converting to a string for applying the
+                           substitution parameters).
+            SchemaException: Compiling the schema fails
+        """
+        # Normalize input to Python dict, optionally after applying format params
+        if kwargs:
+            if hasattr(definition, "keys"):  # dict-like
+                try:
+                    definition_str = json.dumps(definition)
+                except TypeError as err:
+                    raise JSONException(f"Converting input dict to JSON for formatting failed: {err}")
+            else:
+                definition_str = definition
+            template = Template(definition_str)
+            try:
+                schema_str = template.substitute(mapping=kwargs)
+            except KeyError as err:
+                raise ValueError(f"Substitution in schema definition failed: {err}")
+            try:
+                self._schema = json.loads(schema_str)
+            except json.JSONDecodeError as err:
+                raise JSONException(f"Parsing of schema definition, after substitution, failed: {err}")
+        else:
+            if hasattr(definition, "keys"):  # dict-like
+                self._schema = definition
+            else:
+                try:
+                    self._schema = json.loads(definition)
+                except json.JSONDecodeError as err:
+                    raise JSONException(f"Parsing of schema definition after substitution of format params failed: {err}")
+        # Compile input to a schema validation function
+        try:
+            self._validate = fastjsonschema.compile(self._schema)
+        except fastjsonschema.JsonSchemaDefinitionException as err:
+            raise SchemaException(f"Invalid schema definition: {err}")
+
+    def validate(self, json_data: Union[Dict, str]) -> Optional[str]:
+        """Validate input data against the schema given to the constructor.
+
+        Args:
+            json_data: Input in the form of a Python dict or JSON-format string.
+
+        Returns:
+            Validation error message, or None if it is valid (think of this as "no errors")
+
+        Raises:
+            JSONException: Input (string) data could not be decoded as JSON
+        """
+        if hasattr(json_data, "keys"):  # dict-like
+            input_dict = json_data
+        else:
+            try:
+                input_dict = json.loads(json_data)
+            except json.JSONDecodeError as err:
+                raise JSONException(f"Decoding input data failed: {err}")
+        result = None
+        try:
+            self._validate(input_dict)
+        except fastjsonschema.JsonSchemaValueException as err:
+            result = err.message
+        return result
+
+
+# End schema validation
