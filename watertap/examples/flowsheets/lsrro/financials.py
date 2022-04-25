@@ -156,6 +156,10 @@ def _make_vars(self):
     iscale.set_scaling_factor(self.capital_cost, 1e-3)
     iscale.set_scaling_factor(self.operating_cost, 1e-1)
 
+    # for the default initializer
+    self.purchase_cost = Var()
+    self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
+
 
 def ReverseOsmosis_costing(self, membrane_type="lsrro"):
     _make_vars(self)
@@ -193,9 +197,6 @@ def pressure_changer_costing(self, pump_type="centrifugal"):
 
     b_PC = self.parent_block()
     b_fs = b_PC.parent_block()
-
-    self.purchase_cost = Var()
-    self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
     iscale.set_scaling_factor(self.purchase_cost, 1)
 
     if pump_type == "High pressure":

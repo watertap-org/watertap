@@ -1145,7 +1145,11 @@ def display_RO_reports(m):
 
 
 if __name__ == "__main__":
+    main()
+
+def main():
     import csv
+    import pathlib
 
     # cin = 125
     # recovery = .35
@@ -1200,8 +1204,11 @@ if __name__ == "__main__":
             "LCOW",
             "LCOW_feed",
         ]
+        file_name = \
+            f"recheck_paper_cases_after_erd_fix/{number_nodes}_nodes_A_5LMHbar_{b_case_lst[0]}_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv"
+        pathlib.Path(file_name).parent.mkdir(parents=True, exist_ok=True)
         with open(
-            f"recheck_paper_cases_after_erd_fix/{number_nodes}_nodes_A_5LMHbar_{b_case_lst[0]}_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv",
+            file_name,
             "w",
             newline="",
         ) as csv_file:
