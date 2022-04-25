@@ -80,8 +80,8 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.solvent_set, Set)
     for j in model.fs.properties.solvent_set:
         assert j in ["H2O"]
-    assert isinstance(model.fs.properties.solute_set, Set)
-    for j in model.fs.properties.solute_set:
+    assert isinstance(model.fs.properties.ion_set, Set)
+    for j in model.fs.properties.ion_set | model.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D"]
 
     assert isinstance(model.fs.properties.phase_list, Set)
@@ -534,12 +534,14 @@ def test_seawater_data():
 
     assert value(
         sum(
-            stream[0].conc_mass_phase_comp["Liq", j] for j in m.fs.properties.solute_set
+            stream[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
         )
     ) == pytest.approx(35.9744, rel=1e-3)
     assert value(
         sum(
-            stream[0].mass_frac_phase_comp["Liq", j] for j in m.fs.properties.solute_set
+            stream[0].mass_frac_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
         )
     ) == pytest.approx(0.035142, rel=1e-3)
     assert value(

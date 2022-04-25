@@ -223,7 +223,7 @@ class NanofiltrationData(UnitModelBlockData):
         if (
             hasattr(self.config.property_package, "ion_set")
             and len(self.config.property_package.ion_set) == 0
-        ) or (
+        ) and (
             hasattr(self.config.property_package, "solute_set")
             and len(self.config.property_package.solute_set) == 0
         ):
@@ -245,9 +245,20 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
 
-        if hasattr(self.config.property_package, "ion_set"):
+        if hasattr(self.config.property_package, "ion_set") and hasattr(
+            self.config.property_package, "solute_set"
+        ):
+            solute_set = (
+                self.config.property_package.ion_set
+                | self.config.property_package.solute_set
+            )
+        elif hasattr(self.config.property_package, "ion_set") and not hasattr(
+            self.config.property_package, "solute_set"
+        ):
             solute_set = self.config.property_package.ion_set
-        elif hasattr(self.config.property_package, "solute_set"):
+        elif hasattr(self.config.property_package, "solute_set") and not hasattr(
+            self.config.property_package, "ion_set"
+        ):
             solute_set = self.config.property_package.solute_set
         else:
             raise ConfigurationError(
@@ -1137,7 +1148,10 @@ class NanofiltrationData(UnitModelBlockData):
             )
 
     def _make_expressions(self):
-        solute_set = self.config.property_package.solute_set
+        solute_set = (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        )
 
         # Stokes radius to membrane pore radius ratio (for each solute)
         @self.Expression(
@@ -1509,7 +1523,10 @@ class NanofiltrationData(UnitModelBlockData):
                 time_point
             ].flow_mol_phase_comp["Liq", j]
 
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             expr_dict[f"Stokes radius of {j}"] = self.feed_side.properties_in[
                 time_point
             ].radius_stokes_comp[j]
@@ -1719,7 +1736,10 @@ class NanofiltrationData(UnitModelBlockData):
             state_args_permeate["flow_mol_phase_comp"][("Liq", j)] *= initialize_guess[
                 "solvent_recovery"
             ]
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             state_args_retentate["flow_mol_phase_comp"][("Liq", j)] *= (
                 1 - initialize_guess["solute_recovery"]
             )
@@ -1730,7 +1750,10 @@ class NanofiltrationData(UnitModelBlockData):
         state_args_interface_in = deepcopy(state_args)
         state_args_interface_out = deepcopy(state_args_retentate)
 
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             state_args_interface_in["flow_mol_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
@@ -1770,10 +1793,26 @@ class NanofiltrationData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        for k in ("ion_set", "solute_set"):
-            if hasattr(self.config.property_package, k):
-                solute_set = getattr(self.config.property_package, k)
-                break
+        if hasattr(self.config.property_package, "ion_set") and hasattr(
+            self.config.property_package, "solute_set"
+        ):
+            solute_set = (
+                self.config.property_package.ion_set
+                | self.config.property_package.solute_set
+            )
+        elif hasattr(self.config.property_package, "ion_set") and not hasattr(
+            self.config.property_package, "solute_set"
+        ):
+            solute_set = self.config.property_package.ion_set
+        elif hasattr(self.config.property_package, "solute_set") and not hasattr(
+            self.config.property_package, "ion_set"
+        ):
+            solute_set = self.config.property_package.solute_set
+        else:
+            raise ConfigurationError(
+                "This NF model was expecting an "
+                "ion_set or solute_set and did not receive either."
+            )
 
         # setting scaling factors for variables
         if iscale.get_scaling_factor(self.radius_pore) is None:
@@ -1830,7 +1869,11 @@ class NanofiltrationData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, 1e1)
 
         for j in self.config.property_package.component_list:
-            if j in self.config.property_package.solute_set:
+            if (
+                j
+                in self.config.property_package.solute_set
+                | self.config.property_package.ion_set
+            ):
                 iscale.set_scaling_factor(
                     self.feed_side.mass_transfer_term[0, "Liq", j], 1e4
                 )
