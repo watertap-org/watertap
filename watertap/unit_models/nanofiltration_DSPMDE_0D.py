@@ -1804,15 +1804,8 @@ class NanofiltrationData(UnitModelBlockData):
             self.config.property_package, "solute_set"
         ):
             solute_set = self.config.property_package.ion_set
-        elif hasattr(self.config.property_package, "solute_set") and not hasattr(
-            self.config.property_package, "ion_set"
-        ):
-            solute_set = self.config.property_package.solute_set
         else:
-            raise ConfigurationError(
-                "This NF model was expecting an "
-                "ion_set or solute_set and did not receive either."
-            )
+            solute_set = self.config.property_package.solute_set
 
         # setting scaling factors for variables
         if iscale.get_scaling_factor(self.radius_pore) is None:
