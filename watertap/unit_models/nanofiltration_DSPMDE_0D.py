@@ -245,6 +245,8 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
 
+        # These two sets should always be present
+        #   and their union is the full set of dissolved species
         if hasattr(self.config.property_package, "ion_set") and hasattr(
             self.config.property_package, "solute_set"
         ):
@@ -252,18 +254,10 @@ class NanofiltrationData(UnitModelBlockData):
                 self.config.property_package.ion_set
                 | self.config.property_package.solute_set
             )
-        elif hasattr(self.config.property_package, "ion_set") and not hasattr(
-            self.config.property_package, "solute_set"
-        ):
-            solute_set = self.config.property_package.ion_set
-        elif hasattr(self.config.property_package, "solute_set") and not hasattr(
-            self.config.property_package, "ion_set"
-        ):
-            solute_set = self.config.property_package.solute_set
         else:
             raise ConfigurationError(
                 "This NF model was expecting an "
-                "ion_set or solute_set and did not receive either."
+                "ion_set and solute_set and did not them."
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -1793,19 +1787,10 @@ class NanofiltrationData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        if hasattr(self.config.property_package, "ion_set") and hasattr(
-            self.config.property_package, "solute_set"
-        ):
-            solute_set = (
-                self.config.property_package.ion_set
-                | self.config.property_package.solute_set
-            )
-        elif hasattr(self.config.property_package, "ion_set") and not hasattr(
-            self.config.property_package, "solute_set"
-        ):
-            solute_set = self.config.property_package.ion_set
-        else:
-            solute_set = self.config.property_package.solute_set
+        solute_set = (
+            self.config.property_package.ion_set
+            | self.config.property_package.solute_set
+        )
 
         # setting scaling factors for variables
         if iscale.get_scaling_factor(self.radius_pore) is None:
