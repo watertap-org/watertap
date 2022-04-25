@@ -200,7 +200,7 @@ class NanofiltrationData(UnitModelBlockData):
             :header: "Configuration Options", "Description"
 
             "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-            "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on 
+            "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on
             spiral wound module correlation"
         """,
         ),
@@ -223,7 +223,7 @@ class NanofiltrationData(UnitModelBlockData):
         if (
             hasattr(self.config.property_package, "ion_set")
             and len(self.config.property_package.ion_set) == 0
-        ) or (
+        ) and (
             hasattr(self.config.property_package, "solute_set")
             and len(self.config.property_package.solute_set) == 0
         ):
@@ -245,14 +245,19 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
 
-        if hasattr(self.config.property_package, "ion_set"):
-            solute_set = self.config.property_package.ion_set
-        elif hasattr(self.config.property_package, "solute_set"):
-            solute_set = self.config.property_package.solute_set
+        # These two sets should always be present
+        #   and their union is the full set of dissolved species
+        if hasattr(self.config.property_package, "ion_set") and hasattr(
+            self.config.property_package, "solute_set"
+        ):
+            solute_set = (
+                self.config.property_package.ion_set
+                | self.config.property_package.solute_set
+            )
         else:
             raise ConfigurationError(
                 "This NF model was expecting an "
-                "ion_set or solute_set and did not receive either."
+                "ion_set and solute_set and did not them."
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -745,7 +750,10 @@ class NanofiltrationData(UnitModelBlockData):
             return b.flux_vol_water[t, x] == (
                 prop_feed.pressure
                 - prop_perm.pressure
-                - (prop_feed_inter.pressure_osm - prop_perm.pressure_osm)
+                - (
+                    prop_feed_inter.pressure_osm_phase["Liq"]
+                    - prop_perm.pressure_osm_phase["Liq"]
+                )
             ) * (b.radius_pore**2) / (
                 8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective
             )
@@ -1134,7 +1142,10 @@ class NanofiltrationData(UnitModelBlockData):
             )
 
     def _make_expressions(self):
-        solute_set = self.config.property_package.solute_set
+        solute_set = (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        )
 
         # Stokes radius to membrane pore radius ratio (for each solute)
         @self.Expression(
@@ -1506,7 +1517,10 @@ class NanofiltrationData(UnitModelBlockData):
                 time_point
             ].flow_mol_phase_comp["Liq", j]
 
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             expr_dict[f"Stokes radius of {j}"] = self.feed_side.properties_in[
                 time_point
             ].radius_stokes_comp[j]
@@ -1558,17 +1572,17 @@ class NanofiltrationData(UnitModelBlockData):
             ] = self.mixed_permeate[time_point].conc_mol_phase_comp["Liq", j]
 
             if self.feed_side.properties_in[time_point].is_property_constructed(
-                "pressure_osm"
+                "pressure_osm_phase"
             ):
                 var_dict[
                     f"Osmotic Pressure @ Bulk Feed, Inlet (Pa)"
-                ] = self.feed_side.properties_in[time_point].pressure_osm
+                ] = self.feed_side.properties_in[time_point].pressure_osm_phase["Liq"]
             if self.feed_side.properties_out[time_point].is_property_constructed(
-                "pressure_osm"
+                "pressure_osm_phase"
             ):
                 var_dict[
                     f"Osmotic Pressure @ Bulk Feed, Outlet (Pa)"
-                ] = self.feed_side.properties_out[time_point].pressure_osm
+                ] = self.feed_side.properties_out[time_point].pressure_osm_phase["Liq"]
 
             for x in self.io_list:
                 if not x:
@@ -1597,17 +1611,23 @@ class NanofiltrationData(UnitModelBlockData):
 
                 var_dict[
                     f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"
-                ] = self.feed_side.properties_interface[time_point, x].pressure_osm
+                ] = self.feed_side.properties_interface[
+                    time_point, x
+                ].pressure_osm_phase[
+                    "Liq"
+                ]
 
                 var_dict[
                     f"Osmotic Pressure @ Permeate, {io} (Pa)"
-                ] = self.permeate_side[time_point, x].pressure_osm
+                ] = self.permeate_side[time_point, x].pressure_osm_phase["Liq"]
                 expr_dict[f"Net Driving Pressure, {io} (Pa)"] = (
                     prop_feed.pressure
                     - self.permeate_side[0, x].pressure
                     - (
-                        self.feed_side.properties_interface[0, x].pressure_osm
-                        - self.permeate_side[0, x].pressure_osm
+                        self.feed_side.properties_interface[0, x].pressure_osm_phase[
+                            "Liq"
+                        ]
+                        - self.permeate_side[0, x].pressure_osm_phase["Liq"]
                     )
                 )
                 var_dict[
@@ -1710,7 +1730,10 @@ class NanofiltrationData(UnitModelBlockData):
             state_args_permeate["flow_mol_phase_comp"][("Liq", j)] *= initialize_guess[
                 "solvent_recovery"
             ]
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             state_args_retentate["flow_mol_phase_comp"][("Liq", j)] *= (
                 1 - initialize_guess["solute_recovery"]
             )
@@ -1721,7 +1744,10 @@ class NanofiltrationData(UnitModelBlockData):
         state_args_interface_in = deepcopy(state_args)
         state_args_interface_out = deepcopy(state_args_retentate)
 
-        for j in self.config.property_package.solute_set:
+        for j in (
+            self.config.property_package.solute_set
+            | self.config.property_package.ion_set
+        ):
             state_args_interface_in["flow_mol_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
@@ -1761,10 +1787,10 @@ class NanofiltrationData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        for k in ("ion_set", "solute_set"):
-            if hasattr(self.config.property_package, k):
-                solute_set = getattr(self.config.property_package, k)
-                break
+        solute_set = (
+            self.config.property_package.ion_set
+            | self.config.property_package.solute_set
+        )
 
         # setting scaling factors for variables
         if iscale.get_scaling_factor(self.radius_pore) is None:
@@ -1821,7 +1847,11 @@ class NanofiltrationData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, 1e1)
 
         for j in self.config.property_package.component_list:
-            if j in self.config.property_package.solute_set:
+            if (
+                j
+                in self.config.property_package.solute_set
+                | self.config.property_package.ion_set
+            ):
                 iscale.set_scaling_factor(
                     self.feed_side.mass_transfer_term[0, "Liq", j], 1e4
                 )
