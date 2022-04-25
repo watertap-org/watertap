@@ -1083,3 +1083,10 @@ def test_parameter_block_comparison(model4):
     )
     for j in m_ion.fs.properties.solute_set:
         assert j in ["E"]
+
+    assert m_ion.fs.properties.charge_comp["B"].value == -2
+    # NOTE: Below is how you grab charge from the generic package
+    assert (
+        m_ion.fs.properties.charge_comp["B"].value
+        == m_generic.fs.properties.get_component("B").config.charge
+    )
