@@ -25,6 +25,7 @@ from idaes.core import (
     FlowsheetBlock,
     MaterialFlowBasis,
     MaterialBalanceType,
+    AqueousPhase,
 )
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
@@ -44,6 +45,20 @@ from idaes.core.util.scaling import (
 )
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
 from idaes.core.util import get_solver
+
+# Imports from idaes core
+from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.phases import PhaseType as PT
+
+# Imports from idaes generic models
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+from idaes.generic_models.properties.core.state_definitions import FpcTP
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+
+# Import the idaes objects for Generic Properties
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock,
+)
 
 solver = get_solver()
 # -----------------------------------------------------------------------------
@@ -80,8 +95,8 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.solvent_set, Set)
     for j in model.fs.properties.solvent_set:
         assert j in ["H2O"]
-    assert isinstance(model.fs.properties.solute_set, Set)
-    for j in model.fs.properties.solute_set:
+    assert isinstance(model.fs.properties.ion_set, Set)
+    for j in model.fs.properties.ion_set | model.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D"]
 
     assert isinstance(model.fs.properties.phase_list, Set)
@@ -134,7 +149,7 @@ def test_property_ions(model):
     m.fs.stream[0].flow_mass_phase_comp
 
     m.fs.stream[0].molality_comp
-    m.fs.stream[0].pressure_osm
+    m.fs.stream[0].pressure_osm_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
@@ -161,7 +176,9 @@ def test_property_ions(model):
         2.2829e-2, rel=1e-3
     )
 
-    assert value(m.fs.stream[0].pressure_osm) == pytest.approx(60.546e5, rel=1e-3)
+    assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
+        60.546e5, rel=1e-3
+    )
 
     assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
         1001.76, rel=1e-3
@@ -226,7 +243,7 @@ def test_property_ions(model2):
     stream[0].flow_mass_phase_comp
 
     stream[0].molality_comp
-    stream[0].pressure_osm
+    stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
     stream[0].conc_mol_phase_comp
     stream[0].flow_vol
@@ -307,7 +324,7 @@ def test_build(model3):
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
         "molality_comp",
-        "pressure_osm",
+        "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
 
@@ -525,17 +542,21 @@ def test_seawater_data():
     )
 
     assert value(stream[0].dens_mass_phase["Liq"]) == pytest.approx(1023.816, rel=1e-3)
-    assert value(stream[0].pressure_osm) == pytest.approx(29.132e5, rel=1e-3)
+    assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
+        29.132e5, rel=1e-3
+    )
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(
         sum(
-            stream[0].conc_mass_phase_comp["Liq", j] for j in m.fs.properties.solute_set
+            stream[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
         )
     ) == pytest.approx(35.9744, rel=1e-3)
     assert value(
         sum(
-            stream[0].mass_frac_phase_comp["Liq", j] for j in m.fs.properties.solute_set
+            stream[0].mass_frac_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
         )
     ) == pytest.approx(0.035142, rel=1e-3)
     assert value(
@@ -687,16 +708,16 @@ def test_assert_electroneutrality_get_property():
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
 
-    assert not stream[0].is_property_constructed("pressure_osm")
+    assert not stream[0].is_property_constructed("pressure_osm_phase")
     assert not stream[0].is_property_constructed("mass_frac_phase_comp")
 
     stream[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
-        get_property=["mass_frac_phase_comp", "pressure_osm"],
+        get_property=["mass_frac_phase_comp", "pressure_osm_phase"],
     )
     assert stream[0].is_property_constructed("mass_frac_phase_comp")
-    assert stream[0].is_property_constructed("pressure_osm")
+    assert stream[0].is_property_constructed("pressure_osm_phase")
     assert not hasattr(stream, "charge_balance")
 
     assert not stream[0].is_property_constructed("flow_vol")
@@ -774,7 +795,7 @@ def test_assert_electroneutrality_get_property():
     stream[0].assert_electroneutrality(
         defined_state=True,
         adjust_by_ion="Cl_-",
-        get_property=("mass_frac_phase_comp", "pressure_osm"),
+        get_property=("mass_frac_phase_comp", "pressure_osm_phase"),
     )
     # check error when adjust_by_ion is not in solute list
     with pytest.raises(
@@ -826,3 +847,246 @@ def test_assert_electroneutrality_get_property():
         stream[0].assert_electroneutrality(
             defined_state=False, adjust_by_ion="Cl_-", tol=1e-18
         )
+
+
+@pytest.fixture(scope="module")
+def model4():
+    m4 = ConcreteModel()
+
+    m4.fs = FlowsheetBlock(default={"dynamic": False})
+    m4.fs.properties = DSPMDEParameterBlock(
+        default={
+            "solute_list": ["A", "B", "C", "D", "E"],
+            "diffusivity_data": {
+                ("Liq", "A"): 1e-9,
+                ("Liq", "B"): 1e-10,
+                ("Liq", "C"): 1e-7,
+                ("Liq", "D"): 1e-11,
+                ("Liq", "E"): 1e-11,
+            },
+            "mw_data": {
+                "H2O": 18e-3,
+                "A": 10e-3,
+                "B": 25e-3,
+                "C": 100e-3,
+                "D": 25e-3,
+                "E": 25e-3,
+            },
+            "stokes_radius_data": {
+                "A": 1e-9,
+                "B": 1e-9,
+                "C": 1e-9,
+                "D": 1e-10,
+                "E": 1e-10,
+            },
+            "charge": {"A": 1, "B": -2, "C": 2, "D": -1, "E": 0},
+        }
+    )
+
+    # config
+    thermo_config = {
+        "components": {
+            "H2O": {
+                "type": Solvent,
+                "valid_phase_types": PT.aqueousPhase,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (18.0153, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+                # End parameter_data
+            },
+            "A": {
+                "type": Cation,
+                "charge": 1,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                "parameter_data": {
+                    "mw": (10, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+            },
+            "B": {
+                "type": Anion,
+                "charge": -2,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                "parameter_data": {
+                    "mw": (25, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+            },
+            "C": {
+                "type": Cation,
+                "charge": 2,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                "parameter_data": {
+                    "mw": (100, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+            },
+            "D": {
+                "type": Anion,
+                "charge": -1,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                "parameter_data": {
+                    "mw": (25, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+            },
+            "E": {
+                "type": Solute,
+                "valid_phase_types": PT.aqueousPhase,
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                "parameter_data": {
+                    "mw": (25, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                },
+            },
+        },
+        # End Component list
+        "phases": {
+            "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+        },
+        "state_definition": FpcTP,
+        "state_bounds": {
+            "temperature": (273.15, 300, 650),
+            "pressure": (5e4, 1e5, 1e6),
+        },
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+    }
+    # End thermo_config definition
+
+    m5 = ConcreteModel()
+    m5.fs = FlowsheetBlock(default={"dynamic": False})
+    m5.fs.properties = GenericParameterBlock(default=thermo_config)
+
+    return (m4, m5)
+
+
+@pytest.mark.unit
+def test_parameter_block_comparison(model4):
+    m_ion = model4[0]
+    m_generic = model4[1]
+
+    assert isinstance(m_ion.fs.properties.component_list, Set)
+    assert isinstance(m_generic.fs.properties.component_list, Set)
+    assert len(m_ion.fs.properties.component_list) == len(
+        m_generic.fs.properties.component_list
+    )
+    for j in m_ion.fs.properties.component_list:
+        assert j in ["H2O", "A", "B", "C", "D", "E"]
+
+    assert isinstance(m_ion.fs.properties.cation_set, Set)
+    assert isinstance(m_generic.fs.properties.cation_set, Set)
+    assert len(m_ion.fs.properties.cation_set) == len(
+        m_generic.fs.properties.cation_set
+    )
+    for j in m_ion.fs.properties.cation_set:
+        assert j in ["A", "C"]
+
+    assert isinstance(m_ion.fs.properties.anion_set, Set)
+    assert isinstance(m_generic.fs.properties.anion_set, Set)
+    assert len(m_ion.fs.properties.anion_set) == len(m_generic.fs.properties.anion_set)
+    for j in m_ion.fs.properties.anion_set:
+        assert j in ["B", "D"]
+
+    assert isinstance(m_ion.fs.properties.ion_set, Set)
+    assert isinstance(m_generic.fs.properties.ion_set, Set)
+    assert len(m_ion.fs.properties.ion_set) == len(m_generic.fs.properties.ion_set)
+    for j in m_ion.fs.properties.ion_set:
+        assert j in ["A", "B", "C", "D"]
+
+    assert isinstance(m_ion.fs.properties.solute_set, Set)
+    assert isinstance(m_generic.fs.properties.solute_set, Set)
+    assert len(m_ion.fs.properties.solute_set) == len(
+        m_generic.fs.properties.solute_set
+    )
+    for j in m_ion.fs.properties.solute_set:
+        assert j in ["E"]
+
+    assert m_ion.fs.properties.charge_comp["B"].value == -2
+    # NOTE: Below is how you grab charge from the generic package
+    assert (
+        m_ion.fs.properties.charge_comp["B"].value
+        == m_generic.fs.properties.get_component("B").config.charge
+    )
