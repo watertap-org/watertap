@@ -118,8 +118,7 @@ def test_flowsheet_interface_as_dict(mock_block):
     obj.set_visualization({})
     d = obj.as_dict(include_vis=False)
     assert "vis" not in d
-    assert "variables" in d
-    assert "block_qname" in d
+    assert "variables" in d["blocks"]
     d = obj.as_dict(include_vis=True)
     assert "vis" in d
 

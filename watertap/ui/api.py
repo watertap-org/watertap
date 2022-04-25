@@ -48,10 +48,9 @@ For example::
 
 """
 import json
-import importlib
 import logging
 from pathlib import Path
-from typing import Dict, Iterable, Union, TextIO, Generator
+from typing import Dict, List, Union, TextIO, Generator
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -60,7 +59,8 @@ import idaes.logger as idaeslog
 
 # local
 from . import api_util
-from .api_util import log_meth, config_docs
+from .api_util import log_meth, config_docs, open_file_or_stream
+from .api_util import Schema, SchemaException, JSONException
 
 # Global variables
 # ----------------
@@ -161,11 +161,16 @@ class BlockInterface:
         if "description" not in options:
             options["description"] = block.doc
         self.config = self.CONFIG(options)
+        set_block_interface(self._block, self)
 
     def get_exported_variables(self) -> Generator[Var, None, None]:
-        """Called by client to get variables exported by the block."""
+        """Called by client to get variables exported by the block.
+
+        Return:
+            Generates a series of dict-s with keys {name, display_name, description, indexed_values|value}.
+        """
         for item in self.config.variables.value():
-            c = {"name": item["name"]}   # one result
+            c = {"name": item["name"]}  # one result
             # get the Pyomo Var from the block
             v = getattr(self._block, item["name"])
             # copy contents of Var into result
@@ -195,7 +200,61 @@ class FlowsheetInterface(BlockInterface):
     # Actions in the flowsheet workflow
     ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
 
+    # Standard keys for data fields
+    BLCK_KEY = "block"
+    NAME_KEY = "name"
+    DISP_KEY = "display_name"
+    DESC_KEY = "description"
     VARS_KEY = "variables"
+    VALU_KEY = "value"
+
+    BLOCK_SCHEMA = {
+        "$$schema": "http://json-schema.org/draft-07/schema#",
+        "$$ref": "#/$$defs/block_schema",
+        "$$defs": {
+            "block_schema": {
+                "type": "object",
+                "properties": {
+                    "$name_key": {"type": "str"},
+                    "$disp_key": {"type": "str"},
+                    "$desc_key": {"type": "str"},
+                    "$vars_key": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "$name_key": {"type": "str"},
+                                "$disp_key": {"type": "str"},
+                                "$desc_key": {"type": "str"},
+                                # scalar or indexed value
+                                "$valu_key": {
+                                    "oneOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "oneOf": [
+                                                    {"type": "number"},
+                                                    {"type": "string"},
+                                                ]
+                                            },
+                                        },
+                                        {"type": "number"},
+                                        {"type": "string"},
+                                    ]
+                                },
+                            },
+                            "required": ["$name_key"],
+                        },
+                    },
+                    "$blks_key": {
+                        "type": "array",
+                        "items": {"$$ref": "#/$$defs/block_schema"},
+                    },
+                },
+                "required": ["$name_key", "$blks_key"],
+            }
+        },
+    }
 
     def __init__(self, flowsheet: Block, options):
         """Constructor.
@@ -207,6 +266,16 @@ class FlowsheetInterface(BlockInterface):
         super().__init__(flowsheet, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self._vis = None
+        self._block_schema = Schema(
+            self.BLOCK_SCHEMA,
+            blck_key=self.BLCK_KEY,
+            name_key=self.NAME_KEY,
+            disp_key=self.DISP_KEY,
+            desc_key=self.DESC_KEY,
+            vars_key=self.VARS_KEY,
+            valu_key=self.VALU_KEY,
+            blks_key=self.BLKS_KEY,
+        )
 
     # Public methods
 
@@ -221,7 +290,7 @@ class FlowsheetInterface(BlockInterface):
     @log_meth
     def save(self, file_or_stream: Union[str, Path, TextIO]):
         """Save the current state of this instance to a file."""
-        fp = self._open_file_or_stream(
+        fp = open_file_or_stream(
             file_or_stream, "write", mode="w", encoding="utf-8"
         )
         data = self.as_dict()
@@ -232,61 +301,32 @@ class FlowsheetInterface(BlockInterface):
     def load(
         cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
     ) -> "FlowsheetInterface":
-        """Create new instance of this class from saved state in a file."""
-        fp = cls._open_file_or_stream(
+        """Load from saved state in a file into the flowsheet block ``fs_block``."""
+        fp = open_file_or_stream(
             file_or_stream, "read", mode="r", encoding="utf-8"
         )
         data = json.load(fp)
-        print(f"@@ load got data: {data}")
+        # print(f"@@ load got data: {data}")
         root = data["blocks"]
-        all_vars = []
-        cls._load_into_blocks(root, fs_block, all_vars)
-        config = {
-            "display_name": root["display_name"],
-            "description": root["description"],
-            "variables": all_vars,
-        }
-        obj = FlowsheetInterface(fs_block, config)
-        obj.set_visualization(data["vis"])
-        return obj
+        cls._load(root, fs_block)
+        # attach other information to root
+        ui = get_block_interface(fs_block)
+        if ui is None:
+            raise ValueError(
+                f"Flowsheet object must define FlowsheetInterface using ``set_block_interface()`` "
+                f"during construction. obj={fs_block}"
+            )
+        ui.set_visualization(data["vis"])
+        return ui
 
-    @classmethod
-    def _load_into_blocks(cls, block_data, cur_block, vars_list):
-        if "variables" in block_data:
-            ui = get_block_interface(cur_block)
-            cls._load_variables(block_data["variables"], ui)
-            vars_list.extend(block_data["variables"])
-        if "subblocks" in block_data:
-            for sb_name, sb_data in block_data["subblocks"].items():
-                sb_block = getattr(cur_block, sb_name)
-                cls._load_into_blocks(sb_data, sb_block, vars_list)
-
-    @classmethod
-    def _load_variables(cls, variables, ui: BlockInterface):
-        block_var_dict = {v["name"]: v for v in ui.config.variables.value()}
-        for v in variables:
-            name = v["name"]
-            if name in block_var_dict:
-                # TODO: Set UI variable info from saved
-                pass
-            else:
-                # TODO: Warn that saved info is not in the UI of the block
-                pass
-
-
-
-
-    @classmethod
-    def _open_file_or_stream(cls, fos, attr, **kwargs):
-        if hasattr(fos, attr):
-            output = fos
-        else:
-            output = open(fos, **kwargs)
-        return output
 
     @log_meth
     def get_variables(self) -> Dict:
-        """Get all the variables exported by this flowsheet and its sub-blocks."""
+        """Get all the variables exported by this flowsheet and its sub-blocks.
+
+        Returns:
+            A dict with the variables. See the class attribute VARIABLES_SCHEMA for expected form.
+        """
         block_map = self._get_block_map()
         return {"blocks": block_map}
 
@@ -325,48 +365,100 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError(f"Unknown action. name={name}, known actions={all_actions}")
 
     def _get_block_map(self):
-        """Builds a tree like:
-
-        {"variables": [{"name": "conc_mol", "display_name": ..},],
-         "subblocks": {
-           "block-name": {
-                    "variables": [..],
-                    "subblocks": { }
-                },
-                "block2-name": {
-                },
-            }
-        }
-
-        """
-        stack = [([], self._block)]  # start at root
-        mapping = {"display_name": "flowsheet", "description": "flowsheet"}
-        # walk sub-blocks
+        """Builds a block map matching the schema in self.BLOCK_SCHEMA"""
+        stack = [([self._block.name], self._block)]  # start at root
+        mapping = {}
+        # walk the tree, building mapping as we go
         while stack:
             key, val = stack.pop()
             ui = get_block_interface(val)
             if ui:
-                self._add_mapping_key(mapping, key, ui)
-            # add all sub-blocks
+                self._add_to_mapping(mapping, key, ui)
+            # add sub-blocks to stack so we visit them
             if hasattr(val, "component_map"):
                 for key2, val2 in val.component_map(ctype=Block).items():
                     stack.append((key + [key2], val2))
         return mapping
 
-    @staticmethod
-    def _add_mapping_key(m, keys, block_ui: BlockInterface):
-        section = {
-            "display_name": block_ui.config.display_name,
-            "description": block_ui.config.description,
-            "variables": block_ui.get_exported_variables(),
-            "subblocks": {},
+    def _add_to_mapping(self, m, key, block_ui: BlockInterface):
+        new_data = {
+            self.DISP_KEY: block_ui.config.display_name,
+            self.DESC_KEY: block_ui.config.description,
+            self.VARS_KEY: block_ui.get_exported_variables(),
+            self.BLCK_KEY: [],
         }
-        if len(keys) == 0:
-            m.update(section)
-        else:
-            node_keys, leaf_key = keys[:-1], keys[-1]
-            for k in node_keys:
-                if k not in m["subblocks"]:
-                    m["subblocks"][k] = {"subblocks": {}}
-                m = m["subblocks"][k]  # descend
-            m[leaf_key] = section
+        nodes, leaf = key[:-1], key[-1]
+        # descend to leaf, creating intermediate nodes as needed
+        for k in nodes:
+            next_m = None
+            for sub_block in m[self.BLCK_KEY]:
+                if sub_block[self.NAME_KEY] == k:
+                    next_m = sub_block
+                    break
+            if next_m is None:
+                new_node = {self.NAME_KEY: k, self.BLCK_KEY: []}
+                m[self.BLCK_KEY].append(new_node)
+                next_m = new_node
+            m = next_m
+        # add new item at leaf
+        for sub_block in m[self.BLCK_KEY]:
+            if sub_block[self.NAME_KEY] == leaf:
+                raise ValueError(
+                    f"Add mapping key failed: Already present. key={leaf}"
+                )
+        m[self.BLCK_KEY].append(new_data)
+
+    @classmethod
+    def _load(cls, block_data, cur_block):
+        """Load the variables in ``block_data`` into ``cur_block``, then
+        recurse to do the same with any sub-blocks.
+        """
+        if "variables" in block_data:
+            ui = get_block_interface(cur_block)
+            cls._load_variables(block_data["variables"], ui)
+        if "subblocks" in block_data:
+            for sb_name, sb_data in block_data["subblocks"].items():
+                sb_block = getattr(cur_block, sb_name)
+                cls._load(sb_data, sb_block)
+
+    @classmethod
+    def _load_variables(cls, variables, ui: BlockInterface) -> Dict[str, List]:
+        """Load the list of variable data in ``variables`` into the block interface of a block.
+
+        There are two possible cases for each variable in the input list:
+          (1) This variable *is* in the block interface: Update the block interface info
+          (2) This variable *is not* in the block interface: Add it to the return value
+
+        Also add any variables in the block interface that are not in the input to the return value.
+
+        Returns:
+           A dict with two keys, each a list of variables:
+
+              - 'missing', variables that were in the input but missing from the block interface
+              - 'extra', variables that were *not* in the input but present in the block interface
+        """
+        loaded_vars = []
+        result = {"missing": []}
+        block_var_dict = {v.name: v for v in ui.config.variables.value()}
+        block_var_extra = block_var_dict.copy()  # what remains after loop is 'extra'
+        # loop through the list of input variables
+        for data_var in variables:
+            name = data_var[cls.NAME_KEY]
+            block_var = block_var_dict.get(name, None)
+            if block_var is None:
+                result["missing"].append(data_var)
+                _log.warning(
+                    f"Input variable not in BlockInterface: name={name}"
+                )  # XXX: block name?
+            else:
+                loaded_vars.append(data_var)
+        result["extra"] = list(block_var_extra.values())
+        if len(result["extra"]) > 0:
+            var_names = ", ".join([e["name"] for e in result["extra"]])
+            _log.warning(
+                f"Variables in BlockInterface not in input variables: names={var_names}"
+            )  # XXX: block name?
+        # substitute loaded variables for original ones in the block interface
+        ui.config.variables.set_value(loaded_vars)
+        # return 'missing' and 'extra'
+        return result
