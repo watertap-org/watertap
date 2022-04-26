@@ -19,7 +19,7 @@ def test_against_baseline():
         test = test.T.drop(non_numeric_columns).T.astype(float)
         baseline = baseline.T.drop(non_numeric_columns).T.astype(float)
     
-        if not np.isclose(baseline, test, equal_nan=True).all():
+        if not np.isclose(baseline, test, equal_nan=True, rtol=1e-03).all():
             raise ValueError("Difference in numeric values in "+path.basename(fn))
     
     print("All good")

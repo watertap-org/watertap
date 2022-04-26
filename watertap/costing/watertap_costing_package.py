@@ -120,7 +120,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.high_pressure_pump_cost = pyo.Var(
             initialize=53 / 1e5 * 3600,
             doc="High pressure pump cost",
-            units=self.base_currency / pyo.units.watt,
+            units=self.base_currency / (pyo.units.m**3 * pyo.units.pascal / pyo.units.s),
         )
         self.low_pressure_pump_cost = pyo.Var(
             initialize=889,
@@ -428,7 +428,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.high_pressure_pump_cost
-            * pyo.units.convert(blk.unit_model.work_mechanical[0], pyo.units.W)
+            * blk.unit_model.outlet.pressure[0]
+            * blk.unit_model.control_volume.properties_out[0].flow_vol
         )
 
     @staticmethod
