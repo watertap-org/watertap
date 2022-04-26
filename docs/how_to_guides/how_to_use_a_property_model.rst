@@ -1,7 +1,8 @@
 How to use a property model
 ------------------------------------------------
 
-The example below shows how to use a property model and display outputs for a state block.
+The example below shows how to use a property model and display outputs for a state block. Property models allow
+users to model the chemical and physical properties of simple systems without the use of unit models.
 
 .. testsetup::
 
@@ -24,16 +25,16 @@ The example below shows how to use a property model and display outputs for a st
     import idaes.core.util.scaling as iscale
 
 
-    # Create a concrete model, flowsheet, and NaCl property parameter block
+    # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.NaClParameterBlock()
 
 
-    # Build the state block and specify a time (0 = steady state)
+    # Build the state block and specify a time (0 = steady state).
     m.fs.state_block = m.fs.properties.build_state_block([0], default={})
 
-    # Fully specify the system
+    # Fully specify the system.
     feed_flow_mass = 1
     feed_mass_frac_NaCl = 0.035
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
@@ -45,7 +46,7 @@ The example below shows how to use a property model and display outputs for a st
     m.fs.state_block[0].pressure.fix(feed_pressure)
     m.fs.state_block[0].temperature.fix(feed_temperature)
 
-    # Set scaling factors for component mass flowrates (variable * scaling factor should be between 0.01 and 100)
+    # Set scaling factors for component mass flowrates (variable * scaling factor should be between 0.01 and 100).
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
     iscale.calculate_scaling_factors(m.fs)
@@ -60,11 +61,11 @@ The example below shows how to use a property model and display outputs for a st
     m.fs.state_block[0].enth_mass_phase['Liq']
     m.fs.state_block[0].pressure_osm
 
-    # Create the solver object
+    # Create the solver object.
     solver = get_solver()
     solver.options = {'nlp_scaling_method': 'user-scaling'}
 
-    # Solve the model and display the output
-    results = solver.solve(m, tee=True)
-    m.fs.state_block[0].display()
+    # Solve the model and display the output.
+    results = solver.solve(m, tee=False)
+    #m.fs.state_block[0].display()
 
