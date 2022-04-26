@@ -147,7 +147,7 @@ class Schema:
                 definition_str = definition
             template = Template(definition_str)
             try:
-                schema_str = template.substitute(mapping=kwargs)
+                schema_str = template.safe_substitute(kwargs)
             except KeyError as err:
                 raise ValueError(f"Substitution in schema definition failed: {err}")
             try:

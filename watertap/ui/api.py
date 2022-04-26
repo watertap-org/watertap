@@ -201,7 +201,7 @@ class FlowsheetInterface(BlockInterface):
     ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
 
     # Standard keys for data fields
-    BLCK_KEY = "block"
+    BLKS_KEY = "blocks"
     NAME_KEY = "name"
     DISP_KEY = "display_name"
     DESC_KEY = "description"
@@ -215,17 +215,17 @@ class FlowsheetInterface(BlockInterface):
             "block_schema": {
                 "type": "object",
                 "properties": {
-                    "$name_key": {"type": "str"},
-                    "$disp_key": {"type": "str"},
-                    "$desc_key": {"type": "str"},
+                    "$name_key": {"type": "string"},
+                    "$disp_key": {"type": "string"},
+                    "$desc_key": {"type": "string"},
                     "$vars_key": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "$name_key": {"type": "str"},
-                                "$disp_key": {"type": "str"},
-                                "$desc_key": {"type": "str"},
+                                "$name_key": {"type": "string"},
+                                "$disp_key": {"type": "string"},
+                                "$desc_key": {"type": "string"},
                                 # scalar or indexed value
                                 "$valu_key": {
                                     "oneOf": [
@@ -268,7 +268,6 @@ class FlowsheetInterface(BlockInterface):
         self._vis = None
         self._block_schema = Schema(
             self.BLOCK_SCHEMA,
-            blck_key=self.BLCK_KEY,
             name_key=self.NAME_KEY,
             disp_key=self.DISP_KEY,
             desc_key=self.DESC_KEY,
@@ -367,7 +366,10 @@ class FlowsheetInterface(BlockInterface):
     def _get_block_map(self):
         """Builds a block map matching the schema in self.BLOCK_SCHEMA"""
         stack = [([self._block.name], self._block)]  # start at root
-        mapping = {}
+        mapping = {self.NAME_KEY: self._block.name, self.BLKS_KEY: []}
+        root_ui = get_block_interface(self._block)
+        if root_ui:
+            mapping[self.VARS_KEY] = list(root_ui.get_exported_variables())
         # walk the tree, building mapping as we go
         while stack:
             key, val = stack.pop()
@@ -384,29 +386,30 @@ class FlowsheetInterface(BlockInterface):
         new_data = {
             self.DISP_KEY: block_ui.config.display_name,
             self.DESC_KEY: block_ui.config.description,
-            self.VARS_KEY: block_ui.get_exported_variables(),
-            self.BLCK_KEY: [],
+            self.VARS_KEY: list(block_ui.get_exported_variables()),
+            self.BLKS_KEY: [],
         }
         nodes, leaf = key[:-1], key[-1]
         # descend to leaf, creating intermediate nodes as needed
         for k in nodes:
             next_m = None
-            for sub_block in m[self.BLCK_KEY]:
+            for sub_block in m[self.BLKS_KEY]:
                 if sub_block[self.NAME_KEY] == k:
                     next_m = sub_block
                     break
             if next_m is None:
-                new_node = {self.NAME_KEY: k, self.BLCK_KEY: []}
-                m[self.BLCK_KEY].append(new_node)
+                new_node = {self.NAME_KEY: k, self.BLKS_KEY: []}
+                m[self.BLKS_KEY].append(new_node)
                 next_m = new_node
+            print(f"@@ descend from m={m} to {next_m}")
             m = next_m
         # add new item at leaf
-        for sub_block in m[self.BLCK_KEY]:
+        for sub_block in m[self.BLKS_KEY]:
             if sub_block[self.NAME_KEY] == leaf:
                 raise ValueError(
                     f"Add mapping key failed: Already present. key={leaf}"
                 )
-        m[self.BLCK_KEY].append(new_data)
+        m[self.BLKS_KEY].append(new_data)
 
     @classmethod
     def _load(cls, block_data, cur_block):

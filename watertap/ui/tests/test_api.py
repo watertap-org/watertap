@@ -147,5 +147,11 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     obj.set_visualization({})
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
-    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename)
+    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename, mock_block)
     assert obj2 == obj
+
+
+def test_flowsheet_interface_schema(mock_block):
+    fsi = FlowsheetInterface(mock_block, build_options())
+    assert fsi._block_schema is not None
+
