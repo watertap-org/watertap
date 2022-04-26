@@ -193,7 +193,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         )
 
         # Reaction Stoichiometry
-        # This is the stoichiometric part the Perterson matrix in dict form
+        # This is the stoichiometric part the Peterson matrix in dict form
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic growth of heterotrophs
             ("R1", "Liq", "H2O"): 0,
