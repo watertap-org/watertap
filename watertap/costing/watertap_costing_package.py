@@ -383,6 +383,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Args:
             pump_type - PumpType Enum indicating pump type,
                         default = PumpType.high_pressure
+            cost_electricity_flow - bool, if True, the Pump's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         if pump_type == PumpType.high_pressure:
             WaterTAPCostingData.cost_high_pressure_pump(blk, cost_electricity_flow)
@@ -408,6 +411,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Args:
             energy_recovery_device_type - EnergyRecoveryDeviceType Enum indicating ERD type,
                                           default = EnergyRecoveryDeviceType.default
+            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
             WaterTAPCostingData.cost_default_energy_recovery_device(blk)
@@ -425,6 +431,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         High pressure pump costing method
 
         TODO: describe equations
+
+        Args:
+            cost_electricity_flow - bool, if True, the Pump's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         t0 = blk.flowsheet().time.first()
         _make_capital_cost_var(blk)
@@ -447,6 +458,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Low pressure pump costing method
 
         TODO: describe equations
+
+        Args:
+            cost_electricity_flow - bool, if True, the Pump's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         t0 = blk.flowsheet().time.first()
         cost_by_flow_volume(
@@ -471,6 +487,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         ERD pressure exchanger costing method
 
         TODO: describe equations
+
+        Args:
+            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         t0 = blk.flowsheet().time.first()
         cost_by_flow_volume(
@@ -495,6 +516,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Energy recovery device costing method
 
         TODO: describe equations
+
+        Args:
+            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
+                                    be converted to kW and costed as an electricity
+                                    default = True
         """
         t0 = blk.flowsheet().time.first()
         _make_capital_cost_var(blk)
@@ -542,22 +568,25 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_mixer(blk, mixer_type=MixerType.default):
+    def cost_mixer(blk, mixer_type=MixerType.default, **kwargs):
         """
         Mixer costing method
 
         TODO: describe equations
 
-        args:
+        Args:
             mixer_type - MixerType Enum indicating mixer type,
-                        default = MixerType.default
+                         default = MixerType.default
+            **kwargs - Additional keywords for the MixerType, e.g., NaOCl
+                       and CaOH2 mixers expect the `dosing_rate` keyword
+                       argument.
         """
         if mixer_type == MixerType.default:
-            WaterTAPCostingData.cost_default_mixer(blk)
+            WaterTAPCostingData.cost_default_mixer(blk, **kwargs)
         elif mixer_type == MixerType.NaOCl:
-            WaterTAPCostingData.cost_naocl_mixer(blk)
+            WaterTAPCostingData.cost_naocl_mixer(blk, **kwargs)
         elif mixer_type == MixerType.CaOH2:
-            WaterTAPCostingData.cost_caoh2_mixer(blk)
+            WaterTAPCostingData.cost_caoh2_mixer(blk, **kwargs)
         else:
             raise ConfigurationError(
                 f"{blk.unit_model.name} received invalid argument for mixer_type:"
@@ -581,11 +610,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_naocl_mixer(blk):
+    def cost_naocl_mixer(blk, dosing_rate):
         """
         NaOCl mixer costing method
 
         TODO: describe equations
+
+        Args:
+            dosing_rate: An expression in [mass/time] for NaOCl dosage
         """
         cost_by_flow_volume(
             blk,
@@ -595,21 +627,24 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 pyo.units.m**3 / pyo.units.day,
             ),
         )
+        blk.costing_package.cost_flow(
+            pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "NaOCl"
+        )
 
     @staticmethod
-    def cost_caoh2_mixer(blk):
+    def cost_caoh2_mixer(blk, dosing_rate):
         """
         CaOH2 mixer costing method
 
         TODO: describe equations
+
+        Args:
+            dosing_rate: An expression in [mass/time] for CaOH2 dosage
         """
         stream = blk.unit_model.lime_stream
         blk.lime_kg_per_day = pyo.Expression(
             expr=pyo.units.convert(
-                74.093e-3
-                * (pyo.units.kg / pyo.units.mol)
-                * stream.flow_mol[0]
-                * stream.mole_frac_comp[0, "Ca(OH)2"],
+                dosing_rate,
                 pyo.units.kg / pyo.units.day,
             )
         )
@@ -618,6 +653,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             blk.costing_package.caoh2_mixer_unit_cost
             / blk.costing_package.factor_total_investment,
             blk.lime_kg_per_day,
+        )
+        blk.costing_package.cost_flow(
+            pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "CaOH2"
         )
 
 

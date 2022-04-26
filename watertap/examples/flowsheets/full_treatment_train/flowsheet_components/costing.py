@@ -143,12 +143,11 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
         m.fs.stoich_softening_mixer_unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"mixer_type": MixerType.CaOH2},
+                "costing_method_arguments": {
+                    "mixer_type": MixerType.CaOH2,
+                    "dosing_rate": m.fs.stoich_softening_mixer_unit.dosing_rate,
+                },
             }
-        )
-        m.fs.costing.cost_flow(
-            m.fs.stoich_softening_mixer_unit.dosing_rate,
-            "CaOH2",
         )
 
     # Post-treatment
@@ -157,12 +156,11 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
         m.fs.ideal_naocl_mixer_unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"mixer_type": MixerType.NaOCl},
+                "costing_method_arguments": {
+                    "mixer_type": MixerType.NaOCl,
+                    "dosing_rate": m.fs.ideal_naocl_mixer_unit.dosing_rate,
+                },
             }
-        )
-        m.fs.costing.cost_flow(
-            m.fs.ideal_naocl_mixer_unit.dosing_rate,
-            "NaOCl",
         )
 
     if hasattr(m.fs, "mixer_permeate"):
