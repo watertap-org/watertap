@@ -209,9 +209,9 @@ class FlowsheetInterface(BlockInterface):
     VALU_KEY = "value"
 
     BLOCK_SCHEMA = {
-        "$$schema": "http://json-schema.org/draft-07/schema#",
-        "$$ref": "#/$$defs/block_schema",
-        "$$defs": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$ref": "#/$defs/block_schema",
+        "$defs": {
             "block_schema": {
                 "type": "object",
                 "properties": {
@@ -248,7 +248,7 @@ class FlowsheetInterface(BlockInterface):
                     },
                     "$blks_key": {
                         "type": "array",
-                        "items": {"$$ref": "#/$$defs/block_schema"},
+                        "items": {"$ref": "#/$defs/block_schema"},
                     },
                 },
                 "required": ["$name_key", "$blks_key"],
@@ -293,7 +293,6 @@ class FlowsheetInterface(BlockInterface):
             file_or_stream, "write", mode="w", encoding="utf-8"
         )
         data = self.as_dict()
-        print(f"@@ save saving data: {data}")
         json.dump(data, fp)
 
     @classmethod
@@ -305,7 +304,6 @@ class FlowsheetInterface(BlockInterface):
             file_or_stream, "read", mode="r", encoding="utf-8"
         )
         data = json.load(fp)
-        # print(f"@@ load got data: {data}")
         root = data["blocks"]
         cls._load(root, fs_block)
         # attach other information to root
@@ -401,7 +399,6 @@ class FlowsheetInterface(BlockInterface):
                 new_node = {self.NAME_KEY: k, self.BLKS_KEY: []}
                 m[self.BLKS_KEY].append(new_node)
                 next_m = new_node
-            print(f"@@ descend from m={m} to {next_m}")
             m = next_m
         # add new item at leaf
         for sub_block in m[self.BLKS_KEY]:
@@ -442,7 +439,7 @@ class FlowsheetInterface(BlockInterface):
         """
         loaded_vars = []
         result = {"missing": []}
-        block_var_dict = {v.name: v for v in ui.config.variables.value()}
+        block_var_dict = {v[cls.NAME_KEY]: v for v in ui.config.variables.value()}
         block_var_extra = block_var_dict.copy()  # what remains after loop is 'extra'
         # loop through the list of input variables
         for data_var in variables:
@@ -462,6 +459,13 @@ class FlowsheetInterface(BlockInterface):
                 f"Variables in BlockInterface not in input variables: names={var_names}"
             )  # XXX: block name?
         # substitute loaded variables for original ones in the block interface
+        # first, extract values out of the input data
+        values_map = {}
+        for lv in loaded_vars:
+            lv_value = lv.get(cls.VALU_KEY, None)
+            if lv_value is not None:
+                values_map[lv[cls.NAME_KEY]] = lv_value
+                del lv[cls.VALU_KEY]
         ui.config.variables.set_value(loaded_vars)
         # return 'missing' and 'extra'
         return result
