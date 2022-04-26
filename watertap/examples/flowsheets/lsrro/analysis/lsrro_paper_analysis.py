@@ -23,6 +23,7 @@ from pyomo.environ import (
     Block,
     NonNegativeReals,
     RangeSet,
+    Set,
     check_optimal_termination,
     units as pyunits,
 )
@@ -45,12 +46,12 @@ from watertap.unit_models.reverse_osmosis_1D import (
     PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_no_degrees_of_freedom, check_dof
-from watertap.costing import WaterTAPCosting
+from watertap.core.util.initialization import assert_no_degrees_of_freedom, assert_degrees_of_freedom
+from watertap.costing.watertap_costing_package import WaterTAPCosting, make_capital_cost_var
 import watertap.property_models.NaCl_prop_pack as props
 
 B_max = None
-number_nodes = 10
+number_of_RO_finite_elements = 10
 
 
 def run_lsrro_case(
@@ -62,13 +63,13 @@ def run_lsrro_case(
     B_case=None,
     AB_tradeoff=None,
     A_fixed=None,
-    nacl_solubility_limit=None,
-    has_CP=None,
-    has_Pdrop=None,
+    has_NaCl_solubility_limit=None,
+    has_calculated_concentration_polarization=None,
+    has_calculated_ro_pressure_drop=None,
     permeate_quality_limit=None,
     ABgamma_factor=None,
 ):
-    m = build(number_of_stages, nacl_solubility_limit, has_CP, has_Pdrop)
+    m = build(number_of_stages, has_NaCl_solubility_limit, has_calculated_concentration_polarization, has_calculated_ro_pressure_drop)
     set_operating_conditions(m, Cin)
 
     initialize(m)
@@ -100,7 +101,7 @@ def run_lsrro_case(
     return m, res
 
 
-def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop=True):
+def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_concentration_polarization=True, has_calculated_ro_pressure_drop=True):
     # ---building model---
     m = ConcreteModel()
 
@@ -121,13 +122,15 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     m.fs.costing.erd_pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
-    m.fs.StageSet = RangeSet(m.fs.NumberOfStages)
-    m.fs.LSRRO_StageSet = RangeSet(2, m.fs.NumberOfStages)
-    m.fs.NonFinal_StageSet = RangeSet(m.fs.NumberOfStages - 1)
+    m.fs.Stages = RangeSet(m.fs.NumberOfStages)
+    m.fs.LSRRO_Stages = RangeSet(2, m.fs.NumberOfStages)
+    m.fs.NonFinalStages = RangeSet(m.fs.NumberOfStages - 1)
     if number_of_stages > 1:
-        m.fs.LSRRO_NonFinal_StageSet = RangeSet(2, m.fs.NumberOfStages - 1)
+        m.fs.IntermediateStages = RangeSet(2, m.fs.NumberOfStages - 1)
     else:
-        m.fs.LSRRO_NonFinal_StageSet = RangeSet(0)
+        m.fs.IntermediateStages = RangeSet(0)
+    m.fs.FirstStage = m.fs.Stages.first()
+    m.fs.LastStage = m.fs.Stages.last()
 
     m.fs.feed = Feed(default={"property_package": m.fs.properties})
     m.fs.product = Product(default={"property_package": m.fs.properties})
@@ -135,7 +138,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     # Add the mixers
     m.fs.Mixers = Mixer(
-        m.fs.NonFinal_StageSet,
+        m.fs.NonFinalStages,
         default={
             "property_package": m.fs.properties,
             "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
@@ -145,33 +148,33 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     # Add the pumps
     m.fs.PrimaryPumps = Pump(
-        m.fs.StageSet, default={"property_package": m.fs.properties}
+        m.fs.Stages, default={"property_package": m.fs.properties}
     )
     for pump in m.fs.PrimaryPumps.values():
         pump.costing = UnitModelCostingBlock(default={
             "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":"high_pressure"},
+            "costing_method":cost_high_pressure_pump_lsrro,
             })
         m.fs.costing.cost_flow(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # Add the equalizer pumps
     m.fs.BoosterPumps = Pump(
-        m.fs.LSRRO_StageSet, default={"property_package": m.fs.properties}
+        m.fs.LSRRO_Stages, default={"property_package": m.fs.properties}
     )
     for pump in m.fs.BoosterPumps.values():
         pump.costing = UnitModelCostingBlock(default={
             "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":"high_pressure"},
+            "costing_method":cost_high_pressure_pump_lsrro,
             })
         m.fs.costing.cost_flow(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # Add the stages ROs
-    if has_Pdrop:
+    if has_calculated_ro_pressure_drop:
         pressure_change_type = PressureChangeType.calculated
     else:
         pressure_change_type = PressureChangeType.fixed_per_stage
 
-    if has_CP:
+    if has_calculated_concentration_polarization:
         cp_type = ConcentrationPolarizationType.calculated
         kf_type = MassTransferCoefficient.calculated
     else:
@@ -179,51 +182,45 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
         kf_type = MassTransferCoefficient.none
 
     m.fs.ROUnits = ReverseOsmosis1D(
-        m.fs.StageSet,
+        m.fs.Stages,
         default={
             "property_package": m.fs.properties,
-            "has_pressure_change": has_Pdrop,
+            "has_pressure_change": has_calculated_ro_pressure_drop,
             "pressure_change_type": pressure_change_type,
             "mass_transfer_coefficient": kf_type,
             "concentration_polarization_type": cp_type,
             "transformation_scheme": "BACKWARD",
             "transformation_method": "dae.finite_difference",
-            "finite_elements": number_nodes,  # TODO: change to 10 for paper analysis
+            "finite_elements": number_of_RO_finite_elements,
             "has_full_reporting": True,
         },
     )
 
     for idx, ro_stage in m.fs.ROUnits.items():
-        if idx > m.fs.StageSet.first():
-            ro_stage.costing = UnitModelCostingBlock(default={
-                "flowsheet_costing_block":m.fs.costing,
-                "costing_method_arguments":{"ro_type":"high_pressure"},
-                })
-        else:
+        if idx == m.fs.FirstStage:
             ro_stage.costing = UnitModelCostingBlock(default={
                 "flowsheet_costing_block":m.fs.costing,
                 "costing_method_arguments":{"ro_type":"standard"},
                 })
+        else:
+            ro_stage.costing = UnitModelCostingBlock(default={
+                "flowsheet_costing_block":m.fs.costing,
+                "costing_method_arguments":{"ro_type":"high_pressure"},
+                })
 
     # Add EnergyRecoveryDevices
-    m.fs.EnergyRecoveryDevice = EnergyRecoveryDevice(
+    m.fs.EnergyRecoveryDeviceSet = Set(initialize=\
+            [m.fs.FirstStage, m.fs.LastStage] if m.fs.FirstStage < m.fs.LastStage else \
+                    [m.fs.LastStage])
+    m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(m.fs.EnergyRecoveryDeviceSet,
         default={"property_package": m.fs.properties,}
     )
-    m.fs.EnergyRecoveryDevice.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block":m.fs.costing,
-        "costing_method_arguments":{"energy_recovery_device_type":"pressure_exchanger"},
-        })
-    m.fs.costing.cost_flow(pyunits.convert(m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW), "electricity")
-
-    if number_of_stages > 1:
-        m.fs.ERD_first_stage = EnergyRecoveryDevice(
-            default={"property_package": m.fs.properties,}
-        )
-        m.fs.ERD_first_stage.costing = UnitModelCostingBlock(default={
+    for erd in m.fs.EnergyRecoveryDevices.values():
+        erd.costing = UnitModelCostingBlock(default={
             "flowsheet_costing_block":m.fs.costing,
             "costing_method_arguments":{"energy_recovery_device_type":"pressure_exchanger"},
             })
-        m.fs.costing.cost_flow(pyunits.convert(m.fs.ERD_first_stage.work_mechanical[0], to_units=pyunits.kW), "electricity")
+        m.fs.costing.cost_flow(pyunits.convert(erd.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # additional parameters, variables or expressions ---------------------------------------------------------------------------
     m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
@@ -288,13 +285,13 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     m.fs.costing.add_specific_energy_consumption(m.fs.feed.properties[0].flow_vol,
             name="specific_energy_consumption_feed")
 
-    @m.fs.Expression(m.fs.StageSet)
+    @m.fs.Expression(m.fs.Stages)
     def stage_recovery_vol(fs, stage):
         return ( fs.ROUnits[stage].mixed_permeate[0].flow_vol
             / fs.PrimaryPumps[stage].control_volume.properties_in[0].flow_vol
             )
 
-    @m.fs.Expression(m.fs.StageSet)
+    @m.fs.Expression(m.fs.Stages)
     def stage_recovery_mass_H2O(fs, stage):
         return (
             fs.ROUnits[stage].mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
@@ -305,7 +302,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     m.fs.costing.primary_pump_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * sum(m.fs.PrimaryPumps[n].costing.capital_cost for n in m.fs.StageSet)
+        * sum(m.fs.PrimaryPumps[n].costing.capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
@@ -314,18 +311,14 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     m.fs.costing.booster_pump_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
         * (sum(
-            m.fs.BoosterPumps[n].costing.capital_cost for n in m.fs.LSRRO_StageSet
+            m.fs.BoosterPumps[n].costing.capital_cost for n in m.fs.LSRRO_Stages
         ) if number_of_stages > 1 else 0*m.fs.costing.base_currency)
-        / m.fs.costing.annual_water_production
+        / m.fs.costing.annual_water_production,
     )
 
     m.fs.costing.erd_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * (
-            m.fs.EnergyRecoveryDevice.costing.capital_cost
-            + ( m.fs.ERD_first_stage.costing.capital_cost if
-                number_of_stages > 1 else 0*m.fs.costing.base_currency )
-        )
+        * sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values())
         / m.fs.costing.annual_water_production
     )
 
@@ -351,7 +344,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     m.fs.costing.membrane_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * sum(m.fs.ROUnits[n].costing.capital_cost for n in m.fs.StageSet)
+        * sum(m.fs.ROUnits[n].costing.capital_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
@@ -362,7 +355,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     )
 
     m.fs.costing.membrane_replacement_lcow = Expression(
-        expr=sum(m.fs.ROUnits[n].costing.fixed_operating_cost for n in m.fs.StageSet)
+        expr=sum(m.fs.ROUnits[n].costing.fixed_operating_cost for n in m.fs.Stages)
         / m.fs.costing.annual_water_production
     )
 
@@ -394,7 +387,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     # Connect the Pump n to the Mixer n
     m.fs.pump_to_mixer = Arc(
-        m.fs.NonFinal_StageSet,
+        m.fs.NonFinalStages,
         rule=lambda fs, n: {
             "source": fs.PrimaryPumps[n].outlet,
             "destination": fs.Mixers[n].upstream,
@@ -403,7 +396,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
 
     # Connect the Mixer n to the Stage n
     m.fs.mixer_to_stage = Arc(
-        m.fs.NonFinal_StageSet,
+        m.fs.NonFinalStages,
         rule=lambda fs, n: {
             "source": fs.Mixers[n].outlet,
             "destination": fs.ROUnits[n].inlet,
@@ -411,8 +404,8 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     )
 
     # Connect the Stage n to the Eq Pump n
-    m.fs.stage_to_eq_pump = Arc(
-        m.fs.LSRRO_StageSet,
+    m.fs.stage_permeate_to_booster_pump = Arc(
+        m.fs.LSRRO_Stages,
         rule=lambda fs, n: {
             "source": fs.ROUnits[n].permeate,
             "destination": fs.BoosterPumps[n].inlet,
@@ -420,50 +413,50 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     )
 
     # Connect the Eq Pump n to the Mixer n-1
-    m.fs.eq_pump_to_mixer = Arc(
-        m.fs.LSRRO_StageSet,
+    m.fs.booster_pump_to_mixer = Arc(
+        m.fs.LSRRO_Stages,
         rule=lambda fs, n: {
             "source": fs.BoosterPumps[n].outlet,
             "destination": fs.Mixers[n - 1].downstream,
         },
     )
 
-    last_stage = m.fs.StageSet.last()
+    last_stage = m.fs.LastStage
     if number_of_stages > 1:
         # Connect the primary RO permeate to the product
         m.fs.primary_RO_to_erd = Arc(
-            source=m.fs.ROUnits[1].retentate, destination=m.fs.ERD_first_stage.inlet
+            source=m.fs.ROUnits[1].retentate, destination=m.fs.EnergyRecoveryDevices[1].inlet
         )
         # Connect 1st stage ERD to primary pump
         m.fs.primary_ERD_to_pump = Arc(
-            source=m.fs.ERD_first_stage.outlet, destination=m.fs.PrimaryPumps[2].inlet
+            source=m.fs.EnergyRecoveryDevices[1].outlet, destination=m.fs.PrimaryPumps[2].inlet
         )
 
     # Connect the Stage n to the Pump n+1
-    m.fs.stage_to_pump = Arc(
-        m.fs.LSRRO_NonFinal_StageSet,
+    m.fs.stage_retentate_to_pump = Arc(
+        m.fs.IntermediateStages,
         rule=lambda fs, n: {
             "source": fs.ROUnits[n].retentate,
             "destination": fs.PrimaryPumps[n + 1].inlet,
         },
     )
     # Connect the Pump N to the Stage N
-    m.fs.pump_to_stage = Arc(
+    m.fs.pumpN_to_stageN = Arc(
         source=m.fs.PrimaryPumps[last_stage].outlet,
         destination=m.fs.ROUnits[last_stage].inlet,
     )
     # Connect Final Stage to EnergyRecoveryDevice Pump
     m.fs.stage_to_erd = Arc(
         source=m.fs.ROUnits[last_stage].retentate,
-        destination=m.fs.EnergyRecoveryDevice.inlet,
+        destination=m.fs.EnergyRecoveryDevices[last_stage].inlet,
     )
     # Connect the EnergyRecoveryDevice to the disposal
     m.fs.erd_to_disposal = Arc(
-        source=m.fs.EnergyRecoveryDevice.outlet, destination=m.fs.disposal.inlet
+        source=m.fs.EnergyRecoveryDevices[last_stage].outlet, destination=m.fs.disposal.inlet
     )
 
     # additional bounding
-    if nacl_solubility_limit:
+    if has_NaCl_solubility_limit:
         for b in m.component_data_objects(Block, descend_into=True):
             # NaCl solubility limit
             if hasattr(b, "is_property_constructed") and b.is_property_constructed(
@@ -474,6 +467,18 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP=True, has_Pdrop
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
+
+
+def cost_high_pressure_pump_lsrro(blk):
+
+    make_capital_cost_var(blk)
+    blk.capital_cost_constraint = Constraint(
+        expr=blk.capital_cost
+        == blk.costing_package.high_pressure_pump_cost 
+        * pyunits.watt / (pyunits.m**3 * pyunits.pascal / pyunits.s)
+        * blk.unit_model.outlet.pressure[0]
+        * blk.unit_model.control_volume.properties_out[0].flow_vol
+    )
 
 
 def set_operating_conditions(m, Cin=None):
@@ -523,10 +528,10 @@ def set_operating_conditions(m, Cin=None):
 
     # initialize stages
     for idx, stage in m.fs.ROUnits.items():
-        if idx > m.fs.StageSet.first():
-            B_scale = 100.0
-        else:
+        if idx == m.fs.FirstStage:
             B_scale = 1.0
+        else:
+            B_scale = 100.0
 
         stage.A_comp.fix(mem_A)
         stage.B_comp.fix(mem_B * B_scale)
@@ -540,16 +545,15 @@ def set_operating_conditions(m, Cin=None):
             stage.spacer_porosity.fix(spacer_porosity)
 
     # energy recovery devices
-    if value(m.fs.NumberOfStages) > 1:
-        m.fs.ERD_first_stage.efficiency_pump.fix(erd_efi)
-        m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.fix(70e5)
-        iscale.set_scaling_factor(m.fs.ERD_first_stage.control_volume.work, 1e-3)
+    for erd in m.fs.EnergyRecoveryDevices.values():
+        erd.efficiency_pump.fix(erd_efi)
+        iscale.set_scaling_factor(erd.control_volume.work, 1e-3)
 
-    m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
-    m.fs.EnergyRecoveryDevice.control_volume.properties_out[0].pressure.fix(
+    # if FirstStage *is* LastStage, we'll just overwrite the pressure
+    m.fs.EnergyRecoveryDevices[m.fs.FirstStage].control_volume.properties_out[0].pressure.fix(70e5)
+    m.fs.EnergyRecoveryDevices[m.fs.LastStage].control_volume.properties_out[0].pressure.fix(
         pressure_atm
     )
-    iscale.set_scaling_factor(m.fs.EnergyRecoveryDevice.control_volume.work, 1e-3)
 
     # ---scaling---
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
@@ -603,13 +607,14 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
 
     propagate_state(m.fs.feed_to_pump)
 
-    last_stage = m.fs.StageSet.last()
-    first_stage = m.fs.StageSet.first()
-    for stage in m.fs.StageSet:
+    last_stage = m.fs.LastStage
+    first_stage = m.fs.FirstStage
+
+    for stage in m.fs.Stages:
         m.fs.PrimaryPumps[stage].initialize(optarg=optarg)
 
         if stage == last_stage:
-            propagate_state(m.fs.pump_to_stage)
+            propagate_state(m.fs.pumpN_to_stageN)
         else:
             propagate_state(m.fs.pump_to_mixer[stage])
             if guess_mixers:
@@ -627,41 +632,46 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
+            m.fs.product.initialize(optarg=optarg)
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_RO_to_erd)
+                m.fs.EnergyRecoveryDevices[first_stage].initialize(optarg=optarg)
                 propagate_state(m.fs.primary_ERD_to_pump)
         else:
-            propagate_state(m.fs.stage_to_eq_pump[stage])
+            propagate_state(m.fs.stage_permeate_to_booster_pump[stage])
             m.fs.BoosterPumps[stage].initialize(optarg=optarg)
-            propagate_state(m.fs.eq_pump_to_mixer[stage])
+            propagate_state(m.fs.booster_pump_to_mixer[stage])
 
-        if stage == last_stage:
-            propagate_state(m.fs.stage_to_erd)
-        elif stage != first_stage and stage != last_stage:
-            propagate_state(m.fs.stage_to_pump[stage])
+        if stage in m.fs.IntermediateStages:
+            propagate_state(m.fs.stage_retentate_to_pump[stage])
 
     # for the end stage
+    propagate_state(m.fs.stage_to_erd)
+    m.fs.EnergyRecoveryDevices[last_stage].initialize(optarg=optarg)
     propagate_state(m.fs.erd_to_disposal)
+    m.fs.disposal.initialize(optarg=optarg)
 
 
 def do_backward_initialization_pass(m, optarg):
     print("--------------------START BACKWARD INITIALIZATION PASS--------------------")
 
-    first_stage = m.fs.StageSet.first()
-    for stage in reversed(m.fs.NonFinal_StageSet):
+    first_stage = m.fs.FirstStage
+    for stage in reversed(m.fs.NonFinalStages):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
         m.fs.ROUnits[stage].initialize(optarg=optarg)
         if stage == first_stage:
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_ERD_to_pump)
+                m.fs.EnergyRecoveryDevices[first_stage].initialize(optarg=optarg)
                 propagate_state(m.fs.primary_RO_to_erd)
             propagate_state(m.fs.primary_RO_to_product)
+            m.fs.product.initialize(optarg=optarg)
         else:
-            propagate_state(m.fs.stage_to_pump[stage])
-            propagate_state(m.fs.stage_to_eq_pump[stage])
+            propagate_state(m.fs.stage_retentate_to_pump[stage])
+            propagate_state(m.fs.stage_permeate_to_booster_pump[stage])
             m.fs.BoosterPumps[stage].initialize(optarg=optarg)
-            propagate_state(m.fs.eq_pump_to_mixer[stage])
+            propagate_state(m.fs.booster_pump_to_mixer[stage])
 
 
 def initialize(m, verbose=False, solver=None):
@@ -681,7 +691,7 @@ def initialize(m, verbose=False, solver=None):
     seq = SequentialDecomposition()
     seq.options.tear_method = "Direct"
     seq.options.iterLim = m.fs.NumberOfStages
-    seq.options.tear_set = list(m.fs.eq_pump_to_mixer.values())
+    seq.options.tear_set = list(m.fs.booster_pump_to_mixer.values())
     seq.options.log_info = True
 
     # run SD tool
@@ -738,7 +748,7 @@ def optimize_set_up(
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.deltaP.setlb(0)
-        if idx > m.fs.StageSet.first():
+        if idx > m.fs.Stages.first():
             pump.max_lsrro_pressure_con = Constraint(
                 expr=(
                     m.fs.lsrro_min_pressure,
@@ -768,8 +778,8 @@ def optimize_set_up(
             )
 
     if value(m.fs.NumberOfStages) > 1:
-        m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
-        m.fs.ERD_first_stage.deltaP.setub(0)
+        m.fs.EnergyRecoveryDevices[1].control_volume.properties_out[0].pressure.unfix()
+        m.fs.EnergyRecoveryDevices[1].deltaP.setub(0)
 
     # unfix eq pumps
     for idx, pump in m.fs.BoosterPumps.items():
@@ -796,7 +806,7 @@ def optimize_set_up(
             doc="Solute permeability coeff. constant in all LSR stages",
         )
         m.fs.B_comp_system.set_value(
-            m.fs.ROUnits[m.fs.LSRRO_StageSet.first()].B_comp[0, "NaCl"]
+            m.fs.ROUnits[m.fs.LSRRO_Stages.first()].B_comp[0, "NaCl"]
         )
         m.fs.B_comp_system.setlb(3.5e-8)
         m.fs.B_comp_system.setub(3.5e-8 * 1e2)
@@ -828,7 +838,7 @@ def optimize_set_up(
         ) or (stage.config.pressure_change_type == PressureChangeType.calculated):
             stage.N_Re[0, 0].unfix()
 
-        if idx > m.fs.StageSet.first():
+        if idx > m.fs.Stages.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
             if B_max is not None:
@@ -926,7 +936,7 @@ def optimize_set_up(
             water_recovery
         )  # product mass flow rate fraction of feed [-]
     if Cbrine is not None:
-        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[
+        m.fs.ROUnits[m.fs.Stages.last()].feed_side.properties[
             0, 1
         ].conc_mass_phase_comp["Liq", "NaCl"].fix(
             Cbrine
@@ -943,10 +953,8 @@ def optimize_set_up(
     # ---checking model---
     assert_units_consistent(m)
 
-    check_dof(
-        m,
-        fail_flag=False,
-        expected_dof=4 * m.fs.NumberOfStages
+    assert_degrees_of_freedom(m,
+        4 * m.fs.NumberOfStages
         - (1 if (water_recovery is not None) else 0)
         - (1 if value(m.fs.NumberOfStages) == 1 else 0),
     )
@@ -956,7 +964,7 @@ def optimize_set_up(
 
 def display_design(m):
     print("--decision variables--")
-    for stage in m.fs.StageSet:
+    for stage in m.fs.Stages:
         print(
             "Stage %d operating pressure %.1f bar"
             % (stage, m.fs.ROUnits[stage].inlet.pressure[0].value / 1e5)
@@ -991,12 +999,10 @@ def display_state(m):
         )
 
     print_state("Feed", m.fs.feed.outlet)
-    last_stage = m.fs.StageSet.last()
-    first_stage = m.fs.StageSet.first()
-    for stage in m.fs.StageSet:
+    for stage in m.fs.Stages:
 
         print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
-        if stage == last_stage:
+        if stage == m.fs.LastStage:
             pass
         else:
             print_state(f"Mixer {stage} recycle", m.fs.Mixers[stage].downstream)
@@ -1009,7 +1015,7 @@ def display_state(m):
         # sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
         # print(f"Stage {stage} Volumetric water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
-        if stage == first_stage:
+        if stage == m.fs.FirstStage:
             pass
         else:
             print_state(f"Booster Pump {stage} out", m.fs.BoosterPumps[stage].outlet)
@@ -1047,7 +1053,7 @@ def display_system(m):
     print("Volumetric water recovery: %.1f%%" % (value(m.fs.water_recovery) * 100))
     print(f"Number of Stages: {value(m.fs.NumberOfStages)}")
     total_area = value(
-        sum(m.fs.ROUnits[a].area for a in m.fs.StageSet)
+        sum(m.fs.ROUnits[a].area for a in m.fs.Stages)
     )
     print(f"Total Membrane Area: {total_area:.2f}")
     print("Energy Consumption: %.1f kWh/m3" % value(m.fs.costing.specific_energy_consumption))
@@ -1055,26 +1061,19 @@ def display_system(m):
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
     print(
         f"Primary Pump Capital Cost ($/m3):"
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.StageSet)/ m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages)/ m.fs.costing.annual_water_production)}"
     )
     print(
         f"Booster Pump Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_Stages) / m.fs.costing.annual_water_production)}"
     )
-    if value(m.fs.NumberOfStages) > 1:
-        print(
-            f"ERD Capital Cost ($/m3):"
-            f"{value(m.fs.costing.factor_capital_annualization*(m.fs.EnergyRecoveryDevice.costing.capital_cost + m.fs.ERD_first_stage.costing.capital_cost) / m.fs.costing.annual_water_production)}"
-        )
-    else:
-        print(
-            f"ERD Capital Cost ($/m3):"
-            f"{value(m.fs.costing.factor_capital_annualization * m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.costing.annual_water_production)}"
-        )
-
+    print(
+        f"ERD Capital Cost ($/m3):"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production)}"
+    )
     print(
         f"Membrane Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.Stages) / m.fs.costing.annual_water_production)}"
     )
     print(
         f"Indirect Capital Cost ($/m3): "
@@ -1093,9 +1092,6 @@ def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
 
-
-if __name__ == "__main__":
-    main()
 
 def main():
     import csv
@@ -1155,7 +1151,7 @@ def main():
             "LCOW_feed",
         ]
         file_name = \
-            f"recheck_paper_cases_after_erd_fix/{number_nodes}_nodes_A_5LMHbar_{b_case_lst[0]}_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv"
+            f"recheck_paper_cases_after_erd_fix/{number_of_RO_finite_elements}_nodes_A_5LMHbar_{b_case_lst[0]}_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv"
         pathlib.Path(file_name).parent.mkdir(parents=True, exist_ok=True)
         with open(
             file_name,
@@ -1191,10 +1187,10 @@ def main():
                                         A_case=a_case,  # TODO: double check that default goes to fix A
                                         B_case=b_case,  # TODO: double check that default goes to optimize B
                                         AB_tradeoff=ab_tradeoff,  # TODO: default to no constraint
-                                        nacl_solubility_limit=True,  # default= True
+                                        has_NaCl_solubility_limit=True,  # default= True
                                         permeate_quality_limit=1000e-6,
-                                        has_CP=True,  # default to True
-                                        has_Pdrop=True,  # default to True
+                                        has_calculated_concentration_polarization=True,  # default to True
+                                        has_calculated_ro_pressure_drop=True,  # default to True
                                         A_fixed=5 / 3.6e11,  # default to 5LMH/bar
                                         ABgamma_factor=ab_gamma,  # default to 1 or None
                                     )
@@ -1203,7 +1199,7 @@ def main():
                                         total_area = value(
                                             sum(
                                                 m.fs.ROUnits[a].area
-                                                for a in m.fs.StageSet
+                                                for a in m.fs.Stages
                                             )
                                         )
                                         final_lcow = value(m.fs.costing.LCOW)
@@ -1258,11 +1254,11 @@ def main():
 
                                         a_stage = {
                                             f"A_stage {n}": f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] * 3.6e11):.2f}'
-                                            for n in m.fs.StageSet
+                                            for n in m.fs.Stages
                                         }
                                         b_stage = {
                                             f"B_stage {n}": f'{value(m.fs.ROUnits[n].B_comp[0, "NaCl"] * 3.6e6):.2f}'
-                                            for n in m.fs.StageSet
+                                            for n in m.fs.Stages
                                         }
 
                                         pumping_energy_agg_costs = value(
@@ -1361,3 +1357,6 @@ def main():
                                         headers.append("membrane_agg_costs")
                                         csvwriter.writerow(headers)
                                     csvwriter.writerow(row)
+
+if __name__ == "__main__":
+    main()
