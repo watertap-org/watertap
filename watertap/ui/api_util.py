@@ -127,8 +127,8 @@ class Schema:
                         or it can be a Python dict.
             kwargs: If present, ``Template.substutute()`` will be applied to the JSON-string version of the input
                     (which will be created if it starts as a Python dict), to substitute values in the
-                    schema dynamically. This uses '$var' style substitution, so be sure to escape '$schema' and
-                    any other '$' in the schema definition like '$$schema' instead.
+                    schema dynamically. This uses '$var' style substitution, with any unrecognized '$<thing>'
+                    being left as-is.
 
         Raises:
             ValueError: Substitution of kwargs in schema fails
