@@ -277,14 +277,48 @@ class _DSPMDEStateBlock(StateBlock):
 
         # Fix state variables
         flags = fix_state_vars(self, state_args)
-        
+
         for k in self.keys():
             for j in self[k].params.component_list:
-                self[k].conc_mol_phase_comp['Liq', j].set_value(self[k].flow_mol_phase_comp['Liq',j] / \
-                    self[k].flow_mol_phase_comp['Liq','H2O'] / self[k].mw_comp[j] * self[k].dens_mass_phase['Liq'])
-        
+                if self[k].is_property_constructed('mass_frac_phase_comp'):
+                    self[k].conc_mass_phase_comp['Liq', j].set_value(
+                        self[k].dens_mass_phase['Liq'] * self[k].mass_frac_phase_comp['Liq', j])
+                if self[k].is_property_constructed('flow_vol_phase'):
+                    self[k].flow_vol_phase['Liq'].set_value(
+                        sum(self[k].flow_mol_phase_comp['Liq', j] * self[k].params.mw_comp[j] for j in self[k].params.component_list) \
+                        / self[k].dens_mass_phase['Liq'])
+                if self[k].is_property_constructed('conc_mol_phase_comp'):
+                    self[k].conc_mol_phase_comp['Liq', j].set_value(self[k].conc_mass_phase_comp['Liq',j] / self[k].params.mw_comp[j])
+                if self[k].is_property_constructed('flow_mass_phase_comp'):
+                    self[k].flow_mass_phase_comp['Liq', j].set_value(self[k].flow_mol_phase_comp['Liq',j] * self[k].params.mw_comp[j])
+                if self[k].is_property_constructed('mole_frac_phase_comp'):
+                    self[k].mole_frac_phase_comp['Liq', j].set_value(self[k].flow_mol_phase_comp['Liq', j] /
+                        sum(self[k].flow_mol_phase_comp['Liq', j] for j in self[k].params.component_list))
+            for j in self[k].params.solute_set:   
+                if self[k].is_property_constructed('molality_comp'):
+                    self[k].molality_comp[j].set_value(self[k].flow_mol_phase_comp['Liq', j]\
+                    / self[k].flow_mol_phase_comp['Liq', 'H2O'] / self[k].params.mw_comp['H2O'])
+        '''
+        b.flow_vol_phase['Liq']
+                    == sum(b.flow_mol_phase_comp['Liq', j]*b.mw_comp[j] for j in self.params.component_list)
+                    / b.dens_mass_phase['Liq']
+        b.flow_vol_phase[p] for p in self.params.phase_list
 
-        
+        b.conc_mol_phase_comp['Liq', j] * b.params.mw_comp[j] ==
+                    b.conc_mass_phase_comp['Liq', j]
+
+        b.flow_mass_phase_comp['Liq', j] ==
+                    b.flow_mol_phase_comp['Liq', j] * b.params.mw_comp[j]
+
+        b.mole_frac_phase_comp['Liq', j] == b.flow_mol_phase_comp['Liq', j] /
+                    sum(b.flow_mol_phase_comp['Liq', j] for j in b.params.component_list)
+
+        b.molality_comp[j] ==
+                    b.flow_mol_phase_comp['Liq', j]
+                    / b.flow_mol_phase_comp['Liq', 'H2O']
+                    / b.params.mw_comp['H2O']
+
+        '''
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
@@ -363,7 +397,7 @@ class _DSPMDEStateBlock(StateBlock):
 
         # Initialize at current state values (not user provided)
         self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
-       
+        
         # Set solver and options
         opt = get_solver(solver, optarg)
 
@@ -493,7 +527,6 @@ class DSPMDEStateBlockData(StateBlockData):
             bounds=(1e-20, None),
             units=pyunits.m ** 3 / pyunits.s,
             doc="Volumetric flow rate")
-
         def rule_flow_vol_phase(b):
             return (b.flow_vol_phase['Liq']
                     == sum(b.flow_mol_phase_comp['Liq', j]*b.mw_comp[j] for j in self.params.component_list)
@@ -501,25 +534,43 @@ class DSPMDEStateBlockData(StateBlockData):
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
 
     def _flow_vol(self):
-
         def rule_flow_vol(b):
             return sum(b.flow_vol_phase[p] for p in self.params.phase_list)
         self.flow_vol = Expression(rule=rule_flow_vol)
-
+    
     def _conc_mol_phase_comp(self):
         self.conc_mol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            #initialize=500,
+            initialize=500,
             bounds=(1e-20, None),
             units=pyunits.mol * pyunits.m ** -3,
             doc="Molar concentration")
-
         def rule_conc_mol_phase_comp(b, j):
             return (b.conc_mol_phase_comp['Liq', j] * b.params.mw_comp[j] ==
                     b.conc_mass_phase_comp['Liq', j])
         self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
-
+    
+    '''
+    def _conc_mol_phase_comp(self):
+        
+        def conc_mol_init(b, p, j):
+            return b.flow_mol_phase_comp[p, j] * b.flow_mol_phase_comp[p, 'H2O'] ** -1 * \
+                b.params.mw_comp['H2O'] ** -1 * b.dens_mass_phase['Liq']
+        self.conc_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=conc_mol_init,
+            bounds=(1e-20, None),
+            units=pyunits.mol * pyunits.m ** -3,
+            doc="Molar concentration")
+        def rule_conc_mol_phase_comp(b,j):
+            return (b.conc_mol_phase_comp['Liq', j] * b.params.mw_comp[j] ==
+                    b.conc_mass_phase_comp['Liq', j])
+        self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
+    '''
+    
+     
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
             self.params.phase_list,
@@ -846,6 +897,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
+        
         v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp', 'flow_mass_phase_comp',
                                 'mole_frac_phase_comp', 'conc_mol_phase_comp', 'act_coeff_phase_comp']
         for v_str in v_str_lst_phase_comp:
@@ -856,3 +908,4 @@ class DSPMDEStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(v_comp['Liq', j], default= 1, warning=True)
                     print("c_sf:", c, ":", sf)
                     iscale.constraint_scaling_transform(c, sf)
+        
