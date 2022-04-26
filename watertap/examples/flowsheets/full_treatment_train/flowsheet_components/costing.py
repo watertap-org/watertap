@@ -86,10 +86,6 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
                 "costing_method_arguments": {"pump_type": PumpType.low_pressure},
             }
         )
-        m.fs.costing.cost_flow(
-            pyunits.convert(m.fs.pump_NF.work_mechanical[0], to_units=pyunits.kW),
-            "electricity",
-        )
 
     # Reverse Osmosis
     if hasattr(m.fs, "RO"):
@@ -121,10 +117,6 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
                 "costing_method_arguments": {"pump_type": PumpType.high_pressure},
             }
         )
-        m.fs.costing.cost_flow(
-            pyunits.convert(m.fs.pump_RO.work_mechanical[0], to_units=pyunits.kW),
-            "electricity",
-        )
 
     # Stage 2 pump
     if hasattr(m.fs, "pump_RO2"):
@@ -133,10 +125,6 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
                 "flowsheet_costing_block": m.fs.costing,
                 "costing_method_arguments": {"pump_type": PumpType.high_pressure},
             }
-        )
-        m.fs.costing.cost_flow(
-            pyunits.convert(m.fs.pump_RO2.work_mechanical[0], to_units=pyunits.kW),
-            "electricity",
         )
 
     # ERD
@@ -148,10 +136,6 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
                     "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
                 },
             }
-        )
-        m.fs.costing.cost_flow(
-            pyunits.convert(m.fs.ERD.work_mechanical[0], to_units=pyunits.kW),
-            "electricity",
         )
 
     # Pretreatment

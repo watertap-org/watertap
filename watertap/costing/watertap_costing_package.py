@@ -374,7 +374,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_pump(blk, pump_type=PumpType.high_pressure):
+    def cost_pump(blk, pump_type=PumpType.high_pressure, cost_electricity_flow=True):
         """
         Pump costing method
 
@@ -385,9 +385,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                         default = PumpType.high_pressure
         """
         if pump_type == PumpType.high_pressure:
-            WaterTAPCostingData.cost_high_pressure_pump(blk)
+            WaterTAPCostingData.cost_high_pressure_pump(blk, cost_electricity_flow)
         elif pump_type == PumpType.low_pressure:
-            WaterTAPCostingData.cost_low_pressure_pump(blk)
+            WaterTAPCostingData.cost_low_pressure_pump(blk, cost_electricity_flow)
         else:
             raise ConfigurationError(
                 f"{blk.unit_model.name} received invalid argument for pump_type:"
@@ -396,7 +396,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
     @staticmethod
     def cost_energy_recovery_device(
-        blk, energy_recovery_device_type=EnergyRecoveryDeviceType.default
+        blk,
+        energy_recovery_device_type=EnergyRecoveryDeviceType.default,
+        cost_electricity_flow=True,
     ):
         """
         Energy recovery device costing method
@@ -418,60 +420,85 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
     @staticmethod
-    def cost_high_pressure_pump(blk):
+    def cost_high_pressure_pump(blk, cost_electricity_flow=True):
         """
         High pressure pump costing method
 
         TODO: describe equations
         """
+        t0 = blk.flowsheet().time.first()
         _make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.high_pressure_pump_cost
-            * pyo.units.convert(blk.unit_model.work_mechanical[0], pyo.units.W)
+            * pyo.units.convert(blk.unit_model.work_mechanical[t0], pyo.units.W)
         )
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
+                ),
+                "electricity",
+            )
 
     @staticmethod
-    def cost_low_pressure_pump(blk):
+    def cost_low_pressure_pump(blk, cost_electricity_flow=True):
         """
         Low pressure pump costing method
 
         TODO: describe equations
         """
+        t0 = blk.flowsheet().time.first()
         cost_by_flow_volume(
             blk,
             blk.costing_package.low_pressure_pump_cost,
             pyo.units.convert(
-                blk.unit_model.control_volume.properties_in[0].flow_vol,
+                blk.unit_model.control_volume.properties_in[t0].flow_vol,
                 (pyo.units.m**3 / pyo.units.s),
             ),
         )
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
+                ),
+                "electricity",
+            )
 
     @staticmethod
-    def cost_pressure_exchanger_erd(blk):
+    def cost_pressure_exchanger_erd(blk, cost_electricity_flow=True):
         """
         ERD pressure exchanger costing method
 
         TODO: describe equations
         """
+        t0 = blk.flowsheet().time.first()
         cost_by_flow_volume(
             blk,
             blk.costing_package.erd_pressure_exchanger_cost,
             pyo.units.convert(
-                blk.unit_model.control_volume.properties_in[0].flow_vol,
+                blk.unit_model.control_volume.properties_in[t0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
             ),
         )
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
+                ),
+                "electricity",
+            )
 
     @staticmethod
-    def cost_default_energy_recovery_device(blk):
+    def cost_default_energy_recovery_device(blk, cost_electricity_flow=True):
         """
         Energy recovery device costing method
 
         TODO: describe equations
         """
+        t0 = blk.flowsheet().time.first()
         _make_capital_cost_var(blk)
-        unit_cv_in = blk.unit_model.control_volume.properties_in[0]
+        unit_cv_in = blk.unit_model.control_volume.properties_in[t0]
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.energy_recovery_device_linear_coefficient
@@ -490,6 +517,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
             ** blk.costing_package.energy_recovery_device_exponent
         )
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
+                ),
+                "electricity",
+            )
 
     @staticmethod
     def cost_pressure_exchanger(blk):
@@ -636,14 +670,11 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
     blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == blk.membrane_cost * pyo.units.convert(blk.unit_model.area, pyo.units.m**2)
+        expr=blk.capital_cost == blk.membrane_cost * blk.unit_model.area
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_membrane_replacement
-        * blk.membrane_cost
-        * pyo.units.convert(blk.unit_model.area, pyo.units.m**2)
+        == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area
     )
 
 
