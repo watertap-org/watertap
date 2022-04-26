@@ -27,6 +27,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     LiquidPhase,
+    Component,
     Solute,
     Solvent,
 )
@@ -78,7 +79,8 @@ class ASM1ParameterData(PhysicalParameterBlock):
         self.nitrogen_particulate = Solute(
             doc="Particulate biodegradable organic nitrogen"
         )
-        self.alkalinity = Solute(doc="Alkalinity")
+
+        self.alkalinity = Component(doc="Alkalinity")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -119,6 +121,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
+                "alkalinity": {"method": None},
             }
         )
         obj.add_default_units(
@@ -126,7 +129,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
                 "time": pyo.units.s,
                 "length": pyo.units.m,
                 "mass": pyo.units.kg,
-                "amount": pyo.units.mol,
+                "amount": pyo.units.kmol,
                 "temperature": pyo.units.K,
             }
         )
@@ -273,13 +276,21 @@ class ASM1StateBlockData(StateBlockData):
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
             initialize=0.1,
-            doc="Component molar concentrations",
+            doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
+        )
+        self.alkalinity = pyo.Var(
+            domain=pyo.NonNegativeReals,
+            initialize=1,
+            doc="Alkalinity in molar concentration",
+            units=pyo.units.kmol / pyo.units.m**3,
         )
 
     def get_material_flow_terms(b, p, j):
         if j == "H2O":
             return b.flow_vol * b.params.dens_mass
+        elif j == "alkalinity":
+            return b.flow_vol * b.alkalinity * (14 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.flow_vol * b.conc_mass_comp[j]
 
@@ -292,7 +303,12 @@ class ASM1StateBlockData(StateBlockData):
         )
 
     def get_material_density_terms(b, p, j):
-        return b.conc_mass_comp[j]
+        if j == "H2O":
+            return b.params.dens_mass
+        elif j == "alkalinity":
+            return b.alkalinity * (14 * pyo.units.kg / pyo.units.kmol)
+        else:
+            return b.conc_mass_comp[j]
 
     def get_energy_density_terms(b, p):
         return (
@@ -310,6 +326,7 @@ class ASM1StateBlockData(StateBlockData):
     def define_state_vars(b):
         return {
             "flow_vol": b.flow_vol,
+            "alkalinity": b.alkalinity,
             "conc_mass_comp": b.conc_mass_comp,
             "temperature": b.temperature,
             "pressure": b.pressure,
@@ -318,7 +335,8 @@ class ASM1StateBlockData(StateBlockData):
     def define_display_vars(b):
         return {
             "Volumetric Flowrate": b.flow_vol,
-            "Molar Concentration": b.conc_mass_comp,
+            "Molar Alkalinity": b.alkalinity,
+            "Mass Concentration": b.conc_mass_comp,
             "Temperature": b.temperature,
             "Pressure": b.pressure,
         }

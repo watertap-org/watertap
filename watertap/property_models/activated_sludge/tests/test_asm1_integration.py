@@ -29,7 +29,7 @@ from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import CSTR
+from idaes.generic_models.unit_models import CSTR
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
@@ -63,9 +63,30 @@ def test_ASM1_reactor():
             "reaction_package": m.fs.rxn_props,
         }
     )
+    m.fs.R3 = CSTR(
+        default={
+            "property_package": m.fs.props,
+            "reaction_package": m.fs.rxn_props,
+        }
+    )
+    m.fs.R4 = CSTR(
+        default={
+            "property_package": m.fs.props,
+            "reaction_package": m.fs.rxn_props,
+        }
+    )
+    m.fs.R5 = CSTR(
+        default={
+            "property_package": m.fs.props,
+            "reaction_package": m.fs.rxn_props,
+        }
+    )
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)
+    m.fs.stream2 = Arc(source=m.fs.R2.outlet, destination=m.fs.R3.inlet)
+    m.fs.stream3 = Arc(source=m.fs.R3.outlet, destination=m.fs.R4.inlet)
+    m.fs.stream4 = Arc(source=m.fs.R4.outlet, destination=m.fs.R5.inlet)
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     assert_units_consistent(m)
@@ -110,12 +131,13 @@ def test_ASM1_reactor():
     m.fs.R1.inlet.conc_mass_comp[0, "nitrogen_particulate"].fix(
         5.616 * pyo.units.g / pyo.units.m**3
     )
-    m.fs.R1.inlet.conc_mass_comp[0, "alkalinity"].fix(
-        4.704 * pyo.units.g / pyo.units.m**3
-    )
+    m.fs.R1.inlet.alkalinity.fix(4.704 * pyo.units.mol / pyo.units.m**3)
 
     m.fs.R1.volume.fix(1000 * pyo.units.m**3)
     m.fs.R2.volume.fix(1000 * pyo.units.m**3)
+    m.fs.R3.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R4.volume.fix(1333 * pyo.units.m**3)
+    m.fs.R5.volume.fix(1333 * pyo.units.m**3)
 
     assert degrees_of_freedom(m) == 0
 
@@ -123,12 +145,37 @@ def test_ASM1_reactor():
     m.fs.R1.initialize()
     propagate_state(m.fs.stream1)
     m.fs.R2.initialize()
+    propagate_state(m.fs.stream2)
+    m.fs.R3.initialize()
+    propagate_state(m.fs.stream3)
+    m.fs.R4.initialize()
+    propagate_state(m.fs.stream4)
+    m.fs.R5.initialize()
+
+    # For aerobic reactors, need to fix the oxygen concentration in outlet
+    # To do this, we also need to deactivate the constraint linking O2 from
+    # the previous unit
+    # Doing this before initialization will cause issues with DoF however
+    m.fs.R3.outlet.conc_mass_comp[0, "oxygen"].fix(
+        1.72 * pyo.units.g / pyo.units.m**3
+    )
+    m.fs.stream2.expanded_block.conc_mass_comp_equality[0, "oxygen"].deactivate()
+
+    m.fs.R4.outlet.conc_mass_comp[0, "oxygen"].fix(
+        2.43 * pyo.units.g / pyo.units.m**3
+    )
+    m.fs.stream3.expanded_block.conc_mass_comp_equality[0, "oxygen"].deactivate()
+    m.fs.R5.outlet.conc_mass_comp[0, "oxygen"].fix(
+        0.491 * pyo.units.g / pyo.units.m**3
+    )
+    m.fs.stream4.expanded_block.conc_mass_comp_equality[0, "oxygen"].deactivate()
 
     solver = get_solver()
     results = solver.solve(m, tee=True)
     assert pyo.check_optimal_termination(results)
 
     # Verify results against reference
+    # First reactor (anoxic)
     assert pyo.value(m.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
     assert pyo.value(m.fs.R1.outlet.temperature[0]) == pytest.approx(298.15, rel=1e-4)
     assert pyo.value(m.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
@@ -168,10 +215,9 @@ def test_ASM1_reactor():
     assert pyo.value(
         m.fs.R1.outlet.conc_mass_comp[0, "nitrogen_particulate"]
     ) == pytest.approx(5.29e-3, rel=1e-2)
-    assert pyo.value(m.fs.R1.outlet.conc_mass_comp[0, "alkalinity"]) == pytest.approx(
-        4.93e-3, rel=1e-2
-    )
+    assert pyo.value(m.fs.R1.outlet.alkalinity[0]) == pytest.approx(4.93e-3, rel=1e-2)
 
+    # Second reactor (anoixic)
     assert pyo.value(m.fs.R2.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
     assert pyo.value(m.fs.R2.outlet.temperature[0]) == pytest.approx(298.15, rel=1e-4)
     assert pyo.value(m.fs.R2.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
@@ -211,6 +257,130 @@ def test_ASM1_reactor():
     assert pyo.value(
         m.fs.R2.outlet.conc_mass_comp[0, "nitrogen_particulate"]
     ) == pytest.approx(5.03e-3, rel=1e-2)
-    assert pyo.value(m.fs.R2.outlet.conc_mass_comp[0, "alkalinity"]) == pytest.approx(
-        5.08e-3, rel=1e-2
+    assert pyo.value(m.fs.R2.outlet.alkalinity[0]) == pytest.approx(5.08e-3, rel=1e-2)
+
+    # Third reactor (aerobic)
+    assert pyo.value(m.fs.R3.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+    assert pyo.value(m.fs.R3.outlet.temperature[0]) == pytest.approx(298.15, rel=1e-4)
+    assert pyo.value(m.fs.R3.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "inert_soluble"]
+    ) == pytest.approx(30e-3, rel=1e-5)
+    assert pyo.value(m.fs.R3.outlet.conc_mass_comp[0, "substrate"]) == pytest.approx(
+        1.15e-3, rel=1e-2
     )
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "inert_particulate"]
+    ) == pytest.approx(1149e-3, rel=1e-3)
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "biodegradable"]
+    ) == pytest.approx(64.9e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "heterotrophic"]
+    ) == pytest.approx(2557e-3, rel=1e-3)
+    assert pyo.value(m.fs.R3.outlet.conc_mass_comp[0, "autotrophic"]) == pytest.approx(
+        149e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "decay_particulate"]
+    ) == pytest.approx(450e-3, rel=1e-2)
+    assert pyo.value(m.fs.R3.outlet.conc_mass_comp[0, "oxygen"]) == pytest.approx(
+        1.72e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R3.outlet.conc_mass_comp[0, "nitrates"]) == pytest.approx(
+        6.54e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R3.outlet.conc_mass_comp[0, "ammonium"]) == pytest.approx(
+        5.55e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "nitrogen_soluble"]
+    ) == pytest.approx(0.829e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R3.outlet.conc_mass_comp[0, "nitrogen_particulate"]
+    ) == pytest.approx(4.39e-3, rel=1e-2)
+    assert pyo.value(m.fs.R3.outlet.alkalinity[0]) == pytest.approx(4.67e-3, rel=1e-2)
+
+    # Fourth reactor (aerobic)
+    assert pyo.value(m.fs.R4.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+    assert pyo.value(m.fs.R4.outlet.temperature[0]) == pytest.approx(298.15, rel=1e-4)
+    assert pyo.value(m.fs.R4.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "inert_soluble"]
+    ) == pytest.approx(30e-3, rel=1e-5)
+    assert pyo.value(m.fs.R4.outlet.conc_mass_comp[0, "substrate"]) == pytest.approx(
+        0.995e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "inert_particulate"]
+    ) == pytest.approx(1149e-3, rel=1e-3)
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "biodegradable"]
+    ) == pytest.approx(55.7e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "heterotrophic"]
+    ) == pytest.approx(2559e-3, rel=1e-3)
+    assert pyo.value(m.fs.R4.outlet.conc_mass_comp[0, "autotrophic"]) == pytest.approx(
+        150e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "decay_particulate"]
+    ) == pytest.approx(451e-3, rel=1e-2)
+    assert pyo.value(m.fs.R4.outlet.conc_mass_comp[0, "oxygen"]) == pytest.approx(
+        2.43e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R4.outlet.conc_mass_comp[0, "nitrates"]) == pytest.approx(
+        9.30e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R4.outlet.conc_mass_comp[0, "ammonium"]) == pytest.approx(
+        2.97e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "nitrogen_soluble"]
+    ) == pytest.approx(0.767e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R4.outlet.conc_mass_comp[0, "nitrogen_particulate"]
+    ) == pytest.approx(3.88e-3, rel=1e-2)
+    assert pyo.value(m.fs.R4.outlet.alkalinity[0]) == pytest.approx(4.29e-3, rel=1e-2)
+
+    # Fifth reactor (aerobic)
+    assert pyo.value(m.fs.R5.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+    assert pyo.value(m.fs.R5.outlet.temperature[0]) == pytest.approx(298.15, rel=1e-4)
+    assert pyo.value(m.fs.R5.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "inert_soluble"]
+    ) == pytest.approx(30e-3, rel=1e-5)
+    assert pyo.value(m.fs.R5.outlet.conc_mass_comp[0, "substrate"]) == pytest.approx(
+        0.889e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "inert_particulate"]
+    ) == pytest.approx(1149e-3, rel=1e-3)
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "biodegradable"]
+    ) == pytest.approx(49.3e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "heterotrophic"]
+    ) == pytest.approx(2559e-3, rel=1e-3)
+    assert pyo.value(m.fs.R5.outlet.conc_mass_comp[0, "autotrophic"]) == pytest.approx(
+        150e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "decay_particulate"]
+    ) == pytest.approx(452e-3, rel=1e-2)
+    assert pyo.value(m.fs.R5.outlet.conc_mass_comp[0, "oxygen"]) == pytest.approx(
+        0.491e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R5.outlet.conc_mass_comp[0, "nitrates"]) == pytest.approx(
+        10.4e-3, rel=1e-2
+    )
+    assert pyo.value(m.fs.R5.outlet.conc_mass_comp[0, "ammonium"]) == pytest.approx(
+        1.73e-3, rel=1e-2
+    )
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "nitrogen_soluble"]
+    ) == pytest.approx(0.688e-3, rel=1e-2)
+    assert pyo.value(
+        m.fs.R5.outlet.conc_mass_comp[0, "nitrogen_particulate"]
+    ) == pytest.approx(3.53e-3, rel=1e-2)
+    assert pyo.value(m.fs.R5.outlet.alkalinity[0]) == pytest.approx(4.13e-3, rel=1e-2)

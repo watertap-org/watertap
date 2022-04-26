@@ -194,6 +194,8 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
 
         # Reaction Stoichiometry
         # This is the stoichiometric part the Peterson matrix in dict form
+        # Note that the coeffiicents for alkalinity are givein on a mass basis
+        # Conversion to molar basis is handled elsewhere for unit consistency
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic growth of heterotrophs
             ("R1", "Liq", "H2O"): 0,
@@ -209,7 +211,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "ammonium"): -self.i_xb,
             ("R1", "Liq", "nitrogen_soluble"): 0,
             ("R1", "Liq", "nitrogen_particulate"): 0,
-            ("R1", "Liq", "alkalinity"): -self.i_xb / 14,
+            ("R1", "Liq", "alkalinity"): -self.i_xb,
             # R2: Anoxic growth of heterotrophs
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "inert_soluble"): 0,
@@ -224,8 +226,8 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             ("R2", "Liq", "ammonium"): -self.i_xb,
             ("R2", "Liq", "nitrogen_soluble"): 0,
             ("R2", "Liq", "nitrogen_particulate"): 0,
-            ("R2", "Liq", "alkalinity"): (1 - self.yield_H) / (14 * 2.86 * self.yield_H)
-            - self.i_xb / 14,
+            ("R2", "Liq", "alkalinity"): (1 - self.yield_H) / (2.86 * self.yield_H)
+            - self.i_xb,
             # R3: Aerobic growth of autotrophs
             ("R3", "Liq", "H2O"): 0,
             ("R3", "Liq", "inert_soluble"): 0,
@@ -240,7 +242,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             ("R3", "Liq", "ammonium"): -self.i_xb - 1 / self.yield_A,
             ("R3", "Liq", "nitrogen_soluble"): 0,
             ("R3", "Liq", "nitrogen_particulate"): 0,
-            ("R3", "Liq", "alkalinity"): -self.i_xb / 14 - 1 / (7 * self.yield_A),
+            ("R3", "Liq", "alkalinity"): -self.i_xb - 2 / (self.yield_A),
             # R4: Decay of heterotrophs
             ("R4", "Liq", "H2O"): 0,
             ("R4", "Liq", "inert_soluble"): 0,
@@ -285,7 +287,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "ammonium"): 1,
             ("R6", "Liq", "nitrogen_soluble"): -1,
             ("R6", "Liq", "nitrogen_particulate"): 0,
-            ("R6", "Liq", "alkalinity"): 1 / 14,
+            ("R6", "Liq", "alkalinity"): 1,
             # R7: Hydrolysis of entrapped organics
             ("R7", "Liq", "H2O"): 0,
             ("R7", "Liq", "inert_soluble"): 0,
@@ -333,7 +335,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
                 "time": pyo.units.s,
                 "length": pyo.units.m,
                 "mass": pyo.units.kg,
-                "amount": pyo.units.mol,
+                "amount": pyo.units.kmol,
                 "temperature": pyo.units.K,
             }
         )
