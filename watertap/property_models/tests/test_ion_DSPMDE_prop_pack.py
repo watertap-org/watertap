@@ -79,7 +79,7 @@ def model():
                 ("Liq", "D"): 1e-11,
             },
             "mw_data": {"H2O": 18e-3, "A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3},
-            "electrical_mobility_data": {"A": 5.19e-8, "B":8.29e-8, "C":6.17e-8, "D":7.92e-8}
+            "electrical_mobility_data": {"A": 5.19e-8, "B":8.29e-8, "C":6.17e-8, "D":7.92e-8},
             "stokes_radius_data": {"A": 1e-9, "B": 1e-9, "C": 1e-9, "D": 1e-10},
             "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
         }
@@ -460,7 +460,7 @@ def test_seawater_data():
                 "Mg_2+": 5.50e-8,
                 "Cl_-": 7.92e-8,
                 "SO4_2-": 8.29e-8
-            }
+            },
             "stokes_radius_data": {
                 "Na_+": 0.184e-9,
                 "Ca_2+": 0.309e-9,
