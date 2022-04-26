@@ -61,7 +61,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         self._reaction_block_class = ASM1ReactionBlock
 
         # Reaction Index
-        # Reaction names based on stadnard numbering in ASM1 paper
+        # Reaction names based on standard numbering in ASM1 paper
         # R1: Aerobic growth of heterotrophs
         # R2: Anoxic growth of heterotrophs
         # R3: Aerobic growth of autotrophs
