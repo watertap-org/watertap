@@ -111,9 +111,89 @@ def get_block_interface(block: Block) -> Union["BlockInterface", None]:
     """
     return getattr(block, "ui", None)
 
+class BlockSchemaDefinition:
+    """Container for the schema definition of JSON used for loading/saving blocks.
+
+    The BlockInterface, and thus FlowsheetInterface, classes will inherit from this class
+    in order to pick up this definition as a set of class constants.
+    """
+    # Standard keys for data fields
+    BLKS_KEY = "blocks"
+    NAME_KEY = "name"
+    DISP_KEY = "display_name"
+    DESC_KEY = "description"
+    VARS_KEY = "variables"
+    VALU_KEY = "value"
+    INDX_KEY = "index"
+
+    BLOCK_SCHEMA = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$ref": "#/$defs/block_schema",
+        "$defs": {
+            "block_schema": {
+                "type": "object",
+                "properties": {
+                    "$name_key": {"type": "string"},
+                    "$disp_key": {"type": "string"},
+                    "$desc_key": {"type": "string"},
+                    "$vars_key": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "$name_key": {"type": "string"},
+                                "$disp_key": {"type": "string"},
+                                "$desc_key": {"type": "string"},
+                                # scalar or indexed value
+                                # two forms:
+                                #  {value: 1.34}  -- scalar
+                                #  {value: [{index: [0, "H2O"], value: 1.34}, {index: [1, "NaCl"], value: 3.56}, ..]}
+                                "$valu_key": {
+                                    "oneOf": [
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "$indx_key": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "oneOf": [
+                                                                {"type": "number"},
+                                                                {"type": "string"}
+                                                            ]
+                                                        }
+                                                    },
+                                                    "$valu_key": {
+                                                        "oneOf": [
+                                                            {"type": "number"},
+                                                            {"type": "string"},
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                        },
+                                        {"type": "number"},
+                                        {"type": "string"},
+                                    ]
+                                },
+                            },
+                            "required": ["$name_key"],
+                        },
+                    },
+                    "$blks_key": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/block_schema"},
+                    },
+                },
+                "required": ["$name_key", "$blks_key"],
+            }
+        },
+    }
+
 
 @config_docs
-class BlockInterface:
+class BlockInterface(BlockSchemaDefinition):
     """Interface to a block.
 
     Attrs:
@@ -163,27 +243,41 @@ class BlockInterface:
         self.config = self.CONFIG(options)
         set_block_interface(self._block, self)
 
+    @property
+    def block(self):
+        """Get block that is being interfaced to."""
+        return self._block
+
     def get_exported_variables(self) -> Generator[Var, None, None]:
-        """Called by client to get variables exported by the block.
+        """Get variables exported by the block.
+
+        The returned dict is also used as the saved/loaded variable in a block;
+        i.e., it is called from ``FlowsheetInterface.load()`` and ``.save()``.
 
         Return:
-            Generates a series of dict-s with keys {name, display_name, description, indexed_values|value}.
+            Generates a series of dict-s with keys {name, display_name, description, value}.
         """
         for item in self.config.variables.value():
-            c = {"name": item["name"]}  # one result
+            c = {self.NAME_KEY: item["name"]}  # one result
             # get the Pyomo Var from the block
             v = getattr(self._block, item["name"])
             # copy contents of Var into result
             if v.is_indexed():
-                c["indexed_values"] = {}
+                indexed_values = []
                 for idx in v.index_set():
-                    c["indexed_values"][str(idx)] = value(v[idx])
+                    try:
+                        idx_tuple = tuple(idx)
+                    except TypeError:
+                        idx_tuple = (idx,)
+                    indexed_values.append({self.VALU_KEY: value(v[idx]), self.INDX_KEY: idx_tuple})
+                block_value = {self.VALU_KEY: indexed_values}
             else:
-                c["value"] = value(v)
-            if "display_name" not in c:
-                c["display_name"] = v.local_name
-            if "description" not in c:
-                c["description"] = v.doc
+                block_value = value(v)
+            c[self.VALU_KEY] = block_value
+            if self.DISP_KEY not in c:
+                c[self.DISP_KEY] = v.local_name
+            if self.DESC_KEY not in c:
+                c[self.DESC_KEY] = v.doc
             c["units"] = str(v.get_units())
             # generate one result
             yield c
@@ -193,68 +287,12 @@ class WorkflowActions:
     build = "build"
     solve = "solve"
 
-
 class FlowsheetInterface(BlockInterface):
     """Interface to the UI for a flowsheet."""
 
     # Actions in the flowsheet workflow
     ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
 
-    # Standard keys for data fields
-    BLKS_KEY = "blocks"
-    NAME_KEY = "name"
-    DISP_KEY = "display_name"
-    DESC_KEY = "description"
-    VARS_KEY = "variables"
-    VALU_KEY = "value"
-
-    BLOCK_SCHEMA = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$ref": "#/$defs/block_schema",
-        "$defs": {
-            "block_schema": {
-                "type": "object",
-                "properties": {
-                    "$name_key": {"type": "string"},
-                    "$disp_key": {"type": "string"},
-                    "$desc_key": {"type": "string"},
-                    "$vars_key": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "$name_key": {"type": "string"},
-                                "$disp_key": {"type": "string"},
-                                "$desc_key": {"type": "string"},
-                                # scalar or indexed value
-                                "$valu_key": {
-                                    "oneOf": [
-                                        {
-                                            "type": "array",
-                                            "items": {
-                                                "oneOf": [
-                                                    {"type": "number"},
-                                                    {"type": "string"},
-                                                ]
-                                            },
-                                        },
-                                        {"type": "number"},
-                                        {"type": "string"},
-                                    ]
-                                },
-                            },
-                            "required": ["$name_key"],
-                        },
-                    },
-                    "$blks_key": {
-                        "type": "array",
-                        "items": {"$ref": "#/$defs/block_schema"},
-                    },
-                },
-                "required": ["$name_key", "$blks_key"],
-            }
-        },
-    }
 
     def __init__(self, flowsheet: Block, options):
         """Constructor.
@@ -273,6 +311,7 @@ class FlowsheetInterface(BlockInterface):
             desc_key=self.DESC_KEY,
             vars_key=self.VARS_KEY,
             valu_key=self.VALU_KEY,
+            indx_key=self.INDX_KEY,
             blks_key=self.BLKS_KEY,
         )
 
@@ -381,13 +420,13 @@ class FlowsheetInterface(BlockInterface):
         return mapping
 
     def _add_to_mapping(self, m, key, block_ui: BlockInterface):
+        nodes, leaf = key[:-1], key[-1]
         new_data = {
             self.DISP_KEY: block_ui.config.display_name,
             self.DESC_KEY: block_ui.config.description,
             self.VARS_KEY: list(block_ui.get_exported_variables()),
             self.BLKS_KEY: [],
         }
-        nodes, leaf = key[:-1], key[-1]
         # descend to leaf, creating intermediate nodes as needed
         for k in nodes:
             next_m = None
@@ -467,5 +506,9 @@ class FlowsheetInterface(BlockInterface):
                 values_map[lv[cls.NAME_KEY]] = lv_value
                 del lv[cls.VALU_KEY]
         ui.config.variables.set_value(loaded_vars)
+        # Set values.
+        for variable_name, lv_value in values_map.items():
+            variable_obj = getattr(ui.block, variable_name)
+            variable_obj.set_value(lv_value)
         # return 'missing' and 'extra'
         return result

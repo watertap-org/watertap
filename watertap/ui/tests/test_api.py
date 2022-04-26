@@ -81,14 +81,14 @@ def test_get_block_interface(mock_block):
 
 
 @pytest.mark.unit
-def test_blockinterface_constructor(mock_block):
+def test_block_interface_constructor(mock_block):
     for i in range(4):  # combinations of display_name and description
         disp, desc = (i % 2) == 0, ((i // 2) % 2) == 0
         obj = BlockInterface(mock_block, build_options(display_name=disp, description=desc))
         obj.get_exported_variables()  # force looking at contents
 
 @pytest.mark.unit
-def test_blockinterface_get_exported_variables(mock_block):
+def test_block_interface_get_exported_variables(mock_block):
     # no variables section
     obj = BlockInterface(mock_block, build_options(variables=-1))
     assert len(list(obj.get_exported_variables())) == 0
