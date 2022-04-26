@@ -621,8 +621,8 @@ def _lsrro_mixer_guess_initializer(
     mixer.initialize(optarg=optarg)
 
 
-def do_initialization_pass(m, optarg, guess_mixers):
-    print("--------------------START INITIALIZATION PASS--------------------")
+def do_forward_initialization_pass(m, optarg, guess_mixers):
+    print("--------------------START FORWARD INITIALIZATION PASS--------------------")
     # start with the feed
     m.fs.feed.initialize(optarg=optarg)
 
@@ -648,6 +648,8 @@ def do_initialization_pass(m, optarg, guess_mixers):
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
 
+        m.fs.ROUnits[stage].initialize(optarg=optarg)
+
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
             if value(m.fs.NumberOfStages) > 1:
@@ -667,8 +669,8 @@ def do_initialization_pass(m, optarg, guess_mixers):
     propagate_state(m.fs.erd_to_disposal)
 
 
-def do_backwards_initialization_pass(m, optarg):
-    print("--------------------START BACKWARDS INITIALIZATION PASS--------------------")
+def do_backward_initialization_pass(m, optarg):
+    print("--------------------START BACKWARD INITIALIZATION PASS--------------------")
 
     first_stage = m.fs.StageSet.first()
     for stage in reversed(m.fs.NonFinal_StageSet):
@@ -695,10 +697,10 @@ def initialize(m, verbose=False, solver=None):
         solver = get_solver()
 
     optarg = solver.options
-    do_initialization_pass(m, optarg=optarg, guess_mixers=True)
+    do_forward_initialization_pass(m, optarg=optarg, guess_mixers=True)
     for _ in range(m.fs.NumberOfStages.value // 2):
-        do_backwards_initialization_pass(m, optarg=optarg)
-        do_initialization_pass(m, optarg=optarg, guess_mixers=False)
+        do_backward_initialization_pass(m, optarg=optarg)
+        do_forward_initialization_pass(m, optarg=optarg, guess_mixers=False)
 
     # # set up SD tool
     seq = SequentialDecomposition()
