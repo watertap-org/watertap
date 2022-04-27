@@ -33,6 +33,7 @@ from pyomo.environ import (
     log,
     Var,
     Param,
+    Set,
     Suffix,
     value,
     check_optimal_termination,
@@ -49,8 +50,8 @@ from idaes.core import (
     StateBlock,
     MaterialBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.components import Component, Solute, Solvent, Cation, Anion
+from idaes.core.phases import LiquidPhase, AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
@@ -126,12 +127,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             description="Activity coefficient model construction flag",
             doc="""
            Options to account for activity coefficient model.
-    
+
            **default** - ``ActivityCoefficientModel.ideal``
-    
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-    
+
            "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
        """,
@@ -145,12 +146,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             description="Solution density calculation construction flag",
             doc="""
            Options to account for solution density.
-    
+
            **default** - ``DensityCalculation.seawater``
-    
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-    
+
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
@@ -166,14 +167,51 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         self._state_block_class = DSPMDEStateBlock
 
+        # phases
+        self.Liq = AqueousPhase()
+
+        # list to hold all species (including water)
+        self.component_list = Set()
+
         # components
         self.H2O = Solvent()
 
-        for j in self.config.solute_list:
-            self.add_component(str(j), Solute())
+        # blank sets
+        self.cation_set = Set()
+        self.anion_set = Set()
+        self.solute_set = Set()
+        self.ion_set = Set()
 
-        # phases
-        self.Liq = LiquidPhase()
+        for j in self.config.solute_list:
+            if j in self.config.charge:
+                if self.config.charge[j] > 0:
+                    self.add_component(
+                        str(j),
+                        Cation(
+                            default={
+                                "charge": self.config.charge[j],
+                                "_electrolyte": True,
+                            }
+                        ),
+                    )
+                    self.component_list.add(str(j))
+                    self.ion_set.add(str(j))
+                elif self.config.charge[j] < 0:
+                    self.add_component(
+                        str(j),
+                        Anion(
+                            default={
+                                "charge": self.config.charge[j],
+                                "_electrolyte": True,
+                            }
+                        ),
+                    )
+                    self.component_list.add(str(j))
+                    self.ion_set.add(str(j))
+                else:
+                    self.add_component(str(j), Solute())
+            else:
+                self.add_component(str(j), Solute())
 
         # reference
         # Todo: enter any relevant references
@@ -190,7 +228,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
         # Stokes radius
         self.radius_stokes_comp = Param(
-            self.solute_set,
+            self.ion_set | self.solute_set,
             mutable=True,
             default=1e-10,
             initialize=self.config.stokes_radius_data,
@@ -199,7 +237,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
         self.diffus_phase_comp = Param(
             self.phase_list,
-            self.solute_set,
+            self.ion_set | self.solute_set,
             mutable=True,
             default=1e-9,
             initialize=self.config.diffusivity_data,
@@ -216,7 +254,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
         # Ion charge
         self.charge_comp = Param(
-            self.solute_set,
+            self.ion_set | self.solute_set,
             mutable=True,
             default=1,
             initialize=self.config.charge,
@@ -335,7 +373,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "molality_comp": {"method": "_molality_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
-                "pressure_osm": {"method": "_pressure_osm"},
+                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
                 "charge_comp": {"method": "_charge_comp"},
@@ -665,7 +703,10 @@ class DSPMDEStateBlockData(StateBlockData):
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
-                s = sum(b.mass_frac_phase_comp["Liq", j] for j in b.params.solute_set)
+                s = sum(
+                    b.mass_frac_phase_comp["Liq", j]
+                    for j in b.params.ion_set | b.params.solute_set
+                )
                 dens_mass = (
                     b.dens_mass_solvent
                     + b.params.dens_mass_param_B1 * s
@@ -807,7 +848,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _molality_comp(self):
         self.molality_comp = Var(
-            self.params.solute_set,
+            self.params.ion_set | self.params.solute_set,
             initialize=1,
             bounds=(1e-8, 10),
             units=pyunits.mole / pyunits.kg,
@@ -823,7 +864,7 @@ class DSPMDEStateBlockData(StateBlockData):
             )
 
         self.eq_molality_comp = Constraint(
-            self.params.solute_set, rule=rule_molality_comp
+            self.params.ion_set | self.params.solute_set, rule=rule_molality_comp
         )
 
     def _radius_stokes_comp(self):
@@ -849,7 +890,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def _act_coeff_phase_comp(self):
         self.act_coeff_phase_comp = Var(
             self.phase_list,
-            self.params.solute_set,
+            self.params.ion_set | self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
             bounds=(1e-3, 1.001),
@@ -876,7 +917,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
 
         self.eq_act_coeff_phase_comp = Constraint(
-            self.params.solute_set, rule=rule_act_coeff_phase_comp
+            self.params.ion_set | self.params.solute_set, rule=rule_act_coeff_phase_comp
         )
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
@@ -892,7 +933,7 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_ionic_strength(b):
             return b.ionic_strength == 0.5 * sum(
                 b.charge_comp[j] ** 2 * b.molality_comp[j]
-                for j in self.params.solute_set
+                for j in self.params.ion_set | self.params.solute_set
             )
 
         self.eq_ionic_strength = Constraint(rule=rule_ionic_strength)
@@ -936,23 +977,27 @@ class DSPMDEStateBlockData(StateBlockData):
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
 
     # TODO: change osmotic pressure calc
-    def _pressure_osm(self):
-        self.pressure_osm = Var(
+    def _pressure_osm_phase(self):
+        self.pressure_osm_phase = Var(
+            self.params.phase_list,
             initialize=1e6,
             bounds=(5e2, 5e7),
             units=pyunits.Pa,
             doc="van't Hoff Osmotic pressure",
         )
 
-        def rule_pressure_osm(b):
+        def rule_pressure_osm_phase(b):
             return (
-                b.pressure_osm
-                == sum(b.conc_mol_phase_comp["Liq", j] for j in self.params.solute_set)
+                b.pressure_osm_phase["Liq"]
+                == sum(
+                    b.conc_mol_phase_comp["Liq", j]
+                    for j in self.params.ion_set | self.params.solute_set
+                )
                 * Constants.gas_constant
                 * b.temperature
             )
 
-        self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
+        self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1009,11 +1054,11 @@ class DSPMDEStateBlockData(StateBlockData):
                 f"Set defined_state to true if get_property = {get_property}"
             )
         if adjust_by_ion is not None:
-            if adjust_by_ion in self.params.solute_set:
+            if adjust_by_ion in self.params.ion_set | self.params.solute_set:
                 self.charge_balance = Constraint(
                     expr=sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                        for j in self.params.solute_set
+                        for j in self.params.ion_set | self.params.solute_set
                     )
                     == 0
                 )
@@ -1022,7 +1067,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     "adjust_by_ion must be set to the name of an ion in the list of solutes."
                 )
         if defined_state:
-            for j in self.params.solute_set:
+            for j in self.params.ion_set | self.params.solute_set:
                 if (
                     not self.flow_mol_phase_comp["Liq", j].is_fixed()
                     and adjust_by_ion != j
@@ -1034,7 +1079,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 if adjust_by_ion == j and self.flow_mol_phase_comp["Liq", j].is_fixed():
                     self.flow_mol_phase_comp["Liq", j].unfix()
         else:
-            for j in self.params.solute_set:
+            for j in self.params.ion_set | self.params.solute_set:
                 if self.flow_mol_phase_comp["Liq", j].is_fixed():
                     raise AssertionError(
                         f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
@@ -1051,7 +1096,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 val = value(
                     sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                        for j in self.params.solute_set
+                        for j in self.params.ion_set | self.params.solute_set
                     )
                 )
             else:
@@ -1064,7 +1109,7 @@ class DSPMDEStateBlockData(StateBlockData):
             val = value(
                 sum(
                     self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                    for j in self.params.solute_set
+                    for j in self.params.ion_set | self.params.solute_set
                 )
             )
         if abs(val) <= tol:
@@ -1132,7 +1177,7 @@ class DSPMDEStateBlockData(StateBlockData):
             )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.solute_set:
+        for j in self.params.ion_set | self.params.solute_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", j], default=1, warning=True
@@ -1247,10 +1292,10 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        if self.is_property_constructed("pressure_osm"):
-            if iscale.get_scaling_factor(self.pressure_osm) is None:
+        if self.is_property_constructed("pressure_osm_phase"):
+            if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 sf = iscale.get_scaling_factor(self.pressure)
-                iscale.set_scaling_factor(self.pressure_osm, sf)
+                iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1267,7 +1312,7 @@ class DSPMDEStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed("molality_comp"):
-            for j in self.params.solute_set:
+            for j in self.params.ion_set | self.params.solute_set:
                 if iscale.get_scaling_factor(self.molality_comp[j]) is None:
                     sf = (
                         iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
@@ -1279,7 +1324,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.molality_comp[j], sf)
 
         if self.is_property_constructed("act_coeff_phase_comp"):
-            for j in self.params.solute_set:
+            for j in self.params.ion_set | self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.act_coeff_phase_comp["Liq", j])
                     is None
@@ -1296,7 +1341,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        for v_str in ("pressure_osm", "dens_mass_solvent"):
+        for v_str in ["dens_mass_solvent"]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
@@ -1304,7 +1349,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # # property relationships with phase index, but simple constraint
-        for v_str in ("flow_vol_phase", "dens_mass_phase"):
+        for v_str in ["pressure_osm_phase", "flow_vol_phase", "dens_mass_phase"]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)

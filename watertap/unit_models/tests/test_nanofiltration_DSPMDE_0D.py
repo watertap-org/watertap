@@ -68,6 +68,8 @@ solver = get_solver()
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
+    # NOTE: Not giving actual charges in order to test construction of
+    #   both the ion_set and solute_set
     m.fs.properties = DSPMDEParameterBlock(
         default={"solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"]}
     )
