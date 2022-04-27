@@ -273,7 +273,7 @@ def add_costing(m):
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
-    )  # TODO: check utilization factor here
+    )  
 
     m.fs.costing.LCOW = Expression(
         expr=(
