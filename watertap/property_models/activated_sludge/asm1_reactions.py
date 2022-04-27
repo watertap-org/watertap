@@ -194,7 +194,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
 
         # Reaction Stoichiometry
         # This is the stoichiometric part the Peterson matrix in dict form
-        # Note that the coeffiicents for alkalinity are givein on a mass basis
+        # Note that the coeffiicents for alkalinity are given on a mass basis
         # Conversion to molar basis is handled elsewhere for unit consistency
         self.rate_reaction_stoichiometry = {
             # R1: Aerobic growth of heterotrophs
