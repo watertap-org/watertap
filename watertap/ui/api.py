@@ -322,6 +322,8 @@ class FlowsheetInterface(BlockInterface):
     # Actions in the flowsheet workflow
     ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
 
+    _schema = None  # cached schema
+
     def __init__(self, flowsheet: Block, options):
         """Constructor.
 
@@ -332,7 +334,6 @@ class FlowsheetInterface(BlockInterface):
         super().__init__(flowsheet, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self._vis = None
-        self._block_schema = Schema(self.BLOCK_SCHEMA, **self.ALL_KEYS)
 
     # Public methods
 
@@ -364,8 +365,7 @@ class FlowsheetInterface(BlockInterface):
         """
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
-        schema = Schema(cls.BLOCK_SCHEMA, **cls.ALL_KEYS)
-        validation_error = schema.validate(data)
+        validation_error = cls.get_schema().validate(data)
         if validation_error:
             raise ValueError(f"Input data failed schema validation: {validation_error}")
         root = data["blocks"]
@@ -379,6 +379,14 @@ class FlowsheetInterface(BlockInterface):
             )
         ui.set_visualization(data["vis"])
         return ui
+
+    @classmethod
+    def get_schema(cls) -> Schema:
+        """Get a schema that can validate the exported JSON representation.
+        """
+        if cls._schema is None:
+            cls._schema = Schema(cls.BLOCK_SCHEMA, **cls.ALL_KEYS)
+        return cls._schema
 
     def set_action(self, name, func, **kwargs):
         """Set a function to call for a named action on the flowsheet."""
