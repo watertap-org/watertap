@@ -16,15 +16,48 @@ from watertap.ui.api import *
 # Mocking and fixtures
 
 
+class MockSubBlock1:
+    name = "subblock1"
+    doc = "sub-block 1"
+
+
+class MockSubBlock2:
+    name = "subblock2"
+    doc = "sub-block 2"
+
+
+class MockSubBlock3:
+    name = "subblock3"
+    doc = "sub-block 3"
+    # sub-blocks
+    subblock1 = MockSubBlock1()
+    set_block_interface(subblock1, {})
+
+    def component_map(self, **kwargs):
+        return {"subblock1": getattr(self, "subblock1")}
+
+
 class MockBlock:
-    name = "watertap.ui.tests.test_api.MockBlock"
-    doc = "default block doc"
+    # name = "watertap.ui.tests.test_api.MockBlock"
+    name = "Flowsheet"
+    doc = "flowsheet description"
     foo_var = Var(name="foo_var", initialize=0.0, within=Reals)
     foo_var.construct()
     bar_idx = Set(initialize=[0, 1, 2])
     bar_idx.construct()
     bar_var = Var(bar_idx, name="bar_var", initialize=[0.0, 0.0, 0.0], within=Reals)
     bar_var.construct()
+    # sub-blocks
+    subblock1 = MockSubBlock1()
+    set_block_interface(subblock1, {})
+    subblock2 = MockSubBlock2()
+    set_block_interface(subblock2, {})
+    subblock3 = MockSubBlock3()  # note: no interface
+
+    def component_map(self, **kwargs):
+        return {"subblock1": getattr(self, "subblock1"),
+                "subblock2": getattr(self, "subblock2"),
+                "subblock3": getattr(self, "subblock3")}
 
 
 @pytest.fixture
@@ -87,6 +120,7 @@ def test_block_interface_constructor(mock_block):
         obj = BlockInterface(mock_block, build_options(display_name=disp, description=desc))
         obj.get_exported_variables()  # force looking at contents
 
+
 @pytest.mark.unit
 def test_block_interface_get_exported_variables(mock_block):
     # no variables section
@@ -117,10 +151,14 @@ def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
     obj.set_visualization({})
     d = obj.as_dict(include_vis=False)
+    fs = d["blocks"][0]
     assert "vis" not in d
-    assert "variables" in d["blocks"]
+    assert "variables" in fs
+    #
     d = obj.as_dict(include_vis=True)
+    fs = d["blocks"][0]
     assert "vis" in d
+    assert "variables" in fs
 
 
 def test_flowsheet_interface_save(mock_block, tmpdir):
