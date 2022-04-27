@@ -215,7 +215,7 @@ Unit : fs.unit                                                             Time:
     Mass Concentration phosphorus 0.99602    0.17062 5.4645e-08
     Mass Concentration struvite   0.99602 1.0037e-10     1000.0
     Mass Concentration foo        0.99602     1.0037 5.4645e-08
-====================================================================================\
+====================================================================================
 """
 
         assert output in stream.getvalue()
