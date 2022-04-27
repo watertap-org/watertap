@@ -34,6 +34,7 @@ from watertap.unit_models.zero_order import (
     CoagulationFlocculationZO,
     DeepWellInjectionZO,
     DMBRZO,
+    ElectroNPZO,
     FixedBedZO,
     GACZO,
     LandfillZO,
@@ -801,6 +802,64 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+
+    def cost_electroN_P(blk):
+        """
+        General method for costing electrochemical nutrient recovery. Capital cost
+        is based on the volumetirc flowrate and HRT of the incoming stream. Chemical
+        dosing cost is based on MgCl2 cost.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+        byproduct_state = blk.unit_model.properties_byproduct[t0]
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, ref_state = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "HRT",
+                "sizing_cost",
+                "reference_state",
+            ],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            A * ref_state * B, to_units=blk.config.flowsheet_costing_block.base_currency
+        )
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.MgCl2_flowrate[t0], "magnesium_chloride"
         )
 
     def cost_fixed_bed(blk):
@@ -1963,6 +2022,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         CoagulationFlocculationZO: cost_coag_and_floc,
         DeepWellInjectionZO: cost_deep_well_injection,
         DMBRZO: cost_dmbr,
+        ElectroNPZO: cost_electroN_P,
         FixedBedZO: cost_fixed_bed,
         GACZO: cost_gac,
         LandfillZO: cost_landfill,

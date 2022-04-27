@@ -125,6 +125,7 @@ def test_unit_parameter_files(tech):
         "photothermal_membrane",
         "pump_electricity",
         "CANDO_P",
+        "electroN_P",
     ]
 
     expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
