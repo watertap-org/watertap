@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an energy recovery unit
-operation.
+This module contains a zero-order representation of an energy recovery unit.
 """
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class

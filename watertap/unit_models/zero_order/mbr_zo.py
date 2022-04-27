@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a membrane bioreactor unit
-operation.
+This module contains a zero-order representation of a membrane bioreactor unit.
 """
 
 from idaes.core import declare_process_block_class
