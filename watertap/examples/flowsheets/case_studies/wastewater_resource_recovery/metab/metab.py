@@ -71,7 +71,7 @@ def main():
     m.fs.costing.metab.bead_cost["hydrogen"].fix(14.40)  # default 1440, 0.01x
     m.fs.costing.metab.reactor_cost["hydrogen"].fix(78.9)  # default 789, 0.1x
     m.fs.costing.metab.vacuum_cost["hydrogen"].fix(5930)  # default 59300, 0.1x
-    m.fs.costing.metab.mixer_cost["hydrogen"].fix(27.40)  # default 2740, 0.1x
+    m.fs.costing.metab.mixer_cost["hydrogen"].fix(27.40)  # default 2740, 0.01x
     m.fs.costing.metab.membrane_cost["hydrogen"].fix(498)  # default 498
 
     m.fs.metab_methane.hydraulic_retention_time.fix(15)  # default 150, 0.1x
