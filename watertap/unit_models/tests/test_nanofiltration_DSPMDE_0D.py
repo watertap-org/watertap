@@ -269,10 +269,10 @@ class TestNanoFiltration:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
 
         calculate_scaling_factors(m)
@@ -346,10 +346,10 @@ class TestNanoFiltration:
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
             "Na_+": 0.017432,
-            "Cl_-": 0.015837,
-            "Ca_2+": -0.023145,
-            "SO4_2-": 0.015924,
-            "Mg_2+": 0.01546,
+            "Cl_-": 0.014704,
+            "Ca_2+": -0.034499,
+            "SO4_2-": 0.01435907,
+            "Mg_2+": 0.013672,
         }
         for j, val in intrinsic_rejection_dict.items():
             assert pytest.approx(val, rel=5e-2) == value(
