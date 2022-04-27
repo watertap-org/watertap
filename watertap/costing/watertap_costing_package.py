@@ -17,7 +17,7 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
@@ -34,6 +34,7 @@ from watertap.unit_models import (
     NanofiltrationZO,
     PressureExchanger,
     Pump,
+    EnergyRecoveryDevice,
 )
 
 
@@ -45,8 +46,11 @@ class ROType(StrEnum):
 class PumpType(StrEnum):
     low_pressure = "low_pressure"
     high_pressure = "high_pressure"
+
+
+class EnergyRecoveryDeviceType(StrEnum):
+    default = "default"
     pressure_exchanger = "pressure_exchanger"
-    energy_recovery_device = "energy_recovery_device"
 
 
 class MixerType(StrEnum):
@@ -57,6 +61,10 @@ class MixerType(StrEnum):
 
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
+    def build(self):
+        super().build()
+        self._registered_LCOWs = {}
+
     def build_global_params(self):
 
         # Register currency and conversion rates based on CE Index
@@ -119,7 +127,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Low pressure pump cost",
             units=self.base_currency / (pyo.units.liter / pyo.units.second),
         )
-        self.pump_pressure_exchanger_cost = pyo.Var(
+        self.erd_pressure_exchanger_cost = pyo.Var(
             initialize=535,
             doc="Pressure exchanger cost",
             units=self.base_currency / (pyo.units.meter**3 / pyo.units.hours),
@@ -189,16 +197,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # Define standard material flows and costs
         self.defined_flows["electricity"] = self.electricity_base_cost
-        self.defined_flows["NaOCl"] = (
-            74.44e-3
-            * (pyo.units.kg / pyo.units.mol)
-            * (self.naocl_cost / self.naocl_purity)
-        )
-        self.defined_flows["CaOH2"] = (
-            74.093e-3
-            * (pyo.units.kg / pyo.units.mol)
-            * (self.caoh2_cost / self.caoh2_purity)
-        )
+        self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
+        self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
@@ -252,50 +252,85 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             self.total_operating_cost, self.total_operating_cost_constraint
         )
 
-        if hasattr(self, "LCOW"):
-            calculate_variable_from_constraint(self.LCOW, self.LCOW_constraint)
+        for var, con in self._registered_LCOWs.values():
+            calculate_variable_from_constraint(var, con)
 
-    def add_LCOW(self, flow_rate):
+    def add_LCOW(self, flow_rate, name="LCOW"):
         """
         Add Levelized Cost of Water (LCOW) to costing block.
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating LCOW
+            name (optional) - name for the LCOW variable (default: LCOW)
         """
 
-        self.annual_water_production = pyo.Expression(
-            expr=(
-                pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / self.base_period
-                )
-                * self.load_factor
-            )
+        LCOW = pyo.Var(
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
+            units=self.base_currency / pyo.units.m**3,
         )
+        self.add_component(name, LCOW)
 
-        self.LCOW = pyo.Var(
-            doc="Levelized Cost of Water", units=self.base_currency / pyo.units.m**3
-        )
-
-        self.LCOW_constraint = pyo.Constraint(
-            expr=self.LCOW
+        LCOW_constraint = pyo.Constraint(
+            expr=LCOW
             == (
                 self.total_investment_cost * self.factor_capital_annualization
                 + self.total_operating_cost
             )
-            / self.annual_water_production
+            / (
+                pyo.units.convert(
+                    flow_rate, to_units=pyo.units.m**3 / self.base_period
+                )
+                * self.load_factor
+            ),
+            doc=f"Constraint for Levelized Cost of Water based on flow {flow_rate.name}",
+        )
+        self.add_component(name + "_constraint", LCOW_constraint)
+
+        self._registered_LCOWs[name] = (LCOW, LCOW_constraint)
+
+    def add_annual_water_production(self, flow_rate, name="annual_water_production"):
+        """
+        Add annual water production to costing block.
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating annual water production
+            name (optional) - name for the annual water productionvariable
+                              Expression (default: annual_water_production)
+        """
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=(
+                    pyo.units.convert(
+                        flow_rate, to_units=pyo.units.m**3 / self.base_period
+                    )
+                    * self.load_factor
+                ),
+                doc=f"Annual water production based on flow {flow_rate.name}",
+            ),
         )
 
-    def add_specific_energy_consumption(self, flow_rate):
+    def add_specific_energy_consumption(
+        self, flow_rate, name="specific_energy_consumption"
+    ):
         """
         Add specific energy consumption (kWh/m**3) to costing block.
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating specific energy consumption
+            name (optional) - the name of the Expression for the specific
+                              energy consumption (default: specific_energy_consumption)
         """
 
-        self.specific_energy_consumption = pyo.Expression(
-            expr=self.aggregate_flow_electricity
-            / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr)
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=self.aggregate_flow_electricity
+                / pyo.units.convert(
+                    flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
+                ),
+                doc=f"Specific energy consumption based on flow {flow_rate.name}",
+            ),
         )
 
     # Define costing methods supported by package
@@ -323,13 +358,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             ro_type - ROType Enum indicating reverse osmosis type,
                       default = ROType.standard
         """
-        # Validate arguments
-        if ro_type not in ROType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for ro_type:"
-                f" {ro_type}. Argument must be a member of the ROType Enum."
-            )
-
         if ro_type == ROType.standard:
             membrane_cost = blk.costing_package.reverse_osmosis_membrane_cost
         elif ro_type == ROType.high_pressure:
@@ -337,7 +365,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.costing_package.reverse_osmosis_high_pressure_membrane_cost
             )
         else:
-            raise BurntToast(f"Unrecognized ro_type: {ro_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for ro_type:"
+                f" {ro_type}. Argument must be a member of the ROType Enum."
+            )
         cost_membrane(
             blk, membrane_cost, blk.costing_package.factor_membrane_replacement
         )
@@ -351,24 +382,40 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             pump_type - PumpType Enum indicating pump type,
-                        default = pumptype.high_pressure
+                        default = PumpType.high_pressure
         """
-        if pump_type not in PumpType:
+        if pump_type == PumpType.high_pressure:
+            WaterTAPCostingData.cost_high_pressure_pump(blk)
+        elif pump_type == PumpType.low_pressure:
+            WaterTAPCostingData.cost_low_pressure_pump(blk)
+        else:
             raise ConfigurationError(
                 f"{blk.unit_model.name} received invalid argument for pump_type:"
                 f" {pump_type}. Argument must be a member of the PumpType Enum."
             )
 
-        if pump_type == PumpType.high_pressure:
-            WaterTAPCostingData.cost_high_pressure_pump(blk)
-        elif pump_type == PumpType.low_pressure:
-            WaterTAPCostingData.cost_low_pressure_pump(blk)
-        elif pump_type == PumpType.pressure_exchanger:
-            WaterTAPCostingData.cost_pressure_exchanger_pump(blk)
-        elif pump_type == PumpType.energy_recovery_device:
-            WaterTAPCostingData.cost_energy_recovery_device_pump(blk)
+    @staticmethod
+    def cost_energy_recovery_device(
+        blk, energy_recovery_device_type=EnergyRecoveryDeviceType.default
+    ):
+        """
+        Energy recovery device costing method
+
+        TODO: describe equations
+
+        Args:
+            energy_recovery_device_type - EnergyRecoveryDeviceType Enum indicating ERD type,
+                                          default = EnergyRecoveryDeviceType.default
+        """
+        if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
+            WaterTAPCostingData.cost_default_energy_recovery_device(blk)
+        elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
+            WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
         else:
-            raise BurntToast(f"Unrecognized pump_type: {pump_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for energy_recovery_device_type:"
+                f" {energy_recovery_device_type}. Argument must be a member of the EnergyRecoveryDeviceType Enum."
+            )
 
     @staticmethod
     def cost_high_pressure_pump(blk):
@@ -401,15 +448,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_pressure_exchanger_pump(blk):
+    def cost_pressure_exchanger_erd(blk):
         """
-        Pump pressure exchanger costing method
+        ERD pressure exchanger costing method
 
         TODO: describe equations
         """
         cost_by_flow_volume(
             blk,
-            blk.costing_package.pump_pressure_exchanger_cost,
+            blk.costing_package.erd_pressure_exchanger_cost,
             pyo.units.convert(
                 blk.unit_model.control_volume.properties_in[0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
@@ -417,9 +464,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_energy_recovery_device_pump(blk):
+    def cost_default_energy_recovery_device(blk):
         """
-        Pump energy recovery device costing method
+        Energy recovery device costing method
 
         TODO: describe equations
         """
@@ -471,12 +518,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             mixer_type - MixerType Enum indicating mixer type,
                         default = MixerType.default
         """
-        if mixer_type not in MixerType:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for mixer_type:"
-                f" {mixer_type}. Argument must be a member of the MixerType Enum."
-            )
-
         if mixer_type == MixerType.default:
             WaterTAPCostingData.cost_default_mixer(blk)
         elif mixer_type == MixerType.NaOCl:
@@ -484,7 +525,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         elif mixer_type == MixerType.CaOH2:
             WaterTAPCostingData.cost_caoh2_mixer(blk)
         else:
-            raise BurntToast(f"Unrecognized mixer_type: {mixer_type}")
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for mixer_type:"
+                f" {mixer_type}. Argument must be a member of the MixerType Enum."
+            )
 
     @staticmethod
     def cost_default_mixer(blk):
@@ -547,6 +591,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 WaterTAPCostingData.unit_mapping = {
     Mixer: WaterTAPCostingData.cost_mixer,
     Pump: WaterTAPCostingData.cost_pump,
+    EnergyRecoveryDevice: WaterTAPCostingData.cost_energy_recovery_device,
     PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
     ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,
     ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
