@@ -261,8 +261,8 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             doc="Fluid viscosity",
         )
         # Ion electrical mobility 
-        self.electrical_mobility = Param(
-            self.ion_set,
+        self.electrical_mobility_comp = Param(
+            self.ion_set | self.solute_set,
             mutable =  True,
             default = 5.19e-8, #default as Na+
             initialize = self.config.electrical_mobility_data,
@@ -368,7 +368,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
-
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -392,8 +391,8 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
-                "electrical_mobility": {'method': '_electrical_mobility'},
-                "electrical_conductivity_phase": {'method': '_electrical_conductivity_phase',},
+                "electrical_mobility_comp": {'method': '_electrical_mobility_comp'},
+                "electrical_conductivity_phase": {'method': '_electrical_conductivity_phase'},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
@@ -920,8 +919,8 @@ class DSPMDEStateBlockData(StateBlockData):
     def _mw_comp(self):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
-    def _electrical_mobility(self):
-        add_object_reference(self, "electrical_mobility", self.params.electrical_mobility)
+    def _electrical_mobility_comp(self):
+        add_object_reference(self, "electrical_mobility_comp", self.params.electrical_mobility_comp)
 
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
@@ -1043,23 +1042,23 @@ class DSPMDEStateBlockData(StateBlockData):
 
         self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
-        def _electrical_conductivity_phase(self):
-                self._electrical_conductivity_phase = Var(
-                    self.params.phase_list,
-                    initialize =  0.1,
-                    units = pyunits.ohm ** -1 * pyunits.meter ** -1,
-                    doc = 'Electrical conductivity'
-                )
-                def rule_electrical_conductivity_phase(b):
-                    return (
-                        b._electrical_conductivity_phase["Liq"] 
-                        == sum(
-                        Constants.faraday_constant 
-                        * abs(b.charge_comp[j]) * b.electrical_mobility[j] 
-                        * b.conc_mol_phase_comp['Liq', j] for j in self.params.ion_set
-                        ) #maybe revisit for other emprical calculation or non-ideal situation 
-                    )
-                self.eq_electrical_conductivity_phase = Constraint(rule = rule_electrical_conductivity_phase)
+    def _electrical_conductivity_phase(self):
+        self.electrical_conductivity_phase = Var(
+            self.params.phase_list,
+            initialize =  0.1,
+            units = pyunits.ohm ** -1 * pyunits.meter ** -1,
+            doc = 'Electrical conductivity'
+        )
+        def rule_electrical_conductivity_phase(b):
+            return (
+                b.electrical_conductivity_phase["Liq"] 
+                == sum(
+                Constants.faraday_constant 
+                * abs(b.charge_comp[j]) * b.electrical_mobility_comp[j] 
+                * b.conc_mol_phase_comp['Liq', j] for j in self.params.ion_set
+                ) #maybe revisit for other emprical calculation or non-ideal situation 
+            )
+        self.eq_electrical_conductivity_phase = Constraint(rule = rule_electrical_conductivity_phase)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1255,9 +1254,9 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
 
-        for ind, v in self.electrical_mobility.items():
+        for ind, v in self.electrical_mobility_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.electrical_mobility[ind], 1e8)
+                iscale.set_scaling_factor(self.electrical_mobility_comp[ind], 1e8)
 
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
@@ -1364,15 +1363,15 @@ class DSPMDEStateBlockData(StateBlockData):
                 sf = 1e-3 * min(
                     iscale.get_scaling_factor(
                         self.conc_mol_phase_comp['Liq', j]) 
-                        for j in self.params.ion_set|self.params.solute_set
+                        for j in self.params.ion_set | self.params.solute_set
                     )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
         if self.is_property_constructed('electrical_conductivity_phase'):
             if iscale.get_scaling_factor(self.electrical_conductivity_phase) is None:
                 sf = 1e-5 * min(
-                    iscale.get_scaling_factor(self.eletrical_mobility[j]) * iscale.get_scaling_factor(self.conc_mol_phase_comp['Liq', j])
-                    for j in self.params.ion_set
+                    (iscale.get_scaling_factor(self.electrical_mobility_comp[j]) * iscale.get_scaling_factor(self.conc_mol_phase_comp['Liq', j]))
+                    for j in self.params.ion_set | self.params.solute_set
                     )   
                 iscale.set_scaling_factor(self.electrical_conductivity_phase, sf)
 

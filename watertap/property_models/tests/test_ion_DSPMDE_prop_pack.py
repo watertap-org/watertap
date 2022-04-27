@@ -30,7 +30,7 @@ from idaes.core import (
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_DSPMDE_prop_pack import (
+from watertap.property_models.ion_prop_xb import (
     DSPMDEParameterBlock,
     DSPMDEStateBlock,
     ActivityCoefficientModel,
@@ -78,7 +78,7 @@ def model():
                 ("Liq", "C"): 1e-7,
                 ("Liq", "D"): 1e-11,
             },
-            "mw_data": {"H2O": 18e-3, "A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 25e-3},
+            "mw_data": {"H2O": 18e-3, "A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 125e-3},
             "electrical_mobility_data": {"A": 5.19e-8, "B":8.29e-8, "C":6.17e-8, "D":7.92e-8},
             "stokes_radius_data": {"A": 1e-9, "B": 1e-9, "C": 1e-9, "D": 1e-10},
             "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
@@ -113,11 +113,11 @@ def test_parameter_block(model):
     assert model.fs.properties.mw_comp["D"].value == 125e-3
     assert model.fs.properties.mw_comp["H2O"].value == 18e-3
 
-    assert isinstance(model.fs.properties.electrical_mobility_data, Param)
-    assert model.fs.properties.electrical_mobility["A"].value == 5.19e-8
-    assert model.fs.properties.electrical_mobility["B"].value == 8.29e-8
-    assert model.fs.properties.electrical_mobility["C"].value == 6.17e-8
-    assert model.fs.properties.electrical_mobility["D"].value == 7.92e-8
+    assert isinstance(model.fs.properties.electrical_mobility_comp, Param)
+    assert model.fs.properties.electrical_mobility_comp["A"].value == 5.19e-8
+    assert model.fs.properties.electrical_mobility_comp["B"].value == 8.29e-8
+    assert model.fs.properties.electrical_mobility_comp["C"].value == 6.17e-8
+    assert model.fs.properties.electrical_mobility_comp["D"].value == 7.92e-8
 
     assert isinstance(model.fs.properties.diffus_phase_comp, Param)
     assert model.fs.properties.diffus_phase_comp["Liq", "A"].value == 1e-9
@@ -231,11 +231,6 @@ def test_property_ions(model2):
     stream[0].diffus_phase_comp["Liq", "C"] = 1e-7
     stream[0].diffus_phase_comp["Liq", "D"] = 1e-11
 
-    stream[0].ion_moibility["Liq", "A"] = 5.19e-8
-    stream[0].ion_moibility["Liq", "B"] = 8.29e-8
-    stream[0].ion_moibility["Liq", "C"] = 6.17e-8
-    stream[0].ion_moibility["Liq", "D"] = 7.92e-8
-
     stream[0].mw_comp["H2O"] = 18e-3
     stream[0].mw_comp["A"] = 10e-3
     stream[0].mw_comp["B"] = 25e-3
@@ -251,6 +246,11 @@ def test_property_ions(model2):
     stream[0].charge_comp["B"] = -2
     stream[0].charge_comp["C"] = 2
     stream[0].charge_comp["D"] = -1
+
+    stream[0].electrical_mobility_comp["A"] = 5.19e-8
+    stream[0].electrical_mobility_comp["B"] = 8.29e-8
+    stream[0].electrical_mobility_comp["C"] = 6.17e-8
+    stream[0].electrical_mobility_comp["D"] = 7.92e-8
 
     stream[0].assert_electroneutrality(defined_state=True, tol=1e-8)
 
@@ -341,7 +341,7 @@ def test_build(model3):
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
         "molality_comp",
-        "electrical_conductivity_phase"
+        "electrical_conductivity_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
@@ -959,7 +959,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (10, pyunits.g / pyunits.mol),
-                    "electrical_mobility": (5.19e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (5.19e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -981,7 +981,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility": (8.29e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (8.29e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -1003,7 +1003,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (100, pyunits.g / pyunits.mol),
-                    "electrical_mobility": (6.17e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (6.17e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -1025,7 +1025,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility": (7.92e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (7.92e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -1135,4 +1135,4 @@ def test_parameter_block_comparison(model4):
         m_ion.fs.properties.charge_comp["B"].value
         == m_generic.fs.properties.get_component("B").config.charge
     )
-    assert m_ion.fs.properties.electrical_mobility["B"].value == 8.29e-8
+    assert m_ion.fs.properties.electrical_mobility_comp["B"].value == 8.29e-8
