@@ -313,7 +313,6 @@ def add_costing(m):
         doc="Levelized Cost of Hydrogen",
     )
 
-
     m.fs.costing.LCOM = Expression(
         expr=(
             (
@@ -549,7 +548,6 @@ def add_costing(m):
     m.fs.costing.LCOCR_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOCR_comp)
 
 
-
 def initialize_costing(m):
     m.fs.costing.initialize()
 
@@ -621,7 +619,6 @@ def display_costing(m):
         pyunits.convert(
             m.fs.costing.LCOM, to_units=m.fs.costing.base_currency / pyunits.kg
         )
-
     )
     print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
 
