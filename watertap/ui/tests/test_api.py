@@ -185,6 +185,7 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     obj.set_visualization({})
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
+    # print(f"@@ saved: {json.dumps(obj.as_dict(), indent=2)}")
     obj2 = FlowsheetInterface.load(Path(tmpdir) / filename, mock_block)
     assert obj2 == obj
 
