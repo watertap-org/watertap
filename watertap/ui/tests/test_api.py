@@ -137,16 +137,19 @@ def test_block_interface_get_exported_variables(mock_block):
     assert len(list(obj.get_exported_variables())) == 2
 
 
+@pytest.mark.unit
 def test_workflow_actions():
     wfa = WorkflowActions
     assert wfa.build is not None
     assert wfa.solve is not None
 
 
+@pytest.mark.unit
 def test_flowsheet_interface_constructor(mock_block):
     FlowsheetInterface(mock_block, build_options(variables=2))
 
 
+@pytest.mark.unit
 def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
     obj.set_visualization({})
@@ -161,6 +164,7 @@ def test_flowsheet_interface_as_dict(mock_block):
     assert "variables" in fs
 
 
+@pytest.mark.unit
 def test_flowsheet_interface_save(mock_block, tmpdir):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
     obj.set_visualization({})
@@ -180,6 +184,7 @@ def test_flowsheet_interface_save(mock_block, tmpdir):
     assert strm.getvalue() != ""
 
 
+@pytest.mark.unit
 def test_flowsheet_interface_load(mock_block, tmpdir):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
     obj.set_visualization({})
@@ -190,7 +195,47 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     assert obj2 == obj
 
 
-def test_flowsheet_interface_schema(mock_block):
-    fsi = FlowsheetInterface(mock_block, build_options())
-    assert fsi._block_schema is not None
+@pytest.mark.unit
+def test_schema():
+    schema = FlowsheetInterface.get_schema()
+    assert schema.validate({}) is not None  # missing 'name' and 'blocks'
+    assert schema.validate({"name": "x", "blocks": []}) is None  # ok
+    assert schema.validate({"name": "x", "blocks": "fooo"}) is not None  # blocks must be list
+    assert schema.validate({"name": "x", "blocks": [], "extra": {}}) is None  # ok (extra ok)
+    assert schema.validate({"name": "x", "blocks": [{"name": "x", "blocks": []}]}) is None  # nested
 
+
+@pytest.mark.component
+def test_schema_performance():
+    import time
+    schema = FlowsheetInterface.get_schema()
+
+    def section(name, num_vars):
+        d = {"name": name, "blocks": []}
+        variables = []
+        for i in range(num_vars):
+            v = {"name": f"v{i}", "display_name": f"variable {i}", "units": "dimensionless"}
+            variables.append(v)
+        d["variables"] = variables
+        return d
+
+    # build a big data object
+    d = {"name": "__root__", "blocks": []}
+    nblocks = [1000, 10]
+    nvars = 100
+    for i in range(nblocks[0]):
+        block = section(f"block{i}", nvars)
+        for j in range(nblocks[1]):
+            block2 = section(f"block{i}_{j}", nvars)
+            block["blocks"].append(block2)
+        d["blocks"].append(block)
+
+    print(f"validating flowsheet with {nblocks[0]  * nblocks[1]} blocks each with {nvars} variables")
+    t0 = time.time()
+    schema.validate(d)
+    t1 = time.time()
+    dur = t1 - t0
+    print(f"time to validate = {dur:.3f}s or {dur/(nblocks[0]  * nblocks[1])*1000} ms/block")
+
+    # should never take more than 1/10 sec per block (sub-ms times are normal)
+    assert dur < (0.1 * nblocks[0] * nblocks[1])
