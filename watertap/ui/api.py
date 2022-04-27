@@ -163,7 +163,8 @@ class BlockSchemaDefinition:
                                 # scalar or indexed value
                                 # two forms:
                                 #  {value: 1.34}  -- scalar
-                                #  {value: [{index: [0, "H2O"], value: 1.34}, {index: [1, "NaCl"], value: 3.56}, ..]}
+                                #  {value: [{index: [0, "H2O"], value: 1.34},
+                                #           {index: [1, "NaCl"], value: 3.56}, ..]}
                                 "$valu_key": {
                                     "oneOf": [
                                         {
@@ -186,6 +187,7 @@ class BlockSchemaDefinition:
                                                             {"type": "string"},
                                                         ]
                                                     },
+                                                    "$unit_key": { "type": "string"},
                                                 },
                                             },
                                         },
@@ -218,6 +220,9 @@ class BlockInterface(BlockSchemaDefinition):
 
     _var_config = ConfigDict()
     _var_config.declare(
+        "name", ConfigValue(description="Name of the variable", domain=str)
+    )
+    _var_config.declare(
         "display_name",
         ConfigValue(description="Display name for the variable", domain=str),
     )
@@ -226,7 +231,8 @@ class BlockInterface(BlockSchemaDefinition):
         ConfigValue(description="Description for the variable", domain=str),
     )
     _var_config.declare(
-        "name", ConfigValue(description="Name of the variable", domain=str)
+        "units",
+        ConfigValue(description="Units for the variable", domain=str),
     )
 
     CONFIG = ConfigDict()
@@ -457,12 +463,13 @@ class FlowsheetInterface(BlockInterface):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
         """
-        if "variables" in block_data:
+        print(f"@@ load block_data={block_data} into cur_block={cur_block}")
+        if cls.VARS_KEY in block_data:
             ui = get_block_interface(cur_block)
-            cls._load_variables(block_data["variables"], ui)
-        if "subblocks" in block_data:
-            for sb_name, sb_data in block_data["subblocks"].items():
-                sb_block = getattr(cur_block, sb_name)
+            cls._load_variables(block_data[cls.VARS_KEY], ui)
+        if cls.BLKS_KEY in block_data:
+            for sb_data in block_data[cls.BLKS_KEY]:
+                sb_block = getattr(cur_block, sb_data[cls.NAME_KEY])
                 cls._load(sb_data, sb_block)
 
     @classmethod
@@ -474,6 +481,10 @@ class FlowsheetInterface(BlockInterface):
           (2) This variable *is not* in the block interface: Add it to the return value
 
         Also add any variables in the block interface that are not in the input to the return value.
+
+        Args:
+            variables: list of variables
+            ui: The interface to the block where the variables are being loaded
 
         Returns:
            A dict with two keys, each a list of variables:
@@ -511,9 +522,14 @@ class FlowsheetInterface(BlockInterface):
                 values_map[lv[cls.NAME_KEY]] = lv_value
                 del lv[cls.VALU_KEY]
         ui.config.variables.set_value(loaded_vars)
-        # Set values.
+        # Set values for variables in the block
         for variable_name, lv_value in values_map.items():
             variable_obj = getattr(ui.block, variable_name)
-            variable_obj.set_value(lv_value)
+            if isinstance(lv_value, list):
+                for lv_item in lv_value:
+                    idx, val = tuple(lv_item[cls.INDX_KEY]), lv_item[cls.VALU_KEY]
+                    variable_obj[idx] = val
+            else:
+                variable_obj.set_value(lv_value)
         # return 'missing' and 'extra'
         return result
