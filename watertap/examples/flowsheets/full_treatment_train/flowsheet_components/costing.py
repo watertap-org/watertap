@@ -23,7 +23,13 @@ from pyomo.environ import (
     units as pyunits,
 )
 from idaes.generic_models.costing import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting, PumpType, MixerType, ROType
+from watertap.costing import (
+    WaterTAPCosting,
+    PumpType,
+    EnergyRecoveryDeviceType,
+    MixerType,
+    ROType,
+)
 
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
@@ -138,7 +144,9 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
         m.fs.ERD.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"pump_type": PumpType.pressure_exchanger},
+                "costing_method_arguments": {
+                    "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
+                },
             }
         )
         m.fs.costing.cost_flow(
@@ -155,8 +163,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
             }
         )
         m.fs.costing.cost_flow(
-            m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
-            * m.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"],
+            m.fs.stoich_softening_mixer_unit.dosing_rate,
             "CaOH2",
         )
 
@@ -170,8 +177,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
             }
         )
         m.fs.costing.cost_flow(
-            m.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0]
-            * m.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"],
+            m.fs.ideal_naocl_mixer_unit.dosing_rate,
             "NaOCl",
         )
 
@@ -185,6 +191,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
 
     # call get_system_costing for whole flowsheet
     m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.treated_flow_vol)
     m.fs.costing.add_LCOW(m.fs.treated_flow_vol)
 
     if hasattr(m.fs, "stoich_softening_mixer_unit"):

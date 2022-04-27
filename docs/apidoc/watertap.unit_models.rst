@@ -36,7 +36,7 @@ watertap.unit\_models.pressure\_exchanger module
 watertap.unit\_models.pump\_isothermal module
 ---------------------------------------------
 
-.. automodule:: watertap.unit_models.pump_isothermal
+.. automodule:: watertap.unit_models.pressure_changer
    :members:
    :show-inheritance:
 
