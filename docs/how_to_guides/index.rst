@@ -5,6 +5,7 @@ How To Guides
    :maxdepth: 1
 
    how_to_run_models_in_a_py_script
+   how_to_use_a_property_model
    how_to_setup_simple_RO
    how_to_setup_RO_config_options
    how_to_setup_simple_chemistry
@@ -18,4 +19,3 @@ How To Guides
    how_to_use_parameter_sweep_monte_carlo
    how_to_use_EDB
    how_to_contribute_development
-   how_to_use_a_property_model
