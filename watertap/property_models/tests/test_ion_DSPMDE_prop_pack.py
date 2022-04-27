@@ -30,7 +30,7 @@ from idaes.core import (
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_prop_xb import (
+from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
     DSPMDEStateBlock,
     ActivityCoefficientModel,
@@ -539,13 +539,6 @@ def test_seawater_data():
 
     # check if any variables are badly scaled
     badly_scaled_var_list = list(badly_scaled_var_generator(m,large=100, small=0.01, zero = 1e-10))
-    print("\n REPORT BADLY SCALED VARS & CONSTRAINS")
-    badly_scaled_var_values = {
-            var.name: val
-            for (var, val) in badly_scaled_var_generator(m, large=100, small=0.01, zero = 1e-10)
-            }
-    for j, k in badly_scaled_var_values.items():
-        print(j, ':', k)
     assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
