@@ -233,7 +233,7 @@ def add_costing(m):
     # m.fs.costing.add_LCOW(m.fs.product_H2O.properties[0].flow_vol)
 
     # other levelized costs
-    #TODO - resolve discrepancy between sum of cost components and total levelized costs 
+    # TODO -resolve discrepancy between sum of cost components and total levelized costs
     m.fs.costing.annual_water_production = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
@@ -274,7 +274,7 @@ def add_costing(m):
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
-    )  
+    )
 
     m.fs.costing.LCOW = Expression(
         expr=(
