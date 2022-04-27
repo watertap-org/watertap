@@ -710,7 +710,6 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-           # else 0.0033,  # todo: revisit
             bounds=(1e-8, 1.001),
             units=pyunits.kg / pyunits.kg,
             doc="Mass fraction",
