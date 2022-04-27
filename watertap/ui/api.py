@@ -343,6 +343,7 @@ class FlowsheetInterface(BlockInterface):
         # print(f"@@ as_dict data={json.dumps(d, indent=2)}")
         if include_vis and self._vis is not None:
             d["vis"] = self._vis.copy()
+        d[self.NAME_KEY] = "__root__"
         return d
 
     @log_meth
@@ -356,9 +357,17 @@ class FlowsheetInterface(BlockInterface):
     def load(
         cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
     ) -> "FlowsheetInterface":
-        """Load from saved state in a file into the flowsheet block ``fs_block``."""
+        """Load from saved state in a file into the flowsheet block ``fs_block``.
+
+        Raises:
+            ValueError: Improper input data
+        """
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
+        schema = Schema(cls.BLOCK_SCHEMA, **cls.ALL_KEYS)
+        validation_error = schema.validate(data)
+        if validation_error:
+            raise ValueError(f"Input data failed schema validation: {validation_error}")
         root = data["blocks"]
         cls._load(root, fs_block)
         # attach other information to root
