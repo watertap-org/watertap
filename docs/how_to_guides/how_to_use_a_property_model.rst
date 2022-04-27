@@ -63,7 +63,6 @@ users to model the chemical and physical properties of simple systems without th
 
     # Create the solver object.
     solver = get_solver()
-    solver.options = {'nlp_scaling_method': 'user-scaling'}
 
     # Solve the model and display the output.
     results = solver.solve(m, tee=False)
