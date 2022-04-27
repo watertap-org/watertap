@@ -304,6 +304,7 @@ def test_build(model3):
     # test state variables
     state_vars_list = ["flow_mol_phase_comp", "temperature", "pressure"]
     state_vars_dict = m.fs.stream[0].define_state_vars()
+    print('$$$$$$$$$$$$', state_vars_dict)
     assert len(state_vars_dict) == len(state_vars_list)
     for sv in state_vars_list:
         assert sv in state_vars_dict
@@ -353,8 +354,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 64
-    assert number_total_constraints(m) == 46
+    assert number_variables(m) == 65
+    assert number_total_constraints(m) == 47
     assert number_unused_variables(m) == 6
 
 
@@ -402,7 +403,7 @@ def test_scaling(model3):
         getattr(m.fs.stream[0], v_name)
 
     calculate_scaling_factors(m)
-
+    
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
     [print(i) for i in unscaled_var_list]
@@ -519,28 +520,32 @@ def test_seawater_data():
 
     check_dof(m, fail_flag=True)
 
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "Na_+"))
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "Cl_-"))
+    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e-1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e1, index=("Liq", "Na_+"))
+    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-"))
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e4, index=("Liq", "SO4_2-")
+        "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1, index=("Liq", "Mg_2+")
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
     )
-    calculate_scaling_factors(m)
 
-    # check if any variables are badly scaled
-    badly_scaled_var_list = list(badly_scaled_var_generator(m))
-    assert len(badly_scaled_var_list) == 0
+    calculate_scaling_factors(m)
 
     stream.initialize()
 
     # check if any variables are badly scaled
-    badly_scaled_var_list = list(badly_scaled_var_generator(m))
+    badly_scaled_var_list = list(badly_scaled_var_generator(m,large=100, small=0.01, zero = 1e-10))
+    print("\n REPORT BADLY SCALED VARS & CONSTRAINS")
+    badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in badly_scaled_var_generator(m, large=100, small=0.01, zero = 1e-10)
+            }
+    for j, k in badly_scaled_var_values.items():
+        print(j, ':', k)
     assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
