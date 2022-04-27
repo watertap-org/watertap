@@ -287,8 +287,9 @@ class BlockInterface(BlockSchemaDefinition):
             if self.DISP_KEY not in c:
                 c[self.DISP_KEY] = v.local_name
             if self.DESC_KEY not in c:
-                c[self.DESC_KEY] = v.doc
-            c[self.UNIT_KEY] = str(v.get_units())
+                c[self.DESC_KEY] = v.doc or f"{c[self.DISP_KEY]} variable"
+            if v.get_units():
+                c[self.UNIT_KEY] = str(v.get_units())
             # generate one result
             yield c
 
@@ -338,7 +339,8 @@ class FlowsheetInterface(BlockInterface):
     @log_meth
     def as_dict(self, include_vis=True):
         """Return current state serialized as a dictionary."""
-        d = self.get_variables()
+        d = self._get_block_map()
+        # print(f"@@ as_dict data={json.dumps(d, indent=2)}")
         if include_vis and self._vis is not None:
             d["vis"] = self._vis.copy()
         return d
@@ -368,16 +370,6 @@ class FlowsheetInterface(BlockInterface):
             )
         ui.set_visualization(data["vis"])
         return ui
-
-    @log_meth
-    def get_variables(self) -> Dict:
-        """Get all the variables exported by this flowsheet and its sub-blocks.
-
-        Returns:
-            A dict with the variables. See :class:`BlockSchemaDefinition` for details.
-        """
-        block_map = self._get_block_map()
-        return {"blocks": block_map}
 
     def set_action(self, name, func, **kwargs):
         """Set a function to call for a named action on the flowsheet."""
@@ -416,13 +408,14 @@ class FlowsheetInterface(BlockInterface):
     def _get_block_map(self):
         """Builds a block map matching the schema in self.BLOCK_SCHEMA"""
         stack = [([self._block.name], self._block)]  # start at root
-        mapping = {self.NAME_KEY: self._block.name, self.BLKS_KEY: []}
-        root_ui = get_block_interface(self._block)
-        if root_ui:
-            mapping[self.VARS_KEY] = list(root_ui.get_exported_variables())
+        mapping = {}  # {self.NAME_KEY: self._block.name, self.BLKS_KEY: []}
+        # root_ui = get_block_interface(self._block)
+        # if root_ui:
+        #    mapping[self.VARS_KEY] = list(root_ui.get_exported_variables())
         # walk the tree, building mapping as we go
         while stack:
             key, val = stack.pop()
+            # print(f"@@ popped from stack: key={key}, val={val}")
             ui = get_block_interface(val)
             if ui:
                 self._add_to_mapping(mapping, key, ui)
@@ -433,8 +426,11 @@ class FlowsheetInterface(BlockInterface):
         return mapping
 
     def _add_to_mapping(self, m, key, block_ui: BlockInterface):
-        nodes, leaf = key[:-1], key[-1]
+        nodes = key[:-1]
+        leaf = key[-1]
+        # print(f"@@ add-to-mapping, key={key} nodes={nodes} leaf={leaf}")
         new_data = {
+            self.NAME_KEY: block_ui.block.name,
             self.DISP_KEY: block_ui.config.display_name,
             self.DESC_KEY: block_ui.config.description,
             self.VARS_KEY: list(block_ui.get_exported_variables()),
@@ -453,17 +449,20 @@ class FlowsheetInterface(BlockInterface):
                 next_m = new_node
             m = next_m
         # add new item at leaf
-        for sub_block in m[self.BLKS_KEY]:
-            if sub_block[self.NAME_KEY] == leaf:
-                raise ValueError(f"Add mapping key failed: Already present. key={leaf}")
-        m[self.BLKS_KEY].append(new_data)
+        if self.BLKS_KEY in m:
+            for sub_block in m[self.BLKS_KEY]:
+                if sub_block[self.NAME_KEY] == leaf:
+                    raise ValueError(f"Add mapping key failed: Already present. key={leaf}")
+            m[self.BLKS_KEY].append(new_data)
+        else:
+            m[self.BLKS_KEY] = [new_data]
+        # print(f"@@ New mapping: {json.dumps(m, indent=2)}")
 
     @classmethod
     def _load(cls, block_data, cur_block):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
         """
-        print(f"@@ load block_data={block_data} into cur_block={cur_block}")
         if cls.VARS_KEY in block_data:
             ui = get_block_interface(cur_block)
             cls._load_variables(block_data[cls.VARS_KEY], ui)
