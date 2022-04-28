@@ -5,6 +5,7 @@ How To Guides
    :maxdepth: 1
 
    how_to_run_models_in_a_py_script
+   how_to_use_a_property_model
    how_to_setup_simple_RO
    how_to_setup_RO_config_options
    how_to_setup_simple_chemistry

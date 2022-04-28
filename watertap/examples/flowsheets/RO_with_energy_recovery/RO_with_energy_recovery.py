@@ -40,7 +40,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
     PressureChangeType,
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
@@ -125,6 +125,7 @@ def build():
         default={"flowsheet_costing_block": m.fs.costing}
     )
     m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
 

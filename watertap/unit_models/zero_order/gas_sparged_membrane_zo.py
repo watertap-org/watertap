@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an injection well disposal
-unit operation.
+This module contains a zero-order representation of a gas-sparged membrane unit.
 """
 from idaes.core import declare_process_block_class
 
