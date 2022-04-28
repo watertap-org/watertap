@@ -79,7 +79,12 @@ def model():
                 ("Liq", "D"): 1e-11,
             },
             "mw_data": {"H2O": 18e-3, "A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 125e-3},
-            "electrical_mobility_data": {"A": 5.19e-8, "B":8.29e-8, "C":6.17e-8, "D":7.92e-8},
+            "electrical_mobility_data": {
+                "A": 5.19e-8,
+                "B": 8.29e-8,
+                "C": 6.17e-8,
+                "D": 7.92e-8,
+            },
             "stokes_radius_data": {"A": 1e-9, "B": 1e-9, "C": 1e-9, "D": 1e-10},
             "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
         }
@@ -304,7 +309,7 @@ def test_build(model3):
     # test state variables
     state_vars_list = ["flow_mol_phase_comp", "temperature", "pressure"]
     state_vars_dict = m.fs.stream[0].define_state_vars()
-    print('$$$$$$$$$$$$', state_vars_dict)
+    print("$$$$$$$$$$$$", state_vars_dict)
     assert len(state_vars_dict) == len(state_vars_list)
     for sv in state_vars_list:
         assert sv in state_vars_dict
@@ -403,7 +408,7 @@ def test_scaling(model3):
         getattr(m.fs.stream[0], v_name)
 
     calculate_scaling_factors(m)
-    
+
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
     [print(i) for i in unscaled_var_list]
@@ -460,7 +465,7 @@ def test_seawater_data():
                 "Ca_2+": 6.17e-8,
                 "Mg_2+": 5.50e-8,
                 "Cl_-": 7.92e-8,
-                "SO4_2-": 8.29e-8
+                "SO4_2-": 8.29e-8,
             },
             "stokes_radius_data": {
                 "Na_+": 0.184e-9,
@@ -520,9 +525,15 @@ def test_seawater_data():
 
     check_dof(m, fail_flag=True)
 
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e-1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e1, index=("Liq", "Na_+"))
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-"))
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e1, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-")
+    )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
     )
@@ -538,7 +549,9 @@ def test_seawater_data():
     stream.initialize()
 
     # check if any variables are badly scaled
-    badly_scaled_var_list = list(badly_scaled_var_generator(m,large=100, small=0.01, zero = 1e-10))
+    badly_scaled_var_list = list(
+        badly_scaled_var_generator(m, large=100, small=0.01, zero=1e-10)
+    )
     assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
@@ -694,7 +707,7 @@ def test_assert_electroneutrality_get_property():
                 "Ca_2+": 6.17e-8,
                 "Mg_2+": 5.50e-8,
                 "Cl_-": 7.92e-8,
-                "SO4_2-": 8.29e-8
+                "SO4_2-": 8.29e-8,
             },
             "stokes_radius_data": {
                 "Na_+": 0.184e-9,
@@ -957,7 +970,10 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (10, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (5.19e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (
+                        5.19e-8,
+                        pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+                    ),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -979,7 +995,10 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (8.29e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (
+                        8.29e-8,
+                        pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+                    ),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -1001,7 +1020,10 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (100, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (6.17e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (
+                        6.17e-8,
+                        pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+                    ),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
@@ -1023,7 +1045,10 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (7.92e-8, pyunits.meter ** 2 * pyunits.volt ** -1 * pyunits.second ** -1),
+                    "electrical_mobility_comp": (
+                        7.92e-8,
+                        pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+                    ),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
                     "cp_mol_liq_comp_coeff": (
                         75.312,
