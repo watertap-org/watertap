@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a dissolved air flotation unit
-operation.
+This module contains a zero-order representation of a dissolved air flotation unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var

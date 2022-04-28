@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a deep well injection unit
-operation.
+This module contains a zero-order representation of a deep well injection unit.
 """
 
 from pyomo.environ import Constraint, Reference, units as pyunits, Var
