@@ -63,24 +63,26 @@ class ASM1ParameterData(PhysicalParameterBlock):
         # Add Component objects
         self.H2O = Solvent()
 
-        self.inert_soluble = Solute(doc="Soluble inert organic matter")
-        self.substrate = Solute(doc="Readily biodegradable substrate")
-        self.inert_particulate = Solute(doc="Particulate inert organic matter")
-        self.biodegradable = Solute(doc="Slowly biodegradable substrate")
-        self.heterotrophic = Solute(doc="Active heterotrophic biomass")
-        self.autotrophic = Solute(doc="Active autotrophic biomass")
+        self.inert_soluble = Solute(doc="Soluble inert organic matter, S_I")
+        self.substrate = Solute(doc="Readily biodegradable substrate, S_S")
+        self.inert_particulate = Solute(doc="Particulate inert organic matter, X_I")
+        self.biodegradable = Solute(doc="Slowly biodegradable substrate, X_S")
+        self.heterotrophic = Solute(doc="Active heterotrophic biomass, X_B,H")
+        self.autotrophic = Solute(doc="Active autotrophic biomass, X_B,A")
         self.decay_particulate = Solute(
-            doc="Particulate products arising from biomass decay"
+            doc="Particulate products arising from biomass decay, X_P"
         )
-        self.oxygen = Solute(doc="Oxygen")
-        self.nitrates = Solute(doc="Nitrate and nitrite nitrogen")
-        self.ammonium = Solute(doc="NH4+ + NH3 nitrogen")
-        self.nitrogen_soluble = Solute(doc="Soluble biodegradable organic nitrogen")
+        self.oxygen = Solute(doc="Oxygen, S_O")
+        self.nitrates = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
+        self.ammonium = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
+        self.nitrogen_soluble = Solute(
+            doc="Soluble biodegradable organic nitrogen, S_ND"
+        )
         self.nitrogen_particulate = Solute(
-            doc="Particulate biodegradable organic nitrogen"
+            doc="Particulate biodegradable organic nitrogen, X_ND"
         )
 
-        self.alkalinity = Component(doc="Alkalinity")
+        self.alkalinity = Component(doc="Alkalinity, S_ALK")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(

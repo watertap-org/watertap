@@ -91,7 +91,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             initialize=0.08,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Fraction of biomass yielding particulate products, y_p",
+            doc="Fraction of biomass yielding particulate products, f_p",
         )
         self.i_xb = pyo.Var(
             initialize=0.08,
