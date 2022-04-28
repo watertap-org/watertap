@@ -6,4 +6,5 @@ Property Models
 
    NaCl
    seawater
-   coagulation 
+   coagulation
+   activated_sludge_model
