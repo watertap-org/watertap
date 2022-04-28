@@ -40,7 +40,7 @@ from idaes.core.util.scaling import (
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,

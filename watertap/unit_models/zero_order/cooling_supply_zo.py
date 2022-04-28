@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a cooling supply unit.
+This module contains a zero-order representation of a cooling supply unit
 operation.
 """
 
