@@ -177,7 +177,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             initialize=0.1,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Half-saturation coefficient for hydolysis of slowly biodegradable substrate, K_X",
+            doc="Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X",
         )
         self.K_NH = pyo.Var(
             initialize=1e-3,
