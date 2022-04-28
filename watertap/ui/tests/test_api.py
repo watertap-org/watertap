@@ -55,9 +55,11 @@ class MockBlock:
     subblock3 = MockSubBlock3()  # note: no interface
 
     def component_map(self, **kwargs):
-        return {"subblock1": getattr(self, "subblock1"),
-                "subblock2": getattr(self, "subblock2"),
-                "subblock3": getattr(self, "subblock3")}
+        return {
+            "subblock1": getattr(self, "subblock1"),
+            "subblock2": getattr(self, "subblock2"),
+            "subblock3": getattr(self, "subblock3"),
+        }
 
 
 @pytest.fixture
@@ -117,7 +119,9 @@ def test_get_block_interface(mock_block):
 def test_block_interface_constructor(mock_block):
     for i in range(4):  # combinations of display_name and description
         disp, desc = (i % 2) == 0, ((i // 2) % 2) == 0
-        obj = BlockInterface(mock_block, build_options(display_name=disp, description=desc))
+        obj = BlockInterface(
+            mock_block, build_options(display_name=disp, description=desc)
+        )
         obj.get_exported_variables()  # force looking at contents
 
 
@@ -203,6 +207,7 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
     assert obj2.get_var_extra() != {}
     assert obj2.get_var_missing() == {}
 
+
 def test_flowsheet_interface_get_var(mock_block):
     fsi = FlowsheetInterface(mock_block, build_options(variables=1))
     with pytest.raises(KeyError):
@@ -216,21 +221,32 @@ def test_schema():
     schema = FlowsheetInterface.get_schema()
     assert schema.validate({}) is not None  # missing 'name' and 'blocks'
     assert schema.validate({"name": "x", "blocks": []}) is None  # ok
-    assert schema.validate({"name": "x", "blocks": "foo"}) is not None  # blocks must be list
-    assert schema.validate({"name": "x", "blocks": [], "extra": {}}) is None  # ok (extra ok)
-    assert schema.validate({"name": "x", "blocks": [{"name": "x", "blocks": []}]}) is None  # nested
+    assert (
+        schema.validate({"name": "x", "blocks": "foo"}) is not None
+    )  # blocks must be list
+    assert (
+        schema.validate({"name": "x", "blocks": [], "extra": {}}) is None
+    )  # ok (extra ok)
+    assert (
+        schema.validate({"name": "x", "blocks": [{"name": "x", "blocks": []}]}) is None
+    )  # nested
 
 
 @pytest.mark.component
 def test_schema_performance():
     import time
+
     schema = FlowsheetInterface.get_schema()
 
     def section(name, num_vars):
         d = {"name": name, "blocks": []}
         variables = []
         for i in range(num_vars):
-            v = {"name": f"v{i}", "display_name": f"variable {i}", "units": "dimensionless"}
+            v = {
+                "name": f"v{i}",
+                "display_name": f"variable {i}",
+                "units": "dimensionless",
+            }
             variables.append(v)
         d["variables"] = variables
         return d
@@ -246,12 +262,16 @@ def test_schema_performance():
             block["blocks"].append(block2)
         d["blocks"].append(block)
 
-    print(f"validating flowsheet with {nblocks[0]  * nblocks[1]} blocks each with {nvars} variables")
+    print(
+        f"validating flowsheet with {nblocks[0]  * nblocks[1]} blocks each with {nvars} variables"
+    )
     t0 = time.time()
     schema.validate(d)
     t1 = time.time()
     dur = t1 - t0
-    print(f"time to validate = {dur:.3f}s or {dur/(nblocks[0]  * nblocks[1])*1000} ms/block")
+    print(
+        f"time to validate = {dur:.3f}s or {dur/(nblocks[0]  * nblocks[1])*1000} ms/block"
+    )
 
     # should never take more than 1/50th sec per block (sub-ms times are normal)
     assert dur < (0.02 * nblocks[0] * nblocks[1])

@@ -39,6 +39,7 @@ def _get_method_classname(m):
             return v
     return "<unknown>"
 
+
 # End logging
 
 
@@ -116,19 +117,22 @@ def config_docs(cls):
 # Schema validation
 # -----------------
 
+
 class SchemaException(Exception):
     """Exception for problems with schema definition."""
+
     pass
 
 
 class JSONException(Exception):
     """Exception for problems encoding or decoding JSON."""
+
     pass
 
 
 class Schema:
-    """Lightweight wrapper for schema validation.
-    """
+    """Lightweight wrapper for schema validation."""
+
     def __init__(self, definition: Union[Dict, str], **kwargs):
         """Constructor.
 
@@ -153,7 +157,9 @@ class Schema:
                 try:
                     definition_str = json.dumps(definition)
                 except TypeError as err:
-                    raise JSONException(f"Converting input dict to JSON for formatting failed: {err}")
+                    raise JSONException(
+                        f"Converting input dict to JSON for formatting failed: {err}"
+                    )
             else:
                 definition_str = definition
             template = Template(definition_str)
@@ -164,7 +170,9 @@ class Schema:
             try:
                 self._schema = json.loads(schema_str)
             except json.JSONDecodeError as err:
-                raise JSONException(f"Parsing of schema definition, after substitution, failed: {err}")
+                raise JSONException(
+                    f"Parsing of schema definition, after substitution, failed: {err}"
+                )
         else:
             if hasattr(definition, "keys"):  # dict-like
                 self._schema = definition
@@ -172,7 +180,9 @@ class Schema:
                 try:
                     self._schema = json.loads(definition)
                 except json.JSONDecodeError as err:
-                    raise JSONException(f"Parsing of schema definition after substitution of format params failed: {err}")
+                    raise JSONException(
+                        f"Parsing of schema definition after substitution of format params failed: {err}"
+                    )
         # Compile input to a schema validation function
         try:
             self._validate = fastjsonschema.compile(self._schema)
