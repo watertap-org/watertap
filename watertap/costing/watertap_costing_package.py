@@ -195,7 +195,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.fc_crystallizer_fob_unit_cost = pyo.Var(
             initialize=675000,
             doc="Forced circulation crystallizer reference free-on-board cost (Woods, 2007)",
-            units=self.base_currency / pyo.units.kg,
+            units=self.base_currency,
         )
 
         self.fc_crystallizer_ref_capacity = pyo.Var(
@@ -626,7 +626,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.capital_cost
             == blk.costing_package.fc_crystallizer_iec_percent
             * blk.costing_package.fc_crystallizer_fob_unit_cost
-            * (blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"] / blk.costing.fc_crystallizer_ref_capacity)
+            * (blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"] / blk.costing_package.fc_crystallizer_ref_capacity)
             ** blk.costing_package.fc_crystallizer_ref_exponent
         )
 

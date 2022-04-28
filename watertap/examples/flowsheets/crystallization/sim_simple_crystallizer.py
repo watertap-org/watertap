@@ -31,6 +31,7 @@ from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
@@ -100,6 +101,7 @@ if __name__ == "__main__":
         "flow_mass_phase_comp", 1e-1, index=("Sol", "NaCl")
     )
     iscale.calculate_scaling_factors(m.fs)
+    m.fs.crystallizer.costing = UnitModelCostingBlock(default={'flowsheet_costing_block': m.fs.costing})
     m.fs.costing.cost_process()
 
     #  m.fs.crystallizer.k_param = 0.06
@@ -121,7 +123,6 @@ if __name__ == "__main__":
     # m.fs.crystallizer.display()
 
     m.fs.crystallizer.report()
-    m.fs.pprint()
     assert False
 
     # assert False
