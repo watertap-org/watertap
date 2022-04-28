@@ -757,7 +757,7 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
@@ -856,7 +856,7 @@ class WaterStateBlockData(StateBlockData):
         self.cp_phase = Var(
             self.params.phase_list,
             initialize=4e3,
-            bounds=(1e-8, 1e8),
+            bounds=(0, 1e8),
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity",
         )
