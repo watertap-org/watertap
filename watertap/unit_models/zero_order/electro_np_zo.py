@@ -34,7 +34,7 @@ class ElectroNPZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "electroN_P"
+        self._tech_type = "electro_np"
 
         build_sido_reactive(self)
 

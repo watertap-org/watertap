@@ -75,7 +75,7 @@ class TestElectroNPZO:
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("electroN_P")
+        data = model.db.get_unit_operation_parameters("electro_np")
 
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
@@ -241,7 +241,7 @@ def test_costing():
         "flowsheets",
         "case_studies",
         "wastewater_resource_recovery",
-        "electroN_P",
+        "electro_np",
         "case_1617.yaml",
     )
 
@@ -261,9 +261,9 @@ def test_costing():
         default={"flowsheet_costing_block": m.fs.costing}
     )
 
-    assert isinstance(m.fs.costing.electroN_P, Block)
-    assert isinstance(m.fs.costing.electroN_P.HRT, Var)
-    assert isinstance(m.fs.costing.electroN_P.sizing_cost, Var)
+    assert isinstance(m.fs.costing.electro_np, Block)
+    assert isinstance(m.fs.costing.electro_np.HRT, Var)
+    assert isinstance(m.fs.costing.electro_np.sizing_cost, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
