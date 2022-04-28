@@ -75,7 +75,9 @@ class TestElectroNPZO:
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("electrochemical_nutrient_removal")
+        data = model.db.get_unit_operation_parameters(
+            "electrochemical_nutrient_removal"
+        )
 
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
