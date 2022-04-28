@@ -187,7 +187,7 @@ class BlockSchemaDefinition:
                                                             {"type": "string"},
                                                         ]
                                                     },
-                                                    "$unit_key": { "type": "string"},
+                                                    "$unit_key": {"type": "string"},
                                                 },
                                             },
                                         },
@@ -333,23 +333,77 @@ class FlowsheetInterface(BlockInterface):
         """
         super().__init__(flowsheet, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
-        self._vis = None
+        self.meta = {}
+        self._var_diff = {}  # for recording missing/extra variables during load()
 
     # Public methods
 
+    def get_var_missing(self) -> Dict[str, List[str]]:
+        """After a :meth:`load`, these are the variables that were present in the input,
+           but not found in the BlockInterface object for the corresponding block.
+
+           e.g.: ``{'Flowsheet': ['foo_var', 'bar_var'], 'Flowsheet.Component': ['baz_var']}``
+
+        Returns:
+            map of block names to a list of variable names
+
+        Raises:
+            KeyError: if :meth:`load()` has not been called.
+        """
+        try:
+            return self._var_diff["missing"].copy()
+        except KeyError:
+            raise KeyError("get_var_missing() has no meaning before load() is called")
+
+    def get_var_extra(self) -> Dict[str, List[str]]:
+        """After a :meth:`load`, these are the variables that were in some BlockInterface object,
+           but not found in the input data for the corresponding block.
+
+           e.g.: ``{'Flowsheet': ['new1_var'], 'Flowsheet.Component': ['new2_var']}``
+
+        Returns:
+            map of block names to a list of variable names
+
+        Raises:
+            KeyError: if :meth:`load()` has not been called.
+        """
+        try:
+            return self._var_diff["extra"].copy()
+        except KeyError:
+            raise KeyError("get_var_extra() has no meaning before load() is called")
+
     @log_meth
-    def as_dict(self, include_vis=True):
+    def as_dict(self):
         """Return current state serialized as a dictionary."""
         d = self._get_block_map()
-        # print(f"@@ as_dict data={json.dumps(d, indent=2)}")
-        if include_vis and self._vis is not None:
-            d["vis"] = self._vis.copy()
+        d.update(self.meta)
         d[self.NAME_KEY] = "__root__"
         return d
 
+    def __eq__(self, other) -> bool:
+        """Equality test. A side effect is that both objects are serialized using :meth:`as_dict()`.
+
+        Returns:
+            Equality of ``as_dict()`` applied to self and 'other'. If it's not defined on 'other', then False.
+        """
+        if hasattr(other, "as_dict") and callable(other.as_dict):
+            return self.as_dict() == other.as_dict()
+        return False
+
     @log_meth
     def save(self, file_or_stream: Union[str, Path, TextIO]):
-        """Save the current state of this instance to a file."""
+        """Save the current state of this instance to a file.
+
+        Args:
+            file_or_stream: File specified as filename, Path object, or stream object
+
+        Returns:
+            None
+
+        Raises:
+            IOError: Could not open or use the output file
+            TypeError: Unable to serialize as JSON
+        """
         fp = open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
         data = self.as_dict()
         json.dump(data, fp)
@@ -359,31 +413,50 @@ class FlowsheetInterface(BlockInterface):
         cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
     ) -> "FlowsheetInterface":
         """Load from saved state in a file into the flowsheet block ``fs_block``.
+        This will modify the values in the block from the saved values.
+
+        Any variables in the file that were not found in the hierarchy of block interfaces under ``fs_block``,
+        or any variables in that hierarchy that were not present in the input file, are recorded and can
+        be retrieved after this function returnns with :meth:`get_var_missing` and :meth:`get_var_extra`.
+
+        Args:
+            file_or_stream: File to load from
+            fs_block: Flowsheet to modify. The BlockInterface-s in the flowsheet, and its contained blocks,
+               will be updated with values and units from the saved data.
+
+        Returns:
+            Initialized flowsheet interface.
 
         Raises:
             ValueError: Improper input data
         """
-        fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
-        data = json.load(fp)
-        validation_error = cls.get_schema().validate(data)
-        if validation_error:
-            raise ValueError(f"Input data failed schema validation: {validation_error}")
-        root = data["blocks"]
-        cls._load(root, fs_block)
-        # attach other information to root
         ui = get_block_interface(fs_block)
         if ui is None:
             raise ValueError(
                 f"Flowsheet object must define FlowsheetInterface using "
                 f"``set_block_interface()`` during construction. obj={fs_block}"
             )
-        ui.set_visualization(data["vis"])
+        fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
+        data = json.load(fp)
+        validation_error = cls.get_schema().validate(data)
+        if validation_error:
+            raise ValueError(f"Input data failed schema validation: {validation_error}")
+        # check root block
+        top_blocks = data[cls.BLKS_KEY]
+        if len(top_blocks) != 1:
+            n = len(top_blocks)
+            names = [b.get(cls.NAME_KEY, "?") for b in top_blocks]
+            raise ValueError(f"There should be one top-level flowsheet block, got {n}: {names}")
+        # load, starting at root block data, into the flowsheet Pyomo Block
+        cls._load(top_blocks[0], fs_block, None, ui._new_var_diff())
+        # add metadata (anything not under the blocks or name in root)
+        ui.meta = {mk: data[mk] for mk in set(data.keys()) - {cls.BLKS_KEY, cls.NAME_KEY}}
+        # return the resulting interface of the flowsheet block
         return ui
 
     @classmethod
     def get_schema(cls) -> Schema:
-        """Get a schema that can validate the exported JSON representation.
-        """
+        """Get a schema that can validate the exported JSON representation."""
         if cls._schema is None:
             cls._schema = Schema(cls.BLOCK_SCHEMA, **cls.ALL_KEYS)
         return cls._schema
@@ -407,15 +480,11 @@ class FlowsheetInterface(BlockInterface):
             raise ValueError("Undefined action. name={name}")
         return func(self._block, **kwargs)
 
-    def set_visualization(self, vis: Dict):
-        """Set the visualization information.
+    # Protected methods
 
-        Args:
-            vis: Visualization data dict
-        """
-        self._vis = vis
-
-    # Private methods
+    def _new_var_diff(self):
+        self._var_diff = {"missing": {}, "extra": {}}
+        return self._var_diff
 
     def _check_action(self, name):
         if name not in self.ACTIONS:
@@ -432,7 +501,6 @@ class FlowsheetInterface(BlockInterface):
         # walk the tree, building mapping as we go
         while stack:
             key, val = stack.pop()
-            # print(f"@@ popped from stack: key={key}, val={val}")
             ui = get_block_interface(val)
             if ui:
                 self._add_to_mapping(mapping, key, ui)
@@ -445,7 +513,6 @@ class FlowsheetInterface(BlockInterface):
     def _add_to_mapping(self, m, key, block_ui: BlockInterface):
         nodes = key[:-1]
         leaf = key[-1]
-        # print(f"@@ add-to-mapping, key={key} nodes={nodes} leaf={leaf}")
         new_data = {
             self.NAME_KEY: block_ui.block.name,
             self.DISP_KEY: block_ui.config.display_name,
@@ -469,34 +536,49 @@ class FlowsheetInterface(BlockInterface):
         if self.BLKS_KEY in m:
             for sub_block in m[self.BLKS_KEY]:
                 if sub_block[self.NAME_KEY] == leaf:
-                    raise ValueError(f"Add mapping key failed: Already present. key={leaf}")
+                    raise ValueError(
+                        f"Add mapping key failed: Already present. key={leaf}"
+                    )
             m[self.BLKS_KEY].append(new_data)
         else:
             m[self.BLKS_KEY] = [new_data]
         # print(f"@@ New mapping: {json.dumps(m, indent=2)}")
 
     @classmethod
-    def _load(cls, block_data, cur_block):
+    def _load(cls, block_data, cur_block: Block, parent_key, var_diff):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
         """
-        if cls.VARS_KEY in block_data:
-            ui = get_block_interface(cur_block)
-            cls._load_variables(block_data[cls.VARS_KEY], ui)
+        cur_block_key = cur_block.name if parent_key is None else f"{parent_key}.{cur_block.name}"
+        ui = get_block_interface(cur_block)
+        if ui:
+            if cls.VARS_KEY in block_data:
+                load_result = cls._load_variables(block_data[cls.VARS_KEY], ui)
+                # save any 'missing' and 'extra' variables for this block into `load_diff`
+                for key, val in load_result.items():
+                    if val:
+                        var_diff[key][cur_block_key] = val
+            else:
+                # all variables (not in the data) are 'extra' in the block
+                block_vars = ui.config.variables.value()
+                if block_vars:
+                    var_diff["extra"][cur_block_key] = [v[cls.NAME_KEY] for v in block_vars]
+        else:
+            # all variables in the data are 'missing' from the block
+            data_vars = block_data.get(cls.VARS_KEY, [])
+            if data_vars:
+                var_diff["missing"][cur_block_key] = [v[cls.NAME_KEY] for v in data_vars]
         if cls.BLKS_KEY in block_data:
             for sb_data in block_data[cls.BLKS_KEY]:
                 sb_block = getattr(cur_block, sb_data[cls.NAME_KEY])
-                cls._load(sb_data, sb_block)
+                cls._load(sb_data, sb_block, cur_block_key, var_diff)
 
     @classmethod
     def _load_variables(cls, variables, ui: BlockInterface) -> Dict[str, List]:
-        """Load the list of variable data in ``variables`` into the block interface of a block.
+        """Load the values in ``variables`` into the block interface of a block.
 
-        There are two possible cases for each variable in the input list:
-          (1) This variable *is* in the block interface: Update the block interface info
-          (2) This variable *is not* in the block interface: Add it to the return value
-
-        Also add any variables in the block interface that are not in the input to the return value.
+        The only modification to the blocks is the stored value. Units, display name, description, etc.
+        are not changed. Input variables missing from the block and vice-versa are noted, see return value.
 
         Args:
             variables: list of variables
@@ -508,44 +590,24 @@ class FlowsheetInterface(BlockInterface):
               - 'missing', variables that were in the input but missing from the block interface
               - 'extra', variables that were *not* in the input but present in the block interface
         """
-        loaded_vars = []
-        result = {"missing": []}
-        block_var_dict = {v[cls.NAME_KEY]: v for v in ui.config.variables.value()}
-        block_var_extra = block_var_dict.copy()  # what remains after loop is 'extra'
-        # loop through the list of input variables
+        result = {"missing": [], "extra": {v[cls.NAME_KEY] for v in ui.config.variables.value()}}
+        # Loop through the list of input variables and set corresponding variable values in the block,
+        # while also updating the 'missing' and 'extra' lists.
         for data_var in variables:
             name = data_var[cls.NAME_KEY]
-            block_var = block_var_dict.get(name, None)
-            if block_var is None:
+            variable_obj = getattr(ui.block, name)
+            if variable_obj is None:
                 result["missing"].append(data_var)
-                _log.warning(
-                    f"Input variable not in BlockInterface: name={name}"
-                )  # XXX: block name?
             else:
-                loaded_vars.append(data_var)
-        result["extra"] = list(block_var_extra.values())
-        if len(result["extra"]) > 0:
-            var_names = ", ".join([e["name"] for e in result["extra"]])
-            _log.warning(
-                f"Variables in BlockInterface not in input variables: names={var_names}"
-            )  # XXX: block name?
-        # substitute loaded variables for original ones in the block interface
-        # first, extract values out of the input data
-        values_map = {}
-        for lv in loaded_vars:
-            lv_value = lv.get(cls.VALU_KEY, None)
-            if lv_value is not None:
-                values_map[lv[cls.NAME_KEY]] = lv_value
-                del lv[cls.VALU_KEY]
-        ui.config.variables.set_value(loaded_vars)
-        # Set values for variables in the block
-        for variable_name, lv_value in values_map.items():
-            variable_obj = getattr(ui.block, variable_name)
-            if isinstance(lv_value, list):
-                for lv_item in lv_value:
-                    idx, val = tuple(lv_item[cls.INDX_KEY]), lv_item[cls.VALU_KEY]
-                    variable_obj[idx] = val
-            else:
-                variable_obj.set_value(lv_value)
+                data_val = data_var.get(cls.VALU_KEY, None)
+                if data_val is not None:
+                    if isinstance(data_val, list):
+                        for item in data_val:
+                            idx, val = tuple(item[cls.INDX_KEY]), item[cls.VALU_KEY]
+                            variable_obj[idx] = val
+                    else:
+                        variable_obj.set_value(data_val)
+                result["extra"].remove(name)
         # return 'missing' and 'extra'
+        result["extra"] = list(result["extra"])  # normalize to lists for both
         return result

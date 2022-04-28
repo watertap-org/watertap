@@ -6,7 +6,7 @@ import inspect
 import json
 import functools
 from string import Template
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, IO
 
 # third-party
 import fastjsonschema
@@ -42,7 +42,18 @@ def _get_method_classname(m):
 # End logging
 
 
-def open_file_or_stream(fos, attr, **kwargs):
+def open_file_or_stream(fos, attr, **kwargs) -> IO:
+    """Open a file or use the existing stream. Avoids adding this logic to every function that wants to provide
+       multiple ways of specifying a file.
+
+    Args:
+        fos: File or stream
+        attr: Attribute to check on the ``fos`` object to see if it is a stream, e.g. "write" or "read"
+        kwargs: Additional keywords passed to the ``open`` call. Ignored if the input is a stream.
+
+    Returns:
+        Opened stream object
+    """
     if hasattr(fos, attr):
         output = fos
     else:
