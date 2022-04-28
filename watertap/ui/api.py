@@ -1,10 +1,11 @@
 """
-API for the UI.
+This module defines the API for the WaterTAP user interface.
 
-The main entry point is the class FlowsheetInterface. An existing module that created and ran
-a flowsheet should define a function that returns an instance of this class.
-It should also define functions that perform the ``build`` and ```solve`` actions on the flowsheet.
-The name of this module-level function is define in this module in the variable ENTRY_POINT.
+The main entry point is :class:`FlowsheetInterface`. An existing module that created
+and ran a flowsheet should define a function that returns an instance of this class.
+It should also define functions that perform the ``build`` and ```solve`` actions on
+the flowsheet. The name of this module-level function is defined in this module in
+the variable ENTRY_POINT.
 
 For example::
 
@@ -22,8 +23,9 @@ For example::
         fsi.set_action(WorkflowActions.solve, solve)
         return fsi
 
-Unit models should use ``set_block_interface`` in their ``build()`` method to export variables to the UI.
-All the unit models (blocks) in the flowsheet that do this will have their exported variables shown in the UI.
+Unit models should use ``set_block_interface`` in their ``build()`` method to export
+variables to the UI. All the unit models (blocks) in the flowsheet that do this will
+have their exported variables shown in the UI.
 
 For example::
 
@@ -43,8 +45,6 @@ For example::
                    ...etc..
               ]
            })
-
-
 
 """
 import json
@@ -340,7 +340,7 @@ class FlowsheetInterface(BlockInterface):
 
     def get_var_missing(self) -> Dict[str, List[str]]:
         """After a :meth:`load`, these are the variables that were present in the input,
-           but not found in the BlockInterface object for the corresponding block.
+        but not found in the BlockInterface object for the corresponding block.
 
            e.g.: ``{'Flowsheet': ['foo_var', 'bar_var'], 'Flowsheet.Component': ['baz_var']}``
 
@@ -356,8 +356,9 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError("get_var_missing() has no meaning before load() is called")
 
     def get_var_extra(self) -> Dict[str, List[str]]:
-        """After a :meth:`load`, these are the variables that were in some BlockInterface object,
-           but not found in the input data for the corresponding block.
+        """After a :meth:`load`, these are the variables that were in some
+        :class:`BlockInterface` object, but not found in the input data for the
+        corresponding block.
 
            e.g.: ``{'Flowsheet': ['new1_var'], 'Flowsheet.Component': ['new2_var']}``
 
@@ -381,7 +382,8 @@ class FlowsheetInterface(BlockInterface):
         return d
 
     def __eq__(self, other) -> bool:
-        """Equality test. A side effect is that both objects are serialized using :meth:`as_dict()`.
+        """Equality test. A side effect is that both objects are serialized using
+        :meth:`as_dict()`.
 
         Returns:
             Equality of ``as_dict()`` applied to self and 'other'. If it's not defined on 'other', then False.
@@ -413,11 +415,8 @@ class FlowsheetInterface(BlockInterface):
         cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
     ) -> "FlowsheetInterface":
         """Load from saved state in a file into the flowsheet block ``fs_block``.
-        This will modify the values in the block from the saved values.
-
-        Any variables in the file that were not found in the hierarchy of block interfaces under ``fs_block``,
-        or any variables in that hierarchy that were not present in the input file, are recorded and can
-        be retrieved after this function returnns with :meth:`get_var_missing` and :meth:`get_var_extra`.
+        This will modify the values in the block from the saved values using the
+        :meth:`update()` method. See its documentation for details.
 
         Args:
             file_or_stream: File to load from
@@ -438,25 +437,48 @@ class FlowsheetInterface(BlockInterface):
             )
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
-        validation_error = cls.get_schema().validate(data)
-        if validation_error:
-            raise ValueError(f"Input data failed schema validation: {validation_error}")
-        # check root block
-        top_blocks = data[cls.BLKS_KEY]
-        if len(top_blocks) != 1:
-            n = len(top_blocks)
-            names = [b.get(cls.NAME_KEY, "?") for b in top_blocks]
-            raise ValueError(f"There should be one top-level flowsheet block, got {n}: {names}")
-        # load, starting at root block data, into the flowsheet Pyomo Block
-        cls._load(top_blocks[0], fs_block, None, ui._new_var_diff())
-        # add metadata (anything not under the blocks or name in root)
-        ui.meta = {mk: data[mk] for mk in set(data.keys()) - {cls.BLKS_KEY, cls.NAME_KEY}}
+        ui.update(data)
         # return the resulting interface of the flowsheet block
         return ui
 
+    def update(self, data: Dict):
+        """Update values in blocks in and under this interface, from data.
+
+       Any variables in the file that were not found in the hierarchy of block
+       interfaces under this object, or any variables in that hierarchy that were
+       not present in the input file, are recorded and can be retrieved after this
+       function returnns with :meth:`get_var_missing` and :meth:`get_var_extra`.
+
+        Args:
+            data: Data in the expected schema (see :meth:`get_schema`)
+        """
+        validation_error = self.get_schema().validate(data)
+        if validation_error:
+            raise ValueError(f"Input data failed schema validation: {validation_error}")
+        # check root block
+        top_blocks = data[self.BLKS_KEY]
+        if len(top_blocks) != 1:
+            n = len(top_blocks)
+            names = [b.get(self.NAME_KEY, "?") for b in top_blocks]
+            raise ValueError(
+                f"There should be one top-level flowsheet block, got {n}: {names}"
+            )
+        # load, starting at root block data, into the flowsheet Pyomo Block
+        self._load(top_blocks[0], self.block, None, self._new_var_diff())
+        # add metadata (anything not under the blocks or name in root)
+        self.meta = {
+            mk: data[mk] for mk in set(data.keys()) - {self.BLKS_KEY, self.NAME_KEY}
+        }
+
     @classmethod
     def get_schema(cls) -> Schema:
-        """Get a schema that can validate the exported JSON representation."""
+        """Get a schema that can validate the exported JSON representation from
+        :meth:`as_dict()` or, equivalently, :meth:`save()`.
+
+        Returns:
+            The schema defined by the :class:`BlockSchemaDefinition`, wrapped by a
+            utility class that hides the details of schema validation libraries.
+        """
         if cls._schema is None:
             cls._schema = Schema(cls.BLOCK_SCHEMA, **cls.ALL_KEYS)
         return cls._schema
@@ -549,7 +571,9 @@ class FlowsheetInterface(BlockInterface):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
         """
-        cur_block_key = cur_block.name if parent_key is None else f"{parent_key}.{cur_block.name}"
+        cur_block_key = (
+            cur_block.name if parent_key is None else f"{parent_key}.{cur_block.name}"
+        )
         ui = get_block_interface(cur_block)
         if ui:
             if cls.VARS_KEY in block_data:
@@ -562,12 +586,16 @@ class FlowsheetInterface(BlockInterface):
                 # all variables (not in the data) are 'extra' in the block
                 block_vars = ui.config.variables.value()
                 if block_vars:
-                    var_diff["extra"][cur_block_key] = [v[cls.NAME_KEY] for v in block_vars]
+                    var_diff["extra"][cur_block_key] = [
+                        v[cls.NAME_KEY] for v in block_vars
+                    ]
         else:
             # all variables in the data are 'missing' from the block
             data_vars = block_data.get(cls.VARS_KEY, [])
             if data_vars:
-                var_diff["missing"][cur_block_key] = [v[cls.NAME_KEY] for v in data_vars]
+                var_diff["missing"][cur_block_key] = [
+                    v[cls.NAME_KEY] for v in data_vars
+                ]
         if cls.BLKS_KEY in block_data:
             for sb_data in block_data[cls.BLKS_KEY]:
                 sb_block = getattr(cur_block, sb_data[cls.NAME_KEY])
@@ -590,7 +618,10 @@ class FlowsheetInterface(BlockInterface):
               - 'missing', variables that were in the input but missing from the block interface
               - 'extra', variables that were *not* in the input but present in the block interface
         """
-        result = {"missing": [], "extra": {v[cls.NAME_KEY] for v in ui.config.variables.value()}}
+        result = {
+            "missing": [],
+            "extra": {v[cls.NAME_KEY] for v in ui.config.variables.value()},
+        }
         # Loop through the list of input variables and set corresponding variable values in the block,
         # while also updating the 'missing' and 'extra' lists.
         for data_var in variables:
