@@ -33,6 +33,7 @@ from watertap.unit_models import (
     NanoFiltration0D,
     NanofiltrationZO,
     PressureExchanger,
+    Crystallization,
     Pump,
     EnergyRecoveryDevice,
 )
@@ -188,6 +189,30 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             mutable=True,
             initialize=1,
             doc="CaOH2 purity",
+            units=pyo.units.dimensionless,
+        )
+
+        self.fc_crystallizer_fob_unit_cost = pyo.Var(
+            initialize=675000,
+            doc="Forced circulation crystallizer reference free-on-board cost (Woods, 2007)",
+            units=self.base_currency / pyo.units.kg,
+        )
+
+        self.fc_crystallizer_ref_capacity = pyo.Var(
+            initialize=1,
+            doc="Forced circulation crystallizer reference crystal capacity (Woods, 2007)",
+            units=pyo.units.kg / pyo.units.s,
+        )
+
+        self.fc_crystallizer_ref_exponent = pyo.Var(
+            initialize=0.53,
+            doc="Forced circulation crystallizer cost exponent factor (Woods, 2007)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.fc_crystallizer_iec_percent = pyo.Var(
+            initialize=1.43,
+            doc="Forced circulation crystallizer installed equipment cost (Diab and Gerogiorgis, 2017)",
             units=pyo.units.dimensionless,
         )
 
@@ -587,6 +612,24 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
 
+    @staticmethod
+    def cost_crystallizer(blk):
+        """
+        Function for costing the FC crystallizer by the mass flow of produced crystals.
+
+        Args:
+            mass_to_cost - The mass flow costed in [mass]/[time]
+        """
+        _make_capital_cost_var(blk)
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == blk.costing_package.fc_crystallizer_iec_percent
+            * blk.costing_package.fc_crystallizer_fob_unit_cost
+            * (blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"] / blk.costing.fc_crystallizer_ref_capacity)
+            ** blk.costing_package.fc_crystallizer_ref_exponent
+        )
+
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
     Mixer: WaterTAPCostingData.cost_mixer,
@@ -597,6 +640,7 @@ WaterTAPCostingData.unit_mapping = {
     ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
+    Crystallization: WaterTAPCostingData.cost_crystallizer,
 }
 
 

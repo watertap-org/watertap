@@ -664,6 +664,10 @@ class CrystallizationData(UnitModelBlockData):
         blk.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
+    def get_costing(self, module=None):
+        self.costing = Block()
+        module.Crystallization_costing(self.costing)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 

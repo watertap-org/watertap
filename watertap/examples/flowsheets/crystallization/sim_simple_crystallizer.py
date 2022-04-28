@@ -34,6 +34,7 @@ from idaes.core.util import get_solver
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
+from watertap.costing import WaterTAPCosting
 
 from io import StringIO
 from pyomo.util.infeasible import (
@@ -53,6 +54,7 @@ if __name__ == "__main__":
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # attach property package
     m.fs.properties = props.NaClParameterBlock()
+    m.fs.costing = WaterTAPCosting()
     # build the unit model
     m.fs.crystallizer = Crystallization(default={"property_package": m.fs.properties})
 
@@ -98,6 +100,7 @@ if __name__ == "__main__":
         "flow_mass_phase_comp", 1e-1, index=("Sol", "NaCl")
     )
     iscale.calculate_scaling_factors(m.fs)
+    m.fs.costing.cost_process()
 
     #  m.fs.crystallizer.k_param = 0.06
     # solving
@@ -118,6 +121,8 @@ if __name__ == "__main__":
     # m.fs.crystallizer.display()
 
     m.fs.crystallizer.report()
+    m.fs.pprint()
+    assert False
 
     # assert False
     ##########################################
