@@ -63,26 +63,20 @@ class ASM1ParameterData(PhysicalParameterBlock):
         # Add Component objects
         self.H2O = Solvent()
 
-        self.inert_soluble = Solute(doc="Soluble inert organic matter, S_I")
-        self.substrate = Solute(doc="Readily biodegradable substrate, S_S")
-        self.inert_particulate = Solute(doc="Particulate inert organic matter, X_I")
-        self.biodegradable = Solute(doc="Slowly biodegradable substrate, X_S")
-        self.heterotrophic = Solute(doc="Active heterotrophic biomass, X_B,H")
-        self.autotrophic = Solute(doc="Active autotrophic biomass, X_B,A")
-        self.decay_particulate = Solute(
-            doc="Particulate products arising from biomass decay, X_P"
-        )
-        self.oxygen = Solute(doc="Oxygen, S_O")
-        self.nitrates = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
-        self.ammonium = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
-        self.nitrogen_soluble = Solute(
-            doc="Soluble biodegradable organic nitrogen, S_ND"
-        )
-        self.nitrogen_particulate = Solute(
-            doc="Particulate biodegradable organic nitrogen, X_ND"
-        )
+        self.S_I = Solute(doc="Soluble inert organic matter, S_I")
+        self.S_S = Solute(doc="Readily biodegradable substrate, S_S")
+        self.X_I = Solute(doc="Particulate inert organic matter, X_I")
+        self.X_S = Solute(doc="Slowly biodegradable substrate, X_S")
+        self.X_BH = Solute(doc="Active heterotrophic biomass, X_B,H")
+        self.X_BA = Solute(doc="Active autotrophic biomass, X_B,A")
+        self.X_P = Solute(doc="Particulate products arising from biomass decay, X_P")
+        self.S_O = Solute(doc="Oxygen, S_O")
+        self.S_NO = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
+        self.S_NH = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
+        self.S_ND = Solute(doc="Soluble biodegradable organic nitrogen, S_ND")
+        self.X_ND = Solute(doc="Particulate biodegradable organic nitrogen, X_ND")
 
-        self.alkalinity = Component(doc="Alkalinity, S_ALK")
+        self.S_ALK = Component(doc="Alkalinity, S_ALK")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -291,8 +285,9 @@ class ASM1StateBlockData(StateBlockData):
     def get_material_flow_terms(b, p, j):
         if j == "H2O":
             return b.flow_vol * b.params.dens_mass
-        elif j == "alkalinity":
-            return b.flow_vol * b.alkalinity * (14 * pyo.units.kg / pyo.units.kmol)
+        elif j == "S_ALK":
+            # Convert moles of alkalinity to mass of C assuming all is HCO3-
+            return b.flow_vol * b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.flow_vol * b.conc_mass_comp[j]
 
@@ -307,8 +302,9 @@ class ASM1StateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         if j == "H2O":
             return b.params.dens_mass
-        elif j == "alkalinity":
-            return b.alkalinity * (14 * pyo.units.kg / pyo.units.kmol)
+        elif j == "S_ALK":
+            # Convert moles of alkalinity to mass of C assuming all is HCO3-
+            return b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.conc_mass_comp[j]
 

@@ -57,19 +57,19 @@ class TestParamBlock(object):
         for i in model.params.component_list:
             assert i in [
                 "H2O",
-                "inert_soluble",
-                "substrate",
-                "inert_particulate",
-                "biodegradable",
-                "heterotrophic",
-                "autotrophic",
-                "decay_particulate",
-                "oxygen",
-                "nitrates",
-                "ammonium",
-                "nitrogen_soluble",
-                "nitrogen_particulate",
-                "alkalinity",
+                "S_I",
+                "S_S",
+                "X_I",
+                "X_S",
+                "X_BH",
+                "X_BA",
+                "X_P",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "X_ND",
+                "S_ALK",
             ]
 
         assert isinstance(model.params.cp_mass, Param)
@@ -114,18 +114,18 @@ class TestStateBlock(object):
         assert len(model.props[1].conc_mass_comp) == 12
         for i in model.props[1].conc_mass_comp:
             assert i in [
-                "inert_soluble",
-                "substrate",
-                "inert_particulate",
-                "biodegradable",
-                "heterotrophic",
-                "autotrophic",
-                "decay_particulate",
-                "oxygen",
-                "nitrates",
-                "ammonium",
-                "nitrogen_soluble",
-                "nitrogen_particulate",
+                "S_I",
+                "S_S",
+                "X_I",
+                "X_S",
+                "X_BH",
+                "X_BA",
+                "X_P",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "X_ND",
             ]
             assert value(model.props[1].conc_mass_comp[i]) == 0.1
 
@@ -137,11 +137,11 @@ class TestStateBlock(object):
                     assert str(model.props[1].get_material_flow_terms(p, j)) == str(
                         model.props[1].flow_vol * model.props[1].params.dens_mass
                     )
-                elif j == "alkalinity":
+                elif j == "S_ALK":
                     assert str(model.props[1].get_material_flow_terms(p, j)) == str(
                         model.props[1].flow_vol
                         * model.props[1].alkalinity
-                        * (14 * units.kg / units.kmol)
+                        * (12 * units.kg / units.kmol)
                     )
                 else:
                     assert str(model.props[1].get_material_flow_terms(p, j)) == str(
@@ -166,9 +166,9 @@ class TestStateBlock(object):
                     assert str(model.props[1].get_material_density_terms(p, j)) == str(
                         model.props[1].params.dens_mass
                     )
-                elif j == "alkalinity":
+                elif j == "S_ALK":
                     assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].alkalinity * (14 * units.kg / units.kmol)
+                        model.props[1].alkalinity * (12 * units.kg / units.kmol)
                     )
                 else:
                     assert str(model.props[1].get_material_density_terms(p, j)) == str(

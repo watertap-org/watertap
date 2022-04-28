@@ -70,25 +70,25 @@ class TestParamBlock(object):
             assert i[1] == "Liq"
             assert i[2] in [
                 "H2O",
-                "inert_soluble",
-                "substrate",
-                "inert_particulate",
-                "biodegradable",
-                "heterotrophic",
-                "autotrophic",
-                "decay_particulate",
-                "oxygen",
-                "nitrates",
-                "ammonium",
-                "nitrogen_soluble",
-                "nitrogen_particulate",
-                "alkalinity",
+                "S_I",
+                "S_S",
+                "X_I",
+                "X_S",
+                "X_BH",
+                "X_BA",
+                "X_P",
+                "S_O",
+                "S_NO",
+                "S_NH",
+                "S_ND",
+                "X_ND",
+                "S_ALK",
             ]
 
-        assert isinstance(model.rparams.yield_A, Var)
-        assert value(model.rparams.yield_A) == 0.24
-        assert isinstance(model.rparams.yield_H, Var)
-        assert value(model.rparams.yield_H) == 0.67
+        assert isinstance(model.rparams.Y_A, Var)
+        assert value(model.rparams.Y_A) == 0.24
+        assert isinstance(model.rparams.Y_H, Var)
+        assert value(model.rparams.Y_H) == 0.67
         assert isinstance(model.rparams.f_p, Var)
         assert value(model.rparams.f_p) == 0.08
         assert isinstance(model.rparams.i_xb, Var)
@@ -96,38 +96,34 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.i_xp, Var)
         assert value(model.rparams.i_xp) == 0.06
 
-        assert isinstance(model.rparams.max_growth_rate_autotrophic, Var)
-        assert value(model.rparams.max_growth_rate_autotrophic) == 0.5
-        assert isinstance(model.rparams.max_growth_rate_heterotrophic, Var)
-        assert value(model.rparams.max_growth_rate_heterotrophic) == 4
-        assert isinstance(model.rparams.half_saturation_coeff_heterotrophic, Var)
-        assert value(model.rparams.half_saturation_coeff_heterotrophic) == 10e-3
-        assert isinstance(model.rparams.half_saturation_coeff_oxygen_heterotrophic, Var)
-        assert value(model.rparams.half_saturation_coeff_oxygen_heterotrophic) == 0.2e-3
-        assert isinstance(model.rparams.half_saturation_coeff_oxygen_autotrophic, Var)
-        assert value(model.rparams.half_saturation_coeff_oxygen_autotrophic) == 0.4e-3
-        assert isinstance(
-            model.rparams.half_saturation_coeff_nitrate_heterotrophic, Var
-        )
-        assert (
-            value(model.rparams.half_saturation_coeff_nitrate_heterotrophic) == 0.5e-3
-        )
-        assert isinstance(model.rparams.decay_coeff_heterotrophic, Var)
-        assert value(model.rparams.decay_coeff_heterotrophic) == 0.3
-        assert isinstance(model.rparams.decay_coeff_autotrophic, Var)
-        assert value(model.rparams.decay_coeff_autotrophic) == 0.05
+        assert isinstance(model.rparams.mu_A, Var)
+        assert value(model.rparams.mu_A) == 0.5
+        assert isinstance(model.rparams.mu_H, Var)
+        assert value(model.rparams.mu_H) == 4
+        assert isinstance(model.rparams.K_S, Var)
+        assert value(model.rparams.K_S) == 10e-3
+        assert isinstance(model.rparams.K_OH, Var)
+        assert value(model.rparams.K_OH) == 0.2e-3
+        assert isinstance(model.rparams.K_OA, Var)
+        assert value(model.rparams.K_OA) == 0.4e-3
+        assert isinstance(model.rparams.K_NO, Var)
+        assert value(model.rparams.K_NO) == 0.5e-3
+        assert isinstance(model.rparams.b_H, Var)
+        assert value(model.rparams.b_H) == 0.3
+        assert isinstance(model.rparams.b_A, Var)
+        assert value(model.rparams.b_A) == 0.05
         assert isinstance(model.rparams.eta_g, Var)
         assert value(model.rparams.eta_g) == 0.8
         assert isinstance(model.rparams.eta_h, Var)
         assert value(model.rparams.eta_h) == 0.8
-        assert isinstance(model.rparams.max_hydrolysis_rate, Var)
-        assert value(model.rparams.max_hydrolysis_rate) == 3
-        assert isinstance(model.rparams.half_saturation_coeff_hydrolysis, Var)
-        assert value(model.rparams.half_saturation_coeff_hydrolysis) == 0.1
-        assert isinstance(model.rparams.half_saturation_coeff_ammonium, Var)
-        assert value(model.rparams.half_saturation_coeff_ammonium) == 1e-3
-        assert isinstance(model.rparams.ammonification_rate, Var)
-        assert value(model.rparams.ammonification_rate) == 50
+        assert isinstance(model.rparams.k_h, Var)
+        assert value(model.rparams.k_h) == 3
+        assert isinstance(model.rparams.K_X, Var)
+        assert value(model.rparams.K_X) == 0.1
+        assert isinstance(model.rparams.K_NH, Var)
+        assert value(model.rparams.K_NH) == 1e-3
+        assert isinstance(model.rparams.k_a, Var)
+        assert value(model.rparams.k_a) == 50
 
 
 class TestReactionBlock(object):
@@ -194,36 +190,18 @@ class TestReactor:
         m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
         m.fs.R1.inlet.temperature.fix(298.15 * units.K)
         m.fs.R1.inlet.pressure.fix(1 * units.atm)
-        m.fs.R1.inlet.conc_mass_comp[0, "inert_soluble"].fix(
-            30 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "substrate"].fix(
-            14.6112 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "inert_particulate"].fix(
-            1149 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "biodegradable"].fix(
-            89.324 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "heterotrophic"].fix(
-            2542.03 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "autotrophic"].fix(
-            148.6 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "decay_particulate"].fix(
-            448 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "oxygen"].fix(0.3928 * units.g / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "nitrates"].fix(8.32 * units.g / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "ammonium"].fix(7.696 * units.g / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "nitrogen_soluble"].fix(
-            1.9404 * units.g / units.m**3
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "nitrogen_particulate"].fix(
-            5.616 * units.g / units.m**3
-        )
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(14.6112 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1149 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(89.324 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(2542.03 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_BA"].fix(148.6 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_P"].fix(448 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(0.3928 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NO"].fix(8.32 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH"].fix(7.696 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_ND"].fix(1.9404 * units.g / units.m**3)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_ND"].fix(5.616 * units.g / units.m**3)
         m.fs.R1.inlet.alkalinity.fix(4.704 * units.mol / units.m**3)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
@@ -253,42 +231,42 @@ class TestReactor:
             298.15, rel=1e-4
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "inert_soluble"]
-        ) == pytest.approx(30e-3, rel=1e-5)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "substrate"]
-        ) == pytest.approx(2.81e-3, rel=1e-2)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "inert_particulate"]
-        ) == pytest.approx(1149e-3, rel=1e-3)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "biodegradable"]
-        ) == pytest.approx(82.1e-3, rel=1e-2)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "heterotrophic"]
-        ) == pytest.approx(2552e-3, rel=1e-3)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "autotrophic"]
-        ) == pytest.approx(149e-3, rel=1e-2)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "decay_particulate"]
-        ) == pytest.approx(449e-3, rel=1e-2)
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "oxygen"]) == pytest.approx(
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
+            30e-3, rel=1e-5
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_S"]) == pytest.approx(
+            2.81e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            1149e-3, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            82.1e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BH"]) == pytest.approx(
+            2552e-3, rel=1e-3
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_BA"]) == pytest.approx(
+            149e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_P"]) == pytest.approx(
+            449e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O"]) == pytest.approx(
             4.3e-6, rel=1e-2
         )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "nitrates"]) == pytest.approx(
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO"]) == pytest.approx(
             5.36e-3, rel=1e-2
         )
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "ammonium"]) == pytest.approx(
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH"]) == pytest.approx(
             7.92e-3, rel=1e-2
         )
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "nitrogen_soluble"]
-        ) == pytest.approx(1.22e-3, rel=1e-2)
-        assert value(
-            model.fs.R1.outlet.conc_mass_comp[0, "nitrogen_particulate"]
-        ) == pytest.approx(5.29e-3, rel=1e-2)
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_ND"]) == pytest.approx(
+            1.22e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_ND"]) == pytest.approx(
+            5.29e-3, rel=1e-2
+        )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             4.93e-3, rel=1e-2
         )
