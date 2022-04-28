@@ -171,7 +171,7 @@ Unit : fs.unit                                                             Time:
             Resin Demand : 0.013630 : False : (0, None)
     Solute Removal [foo] :   0.0000 :  True : (0, None)
     Solute Removal [tds] :  0.90000 :  True : (0, None)
-          Water Recovery :   1.0000 :  True : (1e-08, 1.0000001)
+          Water Recovery :   1.0000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -319,7 +319,7 @@ Unit : fs.unit                                                             Time:
                                    Resin Demand : 1.0000e-08 : False : (0, None)
           Solute Removal [ammonium_as_nitrogen] :    0.99900 :  True : (0, None)
                            Solute Removal [foo] :     0.0000 :  True : (0, None)
-                                 Water Recovery :    0.97300 :  True : (1e-08, 1.0000001)
+                                 Water Recovery :    0.97300 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

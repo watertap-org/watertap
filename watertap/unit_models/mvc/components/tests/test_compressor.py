@@ -74,7 +74,7 @@ Unit : fs.compressor                                                       Time:
     Variables: 
 
     Key            : Value      : Fixed : Bounds
-        Efficiency :    0.80000 :  True : (1e-08, 1)
+        Efficiency :    0.80000 :  True : (0, 1)
     Pressure ratio :     2.0000 :  True : (1, 10)
               Work : 1.1534e+05 : False : (None, None)
 

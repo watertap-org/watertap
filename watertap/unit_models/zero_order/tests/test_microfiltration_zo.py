@@ -199,7 +199,7 @@ Unit : fs.unit                                                             Time:
                 Solute Removal [eeq] : 0.30000 :  True : (0, None)
                 Solute Removal [toc] : 0.10000 :  True : (0, None)
                 Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.95000 :  True : (1e-08, 1.0000001)
+                      Water Recovery : 0.95000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -376,7 +376,7 @@ Unit : fs.unit                                                             Time:
                 Solute Removal [foo] :  0.0000 :  True : (0, None)
                 Solute Removal [toc] : 0.10000 :  True : (0, None)
                 Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.95000 :  True : (1e-08, 1.0000001)
+                      Water Recovery : 0.95000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

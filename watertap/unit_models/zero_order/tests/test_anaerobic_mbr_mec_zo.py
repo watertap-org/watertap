@@ -210,7 +210,7 @@ Unit : fs.unit                                                             Time:
                              Solute Removal [cod] :     0.0000 :  True : (0, None)
             Solute Removal [nonbiodegradable_cod] :     1.0000 :  True : (0, None)
         Solute Removal [phosphate_as_phosphorous] :     0.0000 :  True : (0, None)
-                                   Water Recovery :    0.39680 :  True : (1e-08, 1.0000001)
+                                   Water Recovery :    0.39680 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

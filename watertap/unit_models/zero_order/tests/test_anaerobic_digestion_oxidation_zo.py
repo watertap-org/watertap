@@ -175,7 +175,7 @@ Unit : fs.unit                                                             Time:
     Electricity Intensity : 0.15000 :  True : (None, None)
      Solute Removal [bod] : 0.97000 :  True : (0, None)
      Solute Removal [tss] : 0.75000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
+           Water Recovery : 0.99990 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -341,7 +341,7 @@ Unit : fs.unit                                                             Time:
      Solute Removal [bod] : 0.97000 :  True : (0, None)
      Solute Removal [foo] :  0.0000 :  True : (0, None)
      Solute Removal [tss] : 0.75000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
+           Water Recovery : 0.99990 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

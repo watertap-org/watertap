@@ -162,7 +162,7 @@ Unit : fs.unit                                                             Time:
                 Membrane Area : 4.3200e+05 : False : (0, None)
     Solute Removal [nitrogen] :     0.0000 :  True : (0, None)
                    Water Flux :     1.0000 :  True : (0, None)
-               Water Recovery :    0.10000 :  True : (1e-08, 1.0000001)
+               Water Recovery :    0.10000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

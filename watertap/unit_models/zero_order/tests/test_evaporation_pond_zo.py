@@ -289,7 +289,7 @@ Unit : fs.unit                                                             Time:
       Solute Removal [sulfate] :    0.98000 :  True : (0, None)
           Solute Removal [tds] :    0.98000 :  True : (0, None)
           Solute Removal [tss] :    0.98000 :  True : (0, None)
-                Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
+                Water Recovery : 0.00010000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

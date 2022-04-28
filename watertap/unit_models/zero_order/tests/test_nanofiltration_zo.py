@@ -310,7 +310,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [sulfur] : 0.97000 :  True : (0, None)
        Solute Removal [toc] : 0.75000 :  True : (0, None)
        Solute Removal [tss] : 0.97000 :  True : (0, None)
-             Water Recovery : 0.85000 :  True : (1e-08, 1.0000001)
+             Water Recovery : 0.85000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -479,7 +479,7 @@ Unit : fs.unit                                                             Time:
                         Solute Removal [dye] :  0.98390 :  True : (0, None)
                         Solute Removal [tds] :  0.26550 :  True : (0, None)
     Water Permeability Coefficient (LMH/bar) :   100.00 :  True : (None, None)
-                              Water Recovery :  0.75000 :  True : (1e-08, 1.0000001)
+                              Water Recovery :  0.75000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

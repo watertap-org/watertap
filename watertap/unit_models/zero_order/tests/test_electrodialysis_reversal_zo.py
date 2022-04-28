@@ -170,7 +170,7 @@ Unit : fs.unit                                                             Time:
                                 Power Consumption (kW) : 4.7276e+05 : False : (0, None)
                                   Solute Removal [foo] :     0.0000 :  True : (0, None)
                                   Solute Removal [tds] :    0.80870 :  True : (0, None)
-                                        Water Recovery :    0.92140 :  True : (1e-08, 1.0000001)
+                                        Water Recovery :    0.92140 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

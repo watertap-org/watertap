@@ -251,7 +251,7 @@ Unit : fs.unit                                                             Time:
                      Solute Removal [sodium] :    0.95000 :  True : (0, None)
                         Solute Removal [tds] :    0.90000 :  True : (0, None)
                         Solute Removal [tss] :    0.97000 :  True : (0, None)
-                              Water Recovery :    0.99000 :  True : (1e-08, 1.0000001)
+                              Water Recovery :    0.99000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

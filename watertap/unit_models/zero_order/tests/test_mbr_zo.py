@@ -246,7 +246,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
                             Solute Removal [tss] : 0.50000 :  True : (0, None)
                 Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
+                                  Water Recovery : 0.99990 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -487,7 +487,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
                             Solute Removal [tss] : 0.50000 :  True : (0, None)
                 Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
+                                  Water Recovery : 0.99990 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

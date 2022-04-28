@@ -165,7 +165,7 @@ Unit : fs.unit                                                             Time:
     Electricity intensity per Inlet Flowrate  (kWh/m3) :     23.186 : False : (None, None)
                                 Power Consumption (kW) : 8.5557e+05 : False : (0, None)
                                   Solute Removal [tds] :    0.98000 :  True : (0, None)
-                                        Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
+                                        Water Recovery :    0.90000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -316,7 +316,7 @@ Unit : fs.unit                                                             Time:
                                 Power Consumption (kW) : 8.5565e+05 : False : (0, None)
                                   Solute Removal [foo] :     0.0000 :  True : (0, None)
                                   Solute Removal [tds] :    0.98000 :  True : (0, None)
-                                        Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
+                                        Water Recovery :    0.90000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

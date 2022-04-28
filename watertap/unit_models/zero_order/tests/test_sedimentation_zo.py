@@ -194,7 +194,7 @@ Unit : fs.unit                                                             Time:
       Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
          Solute Removal [foo] :     0.0000 :  True : (0, None)
          Solute Removal [tss] :    0.99083 :  True : (0, None)
-               Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
+               Water Recovery :    0.99990 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -361,7 +361,7 @@ Unit : fs.unit                                                             Time:
                 Phosphorus-Solids Ratio (kg/kg) :    0.15000 :  True : (None, None)
                         Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
                            Solute Removal [tss] :    0.99900 :  True : (0, None)
-                                 Water Recovery :    0.98610 :  True : (1e-08, 1.0000001)
+                                 Water Recovery :    0.98610 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -527,7 +527,7 @@ Unit : fs.unit                                                             Time:
              Phosphorus-Solids Ratio (kg/kg) :    0.15000 :  True : (None, None)
                      Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
                  Solute Removal [phosphates] :    0.99900 :  True : (0, None)
-                              Water Recovery :    0.98610 :  True : (1e-08, 1.0000001)
+                              Water Recovery :    0.98610 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

@@ -188,7 +188,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [oil_and_grease] :    0.90000 :  True : (0, None)
        Solute Removal [oily_matter] :    0.90000 :  True : (0, None)
                Solute Removal [tss] :    0.99083 :  True : (0, None)
-                     Water Recovery :    0.99900 :  True : (1e-08, 1.0000001)
+                     Water Recovery :    0.99900 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -366,7 +366,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [oil_and_grease] :    0.90000 :  True : (0, None)
        Solute Removal [oily_matter] :    0.90000 :  True : (0, None)
                Solute Removal [tss] :    0.99083 :  True : (0, None)
-                     Water Recovery :    0.99900 :  True : (1e-08, 1.0000001)
+                     Water Recovery :    0.99900 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

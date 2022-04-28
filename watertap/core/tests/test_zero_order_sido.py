@@ -247,7 +247,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [A] : 0.10000 :  True : (0, None)
     Solute Removal [B] : 0.20000 :  True : (0, None)
     Solute Removal [C] : 0.30000 :  True : (0, None)
-        Water Recovery : 0.80000 :  True : (1e-08, 1.0000001)
+        Water Recovery : 0.80000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

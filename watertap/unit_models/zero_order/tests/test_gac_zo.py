@@ -182,7 +182,7 @@ Unit : fs.unit                                                             Time:
               Empty Bed Contact Time :  0.16667 :  True : (0, None)
     Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
                 Solute Removal [tss] :  0.97000 :  True : (0, None)
-                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
+                      Water Recovery :  0.96000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -342,7 +342,7 @@ Unit : fs.unit                                                             Time:
                 Solute Removal [foo] :   0.0000 :  True : (0, None)
     Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
                 Solute Removal [tss] :  0.97000 :  True : (0, None)
-                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
+                      Water Recovery :  0.96000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

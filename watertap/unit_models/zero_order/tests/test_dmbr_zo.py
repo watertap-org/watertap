@@ -212,7 +212,7 @@ Unit : fs.unit                                                             Time:
                  Solute Removal [nitrate] :     0.0000 :  True : (0, None)
                 Solute Removal [nitrogen] :     0.0000 :  True : (0, None)
                      Solute Removal [tss] :    0.80000 :  True : (0, None)
-                           Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
+                           Water Recovery :    0.90000 :  True : (0, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
