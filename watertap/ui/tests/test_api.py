@@ -152,22 +152,14 @@ def test_flowsheet_interface_constructor(mock_block):
 @pytest.mark.unit
 def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
-    obj.set_visualization({})
-    d = obj.as_dict(include_vis=False)
+    d = obj.as_dict()
     fs = d["blocks"][0]
-    assert "vis" not in d
-    assert "variables" in fs
-    #
-    d = obj.as_dict(include_vis=True)
-    fs = d["blocks"][0]
-    assert "vis" in d
     assert "variables" in fs
 
 
 @pytest.mark.unit
 def test_flowsheet_interface_save(mock_block, tmpdir):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
-    obj.set_visualization({})
     # string
     filename = "test-str.json"
     str_path = os.path.join(tmpdir, filename)
@@ -187,7 +179,7 @@ def test_flowsheet_interface_save(mock_block, tmpdir):
 @pytest.mark.unit
 def test_flowsheet_interface_load(mock_block, tmpdir):
     obj = FlowsheetInterface(mock_block, build_options(variables=2))
-    obj.set_visualization({})
+    obj.meta = {"vis": ["something"]}
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
     # print(f"@@ saved: {json.dumps(obj.as_dict(), indent=2)}")
@@ -196,11 +188,35 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
 
 
 @pytest.mark.unit
+def test_flowsheet_interface_load_missing(mock_block, tmpdir):
+    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    filename = "saved.json"
+    # manual save, and remove some variables
+    d = obj.as_dict()
+    block = d["blocks"][0]
+    block["variables"] = []
+    fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
+    json.dump(d, fp)
+    fp.close()
+    # reload
+    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename, mock_block)
+    assert obj2.get_var_extra() != {}
+    assert obj2.get_var_missing() == {}
+
+def test_flowsheet_interface_get_var(mock_block):
+    fsi = FlowsheetInterface(mock_block, build_options(variables=1))
+    with pytest.raises(KeyError):
+        fsi.get_var_missing()
+    with pytest.raises(KeyError):
+        fsi.get_var_extra()
+
+
+@pytest.mark.unit
 def test_schema():
     schema = FlowsheetInterface.get_schema()
     assert schema.validate({}) is not None  # missing 'name' and 'blocks'
     assert schema.validate({"name": "x", "blocks": []}) is None  # ok
-    assert schema.validate({"name": "x", "blocks": "fooo"}) is not None  # blocks must be list
+    assert schema.validate({"name": "x", "blocks": "foo"}) is not None  # blocks must be list
     assert schema.validate({"name": "x", "blocks": [], "extra": {}}) is None  # ok (extra ok)
     assert schema.validate({"name": "x", "blocks": [{"name": "x", "blocks": []}]}) is None  # nested
 
@@ -221,7 +237,7 @@ def test_schema_performance():
 
     # build a big data object
     d = {"name": "__root__", "blocks": []}
-    nblocks = [1000, 10]
+    nblocks = [100, 10]
     nvars = 100
     for i in range(nblocks[0]):
         block = section(f"block{i}", nvars)
@@ -237,5 +253,5 @@ def test_schema_performance():
     dur = t1 - t0
     print(f"time to validate = {dur:.3f}s or {dur/(nblocks[0]  * nblocks[1])*1000} ms/block")
 
-    # should never take more than 1/10 sec per block (sub-ms times are normal)
-    assert dur < (0.1 * nblocks[0] * nblocks[1])
+    # should never take more than 1/50th sec per block (sub-ms times are normal)
+    assert dur < (0.02 * nblocks[0] * nblocks[1])
