@@ -165,7 +165,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
             initialize=0.8,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Correction factor for hydolysis under anoxic conditions, eta_h",
+            doc="Correction factor for hydrolysis under anoxic conditions, eta_h",
         )
         self.k_h = pyo.Var(
             initialize=3,
