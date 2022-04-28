@@ -444,13 +444,13 @@ class FlowsheetInterface(BlockInterface):
     def update(self, data: Dict):
         """Update values in blocks in and under this interface, from data.
 
-       Any variables in the file that were not found in the hierarchy of block
-       interfaces under this object, or any variables in that hierarchy that were
-       not present in the input file, are recorded and can be retrieved after this
-       function returnns with :meth:`get_var_missing` and :meth:`get_var_extra`.
+        Any variables in the file that were not found in the hierarchy of block
+        interfaces under this object, or any variables in that hierarchy that were
+        not present in the input file, are recorded and can be retrieved after this
+        function returnns with :meth:`get_var_missing` and :meth:`get_var_extra`.
 
-        Args:
-            data: Data in the expected schema (see :meth:`get_schema`)
+         Args:
+             data: Data in the expected schema (see :meth:`get_schema`)
         """
         validation_error = self.get_schema().validate(data)
         if validation_error:
