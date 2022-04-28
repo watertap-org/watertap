@@ -34,7 +34,7 @@ class ElectroNPZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "electro_np"
+        self._tech_type = "electrochemical_nutrient_removal"
 
         build_sido_reactive(self)
 

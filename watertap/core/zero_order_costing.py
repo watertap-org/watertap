@@ -805,7 +805,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_electro_np(blk):
+    def cost_electrochemical_nutrient_removal(blk):
         """
         General method for costing electrochemical nutrient recovery. Capital cost
         is based on the volumetirc flowrate and HRT of the incoming stream. Chemical
@@ -2194,7 +2194,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         CoagulationFlocculationZO: cost_coag_and_floc,
         DeepWellInjectionZO: cost_deep_well_injection,
         DMBRZO: cost_dmbr,
-        ElectroNPZO: cost_electro_np,
+        ElectroNPZO: cost_electrochemical_nutrient_removal,
         FixedBedZO: cost_fixed_bed,
         GACZO: cost_gac,
         LandfillZO: cost_landfill,
