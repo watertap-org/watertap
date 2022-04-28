@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for ASM1 proeprty and reaction packages.
+Tests for ASM1 property and reaction packages.
 
 Verified againts results from:
 
