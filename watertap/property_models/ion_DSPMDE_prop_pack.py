@@ -480,8 +480,17 @@ class _DSPMDEStateBlock(StateBlock):
 
         # initialize vars caculated from state vars
         for k in self.keys():
+            # Vars indexd by component (and phase)
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
+                    self[k].mass_frac_phase_comp["Liq", j].set_value(
+                        self[k].flow_mass_phase_comp["Liq", j]
+                        / sum(
+                            self[k].flow_mass_phase_comp["Liq", j]
+                            for j in self[k].params.component_list
+                        )
+                    )
+                if self[k].is_property_constructed("conc_mass_phase_comp"):
                     self[k].conc_mass_phase_comp["Liq", j].set_value(
                         self[k].dens_mass_phase["Liq"]
                         * self[k].mass_frac_phase_comp["Liq", j]
@@ -513,6 +522,7 @@ class _DSPMDEStateBlock(StateBlock):
                             for j in self[k].params.component_list
                         )
                     )
+            # Vars indexd by solute_set
             for j in self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_comp"):
                     self[k].molality_comp[j].set_value(
@@ -520,6 +530,34 @@ class _DSPMDEStateBlock(StateBlock):
                         / self[k].flow_mol_phase_comp["Liq", "H2O"]
                         / self[k].params.mw_comp["H2O"]
                     )
+            # Vars indexd not indexed or indexed only by phase
+            if self[k].is_property_constructed("ionic_strength"):
+                self[k].ionic_strength.set_value(
+                    0.5
+                    * sum(
+                        self[k].charge_comp[j] ** 2 * self[k].molality_comp[j]
+                        for j in self[k].params.ion_set | self[k].params.solute_set
+                    )
+                )
+            if self[k].is_property_constructed("pressure_osm_phase"):
+                self[k].pressure_osm_phase["Liq"].set_value(
+                    sum(
+                        self[k].conc_mol_phase_comp["Liq", j]
+                        for j in self[k].params.ion_set | self[k].params.solute_set
+                    )
+                    * Constants.gas_constant
+                    * self[k].temperature
+                )
+            if self[k].is_property_constructed("electrical_conductivity_phase"):
+                self[k].electrical_conductivity_phase["Liq"].set_value(
+                    sum(
+                        Constants.faraday_constant
+                        * abs(self[k].charge_comp[j])
+                        * self[k].electrical_mobility_comp[j]
+                        * self[k].conc_mol_phase_comp["Liq", j]
+                        for j in self[k].params.ion_set | self[k].params.solute_set
+                    )
+                )
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -1077,7 +1115,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 * abs(b.charge_comp[j])
                 * b.electrical_mobility_comp[j]
                 * b.conc_mol_phase_comp["Liq", j]
-                for j in self.params.ion_set
+                for j in self.params.ion_set | self.params.solute_set
             )  # maybe revisit for other emprical calculation or non-ideal situation
 
         self.eq_electrical_conductivity_phase = Constraint(
