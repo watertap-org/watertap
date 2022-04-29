@@ -251,16 +251,16 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.ion_diffusivity_membrane = Var(
             self.membrane_set,
             anion_set | cation_set,
-            initialize = 1e-8,
-            bounds = (1e-20, 1e-3),
+            initialize = 1e-10,
+            bounds = (1e-20, 1e-5),
             units = pyunits.m**2 / pyunits.s,
             doc = "Ion diffusivity through each membrane"
         )
 
         self.water_permeability_membrane = Var(
             self.membrane_set,
-            initialize = 5,
-            bounds = (1e-20, 100),
+            initialize = 1e-12,
+            bounds = (1e-20, 1e-5),
             units = pyunits.m / pyunits.s / pyunits.Pa,
             doc = "Permeability for water through each membrane"
         )
@@ -636,12 +636,20 @@ class Electrodialysis1DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.membrane_thickness, sf)
 
         if iscale.get_scaling_factor(self.ion_diffusivity_membrane) is None:
-            sf = iscale.get_scaling_factor(self.ion_diffusivity_membrane, default=1e7, warning=False)
+            sf = iscale.get_scaling_factor(self.ion_diffusivity_membrane, default=1e9, warning=False)
             iscale.set_scaling_factor(self.ion_diffusivity_membrane, sf)
 
         if iscale.get_scaling_factor(self.water_permeability_membrane) is None:
-            sf = iscale.get_scaling_factor(self.water_permeability_membrane, default=1, warning=False)
+            sf = iscale.get_scaling_factor(self.water_permeability_membrane, default=1e10, warning=False)
             iscale.set_scaling_factor(self.water_permeability_membrane, sf)
+
+        if iscale.get_scaling_factor(self.dilute_side.area) is None:
+            sf = iscale.get_scaling_factor(self.dilute_side.area, default=1, warning=False)
+            iscale.set_scaling_factor(self.dilute_side.area, sf)
+
+        if iscale.get_scaling_factor(self.concentrate_side.area) is None:
+            sf = iscale.get_scaling_factor(self.concentrate_side.area, default=1, warning=False)
+            iscale.set_scaling_factor(self.concentrate_side.area, sf)
 
         # Transform length constraint
         if ((iscale.get_scaling_factor(self.dilute_side.length) is None) and
