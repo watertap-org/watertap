@@ -44,7 +44,6 @@ def main():
     m = build()
 
     set_operating_conditions(m)
-    m.display()
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
@@ -118,7 +117,6 @@ def main():
         value(sum(m.fs.costing.LCOCR_comp[c] for c in m.fs.costing.LC_comp)),
         value(m.fs.costing.LCOCR),
     )
-    m.fs.costing.LCOCR_comp.display()
 
     return m, results
 
