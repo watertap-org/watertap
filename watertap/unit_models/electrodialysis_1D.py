@@ -204,69 +204,11 @@ class Electrodialysis1DData(UnitModelBlockData):
         if 'H2O' not in full_set:
             raise ConfigurationError("Property Package MUST constain 'H2O' as a component")
 
-        # Both the generic package and Adam's prop pack have a 'solute_set', but what
-        #   gets put into that set is currently defined differently. The purpose of
-        #   this loop is to ensure that our 'full_solute_set' is always the same
-        #   list for either prop pack used.
-        full_solute_list = []
-        for j in full_set:
-            if j != 'H2O':
-                full_solute_list.append(j)
-        self.full_solute_set = Set(initialize = full_solute_list)
+        # cation set reference
+        cation_set = self.config.property_package.cation_set
 
-        # # TODO: Current Issue with how a set of components is defined in Adam's prop pack
-        #   Issue is that all non-H2O species are added as 'Solutes', which DO NOT have
-        #   a 'charge' parameter inherently in the GenericProperties system. Also, the
-        #   generic system does not support a property called 'charge_comp' as is done
-        #   in Adam's prop pack for this info. Therefore, if we want this to work with
-        #   either, we need to update Adam's prop pack or setup the logic in this model
-        #   on how to handle situations for either case.
-        #
-        #   e.g., try to grab cation_set, anion_set, and solute_set,
-        #           if not available, grab component_list and look for 'charge_comp'.
-
-        # Adam: pressure_osm   | generic: pressure_osm_phase
-
-        # First, try to find cation_set and assign if not already assigned
-        #       NOTE: The assignment is based on the assumption that the
-        #       property package (i.e., ion_DSPMDE_prop_pack) will have
-        #       a property named 'charge_comp'. If not, then another error
-        #       will be thrown.
-        try:
-            cation_set = self.config.property_package.cation_set
-        except AttributeError:
-            temp_list = []
-            for j in full_set:
-                if j in self.config.property_package.charge_comp:
-                    if self.config.property_package.charge_comp[j].value > 0:
-                        temp_list.append(j)
-
-            # Append the set we need to this unit with unique name,
-            #   then assign alias to the common name
-            self.unit_cation_set = Set(initialize = temp_list)
-            cation_set = self.unit_cation_set
-
-        # Next, try to find anion_set and assign if not already assigned
-        #       NOTE: The assignment is based on the assumption that the
-        #       property package (i.e., ion_DSPMDE_prop_pack) will have
-        #       a property named 'charge_comp'. If not, then another error
-        #       will be thrown.
-        try:
-            anion_set = self.config.property_package.anion_set
-        except AttributeError:
-            temp_list = []
-            for j in full_set:
-                if j in self.config.property_package.charge_comp:
-                    if self.config.property_package.charge_comp[j].value < 0:
-                        temp_list.append(j)
-
-            # Append the set we need to this unit with unique name,
-            #   then assign alias to the common name
-            self.unit_anion_set = Set(initialize = temp_list)
-            anion_set = self.unit_anion_set
-
-        # Grab charge from generic package
-        #print(self.config.property_package.get_component('Na_+').config.charge)
+        # anion set reference
+        anion_set = self.config.property_package.anion_set
 
         # Create an ion_charge parameter to reference in model equations
         #   This is for convenience since the charge info is stored in
@@ -280,14 +222,10 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="Ion charge",
         )
 
-        # Loop through full set and try to assign charge based on 'charge_comp'
+        # Loop through full set and try to assign charge
         for j in full_set:
             if j in anion_set or j in cation_set:
-                try:
-                    self.ion_charge[j] = self.config.property_package.charge_comp[j].value
-                # If unassignable, then try to access charge from generic package
-                except AttributeError:
-                    self.ion_charge[j] = self.config.property_package.get_component(j).config.charge
+                self.ion_charge[j] = self.config.property_package.get_component(j).config.charge
 
 
         # Each dilute_side and concentrate_side pair has 2 membranes
@@ -465,17 +403,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                          doc=" Constraint for rate of flux of water and/or ions caused by osmotic pressure and/or diffusion")
         def eq_nonelec_flux(self, t, x, p, j):
             if j == 'H2O':
-                # # TODO: We should remove the try-except after custom prop pack is fixed
-                # Add in a 'try-except' statement to catch when the property is not
-                #   named used the standard IDAES convention
-                try:
-                    # This is the proper name
-                    Posm_D = self.dilute_side.properties[t, x].pressure_osm_phase[p]
-                    Posm_C = self.concentrate_side.properties[t, x].pressure_osm_phase[p]
-                except:
-                    # This is the improper name that are in custom prop packs
-                    Posm_D = self.dilute_side.properties[t, x].pressure_osm
-                    Posm_C = self.concentrate_side.properties[t, x].pressure_osm
+                Posm_D = self.dilute_side.properties[t, x].pressure_osm_phase[p]
+                Posm_C = self.concentrate_side.properties[t, x].pressure_osm_phase[p]
                 L_cem = pyunits.convert( self.water_permeability_membrane['cem'],
                                 to_units=units_meta("length") * units_meta("time") ** -1 * units_meta("pressure") ** -1 )
                 L_aem = pyunits.convert( self.water_permeability_membrane['aem'],
@@ -687,35 +616,58 @@ class Electrodialysis1DData(UnitModelBlockData):
 
             i += 1
 
-        #for t in self.flowsheet().config.time:
-        #    print(t)
-        #    for x in self.difference_elements:
-        #        print(x)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # First, should set some values for all state vars based on inlet state
+        #   We do this here because good scaling factors will depend on the
+        #   starting values for the state vars
+        self.propogate_initial_state()
+
+        # Scaling factors that user may setup
+        if iscale.get_scaling_factor(self.cell_width) is None:
+            sf = iscale.get_scaling_factor(self.cell_width, default=1, warning=False)
+            iscale.set_scaling_factor(self.cell_width, sf)
+
+        if iscale.get_scaling_factor(self.membrane_thickness) is None:
+            sf = iscale.get_scaling_factor(self.membrane_thickness, default=1e3, warning=False)
+            iscale.set_scaling_factor(self.membrane_thickness, sf)
+
+        if iscale.get_scaling_factor(self.ion_diffusivity_membrane) is None:
+            sf = iscale.get_scaling_factor(self.ion_diffusivity_membrane, default=1e7, warning=False)
+            iscale.set_scaling_factor(self.ion_diffusivity_membrane, sf)
+
+        if iscale.get_scaling_factor(self.water_permeability_membrane) is None:
+            sf = iscale.get_scaling_factor(self.water_permeability_membrane, default=1, warning=False)
+            iscale.set_scaling_factor(self.water_permeability_membrane, sf)
+
+        # Transform length constraint
+        if ((iscale.get_scaling_factor(self.dilute_side.length) is None) and
+            (iscale.get_scaling_factor(self.concentrate_side.length) is None)):
+            sf = iscale.get_scaling_factor(self.dilute_side.length, default=1, warning=False)
+        elif ((iscale.get_scaling_factor(self.dilute_side.length) is None) and
+            (iscale.get_scaling_factor(self.concentrate_side.length) is not None)):
+            sf = iscale.get_scaling_factor(self.concentrate_side.length, default=1, warning=False)
+        else:
+            sf = iscale.get_scaling_factor(self.dilute_side.length, default=1, warning=False)
+        iscale.constraint_scaling_transform(self.eq_equal_length, sf)
+
+        # Scaling factors for isothermal temperature
+        if iscale.get_scaling_factor(self.dilute_side.properties[0, self.first_element].temperature) is None:
+            sf = iscale.get_scaling_factor(self.dilute_side.properties[0, self.first_element].temperature, default=1e-2, warning=True)
+        if iscale.get_scaling_factor(self.concentrate_side.properties[0, self.first_element].temperature) is None:
+            sf = iscale.get_scaling_factor(self.concentrate_side.properties[0, self.first_element].temperature, default=1e-2, warning=True)
+
+        sf = iscale.get_scaling_factor(self.concentrate_side.properties[0, self.first_element].temperature)
+        for t in self.flowsheet().config.time:
+            for x in self.difference_elements:
+                iscale.constraint_scaling_transform(self.eq_isothermal_dilute[t,x], sf)
+                iscale.constraint_scaling_transform(self.eq_isothermal_concentrate[t,x], sf)
+
         # # TODO: Add scaling factors
 
-        ## # TODO: Somehow, the scaling factors I give to the property package
-        #       are not being reflected here and are instead becoming larger.
-        '''
-        for set in self.dilute_side.properties:
-            for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
-                print(ind)
-                print(iscale.get_scaling_factor(self.dilute_side.properties[set].flow_mol_phase_comp[ind]))
-
-                # Part of the issue is that the values of the properties not at the inlet boundary are
-                #   assumed to all be 100. This is an error in the intialization stage of variable creation
-
-                # # TODO: Need to propogate the inlet values provided by the user for the state variables
-                #           to the full length of the domain (and may need to initialize all other constructed
-                #           property vars in a similar manner)
-                print(value(self.dilute_side.properties[set].flow_mol_phase_comp[ind]))
-                print()
-        '''
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe({"Dilute Side Inlet": self.inlet_dilute,

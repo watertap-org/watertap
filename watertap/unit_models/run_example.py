@@ -216,7 +216,7 @@ def scale_model(m):
 
     # Special function to attempt to fix scaling issues from prop pack
     #   by manually applying the inlet condition as the initial guess for the states.
-    m.fs.unit.propogate_initial_state()
+    #m.fs.unit.propogate_initial_state()
 
     # # TODO: Figure out if this is NOT the proper way to  set scaling factors in 1D unit model
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
@@ -314,8 +314,8 @@ def view_model_properties(m):
 ## Run for testing purposes ##
 if __name__ == "__main__":
 
-   m = build_model()
-   #m = build_model_generic()
+   #m = build_model()
+   m = build_model_generic()
 
    fix_inlets_and_vars(m)
    scale_model(m)
@@ -324,6 +324,11 @@ if __name__ == "__main__":
    initialize_model(m)
    run_model(m)
    display_results(m)
+
+   m.fs.unit.dilute_side.scaling_factor.pprint()
+   m.fs.unit.dilute_side.constraint_transformed_scaling_factor.pprint()
+
+   print(iscale.get_scaling_factor(m.fs.unit.dilute_side._flow_terms[0.0,0.0,"Liq","Cl_-"]))
 
    #view_model_constraints(m)
    #view_model_control_volumes(m)
