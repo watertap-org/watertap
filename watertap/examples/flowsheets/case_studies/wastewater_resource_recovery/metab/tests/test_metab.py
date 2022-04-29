@@ -57,7 +57,6 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 class TestMetabFlowsheet:
-
     @pytest.fixture(scope="class")
     def system_frame(self):
         m = build()
@@ -75,14 +74,26 @@ class TestMetabFlowsheet:
         set_operating_conditions(m)
 
         # check feed
-        assert pytest.approx(0.3264, rel=1e-3) == value(m.fs.feed.flow_mass_comp[0, "H2O"])
-        assert pytest.approx(2.221e-3, rel=1e-3) == value(m.fs.feed.flow_mass_comp[0, "cod"])
-        assert pytest.approx(0, abs=1e-6) == value(m.fs.feed.flow_mass_comp[0, "hydrogen"])
-        assert pytest.approx(0, abs=1e-6) == value(m.fs.feed.flow_mass_comp[0, "methane"])
+        assert pytest.approx(0.3264, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(2.221e-3, rel=1e-3) == value(
+            m.fs.feed.flow_mass_comp[0, "cod"]
+        )
+        assert pytest.approx(0, abs=1e-6) == value(
+            m.fs.feed.flow_mass_comp[0, "hydrogen"]
+        )
+        assert pytest.approx(0, abs=1e-6) == value(
+            m.fs.feed.flow_mass_comp[0, "methane"]
+        )
 
         # check one fixed variable on hydrogen and methane reactor
-        assert pytest.approx(0.101, rel=1e-3) == value(m.fs.metab_methane.generation_ratio["cod_to_methane", "methane"])
-        assert pytest.approx(5.03e-3, rel=1e-3) == value(m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"])
+        assert pytest.approx(0.101, rel=1e-3) == value(
+            m.fs.metab_methane.generation_ratio["cod_to_methane", "methane"]
+        )
+        assert pytest.approx(5.03e-3, rel=1e-3) == value(
+            m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"]
+        )
 
     @pytest.mark.component
     def test_initialize(self, system_frame):
@@ -90,9 +101,15 @@ class TestMetabFlowsheet:
         initialize_system(m)
 
         # check products
-        assert pytest.approx(0.32637, rel=1e-3) == value(m.fs.product_H2O.flow_mass_comp[0, "H2O"])
-        assert pytest.approx(1.033e-4, rel=1e-3) == value(m.fs.product_methane.flow_mass_comp[0, "methane"])
-        assert pytest.approx(2.468e-6, rel=1e-3) == value(m.fs.product_hydrogen.flow_mass_comp[0, "hydrogen"])
+        assert pytest.approx(0.32637, rel=1e-3) == value(
+            m.fs.product_H2O.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(1.033e-4, rel=1e-3) == value(
+            m.fs.product_methane.flow_mass_comp[0, "methane"]
+        )
+        assert pytest.approx(2.468e-6, rel=1e-3) == value(
+            m.fs.product_hydrogen.flow_mass_comp[0, "hydrogen"]
+        )
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -101,9 +118,15 @@ class TestMetabFlowsheet:
         assert_optimal_termination(results)
 
         # check products
-        assert pytest.approx(0.32637, rel=1e-3) == value(m.fs.product_H2O.flow_mass_comp[0, "H2O"])
-        assert pytest.approx(1.033e-4, rel=1e-3) == value(m.fs.product_methane.flow_mass_comp[0, "methane"])
-        assert pytest.approx(2.468e-6, rel=1e-3) == value(m.fs.product_hydrogen.flow_mass_comp[0, "hydrogen"])
+        assert pytest.approx(0.32637, rel=1e-3) == value(
+            m.fs.product_H2O.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(1.033e-4, rel=1e-3) == value(
+            m.fs.product_methane.flow_mass_comp[0, "methane"]
+        )
+        assert pytest.approx(2.468e-6, rel=1e-3) == value(
+            m.fs.product_hydrogen.flow_mass_comp[0, "hydrogen"]
+        )
 
     @pytest.mark.component
     def test_costing(self, system_frame):

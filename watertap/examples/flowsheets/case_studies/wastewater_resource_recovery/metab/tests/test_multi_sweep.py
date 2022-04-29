@@ -16,13 +16,11 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
 pytest_parameterize_list = []
 # We are skipping cases 5 & 7 in order to keep the pytests times in check
 for case_num in [1, 2, 3, 4, 5, 6, 7]:
-        pytest_parameterize_list.append(case_num)
+    pytest_parameterize_list.append(case_num)
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_list)
 @pytest.mark.integration
 def test_multi_sweep(case_num, tmp_path):
     nx = 1
-    global_results, sweep_params = run_analysis(
-        case_num, nx, interp_nan_outputs=False
-    )
+    global_results, sweep_params = run_analysis(case_num, nx, interp_nan_outputs=False)
