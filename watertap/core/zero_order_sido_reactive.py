@@ -181,14 +181,14 @@ def build_sido_reactive(self):
             * b.properties_in[t].flow_mass_comp[key_reactant]
         )
 
-    self.generation_ratio = Param(
+    self.generation_ratio = Var(
         self.reaction_set,
         self.config.property_package.component_list,
         initialize=0,
-        mutable=True,
         units=pyunits.dimensionless,
         doc="Mass ratio for generation of species w.r.t. key species",
     )
+
     # Load generation ratio data
     for (r, j), p in self.generation_ratio.items():
         # Check to see whether to use stoichiometry or conversion ratio
@@ -248,7 +248,9 @@ def build_sido_reactive(self):
                     f"contain any information for conversion_ratio or reaction "
                     f"order w.r.t. species {j} in reaction {r}."
                 )
-            p.set_value(cratio)
+            p.fix(cratio)
+        else:
+            p.fix(0)
 
     # Add Expression for generation of each species
     @self.Expression(
