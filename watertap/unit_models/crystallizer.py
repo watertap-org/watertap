@@ -255,7 +255,7 @@ class CrystallizationData(UnitModelBlockData):
         )
 
         self.volume_suspension = Var(
-            initialize=0,
+            initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
             doc="Crystallizer minimum active volume, i.e. volume of liquid-solid suspension",
@@ -664,9 +664,9 @@ class CrystallizationData(UnitModelBlockData):
         blk.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-    def get_costing(self, module=None):
+    def get_costing(self, module=None, **kwargs):
         self.costing = Block()
-        module.Crystallization_costing(self.costing)
+        module.Crystallization_costing(self.costing, cost_type='volume_basis')#**kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
