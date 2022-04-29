@@ -330,4 +330,4 @@ if __name__ == "__main__":
    #view_model_properties(m)
 
    # Evaluate the osm_pressure from generic prop pack
-   #print(value(m.fs.unit.concentrate_side.properties[0,0].pressure_osm_phase['Liq']))
+   #print(value(m.fs.unit.concentrate_side.properties[0,1].pressure_osm_phase['Liq']))
