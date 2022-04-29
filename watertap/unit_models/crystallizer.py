@@ -666,7 +666,7 @@ class CrystallizationData(UnitModelBlockData):
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
-        module.Crystallization_costing(self.costing, cost_type='volume_basis')#**kwargs)
+        module.Crystallization_costing(self.costing)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

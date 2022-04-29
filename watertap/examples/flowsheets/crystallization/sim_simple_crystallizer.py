@@ -36,6 +36,7 @@ from idaes.generic_models.costing import UnitModelCostingBlock
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
 from watertap.costing import WaterTAPCosting
+from watertap.costing.watertap_costing_package import CrystallizerCostType
 
 from io import StringIO
 from pyomo.util.infeasible import (
@@ -102,7 +103,9 @@ if __name__ == "__main__":
     )
     iscale.calculate_scaling_factors(m.fs)
     m.fs.crystallizer.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        default={"flowsheet_costing_block": m.fs.costing,
+        "costing_method_arguments": {"cost_type": CrystallizerCostType.volume_basis}
+        },
     )
     m.fs.costing.cost_process()
 
