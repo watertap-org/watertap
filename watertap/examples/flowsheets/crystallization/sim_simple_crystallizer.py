@@ -104,7 +104,7 @@ if __name__ == "__main__":
     iscale.calculate_scaling_factors(m.fs)
     m.fs.crystallizer.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing,
-        "costing_method_arguments": {"cost_type": CrystallizerCostType.volume_basis}
+        "costing_method_arguments": {"cost_type": CrystallizerCostType.mass_basis}
         },
     )
     m.fs.costing.cost_process()
