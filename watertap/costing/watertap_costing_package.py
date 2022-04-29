@@ -195,7 +195,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.fc_crystallizer_fob_unit_cost = pyo.Var(
             initialize=675000,
             doc="Forced circulation crystallizer reference free-on-board cost (Woods, 2007)",
-            units=self.base_currency,
+            units=pyo.units.USD_2007,
         )
 
         self.fc_crystallizer_ref_capacity = pyo.Var(
@@ -611,7 +611,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             blk.lime_kg_per_day,
         )
 
-
     @staticmethod
     def cost_crystallizer(blk):
         """
@@ -624,11 +623,20 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
-            == blk.costing_package.fc_crystallizer_iec_percent
-            * blk.costing_package.fc_crystallizer_fob_unit_cost
-            * (blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"] / blk.costing_package.fc_crystallizer_ref_capacity)
-            ** blk.costing_package.fc_crystallizer_ref_exponent
+            == pyo.units.convert(
+                (
+                    blk.costing_package.fc_crystallizer_iec_percent
+                    * blk.costing_package.fc_crystallizer_fob_unit_cost
+                    * (
+                        blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", "NaCl"]
+                        / blk.costing_package.fc_crystallizer_ref_capacity
+                    )
+                    ** blk.costing_package.fc_crystallizer_ref_exponent
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
         )
+
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {

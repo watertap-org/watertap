@@ -101,7 +101,9 @@ if __name__ == "__main__":
         "flow_mass_phase_comp", 1e-1, index=("Sol", "NaCl")
     )
     iscale.calculate_scaling_factors(m.fs)
-    m.fs.crystallizer.costing = UnitModelCostingBlock(default={'flowsheet_costing_block': m.fs.costing})
+    m.fs.crystallizer.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
     m.fs.costing.cost_process()
 
     #  m.fs.crystallizer.k_param = 0.06
@@ -123,7 +125,6 @@ if __name__ == "__main__":
     # m.fs.crystallizer.display()
 
     m.fs.crystallizer.report()
-    assert False
 
     # assert False
     ##########################################
