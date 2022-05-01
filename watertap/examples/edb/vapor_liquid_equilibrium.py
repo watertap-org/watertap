@@ -51,7 +51,8 @@
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
         In this case, we are getting all reactions associated with a system of water
-        and carbonic acid. We should get four reactions now:
+        and carbonic acid. We should get four reactions now::
+
             H2O <--> H_+ + OH_-
             H2CO3 <--> H_+ + HCO3_-
             HCO3_- <--> H_+ + CO3_2-
