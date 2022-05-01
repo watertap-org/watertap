@@ -83,6 +83,8 @@ def config_docs(cls):
             desc = "(no description provided)" if len(item) == 1 else item[1]
             doc_lines.append(f"{indent}{bullet} `{name}`: {desc}")
         else:
+            if depth > 0:
+                doc_lines[-1] += " | items:"
             doc_lines.append("")
             for i in item:
                 format_list(i, depth + 1)

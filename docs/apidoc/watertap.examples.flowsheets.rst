@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    watertap.examples.flowsheets.RO_with_energy_recovery
+   watertap.examples.flowsheets.case_studies
    watertap.examples.flowsheets.full_treatment_train
    watertap.examples.flowsheets.lsrro
 
