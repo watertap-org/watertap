@@ -1,6 +1,14 @@
 watertap.property\_models package
 =================================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   watertap.property_models.activated_sludge
+
 Submodules
 ----------
 
