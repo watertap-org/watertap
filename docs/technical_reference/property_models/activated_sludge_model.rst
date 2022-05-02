@@ -4,7 +4,7 @@ ASM1 Property Package
 This package implements property relationships for the treatment of wastewater using an activated sludge biological reactor as provided in `Henze, M. et al. (1987) <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
 This Activated Sludge Model no.1 (ASM1) property package:
-   * supports only 'H2O' and 'Sludge' as Components
+   * supports only 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
    * supports only liquid phase
    * is formulated on a mass basis
 
@@ -13,7 +13,7 @@ Sets
 .. csv-table::
   :header: "Description", "Symbol", "Indices"
 
-  "Components", ":math:`j`", "['H2O', 'Sludge']"
+  "Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', 'S_ALK']"
   "Phases", ":math:`p`", "['Liq']"
 
 State variables
@@ -30,27 +30,27 @@ State variables
 Parameters
 ----------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Units"
+ :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
 
-   "Y_A (0.24)", ":math:`Y_A`", "Y_A", "[p]", ":math:`\text{g COD formed/}\text{g N oxidized}`"
-   "Y_H (0.67)", ":math:`Y_H`", "Y_H", "[p]", ":math:`\text{g COD formed/}\text{g COD oxidized}`"
-   "f_P (0.08)", ":math:`f_P`", "f_P", "[p]", ":math:`\text{dimensionless}`"
-   "i_XB (0.08)", ":math:`i_{XB}`", "i_XB", "[p]", ":math:`\text{g N/}\text{g COD in biomass}`"
-   "i_XP (0.06)", ":math:`i_{XP}`", "i_XP", "[p]", ":math:`\text{g N/}\text{g COD in particulate products}`"
-   "µ_H (4.0)", ":math:`µ_H`", "µ_H", "[p]", ":math:`\text{d}^{-1}`"
-   "K_S (10.0)", ":math:`K_S`", "K_S", "[p]", ":math:`\text{g COD/}\text{m}^{3}`"
-   "K_OH (0.2)", ":math:`K_{O,H}`", "K_OH", "[p]", ":math:`\text{g -COD/}\text{m}^{3}`"
-   "K_NO (0.5)", ":math:`K_{NO}`", "K_NO", "[p]", ":math:`\text{g NO}_{3}\text{-N/}\text{m}^{3}`"
-   "b_H (0.3)", ":math:`b_H`", "b_H", "[p]", ":math:`\text{d}^{-1}`"
-   "η_g (0.8)", ":math:`η_g`", "η_g", "[p]", ":math:`\text{dimensionless}`"
-   "η_h (0.8)", ":math:`η_h`", "η_h", "[p]", ":math:`\text{dimensionless}`"
-   "k_h (3.0)", ":math:`k_h`", "k_h", "[p]", ":math:`\text{g slowly biodegradable COD/}\text{g COD . d}`"
-   "K_X (0.1)", ":math:`K_X`", "K_X", "[p]", ":math:`\text{g slowly biodegradable COD/}\text{g COD}`"
-   "µ_A (0.5)", ":math:`µ_A`", "µ_A", "[p]", ":math:`\text{d}^{-1}`"
-   "K_NH (1.0)", ":math:`K_{NH}`", "K_NH", "[p]", ":math:`\text{g NH}_{3}\text{-N/}\text{m}^{3}`"
-   "b_A (0.05)", ":math:`b_A`", "b_A", "[p]", ":math:`\text{d}^{-1}`"
-   "K_OA (0.4)", ":math:`K_{O,A}`", "K_OA", "[p]", ":math:`\text{g -COD/}\text{m}^{3}`"
-   "k_a (0.05)", ":math:`k_a`", "k_a", "[p]", ":math:`\text{m}^{3}\text{/}\text{g COD . d}`"
+   "Yield of cell COD formed per g N consumed, Y_A", ":math:`Y_A`", "Y_A", "[p]", 0.24, ":math:`\text{dimensionless}`"
+   "Yield of cell COD formed per g COD oxidized, Y_H", ":math:`Y_H`", "Y_H", "[p]", 0.67, ":math:`\text{dimensionless}`"
+   "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", "[p]", 0.08, ":math:`\text{dimensionless}`"
+   "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", "[p]", 0.08, ":math:`\text{dimensionless}`"
+   "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", "[p]", 0.06, ":math:`\text{dimensionless}`"
+   "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", "[p]", 0.5, ":math:`\text{d}^{-1}`"
+   "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", "[p]", 4.0, ":math:`\text{d}^{-1}`"
+   "Half-saturation coefficient for heterotrophic biomass, K_S", ":math:`K_S`", "K_S", "[p]", 0.01, ":math:`\text{kg COD/}\text{m}^{3}`"
+   "Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H", ":math:`K_{O,H}`", "K_OH", "[p]", 0.0002, ":math:`\text{kg -COD/}\text{m}^{3}`"
+   "Oxygen half-saturation coefficient for autotrophic biomass, K_O,A", ":math:`K_{O,A}`", "K_OA", "[p]", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
+   "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO", ":math:`K_{NO}`", "K_NO", "[p]", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
+   "Decay coefficient for heterotrophic biomass, b_H", ":math:`b_H`", "b_H", "[p]", 0.3, ":math:`\text{d}^{-1}`"
+   "Decay coefficient for autotrophic biomass, b_A", ":math:`b_A`", "b_A", "[p]", 0.05, ":math:`\text{d}^{-1}`"
+   "Correction factor for mu_H under anoxic conditions, eta_g", ":math:`η_g`", "eta_g", "[p]", 0.8, ":math:`\text{dimensionless}`"
+   "Correction factor for hydrolysis under anoxic conditions, eta_h", ":math:`η_h`", "eta_h", "[p]", 0.8, ":math:`\text{dimensionless}`"
+   "Maximum specific hydrolysis rate, k_h", ":math:`k_h`", "k_h", "[p]", 3.0, ":math:`\text{d}^{-1}`"
+   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", "[p]", 0.1, ":math:`\text{dimensionless}`"
+   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", "[p]", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
+   "Ammonification rate, k_a", ":math:`k_a`", "k_a", "[p]", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
 
 
 Properties
