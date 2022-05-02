@@ -643,52 +643,69 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             cost_type == CrystallizerCostType.default
             or cost_type == CrystallizerCostType.mass_basis
         ):
-            blk.capital_cost_constraint = pyo.Constraint(
-                expr=blk.capital_cost
-                == pyo.units.convert(
-                    (
-                        blk.costing_package.fc_crystallizer_iec_percent
-                        * blk.costing_package.fc_crystallizer_fob_unit_cost
-                        * (
-                            sum(
-                                blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", j]
-                                for j in blk.unit_model.config.property_package.solute_set
-                            )
-                            / blk.costing_package.fc_crystallizer_ref_capacity
-                        )
-                        ** blk.costing_package.fc_crystallizer_ref_exponent
-                    ),
-                    to_units=blk.costing_package.base_currency,
-                )
-            )
+            WaterTAPCostingData.cost_crystallizer_by_crystal_mass(blk)
         elif cost_type == CrystallizerCostType.volume_basis:
-            blk.capital_cost_constraint = pyo.Constraint(
-                expr=blk.capital_cost
-                == pyo.units.convert(
-                    (
-                        blk.costing_package.fc_crystallizer_volume_cost
-                        * (
-                            (
-                                pyo.units.convert(
-                                    blk.unit_model.volume_suspension
-                                    * (
-                                        blk.unit_model.height_crystallizer
-                                        / blk.unit_model.height_slurry
-                                    ),
-                                    to_units=(pyo.units.ft) ** 3,
-                                )
-                            )
-                            / pyo.units.ft**3
-                        )
-                        ** blk.costing_package.fc_crystallizer_vol_basis_exponent
-                    ),
-                    to_units=blk.costing_package.base_currency,
-                )
-            )
+            WaterTAPCostingData.cost_crystallizer_by_volume(blk)
         else:
-            raise NotImplementedError(
-                "Invalid ``cost_type`` option: only mass and volume cost bases are available."
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for cost_type:"
+                f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
             )
+
+    @staticmethod
+    def cost_crystallizer_by_crystal_mass(blk):
+        """
+        Mass-based capital cost for FC crystallizer
+        """
+        _make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.fc_crystallizer_iec_percent
+                    * blk.costing_package.fc_crystallizer_fob_unit_cost
+                    * (
+                        sum(
+                            blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", j]
+                            for j in blk.unit_model.config.property_package.solute_set
+                        )
+                        / blk.costing_package.fc_crystallizer_ref_capacity
+                    )
+                    ** blk.costing_package.fc_crystallizer_ref_exponent
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
+    @staticmethod
+    def cost_crystallizer_by_volume(blk):
+        """
+        Volume-based capital cost for FC crystallizer
+        """
+        _make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.fc_crystallizer_volume_cost
+                    * (
+                        (
+                            pyo.units.convert(
+                                blk.unit_model.volume_suspension
+                                * (
+                                    blk.unit_model.height_crystallizer
+                                    / blk.unit_model.height_slurry
+                                ),
+                                to_units=(pyo.units.ft) ** 3,
+                            )
+                        )
+                        / pyo.units.ft**3
+                    )
+                    ** blk.costing_package.fc_crystallizer_vol_basis_exponent
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
 
 
 # Define default mapping of costing methods to unit models
