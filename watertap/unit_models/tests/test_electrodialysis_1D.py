@@ -11,10 +11,25 @@
 #
 ###############################################################################
 import pytest
-from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
-    value, Constraint, Var, Objective, Expression, Param, Set, assert_optimal_termination)
+from pyomo.environ import (
+    ConcreteModel,
+    SolverFactory,
+    TerminationCondition,
+    value,
+    Constraint,
+    Var,
+    Objective,
+    Expression,
+    Param,
+    Set,
+    assert_optimal_termination,
+)
 from pyomo.environ import units as pyunits
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent, check_units_equivalent
+from pyomo.util.check_units import (
+    assert_units_consistent,
+    assert_units_equivalent,
+    check_units_equivalent,
+)
 import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, number_variables
@@ -47,34 +62,30 @@ __author__ = "Austin Ladshaw"
 
 _log = idaeslog.getLogger(__name__)
 
+
 def build_dspmde_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # create dict to define ions (the prop pack of Adam requires this)
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-", "NaCl"],
-        "diffusivity_data": {("Liq", "Na_+"): 1.33e-9,
-                             ("Liq", "Cl_-"): 2.03e-9,
-                             ("Liq", "NaCl"): 1.70e-9},
-        "mw_data": {"H2O": 18e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                    "NaCl": 58e-3},
-        "stokes_radius_data": {"Na_+": 0.184e-9,
-                               "Cl_-": 0.121e-9,
-                               "NaCl": 0.305e-9},
-        "charge": {"Na_+": 1,
-                   "Cl_-": -1,
-                   "NaCl": 0},
+        "diffusivity_data": {
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+            ("Liq", "NaCl"): 1.70e-9,
+        },
+        "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35e-3, "NaCl": 58e-3},
+        "stokes_radius_data": {"Na_+": 0.184e-9, "Cl_-": 0.121e-9, "NaCl": 0.305e-9},
+        "charge": {"Na_+": 1, "Cl_-": -1, "NaCl": 0},
     }
     # attach prop pack to flowsheet
     m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
 
     # build the unit model, pass prop pack to the model
-    m.fs.unit = Electrodialysis1D(default={
-        "property_package": m.fs.properties })
+    m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties})
 
     return m
+
 
 def build_generic_model():
     m = ConcreteModel()
@@ -93,9 +104,15 @@ def build_generic_model():
                 "parameter_data": {
                     "mw": (18.0153, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
                     "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
                 },
                 # End parameter_data
             },
@@ -111,9 +128,15 @@ def build_generic_model():
                 "parameter_data": {
                     "mw": (22.989769, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
                     "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
                 },
                 # End parameter_data
             },
@@ -129,9 +152,15 @@ def build_generic_model():
                 "parameter_data": {
                     "mw": (35.453, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
                     "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
                 },
                 # End parameter_data
             },
@@ -147,9 +176,15 @@ def build_generic_model():
                 "parameter_data": {
                     "mw": (58.442, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "cp_mol_liq_comp_coeff": (
+                        75.312,
+                        pyunits.J / pyunits.mol / pyunits.K,
+                    ),
                     "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (
+                        0,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
                 },
                 # End parameter_data
             },
@@ -171,7 +206,7 @@ def build_generic_model():
             "mass": pyunits.kg,
             "amount": pyunits.mol,
             "temperature": pyunits.K,
-        }
+        },
     }
     # End thermo_config definition
 
@@ -179,42 +214,50 @@ def build_generic_model():
     m.fs.properties = GenericParameterBlock(default=thermo_config)
 
     # build the unit model, pass prop pack to the model
-    m.fs.unit = Electrodialysis1D(default={
-        "property_package": m.fs.properties })
+    m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties})
 
     return m
+
 
 def fix_inlets_and_vars_no_current(m):
     # specify the feed for each inlet stream
     m.fs.unit.inlet_dilute.pressure.fix(101325)
     m.fs.unit.inlet_dilute.temperature.fix(298.15)
-    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(2)
-    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, 'Liq', 'Na_+'].fix(0.2)
-    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(0.2)
-    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, 'Liq', 'NaCl'].fix(0.002)
+    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2)
+    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.2)
+    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.2)
+    m.fs.unit.inlet_dilute.flow_mol_phase_comp[0, "Liq", "NaCl"].fix(0.002)
 
     m.fs.unit.inlet_concentrate.pressure.fix(101325)
     m.fs.unit.inlet_concentrate.temperature.fix(298.15)
-    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(1)
-    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Na_+'].fix(0.15)
-    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(0.15)
-    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'NaCl'].fix(0.0015)
+    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(1)
+    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.15)
+    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.15)
+    m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "NaCl"].fix(0.0015)
 
     m.fs.unit.cell_length.fix(0.5)
     m.fs.unit.cell_width.fix(0.1)
-    m.fs.unit.membrane_thickness['cem'].fix()
-    m.fs.unit.membrane_thickness['aem'].fix()
+    m.fs.unit.membrane_thickness["cem"].fix()
+    m.fs.unit.membrane_thickness["aem"].fix()
 
     m.fs.unit.ion_diffusivity_membrane.fix()
     m.fs.unit.water_permeability_membrane.fix()
 
+
 def scale_model(m):
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'Na_+'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'Cl_-'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e3, index=('Liq', 'NaCl'))
+    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e1, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e3, index=("Liq", "NaCl")
+    )
 
     iscale.calculate_scaling_factors(m)
+
 
 def check_scaling(m):
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
@@ -237,9 +280,7 @@ def check_scaling(m):
     # check if any variables are badly scaled
     badly_scaled_var_values = {
         var.name: val
-        for (var, val) in iscale.badly_scaled_var_generator(
-            m, large=1e3, small=1e-3
-        )
+        for (var, val) in iscale.badly_scaled_var_generator(m, large=1e3, small=1e-3)
     }
     if len(badly_scaled_var_values) > 0:
         print("List of poorly scaled variables")
@@ -249,6 +290,7 @@ def check_scaling(m):
         print()
 
     return (unscaled_constraint_list, unscaled_var_list, badly_scaled_var_values)
+
 
 # -----------------------------------------------------------------------------
 # Start test class
@@ -303,7 +345,11 @@ class TestElectrodialysis1D_withDSPMDEProps_noCurrent:
     def test_scaling(self, elec1d_dspmde):
         model = elec1d_dspmde
         scale_model(model)
-        (unscaled_constraint_list, unscaled_var_list, badly_scaled_var_values) = check_scaling(model)
+        (
+            unscaled_constraint_list,
+            unscaled_var_list,
+            badly_scaled_var_values,
+        ) = check_scaling(model)
 
         assert len(unscaled_constraint_list) == 0
         assert len(unscaled_var_list) == 0
@@ -321,7 +367,11 @@ class TestElectrodialysis1D_withDSPMDEProps_noCurrent:
     def test_solve(self, elec1d_dspmde):
         model = elec1d_dspmde
 
-        (unscaled_constraint_list, unscaled_var_list, badly_scaled_var_values) = check_scaling(model)
+        (
+            unscaled_constraint_list,
+            unscaled_var_list,
+            badly_scaled_var_values,
+        ) = check_scaling(model)
 
         assert len(unscaled_constraint_list) == 0
         assert len(unscaled_var_list) == 0
@@ -339,52 +389,35 @@ class TestElectrodialysis1D_withDSPMDEProps_noCurrent:
 
         k1 = "Dilute Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'H2O')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(1.98393, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(1.98393, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'NaCl')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.002, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.002, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'Na_+')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.20013, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.20013, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'Cl_-')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.20013, rel=1e-4)
-
+        assert value(table[k1][k2]) == pytest.approx(0.20013, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'H2O')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(1.016069, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(1.016069, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'NaCl')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.0015, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.0015, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'Na_+')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.14986, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.14986, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "flow_mol_phase_comp ('Liq', 'Cl_-')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.14986, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.14986, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
@@ -440,7 +473,11 @@ class TestElectrodialysis1D_withGenericProps_noCurrent:
     def test_scaling(self, elec1d_generic):
         model = elec1d_generic
         scale_model(model)
-        (unscaled_constraint_list, unscaled_var_list, badly_scaled_var_values) = check_scaling(model)
+        (
+            unscaled_constraint_list,
+            unscaled_var_list,
+            badly_scaled_var_values,
+        ) = check_scaling(model)
 
         assert len(unscaled_constraint_list) == 0
         assert len(unscaled_var_list) == 0
@@ -458,7 +495,11 @@ class TestElectrodialysis1D_withGenericProps_noCurrent:
     def test_solve(self, elec1d_generic):
         model = elec1d_generic
 
-        (unscaled_constraint_list, unscaled_var_list, badly_scaled_var_values) = check_scaling(model)
+        (
+            unscaled_constraint_list,
+            unscaled_var_list,
+            badly_scaled_var_values,
+        ) = check_scaling(model)
 
         assert len(unscaled_constraint_list) == 0
         assert len(unscaled_var_list) == 0
@@ -476,49 +517,32 @@ class TestElectrodialysis1D_withGenericProps_noCurrent:
 
         k1 = "Dilute Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'H2O')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(1.97252, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(1.97252, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'NaCl')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.002, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.002, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'Na_+')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.20017, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.20017, rel=1e-4)
 
         k1 = "Dilute Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'Cl_-')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.20017, rel=1e-4)
-
+        assert value(table[k1][k2]) == pytest.approx(0.20017, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'H2O')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(1.02747, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(1.02747, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'NaCl')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.0015, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.0015, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'Na_+')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.149834, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.149834, rel=1e-4)
 
         k1 = "Concentrate Side Outlet"
         k2 = "Molar Flowrate ('Liq', 'Cl_-')"
-        assert value(
-            table[k1][k2]
-        ) == pytest.approx(0.149834, rel=1e-4)
+        assert value(table[k1][k2]) == pytest.approx(0.149834, rel=1e-4)
