@@ -48,7 +48,7 @@ m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
 
 # build the unit model, pass prop pack to the model
 m.fs.unit = Electrodialysis0D(default = {"property_package": m.fs.properties})
-m.fs.unit.diluate_channel.display()
+
 
 
 print('----------------------------------------------')
@@ -67,6 +67,7 @@ m.fs.unit.inlet_diluate.temperature.fix(298.15)
 m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(0.013)
 m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'Na_+'].fix(2.46e-5)
 m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(2.46e-5)
+m.fs.unit.diluate_channel.display()
 
 #m.fs.unit.inlet_diluate.conc_mol_phase_comp[0, 'Liq', 'Na_+'].fix(102.67)
 #m.fs.unit.inlet_diluate.conc_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(102.67)
@@ -151,6 +152,9 @@ for j, k in badly_scaled_var_values.items():
 # Intialize the model
 m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
+print('\n ============after initialize==========')
+m.fs.unit.diluate_channel.display()
+
 # Solve the model
 results = solver.solve(m, tee=True)
 assert_optimal_termination(results)
@@ -173,6 +177,7 @@ assert_optimal_termination(results)
 #m.fs.unit.concentrate_channel.material_balances.pprint()
 #print(iscale.extreme_jacobian_entries(m))
 # Display the mass transfer terms 
+'''
 print('===check property information===')
 m.fs.unit.diluate_channel.properties_in[0].flow_mol_phase_comp['Liq','H2O'].pprint()
 m.fs.unit.diluate_channel.properties_in[0].flow_mol_phase_comp['Liq','Na_+'].pprint()
@@ -184,8 +189,7 @@ m.fs.unit.diluate_channel.properties_in[0].conc_mol_phase_comp['Liq','Cl_-'].ppr
 m.fs.unit.diluate_channel.properties_out[0].conc_mol_phase_comp['Liq','H2O'].pprint()
 m.fs.unit.diluate_channel.properties_out[0].conc_mol_phase_comp['Liq','Na_+'].pprint()
 m.fs.unit.diluate_channel.properties_out[0].conc_mol_phase_comp['Liq','Cl_-'].pprint()
-
-
+'''
 
 
 

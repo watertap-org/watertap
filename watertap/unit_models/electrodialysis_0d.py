@@ -42,6 +42,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialFlowBasis,
+    components,
 )
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -415,7 +416,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     / (self.cell_width * self.cell_length)
                     / Constants.faraday_constant
                 )
-            elif value(self.config.property_package.charge_comp[j]) != 0:
+            elif self.config.property_package.ion_set:
                 return self.elec_migration_flux_in[t, p, j] == (
                     self.ion_trans_number_membrane["cem", j]
                     - self.ion_trans_number_membrane["aem", j]
@@ -446,7 +447,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     / (self.cell_width * self.cell_length)
                     / Constants.faraday_constant
                 )
-            elif value(self.config.property_package.charge_comp[j]) != 0:
+            elif j in self.config.property_package.ion_set:
                 return self.elec_migration_flux_out[t, p, j] == (
                     self.ion_trans_number_membrane["cem", j]
                     - self.ion_trans_number_membrane["aem", j]
