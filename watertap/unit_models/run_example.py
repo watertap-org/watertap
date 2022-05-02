@@ -253,7 +253,7 @@ def scale_model(m):
     badly_scaled_var_values = {
         var.name: val
         for (var, val) in iscale.badly_scaled_var_generator(
-            m, large=1e2, small=1e-2
+            m, large=1e3, small=1e-3
         )
     }
     print("List of poorly scaled variables")
@@ -267,6 +267,35 @@ def initialize_model(m):
     m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
 def run_model(m):
+    # Check scaling one last time
+    unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
+    print("List of unscaled constraints")
+    print("----------------------------")
+    for j in unscaled_constraint_list:
+        print(j)
+    print()
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    print("List of unscaled variables")
+    print("--------------------------")
+    for j in unscaled_var_list:
+        print(j)
+    print()
+
+    # check if any variables are badly scaled
+    badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            m, large=1e3, small=1e-3
+        )
+    }
+    print("List of poorly scaled variables")
+    print("-------------------------------")
+    for j in badly_scaled_var_values:
+        print(str(j) + "\t" + str(badly_scaled_var_values[j]))
+    print()
+
     # Solve the model
     results = solver.solve(m, tee=True)
 
@@ -314,8 +343,8 @@ def view_model_properties(m):
 ## Run for testing purposes ##
 if __name__ == "__main__":
 
-   m = build_model()
-   #m = build_model_generic()
+   #m = build_model()
+   m = build_model_generic()
 
    fix_inlets_and_vars(m)
    scale_model(m)
@@ -328,7 +357,9 @@ if __name__ == "__main__":
    m.fs.unit.dilute_side.scaling_factor.pprint()
    m.fs.unit.dilute_side.constraint_transformed_scaling_factor.pprint()
 
-   print(iscale.get_scaling_factor(m.fs.unit.dilute_side._flow_terms[0.0,0.0,"Liq","Cl_-"]))
+   print(iscale.get_scaling_factor(m.fs.unit.dilute_side._flow_terms[0.0,0.0,"Liq","NaCl"]))
+
+   print(value(m.fs.unit.eq_nonelec_flux[0,0.1,"Liq","H2O"]))
 
    #m.fs.unit.dilute_side.properties[0,1].conc_mol_phase_comp.pprint()
    #m.fs.unit.concentrate_side.properties[0,1].conc_mol_phase_comp.pprint()
