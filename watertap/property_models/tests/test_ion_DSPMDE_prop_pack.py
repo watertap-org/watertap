@@ -887,7 +887,7 @@ def test_assert_electroneutrality_get_property():
         match=re.escape(
             "Electroneutrality condition violated in fs.stream[0]. "
             "Ion concentrations should be adjusted to bring "
-            "the result of 9.09E-13 closer towards 0."
+            "the result of -1.82E-12 closer towards 0."
         ),
     ):
         stream[0].assert_electroneutrality(
