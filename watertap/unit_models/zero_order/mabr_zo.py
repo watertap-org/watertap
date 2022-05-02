@@ -37,7 +37,14 @@ class MABRZOData(ZeroOrderBaseData):
         self._tech_type = "mabr"
 
         build_sido_reactive(self)
-        constant_intensity(self)
+
+        self.nitrogen_removal_rate = Var(
+            units=pyunits.g / pyunits.m**2 / pyunits.day,
+            bounds=(0, None),
+            doc="Nitrogen removal rate per day",
+        )
+
+        self._fixed_perf_vars.append(self.nitrogen_removal_rate)
 
         self.blower_size = Var(
             units=pyunits.m**2,
@@ -45,6 +52,74 @@ class MABRZOData(ZeroOrderBaseData):
             doc="Sizing variable for blower size",
         )
 
-        self._fixed_perf_vars.append(self.blower_size)
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for blower size",
+        )
+        def blower_size_consumption(b, t):
+            return b.blower_size == pyunits.convert(
+                b.properties_treated[t].flow_mass_comp["ammonium_as_nitrogen"]
+                / b.nitrogen_removal_rate,
+                to_units=pyunits.m**2,
+            )
 
-        self._perf_var_dict["Blower Size (m^2)"] = self.blower_size
+        self._perf_var_dict["Blower Size"] = self.blower_size
+
+        self.air_flow_rate = Var(
+            self.flowsheet().config.time,
+            units=pyunits.m**3 / pyunits.hour / pyunits.m**2,
+            bounds=(0, None),
+            doc="Air flow rate per area",
+        )
+
+        self._fixed_perf_vars.append(self.air_flow_rate)
+
+        self.air_flow_vol = Var(
+            self.flowsheet().config.time,
+            units=pyunits.m**3 / pyunits.hour,
+            bounds=(0, None),
+            doc="Volumetric air flow rate",
+        )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for air flow",
+        )
+        def air_flow_consumption(b, t):
+            return b.air_flow_vol[t] == pyunits.convert(
+                b.air_flow_rate[t] * b.blower_size,
+                to_units=pyunits.m**3 / pyunits.hour,
+            )
+
+        self._perf_var_dict["Volumetric Air Flow Rate"] = self.air_flow_vol
+
+        self.electricity = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
+
+        self._perf_var_dict["Electricity Demand"] = self.electricity
+
+        self.energy_electric_flow_vol_inlet = Var(
+            units=pyunits.kWh / pyunits.m**3,
+            doc="Electricity intensity with respect to inlet flowrate of unit",
+        )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for electricity consumption based on air flowrate.",
+        )
+        def electricity_consumption(b, t):
+            return b.electricity[t] == (
+                b.energy_electric_flow_vol_inlet
+                * pyunits.convert(
+                    b.air_flow_vol[t], to_units=pyunits.m**3 / pyunits.hour
+                )
+            )
+
+        self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
+        self._perf_var_dict[
+            "Electricity Intensity"
+        ] = self.energy_electric_flow_vol_inlet
