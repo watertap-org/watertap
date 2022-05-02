@@ -637,8 +637,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Args:
             cost_type - Option for crystallizer cost function type - volume or mass basis
         """
-        _make_capital_cost_var(blk)
-
         if (
             cost_type == CrystallizerCostType.default
             or cost_type == CrystallizerCostType.mass_basis
