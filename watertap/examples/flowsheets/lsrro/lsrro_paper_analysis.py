@@ -11,6 +11,8 @@
 #
 ###############################################################################
 
+import itertools
+
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -168,6 +170,8 @@ def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_con
             })
         m.fs.costing.cost_flow(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
+    m.fs.total_pump_work = Expression(expr=sum(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW) for pump in itertools.chain(m.fs.PrimaryPumps.values(), m.fs.BoosterPumps.values())))
+
     # Add the stages ROs
     if has_calculated_ro_pressure_drop:
         pressure_change_type = PressureChangeType.calculated
@@ -221,6 +225,9 @@ def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_con
             "costing_method_arguments":{"energy_recovery_device_type":"pressure_exchanger"},
             })
         m.fs.costing.cost_flow(pyunits.convert(erd.work_mechanical[0], to_units=pyunits.kW), "electricity")
+
+    m.fs.recovered_pump_work = Expression(expr=sum(pyunits.convert(erd.work_mechanical[0], to_units=pyunits.kW) for erd in m.fs.EnergyRecoveryDevices.values()))
+    m.fs.net_pump_work = Expression(expr=m.fs.total_pump_work - m.fs.recovered_pump_work)
 
     # additional parameters, variables or expressions ---------------------------------------------------------------------------
     m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
@@ -278,6 +285,12 @@ def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_con
         expr=1
         - m.fs.product.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
         / m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"]
+    )
+    m.fs.annual_feed = Expression(
+        expr=pyunits.convert(
+            m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+        * m.fs.costing.load_factor
     )
 
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")

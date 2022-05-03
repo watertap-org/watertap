@@ -39,9 +39,9 @@ def lsrro_presweep(
 ):
     m = lsrro_case.build(
         number_of_stages=number_of_stages,
-        nacl_solubility_limit=True,
-        has_CP=has_CP,
-        has_Pdrop=True,
+        has_NaCl_solubility_limit=True,
+        has_calculated_concentration_polarization=has_CP,
+        has_calculated_ro_pressure_drop=True,
     )
     lsrro_case.set_operating_conditions(m)
     lsrro_case.initialize(m)
@@ -81,9 +81,9 @@ def run_case(number_of_stages, nx):
 
     # Outputs  -------------------------------------------------------------------------------
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOW wrt Feed Flow"] = m.fs.LCOW_feed
-    outputs["SEC"] = m.fs.specific_energy_consumption
-    outputs["SEC wrt Feed"] = m.fs.specific_energy_consumption_feed
+    outputs["LCOW wrt Feed Flow"] = m.fs.costing.LCOW_feed
+    outputs["SEC"] = m.fs.costing.specific_energy_consumption
+    outputs["SEC wrt Feed"] = m.fs.costing.specific_energy_consumption_feed
     outputs["Number of Stages"] = m.fs.NumberOfStages
     outputs["Final Brine Concentration"] = m.fs.disposal.properties[
         0
@@ -92,13 +92,13 @@ def run_case(number_of_stages, nx):
         m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"] * 1e6
     )
     outputs["Annual Feed Flow"] = m.fs.annual_feed
-    outputs["Annual Water Production"] = m.fs.annual_water_production
+    outputs["Annual Water Production"] = m.fs.costing.annual_water_production
 
-    outputs["Pump Work In (kW)"] = m.fs.total_work_in / 1000
-    outputs["Pump Work Recovered (kW)"] = m.fs.total_work_recovered / 1000
-    outputs["Net Pump Work In (kW)"] = m.fs.net_pump_work / 1000
+    outputs["Pump Work In (kW)"] = m.fs.total_pump_work
+    outputs["Pump Work Recovered (kW)"] = m.fs.recovered_pump_work
+    outputs["Net Pump Work In (kW)"] = m.fs.net_pump_work
     outputs["Energy Recovery (%)"] = (
-        -m.fs.total_work_recovered / m.fs.total_work_in * 100
+        -m.fs.recovered_pump_work / m.fs.total_pump_work * 100 
     )
 
     outputs["Mass Water Recovery Rate (%)"] = m.fs.mass_water_recovery * 100
@@ -106,12 +106,12 @@ def run_case(number_of_stages, nx):
 
     outputs["Total Membrane Area"] = m.fs.total_membrane_area
     outputs["Total Capex LCOW"] = (
-        m.fs.costing.investment_cost_total
-        * m.fs.costing_param.factor_capital_annualization
-        / m.fs.annual_water_production
+        m.fs.costing.total_investment_cost
+        * m.fs.costing.factor_capital_annualization
+        / m.fs.costing.annual_water_production
     )
     outputs["Total Opex LCOW"] = (
-        m.fs.costing.operating_cost_total / m.fs.annual_water_production
+        m.fs.costing.total_operating_cost / m.fs.costing.annual_water_production
     )
 
     outputs["Primary Pump Capex LCOW"] = m.fs.costing.primary_pump_capex_lcow
@@ -204,21 +204,17 @@ def run_case(number_of_stages, nx):
 
     outputs.update(
         {
-            f"Volumetric Stage Recovery Rate (%)-Stage {idx}": getattr(
-                m.fs, f"stage{idx}_recovery_vol"
-            )
-            * 100
-            for idx in m.fs.StageSet
+            f"Volumetric Stage Recovery Rate (%)-Stage {idx}":
+                m.fs.stage_recovery_vol[idx] * 100
+            for idx in m.fs.Stages
         }
     )
 
     outputs.update(
         {
-            f"Mass Water Stage Recovery Rate (%)-Stage {idx}": getattr(
-                m.fs, f"stage{idx}_recovery_mass_H2O"
-            )
-            * 100
-            for idx in m.fs.StageSet
+            f"Mass Water Stage Recovery Rate (%)-Stage {idx}":
+                m.fs.stage_recovery_mass_H2O[idx] * 100
+            for idx in m.fs.Stages
         }
     )
 
@@ -303,52 +299,40 @@ def run_case(number_of_stages, nx):
     )
 
     outputs["Booster Pump SEC-Stage 1"] = m.fs.zero_expression
-    if number_of_stages > 1:
+    outputs.update(
+        {
+            f"Booster Pump SEC-Stage {idx}": pyunits.convert(
+                pump.work_mechanical[0], to_units=pyunits.kW
+            )
+            / pyunits.convert(
+                m.fs.product.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+            for idx, pump in m.fs.BoosterPumps.items()
+        }
+    )
+    outputs.update(
+        {
+            f"ERD SEC-Stage 1": pyunits.convert(
+                m.fs.EnergyRecoveryDevices[1].work_mechanical[0], to_units=pyunits.kW
+            )
+            / pyunits.convert(
+                m.fs.product.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        }
+    )
+    outputs.update(
+        {
+            f"ERD SEC-Stage {idx}": m.fs.zero_expression
+            for idx in m.fs.IntermediateStages
+        }
+    )
+    if m.fs.FirstStage != m.fs.LastStage:
         outputs.update(
             {
-                f"Booster Pump SEC-Stage {idx}": pyunits.convert(
-                    pump.work_mechanical[0], to_units=pyunits.kW
-                )
-                / pyunits.convert(
-                    m.fs.product.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / pyunits.hr,
-                )
-                for idx, pump in m.fs.BoosterPumps.items()
-            }
-        )
-        outputs.update(
-            {
-                f"ERD SEC-Stage 1": pyunits.convert(
-                    m.fs.ERD_first_stage.work_mechanical[0], to_units=pyunits.kW
-                )
-                / pyunits.convert(
-                    m.fs.product.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / pyunits.hr,
-                )
-            }
-        )
-        outputs.update(
-            {
-                f"ERD SEC-Stage {idx}": m.fs.zero_expression
-                for idx in m.fs.LSRRO_NonFinal_StageSet
-            }
-        )
-        outputs.update(
-            {
-                f"ERD SEC-Stage {m.fs.StageSet.last()}": pyunits.convert(
-                    m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW
-                )
-                / pyunits.convert(
-                    m.fs.product.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / pyunits.hr,
-                )
-            }
-        )
-    else:
-        outputs.update(
-            {
-                f"ERD SEC-Stage 1": pyunits.convert(
-                    m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW
+                f"ERD SEC-Stage {m.fs.LastStage}": pyunits.convert(
+                    m.fs.EnergyRecoveryDevices[m.fs.LastStage].work_mechanical[0], to_units=pyunits.kW
                 )
                 / pyunits.convert(
                     m.fs.product.properties[0].flow_vol,
@@ -362,7 +346,7 @@ def run_case(number_of_stages, nx):
             f"Net SEC-Stage {idx}": outputs[f"Primary Pump SEC-Stage {idx}"]
             + outputs[f"Booster Pump SEC-Stage {idx}"]
             + outputs[f"ERD SEC-Stage {idx}"]
-            for idx in m.fs.StageSet
+            for idx in m.fs.Stages
         }
     )
 
@@ -370,7 +354,7 @@ def run_case(number_of_stages, nx):
         m,
         sweep_params,
         outputs,
-        csv_results_file=output_filename,
+        csv_results_file_name=output_filename,
         optimize_function=lsrro_case.solve,
         # optimize_kwargs={'solver': None, 'tee': True, 'raise_on_failure': True},
         # reinitialize_function=lsrro_case.initialize,
