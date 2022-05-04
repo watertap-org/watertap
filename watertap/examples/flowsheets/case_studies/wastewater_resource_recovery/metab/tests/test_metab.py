@@ -47,7 +47,6 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
     initialize_system,
     solve,
     add_costing,
-    initialize_costing,
     display_costing,
     display_results,
 )
@@ -133,7 +132,7 @@ class TestMetabFlowsheet:
         m = system_frame
 
         add_costing(m)
-        initialize_costing(m)
+        m.fs.costing.initialize()
 
         results = solve(m)
 
@@ -150,8 +149,3 @@ class TestMetabFlowsheet:
 
         display_results(m)
         display_costing(m)
-
-    @pytest.mark.component
-    def test_main(self, system_frame):
-        m, results = main()
-        assert_optimal_termination(results)
