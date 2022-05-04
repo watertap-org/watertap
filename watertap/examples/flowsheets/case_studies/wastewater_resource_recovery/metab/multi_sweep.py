@@ -39,7 +39,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interp_nan_outputs=True):
+def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     m, _ = metab.main()
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
@@ -126,32 +126,24 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         # debugging_data_dir=os.path.split(output_filename)[0] + '/local',
-        interpolate_nan_outputs=interp_nan_outputs,
+        interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
     return global_results, sweep_params
 
 
-if __name__ == "__main__":
+def main(case_num=1, nx=11, interpolate_nan_outputs=True):
+
+    # when from the command line
+    case_num = int(case_num)
+    nx = int(nx)
+    interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
     # Start MPI communicator
     comm, rank, num_procs = _init_mpi()
 
-    # Get the case number to run
-    try:
-        case_num = int(sys.argv[1])
-    except:
-        # Default to running case 1
-        case_num = 1
-
-    # Get the default number of discretization points
-    try:
-        nx = int(sys.argv[2])
-    except:
-        nx = 11
-
     tic = time.time()
-    global_results, sweep_params = run_analysis(case_num, nx)
+    global_results, sweep_params = run_analysis(case_num, nx, interpolate_nan_outputs)
     print(global_results)
     toc = time.time()
 
@@ -167,3 +159,8 @@ if __name__ == "__main__":
             % (len(sweep_params), total_samples)
         )
         print("Elapsed time = %.1f s." % (toc - tic))
+    return global_results, sweep_params
+
+
+if __name__ == "__main__":
+    global_results, sweep_params = main(*sys.argv[1:])

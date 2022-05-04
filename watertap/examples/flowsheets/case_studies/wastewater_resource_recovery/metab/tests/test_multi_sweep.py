@@ -12,7 +12,9 @@
 ###############################################################################
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.multi_sweep import *
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.multi_sweep import (
+    main,
+)
 
 pytest_parameterize_list = []
 for case_num in [1, 2, 3, 4, 5, 6, 7]:
@@ -25,5 +27,5 @@ def test_multi_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     nx = 1
-    global_results, sweep_params = run_analysis(case_num, nx, interp_nan_outputs=False)
+    global_results, sweep_params = main(case_num, nx, interpolate_nan_outputs=False)
     os.chdir(cwd)
