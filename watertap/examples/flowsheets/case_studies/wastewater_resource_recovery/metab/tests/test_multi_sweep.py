@@ -14,7 +14,6 @@ import pytest
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.multi_sweep import *
 
 pytest_parameterize_list = []
-# We are skipping cases 5 & 7 in order to keep the pytests times in check
 for case_num in [1, 2, 3, 4, 5, 6, 7]:
     pytest_parameterize_list.append(case_num)
 
