@@ -115,6 +115,7 @@ class TestMABRZO:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -145,7 +146,7 @@ class TestMABRZO:
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
 
-        assert pytest.approx(1.414246e-13, rel=1e-2) == value(
+        assert pytest.approx(1.414246e-13, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
         assert pytest.approx(200, rel=1e-5) == value(
