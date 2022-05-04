@@ -52,9 +52,6 @@ from watertap.core.util.initialization import assert_no_degrees_of_freedom, asse
 from watertap.costing.watertap_costing_package import WaterTAPCosting, make_capital_cost_var
 import watertap.property_models.NaCl_prop_pack as props
 
-B_max = None
-number_of_RO_finite_elements = 10
-
 
 def run_lsrro_case(
     number_of_stages,
@@ -70,8 +67,10 @@ def run_lsrro_case(
     has_calculated_ro_pressure_drop=None,
     permeate_quality_limit=None,
     ABgamma_factor=None,
+    B_max=None,
+    number_of_RO_finite_elements=10,
 ):
-    m = build(number_of_stages, has_NaCl_solubility_limit, has_calculated_concentration_polarization, has_calculated_ro_pressure_drop)
+    m = build(number_of_stages, has_NaCl_solubility_limit, has_calculated_concentration_polarization, has_calculated_ro_pressure_drop, number_of_RO_finite_elements, B_max)
     set_operating_conditions(m, Cin)
 
     initialize(m)
@@ -91,6 +90,7 @@ def run_lsrro_case(
         A_fixed,
         permeate_quality_limit,
         ABgamma_factor,
+        B_max,
     )
     res = solve(m, raise_on_failure=False, tee=False)
     print("\n***---Optimization results---***")
@@ -103,7 +103,7 @@ def run_lsrro_case(
     return m, res
 
 
-def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_concentration_polarization=True, has_calculated_ro_pressure_drop=True):
+def build(number_of_stages=2, has_NaCl_solubility_limit=True, has_calculated_concentration_polarization=True, has_calculated_ro_pressure_drop=True, number_of_RO_finite_elements=10, B_max=None):
     # ---building model---
     m = ConcreteModel()
 
@@ -745,6 +745,7 @@ def optimize_set_up(
     A_fixed=None,
     permeate_quality_limit=None,
     ABgamma_factor=None,
+    B_max=None,
 ):
     """
     B_case: "single optimum" or anything else to optimize B value at every LSR stage
@@ -1143,6 +1144,9 @@ def main():
         1
     ]
 
+    number_of_RO_finite_elements = 10
+    B_max = None
+
     if B_max is None:
         bmax_fn = "nomax"
     else:
@@ -1206,6 +1210,8 @@ def main():
                                         has_calculated_ro_pressure_drop=True,  # default to True
                                         A_fixed=5 / 3.6e11,  # default to 5LMH/bar
                                         ABgamma_factor=ab_gamma,  # default to 1 or None
+                                        B_max=B_max,
+                                        number_of_RO_finite_elements=number_of_RO_finite_elements,
                                     )
                                     if check_optimal_termination(res):
                                         num_stages = value(m.fs.NumberOfStages)
