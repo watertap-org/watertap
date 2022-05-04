@@ -655,7 +655,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         Mass-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
@@ -680,7 +680,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         Volume-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(

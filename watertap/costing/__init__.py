@@ -17,4 +17,5 @@ from .watertap_costing_package import (
     PumpType,
     MixerType,
     EnergyRecoveryDeviceType,
+    CrystallizerCostType,
 )
