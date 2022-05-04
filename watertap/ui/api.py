@@ -253,7 +253,7 @@ class BlockInterface(BlockSchemaDefinition):
 
         Args:
             block: The block associated with this interface.
-            # options: Configuration options
+            options: Configuration options
         """
         options = options or {}
         self._block = block
