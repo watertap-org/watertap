@@ -148,12 +148,6 @@ class TestMABRZO:
         assert pytest.approx(0, abs=1e-9) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(200, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
-        )
-        assert pytest.approx(200, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
-        )
         assert pytest.approx(1105.3883, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
