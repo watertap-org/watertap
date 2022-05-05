@@ -209,7 +209,7 @@ def recursive_parameter_sweep(
         failure_count = local_num_cases - success_count
 
         # Get the global number of successful solves and update the number of remaining samples
-        if num_procs > 1: # pragma: no cover
+        if num_procs > 1:  # pragma: no cover
             global_success_count = np.zeros(1, dtype=np.float64)
             global_failure_count = np.zeros(1, dtype=np.float64)
             comm.Allreduce(
@@ -271,7 +271,7 @@ def recursive_parameter_sweep(
     )
 
     # Now we can save this
-    if num_procs > 1: # pragma: no cover
+    if num_procs > 1:  # pragma: no cover
         comm.Barrier()
 
     global_save_data = _save_results(
