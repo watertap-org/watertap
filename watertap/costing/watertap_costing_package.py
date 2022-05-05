@@ -480,8 +480,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                                     be converted to kW and costed as an electricity
                                     default = True
         """
-        make_capital_cost_var(blk)
         t0 = blk.flowsheet().time.first()
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.high_pressure_pump_cost
@@ -565,8 +565,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                                     be converted to kW and costed as an electricity
                                     default = True
         """
-        make_capital_cost_var(blk)
         t0 = blk.flowsheet().time.first()
+        make_capital_cost_var(blk)
         unit_cv_in = blk.unit_model.control_volume.properties_in[t0]
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost

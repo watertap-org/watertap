@@ -561,17 +561,23 @@ def build(
     return m
 
 
-def cost_high_pressure_pump_lsrro(blk):
-
+def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
+    t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
         == blk.costing_package.high_pressure_pump_cost
         * pyunits.watt
         / (pyunits.m**3 * pyunits.pascal / pyunits.s)
-        * blk.unit_model.outlet.pressure[0]
-        * blk.unit_model.control_volume.properties_out[0].flow_vol
+        * blk.unit_model.outlet.pressure[t0]
+        * blk.unit_model.control_volume.properties_out[t0].flow_vol
     )
+
+    if cost_electricity_flow:
+        blk.costing_package.cost_flow(
+            pyunits.convert(blk.unit_model.work_mechanical[t0], to_units=pyunits.kW),
+            "electricity",
+        )
 
 
 def set_operating_conditions(m, Cin=None):
@@ -892,7 +898,7 @@ def optimize_set_up(
         # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
-    if B_case == Bcase.single_optimum:
+    if B_case == BCase.single_optimum:
         m.fs.B_comp_system = Var(
             domain=NonNegativeReals,
             units=pyunits.m * pyunits.s**-1,
@@ -941,7 +947,7 @@ def optimize_set_up(
                 stage.B_comp.setub(m.fs.B_max)
             else:
                 stage.B_comp.setub(None)
-            if B_case == Bcase.single_optimum:
+            if B_case == BCase.single_optimum:
                 stage.B_comp_equal = Constraint(
                     expr=stage.B_comp[0, "NaCl"] == m.fs.B_comp_system
                 )
