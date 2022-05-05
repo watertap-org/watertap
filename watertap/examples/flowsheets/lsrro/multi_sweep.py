@@ -12,7 +12,7 @@
 ###############################################################################
 import os
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
-from watertap.examples.flowsheets.lsrro.analysis import (
+from watertap.examples.flowsheets.lsrro import (
     lsrro_paper_analysis as lsrro_case,
 )
 from pyomo.environ import (
@@ -35,7 +35,7 @@ from pyomo.environ import (
 
 
 def lsrro_presweep(
-    number_of_stages=2, A_fixed=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
+    number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
 ):
     m = lsrro_case.build(
         number_of_stages=number_of_stages,
@@ -50,7 +50,7 @@ def lsrro_presweep(
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
     lsrro_case.optimize_set_up(
-        m, A_fixed=A_fixed, permeate_quality_limit=permeate_quality_limit
+        m, A_value=A_value, permeate_quality_limit=permeate_quality_limit
     )
 
     return m

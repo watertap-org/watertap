@@ -35,6 +35,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import propagate_state
+from idaes.core.util.misc import StrEnum
 from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.generic_models.unit_models import Feed, Product, Mixer
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
@@ -59,15 +60,32 @@ from watertap.costing.watertap_costing_package import (
 import watertap.property_models.NaCl_prop_pack as props
 
 
+class ACase(StrEnum):
+    fixed = "fixed"
+    optimize = "optimize"
+    single_optimum = "single_optimum"
+
+
+class BCase(StrEnum):
+    single_optimum = "single_optimum"
+    optimize = "optimize"
+
+
+class ABTradeoff(StrEnum):
+    inequality_constraint = "inequality_constraint"
+    equality_constraint = "equality_constraint"
+    none = "none"
+
+
 def run_lsrro_case(
     number_of_stages,
     water_recovery=None,
     Cin=None,
     Cbrine=None,
-    A_case=None,
-    B_case=None,
-    AB_tradeoff=None,
-    A_fixed=None,
+    A_case=ACase.fixed,
+    B_case=BCase.optimize,
+    AB_tradeoff=ABTradeoff.none,
+    A_value=None,
     has_NaCl_solubility_limit=None,
     has_calculated_concentration_polarization=None,
     has_calculated_ro_pressure_drop=None,
@@ -100,7 +118,7 @@ def run_lsrro_case(
         A_case,
         B_case,
         AB_tradeoff,
-        A_fixed,
+        A_value,
         permeate_quality_limit,
         ABgamma_factor,
         B_max,
@@ -812,25 +830,22 @@ def optimize_set_up(
     m,
     water_recovery=None,
     Cbrine=None,
-    A_case=None,
-    B_case=None,
-    AB_tradeoff=None,
-    A_fixed=None,
+    A_case=ACase.fixed,
+    B_case=BCase.optimize,
+    AB_tradeoff=ABTradeoff.none,
+    A_value=None,
     permeate_quality_limit=None,
     ABgamma_factor=None,
     B_max=None,
 ):
     """
-    B_case: "single optimum" or anything else to optimize B value at every LSR stage
-    A_case: "fix" or "optimize" A at every LSR stage
-    AB_tradeoff: "inequality constraint" - B >= function of A
-                 "equality constraint" - B = function of A
-                 anything else for no constraint applied - no constraint relating B value to A value
-    A_fixed: if A_case="fix", then provide a value to fix A with
+    B_case: "single_optimum" or anything else to optimize B value at every LSR stage
+    A_case: "fixed" or "optimize" or "single_optimum" A at every LSR stage
+    AB_tradeoff: "inequality_constraint" - B >= function of A
+                 "equality_constraint" - B = function of A
+                 "none" no constraint applied - no constraint relating B value to A value
+    A_value: if A_case="fixed", then provide a value to fix A with
     """
-
-    if A_case is None:
-        A_case = "fix"
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
@@ -886,7 +901,7 @@ def optimize_set_up(
         # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
-    if B_case == "single optimum":
+    if B_case == B_case.single_optimum:
         m.fs.B_comp_system = Var(
             domain=NonNegativeReals,
             units=pyunits.m * pyunits.s**-1,
@@ -897,7 +912,7 @@ def optimize_set_up(
         )
         m.fs.B_comp_system.setlb(3.5e-8)
         m.fs.B_comp_system.setub(3.5e-8 * 1e2)
-    if A_case == "single optimum":
+    if A_case == ACase.single_optimum:
         m.fs.A_comp_system = Var(
             domain=NonNegativeReals,
             units=pyunits.m * pyunits.s**-1 * pyunits.Pa**-1,
@@ -906,7 +921,10 @@ def optimize_set_up(
         m.fs.A_comp_system.set_value(m.fs.ROUnits[2].A_comp[0, "H2O"])
         m.fs.A_comp_system.setlb(2.78e-12)
         m.fs.A_comp_system.setub(4.2e-11)
-    if AB_tradeoff == "equality constraint" or AB_tradeoff == "inequality constraint":
+    if (
+        AB_tradeoff == ABTradeoff.equality_constraint
+        or AB_tradeoff == ABTradeoff.inequality_constraint
+    ):
         m.fs.AB_tradeoff_coeff = Param(initialize=0.01333, mutable=True)
         m.fs.AB_tradeoff_coeff.set_value(ABgamma_factor * value(m.fs.AB_tradeoff_coeff))
 
@@ -932,11 +950,11 @@ def optimize_set_up(
                 stage.B_comp.setub(m.fs.B_max)
             else:
                 stage.B_comp.setub(None)
-            if B_case == "single optimum":
+            if B_case == B_case.single_optimum:
                 stage.B_comp_equal = Constraint(
                     expr=stage.B_comp[0, "NaCl"] == m.fs.B_comp_system
                 )
-            if A_case == "single optimum":
+            if A_case == ACase.single_optimum:
                 stage.A_comp_equal = Constraint(
                     expr=stage.A_comp[0, "H2O"] == m.fs.A_comp_system
                 )
@@ -953,23 +971,23 @@ def optimize_set_up(
             iscale.constraint_scaling_transform(
                 stage._A_comp_con, iscale.get_scaling_factor(stage.A_comp[0, "H2O"])
             )
-            if A_case == "optimize" or A_case == "single optimum":
+            if A_case == ACase.optimize or A_case == ACase.single_optimum:
                 stage.A_comp.unfix()
                 stage.A_comp.setlb(2.78e-12)
                 stage.A_comp.setub(4.2e-11)
-            elif A_case == "fix":
-                if not isinstance(A_fixed, (int, float)):
-                    raise TypeError("A_fixed must be a numeric value")
-                    # raise TypeError('A value for A_fixed must be provided')
+            elif A_case == ACase.fixed:
+                if not isinstance(A_value, (int, float)):
+                    raise TypeError("A_value must be a numeric value")
+                    # raise TypeError('A value for A_value must be provided')
                 stage.A_comp.unfix()
-                stage.A_comp.fix(A_fixed)
+                stage.A_comp.fix(A_value)
             else:
                 raise TypeError(
-                    f'A_case must be set to "fix", "single optimum", "optimize" or None.'
+                    f'A_case must be set to "fix", "single_optimum", "optimize" or None.'
                     f" A_case was set to {A_case}"
                 )
 
-            if AB_tradeoff == "equality constraint":
+            if AB_tradeoff == ABTradeoff.equality_constraint:
                 stage.ABtradeoff = Constraint(
                     expr=pyunits.convert(
                         stage.B_comp[0, "NaCl"],
@@ -989,7 +1007,7 @@ def optimize_set_up(
                     * pyunits.hour**2
                     * pyunits.bar**3
                 )
-            elif AB_tradeoff == "inequality constraint":
+            elif AB_tradeoff == ABTradeoff.inequality_constraint:
                 stage.ABtradeoff = Constraint(
                     expr=pyunits.convert(
                         stage.B_comp[0, "NaCl"],
@@ -1199,20 +1217,20 @@ def main():
     ending_stage = 5
 
     a_case_lst = [
-        "fix",
-        # "single optimum",
+        "fixed",
+        # "single_optimum",
         # "optimize"
     ]
 
     b_case_lst = [
-        # "single optimum",
+        # "single_optimum",
         "optimize"
     ]
 
     ab_tradeoff_lst = [
-        "no constraint",
-        # "inequality constraint",
-        # "equality constraint"
+        "none",
+        # "inequality_constraint",
+        # "equality_constraint"
     ]
 
     ab_gamma_factor_lst = [
@@ -1283,7 +1301,7 @@ def main():
                                         permeate_quality_limit=1000e-6,
                                         has_calculated_concentration_polarization=True,  # default to True
                                         has_calculated_ro_pressure_drop=True,  # default to True
-                                        A_fixed=5 / 3.6e11,  # default to 5LMH/bar
+                                        A_value=5 / 3.6e11,  # default to 5LMH/bar
                                         ABgamma_factor=ab_gamma,  # default to 1 or None
                                         B_max=B_max,
                                         number_of_RO_finite_elements=number_of_RO_finite_elements,
