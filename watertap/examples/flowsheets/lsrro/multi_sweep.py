@@ -98,7 +98,7 @@ def run_case(number_of_stages, nx):
     outputs["Pump Work Recovered (kW)"] = m.fs.recovered_pump_work
     outputs["Net Pump Work In (kW)"] = m.fs.net_pump_work
     outputs["Energy Recovery (%)"] = (
-        -m.fs.recovered_pump_work / m.fs.total_pump_work * 100 
+        -m.fs.recovered_pump_work / m.fs.total_pump_work * 100
     )
 
     outputs["Mass Water Recovery Rate (%)"] = m.fs.mass_water_recovery * 100
@@ -204,16 +204,20 @@ def run_case(number_of_stages, nx):
 
     outputs.update(
         {
-            f"Volumetric Stage Recovery Rate (%)-Stage {idx}":
-                m.fs.stage_recovery_vol[idx] * 100
+            f"Volumetric Stage Recovery Rate (%)-Stage {idx}": m.fs.stage_recovery_vol[
+                idx
+            ]
+            * 100
             for idx in m.fs.Stages
         }
     )
 
     outputs.update(
         {
-            f"Mass Water Stage Recovery Rate (%)-Stage {idx}":
-                m.fs.stage_recovery_mass_H2O[idx] * 100
+            f"Mass Water Stage Recovery Rate (%)-Stage {idx}": m.fs.stage_recovery_mass_H2O[
+                idx
+            ]
+            * 100
             for idx in m.fs.Stages
         }
     )
@@ -332,7 +336,8 @@ def run_case(number_of_stages, nx):
         outputs.update(
             {
                 f"ERD SEC-Stage {m.fs.LastStage}": pyunits.convert(
-                    m.fs.EnergyRecoveryDevices[m.fs.LastStage].work_mechanical[0], to_units=pyunits.kW
+                    m.fs.EnergyRecoveryDevices[m.fs.LastStage].work_mechanical[0],
+                    to_units=pyunits.kW,
                 )
                 / pyunits.convert(
                     m.fs.product.properties[0].flow_vol,
