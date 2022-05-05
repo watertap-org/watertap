@@ -25,7 +25,7 @@ State variables
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol/m}^{3}`"
+   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}\text{/m}^{3}`"
 
 Parameters
 ----------
@@ -72,7 +72,7 @@ Properties
   "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH", "[p]", ":math:`\text{kg/m}^{3}`"
   "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND", "[p]", ":math:`\text{kg/m}^{3}`"
   "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK", "[p]", ":math:`\text{kg HCO}_{3}\text{/m}^{3}`"
 
 Relationships
 -------------
