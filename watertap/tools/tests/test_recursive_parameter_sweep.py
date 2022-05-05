@@ -146,7 +146,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
     data = recursive_parameter_sweep(m, sweep_params, outputs=outputs,
-        results_file_name=results_fname, write_csv=True, write_h5=True,
+        csv_results_file_name=csv_results_file, h5_results_file_name=h5_results_file,
         req_num_samples=num_samples, debugging_data_dir=tmp_path, seed=seed)
 
     reference_save_data = np.array([[0.38344152, 0.11655848],
@@ -219,7 +219,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
         assert np.allclose(data[:, -1], read_dict['outputs']['x_val']['value'][:num_samples])
 
         # Check for the companion text file
-        txt_fpath = os.path.join(tmp_path, "{0}.txt".format(results_fname))
+        txt_fpath = os.path.join(tmp_path, "{0}.txt".format(h5_results_file))
         assert os.path.exists(txt_fpath)
 
         truth_txt_dict = {

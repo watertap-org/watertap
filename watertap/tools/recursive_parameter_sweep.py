@@ -124,7 +124,7 @@ def _aggregate_filtered_results(local_filtered_dict, req_num_samples, comm, rank
     return global_filtered_dict, global_filtered_results, global_filtered_values
 # ================================================================
 
-def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False,
+def recursive_parameter_sweep(model, sweep_params, outputs=None, csv_results_file_name=None, h5_results_file_name=None,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, req_num_samples=None, seed=None):
@@ -211,7 +211,7 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
         comm.Barrier()
 
     global_save_data = _save_results(sweep_params, local_filtered_values, global_filtered_values, local_filtered_dict,
-        global_filtered_dict, global_filtered_results, results_file_name, write_csv, write_h5, debugging_data_dir,
+        global_filtered_dict, global_filtered_results, csv_results_file_name, h5_results_file_name, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data
