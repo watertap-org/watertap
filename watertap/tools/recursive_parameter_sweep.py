@@ -51,30 +51,7 @@ np.set_printoptions(linewidth=200)
 # ================================================================
 
 
-def _force_exception(ctr):
-
-    random_number = np.random.rand()
-    # if (ctr % 2) == 0:
-    #     return 1/0
-    # else:
-    #     return 1
-    if random_number < 0.5:
-        return 1 / 0
-    else:
-        return 1
-
-
-# ================================================================
-
-
 def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict, comm):
-
-    # pyomo_termination_condition = TerminationConditionMapping()
-    # try:
-    #     assert filter_keyword in pyomo_termination_condition.mapping.keys()
-    # except:
-    #     warnings.warn("Invalid filtering option specified. Filtering optimal values")
-    #     filter_keyword = "optimal"
 
     # Figure out how many filtered solves did this rank actually do
     filter_counter = 0
@@ -232,7 +209,7 @@ def recursive_parameter_sweep(
         failure_count = local_num_cases - success_count
 
         # Get the global number of successful solves and update the number of remaining samples
-        if num_procs > 1:
+        if num_procs > 1: # pragma: no cover
             global_success_count = np.zeros(1, dtype=np.float64)
             global_failure_count = np.zeros(1, dtype=np.float64)
             comm.Allreduce(
@@ -294,7 +271,7 @@ def recursive_parameter_sweep(
     )
 
     # Now we can save this
-    if num_procs > 1:
+    if num_procs > 1: # pragma: no cover
         comm.Barrier()
 
     global_save_data = _save_results(
