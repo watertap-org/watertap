@@ -232,11 +232,15 @@ def recursive_parameter_sweep(
         failure_count = local_num_cases - success_count
 
         # Get the global number of successful solves and update the number of remaining samples
-        n_successful_list = comm.allgather(success_count)
-        n_failure_list = comm.allgather(failure_count)
+        if num_procs > 1:
+            global_success_count = np.zeros(1, dtype=np.float64)
+            global_failure_count = np.zeros(1, dtype=np.float64)
+            comm.Allreduce(np.array(success_count, dtype=np.float64), global_success_count)
+            comm.Allreduce(np.array(failure_count, dtype=np.float64), global_failure_count)
+        else:
+            global_success_count = success_count
+            global_failure_count = failure_count
 
-        global_success_count = sum(n_successful_list)
-        global_failure_count = sum(n_failure_list)
         success_prob = global_success_count / (
             global_failure_count + global_success_count
         )
@@ -286,7 +290,7 @@ def recursive_parameter_sweep(
     )
 
     # Now we can save this
-    if num_procs > 0:
+    if num_procs > 1:
         comm.Barrier()
 
     global_save_data = _save_results(
