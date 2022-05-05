@@ -1,0 +1,51 @@
+default:    # Electrochemical Nutrient Recovery
+  energy_electric_flow_mass:
+    value: 0.205
+    units: kWh/kg
+  recovery_frac_mass_H2O:
+    value: 1 # no water wasting, reactive removal handled below
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    nitrogen:
+      value: 0 # reactive removal handled below
+      units: dimensionless
+      constituent_longform: Nitrogen
+    phosphorus:
+      value: 0 # reactive removal handled below
+      units: dimensionless
+      consituent_longform: Phosphorus
+    struvite:
+      value: 1 # reactive removal handled below
+      units: dimensionless
+      consituent_longform: Struvite
+  magnesium_chloride_dosage:
+    value: 0.388 # g-MgCl2/g-struvite
+    units: dimensionless
+  capital_cost:
+    basis: flow_vol
+    cost_factor: None
+    reference_state:
+      value: 37.9
+      units: m^3/hr
+    HRT: # Hydraulic retention time
+      value: 1.3333
+      units: hr
+    sizing_cost:
+      value: 1.25
+      units: USD_2020/m^3
+  reactions:
+    extract_N_P:
+      key_reactant: phosphorus
+      conversion: 0.83
+      stoichiometry:
+        phosphorus:
+          conversion_ratio: -1
+        nitrogen:
+          conversion_ratio: -1
+        H2O:
+          conversion_ratio: -6
+        struvite:
+          conversion_ratio: 1

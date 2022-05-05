@@ -16,4 +16,5 @@ from .reverse_osmosis_1D import ReverseOsmosis1D
 from .nanofiltration_0D import NanoFiltration0D
 from .nanofiltration_ZO import NanofiltrationZO
 from .pressure_exchanger import PressureExchanger
-from .pump_isothermal import Pump
+from .pressure_changer import Pump, EnergyRecoveryDevice
+from .crystallizer import Crystallization

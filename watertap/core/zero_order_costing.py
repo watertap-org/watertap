@@ -34,12 +34,14 @@ from watertap.unit_models.zero_order import (
     CoagulationFlocculationZO,
     DeepWellInjectionZO,
     DMBRZO,
+    ElectroNPZO,
     FixedBedZO,
     GACZO,
     LandfillZO,
     MABRZO,
     IonExchangeZO,
     IronManganeseRemovalZO,
+    MetabZO,
     NanofiltrationZO,
     OzoneZO,
     OzoneAOPZO,
@@ -803,6 +805,64 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def cost_electrochemical_nutrient_removal(blk):
+        """
+        General method for costing electrochemical nutrient recovery. Capital cost
+        is based on the volumetirc flowrate and HRT of the incoming stream. Chemical
+        dosing cost is based on MgCl2 cost.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+        byproduct_state = blk.unit_model.properties_byproduct[t0]
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, ref_state = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "HRT",
+                "sizing_cost",
+                "reference_state",
+            ],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            A * ref_state * B, to_units=blk.config.flowsheet_costing_block.base_currency
+        )
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.MgCl2_flowrate[t0], "magnesium_chloride"
+        )
+
     def cost_fixed_bed(blk):
         """
         General method for costing fixed bed units. This primarily calls the
@@ -963,6 +1023,177 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+
+    def cost_metab(blk):
+        """
+        General method for costing the metab reactor. Capital cost
+        is based on the cost of reactor, mixer, METAB beads, membrane,
+        and vacuum pump.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        (
+            reactor_cost,
+            mixer_cost,
+            bead_bulk_density,
+            bead_cost,
+            bead_replacement_factor,
+            membrane_sidestream_fraction,
+            membrane_specific_size,
+            membrane_cost,
+            vacuum_cost,
+        ) = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "reactor_cost",
+                "mixer_cost",
+                "bead_bulk_density",
+                "bead_cost",
+                "bead_replacement_factor",
+                "membrane_sidestream_fraction",
+                "membrane_specific_size",
+                "membrane_cost",
+                "vacuum_cost",
+            ],
+        )
+
+        # Add capital cost variables and constraints
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+        blk.DCC_reactor = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of reactor",
+        )
+        blk.DCC_mixer = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of mixer",
+        )
+        blk.DCC_bead = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of beads",
+        )
+        blk.DCC_membrane = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of membrane",
+        )
+        blk.DCC_vacuum = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of vacuum pump",
+        )
+        blk.eq_DCC_reactor = pyo.Constraint(
+            expr=blk.DCC_reactor
+            == pyo.units.convert(
+                blk.unit_model.volume * reactor_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_mixer = pyo.Constraint(
+            expr=blk.DCC_mixer
+            == pyo.units.convert(
+                blk.unit_model.energy_electric_mixer_vol
+                * blk.unit_model.volume
+                * mixer_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_bead = pyo.Constraint(
+            expr=blk.DCC_bead
+            == pyo.units.convert(
+                blk.unit_model.volume * bead_bulk_density * bead_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_membrane = pyo.Constraint(
+            expr=blk.DCC_membrane
+            == pyo.units.convert(
+                blk.unit_model.get_inlet_flow(0)
+                * membrane_sidestream_fraction
+                * membrane_specific_size
+                * membrane_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_vacuum = pyo.Constraint(
+            expr=blk.DCC_vacuum
+            == pyo.units.convert(
+                blk.unit_model.properties_byproduct[0].flow_mass_comp[
+                    blk.unit_model._gas_comp
+                ]
+                * vacuum_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+
+        expr = (
+            blk.DCC_reactor
+            + blk.DCC_mixer
+            + blk.DCC_bead
+            + blk.DCC_membrane
+            + blk.DCC_vacuum
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Add fixed operating cost variable and constraint
+        blk.fixed_operating_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency
+            / blk.config.flowsheet_costing_block.base_period,
+            bounds=(0, None),
+            doc="Fixed operating cost of unit",
+        )
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == pyo.units.convert(
+                blk.DCC_bead * bead_replacement_factor,
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
+            )
+        )
+
+        # Register operating cost flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(blk.unit_model.heat[t0], "heat")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties_byproduct[0].flow_mass_comp[
+                blk.unit_model._gas_comp
+            ],
+            blk.unit_model._gas_comp + "_product",
         )
 
     def cost_ion_exchange(blk):
@@ -1963,12 +2194,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         CoagulationFlocculationZO: cost_coag_and_floc,
         DeepWellInjectionZO: cost_deep_well_injection,
         DMBRZO: cost_dmbr,
+        ElectroNPZO: cost_electrochemical_nutrient_removal,
         FixedBedZO: cost_fixed_bed,
         GACZO: cost_gac,
         LandfillZO: cost_landfill,
         MABRZO: cost_mabr,
         IonExchangeZO: cost_ion_exchange,
         IronManganeseRemovalZO: cost_iron_and_manganese_removal,
+        MetabZO: cost_metab,
         NanofiltrationZO: cost_nanofiltration,
         OzoneZO: cost_ozonation,
         OzoneAOPZO: cost_ozonation_aop,
@@ -2022,9 +2255,9 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                 pblock.add_component(p, vobj)
             except KeyError:
                 raise KeyError(
-                    "Error when trying to retrieve costing parameter"
-                    " from {p} database. Please check the YAML "
-                    "file for this technology for errors."
+                    "Error when trying to retrieve costing parameter "
+                    "for {p}. Please check the YAML "
+                    "file for this technology for errors.".format(p=p)
                 )
 
     # Check to see if required subtype is in subtype_set

@@ -255,7 +255,7 @@ class CrystallizationData(UnitModelBlockData):
         )
 
         self.volume_suspension = Var(
-            initialize=0,
+            initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
             doc="Crystallizer minimum active volume, i.e. volume of liquid-solid suspension",
@@ -572,6 +572,7 @@ class CrystallizationData(UnitModelBlockData):
     ):
         """
         General wrapper for pressure changer initialization routines
+
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
@@ -581,6 +582,7 @@ class CrystallizationData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
+
         Returns: None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")

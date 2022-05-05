@@ -48,6 +48,8 @@ giardia_lamblia:
   constituent_longform: Giardia Lamblia
 hardness:
   constituent_longform: Hardness
+hydrogen:
+  constituent_longform: Hydrogen
 hydroxide_alkalinity_as_caco3:
   constituent_longform: Hydroxide Alkalinity as CaCO3
 iron:
@@ -61,7 +63,9 @@ manganese:
 mercury:
   constituent_longform: Mercury
 metals:
-  consituent_longform: Metals
+  constituent_longform: Metals
+methane:
+  constituent_longform: Methane
 molybdenum:
   constituent_longform: Molybdenum
 ndma:
@@ -110,6 +114,8 @@ sodium:
   constituent_longform: Sodium
 strontium:
   constituent_longform: Strontium
+struvite:
+  consituent_longform: Struvite
 sulfate:
   constituent_longform: Sulfate
 sulfur:
