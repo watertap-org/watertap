@@ -901,7 +901,7 @@ def optimize_set_up(
         # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
-    if B_case == B_case.single_optimum:
+    if B_case == Bcase.single_optimum:
         m.fs.B_comp_system = Var(
             domain=NonNegativeReals,
             units=pyunits.m * pyunits.s**-1,
@@ -950,7 +950,7 @@ def optimize_set_up(
                 stage.B_comp.setub(m.fs.B_max)
             else:
                 stage.B_comp.setub(None)
-            if B_case == B_case.single_optimum:
+            if B_case == Bcase.single_optimum:
                 stage.B_comp_equal = Constraint(
                     expr=stage.B_comp[0, "NaCl"] == m.fs.B_comp_system
                 )
