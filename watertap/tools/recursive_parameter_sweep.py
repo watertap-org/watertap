@@ -150,7 +150,7 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
 
     local_output_collection = {}
     loop_ctr = 0
-    while n_samples_remaining > 0 :
+    while n_samples_remaining > 0 and loop_ctr < 10:
         # Enumerate/Sample the parameter space
         global_values = _build_combinations(sweep_params, sampling_type, num_total_samples, comm, rank, num_procs)
 
@@ -169,11 +169,23 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
 
         # Get the global number of successful solves and update the number of remaining samples
         n_successful_list = comm.allgather(success_count)
-        n_samples_remaining -= sum(n_successful_list)
+        n_failure_list = comm.allgather(failure_count)
+
+        global_success_count = sum(n_successful_list)
+        global_failure_count = sum(n_failure_list)
+        success_prob = global_success_count/(global_failure_count+global_success_count)
+
+        if success_prob < 0.1:
+            warnings.warn(f'Success rate of solves = {100.0*success_prob}%, consider adjusting sweep limits.')
+
+        n_samples_remaining -= global_success_count
 
         # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
         safety_factor = 2
-        num_total_samples = int(np.ceil(safety_factor * n_samples_remaining))
+        if success_prob > 0:
+            num_total_samples = int(np.ceil(safety_factor * n_samples_remaining/success_prob))
+        else:
+            num_total_samples = int(np.ceil(safety_factor * n_samples_remaining))
         loop_ctr += 1
 
     # Now that we have all of the local output dictionaries, we need to construct
