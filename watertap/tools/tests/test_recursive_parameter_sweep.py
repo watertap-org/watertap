@@ -15,6 +15,7 @@ import pytest
 import os
 import numpy as np
 import pyomo.environ as pyo
+import ast
 
 from pyomo.environ import value
 
@@ -37,7 +38,10 @@ from watertap.tools.parameter_sweep import (_init_mpi,
 
 from watertap.tools.recursive_parameter_sweep import (_aggregate_filtered_input_arr,
                                                       recursive_parameter_sweep)
-from watertap.tools.tests.test_parameter_sweep import _get_rank0_path
+from watertap.tools.tests.test_parameter_sweep import (_get_rank0_path,
+                                                       _assert_dictionary_correctness,
+                                                       _assert_h5_csv_agreement)
+
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
     set_operating_conditions,
     initialize_system,
@@ -61,7 +65,7 @@ def model():
     # Declare decision variable and param
     m.fs.x = pyo.Var()
     m.fs.a = pyo.Param(mutable=True)
-    m.fs.success_prob = pyo.Param(initialize=0.5)
+    m.fs.success_prob = pyo.Param(initialize=0.5, mutable=True)
 
     # Define expressions and constraints:
     # Numbers must sum to success_prob and x must be positive
@@ -141,24 +145,24 @@ def test_recursive_parameter_sweep(model, tmp_path):
     #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
-    return_save_data = recursive_parameter_sweep(m, sweep_params, outputs=outputs,
+    data = recursive_parameter_sweep(m, sweep_params, outputs=outputs,
         results_file_name=results_fname, write_csv=True, write_h5=True,
         req_num_samples=num_samples, debugging_data_dir=tmp_path, seed=seed)
 
     reference_save_data = np.array([[0.38344152, 0.11655848],
                                     [ 0.4236548, 0.0763452 ],
                                     [0.43758721, 0.06241279],
+                                    [ 0.0187898, 0.4812102 ],
                                     [ 0.0202184, 0.4797816 ],
+                                    [0.06022547, 0.43977453],
                                     [0.07103606, 0.42896394],
                                     [ 0.0871293, 0.4128707 ],
-                                    [0.46147936, 0.03852064],
-                                    [0.11827443, 0.38172557],
-                                    [0.14335329, 0.35664671],
-                                    [0.41466194, 0.08533806]])
+                                    [0.10204481, 0.39795519],
+                                    [0.11827443, 0.38172557]])
 
-    assert np.shape(return_save_data) == (10,2)
-    assert np.allclose(reference_save_data, return_save_data, equal_nan=True)
-    assert np.allclose(np.sum(return_save_data, axis=1), value(m.fs.success_prob))
+    assert np.shape(data) == (10,2)
+    assert np.allclose(reference_save_data, data, equal_nan=True)
+    assert np.allclose(np.sum(data, axis=1), value(m.fs.success_prob))
 
     if rank == 0:
         # Check that the global results file is created
@@ -169,7 +173,62 @@ def test_recursive_parameter_sweep(model, tmp_path):
             assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.h5'))
             assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
 
+        csv_data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=",")
+
+        # Compare the last row of the imported data to truth
+        assert np.allclose(data[-1, :], reference_save_data[-1, :], equal_nan=True)
+
         # Check for the h5 output
-        truth_dict = {}
+        truth_dict = {
+            'outputs': {
+                'x_val': {
+                'lower bound': -1.7976931348623157e+308,
+                'units': 'None',
+                'upper bound': 1.7976931348623157e+308,
+                'value': np.array([0.11655848, 0.0763452, 0.06241279, 0.4812102,
+                0.4797816, 0.43977453, 0.42896394, 0.4128707,
+                0.39795519, 0.38172557, 0.3710737, 0.35664671,
+                0.33869048, 0.29112324, 0.28961744, 0.23544439,
+                0.18457165, 0.1404921, 0.13628923, 0.08533806,
+                0.06296805, 0.06139849, 0.04384967, 0.03852064])
+                }
+            },
+            'solve_successful':
+                [True, True, True, True,
+                True, True, True, True,
+                True, True, True, True,
+                True, True, True, True,
+                True, True, True, True,
+                True, True, True, True]
+            ,
+            'sweep_params': {
+                'fs.a': {
+                'units': 'None',
+                'value': np.array([0.38344152, 0.4236548, 0.43758721, 0.0187898,
+                0.0202184, 0.06022547, 0.07103606, 0.0871293,
+                0.10204481, 0.11827443, 0.1289263, 0.14335329,
+                0.16130952, 0.20887676, 0.21038256, 0.26455561,
+                0.31542835, 0.3595079, 0.36371077, 0.41466194,
+                0.43703195, 0.43860151, 0.45615033, 0.46147936])
+                }
+            }
+        }
+
+        read_dict = _read_output_h5(h5_results_file)
+        _assert_dictionary_correctness(truth_dict, read_dict)
+        assert np.allclose(data[:, -1], read_dict['outputs']['x_val']['value'][:num_samples])
 
         # Check for the companion text file
+        txt_fpath = os.path.join(tmp_path, "{0}.txt".format(results_fname))
+        assert os.path.exists(txt_fpath)
+
+        truth_txt_dict = {
+            "outputs": ["x_val"],
+            "sweep_params": ["fs.a"],
+        }
+
+        with open(txt_fpath, 'r') as f:
+            f_contents = f.read()
+            read_txt_dict = ast.literal_eval(f_contents)
+        assert read_txt_dict == truth_txt_dict
+
