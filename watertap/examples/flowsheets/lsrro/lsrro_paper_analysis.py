@@ -195,9 +195,6 @@ def build(
                 "costing_method": cost_high_pressure_pump_lsrro,
             }
         )
-        m.fs.costing.cost_flow(
-            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity"
-        )
 
     # Add the equalizer pumps
     m.fs.BoosterPumps = Pump(
@@ -209,9 +206,6 @@ def build(
                 "flowsheet_costing_block": m.fs.costing,
                 "costing_method": cost_high_pressure_pump_lsrro,
             }
-        )
-        m.fs.costing.cost_flow(
-            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity"
         )
 
     m.fs.total_pump_work = Expression(
@@ -287,9 +281,6 @@ def build(
                     "energy_recovery_device_type": "pressure_exchanger"
                 },
             }
-        )
-        m.fs.costing.cost_flow(
-            pyunits.convert(erd.work_mechanical[0], to_units=pyunits.kW), "electricity"
         )
 
     m.fs.recovered_pump_work = Expression(
