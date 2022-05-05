@@ -64,6 +64,8 @@ class ParameterSweepWriter:
         write_csv = False,
         interpolate_nan_outputs = False):
 
+        pass
+
     # ================================================================
 
     def _strip_extension(self, file_name, extension):
@@ -88,41 +90,19 @@ class ParameterSweepWriter:
 
     # ================================================================
 
-    def save_results(self, sweep_params, local_values, global_values, local_results_dict,
-        global_results_dict, global_results_arr, results_file_name, write_csv,
-        write_h5, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs,
-    ):
+    def _save_results(self, sweep_params, local_values, global_values, local_results_dict,
+        global_results_dict, global_results_arr, csv_results_file_name, h5_results_file_name,
+         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
-        if results_file_name is not None:
-            dirname, fname_no_ext, extension = _process_results_filename(results_file_name)
-            if rank == 0:
-                # Create the directories for the results and/or for debugging
-                if extension == ".h5" and write_h5 is False:
-                    warnings.warn(
-                        "An H5 results filename was provided. Outputs will be created",
-                        UserWarning,
-                    )
-                    write_h5 = True
-                elif extension == ".csv" and write_csv is False:
-                    warnings.warn(
-                        "A CSV results filename was provided. Outputs will be created",
-                        UserWarning,
-                    )
-                    write_csv = True
-
-                if (write_h5 or write_csv) and dirname != "":
-                    os.makedirs(dirname, exist_ok=True)
-                elif not write_h5 and not write_csv:
-                    warnings.warn(
-                        "A results filename was provided but neither options to write H5 or csv was selected. No file will be written.",
-                        UserWarning,
-                    )
-
-                if debugging_data_dir is not None:
-                    os.makedirs(debugging_data_dir, exist_ok=True)
-        else:
-            dirname = None
-            fname_no_ext = None
+        if rank == 0:
+            if debugging_data_dir is not None:
+                os.makedirs(debugging_data_dir, exist_ok=True)
+            if h5_results_file_name is not None:
+                pathlib.Path(h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
+            if csv_results_file_name is not None:
+                pathlib.Path(csv_results_file_name).parent.mkdir(
+                    parents=True, exist_ok=True
+                )
 
         if num_procs > 1:  # pragma: no cover
             comm.Barrier()
@@ -135,8 +115,8 @@ class ParameterSweepWriter:
                 local_results_dict,
                 debugging_data_dir,
                 rank,
-                write_h5,
-                write_csv,
+                h5_results_file_name is not None,
+                csv_results_file_name is not None,
             )
 
         global_save_data = _write_to_csv(
@@ -145,24 +125,34 @@ class ParameterSweepWriter:
             global_results_dict,
             global_results_arr,
             rank,
-            write_csv,
-            dirname,
-            fname_no_ext,
+            csv_results_file_name,
             interpolate_nan_outputs,
         )
 
-        if rank == 0 and write_h5:
+        if rank == 0 and h5_results_file_name is not None:
             # Save the data of output dictionary
-            _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
+            _write_outputs(global_results_dict, h5_results_file_name, txt_options="keys")
 
         return global_save_data
 
-    def _write_debug_data(self, sweep_params, local_values, local_results_dict,
-        debugging_data_dir, rank, write_h5, write_csv):
+    # ================================================================
+
+    def _write_debug_data(
+        self,
+        sweep_params,
+        local_values,
+        local_results_dict,
+        debugging_data_dir,
+        rank,
+        write_h5,
+        write_csv,
+    ):
 
         if write_h5:
             fname_h5 = f"local_results_{rank:03}.h5"
-            _write_output_to_h5(local_results_dict, debugging_data_dir, fname_h5)
+            self._write_output_to_h5(
+                local_results_dict, os.path.join(debugging_data_dir, fname_h5)
+            )
         if write_csv:
             fname_csv = f"local_results_{rank:03}.csv"
 
@@ -186,17 +176,15 @@ class ParameterSweepWriter:
                 fmt="%.6e",
             )
 
+    # ================================================================
 
-    def _write_outputs(self, output_dict, output_directory, fname_no_ext, txt_options="metadata"):
+    def _write_outputs(self, output_dict, h5_results_file_name, txt_options="metadata"):
 
-        h5_results_file = fname_no_ext + ".h5"
-
-        _write_output_to_h5(output_dict, output_directory, h5_results_file)
+        self._write_output_to_h5(output_dict, h5_results_file_name)
 
         # We will also create a companion txt file by default which contains
         # the metadata of the h5 file in a user readable format.
-        txt_fname = fname_no_ext + ".txt"
-        txt_fpath = os.path.join(output_directory, txt_fname)
+        txt_fname = h5_results_file_name + ".txt"
         if "solve_successful" in output_dict.keys():
             output_dict.pop("solve_successful")
         if txt_options == "metadata":
@@ -211,13 +199,14 @@ class ParameterSweepWriter:
         else:
             my_dict = output_dict
 
-        with open(txt_fpath, "w") as log_file:
+        with open(txt_fname, "w") as log_file:
             pprint.pprint(my_dict, log_file)
 
-    def _write_output_to_h5(self, output_dict, output_directory, fname):
+    # ================================================================
 
-        fpath = os.path.join(output_directory, fname)
-        f = h5py.File(fpath, "w")
+    def _write_output_to_h5(self, output_dict, h5_results_file_name):
+
+        f = h5py.File(h5_results_file_name, "w")
         for key, item in output_dict.items():
             grp = f.create_group(key)
             if key != "solve_successful":
