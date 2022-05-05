@@ -86,7 +86,24 @@ def get_sweep_params_from_yaml(m, yaml_filename):
     """
 
     input_dict = _yaml_to_dict(yaml_filename)
+    out_dict = _dict_to_params(m, input_dict)
+    return out_dict
 
+
+def _dict_to_params(m, input_dict):
+
+    """Reads and stores a yaml file as a dictionary
+
+    Args:
+        dict (str):
+            The dictionary of paramters that are turned into paramter sweep samples
+
+    Returns:
+        input_dict (dict):
+            The result of reading the yaml file and translating
+            its structure into a dictionary.
+
+    """
     sweep_params = {}
 
     for param, values in input_dict.items():
@@ -104,7 +121,20 @@ def get_sweep_params_from_yaml(m, yaml_filename):
                 values["upper_limit"],
                 values["num_samples"],
             )
-
+        elif values["type"] == "GeomSample":
+            sweep_params[param] = GeomSample(
+                component,
+                values["lower_limit"],
+                values["upper_limit"],
+                values["num_samples"],
+            )
+        elif values["type"] == "ReverseGeomSample":
+            sweep_params[param] = ReverseGeomSample(
+                component,
+                values["lower_limit"],
+                values["upper_limit"],
+                values["num_samples"],
+            )
         elif values["type"] == "UniformSample":
             sweep_params[param] = UniformSample(
                 component, values["lower_limit"], values["upper_limit"]
@@ -151,11 +181,15 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
     """
 
     input_dict = _yaml_to_dict(yaml_filename)
+    _set_values_from_dict(m, input_dict, verbose)
+
+
+def _set_values_from_dict(m, input_dict, verbose=False):
 
     fail_count = 0
 
     for key, default_value in input_dict.items():
-
+        print(key, default_value)
         # Find the specified component on the model
         component = m.find_component(key)
 
