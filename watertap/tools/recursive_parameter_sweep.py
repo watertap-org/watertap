@@ -235,8 +235,12 @@ def recursive_parameter_sweep(
         if num_procs > 1:
             global_success_count = np.zeros(1, dtype=np.float64)
             global_failure_count = np.zeros(1, dtype=np.float64)
-            comm.Allreduce(np.array(success_count, dtype=np.float64), global_success_count)
-            comm.Allreduce(np.array(failure_count, dtype=np.float64), global_failure_count)
+            comm.Allreduce(
+                np.array(success_count, dtype=np.float64), global_success_count
+            )
+            comm.Allreduce(
+                np.array(failure_count, dtype=np.float64), global_failure_count
+            )
         else:
             global_success_count = success_count
             global_failure_count = failure_count
