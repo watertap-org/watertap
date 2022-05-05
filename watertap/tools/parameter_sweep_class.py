@@ -31,237 +31,177 @@ from pyomo.common.tee import capture_output
 
 np.set_printoptions(linewidth=200)
 
-# ================================================================
 
-
-class SamplingType(Enum):
-    FIXED = auto()
-    RANDOM = auto()
-    RANDOM_LHS = auto()
-
-
-# ================================================================
-
-
-class _Sample(ABC):
-    def __init__(self, pyomo_object, *args, **kwargs):
-        # Check for indexed with single value
-        if pyomo_object.is_indexed() and len(pyomo_object) == 1:
-            for _data_obj in pyomo_object.values():
-                pyomo_object = _data_obj
-
-        # Make sure we are a Var() or Param()
-        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
-            raise ValueError(
-                f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead."
-            )
-        if pyomo_object.is_parameter_type() and not pyomo_object.mutable:
-            raise ValueError(
-                f"Parameter {pyomo_object} is not mutable, and so cannot be set by parameter_sweep"
-            )
-        self.pyomo_object = pyomo_object
-        self.setup(*args, **kwargs)
-
-    @abstractmethod
-    def sample(self, num_samples):
+class _ParameterSweepBase(ABC):
+    def __init__(self, *args, **kwargs):
         pass
 
-    @abstractmethod
-    def setup(self, *args, **kwargs):
-        pass
+    # ================================================================
 
-
-# ================================================================
-
-
-class RandomSample(_Sample):
-    sampling_type = SamplingType.RANDOM
-
-
-class FixedSample(_Sample):
-    sampling_type = SamplingType.FIXED
-
-
-# ================================================================
-
-
-class LinearSample(FixedSample):
-    def sample(self, num_samples):
-        return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
-
-    def setup(self, lower_limit, upper_limit, num_samples):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-        self.num_samples = num_samples
-
-
-# ================================================================
-
-
-class UniformSample(RandomSample):
-    def sample(self, num_samples):
-        return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
-
-    def setup(self, lower_limit, upper_limit):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-
-
-# ================================================================
-
-
-class NormalSample(RandomSample):
-    def sample(self, num_samples):
-        return np.random.normal(self.mean, self.sd, num_samples)
-
-    def setup(self, mean, sd):
-        self.mean = mean
-        self.sd = sd
-
-
-# ================================================================
-
-
-class LatinHypercubeSample(_Sample):
-    sampling_type = SamplingType.RANDOM_LHS
-
-    def sample(self, num_samples):
-        return [self.lower_limit, self.upper_limit]
-
-    def setup(self, lower_limit, upper_limit):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-
-
-# ================================================================
-
-
-def _init_mpi(mpi_comm=None):
-
-    if mpi_comm is None:
+    def init_mpi(self):
         try:
             from mpi4py import MPI
+            return MPI.COMM_WORLD
         except:
-            warnings.warn(
-                "Could not import mpi4py from current environment (defaulting to serial)."
-            )
-            return None, 0, 1
+            dummy_comm = DummyMPI()
+            return dummy_comm
 
-        else:
-            mpi_comm = MPI.COMM_WORLD
+    # ================================================================
 
-    return mpi_comm, mpi_comm.Get_rank(), mpi_comm.Get_size()
+    def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
+        num_var_params = len(d)
 
+        if rank == 0:
+            param_values = []
 
-# ================================================================
-
-
-def _strip_extension(file_name, extension):
-    if file_name.lower().endswith(extension):
-        return file_name[: -len(extension)], extension
-    else:
-        return file_name, None
-
-
-# ================================================================
-
-
-def _process_results_filename(results_file_name):
-    # Get the directory path
-    dirname = os.path.dirname(results_file_name)
-    # Get the file name without the extension
-    known_extensions = [".h5", ".csv"]
-    for ext in known_extensions:
-        fname_no_ext, extension = _strip_extension(results_file_name, ext)
-        if extension is not None:
-            break
-
-    return dirname, fname_no_ext, extension
-
-
-# ================================================================
-
-
-def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
-    num_var_params = len(d)
-
-    if rank == 0:
-        param_values = []
-
-        for k, v in d.items():
-            # Build a vector of discrete values for this parameter
-            p = v.sample(num_samples)
-            param_values.append(p)
-
-        if sampling_type == SamplingType.FIXED:
-            # Form an array with every possible combination of parameter values
-            global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
-            global_combo_array = global_combo_array.reshape(num_var_params, -1).T
-
-        elif sampling_type == SamplingType.RANDOM:
-            sorting = np.argsort(param_values[0])
-            global_combo_array = np.vstack(param_values).T
-            global_combo_array = global_combo_array[sorting, :]
-
-        elif sampling_type == SamplingType.RANDOM_LHS:
-            lb = [val[0] for val in param_values]
-            ub = [val[1] for val in param_values]
-            lhs = sampling.LatinHypercubeSampling(
-                [lb, ub], number_of_samples=num_samples, sampling_type="creation"
-            )
-            global_combo_array = lhs.sample_points()
-            sorting = np.argsort(global_combo_array[:, 0])
-            global_combo_array = global_combo_array[sorting, :]
-
-        else:
-            raise ValueError(f"Unknown sampling type: {sampling_type}")
-
-        # Test if the global_combo_array is in row-major order
-        if not global_combo_array.flags.c_contiguous:
-            # If not, return a copy of this array with row-major memory order
-            global_combo_array = np.ascontiguousarray(global_combo_array)
-
-    else:
-        if sampling_type == SamplingType.FIXED:
-            nx = 1
             for k, v in d.items():
-                nx *= v.num_samples
-        elif (
-            sampling_type == SamplingType.RANDOM
-            or sampling_type == SamplingType.RANDOM_LHS
-        ):
-            nx = num_samples
+                # Build a vector of discrete values for this parameter
+                p = v.sample(num_samples)
+                param_values.append(p)
+
+            if sampling_type == SamplingType.FIXED:
+                # Form an array with every possible combination of parameter values
+                global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
+                global_combo_array = global_combo_array.reshape(num_var_params, -1).T
+
+            elif sampling_type == SamplingType.RANDOM:
+                sorting = np.argsort(param_values[0])
+                global_combo_array = np.vstack(param_values).T
+                global_combo_array = global_combo_array[sorting, :]
+
+            elif sampling_type == SamplingType.RANDOM_LHS:
+                lb = [val[0] for val in param_values]
+                ub = [val[1] for val in param_values]
+                lhs = sampling.LatinHypercubeSampling(
+                    [lb, ub], number_of_samples=num_samples, sampling_type="creation"
+                )
+                global_combo_array = lhs.sample_points()
+                sorting = np.argsort(global_combo_array[:, 0])
+                global_combo_array = global_combo_array[sorting, :]
+
+            else:
+                raise ValueError(f"Unknown sampling type: {sampling_type}")
+
+            # Test if the global_combo_array is in row-major order
+            if not global_combo_array.flags.c_contiguous:
+                # If not, return a copy of this array with row-major memory order
+                global_combo_array = np.ascontiguousarray(global_combo_array)
+
         else:
-            raise ValueError(f"Unknown sampling type: {sampling_type}")
+            if sampling_type == SamplingType.FIXED:
+                nx = 1
+                for k, v in d.items():
+                    nx *= v.num_samples
+            elif (
+                sampling_type == SamplingType.RANDOM
+                or sampling_type == SamplingType.RANDOM_LHS
+            ):
+                nx = num_samples
+            else:
+                raise ValueError(f"Unknown sampling type: {sampling_type}")
 
-        if not float(nx).is_integer():
-            raise RuntimeError(f"Total number of samples must be integer valued")
-        nx = int(nx)
+            if not float(nx).is_integer():
+                raise RuntimeError(f"Total number of samples must be integer valued")
+            nx = int(nx)
 
-        # Allocate memory to hold the Bcast array
-        global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
+            # Allocate memory to hold the Bcast array
+            global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
 
-    ### Broadcast the array to all processes
-    if num_procs > 1:
-        comm.Bcast(global_combo_array, root=0)
+        ### Broadcast the array to all processes
+        if num_procs > 1:
+            comm.Bcast(global_combo_array, root=0)
 
-    return global_combo_array
+        return global_combo_array
+
+    # ================================================================
+
+    def _divide_combinations(self, global_combo_array, rank, num_procs):
+
+        # Split the total list of combinations into NUM_PROCS chunks,
+        # one per each of the MPI ranks
+        # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
+        divided_combo_array = np.array_split(global_combo_array, num_procs)
+
+        # Return only this rank's portion of the total workload
+        local_combo_array = divided_combo_array[rank]
+
+        return local_combo_array
+
+    # ================================================================
+
+    def _update_model_values(self, m, param_dict, values):
+
+        for k, item in enumerate(param_dict.values()):
+
+            param = item.pyomo_object
+
+            if param.is_variable_type():
+                # Fix the single value to values[k]
+                param.fix(values[k])
+
+            elif param.is_parameter_type():
+                # Fix the single value to values[k]
+                param.set_value(values[k])
+
+            else:
+                raise RuntimeError(f"Unrecognized Pyomo object {param}")
+
+# def _init_mpi(mpi_comm=None):
+#
+#     if mpi_comm is None:
+#         try:
+#             from mpi4py import MPI
+#         except:
+#             warnings.warn(
+#                 "Could not import mpi4py from current environment (defaulting to serial)."
+#             )
+#             return None, 0, 1
+#
+#         else:
+#             mpi_comm = MPI.COMM_WORLD
+#
+#     return mpi_comm, mpi_comm.Get_rank(), mpi_comm.Get_size()
 
 
 # ================================================================
 
 
-def _divide_combinations(global_combo_array, rank, num_procs):
+# def _strip_extension(file_name, extension):
+#     if file_name.lower().endswith(extension):
+#         return file_name[: -len(extension)], extension
+#     else:
+#         return file_name, None
 
-    # Split the total list of combinations into NUM_PROCS chunks,
-    # one per each of the MPI ranks
-    # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
-    divided_combo_array = np.array_split(global_combo_array, num_procs)
 
-    # Return only this rank's portion of the total workload
-    local_combo_array = divided_combo_array[rank]
+# ================================================================
 
-    return local_combo_array
+
+# def _process_results_filename(results_file_name):
+#     # Get the directory path
+#     dirname = os.path.dirname(results_file_name)
+#     # Get the file name without the extension
+#     known_extensions = [".h5", ".csv"]
+#     for ext in known_extensions:
+#         fname_no_ext, extension = _strip_extension(results_file_name, ext)
+#         if extension is not None:
+#             break
+#
+#     return dirname, fname_no_ext, extension
+
+# ================================================================
+
+
+# def _divide_combinations(global_combo_array, rank, num_procs):
+#
+#     # Split the total list of combinations into NUM_PROCS chunks,
+#     # one per each of the MPI ranks
+#     # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
+#     divided_combo_array = np.array_split(global_combo_array, num_procs)
+#
+#     # Return only this rank's portion of the total workload
+#     local_combo_array = divided_combo_array[rank]
+#
+#     return local_combo_array
 
 
 # ================================================================

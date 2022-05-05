@@ -41,14 +41,14 @@ class DummyMPI:
         assert sendbuf.size == receive_arr.size
         receive_arr[:] = sendbuf[:]
 
-class MPIWrapper:
-    def __init__(self):
-        try:
-            from mpi4py import MPI
-            return MPI.COMM_WORLD
-        except:
-            dummy_comm = DummyMPI()
-            return dummy_comm
+# class MPIWrapper:
+#     def __init__(self):
+#         try:
+#             from mpi4py import MPI
+#             return MPI.COMM_WORLD
+#         except:
+#             dummy_comm = DummyMPI()
+#             return dummy_comm
 
 if __name__ == '__main__':
 
@@ -63,5 +63,5 @@ if __name__ == '__main__':
     print("size = ", size)
     print("returned_list = ", returned_list)
 
-    comm = MPIWrapper()
-    print("comm = ", comm)
+    # comm = MPIWrapper()
+    # print("comm = ", comm)

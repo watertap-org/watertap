@@ -64,8 +64,29 @@ class ParameterSweepWriter:
         write_csv = False,
         interpolate_nan_outputs = False):
 
+    # ================================================================
 
+    def _strip_extension(self, file_name, extension):
+        if file_name.lower().endswith(extension):
+            return file_name[: -len(extension)], extension
+        else:
+            return file_name, None
 
+    # ================================================================
+
+    def _process_results_filename(self, results_file_name):
+        # Get the directory path
+        dirname = os.path.dirname(results_file_name)
+        # Get the file name without the extension
+        known_extensions = [".h5", ".csv"]
+        for ext in known_extensions:
+            fname_no_ext, extension = _strip_extension(results_file_name, ext)
+            if extension is not None:
+                break
+
+        return dirname, fname_no_ext, extension
+
+    # ================================================================
 
     def save_results(self, sweep_params, local_values, global_values, local_results_dict,
         global_results_dict, global_results_arr, results_file_name, write_csv,
