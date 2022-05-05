@@ -33,6 +33,7 @@ from watertap.unit_models import (
     NanoFiltration0D,
     NanofiltrationZO,
     PressureExchanger,
+    Crystallization,
     Pump,
     EnergyRecoveryDevice,
 )
@@ -57,6 +58,12 @@ class MixerType(StrEnum):
     default = "default"
     NaOCl = "NaOCl"
     CaOH2 = "CaOH2"
+
+
+class CrystallizerCostType(StrEnum):
+    default = "default"
+    mass_basis = "mass_basis"
+    volume_basis = "volume_basis"
 
 
 @declare_process_block_class("WaterTAPCosting")
@@ -188,6 +195,42 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             mutable=True,
             initialize=1,
             doc="CaOH2 purity",
+            units=pyo.units.dimensionless,
+        )
+
+        self.fc_crystallizer_fob_unit_cost = pyo.Var(
+            initialize=675000,
+            doc="Forced circulation crystallizer reference free-on-board cost (Woods, 2007)",
+            units=pyo.units.USD_2007,
+        )
+
+        self.fc_crystallizer_ref_capacity = pyo.Var(
+            initialize=1,
+            doc="Forced circulation crystallizer reference crystal capacity (Woods, 2007)",
+            units=pyo.units.kg / pyo.units.s,
+        )
+
+        self.fc_crystallizer_ref_exponent = pyo.Var(
+            initialize=0.53,
+            doc="Forced circulation crystallizer cost exponent factor (Woods, 2007)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.fc_crystallizer_iec_percent = pyo.Var(
+            initialize=1.43,
+            doc="Forced circulation crystallizer installed equipment cost (Diab and Gerogiorgis, 2017)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.fc_crystallizer_volume_cost = pyo.Var(
+            initialize=16320,
+            doc="Forced circulation crystallizer cost per volume (Yusuf et al., 2019)",
+            units=pyo.units.USD_2007,  ## TODO: Needs confirmation, but data is from Perry apparently
+        )
+
+        self.fc_crystallizer_vol_basis_exponent = pyo.Var(
+            initialize=0.47,
+            doc="Forced circulation crystallizer volume-based cost exponent (Yusuf et al., 2019)",
             units=pyo.units.dimensionless,
         )
 
@@ -658,6 +701,82 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "CaOH2"
         )
 
+    @staticmethod
+    def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
+        """
+        Function for costing the FC crystallizer by the mass flow of produced crystals.
+
+        Args:
+            cost_type - Option for crystallizer cost function type - volume or mass basis
+        """
+        if (
+            cost_type == CrystallizerCostType.default
+            or cost_type == CrystallizerCostType.mass_basis
+        ):
+            WaterTAPCostingData.cost_crystallizer_by_crystal_mass(blk)
+        elif cost_type == CrystallizerCostType.volume_basis:
+            WaterTAPCostingData.cost_crystallizer_by_volume(blk)
+        else:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for cost_type:"
+                f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
+            )
+
+    @staticmethod
+    def cost_crystallizer_by_crystal_mass(blk):
+        """
+        Mass-based capital cost for FC crystallizer
+        """
+        _make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.fc_crystallizer_iec_percent
+                    * blk.costing_package.fc_crystallizer_fob_unit_cost
+                    * (
+                        sum(
+                            blk.unit_model.solids.flow_mass_phase_comp[0, "Sol", j]
+                            for j in blk.unit_model.config.property_package.solute_set
+                        )
+                        / blk.costing_package.fc_crystallizer_ref_capacity
+                    )
+                    ** blk.costing_package.fc_crystallizer_ref_exponent
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
+    @staticmethod
+    def cost_crystallizer_by_volume(blk):
+        """
+        Volume-based capital cost for FC crystallizer
+        """
+        _make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.fc_crystallizer_volume_cost
+                    * (
+                        (
+                            pyo.units.convert(
+                                blk.unit_model.volume_suspension
+                                * (
+                                    blk.unit_model.height_crystallizer
+                                    / blk.unit_model.height_slurry
+                                ),
+                                to_units=(pyo.units.ft) ** 3,
+                            )
+                        )
+                        / pyo.units.ft**3
+                    )
+                    ** blk.costing_package.fc_crystallizer_vol_basis_exponent
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
@@ -669,6 +788,7 @@ WaterTAPCostingData.unit_mapping = {
     ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
+    Crystallization: WaterTAPCostingData.cost_crystallizer,
 }
 
 

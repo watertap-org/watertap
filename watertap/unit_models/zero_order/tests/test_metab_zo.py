@@ -391,7 +391,7 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(3.091e6, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(4.505e5, rel=1e-3) == value(
+        assert pytest.approx(5069532.966912, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -399,7 +399,7 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(5.432e5, rel=1e-3) == value(
+        assert pytest.approx(5162268.806429799, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
@@ -503,7 +503,7 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(3.881e7, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(5.631e6, rel=1e-3) == value(
+        assert pytest.approx(63369162.086399995, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -511,7 +511,8 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(6.795e6, rel=1e-3) == value(
+
+        assert pytest.approx(64533387.715684555, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
