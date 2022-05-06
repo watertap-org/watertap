@@ -13,6 +13,8 @@
 
 from watertap.tools.parameter_sweep import (
     LinearSample,
+    GeomSample,
+    ReverseGeomSample,
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
