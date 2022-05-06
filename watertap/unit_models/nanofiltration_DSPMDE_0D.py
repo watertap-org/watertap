@@ -1352,58 +1352,58 @@ class NanofiltrationData(UnitModelBlockData):
             state_args=state_args["permeate"],
         )
         init_log.info_high("Initialization Step 2 Complete.")
-
-        # Double-check for poorly scaled variables after state block initialization
-        # and rescale them so that scaled variable values = 1:
-        if automate_rescale:
-            badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
-            if len(badly_scaled_vars) > 0:
-                init_log.warn(
-                    f"{len(badly_scaled_vars)} poorly scaled "
-                    f"variable(s) will be rescaled so that each scaled variable value = 1"
-                )
-                self._automate_rescale_variables()
-        # ---------------------------------------------------------------------
-        # Solve unit with deactivated constraint
-        # self.eq_solute_solvent_flux.deactivate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-            if not check_optimal_termination(res):
-                init_log.warn(
-                    "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
-                )
-        # ---------------------------------------------------------------------
-        # Solve unit
-        self.eq_solute_solvent_flux.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-            if not check_optimal_termination(res):
-                init_log.warn(
-                    "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
-                )
-                res = opt.solve(self, tee=slc.tee)
-                if not check_optimal_termination(res):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization."
-                    )
-        check_solve(
-            res,
-            checkpoint="Solve in Initialization Step 3",
-            logger=init_log,
-            fail_flag=fail_on_warning,
-        )
+        self.report()
+        # # Double-check for poorly scaled variables after state block initialization
+        # # and rescale them so that scaled variable values = 1:
+        # if automate_rescale:
+        #     badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
+        #     if len(badly_scaled_vars) > 0:
+        #         init_log.warn(
+        #             f"{len(badly_scaled_vars)} poorly scaled "
+        #             f"variable(s) will be rescaled so that each scaled variable value = 1"
+        #         )
+        #         self._automate_rescale_variables()
+        # # ---------------------------------------------------------------------
+        # # Solve unit with deactivated constraint
+        # # self.eq_solute_solvent_flux.deactivate()
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = opt.solve(self, tee=slc.tee)
+        #     if not check_optimal_termination(res):
+        #         init_log.warn(
+        #             "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
+        #         )
+        # # ---------------------------------------------------------------------
+        # # Solve unit
+        # self.eq_solute_solvent_flux.activate()
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = opt.solve(self, tee=slc.tee)
+        #     if not check_optimal_termination(res):
+        #         init_log.warn(
+        #             "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
+        #         )
+        #         res = opt.solve(self, tee=slc.tee)
+        #         if not check_optimal_termination(res):
+        #             raise InitializationError(
+        #                 "The property package failed to solve during initialization."
+        #             )
+        # check_solve(
+        #     res,
+        #     checkpoint="Solve in Initialization Step 3",
+        #     logger=init_log,
+        #     fail_flag=fail_on_warning,
+        # )
         # Release Inlet state
         self.feed_side.release_state(flags_feed_side, outlvl)
-        # Rescale any badly scaled vars
-        if automate_rescale:
-            badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
-            if len(badly_scaled_vars) > 0:
-                init_log.warn(
-                    f"After solve: {len(badly_scaled_vars)} poorly scaled "
-                    f"variable(s) will be rescaled so that each scaled variable value = 1"
-                )
-            self._automate_rescale_variables()
-        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+        # # Rescale any badly scaled vars
+        # if automate_rescale:
+        #     badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
+        #     if len(badly_scaled_vars) > 0:
+        #         init_log.warn(
+        #             f"After solve: {len(badly_scaled_vars)} poorly scaled "
+        #             f"variable(s) will be rescaled so that each scaled variable value = 1"
+        #         )
+        #     self._automate_rescale_variables()
+        # init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
         # TODO: replace 0 with time_point
