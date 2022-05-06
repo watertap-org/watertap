@@ -692,7 +692,7 @@ class NanofiltrationData(UnitModelBlockData):
                 )
                 == 0
             )
-            # todo: tolerance should just be 0
+            #
 
         # 4. Charge balance inside the membrane, DOF=N nodes across membrane thickness *2 for inlet/outlet: N=2, DOF=4
         @self.Constraint(
@@ -1067,16 +1067,16 @@ class NanofiltrationData(UnitModelBlockData):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # Experimental constraint
-        @self.Constraint(
-            self.flowsheet().config.time,
-            io_list,
-            doc="Equal volumetric flow for pore exit and permeate at inlet and outlet",
-        )
-        def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
-            return (
-                b.pore_entrance[t, x].flow_vol_phase["Liq"]
-                == b.pore_exit[t, x].flow_vol_phase["Liq"]
-            )
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     io_list,
+        #     doc="Equal volumetric flow for pore exit and permeate at inlet and outlet",
+        # )
+        # def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
+        #     return (
+        #         b.pore_entrance[t, x].flow_vol_phase["Liq"]
+        #         == b.pore_exit[t, x].flow_vol_phase["Liq"]
+        #     )
 
         # Experimental constraint
         @self.Constraint(
@@ -1908,7 +1908,7 @@ class NanofiltrationData(UnitModelBlockData):
             # todo: revisit sf
             # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
             #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-            iscale.constraint_scaling_transform(con, 1e2)
+            iscale.constraint_scaling_transform(con, 1e5)
 
         for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
             # todo: revisit sf
@@ -1916,6 +1916,65 @@ class NanofiltrationData(UnitModelBlockData):
             #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
             iscale.constraint_scaling_transform(con, 1e2)
 
+        for con in self.eq_solute_flux_pore_domain.values():
+            # todo: revisit sf
+            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+            iscale.constraint_scaling_transform(con, 1e5)
+
+        for con in self.eq_interfacial_partitioning_feed.values():
+            iscale.constraint_scaling_transform(con, 10)
+
+        for con in self.eq_interfacial_partitioning_permeate.values():
+            iscale.constraint_scaling_transform(con, 10)
+
+        # for con in self.eq_electroneutrality_interface.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_electroneutrality_pore.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_electroneutrality_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_electroneutrality_feed_outlet.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_electroneutrality_in_membrane.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_electroneutrality_mixed_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+
+        # for con in self.eq_area.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.eq_permeate_isothermal.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.eq_mass_transfer_feed.values():
+        #     iscale.constraint_scaling_transform(con, 1e6)
+        # for con in self.eq_permeate_production.values():
+        #     iscale.constraint_scaling_transform(con, 1e5)
+        # for con in self.eq_recovery_vol_phase.values():
+        #     iscale.constraint_scaling_transform(con, 1e2)
+        # for con in self.eq_rejection_intrinsic_phase_comp.values():
+        #     iscale.constraint_scaling_transform(con, 1e2)
+        # for con in self.eq_N_Sc_comp.values():
+        #     iscale.constraint_scaling_transform(con, 1e-1)
+        # for con in self.eq_N_Pe_comp.values():
+        #     iscale.constraint_scaling_transform(con, 1e-5)
+        # for con in self.eq_N_Pe_comp.values():
+        #     iscale.constraint_scaling_transform(con, 1e-5)
+        # for con in self.eq_velocity.values():
+        #     iscale.constraint_scaling_transform(con, 1e3)
+        # for con in self.eq_pressure_permeate_io.values():
+        #     iscale.constraint_scaling_transform(con, 1e-5)
+        # for con in self.eq_pore_isothermal.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.eq_permeate_isothermal_mixed.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.eq_equal_flow_vol_pore_exit_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.eq_equal_flow_vol_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.feed_side.eq_feed_interface_isothermal.values():
+        #     iscale.constraint_scaling_transform(con, 1)
+        # for con in self.feed_side.eq_feed_isothermal.values():
+        #     iscale.constraint_scaling_transform(con, 1)
         if (
             self.config.mass_transfer_coefficient
             == MassTransferCoefficient.spiral_wound

@@ -286,6 +286,9 @@ class TestNanoFiltration:
         assert len(unscaled_var_list) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
+        unscaled_con_lst = list(unscaled_constraints_generator(m))
+        [print(i) for i in unscaled_con_lst]
+        assert len(unscaled_con_lst) == 0
 
     @pytest.mark.skip(
         reason="Scaling and/or formulation of unit model needs to be revisited"
