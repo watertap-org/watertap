@@ -1067,16 +1067,16 @@ class NanofiltrationData(UnitModelBlockData):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # Experimental constraint
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     io_list,
-        #     doc="Equal volumetric flow for pore exit and permeate at inlet and outlet",
-        # )
-        # def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
-        #     return (
-        #         b.pore_entrance[t, x].flow_vol_phase["Liq"]
-        #         == b.pore_exit[t, x].flow_vol_phase["Liq"]
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Equal volumetric flow for pore exit and permeate at inlet and outlet",
+        )
+        def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
+            return (
+                b.pore_entrance[t, x].flow_vol_phase["Liq"]
+                == b.pore_exit[t, x].flow_vol_phase["Liq"]
+            )
 
         # Experimental constraint
         @self.Constraint(
@@ -1904,29 +1904,29 @@ class NanofiltrationData(UnitModelBlockData):
             )
             iscale.constraint_scaling_transform(con, sf)
 
-        for (t, x, p, j), con in self.eq_solute_solvent_flux.items():
-            # todo: revisit sf
-            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
-            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-            iscale.constraint_scaling_transform(con, 1e5)
-
-        for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
-            # todo: revisit sf
-            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
-            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-            iscale.constraint_scaling_transform(con, 1e2)
-
-        for con in self.eq_solute_flux_pore_domain.values():
-            # todo: revisit sf
-            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
-            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-            iscale.constraint_scaling_transform(con, 1e5)
-
-        for con in self.eq_interfacial_partitioning_feed.values():
-            iscale.constraint_scaling_transform(con, 10)
-
-        for con in self.eq_interfacial_partitioning_permeate.values():
-            iscale.constraint_scaling_transform(con, 10)
+        # for (t, x, p, j), con in self.eq_solute_solvent_flux.items():
+        #     # todo: revisit sf
+        #     # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+        #     #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+        #     iscale.constraint_scaling_transform(con, 1e5)
+        #
+        # for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
+        #     # todo: revisit sf
+        #     # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+        #     #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+        #     iscale.constraint_scaling_transform(con, 1e2)
+        #
+        # for con in self.eq_solute_flux_pore_domain.values():
+        #     # todo: revisit sf
+        #     # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+        #     #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+        #     iscale.constraint_scaling_transform(con, 1e5)
+        #
+        # for con in self.eq_interfacial_partitioning_feed.values():
+        #     iscale.constraint_scaling_transform(con, 10)
+        #
+        # for con in self.eq_interfacial_partitioning_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 10)
 
         # for con in self.eq_electroneutrality_interface.values():
         #     iscale.constraint_scaling_transform(con, 1e6)

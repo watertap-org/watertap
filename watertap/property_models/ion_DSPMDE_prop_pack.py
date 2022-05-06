@@ -1213,6 +1213,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.conc_mol_phase_comp
 
         if solve:
+            ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
             solve = get_solver()
             results = solve.solve(self)
             if check_optimal_termination(results):
@@ -1259,7 +1260,8 @@ class DSPMDEStateBlockData(StateBlockData):
                                 f" {get_property}."
                             )
                     msg = (
-                        f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed "
+                        f"{adjust_by_ion} adjusted: flow_mol_phase_comp['Liq',{adjust_by_ion}] was adjusted from "
+                        f"{ion_before_adjust} and fixed "
                         f"to {ion_adjusted}."
                     )
                 else:
