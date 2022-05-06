@@ -130,7 +130,7 @@ class TestSIDOR:
         assert len(model.fs.unit.solute_treated_equation) == 3
 
         assert isinstance(model.fs.unit.reaction_set, Set)
-        assert isinstance(model.fs.unit.generation_ratio, Param)
+        assert isinstance(model.fs.unit.generation_ratio, Var)
 
         assert isinstance(model.fs.unit.reaction_conversion, Var)
         assert isinstance(model.fs.unit.extent_of_reaction, Var)
