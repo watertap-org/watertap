@@ -114,6 +114,8 @@ sodium:
   constituent_longform: Sodium
 strontium:
   constituent_longform: Strontium
+struvite:
+  consituent_longform: Struvite
 sulfate:
   constituent_longform: Sulfate
 sulfur:

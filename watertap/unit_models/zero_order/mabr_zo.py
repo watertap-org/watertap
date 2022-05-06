@@ -24,7 +24,7 @@ __author__ = "Chenyu Wang"
 
 
 @declare_process_block_class("MABRZO")
-class MABRZOOData(ZeroOrderBaseData):
+class MABRZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a MABR unit.
     """

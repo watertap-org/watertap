@@ -69,3 +69,14 @@ def test_cost_mixer_configuration_error():
         " foo. Argument must be a member of the MixerType Enum.",
     ):
         WaterTAPCostingData.cost_mixer(blk, mixer_type="foo")
+
+
+@pytest.mark.component
+def test_cost_crystallizer_configuration_error():
+    blk = _get_config_testing_block()
+    with pytest.raises(
+        ConfigurationError,
+        match="unit_model received invalid argument for cost_type:"
+        " foo. Argument must be a member of the CrystallizerCostType Enum.",
+    ):
+        WaterTAPCostingData.cost_crystallizer(blk, cost_type="foo")
