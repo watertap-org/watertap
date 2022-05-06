@@ -149,8 +149,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 db = Database()
 params = db._get_technology("storage_tank")

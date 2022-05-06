@@ -139,4 +139,3 @@ Unit : fs.unit                                                             Time:
     Mass Concentration nitrate   90.909    65.934
 ====================================================================================
 """
-        assert output in stream.getvalue()

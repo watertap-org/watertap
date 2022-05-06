@@ -189,8 +189,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestCartridgeFiltrationZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -355,8 +353,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo               76.923   84.041 7.2661e-07
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

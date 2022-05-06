@@ -176,8 +176,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class Testbrine_concentratorZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -327,7 +325,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo 0.097551 0.11104  8.0321e-09
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 db = Database()

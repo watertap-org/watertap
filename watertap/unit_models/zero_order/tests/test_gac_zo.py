@@ -194,8 +194,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestGACZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -354,7 +352,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo             0.099970   0.10415 2.4927e-08
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 db = Database()

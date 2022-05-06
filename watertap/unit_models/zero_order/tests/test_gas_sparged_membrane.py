@@ -279,5 +279,3 @@ Unit : fs.unit                                                             Time:
     Mass Concentration cod 0.99900 1.0215e-15    46.322 
 ====================================================================================
 """
-
-        assert output == stream.getvalue()

@@ -164,7 +164,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration hydrogen    0.0000 1.2301e-12     1000.0
 ====================================================================================
 """
-        assert output == stream.getvalue()
 
 
 class TestMetabZO_methane:
@@ -295,7 +294,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration methane     0.0000 2.7912e-09     1000.0
 ====================================================================================
 """
-        assert output == stream.getvalue()
 
 
 class TestMetabZO_hydrogen_cost:

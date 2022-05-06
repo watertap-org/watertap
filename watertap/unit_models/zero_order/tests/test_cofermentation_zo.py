@@ -231,8 +231,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 @pytest.mark.unit
 def test_COD_not_in_solute_list():

@@ -144,8 +144,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output == stream.getvalue()
-
 
 def test_costing():
     m = ConcreteModel()

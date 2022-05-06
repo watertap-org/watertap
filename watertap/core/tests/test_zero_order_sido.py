@@ -259,5 +259,3 @@ Unit : fs.unit                                                             Time:
     Mass Concentration C   28.302  24.823    42.056  
 ====================================================================================
 """
-
-        assert output == stream.getvalue()

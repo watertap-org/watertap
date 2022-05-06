@@ -140,8 +140,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output == stream.getvalue()
-
 
 class TestPumpElectricity:
     @pytest.fixture(scope="module")
@@ -233,5 +231,3 @@ Unit : fs.unit                                                             Time:
     Index: []
 ====================================================================================
 """
-
-        assert output == stream.getvalue()

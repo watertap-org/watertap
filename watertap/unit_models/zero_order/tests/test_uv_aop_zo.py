@@ -199,8 +199,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestUVAOPZO_subtype_no_default_removal:
     @pytest.fixture(scope="class")
@@ -369,8 +367,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration total_coliforms_fecal_ecoli  0.29967 1.7997e-06
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

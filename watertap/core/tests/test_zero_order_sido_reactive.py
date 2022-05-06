@@ -323,8 +323,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output == stream.getvalue()
-
 
 class TestSIDORErrors:
     @pytest.mark.unit

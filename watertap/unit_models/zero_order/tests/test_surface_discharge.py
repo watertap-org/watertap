@@ -162,8 +162,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestSurfaceDischargeZOsubtype:
     @pytest.fixture(scope="class")
@@ -291,8 +289,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration bar      244.95  244.95
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 db = Database()

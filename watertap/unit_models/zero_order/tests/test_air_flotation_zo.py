@@ -175,8 +175,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestAirFlotationZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -327,8 +325,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo   83.333   90.098 8.8790e-07
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

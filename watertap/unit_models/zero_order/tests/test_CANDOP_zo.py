@@ -240,7 +240,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration nitrous_oxide                0.0000 8.2992e-10     500.00
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 def test_costing():

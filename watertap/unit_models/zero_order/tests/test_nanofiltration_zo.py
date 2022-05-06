@@ -324,8 +324,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestNFZO_non_default_subtype:
     @pytest.fixture(scope="class")
@@ -490,8 +488,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration dye    2.5000   0.053854     9.7374
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

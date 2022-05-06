@@ -226,8 +226,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestOzoneZO_w_o_default_removal:
     @pytest.fixture(scope="class")
@@ -391,8 +389,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration viruses_enteric              9.4340 0.027451
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

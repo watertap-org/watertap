@@ -191,8 +191,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestBioActiveFiltrationZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -359,8 +357,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo               76.923   81.967 1.0000e-06
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

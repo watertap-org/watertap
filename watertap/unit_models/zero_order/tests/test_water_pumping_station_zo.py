@@ -143,8 +143,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestWaterPumpingStationZO_without_fix_pump_power_config:
     @pytest.fixture(scope="class")
@@ -253,8 +251,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo 0.99900 0.99900
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 db = Database()

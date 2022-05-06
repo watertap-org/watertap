@@ -134,8 +134,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output == stream.getvalue()
-
 
 db = Database()
 params = db._get_technology("landfill")

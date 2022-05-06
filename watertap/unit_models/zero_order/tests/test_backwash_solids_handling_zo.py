@@ -184,7 +184,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo     0.099960   0.10525 1.9887e-08
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 db = Database()

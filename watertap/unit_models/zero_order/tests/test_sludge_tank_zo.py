@@ -239,8 +239,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestSludgeTankZO_w_o_default_removal:
     @pytest.fixture(scope="class")
@@ -390,8 +388,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration tss   629.63   16.716    999.99 
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

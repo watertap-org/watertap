@@ -220,7 +220,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo       0.095229 0.099502 2.2173e-08
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 def test_costing():

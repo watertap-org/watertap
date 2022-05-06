@@ -167,8 +167,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestWellFieldZOsubtype:
     @pytest.fixture(scope="class")
@@ -299,8 +297,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration crux    0.0030618 0.0030618
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 db = Database()

@@ -201,8 +201,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestPrimarySeparatorZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -379,8 +377,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo              71.429   89.292 2.8563e-07
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

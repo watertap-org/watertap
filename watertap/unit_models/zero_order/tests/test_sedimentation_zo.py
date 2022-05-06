@@ -206,8 +206,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestSedimentationZO_phosphorus_capture_tss:
     @pytest.fixture(scope="class")
@@ -372,8 +370,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestSedimentationZO_phosphorus_capture_phosphates:
     @pytest.fixture(scope="class")
@@ -537,8 +533,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration phosphates   230.77   0.30414    955.68 
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 db = Database()

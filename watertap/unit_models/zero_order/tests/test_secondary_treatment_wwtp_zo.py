@@ -204,8 +204,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 db = Database()
 params = db._get_technology("secondary_treatment_wwtp")

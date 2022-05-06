@@ -187,8 +187,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestAnaerobicDigestionOxidationZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -353,8 +351,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo   76.923   88.660 4.6485e-07
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 def test_costing():

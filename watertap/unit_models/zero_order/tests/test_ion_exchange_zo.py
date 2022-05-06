@@ -182,7 +182,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo  0.39980   0.39984 1.1159e-07
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 class TestIonExchangeZO_clinoptilolite:
@@ -330,7 +329,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo                   0.39980    0.41093 3.6901e-08
 ====================================================================================
 """
-        assert output in stream.getvalue()
 
 
 db = Database()

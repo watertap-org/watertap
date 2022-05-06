@@ -224,8 +224,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 db = Database()
 params = db._get_technology("anaerobic_mbr_mec")

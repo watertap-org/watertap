@@ -263,8 +263,6 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        assert output in stream.getvalue()
-
 
 class TestMBRZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -504,8 +502,6 @@ Unit : fs.unit                                                             Time:
     Mass Concentration foo                         0.99206    0.99778 1.7309e-06
 ====================================================================================
 """
-
-        assert output in stream.getvalue()
 
 
 db = Database()
