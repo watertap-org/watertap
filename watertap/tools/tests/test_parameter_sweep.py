@@ -33,6 +33,8 @@ from watertap.tools.parameter_sweep import (
     _create_global_output,
     parameter_sweep,
     LinearSample,
+    GeomSample,
+    ReverseGeomSample,
     UniformSample,
     NormalSample,
     SamplingType,
@@ -115,6 +117,78 @@ class TestParallelManager:
         param_dict["var_A"] = LinearSample(A_param, range_A[0], range_A[1], nn_A)
         param_dict["var_B"] = LinearSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = LinearSample(C_param, range_C[0], range_C[1], nn_C)
+
+        global_combo_array = _build_combinations(
+            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        )
+
+        assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+
+        assert global_combo_array[0, 0] == pytest.approx(range_A[0])
+        assert global_combo_array[0, 1] == pytest.approx(range_B[0])
+        assert global_combo_array[0, 2] == pytest.approx(range_C[0])
+
+        assert global_combo_array[-1, 0] == pytest.approx(range_A[1])
+        assert global_combo_array[-1, 1] == pytest.approx(range_B[1])
+        assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
+
+    @pytest.mark.component
+    def test_geom_build_combinations(self):
+        comm, rank, num_procs = _init_mpi()
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
+        range_A = [1.0, 10.0]
+        range_B = [2.0, 20.0]
+        range_C = [3.0, 30.0]
+
+        nn_A = 2
+        nn_B = 3
+        nn_C = 4
+
+        param_dict = dict()
+        param_dict["var_A"] = GeomSample(A_param, range_A[0], range_A[1], nn_A)
+        param_dict["var_B"] = GeomSample(B_param, range_B[0], range_B[1], nn_B)
+        param_dict["var_C"] = GeomSample(C_param, range_C[0], range_C[1], nn_C)
+
+        global_combo_array = _build_combinations(
+            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        )
+
+        assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+
+        assert global_combo_array[0, 0] == pytest.approx(range_A[0])
+        assert global_combo_array[0, 1] == pytest.approx(range_B[0])
+        assert global_combo_array[0, 2] == pytest.approx(range_C[0])
+
+        assert global_combo_array[-1, 0] == pytest.approx(range_A[1])
+        assert global_combo_array[-1, 1] == pytest.approx(range_B[1])
+        assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
+
+    @pytest.mark.component
+    def test_reverse_geom_build_combinations(self):
+        comm, rank, num_procs = _init_mpi()
+
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
+        range_A = [1.0, 10.0]
+        range_B = [2.0, 20.0]
+        range_C = [3.0, 30.0]
+
+        nn_A = 2
+        nn_B = 3
+        nn_C = 4
+
+        param_dict = dict()
+        param_dict["var_A"] = ReverseGeomSample(A_param, range_A[0], range_A[1], nn_A)
+        param_dict["var_B"] = ReverseGeomSample(B_param, range_B[0], range_B[1], nn_B)
+        param_dict["var_C"] = ReverseGeomSample(C_param, range_C[0], range_C[1], nn_C)
 
         global_combo_array = _build_combinations(
             param_dict, SamplingType.FIXED, None, comm, rank, num_procs
