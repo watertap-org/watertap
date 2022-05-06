@@ -686,6 +686,13 @@ class Electrodialysis0DData(UnitModelBlockData):
                     .diluate_channel.properties_in[0]
                     .flow_mol_phase_comp["Liq", j]
                 )
+                blk[k].concentrate_channel.properties_out[0].flow_mol_phase_comp[
+                    "Liq", j
+                ] = value(
+                    blk[k]
+                    .concentrate_channel.properties_in[0]
+                    .flow_mol_phase_comp["Liq", j]
+                )
         # Initialize diluate_channel block
         flags_diluate = blk.diluate_channel.initialize(
             outlvl=outlvl,
