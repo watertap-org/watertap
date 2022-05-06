@@ -16,6 +16,25 @@ Sets
   "Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', 'S_ALK']"
   "Phases", ":math:`p`", "['Liq']"
 
+Components
+----------
+.. csv-table::
+  :header: "Description", "Symbol", "Variable"
+
+  "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I"
+  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S"
+  "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I"
+  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S"
+  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH"
+  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA"
+  "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P"
+  "Oxygen, S_O", ":math:`S_O`", "S_O"
+  "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO"
+  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH"
+  "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND"
+  "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND"
+  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK"
+
 State variables
 ---------------
 .. csv-table::
@@ -25,10 +44,10 @@ State variables
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol/m}^{3}`"
+   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
-Parameters
-----------
+Stoichiometric Parameters
+-------------------------
 .. csv-table::
  :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
 
@@ -37,6 +56,12 @@ Parameters
    "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", "[p]", 0.08, ":math:`\text{dimensionless}`"
    "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", "[p]", 0.08, ":math:`\text{dimensionless}`"
    "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", "[p]", 0.06, ":math:`\text{dimensionless}`"
+
+Kinetic Parameters
+------------------
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
+
    "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", "[p]", 0.5, ":math:`\text{d}^{-1}`"
    "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", "[p]", 4.0, ":math:`\text{d}^{-1}`"
    "Half-saturation coefficient for heterotrophic biomass, K_S", ":math:`K_S`", "K_S", "[p]", 0.01, ":math:`\text{kg COD/}\text{m}^{3}`"
@@ -52,7 +77,6 @@ Parameters
    "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", "[p]", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
    "Ammonification rate, k_a", ":math:`k_a`", "k_a", "[p]", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
 
-
 Properties
 ----------
 .. csv-table::
@@ -60,19 +84,6 @@ Properties
 
   "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
   "Mass density", ":math:`\rho`", "dens_mass", "[p]", ":math:`\text{kg/}\text{m}^3`"
-  "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Oxygen, S_O", ":math:`S_O`", "S_O", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO", "[p]", ":math:`\text{kg/m}^{3}`"
-  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND", "[p]", ":math:`\text{kg/m}^{3}`"
-  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK", "[p]", ":math:`\text{kg/m}^{3}`"
 
 Relationships
 -------------
@@ -91,46 +102,7 @@ Relationships
 
 Scaling
 -------
-This ASM1 property package includes support for scaling, such as providing
-default or calculating scaling factors for almost all variables. The only variables
-that do not have scaling factors are the component mass flowrate and the user will
-receive a warning if these are not set.
-
-The user can specify the scaling factors for component mass flowrates with the following:
-
-.. testsetup::
-
-  from pyomo.environ import ConcreteModel
-  from idaes.core import FlowsheetBlock
-
-.. testcode::
-
-  # relevant imports
-  import watertap.property_models.coagulation_prop_pack as props    # Needs to be replaced with ASM prop pack
-  from idaes.core.util.scaling import calculate_scaling_factors
-
-  # relevant assignments
-  m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
-  m.fs.properties = props.CoagulationParameterBlock()               # Needs to be replaced with ASM
-
-  # set scaling for component mass flowrate
-  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq','H2O'))
-  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq','TDS'))
-  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq','TSS'))
-  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq','Sludge'))
-
-  # calculate scaling factors
-  calculate_scaling_factors(m.fs)
-
-The default scaling factors are as follows:
-
-  * 1e-2 for temperature
-  * 1e-6 for pressure
-  * 1e-3 for mass density
-
-Scaling factors for other variables can be calculated based on their relationships
-with the user-supplied or default scaling factors.
+Scaling for the ASM1 property package has yet to be implemented.
 
 
 References
