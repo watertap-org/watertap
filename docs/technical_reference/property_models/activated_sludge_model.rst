@@ -84,6 +84,22 @@ Properties
 
   "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
   "Mass density", ":math:`\rho`", "dens_mass", "[p]", ":math:`\text{kg/}\text{m}^3`"
+<<<<<<< HEAD
+=======
+  "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Oxygen, S_O", ":math:`S_O`", "S_O", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO", "[p]", ":math:`\text{kg/m}^{3}`"
+  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND", "[p]", ":math:`\text{kg/m}^{3}`"
+  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
+>>>>>>> 390e6f073103c94fd3921a371be505d735f40efa
 
 Relationships
 -------------
