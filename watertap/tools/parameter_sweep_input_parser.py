@@ -88,8 +88,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
     """
 
     input_dict = _yaml_to_dict(yaml_filename)
-    out_dict = _dict_to_params(m, input_dict)
-    return out_dict
+    return _dict_to_params(m, input_dict)
 
 
 def _dict_to_params(m, input_dict):
