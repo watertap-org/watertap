@@ -191,7 +191,6 @@ def _set_values_from_dict(m, input_dict, verbose=False):
     fail_count = 0
 
     for key, default_value in input_dict.items():
-        print(key, default_value)
         # Find the specified component on the model
         component = m.find_component(key)
 
