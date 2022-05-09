@@ -66,9 +66,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             domain=In([False]),
             default=False,
-            description="Dynamic model flag - must be False",
+            description="Dynamic model flag; must be False",
             doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. The filtration unit does not support dynamic
+    **default**: False. The filtration unit does not support dynamic
     behavior, thus this must be False.""",
         ),
     )
@@ -78,9 +78,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             default=False,
             domain=In([False]),
-            description="Holdup construction flag - must be False",
+            description="Holdup construction flag; must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
+    **default**: False. The filtration unit does not have defined volume, thus
     this must be False.""",
         ),
     )
