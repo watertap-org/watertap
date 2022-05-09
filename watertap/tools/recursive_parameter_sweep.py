@@ -11,7 +11,6 @@
 #
 ###############################################################################
 import numpy as np
-import itertools
 import warnings
 from enum import Enum
 from watertap.tools.parameter_sweep import (
@@ -38,9 +37,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
     # Figure out how many filtered solves did this rank actually do
     filter_counter = 0
     for case, content in recursive_local_dict.items():
-        filter_counter += sum(
-            content["solve_successful"]
-        )
+        filter_counter += sum(content["solve_successful"])
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
@@ -53,7 +50,9 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
     offset = 0
     for case_number, content in recursive_local_dict.items():
         # Filter all of the sucessful solves
-        optimal_indices = [idx for idx, success in enumerate(content["solve_successful"]) if success]
+        optimal_indices = [
+            idx for idx, success in enumerate(content["solve_successful"]) if success
+        ]
         n_successful_solves = len(optimal_indices)
         stop = offset + n_successful_solves
 
@@ -213,9 +212,7 @@ def recursive_parameter_sweep(
 
         # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
         scale_factor = 2.0 / max(success_prob, 0.10)
-        num_total_samples = int(
-            np.ceil(scale_factor * n_samples_remaining)
-        )
+        num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
         loop_ctr += 1
 
     # Now that we have all of the local output dictionaries, we need to construct
