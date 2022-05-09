@@ -56,9 +56,6 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     optimize,
 )
 
-# import logging
-# logging.getLogger('pyomo.core').setLevel(logging.ERROR)
-
 # -----------------------------------------------------------------------------
 
 

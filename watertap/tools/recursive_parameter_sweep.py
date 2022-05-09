@@ -53,11 +53,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
     offset = 0
     for case_number, content in recursive_local_dict.items():
         # Filter all of the sucessful solves
-        optimal_indices = list(
-            itertools.compress(
-                range(len(content["solve_successful"])), content["solve_successful"]
-            )
-        )
+        optimal_indices = [idx for idx, success in enumerate(content["solve_successful"]) if success]
         n_successful_solves = len(optimal_indices)
         stop = offset + n_successful_solves
 
