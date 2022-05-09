@@ -11,7 +11,7 @@ For example::
 
     from watertap.ui.api import FlowsheetInterface, WorkflowActions
 
-    def flowsheet_for_ui(fs):
+    def flowsheet_for_ui():
         fsi = FlowsheetInterface(fs, {
             "display_name": "My flowsheet",
             "description": "This is a flowsheet",
@@ -64,9 +64,6 @@ from .api_util import Schema, SchemaException, JSONException
 
 # Global variables
 # ----------------
-
-#: Function name to look for in modules, to get FlowsheetInterface objects
-ENTRY_POINT = "flowsheet_for_ui"
 
 # Logging
 # -------
@@ -261,7 +258,10 @@ class BlockInterface(BlockSchemaDefinition):
         if "display_name" not in options:
             options["display_name"] = block.name
         if "description" not in options:
-            options["description"] = block.doc
+            if block.doc:
+                options["description"] = block.doc
+            else:
+                options["description"] = "none"
         self.config = self.CONFIG(options)
         set_block_interface(self._block, self)
 
@@ -288,7 +288,7 @@ class BlockInterface(BlockSchemaDefinition):
                 c[self.DISP_KEY] = v.local_name
             if self.DESC_KEY not in c:
                 c[self.DESC_KEY] = v.doc or f"{c[self.DISP_KEY]} variable"
-            if v.get_units():
+            if v.get_units() is not None:
                 c[self.UNIT_KEY] = str(v.get_units())
             # generate one result
             yield c
