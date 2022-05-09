@@ -29,8 +29,6 @@ from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
-np.set_printoptions(linewidth=200)
-
 # ================================================================
 
 
