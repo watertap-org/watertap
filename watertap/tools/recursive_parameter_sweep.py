@@ -27,8 +27,6 @@ from watertap.tools.parameter_sweep import (
     _save_results,
 )
 
-np.set_printoptions(linewidth=200)
-
 # ================================================================
 
 
