@@ -166,6 +166,29 @@ class BoronRemovalData(UnitModelBlockData):
         ),
     )
 
+    CONFIG.declare(
+        "chemical_mapping_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="""Dictionary of chemical species names from the property
+        package and how they map to specific species needed for solving a simple
+        boron speciation problem in an equilibrium reactor. This dictionary must
+        have the following format [Required]: \n
+            {'boron_name': 'name_of_species_representing_boron', #[is required]
+            'borate_name': 'name_of_species_representing_borate', #[is required]
+            'proton_name': 'name_of_species_representing_protons',  #[is optional]
+            'hydroxide_name': 'name_of_species_representing_hydroxides', #[is optional]
+            'caustic_additive':
+                {
+                    'cation_name': 'name_of_cation_species_in_additive', #[is optional]
+                    'mw_additive': (value, units), #[is required]
+                    'charge_additive': value, #[is required]
+                },
+            } """,
+        ),
+    )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
@@ -176,6 +199,100 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Next, get the base units of measurement from the property definition
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Check configs for errors
+        common_msg = (
+            "The 'chemical_mapping_data' dict MUST contain a dict of names that map \n"
+            + "to each chemical name in the property package for boron and borate. \n"
+            + "Optionally, user may provide names that also map to protons and hydroxide, \n"
+            + "as well as to the cation from the caustic additive. The 'caustic_additive' \n"
+            + "must be a dict that contains molecular weight and charge.\n\n"
+            + "Example:\n"
+            + "-------\n"
+            + "{'boron_name': 'B[OH]3',    #[is required]\n"
+            + " 'borate_name': 'B[OH]4_-', #[is required]\n"
+            + " 'proton_name': 'H_+',      #[is OPTIONAL]\n"
+            + " 'hydroxide_name': 'OH_-',  #[is OPTIONAL]\n"
+            + " 'caustic_additive': \n"
+            + "     {'cation_name': 'Na_+',                      #[is OPTIONAL]\n"
+            + "      'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]\n"
+            + "      'charge_additive': 1,                       #[is required]\n"
+            + "     }, \n"
+            + "}\n\n"
+        )
+        if type(self.config.chemical_mapping_data) != dict or self.config.chemical_mapping_data=={}:
+            raise ConfigurationError(
+                "\n\n Did not provide a 'dict' for 'chemical_mapping_data' \n" + common_msg
+            )
+        if ('boron_name' not in self.config.chemical_mapping_data or
+            'borate_name' not in self.config.chemical_mapping_data or
+            'caustic_additive' not in self.config.chemical_mapping_data):
+            raise ConfigurationError(
+                "\n\n Missing some required information in 'chemical_mapping_data' \n" + common_msg
+            )
+        if ('mw_additive' not in self.config.chemical_mapping_data['caustic_additive'] or
+            'charge_additive' not in self.config.chemical_mapping_data['caustic_additive']):
+            raise ConfigurationError(
+                "\n\n Missing some required information in 'chemical_mapping_data' \n" + common_msg
+            )
+        if (
+            type(self.config.chemical_mapping_data['caustic_additive']['mw_additive'])
+            != tuple
+        ):
+            raise ConfigurationError(
+                "\n Did not provide a tuple for 'mw_additive' \n" + common_msg
+            )
+
+        # Assign name IDs locally for reference later when building constraints
+        self.boron_name_id = self.config.chemical_mapping_data['boron_name']
+        self.borate_name_id = self.config.chemical_mapping_data['borate_name']
+        if 'proton_name' in self.config.chemical_mapping_data:
+            self.proton_name_id = self.config.chemical_mapping_data['proton_name']
+        else:
+            self.proton_name_id = None
+        if 'hydroxide_name' in self.config.chemical_mapping_data:
+            self.hydroxide_name_id = self.config.chemical_mapping_data['hydroxide_name']
+        else:
+            self.hydroxide_name_id = None
+        if 'cation_name' in self.config.chemical_mapping_data:
+            self.cation_name_id = self.config.chemical_mapping_data['caustic_additive']['cation_name']
+        else:
+            self.cation_name_id = None
+
+        # Cross reference and check given names with set of valid names
+        if self.boron_name_id not in self.config.property_package.component_list:
+            raise ConfigurationError(
+                "\n Given 'boron_name' {" + self.boron_name_id + "} does not match " +
+                "any species name from the property package \n{}".format(
+                    [c for c in self.config.property_package.component_list])
+            )
+        if self.borate_name_id not in self.config.property_package.component_list:
+            raise ConfigurationError(
+                "\n Given 'borate_name' {" + self.borate_name_id + "} does not match " +
+                "any species name from the property package \n{}".format(
+                    [c for c in self.config.property_package.component_list])
+            )
+        if self.proton_name_id != None:
+            if self.proton_name_id not in self.config.property_package.component_list:
+                raise ConfigurationError(
+                    "\n Given 'proton_name' {" + self.proton_name_id + "} does not match " +
+                    "any species name from the property package \n{}".format(
+                        [c for c in self.config.property_package.component_list])
+                )
+        if self.hydroxide_name_id != None:
+            if self.hydroxide_name_id not in self.config.property_package.component_list:
+                raise ConfigurationError(
+                    "\n Given 'hydroxide_name' {" + self.hydroxide_name_id + "} does not match " +
+                    "any species name from the property package \n{}".format(
+                        [c for c in self.config.property_package.component_list])
+                )
+        if self.cation_name_id != None:
+            if self.cation_name_id not in self.config.property_package.component_list:
+                raise ConfigurationError(
+                    "\n Given 'cation_name' {" + self.cation_name_id + "} does not match " +
+                    "any species name from the property package \n{}".format(
+                        [c for c in self.config.property_package.component_list])
+                )
 
         # Add unit variables
 

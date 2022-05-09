@@ -63,23 +63,90 @@ def build_ion_model():
     # create dict to define ions (the prop pack of Adam requires this)
     ion_dict = {
         "solute_list": ["H_+", "OH_-", "B[OH]3", "B[OH]4_-"],
-        "diffusivity_data": {
-            ("Liq", "H_+"): 1.33e-9,
-            ("Liq", "OH_-"): 2.03e-9,
-            ("Liq", "B[OH]3"): 1.70e-9,
-            ("Liq", "B[OH]4_-"): 1.70e-9,
-        },
         "mw_data": {"H2O": 18e-3, "H_+": 1e-3, "OH_-": 17e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
-        "stokes_radius_data": {"H_+": 0.184e-9, "OH_-": 0.121e-9, "B[OH]3": 0.305e-9, "B[OH]4_-": 0.305e-9},
         "charge": {"H_+": 1, "OH_-": -1, "B[OH]3": 0, "B[OH]4_-": -1,},
     }
 
     # attach prop pack to flowsheet
     m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
 
+    map = {'boron_name': 'B[OH]3', #[is required]
+            'borate_name': 'B[OH]4_-', #[is required]
+            'proton_name': 'H_+',  #[is optional]
+            'hydroxide_name': 'OH_-', #[is optional]
+            'caustic_additive':
+                {
+                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'charge_additive': 1, #[is required]
+                },
+    }
     m.fs.unit = BoronRemoval(
         default={
             "property_package": m.fs.properties,
+            "chemical_mapping_data": map,
+        }
+    )
+
+    return m
+
+def build_ion_subset_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # create dict to define ions (the prop pack of Adam requires this)
+    ion_dict = {
+        "solute_list": ["B[OH]3", "B[OH]4_-"],
+        "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
+        "charge": {"B[OH]3": 0, "B[OH]4_-": -1,},
+    }
+
+    # attach prop pack to flowsheet
+    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+    map = {'boron_name': 'B[OH]3', #[is required]
+            'borate_name': 'B[OH]4_-', #[is required]
+            'caustic_additive':
+                {
+                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'charge_additive': 1, #[is required]
+                },
+    }
+    m.fs.unit = BoronRemoval(
+        default={
+            "property_package": m.fs.properties,
+            "chemical_mapping_data": map,
+        }
+    )
+
+    return m
+
+def build_ion_subset_with_Na_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # create dict to define ions (the prop pack of Adam requires this)
+    ion_dict = {
+        "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+"],
+        "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3, "Na_+": 23e-3},
+        "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1,},
+    }
+
+    # attach prop pack to flowsheet
+    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+    map = {'boron_name': 'B[OH]3', #[is required]
+            'borate_name': 'B[OH]4_-', #[is required]
+            'caustic_additive':
+                {
+                    'cation_name': 'Na_+', #[is optional]
+                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'charge_additive': 1, #[is required]
+                },
+    }
+    m.fs.unit = BoronRemoval(
+        default={
+            "property_package": m.fs.properties,
+            "chemical_mapping_data": map,
         }
     )
 
@@ -235,9 +302,20 @@ def build_generic_model():
     # attach prop pack to flowsheet
     m.fs.properties = GenericParameterBlock(default=thermo_config)
 
+    map = {'boron_name': 'B[OH]3', #[is required]
+            'borate_name': 'B[OH]4_-', #[is required]
+            'proton_name': 'H_+',  #[is optional]
+            'hydroxide_name': 'OH_-', #[is optional]
+            'caustic_additive':
+                {
+                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'charge_additive': 1, #[is required]
+                },
+    }
     m.fs.unit = BoronRemoval(
         default={
             "property_package": m.fs.properties,
+            "chemical_mapping_data": map,
         }
     )
 
@@ -245,4 +323,6 @@ def build_generic_model():
 
 if __name__ == "__main__":
     #m = build_generic_model()
-    m = build_ion_model()
+    #m = build_ion_model()
+    #m = build_ion_subset_model()
+    m = build_ion_subset_with_Na_model()
