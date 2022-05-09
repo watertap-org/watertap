@@ -234,13 +234,10 @@ def recursive_parameter_sweep(
         n_samples_remaining -= global_success_count
 
         # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
-        safety_factor = 2
-        if success_prob > 0:
-            num_total_samples = int(
-                np.ceil(safety_factor * n_samples_remaining / success_prob)
-            )
-        else:
-            num_total_samples = int(np.ceil(safety_factor * n_samples_remaining))
+        scale_factor = 2.0 / max(success_prob, 0.10)
+        num_total_samples = int(
+            np.ceil(scale_factor * n_samples_remaining)
+        )
         loop_ctr += 1
 
     # Now that we have all of the local output dictionaries, we need to construct
