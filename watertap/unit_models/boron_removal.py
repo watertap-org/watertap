@@ -294,7 +294,119 @@ class BoronRemovalData(UnitModelBlockData):
                         [c for c in self.config.property_package.component_list])
                 )
 
-        # Add unit variables
+        # Add unit variables and parameters
+        mw_add = pyunits.convert_value(
+            self.config.chemical_mapping_data['caustic_additive']['mw_additive'][0],
+            from_units=self.config.chemical_mapping_data['caustic_additive']['mw_additive'][1],
+            to_units=pyunits.kg / pyunits.mol,
+        )
+        self.caustic_mw = Param(
+            mutable=True,
+            initialize=mw_add,
+            domain=NonNegativeReals,
+            units=pyunits.kg / pyunits.mol,
+            doc="Molecular weight of the caustic additive",
+        )
+        self.caustic_cation_charge = Param(
+            mutable=True,
+            initialize=self.config.chemical_mapping_data['caustic_additive']['charge_additive'],
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Charge of the caustic additive",
+        )
+        self.caustic_dose = Var(
+            self.flowsheet().config.time,
+            initialize=0,
+            bounds=(0, 10000),
+            domain=NonNegativeReals,
+            units=pyunits.mg / pyunits.L,
+            doc="Dosages of the set of caustic additive",
+        )
+
+        # Reaction parameters
+        self.Kw_0 = Param(
+            mutable=True,
+            initialize=10**-14,
+            domain=NonNegativeReals,
+            units=pyunits.mol**2 / pyunits.L**2,
+            doc="Water dissociation constant at 298 K",
+        )
+        self.dH_w = Param(
+            mutable=True,
+            initialize=55830,
+            domain=NonNegativeReals,
+            units=pyunits.J / pyunits.mol,
+            doc="Water dissociation enthalpy",
+        )
+        self.Ka_0 = Param(
+            mutable=True,
+            initialize=10**-9.21,
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Boron dissociation constant at 298 K",
+        )
+        self.dH_a = Param(
+            mutable=True,
+            initialize=13830,
+            domain=NonNegativeReals,
+            units=pyunits.J / pyunits.mol,
+            doc="Boron dissociation enthalpy",
+        )
+
+        # molarity vars (for approximate boron speciation)
+        #       Used to establish the mass transfer rates by
+        #       first solving a coupled equilibrium system
+        #
+        #   ENE: [H+] = [OH-] + [A-] + (Alk - n*[base])
+        #   MB:  TB = [HA] + [A-]
+        #   rw:  Kw = [H+][OH-]
+        #   ra:  Ka[HA] = [H+][A-]
+        #
+        #       Alk = sum(n*Anions) - sum(n*Cations) (from props)
+        #       [base] = (Dose/MW)
+        #       TB = [HA]_inlet + [A-]_inlet (from props)
+
+        # # TODO: Convert concentrations to mol/m^3 (for better scaling)
+        self.residual_alkalinity = Var(
+            self.flowsheet().config.time,
+            initialize=0,
+            bounds=(0, 0.1),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Residual alkalinity coming from 1st RO stage [default = 0 M]",
+        )
+        self.mol_H = Var(
+            self.flowsheet().config.time,
+            initialize=1e-7,
+            bounds=(1e-15, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Resulting molarity of protons",
+        )
+        self.mol_OH = Var(
+            self.flowsheet().config.time,
+            initialize=1e-7,
+            bounds=(1e-15, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Resulting molarity of hydroxide",
+        )
+        self.mol_Boron = Var(
+            self.flowsheet().config.time,
+            initialize=1e-5,
+            bounds=(1e-15, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Resulting molarity of Boron",
+        )
+        self.mol_Borate = Var(
+            self.flowsheet().config.time,
+            initialize=1e-5,
+            bounds=(1e-15, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.L,
+            doc="Resulting molarity of Borate",
+        )
 
         # Build control volume for feed side
         self.control_volume = ControlVolume0DBlock(

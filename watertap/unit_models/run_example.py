@@ -49,6 +49,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+import idaes.logger as idaeslog
 import re
 
 __author__ = "Austin Ladshaw"
@@ -321,8 +322,83 @@ def build_generic_model():
 
     return m
 
+def model_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
+                          "B[OH]3": 0.01, "B[OH]4_-": 0.001,
+                          "Na_+": 0.001}):
+    assert_units_consistent(m)
+    #print(degrees_of_freedom(m))
+
+    m.fs.unit.inlet.pressure.fix(101325)
+    m.fs.unit.inlet.temperature.fix(298.15)
+    for j in state:
+        idx = (0, "Liq", j)
+        if idx in m.fs.unit.inlet.flow_mol_phase_comp:
+            m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
+    m.fs.unit.caustic_dose.fix(100)
+    m.fs.unit.residual_alkalinity.fix(0)
+    assert degrees_of_freedom(m) == 0
+
+def scaling_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
+                          "B[OH]3": 0.01, "B[OH]4_-": 0.001,
+                          "Na_+": 0.001}):
+    # Set some scaling factors and look for 'bad' scaling
+    for j in state:
+        idx = (0, "Liq", j)
+        if idx in m.fs.unit.inlet.flow_mol_phase_comp:
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1/state[j], index=("Liq", j)
+            )
+
+    iscale.calculate_scaling_factors(m.fs)
+
+    # check that all constraints have scaling factors
+    unscaled_con_list = list(iscale.unscaled_constraints_generator(m))
+    if len(unscaled_con_list) > 0:
+        for j in unscaled_con_list:
+            print(j)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    if len(unscaled_var_list) > 0:
+        for j in unscaled_var_list:
+            print(j)
+    #assert len(unscaled_var_list) == 0
+
+    # check if any variables are badly scaled
+    badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            m, large=1e2, small=1e-2
+        )
+    }
+    if len(badly_scaled_var_values) > 0:
+        for j in badly_scaled_var_values:
+            print(str(j) + "\t" + str(badly_scaled_var_values[j]))
+    #assert not badly_scaled_var_values
+
+def intialization_setup(m):
+    m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+def solve_model(m):
+    results = solver.solve(m, tee=True)
+    assert_optimal_termination(results)
+
+def display_unit_vars(m):
+    ''' Used to display unit var solution '''
+    return
+
 if __name__ == "__main__":
     #m = build_generic_model()
     #m = build_ion_model()
     #m = build_ion_subset_model()
     m = build_ion_subset_with_Na_model()
+
+    model_setup(m)
+    scaling_setup(m)
+    intialization_setup(m)
+    solve_model(m)
+
+    # Displays standard unit result at ports
+    m.fs.unit.report()
+
+    display_unit_vars(m)
