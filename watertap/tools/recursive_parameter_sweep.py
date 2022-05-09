@@ -11,26 +11,9 @@
 #
 ###############################################################################
 import numpy as np
-import pyomo.environ as pyo
-import sys
-import os
 import itertools
 import warnings
-import copy, pprint
-import h5py
-
-from scipy.interpolate import griddata
-from enum import Enum, auto
-from abc import abstractmethod, ABC
-from idaes.core.util import get_solver
-
-from idaes.surrogate.pysmo import sampling
-from idaes.core.util.model_statistics import (
-    variables_in_activated_equalities_set,
-    expressions_set,
-    total_objectives_set,
-)
-from pyomo.core.base.block import TraversalStrategy
+from enum import Enum
 from watertap.tools.parameter_sweep import (
     _aggregate_results_arr,
     _build_combinations,
@@ -43,7 +26,6 @@ from watertap.tools.parameter_sweep import (
     _process_sweep_params,
     _process_results_filename,
     _save_results,
-    _write_outputs,
 )
 
 np.set_printoptions(linewidth=200)
@@ -58,7 +40,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
     for case, content in recursive_local_dict.items():
         filter_counter += sum(
             content["solve_successful"]
-        )  # content["solve_successful"].count(filter_keyword)
+        )
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
@@ -75,7 +57,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
             itertools.compress(
                 range(len(content["solve_successful"])), content["solve_successful"]
             )
-        )  # [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
+        )
         n_successful_solves = len(optimal_indices)
         stop = offset + n_successful_solves
 
@@ -174,8 +156,8 @@ def recursive_parameter_sweep(
     if reinitialize_kwargs is None:
         reinitialize_kwargs = dict()
 
-    n_samples_remaining = copy.deepcopy(req_num_samples)
-    num_total_samples = copy.deepcopy(req_num_samples)
+    n_samples_remaining = req_num_samples
+    num_total_samples = req_num_samples
 
     local_output_collection = {}
     loop_ctr = 0
