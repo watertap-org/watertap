@@ -35,6 +35,7 @@ from pyomo.environ import (
     SolverFactory,
     SolverStatus,
     TerminationCondition,
+    log10,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -322,9 +323,9 @@ def build_generic_model():
 
     return m
 
-def model_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
-                          "B[OH]3": 0.01, "B[OH]4_-": 0.001,
-                          "Na_+": 0.001}):
+def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
+                          "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
+                          "Na_+": 1e-3}):
     assert_units_consistent(m)
     #print(degrees_of_freedom(m))
 
@@ -334,16 +335,19 @@ def model_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(100)
+    m.fs.unit.caustic_dose.fix(5)
+
     if degrees_of_freedom(m) != 0:
         print(degrees_of_freedom(m))
         m.fs.unit.eq_electroneutrality.pprint()
         m.fs.unit.eq_total_boron.pprint()
+        m.fs.unit.eq_water_dissociation.pprint()
+        m.fs.unit.eq_boron_dissociation.pprint()
     assert degrees_of_freedom(m) == 0
 
-def scaling_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
-                          "B[OH]3": 0.01, "B[OH]4_-": 0.001,
-                          "Na_+": 0.001}):
+def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
+                          "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
+                          "Na_+": 1e-3}):
     # Set some scaling factors and look for 'bad' scaling
     for j in state:
         idx = (0, "Liq", j)
@@ -371,7 +375,7 @@ def scaling_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
     badly_scaled_var_values = {
         var.name: val
         for (var, val) in iscale.badly_scaled_var_generator(
-            m, large=1e2, small=1e-2
+            m, large=1e3, small=1e-3
         )
     }
     if len(badly_scaled_var_values) > 0:
@@ -384,6 +388,31 @@ def intialization_setup(m):
 
 def solve_model(m):
     results = solver.solve(m, tee=True)
+
+    print()
+
+    m.fs.unit.eq_electroneutrality.pprint()
+    m.fs.unit.eq_total_boron.pprint()
+    m.fs.unit.eq_water_dissociation.pprint()
+    m.fs.unit.eq_boron_dissociation.pprint()
+
+    print()
+
+    m.fs.unit.mol_H.pprint()
+    m.fs.unit.mol_OH.pprint()
+    m.fs.unit.mol_Boron.pprint()
+    m.fs.unit.mol_Borate.pprint()
+
+    print("conc of cation M")
+    conc = m.fs.unit.caustic_cation_charge*m.fs.unit.caustic_dose[0]/m.fs.unit.caustic_mw
+    print(value(conc))
+
+    print()
+
+    m.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp.pprint()
+
+    print("pH = " + str(-log10(value(m.fs.unit.mol_H[0])/1000)))
+
     assert_optimal_termination(results)
 
 def display_unit_vars(m):
@@ -391,7 +420,8 @@ def display_unit_vars(m):
     return
 
 if __name__ == "__main__":
-    #m = build_generic_model()
+    #m = build_generic_model() # not building correctly...
+
     #m = build_ion_model()
     #m = build_ion_subset_model()
     m = build_ion_subset_with_Na_model()
@@ -405,3 +435,8 @@ if __name__ == "__main__":
     m.fs.unit.report()
 
     display_unit_vars(m)
+
+    #m.fs.unit.eq_electroneutrality.pprint()
+    #m.fs.unit.eq_total_boron.pprint()
+    #m.fs.unit.eq_water_dissociation.pprint()
+    #m.fs.unit.eq_boron_dissociation.pprint()
