@@ -33,6 +33,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+
 # Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
@@ -201,7 +202,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="density of water",
         )
-        
+
         self.cell_pair_num = Var(
             initialize=1,
             domain=NonNegativeIntegers,
@@ -275,7 +276,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         )
         self.electrodes_resistence = Var(
             initialize=0,
-            bounds=(0,100),
+            bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.ohm * pyunits.meter**2,
             doc="areal resistence of TWO electrode compartments of a stack",
@@ -290,7 +291,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.voltage = Var(
             self.flowsheet().config.time,
             initialize=100,
-            bounds = (0, 1000),
+            bounds=(0, 1000),
             units=pyunits.volt,
             doc="Voltage across a stack, declared under the 'Constant Voltage' mode only",
         )

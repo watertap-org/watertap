@@ -77,9 +77,9 @@ class TestElectrodialysisVoltageConst:
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
         assert m.fs.unit.config.property_package is m.fs.properties
-        assert 'H2O' in m.fs.properties.component_list
+        assert "H2O" in m.fs.properties.component_list
 
-        #test all essential params and vars are built 
+        # test all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -274,7 +274,7 @@ class TestElectrodialysisCurrentConst:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell2):
         m = electrodialysis_cell2
-        
+
         # test configrations
         assert len(m.fs.unit.config) == 7
         assert not m.fs.unit.config.dynamic
@@ -285,9 +285,9 @@ class TestElectrodialysisCurrentConst:
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
         assert m.fs.unit.config.property_package is m.fs.properties
-        assert 'H2O' in m.fs.properties.component_list
+        assert "H2O" in m.fs.properties.component_list
 
-        #test all essential params and vars are built 
+        # test all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
@@ -481,7 +481,7 @@ class TestElectrodialysis_withNeutralSPecies:
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell3):
         m = electrodialysis_cell3
-        
+
         # test configrations
         assert len(m.fs.unit.config) == 7
         assert not m.fs.unit.config.dynamic
@@ -492,9 +492,9 @@ class TestElectrodialysis_withNeutralSPecies:
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
         assert m.fs.unit.config.property_package is m.fs.properties
-        assert 'H2O' in m.fs.properties.component_list
+        assert "H2O" in m.fs.properties.component_list
 
-        #test all essential params and vars are built 
+        # test all essential params and vars are built
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
