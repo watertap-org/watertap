@@ -78,7 +78,7 @@ def build_ion_model():
             'hydroxide_name': 'OH_-', #[is optional]
             'caustic_additive':
                 {
-                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
                     'charge_additive': 1, #[is required]
                 },
     }
@@ -109,7 +109,7 @@ def build_ion_subset_model():
             'borate_name': 'B[OH]4_-', #[is required]
             'caustic_additive':
                 {
-                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
                     'charge_additive': 1, #[is required]
                 },
     }
@@ -141,7 +141,7 @@ def build_ion_subset_with_Na_model():
             'caustic_additive':
                 {
                     'cation_name': 'Na_+', #[is optional]
-                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
                     'charge_additive': 1, #[is required]
                 },
     }
@@ -174,7 +174,7 @@ def build_ion_subset_with_alk_model():
             'caustic_additive':
                 {
                     'cation_name': 'Na_+', #[is optional]
-                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
                     'charge_additive': 1, #[is required]
                 },
     }
@@ -343,7 +343,7 @@ def build_generic_model():
             'hydroxide_name': 'OH_-', #[is optional]
             'caustic_additive':
                 {
-                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
                     'charge_additive': 1, #[is required]
                 },
     }
@@ -358,7 +358,7 @@ def build_generic_model():
 
 def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
                           "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
-                          "Na_+": 1e-3, "HCO3_-": 1e-4}):
+                          "Na_+": 1e-4, "HCO3_-": 1e-4}):
     assert_units_consistent(m)
     #print(degrees_of_freedom(m))
 
@@ -368,7 +368,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(5)
+    m.fs.unit.caustic_dose.fix(1.5)
 
     if degrees_of_freedom(m) != 0:
         print(degrees_of_freedom(m))
@@ -380,7 +380,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
 
 def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
                           "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
-                          "Na_+": 1e-3, "HCO3_-": 1e-4}):
+                          "Na_+": 1e-4, "HCO3_-": 1e-4}):
     # Set some scaling factors and look for 'bad' scaling
     for j in state:
         idx = (0, "Liq", j)
@@ -465,10 +465,12 @@ def display_unit_vars(m):
 
 if __name__ == "__main__":
     #m = build_generic_model()
-    m = build_ion_model()
+    #m = build_ion_model()
+
     #m = build_ion_subset_model()
     #m = build_ion_subset_with_Na_model()
-    #m = build_ion_subset_with_alk_model()
+
+    m = build_ion_subset_with_alk_model()
 
     model_setup(m)
     scaling_setup(m)

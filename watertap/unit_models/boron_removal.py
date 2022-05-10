@@ -473,8 +473,7 @@ class BoronRemovalData(UnitModelBlockData):
             Alk = 0
             for j in self.ion_charge:
                 if (j == self.boron_name_id or j == self.borate_name_id
-                    or j == self.proton_name_id or j == self.hydroxide_name_id
-                    or j == self.cation_name_id):
+                    or j == self.proton_name_id or j == self.hydroxide_name_id):
                     Alk += 0.0
                 else:
                     Alk += -self.ion_charge[j]*self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", j]
@@ -555,11 +554,35 @@ class BoronRemovalData(UnitModelBlockData):
                 loss_rate = input_rate - exit_rate
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.proton_name_id:
-                return self.control_volume.mass_transfer_term[t, p, j] == 0.0
+                p_out = pyunits.convert(self.mol_H[t],
+                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                )
+                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[p, self.proton_name_id]
+                exit_rate = (
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * p_out
+                )
+
+                loss_rate = input_rate - exit_rate
+                return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.hydroxide_name_id:
-                return self.control_volume.mass_transfer_term[t, p, j] == 0.0
+                h_out = pyunits.convert(self.mol_OH[t],
+                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                )
+                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[p, self.hydroxide_name_id]
+                exit_rate = (
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * h_out
+                )
+
+                loss_rate = input_rate - exit_rate
+                return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.cation_name_id:
-                return self.control_volume.mass_transfer_term[t, p, j] == 0.0
+                c_out = pyunits.convert(self.caustic_cation_charge*self.caustic_dose[t]/self.caustic_mw,
+                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                )
+                exit_rate = (
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * c_out
+                )
+                return self.control_volume.mass_transfer_term[t, p, j] == exit_rate
             else:
                 return self.control_volume.mass_transfer_term[t, p, j] == 0.0
 
