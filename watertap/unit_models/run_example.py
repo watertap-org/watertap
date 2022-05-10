@@ -393,11 +393,15 @@ def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
 
     # check that all constraints have scaling factors
     unscaled_con_list = list(iscale.unscaled_constraints_generator(m))
+    print("List of Unscaled Constraints")
+    print("----------------------------")
     if len(unscaled_con_list) > 0:
         for j in unscaled_con_list:
             print(j)
 
     # check that all variables have scaling factors
+    print("List of Unscaled Variables")
+    print("--------------------------")
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
     if len(unscaled_var_list) > 0:
         for j in unscaled_var_list:
@@ -411,6 +415,8 @@ def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
             m, large=1e3, small=1e-3
         )
     }
+    print("List of Badly Scaled Variables")
+    print("-----------------------------")
     if len(badly_scaled_var_values) > 0:
         for j in badly_scaled_var_values:
             print(str(j) + "\t" + str(badly_scaled_var_values[j]))
