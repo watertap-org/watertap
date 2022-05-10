@@ -1,7 +1,7 @@
 """
 Interface for flowsheet in :module:`metab`.
 """
-from watertap.ui.api import FlowsheetInterface, BlockInterface
+from watertap.ui.api import FlowsheetInterface, WorkflowActions
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
     metab,
 )
@@ -12,12 +12,41 @@ def flowsheet_for_ui():
     fsi = FlowsheetInterface(
         model.fs, {"display_name": "METAB treatment train", "variables": []}
     )
+    fsi.set_action(WorkflowActions.build, build_flowsheet, model=model)
+    fsi.set_action(WorkflowActions.solve, solve_flowsheet, model=model)
+    return fsi
+
+
+def build_flowsheet(fs, model=None, **kwargs):
+    metab.set_operating_conditions(model)
+    metab.assert_degrees_of_freedom(model, 0)
+    metab.assert_units_consistent(model)
+
+
+def solve_flowsheet(fs, model=None, **kwargs):
+    "Solve the flowsheet"
+    metab.initialize_system(model)
+
+    results = metab.solve(model)
+    metab.assert_optimal_termination(results)
+    # metab.display_results(model)
+
+    metab.add_costing(model)
+    model.fs.costing.initialize()
+
+    metab.adjust_default_parameters(model)
+
+    metab.assert_degrees_of_freedom(model, 0)
+    results = metab.solve(model)
+    metab.assert_optimal_termination(results)
+    #display_costing(m)
 
 
 def cli_driver(fsi):
     """Dumb little interactive driver for CLI testing.
     """
-    commands = {"print": print_json, "quit": exit_program}
+    commands = {"print": print_json, "quit": exit_program,
+                "build": run_build, "solve": run_solve}
     while True:
         try:
             cmd = input("Command> ")
@@ -25,10 +54,21 @@ def cli_driver(fsi):
             break
         cmd = cmd.strip().lower()
         if cmd in commands:
+            print(f"Running command: {cmd}")
             commands[cmd](fsi)
         else:
             print_help(cmd, commands)
     exit_program()
+
+
+def run_build(fsi: FlowsheetInterface):
+    """Build the flowsheet"""
+    fsi.run_action(WorkflowActions.build)
+
+
+def run_solve(fsi: FlowsheetInterface):
+    """Solve the flowsheet"""
+    fsi.run_action(WorkflowActions.solve)
 
 
 def print_help(user_cmd, commands):
