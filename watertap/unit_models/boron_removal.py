@@ -828,6 +828,9 @@ class BoronRemovalData(UnitModelBlockData):
                         )
 
             # If flow_mass_phase_comp is state var
+            # NOTE: This cannot currently be tested because there is no 'generic'
+            #   style property package that supports this state definition
+            """
             if (
                 "flow_mass_phase_comp"
                 in self.control_volume.properties_in[t].define_state_vars()
@@ -975,6 +978,7 @@ class BoronRemovalData(UnitModelBlockData):
                             sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j]
                                 for j in self.config.property_package.component_list)
                         )
+            """
 
             i += 1
         #End Loop
@@ -984,7 +988,54 @@ class BoronRemovalData(UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        ## TODO: Provide some intial guess values before scaling
+        # Provide some intial guess values before scaling
         self.propogate_initial_state()
 
-        ## TODO: Add scaling
+        # Add scaling for unit model vars (with user input)
+        if iscale.get_scaling_factor(self.caustic_dose) is None:
+            sf = iscale.get_scaling_factor(self.caustic_dose, default=1, warning=True)
+            iscale.set_scaling_factor(self.caustic_dose, sf)
+
+        ## TODO: Add scaling for unit model vars (without user input)
+        if iscale.get_scaling_factor(self.mol_Boron) is None:
+            sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.boron_name_id],
+                default=1, warning=False)
+            iscale.set_scaling_factor(self.mol_Boron, sf)
+
+        if iscale.get_scaling_factor(self.mol_Borate) is None:
+            sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.borate_name_id],
+                default=1, warning=False)
+            iscale.set_scaling_factor(self.mol_Borate, sf)
+
+        # NOTE: These 2 conditions (H and OH) below may be problematic
+        if iscale.get_scaling_factor(self.mol_H) is None:
+            if self.proton_name_id in self.config.property_package.component_list:
+                sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.proton_name_id],
+                    default=1, warning=False)
+            else:
+                sf = 1
+            iscale.set_scaling_factor(self.mol_H, sf)
+
+        if iscale.get_scaling_factor(self.mol_OH) is None:
+            if self.hydroxide_name_id in self.config.property_package.component_list:
+                sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.hydroxide_name_id],
+                    default=1, warning=False)
+            else:
+                sf = 1
+            iscale.set_scaling_factor(self.mol_OH, sf)
+
+
+        ## TODO: Add scaling for constraints
+
+        # Scale isothermal condition
+        sf = iscale.get_scaling_factor(
+            self.control_volume.properties_in[0].temperature
+        )
+        for t in self.control_volume.properties_in:
+            iscale.constraint_scaling_transform(
+                    self.eq_isothermal[t], sf
+                )
+
+        # Scaling for water dissociation (problematic)
+        for t in self.control_volume.properties_in:
+            iscale.constraint_scaling_transform(self.eq_water_dissociation[t], 1)
