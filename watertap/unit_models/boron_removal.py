@@ -23,6 +23,7 @@ from pyomo.environ import (
     PositiveIntegers,
     Reference,
     value,
+    exp,
     units as pyunits,
 )
 
@@ -299,6 +300,13 @@ class BoronRemovalData(UnitModelBlockData):
                         [c for c in self.config.property_package.component_list])
                 )
 
+        # check for existence of inherent reactions
+        #   This is to ensure that no degeneracy could be introduced
+        #   in the system of equations (may not need this explicit check)
+        if hasattr(self.config, 'inherent_reactions'):
+            raise ConfigurationError(
+                "\n Property Package CANNOT contain 'inherent_reactions' \n"
+            )
 
         # cation set reference
         cation_set = self.config.property_package.cation_set
@@ -435,6 +443,7 @@ class BoronRemovalData(UnitModelBlockData):
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,
                 "reaction_package": None,
+                "reaction_package_args": None,
             }
         )
 
@@ -522,7 +531,7 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Water dissociation",
         )
         def eq_water_dissociation(self, t):
-            return self.Kw_0 == self.mol_H[t] * self.mol_OH[t]
+            return (self.Kw_0 * exp(-self.dH_w/Constants.gas_constant/self.control_volume.properties_out[t].temperature)) == self.mol_H[t] * self.mol_OH[t]
 
 
         @self.Constraint(
@@ -530,7 +539,7 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Boron dissociation",
         )
         def eq_boron_dissociation(self, t):
-            return self.Ka_0 * self.mol_Boron[t] == self.mol_H[t] * self.mol_Borate[t]
+            return (self.Ka_0 * exp(-self.dH_a/Constants.gas_constant/self.control_volume.properties_out[t].temperature)) * self.mol_Boron[t] == self.mol_H[t] * self.mol_Borate[t]
 
         # Add constraints for mass transfer terms
         @self.Constraint(
