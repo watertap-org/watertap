@@ -171,10 +171,13 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             default={},
             domain=dict,
-            description="""Dictionary of chemical additives used in coagulation process,
+            description="Specification of chemical additives used in coagulation process",
+            doc="""
+        A dict of chemical additives used in coagulation process
         along with their molecular weights, the moles of salt produced per mole of
         chemical added, and the molecular weights of the salt produced by the chemical
-        additive with the format of: \n
+        additive with the format of::
+
             {'chem_name_1':
                 {'parameter_data':
                     {
@@ -191,7 +194,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
                     'mw_salt': (value, units)
                     }
                 },
-            } """,
+            }
+
+        """,
         ),
     )
 
