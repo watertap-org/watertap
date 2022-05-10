@@ -434,13 +434,17 @@ class BoronRemovalData(UnitModelBlockData):
                 "has_holdup": False,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,
+                "reaction_package": None,
             }
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(
-            balance_type=self.config.material_balance_type, has_mass_transfer=True
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=True,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=False,
         )
 
         # NOTE: This checks for if an energy_balance_type is defined

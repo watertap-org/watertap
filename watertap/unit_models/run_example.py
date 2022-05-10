@@ -368,7 +368,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(1.5)
+    m.fs.unit.caustic_dose.fix(5)
 
     if degrees_of_freedom(m) != 0:
         print(degrees_of_freedom(m))
