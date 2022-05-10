@@ -254,7 +254,7 @@ class BoronRemovalData(UnitModelBlockData):
             self.hydroxide_name_id = self.config.chemical_mapping_data['hydroxide_name']
         else:
             self.hydroxide_name_id = None
-        if 'cation_name' in self.config.chemical_mapping_data:
+        if 'cation_name' in self.config.chemical_mapping_data['caustic_additive']:
             self.cation_name_id = self.config.chemical_mapping_data['caustic_additive']['cation_name']
         else:
             self.cation_name_id = None
@@ -294,6 +294,29 @@ class BoronRemovalData(UnitModelBlockData):
                         [c for c in self.config.property_package.component_list])
                 )
 
+
+        # cation set reference
+        cation_set = self.config.property_package.cation_set
+
+        # anion set reference
+        anion_set = self.config.property_package.anion_set
+
+        # Add param to store all charges of ions for convenience
+        self.ion_charge = Param(
+            anion_set | cation_set,
+            initialize=1,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc="Ion charge",
+        )
+
+        # Loop through full set and try to assign charge
+        for j in self.config.property_package.component_list:
+            if j in anion_set or j in cation_set:
+                self.ion_charge[j] = self.config.property_package.get_component(
+                    j
+                ).config.charge
+
         # Add unit variables and parameters
         mw_add = pyunits.convert_value(
             self.config.chemical_mapping_data['caustic_additive']['mw_additive'][0],
@@ -326,9 +349,9 @@ class BoronRemovalData(UnitModelBlockData):
         # Reaction parameters
         self.Kw_0 = Param(
             mutable=True,
-            initialize=10**-14,
+            initialize=1e-8,
             domain=NonNegativeReals,
-            units=pyunits.mol**2 / pyunits.L**2,
+            units=pyunits.mol**2 / pyunits.m**6,
             doc="Water dissociation constant at 298 K",
         )
         self.dH_w = Param(
@@ -340,9 +363,9 @@ class BoronRemovalData(UnitModelBlockData):
         )
         self.Ka_0 = Param(
             mutable=True,
-            initialize=10**-9.21,
+            initialize=6.16595e-4,
             domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
+            units=pyunits.mol / pyunits.m**3,
             doc="Boron dissociation constant at 298 K",
         )
         self.dH_a = Param(
@@ -366,45 +389,36 @@ class BoronRemovalData(UnitModelBlockData):
         #       [base] = (Dose/MW)
         #       TB = [HA]_inlet + [A-]_inlet (from props)
 
-        # # TODO: Convert concentrations to mol/m^3 (for better scaling)
-        self.residual_alkalinity = Var(
-            self.flowsheet().config.time,
-            initialize=0,
-            bounds=(0, 0.1),
-            domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
-            doc="Residual alkalinity coming from 1st RO stage [default = 0 M]",
-        )
         self.mol_H = Var(
             self.flowsheet().config.time,
-            initialize=1e-7,
+            initialize=1e-4,
             bounds=(1e-15, 10),
             domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
+            units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of protons",
         )
         self.mol_OH = Var(
             self.flowsheet().config.time,
-            initialize=1e-7,
+            initialize=1e-4,
             bounds=(1e-15, 10),
             domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
+            units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of hydroxide",
         )
         self.mol_Boron = Var(
             self.flowsheet().config.time,
-            initialize=1e-5,
+            initialize=1e-2,
             bounds=(1e-15, 10),
             domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
+            units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Boron",
         )
         self.mol_Borate = Var(
             self.flowsheet().config.time,
-            initialize=1e-5,
+            initialize=1e-2,
             bounds=(1e-15, 10),
             domain=NonNegativeReals,
-            units=pyunits.mol / pyunits.L,
+            units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Borate",
         )
 
@@ -451,6 +465,48 @@ class BoronRemovalData(UnitModelBlockData):
                 )
 
         # Constraints for mass transfer terms
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Electroneutrality condition",
+        )
+        def eq_electroneutrality(self, t):
+            Alk = 0
+            for j in self.ion_charge:
+                if (j == self.boron_name_id or j == self.borate_name_id
+                    or j == self.proton_name_id or j == self.hydroxide_name_id
+                    or j == self.cation_name_id):
+                    Alk += 0.0
+                else:
+                    Alk += -self.ion_charge[j]*self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", j]
+            mol_H = pyunits.convert(self.mol_H[t],
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            mol_OH = pyunits.convert(self.mol_OH[t],
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            mol_Borate = pyunits.convert(self.mol_Borate[t],
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            mol_Base = pyunits.convert(self.caustic_cation_charge*self.caustic_dose[t]/self.caustic_mw,
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            return mol_H == mol_OH + mol_Borate + Alk - mol_Base
+
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Total boron balance",
+        )
+        def eq_total_boron(self, t):
+            exit_Boron = self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", self.boron_name_id]
+            exit_Borate = self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", self.borate_name_id]
+            mol_Borate = pyunits.convert(self.mol_Borate[t],
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            mol_Boron = pyunits.convert(self.mol_Boron[t],
+                to_units=units_meta("amount") * units_meta("length") ** -3,
+            )
+            return exit_Boron+exit_Borate == mol_Borate + mol_Boron
 
         # Add constraints for mass transfer terms
         @self.Constraint(

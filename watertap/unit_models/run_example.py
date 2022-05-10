@@ -335,7 +335,10 @@ def model_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
     m.fs.unit.caustic_dose.fix(100)
-    m.fs.unit.residual_alkalinity.fix(0)
+    if degrees_of_freedom(m) != 0:
+        print(degrees_of_freedom(m))
+        m.fs.unit.eq_electroneutrality.pprint()
+        m.fs.unit.eq_total_boron.pprint()
     assert degrees_of_freedom(m) == 0
 
 def scaling_setup(m, state={"H2O": 1, "H_+": 0.001, "OH_-": 0.001,
