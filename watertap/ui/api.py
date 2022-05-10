@@ -255,9 +255,9 @@ class BlockInterface(BlockSchemaDefinition):
         options = options or {}
         self._block = block
         # dynamically set defaults
-        if "display_name" not in options:
+        if "display_name" not in options or options["display_name"] is None:
             options["display_name"] = block.name
-        if "description" not in options:
+        if "description" not in options or options["description"] is None:
             if block.doc:
                 options["description"] = block.doc
             else:
@@ -310,6 +310,22 @@ class BlockInterface(BlockSchemaDefinition):
             var_value = value(v)  # assume int/float or str
         return var_value
 
+
+def export_variables(block, variables=None, name=None, desc=None) -> BlockInterface:
+    variables = [] if variables is None else variables
+    config = {"display_name": name, "description": desc, "variables": []}
+    cvars = config["variables"]
+    if hasattr(variables, "items"):
+        for var_key, var_val in variables.items():
+            var_entry = {"name": var_key}
+            var_entry.update(var_val)
+            cvars.append(var_entry)
+    else:
+        for var_name in variables:
+            var_entry = {"name": var_name}
+            cvars.append(var_entry)
+    interface = BlockInterface(block, config)
+    return interface
 
 class WorkflowActions:
     build = "build"
