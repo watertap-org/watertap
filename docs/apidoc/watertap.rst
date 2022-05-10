@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    watertap.core
+   watertap.costing
    watertap.data
    watertap.edb
    watertap.examples

@@ -11,6 +11,13 @@ watertap.tools.parameter\_sweep module
    :members:
    :show-inheritance:
 
+watertap.tools.parameter\_sweep\_input\_parser module
+-----------------------------------------------------
+
+.. automodule:: watertap.tools.parameter_sweep_input_parser
+   :members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
