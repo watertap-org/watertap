@@ -66,9 +66,9 @@ class BoronRemovalData(UnitModelBlockData):
         ConfigValue(
             domain=In([False]),
             default=False,
-            description="Dynamic model flag - must be False",
+            description="Dynamic model flag; must be False",
             doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. The filtration unit does not support dynamic
+    **default**: False. The filtration unit does not support dynamic
     behavior, thus this must be False.""",
         ),
     )
@@ -78,9 +78,9 @@ class BoronRemovalData(UnitModelBlockData):
         ConfigValue(
             default=False,
             domain=In([False]),
-            description="Holdup construction flag - must be False",
+            description="Holdup construction flag; must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
+    **default**: False. The filtration unit does not have defined volume, thus
     this must be False.""",
         ),
     )
@@ -171,10 +171,13 @@ class BoronRemovalData(UnitModelBlockData):
         ConfigValue(
             default={},
             domain=dict,
-            description="""Dictionary of chemical species names from the property
+            description="Dictionary of chemical species names and their mapping",
+            doc="""
+        Dictionary of chemical species names from the property
         package and how they map to specific species needed for solving a simple
         boron speciation problem in an equilibrium reactor. This dictionary must
-        have the following format [Required]: \n
+        have the following format [Required]::
+
             {'boron_name': 'name_of_species_representing_boron', #[is required]
             'borate_name': 'name_of_species_representing_borate', #[is required]
             'proton_name': 'name_of_species_representing_protons',  #[is optional]
@@ -185,7 +188,9 @@ class BoronRemovalData(UnitModelBlockData):
                     'mw_additive': (value, units), #[is required]
                     'charge_additive': value, #[is required]
                 },
-            } """,
+            }
+
+            """,
         ),
     )
 
