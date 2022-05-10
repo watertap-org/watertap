@@ -536,9 +536,9 @@ class BoronRemovalData(UnitModelBlockData):
                 boron_out = pyunits.convert(self.mol_Boron[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
-                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp["Liq", self.boron_name_id]
+                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[p, self.boron_name_id]
                 exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase["Liq"] * boron_out
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * boron_out
                 )
 
                 loss_rate = input_rate - exit_rate
@@ -547,9 +547,9 @@ class BoronRemovalData(UnitModelBlockData):
                 borate_out = pyunits.convert(self.mol_Borate[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
-                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp["Liq", self.borate_name_id]
+                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[p, self.borate_name_id]
                 exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase["Liq"] * borate_out
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * borate_out
                 )
 
                 loss_rate = input_rate - exit_rate

@@ -7,7 +7,7 @@ from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
-import idaes.generic_models.properties.core.pure.ConstantProperties as Constant
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
@@ -464,9 +464,8 @@ def display_unit_vars(m):
     return
 
 if __name__ == "__main__":
-    m = build_generic_model() # not building correctly...
-
-    #m = build_ion_model()
+    #m = build_generic_model()
+    m = build_ion_model()
     #m = build_ion_subset_model()
     #m = build_ion_subset_with_Na_model()
     #m = build_ion_subset_with_alk_model()
