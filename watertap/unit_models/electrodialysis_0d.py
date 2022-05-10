@@ -33,7 +33,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-
 # Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
@@ -96,8 +95,8 @@ class Electrodialysis0DData(UnitModelBlockData):
     CONFIG.declare(
         "operation_mode",
         ConfigValue(
-            default="Constant Current",
-            domain=In(["Constant Current", "Constant Voltage"]),
+            default="Constant_Current",
+            domain=In(["Constant_Current", "Constant_Voltage"]),
             description="The electrical operation mode. To be selected between Constant Current and Constant Voltage",
         ),
     )
@@ -202,16 +201,11 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="density of water",
         )
-        self.water_MW = Param(
-            initialize=18.015e-3,
-            mutable=False,
-            units=pyunits.kg * pyunits.mole**-1,
-            doc="molecular weight of water",
-        )
+        
         self.cell_pair_num = Var(
             initialize=1,
             domain=NonNegativeIntegers,
-            bounds=(1, Inf),
+            bounds=(1, 10000),
             units=pyunits.dimensionless,
             doc="cell pair number in a stack",
         )
@@ -248,7 +242,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             self.config.property_package.ion_set
             | self.config.property_package.solute_set,
             initialize=1e-10,
-            # bounds=(1e-11, 1e-6),
+            bounds=(1e-16, 1e-6),
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="Solute (ionic and neutral) diffusivity in the membrane phase",
         )
@@ -262,13 +256,13 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.water_trans_number_membrane = Var(
             self.membrane_set,
             initialize=5,
-            bounds=(0, 1),
+            bounds=(0, 50),
             units=pyunits.dimensionless,
             doc="Transference number of water in membranes",
         )
         self.water_permeability_membrane = Var(
             self.membrane_set,
-            initialize=5,
+            initialize=1e-14,
             units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
             doc="Water permeability coefficient",
         )
@@ -281,6 +275,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         )
         self.electrodes_resistence = Var(
             initialize=0,
+            bounds=(0,100),
             domain=NonNegativeReals,
             units=pyunits.ohm * pyunits.meter**2,
             doc="areal resistence of TWO electrode compartments of a stack",
@@ -288,13 +283,14 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.current = Var(
             self.flowsheet().config.time,
             initialize=1,
-            bounds=(0, 100),
+            bounds=(0, 1000),
             units=pyunits.amp,
             doc="Current across a cell-pair or stack",
         )
         self.voltage = Var(
             self.flowsheet().config.time,
             initialize=100,
+            bounds = (0, 1000),
             units=pyunits.volt,
             doc="Voltage across a stack, declared under the 'Constant Voltage' mode only",
         )
@@ -316,15 +312,15 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.power_electrical = Var(
             self.flowsheet().config.time,
             initialize=1,
-            bounds=(0, Inf),
+            bounds=(0, 12100),
             domain=NonNegativeReals,
             units=pyunits.watt,
             doc="Electrical power consumption of a stack",
         )
         self.specific_power_electrical = Var(
             self.flowsheet().config.time,
-            initialize=1e6,
-            bounds=(0, Inf),
+            initialize=10,
+            bounds=(0, 1000),
             domain=NonNegativeReals,
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
@@ -513,7 +509,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             if j == "H2O":
                 return self.nonelec_flux_in[
                     t, p, j
-                ] == self.water_density / self.water_MW * (
+                ] == self.water_density / self.config.property_package.mw_comp[j] * (
                     self.water_permeability_membrane["cem"]
                     + self.water_permeability_membrane["aem"]
                 ) * (
@@ -541,7 +537,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             if j == "H2O":
                 return self.nonelec_flux_out[
                     t, p, j
-                ] == self.water_density / self.water_MW * (
+                ] == self.water_density / self.config.property_package.mw_comp[j] * (
                     self.water_permeability_membrane["cem"]
                     + self.water_permeability_membrane["aem"]
                 ) * (
@@ -651,7 +647,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             )
 
     # initialize method
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
@@ -832,7 +828,6 @@ class Electrodialysis0DData(UnitModelBlockData):
                     ]
                 )
             )
-            # print('########', ind, sf)
             iscale.set_scaling_factor(self.nonelec_flux_in[ind], sf)
             iscale.constraint_scaling_transform(c, sf)
         for ind, c in self.eq_nonelec_flux_out.items():

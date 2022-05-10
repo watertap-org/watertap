@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
+# "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
 import pytest
@@ -38,7 +38,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import re
@@ -62,24 +61,27 @@ class TestElectrodialysisVoltageConst:
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant Voltage"
-        assert len(m.fs.unit.config) == 7
-        assert not m.fs.unit.config.dynamic
-        assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant Voltage"
-        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-        assert (
-            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
-        )
-        assert m.fs.unit.config.property_package is m.fs.properties
+        m.fs.unit.config.operation_mode = "Constant_Voltage"
         return m
 
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell1):
         m = electrodialysis_cell1
+        # test configrations
+        assert len(m.fs.unit.config) == 7
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.operation_mode == "Constant_Voltage"
+        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert (
+            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        )
+        assert m.fs.unit.config.property_package is m.fs.properties
+        assert 'H2O' in m.fs.properties.component_list
+
+        #test all essential params and vars are built 
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
-        assert isinstance(m.fs.unit.water_MW, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
@@ -266,24 +268,28 @@ class TestElectrodialysisCurrentConst:
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant Current"
-        assert len(m.fs.unit.config) == 7
-        assert not m.fs.unit.config.dynamic
-        assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant Current"
-        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-        assert (
-            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
-        )
-        assert m.fs.unit.config.property_package is m.fs.properties
+        m.fs.unit.config.operation_mode = "Constant_Current"
         return m
 
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell2):
         m = electrodialysis_cell2
+        
+        # test configrations
+        assert len(m.fs.unit.config) == 7
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.operation_mode == "Constant_Current"
+        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert (
+            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        )
+        assert m.fs.unit.config.property_package is m.fs.properties
+        assert 'H2O' in m.fs.properties.component_list
+
+        #test all essential params and vars are built 
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
-        assert isinstance(m.fs.unit.water_MW, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
@@ -469,24 +475,28 @@ class TestElectrodialysis_withNeutralSPecies:
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant Current"
-        assert len(m.fs.unit.config) == 7
-        assert not m.fs.unit.config.dynamic
-        assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant Current"
-        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-        assert (
-            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
-        )
-        assert m.fs.unit.config.property_package is m.fs.properties
+        m.fs.unit.config.operation_mode = "Constant_Current"
         return m
 
     @pytest.mark.unit
     def test_build_model(self, electrodialysis_cell3):
         m = electrodialysis_cell3
+        
+        # test configrations
+        assert len(m.fs.unit.config) == 7
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.operation_mode == "Constant_Current"
+        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert (
+            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        )
+        assert m.fs.unit.config.property_package is m.fs.properties
+        assert 'H2O' in m.fs.properties.component_list
+
+        #test all essential params and vars are built 
         assert isinstance(m.fs.unit.membrane_set, Set)
         assert isinstance(m.fs.unit.water_density, Param)
-        assert isinstance(m.fs.unit.water_MW, Param)
         assert isinstance(m.fs.unit.cell_pair_num, Var)
         assert isinstance(m.fs.unit.cell_width, Var)
         assert isinstance(m.fs.unit.cell_length, Var)
