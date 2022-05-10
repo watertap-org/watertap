@@ -154,6 +154,39 @@ def build_ion_subset_with_Na_model():
 
     return m
 
+
+def build_ion_subset_with_alk_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # create dict to define ions (the prop pack of Adam requires this)
+    ion_dict = {
+        "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+", "HCO3_-"],
+        "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3, "Na_+": 23e-3, "HCO3_-": 61e-3},
+        "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
+    }
+
+    # attach prop pack to flowsheet
+    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+    map = {'boron_name': 'B[OH]3', #[is required]
+            'borate_name': 'B[OH]4_-', #[is required]
+            'caustic_additive':
+                {
+                    'cation_name': 'Na_+', #[is optional]
+                    'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]
+                    'charge_additive': 1, #[is required]
+                },
+    }
+    m.fs.unit = BoronRemoval(
+        default={
+            "property_package": m.fs.properties,
+            "chemical_mapping_data": map,
+        }
+    )
+
+    return m
+
 def build_generic_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -325,7 +358,7 @@ def build_generic_model():
 
 def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
                           "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
-                          "Na_+": 1e-3}):
+                          "Na_+": 1e-3, "HCO3_-": 1e-4}):
     assert_units_consistent(m)
     #print(degrees_of_freedom(m))
 
@@ -347,7 +380,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
 
 def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
                           "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
-                          "Na_+": 1e-3}):
+                          "Na_+": 1e-3, "HCO3_-": 1e-4}):
     # Set some scaling factors and look for 'bad' scaling
     for j in state:
         idx = (0, "Liq", j)
@@ -406,12 +439,23 @@ def solve_model(m):
     print("conc of cation M")
     conc = m.fs.unit.caustic_cation_charge*m.fs.unit.caustic_dose[0]/m.fs.unit.caustic_mw
     print(value(conc))
+    print()
+    print("pH = " + str(-log10(value(m.fs.unit.mol_H[0])/1000)))
 
     print()
 
-    m.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp.pprint()
+    # NOTE: May not get solved for (depends on whether or not outlet concentration is used)
+    for ind in m.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
+        print(ind)
+        print(value(m.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[ind]))
 
-    print("pH = " + str(-log10(value(m.fs.unit.mol_H[0])/1000)))
+    print()
+
+    m.fs.unit.eq_mass_transfer_term.pprint()
+
+    print()
+
+    m.fs.unit.report()
 
     assert_optimal_termination(results)
 
@@ -420,11 +464,12 @@ def display_unit_vars(m):
     return
 
 if __name__ == "__main__":
-    #m = build_generic_model() # not building correctly...
+    m = build_generic_model() # not building correctly...
 
     #m = build_ion_model()
     #m = build_ion_subset_model()
-    m = build_ion_subset_with_Na_model()
+    #m = build_ion_subset_with_Na_model()
+    #m = build_ion_subset_with_alk_model()
 
     model_setup(m)
     scaling_setup(m)
