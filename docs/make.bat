@@ -7,9 +7,6 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
-if "%SPHINXAPIDOC%" == "" (
-    set SPHINXAPIDOC=sphinx-apidoc
-)
 
 set SOURCEDIR=.
 set BUILDDIR=_build
@@ -28,8 +25,6 @@ if errorlevel 9009 (
 	echo.http://sphinx-doc.org/
 	exit /b 1
 )
-REM TODO: Revisit %SPHINXAPIDOC% and get it working adequately with readthedocs
-REM %SPHINXAPIDOC%  -f -M -H WaterTAP -d 3 -o apidoc ../watertap "../*tests*"
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
