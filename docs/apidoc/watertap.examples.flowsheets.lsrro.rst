@@ -4,7 +4,6 @@ watertap.examples.flowsheets.lsrro package
 Submodules
 ----------
 
-
 watertap.examples.flowsheets.lsrro.lsrro module
 -----------------------------------------------
 
