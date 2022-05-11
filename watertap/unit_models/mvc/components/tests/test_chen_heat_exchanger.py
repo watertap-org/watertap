@@ -87,7 +87,7 @@ def test_heat_exchanger():
 
     assert pytest.approx(89050.0, rel=1e-4) == value(m.fs.unit.heat_duty[0])
     assert pytest.approx(1.0, rel=1e-4) == value(
-        m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H20"]
+        m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
@@ -95,7 +95,7 @@ def test_heat_exchanger():
     assert pytest.approx(328.69, rel=1e-4) == value(m.fs.unit.hot_outlet.temperature[0])
     assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.hot_outlet.pressure[0])
     assert pytest.approx(0.5, rel=1e-4) == value(
-        m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "H20"]
+        m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
