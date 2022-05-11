@@ -11,7 +11,6 @@
 #
 ###############################################################################
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
@@ -57,26 +56,4 @@ def test_complete_condense():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.unit.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key       : Value       : Fixed : Bounds
-    Heat duty : -2.4358e+06 : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                           Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08     1.0000
-    flow_mass_phase_comp ('Vap', 'H2O')     1.0000 1.0000e-10
-    temperature                             400.00     340.00
-    pressure                                50000.     50000.
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    m.fs.unit.report()

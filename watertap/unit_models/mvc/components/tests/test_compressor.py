@@ -11,7 +11,6 @@
 #
 ###############################################################################
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
@@ -63,28 +62,4 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.compressor.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.compressor                                                       Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key            : Value      : Fixed : Bounds
-        Efficiency :    0.80000 :  True : (1e-08, 1)
-    Pressure ratio :     2.0000 :  True : (1, 10)
-              Work : 1.1534e+05 : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                           Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08 1.0000e-08
-    flow_mass_phase_comp ('Vap', 'H2O')     1.0000     1.0000
-    temperature                             350.00     429.57
-    pressure                                50000. 1.0000e+05
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    m.fs.compressor.report()
