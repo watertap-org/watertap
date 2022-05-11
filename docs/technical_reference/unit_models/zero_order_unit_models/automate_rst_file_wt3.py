@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
