@@ -4,7 +4,7 @@
 Model Type
 ------------------
 This unit model is formulated as a {single-input, double-output} model form.
-See documentation for the {single-input, double-output} helper function.
+See documentation for :ref:`Single Inlet - Double Outlet Helper Methods<sido_methods>`.
 
 Energy Consumption
 ------------------
