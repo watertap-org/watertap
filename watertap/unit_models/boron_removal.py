@@ -63,7 +63,7 @@ class BoronRemovalData(UnitModelBlockData):
     assumed that...
 
     (1) All reactions and activities are assumed ideal
-    
+
     (2) Only major reactions are water dissociation
     and boron dissociation
 
