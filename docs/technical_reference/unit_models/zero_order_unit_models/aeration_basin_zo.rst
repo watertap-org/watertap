@@ -13,7 +13,7 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 
 Costing Method
 ------------------
-Costing is calculated using the {cost method} cost method in the zero-order costing package.
+Costing is calculated using the {cost_power_law_flow} method in the zero-order costing package.
 See documentation for the {zero-order costing package}.
 
 .. index::
