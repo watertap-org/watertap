@@ -60,8 +60,10 @@ class BoronRemovalData(UnitModelBlockData):
     0D Boron Removal model for after 1st Stage of RO
 
     This model is an approximate equilibrium reactor wherein it is
-    assumed that:
+    assumed that...
+
     (1) All reactions and activities are assumed ideal
+    
     (2) Only major reactions are water dissociation
     and boron dissociation
 
