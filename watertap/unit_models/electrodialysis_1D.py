@@ -668,8 +668,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             if (
                 "flow_mol_phase_comp"
                 not in self.dilute_side.properties[set].define_state_vars()
-                and "flow_mass_phase_comp"
-                not in self.dilute_side.properties[set].define_state_vars()
             ):
                 raise ConfigurationError(
                     "Electrodialysis1D unit model requires "
@@ -732,44 +730,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                             self.concentrate_side.properties[
                                 intial_set
                             ].flow_mol_phase_comp[ind]
-                        )
-
-            if (
-                "flow_mass_phase_comp"
-                in self.dilute_side.properties[set].define_state_vars()
-            ):
-                for ind in self.dilute_side.properties[set].flow_mass_phase_comp:
-                    self.dilute_side.properties[set].flow_mass_phase_comp[ind] = value(
-                        self.dilute_side.properties[intial_set].flow_mass_phase_comp[
-                            ind
-                        ]
-                    )
-                    self.concentrate_side.properties[set].flow_mass_phase_comp[
-                        ind
-                    ] = value(
-                        self.concentrate_side.properties[
-                            intial_set
-                        ].flow_mass_phase_comp[ind]
-                    )
-
-                # Check to see if 'flow_mol_phase_comp' is constructed
-                if self.dilute_side.properties[set].is_property_constructed(
-                    "flow_mol_phase_comp"
-                ):
-                    for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
-                        self.dilute_side.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self.dilute_side.properties[
-                                intial_set
-                            ].flow_mass_phase_comp[ind]
-                        )
-                        self.concentrate_side.properties[set].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self.concentrate_side.properties[
-                                intial_set
-                            ].flow_mass_phase_comp[ind]
                         )
 
             i += 1
