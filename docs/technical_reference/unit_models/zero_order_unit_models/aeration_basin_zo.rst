@@ -11,7 +11,6 @@ Electricity Consumption
 Electricity consumption is calculated using the {constant intensity} helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
-
 Costing Method
 ------------------
 Costing is calculated using the {cost method} cost method in the zero-order costing package.
