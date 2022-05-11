@@ -324,7 +324,7 @@ class BoronRemovalData(UnitModelBlockData):
         # check for existence of inherent reactions
         #   This is to ensure that no degeneracy could be introduced
         #   in the system of equations (may not need this explicit check)
-        if hasattr(self.config, 'inherent_reactions'):
+        if hasattr(self.config.property_package, 'inherent_reaction_idx'):
             raise ConfigurationError(
                 "\n Property Package CANNOT contain 'inherent_reactions' \n"
             )

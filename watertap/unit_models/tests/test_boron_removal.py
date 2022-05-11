@@ -22,6 +22,24 @@ from idaes.generic_models.properties.core.pure.ConstantProperties import Constan
 from idaes.generic_models.properties.core.state_definitions import FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
+# Importing the enum for concentration unit basis used in the 'get_concentration_term' function
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
+
+# Import the object/function for heat of reaction
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+
+# Import safe log power law equation
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    log_power_law_equil,
+)
+
+# Import k-value functions
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
+
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
@@ -818,4 +836,410 @@ class TestBoronRemoval_BadConfigs:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
+        # create dict to define ions (the prop pack requires this)
+        ion_dict = {
+            "solute_list": ["B[OH]3", "B[OH]4_-", "H_+", "OH_-", "Na_+"],
+            "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
+            "charge": {"B[OH]3": 0, "B[OH]4_-": -1,},
+        }
+
+        # attach prop pack to flowsheet
+        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
         return m
+
+    @pytest.mark.unit
+    def test_build_failures(self, boron_removal_bad_configs):
+        m = boron_removal_bad_configs
+
+        # Invalid name of boron
+        map = {'boron_name': 'Boron', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Given 'boron_name' {Boron} does not match any species "
+            "name from the property package "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Invalid name of borate
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'Borate', #[is required]
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Given 'borate_name' {Borate} does not match any species "
+            "name from the property package "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Empty dict
+        map = {}
+        error_msg = (
+            "Did not provide a 'dict' for 'chemical_mapping_data' "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+
+        # Invalid name of hydroxide
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'hydroxide_name': "Raccoon_City",
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Given 'hydroxide_name' {Raccoon_City} does not match any species "
+            "name from the property package "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Invalid name of protons
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'proton_name': "Pulled_Pork",
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Given 'proton_name' {Pulled_Pork} does not match any species "
+            "name from the property package "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Invalid name of cation
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'cation_name': 'Im_Batman', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Given 'cation_name' {Im_Batman} does not match any species "
+            "name from the property package "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Missing information (borate_name)
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'caustic_additive':
+                    {
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Missing some required information in 'chemical_mapping_data' "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Missing information (mw_additive)
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Missing some required information in 'chemical_mapping_data' "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+        # Improper data type (mw_additive must be a tuple with value and units)
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'mw_additive': 40, #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Did not provide a tuple for 'mw_additive' "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
+
+# -----------------------------------------------------------------------------
+# Start test class with bad config
+class TestBoronRemoval_BadConfigs_Generic:
+    @pytest.fixture(scope="class")
+    def boron_removal_bad_configs_gen(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # Configuration dictionary for generic
+        thermo_config = {
+            "components": {
+                "H2O": {
+                    "type": Solvent,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (18.0153, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "H_+": {
+                    "type": Cation,
+                    "charge": 1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (1, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "OH_-": {
+                    "type": Anion,
+                    "charge": -1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (17, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "B[OH]4_-": {
+                    "type": Anion,
+                    "charge": -1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (78.83, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "B[OH]3": {
+                    "type": Solute,
+                    "valid_phase_types": PT.aqueousPhase,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (61.83, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+            },
+            # End Component list
+            "phases": {
+                "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+            },
+            "state_definition": FpcTP,
+            "state_bounds": {
+                "temperature": (273.15, 300, 650),
+                "pressure": (5e4, 1e5, 1e6),
+            },
+            "pressure_ref": 1e5,
+            "temperature_ref": 300,
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            "inherent_reactions": {
+                "H2O_Kw": {
+                    "stoichiometry": {
+                        ("Liq", "H2O"): -1,
+                        ("Liq", "H_+"): 1,
+                        ("Liq", "OH_-"): 1,
+                    },
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": log_power_law_equil,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                        "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
+                        "T_eq_ref": (298, pyunits.K),
+                        # By default, reaction orders follow stoichiometry
+                        #    manually set reaction order here to override
+                        "reaction_order": {
+                            ("Liq", "H2O"): 0,
+                            ("Liq", "H_+"): 1,
+                            ("Liq", "OH_-"): 1,
+                        },
+                    }
+                    # End parameter_data
+                }
+                # End R1
+            },
+        }
+        # End thermo_config definition
+
+        # attach prop pack to flowsheet
+        m.fs.properties = GenericParameterBlock(default=thermo_config)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build_failures(self, boron_removal_bad_configs_gen):
+        m = boron_removal_bad_configs_gen
+
+        # Invalid name of boron
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        error_msg = (
+            "Property Package CANNOT contain 'inherent_reactions' "
+        )
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
+            m.fs.unit = BoronRemoval(
+                default={
+                    "property_package": m.fs.properties,
+                    "chemical_mapping_data": map,
+                }
+            )
