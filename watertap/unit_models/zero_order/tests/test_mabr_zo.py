@@ -209,6 +209,23 @@ Unit : fs.unit                                                             Time:
         assert output in stream.getvalue()
 
 
+@pytest.mark.unit
+def test_no_NH4_N_in_solute_list_error():
+    m = ConcreteModel()
+    m.db = Database()
+    m.db._get_technology("mabr")
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+
+    with pytest.raises(
+        ValueError,
+        match="fs.unit - key_reactant ammonium_as_nitrogen for reaction "
+        "ammonium_to_nitrate is not in the component list used by the "
+        "assigned property package.",
+    ):
+        m.fs.unit = MABRZO(default={"property_package": m.fs.params, "database": m.db})
+
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
