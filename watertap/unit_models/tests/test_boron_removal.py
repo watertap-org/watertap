@@ -240,6 +240,577 @@ class TestBoronRemoval_IonPropPack_Min:
         ) == pytest.approx(3.8257, rel=1e-4)
 
 # -----------------------------------------------------------------------------
+# Start test class
+class TestBoronRemoval_IonPropPack_with_ResAlk:
+    @pytest.fixture(scope="class")
+    def alk_boron_removal_model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # create dict to define ions (the prop pack requires this)
+        ion_dict = {
+            "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+", "HCO3_-"],
+            "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3, "Na_+": 23e-3, "HCO3_-": 61e-3},
+            "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
+        }
+
+        # attach prop pack to flowsheet
+        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        m.fs.unit = BoronRemoval(
+            default={
+                "property_package": m.fs.properties,
+                "chemical_mapping_data": map,
+            }
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_build_model(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+
+        assert isinstance(m.fs.unit.ion_charge, Param)
+        assert len(m.fs.unit.ion_charge) == 3
+
+        assert hasattr(m.fs.unit, 'boron_name_id')
+        assert hasattr(m.fs.unit, 'borate_name_id')
+        assert hasattr(m.fs.unit, 'proton_name_id')
+        assert hasattr(m.fs.unit, 'hydroxide_name_id')
+        assert hasattr(m.fs.unit, 'cation_name_id')
+
+        assert hasattr(m.fs.unit, 'caustic_chem_name')
+
+        assert hasattr(m.fs.unit, 'control_volume')
+
+        assert isinstance(m.fs.unit.caustic_mw, Param)
+        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
+        assert isinstance(m.fs.unit.caustic_dose, Var)
+
+        assert isinstance(m.fs.unit.Kw_0, Param)
+        assert isinstance(m.fs.unit.dH_w, Param)
+        assert isinstance(m.fs.unit.Ka_0, Param)
+        assert isinstance(m.fs.unit.dH_a, Param)
+
+        assert isinstance(m.fs.unit.mol_H, Var)
+        assert isinstance(m.fs.unit.mol_OH, Var)
+        assert isinstance(m.fs.unit.mol_Boron, Var)
+        assert isinstance(m.fs.unit.mol_Borate, Var)
+
+        assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
+        assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
+        assert isinstance(m.fs.unit.eq_total_boron, Constraint)
+        assert isinstance(m.fs.unit.eq_water_dissociation, Constraint)
+        assert isinstance(m.fs.unit.eq_boron_dissociation, Constraint)
+
+    @pytest.mark.unit
+    def test_stats(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+
+        # Check to make sure we have the correct DOF and
+        #   check to make sure the units are correct
+        assert_units_consistent(m)
+        assert degrees_of_freedom(m) == 8
+
+        # set the variables
+        model_setup(m, chem_add=100)
+
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+
+        # Set some scaling factors and look for 'bad' scaling
+        scaling_setup(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                m, large=1e3, small=1e-3
+            )
+        }
+        assert not badly_scaled_var_values
+
+    @pytest.mark.component
+    def test_initialization(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+        initialization_tester(m)
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_solve(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+
+        # first, check to make sure that after initialized, the scaling is still good
+        badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                m, large=1e3, small=1e-3
+            )
+        }
+        assert not badly_scaled_var_values
+
+        # run solver and check for optimal solution
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, alk_boron_removal_model):
+        m = alk_boron_removal_model
+
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
+        ) == pytest.approx(6.71420e-7, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
+        ) == pytest.approx(2.00341e-4, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pH()
+        ) == pytest.approx(11.685, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pOH()
+        ) == pytest.approx(2.3108, rel=1e-4)
+
+# -----------------------------------------------------------------------------
+# Start test class
+class TestBoronRemoval_IonPropPack_with_ResBase:
+    @pytest.fixture(scope="class")
+    def base_boron_removal_model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # create dict to define ions (the prop pack requires this)
+        ion_dict = {
+            "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+"],
+            "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3, "Na_+": 23e-3},
+            "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1,},
+        }
+
+        # attach prop pack to flowsheet
+        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'caustic_additive':
+                    {
+                        'cation_name': 'Na_+', #[is optional]
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        m.fs.unit = BoronRemoval(
+            default={
+                "property_package": m.fs.properties,
+                "chemical_mapping_data": map,
+            }
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_build_model(self, base_boron_removal_model):
+        m = base_boron_removal_model
+
+        assert isinstance(m.fs.unit.ion_charge, Param)
+        assert len(m.fs.unit.ion_charge) == 2
+
+        assert hasattr(m.fs.unit, 'boron_name_id')
+        assert hasattr(m.fs.unit, 'borate_name_id')
+        assert hasattr(m.fs.unit, 'proton_name_id')
+        assert hasattr(m.fs.unit, 'hydroxide_name_id')
+        assert hasattr(m.fs.unit, 'cation_name_id')
+
+        assert hasattr(m.fs.unit, 'caustic_chem_name')
+
+        assert hasattr(m.fs.unit, 'control_volume')
+
+        assert isinstance(m.fs.unit.caustic_mw, Param)
+        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
+        assert isinstance(m.fs.unit.caustic_dose, Var)
+
+        assert isinstance(m.fs.unit.Kw_0, Param)
+        assert isinstance(m.fs.unit.dH_w, Param)
+        assert isinstance(m.fs.unit.Ka_0, Param)
+        assert isinstance(m.fs.unit.dH_a, Param)
+
+        assert isinstance(m.fs.unit.mol_H, Var)
+        assert isinstance(m.fs.unit.mol_OH, Var)
+        assert isinstance(m.fs.unit.mol_Boron, Var)
+        assert isinstance(m.fs.unit.mol_Borate, Var)
+
+        assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
+        assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
+        assert isinstance(m.fs.unit.eq_total_boron, Constraint)
+        assert isinstance(m.fs.unit.eq_water_dissociation, Constraint)
+        assert isinstance(m.fs.unit.eq_boron_dissociation, Constraint)
+
+    @pytest.mark.unit
+    def test_stats(self, base_boron_removal_model):
+        m = base_boron_removal_model
+
+        # Check to make sure we have the correct DOF and
+        #   check to make sure the units are correct
+        assert_units_consistent(m)
+        assert degrees_of_freedom(m) == 7
+
+        # set the variables
+        model_setup(m, chem_add=0)
+
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, base_boron_removal_model):
+        m = base_boron_removal_model
+
+        # Set some scaling factors and look for 'bad' scaling
+        scaling_setup(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                m, large=1e3, small=1e-3
+            )
+        }
+        assert not badly_scaled_var_values
+
+    @pytest.mark.component
+    def test_initialization(self, base_boron_removal_model):
+        m = base_boron_removal_model
+        initialization_tester(m)
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_solve(self, base_boron_removal_model):
+        m = base_boron_removal_model
+
+        # first, check to make sure that after initialized, the scaling is still good
+        badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                m, large=1e3, small=1e-3
+            )
+        }
+        assert not badly_scaled_var_values
+
+        # run solver and check for optimal solution
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, base_boron_removal_model):
+        m = base_boron_removal_model
+
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
+        ) == pytest.approx(1.20642e-4, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
+        ) == pytest.approx(8.03579e-5, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pH()
+        ) == pytest.approx(9.0343, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pOH()
+        ) == pytest.approx(4.9621, rel=1e-4)
+
+# -----------------------------------------------------------------------------
+# Start test class
+class TestBoronRemoval_GenPropPack:
+    @pytest.fixture(scope="class")
+    def gen_boron_removal_model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # Configuration dictionary for generic
+        thermo_config = {
+            "components": {
+                "H2O": {
+                    "type": Solvent,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (18.0153, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "H_+": {
+                    "type": Cation,
+                    "charge": 1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (1, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "OH_-": {
+                    "type": Anion,
+                    "charge": -1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (17, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "B[OH]4_-": {
+                    "type": Anion,
+                    "charge": -1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (78.83, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "B[OH]3": {
+                    "type": Solute,
+                    "valid_phase_types": PT.aqueousPhase,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (61.83, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+            },
+            # End Component list
+            "phases": {
+                "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+            },
+            "state_definition": FpcTP,
+            "state_bounds": {
+                "temperature": (273.15, 300, 650),
+                "pressure": (5e4, 1e5, 1e6),
+            },
+            "pressure_ref": 1e5,
+            "temperature_ref": 300,
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        }
+        # End thermo_config definition
+
+        # attach prop pack to flowsheet
+        m.fs.properties = GenericParameterBlock(default=thermo_config)
+
+        map = {'boron_name': 'B[OH]3', #[is required]
+                'borate_name': 'B[OH]4_-', #[is required]
+                'proton_name': 'H_+',  #[is optional]
+                'hydroxide_name': 'OH_-', #[is optional]
+                'caustic_additive':
+                    {
+                        'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]
+                        'charge_additive': 1, #[is required]
+                    },
+        }
+        m.fs.unit = BoronRemoval(
+            default={
+                "property_package": m.fs.properties,
+                "chemical_mapping_data": map,
+            }
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_build_model(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+
+        assert isinstance(m.fs.unit.ion_charge, Param)
+        assert len(m.fs.unit.ion_charge) == 3
+
+        assert hasattr(m.fs.unit, 'boron_name_id')
+        assert hasattr(m.fs.unit, 'borate_name_id')
+        assert hasattr(m.fs.unit, 'proton_name_id')
+        assert hasattr(m.fs.unit, 'hydroxide_name_id')
+        assert hasattr(m.fs.unit, 'cation_name_id')
+
+        assert hasattr(m.fs.unit, 'caustic_chem_name')
+
+        assert hasattr(m.fs.unit, 'control_volume')
+
+        assert isinstance(m.fs.unit.caustic_mw, Param)
+        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
+        assert isinstance(m.fs.unit.caustic_dose, Var)
+
+        assert isinstance(m.fs.unit.Kw_0, Param)
+        assert isinstance(m.fs.unit.dH_w, Param)
+        assert isinstance(m.fs.unit.Ka_0, Param)
+        assert isinstance(m.fs.unit.dH_a, Param)
+
+        assert isinstance(m.fs.unit.mol_H, Var)
+        assert isinstance(m.fs.unit.mol_OH, Var)
+        assert isinstance(m.fs.unit.mol_Boron, Var)
+        assert isinstance(m.fs.unit.mol_Borate, Var)
+
+        assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
+        assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
+        assert isinstance(m.fs.unit.eq_total_boron, Constraint)
+        assert isinstance(m.fs.unit.eq_water_dissociation, Constraint)
+        assert isinstance(m.fs.unit.eq_boron_dissociation, Constraint)
+
+    @pytest.mark.unit
+    def test_stats(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+
+        # Check to make sure we have the correct DOF and
+        #   check to make sure the units are correct
+        assert_units_consistent(m)
+        assert degrees_of_freedom(m) == 8
+
+        # set the variables
+        model_setup(m, chem_add=1)
+
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+
+        # Set some scaling factors and look for 'bad' scaling
+        scaling_setup(m)
+
+        ## TODO: Revisit scaling for the generic package
+        #   The unscaled vars come from the 'true-to-apparent'
+        #   species vars in the generic package (which we don't
+        #   ever use). May need to revisit how to scale
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 8
+
+    @pytest.mark.component
+    def test_initialization(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+        initialization_tester(m)
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_solve(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+
+        # run solver and check for optimal solution
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, gen_boron_removal_model):
+        m = gen_boron_removal_model
+
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
+        ) == pytest.approx(1.61991e-4, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
+        ) == pytest.approx(3.82806e-5, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pH()
+        ) == pytest.approx(8.5842, rel=1e-4)
+        assert value(
+            m.fs.unit.outlet_pOH()
+        ) == pytest.approx(5.4121, rel=1e-4)
+
+# -----------------------------------------------------------------------------
 # Start test class with bad config
 class TestBoronRemoval_BadConfigs:
     @pytest.fixture(scope="class")
