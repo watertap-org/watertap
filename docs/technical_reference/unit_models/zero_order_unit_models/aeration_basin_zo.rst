@@ -7,7 +7,7 @@ This unit model is formulated as a {single-input, double-output} model form.
 See documentation for :ref:`Single Inlet - Double Outlet Helper Methods<sido_methods>`.
 
 Electricity Consumption
-------------------
+-----------------------
 Electricity consumption is calculated using the {constant intensity} helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
