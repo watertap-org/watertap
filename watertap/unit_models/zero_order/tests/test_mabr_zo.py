@@ -15,7 +15,7 @@ Tests for zero-order mabr model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -175,40 +175,8 @@ class TestMABRZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                   : Value     : Fixed : Bounds
-                        Blower Size (m^2) :    1.0000 :  True : (0, None)
-                       Electricity Demand :   0.57380 : False : (0, None)
-                    Electricity Intensity : 0.0069300 :  True : (None, None)
-    Reaction Extent [ammonium_to_nitrate] :    1.4000 : False : (None, None)
-    Solute Removal [ammonium_as_nitrogen] :    0.0000 :  True : (0, None)
-                     Solute Removal [bod] :    0.0000 :  True : (0, None)
-                 Solute Removal [nitrate] :    0.0000 :  True : (0, None)
-                     Solute Removal [tss] :    0.0000 :  True : (0, None)
-                           Water Recovery :    1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                              Inlet   Treated  Byproduct
-    Volumetric Flowrate                     0.023000 0.023000 4.0000e-12
-    Mass Concentration H2O                    434.78   434.78     200.00
-    Mass Concentration bod                    217.39   217.39     200.00
-    Mass Concentration tss                    217.39   217.39     200.00
-    Mass Concentration ammonium_as_nitrogen   86.957   26.087     200.00
-    Mass Concentration nitrate                43.478   104.35     200.00
-====================================================================================
-"""
+        model.fs.unit.report()
 
 
 def test_costing():
