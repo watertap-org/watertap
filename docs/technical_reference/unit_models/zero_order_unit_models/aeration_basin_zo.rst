@@ -6,10 +6,10 @@ Model Type
 This unit model is formulated as a {single-input, double-output} model form.
 See documentation for :ref:`Single Inlet - Double Outlet Helper Methods<sido_methods>`.
 
-Energy Consumption
+Electricity Consumption
 ------------------
-Energy consumption is calculated using the {constant intensity} helper function.
-See documentation for the {constant intensity} helper function.
+Electricity consumption is calculated using the {constant intensity} helper function.
+See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 
 Costing Method
