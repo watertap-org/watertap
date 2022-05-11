@@ -4,7 +4,6 @@ Gas Sparged Membrane (ZO)
 Model Type
 ----------
 This unit model is formulated as a custom model form.
-See documentation for :ref:`custom Helper Methods<nan>`.
 
 Electricity Consumption
 -----------------------

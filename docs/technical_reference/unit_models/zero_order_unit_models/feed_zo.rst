@@ -4,7 +4,6 @@ Feed  (ZO)
 Model Type
 ----------
 This unit model is formulated as a None model form.
-See documentation for :ref:`None Helper Methods<nan>`.
 
 Electricity Consumption
 -----------------------
