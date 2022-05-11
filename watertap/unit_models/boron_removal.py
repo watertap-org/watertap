@@ -61,17 +61,20 @@ class BoronRemovalData(UnitModelBlockData):
 
     This model is an approximate equilibrium reactor wherein it is
     assumed that:
-        (1) All reactions and activities are assumed ideal
-        (2) Only major reactions are water dissociation
-                and boron dissociation
-        (3) Only 1 caustic chemical is being added to raise pH
-        (4) The caustic additive will always completely dissociate into
-                a cation and some amount hydroxide anions
-                (e.g., NaOH --> Na+ + OH-, Ca(OH2) --> Ca2+ + 2 OH-, etc)
-        (5) Any other ions remaining in solution do not significantly
-                change with pH changes, but do help act as buffers to
-                changes in pH (i.e., will absorb/contribute protons
-                proportional to their charge).
+    (1) All reactions and activities are assumed ideal
+    (2) Only major reactions are water dissociation
+    and boron dissociation
+
+    (3) Only 1 caustic chemical is being added to raise pH
+
+    (4) The caustic additive will always completely dissociate into
+    a cation and some amount hydroxide anions
+    (e.g., NaOH --> Na+ + OH-, Ca(OH2) --> Ca2+ + 2 OH-, etc)
+
+    (5) Any other ions remaining in solution do not significantly
+    change with pH changes, but do help act as buffers to
+    changes in pH (i.e., will absorb/contribute protons
+    proportional to their charge).
     """
 
     # CONFIG are options for the unit model
