@@ -1,10 +1,10 @@
-Aeration Basin (ZO)
-===================
+Buffer Tank (ZO)
+================
 
 Model Type
 ----------
-This unit model is formulated as a single-input, double-output model form.
-See documentation for :ref:`single-input, double-output Helper Methods<sido_methods>`.
+This unit model is formulated as a pass-through model form.
+See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
 -----------------------
@@ -17,13 +17,13 @@ Costing is calculated using the cost_power_law_flow method in the zero-order cos
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.aeration_basin_zo;aeration_basin_zo
+   pair: watertap.unit_models.zero_order.buffer_tank_zo;buffer_tank_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.aeration_basin_zo
+.. currentmodule:: watertap.unit_models.zero_order.buffer_tank_zo
 
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.aeration_basin_zo
+..automodule:: watertap.unit_models.zero_order.buffer_tank_zo
     :members:
     :noindex:

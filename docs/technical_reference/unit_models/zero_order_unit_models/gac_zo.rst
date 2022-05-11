@@ -1,5 +1,5 @@
-Aeration Basin (ZO)
-===================
+Gac  (ZO)
+=========
 
 Model Type
 ----------
@@ -8,22 +8,22 @@ See documentation for :ref:`single-input, double-output Helper Methods<sido_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
+Electricity consumption is calculated using the f(x) helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
-Costing is calculated using the cost_power_law_flow method in the zero-order costing package.
+Costing is calculated using the cost_gac method in the zero-order costing package.
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.aeration_basin_zo;aeration_basin_zo
+   pair: watertap.unit_models.zero_order.gac_zo;gac_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.aeration_basin_zo
+.. currentmodule:: watertap.unit_models.zero_order.gac_zo
 
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.aeration_basin_zo
+..automodule:: watertap.unit_models.zero_order.gac_zo
     :members:
     :noindex:

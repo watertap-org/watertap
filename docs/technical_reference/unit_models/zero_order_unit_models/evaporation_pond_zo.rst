@@ -1,5 +1,5 @@
-Aeration Basin (ZO)
-===================
+Evaporation Pond (ZO)
+=====================
 
 Model Type
 ----------
@@ -13,17 +13,17 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 
 Costing Method
 --------------
-Costing is calculated using the cost_power_law_flow method in the zero-order costing package.
+Costing is calculated using the cost_evaporation_pond method in the zero-order costing package.
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.aeration_basin_zo;aeration_basin_zo
+   pair: watertap.unit_models.zero_order.evaporation_pond_zo;evaporation_pond_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.aeration_basin_zo
+.. currentmodule:: watertap.unit_models.zero_order.evaporation_pond_zo
 
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.aeration_basin_zo
+..automodule:: watertap.unit_models.zero_order.evaporation_pond_zo
     :members:
     :noindex:

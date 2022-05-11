@@ -1,5 +1,5 @@
-Aeration Basin (ZO)
-===================
+Backwash Solids Handling (ZO)
+=============================
 
 Model Type
 ----------
@@ -8,7 +8,7 @@ See documentation for :ref:`single-input, double-output Helper Methods<sido_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
+Electricity consumption is calculated using the pump_electricity helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
@@ -17,13 +17,13 @@ Costing is calculated using the cost_power_law_flow method in the zero-order cos
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.aeration_basin_zo;aeration_basin_zo
+   pair: watertap.unit_models.zero_order.backwash_solids_handling_zo;backwash_solids_handling_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.aeration_basin_zo
+.. currentmodule:: watertap.unit_models.zero_order.backwash_solids_handling_zo
 
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.aeration_basin_zo
+..automodule:: watertap.unit_models.zero_order.backwash_solids_handling_zo
     :members:
     :noindex:
