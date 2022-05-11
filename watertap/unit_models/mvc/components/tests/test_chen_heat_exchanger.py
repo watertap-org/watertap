@@ -85,7 +85,7 @@ def test_heat_exchanger():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(89050.0, rel=1e-4) == value(m.fs.unit.head_duty[0])
+    assert pytest.approx(89050.0, rel=1e-4) == value(m.fs.unit.heat_duty[0])
     assert pytest.approx(1.0, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H20"]
     )
