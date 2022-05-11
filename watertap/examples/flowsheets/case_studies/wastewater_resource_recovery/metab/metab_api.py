@@ -41,12 +41,17 @@ def solve_flowsheet(fs, model=None, **kwargs):
     metab.assert_optimal_termination(results)
     #display_costing(m)
 
+###
+
 
 def cli_driver(fsi):
     """Dumb little interactive driver for CLI testing.
     """
-    commands = {"print": print_json, "quit": exit_program,
-                "build": run_build, "solve": run_solve}
+    commands = {
+        "json": print_json, "quit": exit_program,
+        "build": run_build, "solve": run_solve,
+        "results": print_results
+    }
     while True:
         try:
             cmd = input("Command> ")
@@ -76,7 +81,8 @@ def print_help(user_cmd, commands):
         print(f"'{user_cmd}' is not a command.")
     print(f"Commands:")
     for cmd_key, cmd_val in commands.items():
-        desc = cmd_val.__doc__.strip()
+        desc = cmd_val.__doc__
+        desc = "" if desc is None else desc.strip()
         print(f"  {cmd_key} - {desc}")
 
 
@@ -95,6 +101,19 @@ def print_json(fsi):
     print("--------------")
     print(json.dumps(fsi.as_dict(), indent=2))
     print("--------------")
+
+
+def print_results(fsi: FlowsheetInterface):
+    """Print the results of solving the flowsheet"""
+    fs = fsi.block
+
+    print("Performance results")
+    print("-------------------")
+    metab.display_results(fs)
+
+    print("Costing results")
+    print("---------------")
+    metab.display_costing(fs)
 
 
 if __name__ == "__main__":
