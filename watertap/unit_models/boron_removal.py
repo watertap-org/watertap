@@ -24,6 +24,7 @@ from pyomo.environ import (
     Reference,
     value,
     exp,
+    log10,
     units as pyunits,
 )
 
@@ -57,6 +58,19 @@ _log = idaeslog.getLogger(__name__)
 class BoronRemovalData(UnitModelBlockData):
     """
     0D Boron Removal model for after 1st Stage of RO
+
+    This model is an approximate equilibrium reactor wherein it is
+    assumed that:
+        (1) Only major reactions are water dissociation
+                and boron dissociation
+        (2) Only 1 caustic chemical is being added to raise pH
+        (3) The caustic additive will always completely dissociate into
+                a cation and some amount hydroxide anions
+                (e.g., NaOH --> Na+ + OH-, Ca(OH2) --> Ca2+ + 2 OH-, etc)
+        (4) Any other ions remaining in solution do not significantly
+                change with pH changes, but do help act as buffers to
+                changes in pH (i.e., will absorb/contribute protons
+                proportional to their charge).
     """
 
     # CONFIG are options for the unit model
@@ -185,6 +199,7 @@ class BoronRemovalData(UnitModelBlockData):
             'hydroxide_name': 'name_of_species_representing_hydroxides', #[is optional]
             'caustic_additive':
                 {
+                    'additive_name': 'name_of_the_actual_chemical', #[is optional]
                     'cation_name': 'name_of_cation_species_in_additive', #[is optional]
                     'mw_additive': (value, units), #[is required]
                     'charge_additive': value, #[is required]
@@ -220,8 +235,9 @@ class BoronRemovalData(UnitModelBlockData):
             + " 'proton_name': 'H_+',      #[is OPTIONAL]\n"
             + " 'hydroxide_name': 'OH_-',  #[is OPTIONAL]\n"
             + " 'caustic_additive': \n"
-            + "     {'cation_name': 'Na_+',                      #[is OPTIONAL]\n"
-            + "      'mw_additive': (23, pyunits.g/pyunits.mol), #[is required]\n"
+            + "     {'additive_name': 'NaOH',                    #[is OPTIONAL]\n"
+            + "      'cation_name': 'Na_+',                      #[is OPTIONAL]\n"
+            + "      'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]\n"
             + "      'charge_additive': 1,                       #[is required]\n"
             + "     }, \n"
             + "}\n\n"
@@ -264,6 +280,10 @@ class BoronRemovalData(UnitModelBlockData):
             self.cation_name_id = self.config.chemical_mapping_data['caustic_additive']['cation_name']
         else:
             self.cation_name_id = None
+        if 'additive_name' in self.config.chemical_mapping_data['caustic_additive']:
+            self.caustic_chem_name = self.config.chemical_mapping_data['caustic_additive']['additive_name']
+        else:
+            self.caustic_chem_name = None
 
         # Cross reference and check given names with set of valid names
         if self.boron_name_id not in self.config.property_package.component_list:
@@ -660,6 +680,19 @@ class BoronRemovalData(UnitModelBlockData):
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        # Rescale internal variables
+        for t in blk.flowsheet().config.time:
+            iscale.set_scaling_factor(blk.mol_OH[t], 100/blk.mol_OH[t].value)
+            iscale.set_scaling_factor(blk.mol_H[t], 100/blk.mol_H[t].value)
+            iscale.set_scaling_factor(blk.mol_Boron[t], 100/blk.mol_Boron[t].value)
+            iscale.set_scaling_factor(blk.mol_Borate[t], 100/blk.mol_Borate[t].value)
+
+    def outlet_pH(self, time=0):
+        return -log10(value(self.mol_H[time])/1000)
+
+    def outlet_pOH(self, time=0):
+        return -log10(value(self.mol_OH[time])/1000)
 
     def propogate_initial_state(self):
         units_meta = self.config.property_package.get_metadata().get_derived_units

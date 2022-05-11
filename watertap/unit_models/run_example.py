@@ -477,10 +477,10 @@ if __name__ == "__main__":
     #m = build_generic_model()
     #m = build_ion_model()
 
-    #m = build_ion_subset_model()
+    m = build_ion_subset_model()
     #m = build_ion_subset_with_Na_model()
 
-    m = build_ion_subset_with_alk_model()
+    #m = build_ion_subset_with_alk_model()
 
     model_setup(m)
     scaling_setup(m)
