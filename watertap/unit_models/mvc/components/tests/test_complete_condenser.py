@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -56,4 +56,16 @@ def test_complete_condense():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
+    assert pytest.approx(-2.4358e6, rel=1e-4) == value(m.fs.unit.control_volume.heat[0])
+    assert pytest.approx(1.0, rel=1e-4) == value(
+        m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(1e-10, rel=1e-4) == value(
+        m.fs.unit.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+    )
+    assert pytest.approx(5.0e4, rel=1e-4) == value(m.fs.unit.outlet.pressure[0])
+
     m.fs.unit.report()
+
+    perf_dict = m.fs.unit._get_performance_contents()
+    assert perf_dict == {"vars": {"Heat duty": m.fs.unit.control_volume.heat[0]}}

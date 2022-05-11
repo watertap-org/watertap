@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -62,4 +62,26 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
+    assert pytest.approx(1.1534e5, rel=1e-4) == value(
+        m.fs.compressor.control_volume.work[0]
+    )
+    assert pytest.approx(1e-08, rel=1e-4) == value(
+        m.fs.compressor.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(1.0, rel=1e-4) == value(
+        m.fs.compressor.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+    )
+    assert pytest.approx(429.57, rel=1e-4) == value(
+        m.fs.compressor.outlet.temperature[0]
+    )
+    assert pytest.approx(1.0e5, rel=1e-4) == value(m.fs.compressor.outlet.pressure[0])
+
     m.fs.compressor.report()
+    perf_dict = m.fs.compressor._get_performance_contents()
+    assert perf_dict == {
+        "vars": {
+            "Pressure ratio": m.fs.compressor.pressure_ratio,
+            "Efficiency": m.fs.compressor.efficiency,
+            "Work": m.fs.compressor.control_volume.work[0],
+        }
+    }
