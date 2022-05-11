@@ -368,7 +368,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(4)
+    m.fs.unit.caustic_dose.fix(10)
 
     if degrees_of_freedom(m) != 0:
         print(degrees_of_freedom(m))
@@ -474,13 +474,13 @@ def display_unit_vars(m):
     return
 
 if __name__ == "__main__":
-    m = build_generic_model()
+    #m = build_generic_model()
     #m = build_ion_model()
 
     #m = build_ion_subset_model()
     #m = build_ion_subset_with_Na_model()
 
-    #m = build_ion_subset_with_alk_model()
+    m = build_ion_subset_with_alk_model()
 
     model_setup(m)
     scaling_setup(m)

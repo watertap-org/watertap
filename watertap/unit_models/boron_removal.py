@@ -638,6 +638,16 @@ class BoronRemovalData(UnitModelBlockData):
             state_args=state_args,
         )
         init_log.info_high("Initialization Step 1 Complete.")
+
+        # Apply guess for unit model vars
+        for t in blk.flowsheet().config.time:
+            # Naive guess (pH = 7)
+            blk.mol_H[t].set_value(1e-4)
+            blk.mol_OH[t].set_value(10**-14*1000/blk.mol_H[t].value)
+            TB = value(blk.control_volume.properties_in[t].conc_mol_phase_comp["Liq",blk.boron_name_id]) + value(blk.control_volume.properties_in[t].conc_mol_phase_comp["Liq",blk.borate_name_id])
+            Ratio = 10**-9.21*1000/blk.mol_H[t].value
+            blk.mol_Boron[t].set_value(TB/(1+Ratio))
+            blk.mol_Borate[t].set_value(TB*Ratio/(1+Ratio))
         # ---------------------------------------------------------------------
 
         # ---------------------------------------------------------------------
@@ -888,3 +898,19 @@ class BoronRemovalData(UnitModelBlockData):
         for t in self.control_volume.properties_in:
             sf = iscale.get_scaling_factor(self.mol_Borate) * iscale.get_scaling_factor(self.mol_H)
             iscale.constraint_scaling_transform(self.eq_boron_dissociation[t], sf)
+
+        # Scaling for total boron
+        for t in self.control_volume.properties_in:
+            sf = iscale.get_scaling_factor(self.mol_Boron)
+            iscale.constraint_scaling_transform(self.eq_total_boron[t], sf)
+
+        # Scaling for electroneutrality
+        for t in self.control_volume.properties_in:
+            sf = iscale.get_scaling_factor(self.mol_H) + iscale.get_scaling_factor(self.mol_Borate)
+            iscale.constraint_scaling_transform(self.eq_electroneutrality[t], sf)
+
+        # Scaling for mass_transfer_term
+        for t in self.control_volume.properties_in:
+            for j in self.config.property_package.component_list:
+                sf = iscale.get_scaling_factor(self.mol_Borate)
+                iscale.constraint_scaling_transform(self.eq_mass_transfer_term[t, "Liq", j], sf)
