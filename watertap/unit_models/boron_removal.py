@@ -362,10 +362,10 @@ class BoronRemovalData(UnitModelBlockData):
         # Reaction parameters
         self.Kw_0 = Param(
             mutable=True,
-            initialize=1e-8,
+            initialize=60.91,
             domain=NonNegativeReals,
             units=pyunits.mol**2 / pyunits.m**6,
-            doc="Water dissociation constant at 298 K",
+            doc="Water dissociation pre-exponential constant",
         )
         self.dH_w = Param(
             mutable=True,
@@ -376,10 +376,10 @@ class BoronRemovalData(UnitModelBlockData):
         )
         self.Ka_0 = Param(
             mutable=True,
-            initialize=6.16595e-7,
+            initialize=0.000163,
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.m**3,
-            doc="Boron dissociation constant at 298 K",
+            doc="Boron dissociation pre-exponential constant",
         )
         self.dH_a = Param(
             mutable=True,
@@ -405,7 +405,7 @@ class BoronRemovalData(UnitModelBlockData):
         self.mol_H = Var(
             self.flowsheet().config.time,
             initialize=1e-4,
-            bounds=(1e-15, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of protons",
@@ -413,7 +413,7 @@ class BoronRemovalData(UnitModelBlockData):
         self.mol_OH = Var(
             self.flowsheet().config.time,
             initialize=1e-4,
-            bounds=(1e-15, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of hydroxide",
@@ -421,7 +421,7 @@ class BoronRemovalData(UnitModelBlockData):
         self.mol_Boron = Var(
             self.flowsheet().config.time,
             initialize=1e-2,
-            bounds=(1e-15, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Boron",
@@ -429,7 +429,7 @@ class BoronRemovalData(UnitModelBlockData):
         self.mol_Borate = Var(
             self.flowsheet().config.time,
             initialize=1e-2,
-            bounds=(1e-15, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Borate",
@@ -490,11 +490,12 @@ class BoronRemovalData(UnitModelBlockData):
         def eq_electroneutrality(self, t):
             Alk = 0
             for j in self.ion_charge:
+                conc = self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", j]
                 if (j == self.boron_name_id or j == self.borate_name_id
                     or j == self.proton_name_id or j == self.hydroxide_name_id):
                     Alk += 0.0
                 else:
-                    Alk += -self.ion_charge[j]*self.control_volume.properties_out[t].conc_mol_phase_comp["Liq", j]
+                    Alk += -self.ion_charge[j]*conc
             mol_H = pyunits.convert(self.mol_H[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
@@ -827,159 +828,6 @@ class BoronRemovalData(UnitModelBlockData):
                                 for j in self.config.property_package.component_list)
                         )
 
-            # If flow_mass_phase_comp is state var
-            # NOTE: This cannot currently be tested because there is no 'generic'
-            #   style property package that supports this state definition
-            """
-            if (
-                "flow_mass_phase_comp"
-                in self.control_volume.properties_in[t].define_state_vars()
-            ):
-                for ind in self.control_volume.properties_in[t].flow_mass_phase_comp:
-                    self.control_volume.properties_out[t].flow_mass_phase_comp[ind] = value(
-                        self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                            ind
-                        ]
-                    )
-
-                # Check to see if 'flow_mol_phase_comp' is constructed
-                if self.control_volume.properties_in[t].is_property_constructed(
-                    "flow_mol_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[t].flow_mol_phase_comp:
-                        self.control_volume.properties_out[t].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[
-                                t0
-                            ].flow_mass_phase_comp[ind]  /
-                            self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                        )
-
-                        self.control_volume.properties_in[t].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[
-                                t0
-                            ].flow_mass_phase_comp[ind]  /
-                            self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                        )
-
-                # Check to see if 'mass_frac_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "mass_frac_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[t].mass_frac_phase_comp:
-                        self.control_volume.properties_out[t].mass_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                    for ind in self.control_volume.properties_in[t].mass_frac_phase_comp:
-                        self.control_volume.properties_in[t].mass_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                # Check to see if 'mole_frac_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "mole_frac_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[t].mole_frac_phase_comp:
-                        self.control_volume.properties_out[t].mole_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] / self.control_volume.properties_in[t0].mw_comp[ind[1]] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j] /
-                                self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                    for ind in self.control_volume.properties_in[t].mole_frac_phase_comp:
-                        self.control_volume.properties_in[t].mole_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] / self.control_volume.properties_in[t0].mw_comp[ind[1]] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j] /
-                                self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                # Check to see if 'conc_mol_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "conc_mol_phase_comp"
-                ):
-                    approx_dens = pyunits.convert(55000 * pyunits.mol / pyunits.m**3,
-                        to_units=units_meta("amount") * units_meta("length") ** -3,
-                    )
-                    for ind in self.control_volume.properties_in[t].conc_mol_phase_comp:
-                        self.control_volume.properties_out[t].conc_mol_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] / self.control_volume.properties_in[t0].mw_comp[ind[1]] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j] /
-                                self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                    for ind in self.control_volume.properties_in[t].conc_mol_phase_comp:
-                        self.control_volume.properties_in[t].conc_mol_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] / self.control_volume.properties_in[t0].mw_comp[ind[1]] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j] /
-                                self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                # Check to see if 'conc_mass_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "conc_mass_phase_comp"
-                ):
-                    approx_dens = pyunits.convert(1000 * pyunits.kg / pyunits.m**3,
-                        to_units=units_meta("amount") * units_meta("length") ** -3,
-                    )
-                    for ind in self.control_volume.properties_in[t].conc_mass_phase_comp:
-                        self.control_volume.properties_out[t].conc_mass_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j]
-                                for j in self.config.property_package.component_list)
-                        )
-
-                    for ind in self.control_volume.properties_in[t].conc_mass_phase_comp:
-                        self.control_volume.properties_in[t].conc_mass_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mass_phase_comp[
-                                ind
-                            ] /
-                            sum(self.control_volume.properties_in[t0].flow_mass_phase_comp[ind[0],j]
-                                for j in self.config.property_package.component_list)
-                        )
-            """
-
             i += 1
         #End Loop
 
@@ -996,24 +844,24 @@ class BoronRemovalData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.caustic_dose, default=1, warning=True)
             iscale.set_scaling_factor(self.caustic_dose, sf)
 
-        ## TODO: Add scaling for unit model vars (without user input)
+        # Add scaling for unit model vars (without user input)
         if iscale.get_scaling_factor(self.mol_Boron) is None:
             sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.boron_name_id],
                 default=1, warning=False)
-            iscale.set_scaling_factor(self.mol_Boron, sf)
+            iscale.set_scaling_factor(self.mol_Boron, sf/10)
 
         if iscale.get_scaling_factor(self.mol_Borate) is None:
             sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.borate_name_id],
                 default=1, warning=False)
-            iscale.set_scaling_factor(self.mol_Borate, sf)
+            iscale.set_scaling_factor(self.mol_Borate, sf/10)
 
-        # NOTE: These 2 conditions (H and OH) below may be problematic
+        # Scaling for H and OH
         if iscale.get_scaling_factor(self.mol_H) is None:
             if self.proton_name_id in self.config.property_package.component_list:
                 sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.proton_name_id],
                     default=1, warning=False)
             else:
-                sf = 1
+                sf = 10
             iscale.set_scaling_factor(self.mol_H, sf)
 
         if iscale.get_scaling_factor(self.mol_OH) is None:
@@ -1021,11 +869,8 @@ class BoronRemovalData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].conc_mol_phase_comp["Liq", self.hydroxide_name_id],
                     default=1, warning=False)
             else:
-                sf = 1
+                sf = 10
             iscale.set_scaling_factor(self.mol_OH, sf)
-
-
-        ## TODO: Add scaling for constraints
 
         # Scale isothermal condition
         sf = iscale.get_scaling_factor(
@@ -1036,6 +881,10 @@ class BoronRemovalData(UnitModelBlockData):
                     self.eq_isothermal[t], sf
                 )
 
-        # Scaling for water dissociation (problematic)
+        # Scaling for water dissociation and boron dissociation
         for t in self.control_volume.properties_in:
-            iscale.constraint_scaling_transform(self.eq_water_dissociation[t], 1)
+            sf = iscale.get_scaling_factor(self.mol_H) * iscale.get_scaling_factor(self.mol_OH)
+            iscale.constraint_scaling_transform(self.eq_water_dissociation[t], sf)
+        for t in self.control_volume.properties_in:
+            sf = iscale.get_scaling_factor(self.mol_Borate) * iscale.get_scaling_factor(self.mol_H)
+            iscale.constraint_scaling_transform(self.eq_boron_dissociation[t], sf)

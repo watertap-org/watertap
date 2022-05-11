@@ -368,7 +368,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(2)
+    m.fs.unit.caustic_dose.fix(4)
 
     if degrees_of_freedom(m) != 0:
         print(degrees_of_freedom(m))
@@ -378,7 +378,7 @@ def model_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
         m.fs.unit.eq_boron_dissociation.pprint()
     assert degrees_of_freedom(m) == 0
 
-def scaling_setup(m, state={"H2O": 100, "H_+": 1e-7, "OH_-": 1e-7,
+def scaling_setup(m, state={"H2O": 100, "H_+": 5e-5, "OH_-": 5e-5,
                           "B[OH]3": 2e-4, "B[OH]4_-": 1e-6,
                           "Na_+": 1e-4, "HCO3_-": 1e-4}):
     # Set some scaling factors and look for 'bad' scaling
@@ -447,6 +447,10 @@ def solve_model(m):
     print(value(conc))
     print()
     print("pH = " + str(-log10(value(m.fs.unit.mol_H[0])/1000)))
+    print("pOH = " + str(-log10(value(m.fs.unit.mol_OH[0])/1000)))
+    print("pKw = " + str(-log10(value(m.fs.unit.mol_H[0])/1000) + -log10(value(m.fs.unit.mol_OH[0])/1000)))
+
+    print("pKa = " + str(-log10(value(m.fs.unit.mol_H[0])/1000) + -log10(value(m.fs.unit.mol_Borate[0])/1000) - -log10(value(m.fs.unit.mol_Boron[0])/1000)))
 
     print()
 
@@ -470,13 +474,13 @@ def display_unit_vars(m):
     return
 
 if __name__ == "__main__":
-    #m = build_generic_model()
+    m = build_generic_model()
     #m = build_ion_model()
 
     #m = build_ion_subset_model()
     #m = build_ion_subset_with_Na_model()
 
-    m = build_ion_subset_with_alk_model()
+    #m = build_ion_subset_with_alk_model()
 
     model_setup(m)
     scaling_setup(m)
