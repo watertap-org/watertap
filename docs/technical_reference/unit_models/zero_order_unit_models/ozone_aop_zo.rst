@@ -17,13 +17,13 @@ Costing is calculated using the cost_ozonation_aop method in the zero-order cost
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.ozone_aop _zo;ozone_aop _zo
+   pair: watertap.unit_models.zero_order.ozone_aop_zo;ozone_aop_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.ozone_aop _zo
+.. currentmodule:: watertap.unit_models.zero_order.ozone_aop_zo
 
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.ozone_aop _zo
+..automodule:: watertap.unit_models.zero_order.ozone_aop_zo
     :members:
     :noindex:

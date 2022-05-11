@@ -54,7 +54,7 @@ Zero-Order Unit Models
    municipal_drinking_zo
    municipal_wwtp_zo
    nanofiltration_zo
-   ozone_aop _zo
+   ozone_aop_zo
    ozone_zo
    photothermal_membrane_zo
    primary_separator_zo
