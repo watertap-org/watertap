@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.walnut_shell_filter_zo
+.. automodule:: watertap.unit_models.zero_order.walnut_shell_filter_zo
     :members:
     :noindex:

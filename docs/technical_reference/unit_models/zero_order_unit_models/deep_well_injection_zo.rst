@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.deep_well_injection_zo
+.. automodule:: watertap.unit_models.zero_order.deep_well_injection_zo
     :members:
     :noindex:

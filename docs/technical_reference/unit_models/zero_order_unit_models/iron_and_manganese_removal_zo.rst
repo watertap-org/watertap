@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.iron_and_manganese_removal_zo
+.. automodule:: watertap.unit_models.zero_order.iron_and_manganese_removal_zo
     :members:
     :noindex:

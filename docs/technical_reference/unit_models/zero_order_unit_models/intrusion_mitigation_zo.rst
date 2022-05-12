@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.intrusion_mitigation_zo
+.. automodule:: watertap.unit_models.zero_order.intrusion_mitigation_zo
     :members:
     :noindex:

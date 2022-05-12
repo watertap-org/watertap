@@ -40,7 +40,7 @@ for i, u in enumerate(unit_name_list):
         f"Costing is calculated using the {cost_func_list[i]} method in the zero-order costing package.",
         f"   pair: watertap.unit_models.zero_order.{zo_name_list[i]};{zo_name_list[i]}",
         f".. currentmodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
-        f"..automodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
+        f".. automodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
     ]
     with open("index.rst", "a") as f:
         f.write(f"   {zo_name_list[i]}\n")

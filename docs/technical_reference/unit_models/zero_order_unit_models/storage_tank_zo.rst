@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.storage_tank_zo
+.. automodule:: watertap.unit_models.zero_order.storage_tank_zo
     :members:
     :noindex:

@@ -24,6 +24,6 @@ See documentation for the zero-order costing package.
 Class Documentation
 -------------------
 
-..automodule:: watertap.unit_models.zero_order.municipal_wwtp_zo
+.. automodule:: watertap.unit_models.zero_order.municipal_wwtp_zo
     :members:
     :noindex:
