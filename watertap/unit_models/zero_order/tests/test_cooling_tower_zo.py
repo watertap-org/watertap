@@ -15,7 +15,7 @@ Tests for zero-order cooling tower model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -168,38 +168,8 @@ class TestCoolingTowerZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                        : Value      : Fixed : Bounds
-    Blowdown flowrate (m^3/hr) :     216.00 : False : (None, None)
-                        Cycles :     5.0000 :  True : (None, None)
-            Electricity Demand : 8.0000e-10 : False : (0, None)
-         Electricity Intensity :     0.0000 :  True : (None, None)
-          Solute Removal [foo] :     0.0000 :  True : (0, None)
-          Solute Removal [tss] :    0.90000 :  True : (0, None)
-                Water Recovery :    0.25000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated  Byproduct
-    Volumetric Flowrate    0.012000 0.0036000  0.0084000
-    Mass Concentration H2O   833.33    694.44     892.86
-    Mass Concentration tss   83.333    27.778     107.14
-    Mass Concentration foo   83.333    277.78 9.5238e-08
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
