@@ -1,5 +1,5 @@
-Blending Resevoir (ZO)
-======================
+Blending Reservoir (ZO)
+=======================
 
 Model Type
 ----------
@@ -17,13 +17,13 @@ Costing is calculated using the cost_power_law_flow method in the zero-order cos
 See documentation for the zero-order costing package.
 
 .. index::
-   pair: watertap.unit_models.zero_order.blending_resevoir_zo;blending_resevoir_zo
+   pair: watertap.unit_models.zero_order.blending_reservoir_zo;blending_reservoir_zo
 
-.. currentmodule:: watertap.unit_models.zero_order.blending_resevoir_zo
+.. currentmodule:: watertap.unit_models.zero_order.blending_reservoir_zo
 
 Class Documentation
 -------------------
 
-.. automodule:: watertap.unit_models.zero_order.blending_resevoir_zo
+.. automodule:: watertap.unit_models.zero_order.blending_reservoir_zo
     :members:
     :noindex:
