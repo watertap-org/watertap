@@ -15,7 +15,7 @@ Tests for zero-order primary separator model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -170,38 +170,8 @@ class TestPrimarySeparatorZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value      : Fixed : Bounds
-                 Electricity Demand : 7.0000e-10 : False : (0, None)
-              Electricity Intensity :     0.0000 :  True : (None, None)
-    Solute Removal [oil_and_grease] :    0.90000 :  True : (0, None)
-       Solute Removal [oily_matter] :    0.90000 :  True : (0, None)
-               Solute Removal [tss] :    0.99083 :  True : (0, None)
-                     Water Recovery :    0.99900 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated  Byproduct
-    Volumetric Flowrate               0.013000 0.010199 0.0028008 
-    Mass Concentration H2O              769.23   979.49    3.5704 
-    Mass Concentration oil_and_grease   76.923   9.8047    321.33 
-    Mass Concentration oily_matter      76.923   9.8047    321.33 
-    Mass Concentration tss              76.923  0.89948    353.76 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestPrimarySeparatorZO_w_default_removal:
@@ -347,40 +317,8 @@ class TestPrimarySeparatorZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value      : Fixed : Bounds
-                 Electricity Demand : 8.0000e-10 : False : (0, None)
-              Electricity Intensity :     0.0000 :  True : (None, None)
-               Solute Removal [foo] :     0.0000 :  True : (0, None)
-    Solute Removal [oil_and_grease] :    0.90000 :  True : (0, None)
-       Solute Removal [oily_matter] :    0.90000 :  True : (0, None)
-               Solute Removal [tss] :    0.99083 :  True : (0, None)
-                     Water Recovery :    0.99900 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated  Byproduct
-    Volumetric Flowrate               0.014000 0.011199  0.0028008
-    Mass Concentration H2O              714.29   892.03     3.5704
-    Mass Concentration oil_and_grease   71.429   8.9292     321.33
-    Mass Concentration oily_matter      71.429   8.9292     321.33
-    Mass Concentration tss              71.429  0.81917     353.76
-    Mass Concentration foo              71.429   89.292 2.8563e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

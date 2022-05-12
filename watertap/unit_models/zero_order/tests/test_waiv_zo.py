@@ -15,7 +15,7 @@ Tests for zero-order wind-aided intensified evaporation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -159,36 +159,8 @@ class TestWAIVZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand :     2344.7 : False : (0, None)
-    Electricity Intensity :    0.65000 :  True : (None, None)
-     Solute Removal [foo] :     0.0000 :  True : (0, None)
-     Solute Removal [tds] :     0.0000 :  True : (0, None)
-           Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate     1.0020 0.0021000    0.99990
-    Mass Concentration H2O  998.00    47.619     1000.0
-    Mass Concentration tds 0.99800    476.19 1.0001e-08
-    Mass Concentration foo 0.99800    476.19 1.0001e-08
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
