@@ -978,11 +978,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["specific_removal", "reactor_cost", "specific_air_flow", "blower_cost"],
+            ["reactor_cost", "blower_cost"],
         )
 
         # Add cost variable and constraint
@@ -994,17 +994,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         DCC_reactor = pyo.units.convert(
-            blk.unit_model.properties_treated[t0].flow_vol
-            * blk.unit_model.properties_treated[t0].conc_mass_comp[
-                "ammonium_as_nitrogen"
-            ]
-            / A
-            * B,
+            blk.unit_model.properties_treated[t0].flow_mass_comp["ammonium_as_nitrogen"]
+            / blk.unit_model.nitrogen_removal_rate
+            * A,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         DCC_blower = pyo.units.convert(
-            blk.unit_model.blower_size * C * D,
+            blk.unit_model.reactor_area * blk.unit_model.air_flow_rate[t0] * B,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
