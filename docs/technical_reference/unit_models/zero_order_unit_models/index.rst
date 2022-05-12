@@ -10,7 +10,7 @@ Zero-Order Unit Models
    backwash_solids_handling_zo
    bio_active_filtration_zo
    bioreactor_zo
-   blending_resevoir_zo
+   blending_reservoir_zo
    brine_concentrator_zo
    buffer_tank_zo
    CANDOP_zo
