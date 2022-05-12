@@ -15,7 +15,7 @@ Tests for zero-order walnut shell filter model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -229,46 +229,8 @@ class TestWalnutShellFilterZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                      : Value      : Fixed : Bounds
-                          Electricity Demand : 1.0000e-08 : False : (0, None)
-                       Electricity Intensity :     0.0000 :  True : (None, None)
-                   Solute Removal [chloride] :    0.95000 :  True : (0, None)
-    Solute Removal [electrical_conductivity] :    0.95000 :  True : (0, None)
-                        Solute Removal [foo] :     0.0000 :  True : (0, None)
-            Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                     Solute Removal [sodium] :    0.95000 :  True : (0, None)
-                        Solute Removal [tds] :    0.90000 :  True : (0, None)
-                        Solute Removal [tss] :    0.97000 :  True : (0, None)
-                              Water Recovery :    0.99000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                 Inlet  Treated  Byproduct
-    Volumetric Flowrate                         1.0070  0.99208   0.014920
-    Mass Concentration H2O                      993.05   997.90     670.24
-    Mass Concentration nonvolatile_toc         0.99305  0.80639     13.405
-    Mass Concentration tds                     0.99305  0.10080     60.322
-    Mass Concentration chloride                0.99305 0.050399     63.673
-    Mass Concentration electrical_conductivity 0.99305 0.050399     63.673
-    Mass Concentration sodium                  0.99305 0.050399     63.673
-    Mass Concentration tss                     0.99305 0.030239     65.013
-    Mass Concentration foo                     0.99305   1.0080 6.7024e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
