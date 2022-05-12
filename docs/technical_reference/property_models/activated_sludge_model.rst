@@ -4,7 +4,7 @@ ASM1 Property Package
 This package implements property relationships for the treatment of wastewater using an activated sludge biological reactor as provided in `Henze, M. et al. (1987) <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
 This Activated Sludge Model no.1 (ASM1) property package:
-   * supports only 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
+   * supports 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
    * supports only liquid phase
    * is formulated on a mass basis
 
