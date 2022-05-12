@@ -15,7 +15,7 @@ Tests for zero-order air flotation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -126,33 +126,8 @@ class TestDecarbonatorZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value      : Fixed : Bounds
-                 Electricity Demand : 7.0000e-10 : False : (0, None)
-              Electricity Intensity :     0.0000 :  True : (None, None)
-    Solute Removal [carbon_dioxide] :    0.99900 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated
-    Volumetric Flowrate               0.011000 0.010001
-    Mass Concentration H2O              909.09   999.90
-    Mass Concentration carbon_dioxide   90.909 0.099990
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestDecarbonatorZO_w_default_removal:
@@ -253,35 +228,8 @@ class TestDecarbonatorZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value      : Fixed : Bounds
-                 Electricity Demand : 7.0000e-10 : False : (0, None)
-              Electricity Intensity :     0.0000 :  True : (None, None)
-    Solute Removal [carbon_dioxide] :    0.99900 :  True : (0, None)
-               Solute Removal [foo] :     0.0000 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated
-    Volumetric Flowrate               0.012000 0.011001
-    Mass Concentration H2O              833.33   909.01
-    Mass Concentration carbon_dioxide   83.333 0.090901
-    Mass Concentration foo              83.333   90.901
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

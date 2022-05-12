@@ -15,7 +15,7 @@ Tests for zero-order sedimentation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -175,38 +175,8 @@ class TestSedimentationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                       : Value      : Fixed : Bounds
-    Basin Surface Area (ft^2) :     30.139 : False : (None, None)
-           Electricity Demand : 8.0000e-10 : False : (0, None)
-        Electricity Intensity :     0.0000 :  True : (None, None)
-      Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
-         Solute Removal [foo] :     0.0000 :  True : (0, None)
-         Solute Removal [tss] :    0.99083 :  True : (0, None)
-               Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.014000 0.011027  0.0029735
-    Mass Concentration H2O   714.29   906.81    0.33631
-    Mass Concentration tss   214.29   2.4960     999.66
-    Mass Concentration foo   71.429   90.690 2.6905e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSedimentationZO_phosphorus_capture_tss:
@@ -341,38 +311,8 @@ class TestSedimentationZO_phosphorus_capture_tss:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                         : Value      : Fixed : Bounds
-                      Basin Surface Area (ft^2) :     27.986 : False : (None, None)
-                             Electricity Demand : 7.0000e-10 : False : (0, None)
-                          Electricity Intensity :     0.0000 :  True : (None, None)
-    Final mass flow of settled phosphate (kg/s) :    0.44955 : False : (None, None)
-                Phosphorus-Solids Ratio (kg/kg) :    0.15000 :  True : (None, None)
-                        Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
-                           Solute Removal [tss] :    0.99900 :  True : (0, None)
-                                 Water Recovery :    0.98610 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated  Byproduct
-    Volumetric Flowrate    0.013000 0.0098640 0.0031360 
-    Mass Concentration H2O   769.23    999.70    44.324 
-    Mass Concentration tss   230.77   0.30414    955.68 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSedimentationZO_phosphorus_capture_phosphates:
@@ -507,38 +447,8 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                      : Value      : Fixed : Bounds
-                   Basin Surface Area (ft^2) :     27.986 : False : (None, None)
-                          Electricity Demand : 7.0000e-10 : False : (0, None)
-                       Electricity Intensity :     0.0000 :  True : (None, None)
-    Final mass flow of settled solids (kg/s) :     19.980 : False : (None, None)
-             Phosphorus-Solids Ratio (kg/kg) :    0.15000 :  True : (None, None)
-                     Settling Velocity (m/s) :  0.0050000 :  True : (None, None)
-                 Solute Removal [phosphates] :    0.99900 :  True : (0, None)
-                              Water Recovery :    0.98610 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                    Inlet    Treated  Byproduct
-    Volumetric Flowrate           0.013000 0.0098640 0.0031360 
-    Mass Concentration H2O          769.23    999.70    44.324 
-    Mass Concentration phosphates   230.77   0.30414    955.68 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

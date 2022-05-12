@@ -15,7 +15,7 @@ Tests for zero-order VFA recovery model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -147,34 +147,8 @@ class TestVFARecoveryZO_no_default:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                   : Value      : Fixed : Bounds
-                       Electricity Demand : 8.0000e-10 : False : (0, None)
-                    Electricity Intensity :     0.0000 :  True : (None, None)
-    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
-                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                              Inlet   Treated  Byproduct
-    Volumetric Flowrate                     0.011000 0.010500 0.00050000
-    Mass Concentration H2O                    909.09   952.38 1.6000e-06
-    Mass Concentration nonbiodegradable_cod   90.909   47.619     1000.0
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestVFARecoveryZO_w_default_removal:
@@ -300,36 +274,8 @@ class TestVFARecoveryZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                   : Value      : Fixed : Bounds
-                       Electricity Demand : 8.0000e-10 : False : (0, None)
-                    Electricity Intensity :     0.0000 :  True : (None, None)
-                     Solute Removal [foo] :     0.0000 :  True : (0, None)
-    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
-                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                              Inlet   Treated  Byproduct
-    Volumetric Flowrate                     0.012000 0.011500 0.00050000
-    Mass Concentration H2O                    833.33   869.57 1.6000e-06
-    Mass Concentration nonbiodegradable_cod   83.333   43.478     1000.0
-    Mass Concentration foo                    83.333   86.957 1.6000e-06
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
