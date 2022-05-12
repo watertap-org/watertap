@@ -171,6 +171,7 @@ class TestMABRZO:
     def test_report(self, model):
         model.fs.unit.report()
 
+
 @pytest.mark.unit
 def test_no_NH4_N_in_solute_list_error():
     m = ConcreteModel()
