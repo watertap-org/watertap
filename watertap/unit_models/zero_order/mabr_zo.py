@@ -46,24 +46,22 @@ class MABRZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.nitrogen_removal_rate)
 
-        self.blower_size = Var(
+        self.reactor_area = Var(
             units=pyunits.m**2,
             bounds=(0, None),
-            doc="Sizing variable for blower size",
+            doc="Sizing variable for effective reactor area",
         )
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Constraint for blower size",
+            doc="Constraint for effective reactor area",
         )
-        def blower_size_consumption(b, t):
-            return b.blower_size == pyunits.convert(
+        def reactor_area_constraint(b, t):
+            return b.reactor_area == pyunits.convert(
                 b.properties_treated[t].flow_mass_comp["ammonium_as_nitrogen"]
                 / b.nitrogen_removal_rate,
                 to_units=pyunits.m**2,
             )
-
-        self._perf_var_dict["Blower Size"] = self.blower_size
 
         self.air_flow_rate = Var(
             self.flowsheet().config.time,
@@ -85,9 +83,9 @@ class MABRZOData(ZeroOrderBaseData):
             self.flowsheet().time,
             doc="Constraint for air flow",
         )
-        def air_flow_consumption(b, t):
+        def air_flow_constraint(b, t):
             return b.air_flow_vol[t] == pyunits.convert(
-                b.air_flow_rate[t] * b.blower_size,
+                b.air_flow_rate[t] * b.reactor_area,
                 to_units=pyunits.m**3 / pyunits.hour,
             )
 

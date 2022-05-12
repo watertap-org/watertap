@@ -1001,7 +1001,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         DCC_blower = pyo.units.convert(
-            blk.unit_model.blower_size * blk.unit_model.air_flow_rate[t0] * B,
+            blk.unit_model.reactor_area * blk.unit_model.air_flow_rate[t0] * B,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
