@@ -63,6 +63,8 @@ class MABRZOData(ZeroOrderBaseData):
                 to_units=pyunits.m**2,
             )
 
+        self._perf_var_dict["Reactor Area"] = self.reactor_area
+
         self.air_flow_rate = Var(
             self.flowsheet().config.time,
             units=pyunits.m**3 / pyunits.hour / pyunits.m**2,
