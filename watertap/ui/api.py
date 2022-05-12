@@ -253,17 +253,24 @@ class BlockInterface(BlockSchemaDefinition):
             options: Configuration options
         """
         options = options or {}
-        self._block = block
-        # dynamically set defaults
-        if "display_name" not in options or options["display_name"] is None:
-            options["display_name"] = block.name
-        if "description" not in options or options["description"] is None:
-            if block.doc:
-                options["description"] = block.doc
-            else:
-                options["description"] = "none"
-        self.config = self.CONFIG(options)
-        set_block_interface(self._block, self)
+        self._saved_options = options
+        if block is None:
+            self._block = None
+        else:
+            self._init(block, options)
+
+    def _init(self, block, options):
+            self._block = block
+            # dynamically set defaults
+            if "display_name" not in options or options["display_name"] is None:
+                options["display_name"] = self._block.name
+            if "description" not in options or options["description"] is None:
+                if self._block.doc:
+                    options["description"] = self._block.doc
+                else:
+                    options["description"] = "none"
+            self.config = self.CONFIG(options)
+            set_block_interface(self._block, self)
 
     @property
     def block(self):
@@ -327,9 +334,13 @@ def export_variables(block, variables=None, name=None, desc=None) -> BlockInterf
     interface = BlockInterface(block, config)
     return interface
 
+
 class WorkflowActions:
     build = "build"
     solve = "solve"
+    results = "get-results"
+
+    deps = {build: None, solve: [build], results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):
@@ -340,19 +351,25 @@ class FlowsheetInterface(BlockInterface):
 
     _schema = None  # cached schema
 
-    def __init__(self, flowsheet: Block, options):
+    def __init__(self, options):
         """Constructor.
 
+        Use :meth:`set_block()` to set the root model block, once the
+        flowsheet has been built.
+
         Args:
-            flowsheet: The flowsheet block
             options: Options for the :class:`BlockInterface` constructor
         """
-        super().__init__(flowsheet, options)
+        super().__init__(None, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self.meta = {}
         self._var_diff = {}  # for recording missing/extra variables during load()
+        self._actions_run = set()
 
     # Public methods
+
+    def set_block(self, block):
+        self._init(block, self._saved_options)
 
     def get_var_missing(self) -> Dict[str, List[str]]:
         """After a :meth:`load`, these are the variables that were present in the input,
@@ -485,6 +502,18 @@ class FlowsheetInterface(BlockInterface):
         self.meta = {
             mk: data[mk] for mk in set(data.keys()) - {self.BLKS_KEY, self.NAME_KEY}
         }
+        # clear the 'solve' action and its dependencies
+        if self._action_was_run(WorkflowActions.solve):
+            solve_deps = WorkflowActions.deps[WorkflowActions.solve].copy()
+            while solve_deps:
+                dep = solve_deps.pop()
+                if self._action_was_run(dep):
+                    # add dependencies of this step, etc.
+                    dep_deps = WorkflowActions.deps[dep]
+                    if dep_deps is not None:
+                        solve_deps.extend(dep_deps)
+                    self._action_clear_was_run(dep)
+            self._action_clear_was_run(WorkflowActions.solve)
 
     @classmethod
     def get_schema(cls) -> Schema:
@@ -513,10 +542,16 @@ class FlowsheetInterface(BlockInterface):
     def run_action(self, name):
         """Run the named action's function."""
         self._check_action(name)
+        if self._action_was_run(name):
+            _log.info(f"Skip duplicate run of action. name={name}")
+            return None
+        self._run_deps(name)
         func, kwargs = self._actions[name]
         if func is None:
             raise ValueError("Undefined action. name={name}")
-        return func(self._block, **kwargs)
+        result = func(self._block, ui=self, **kwargs)
+        self._action_set_was_run(name)
+        return result
 
     # Protected methods
 
@@ -528,6 +563,28 @@ class FlowsheetInterface(BlockInterface):
         if name not in self.ACTIONS:
             all_actions = ", ".join(self._actions.keys())
             raise KeyError(f"Unknown action. name={name}, known actions={all_actions}")
+
+    def _run_deps(self, name):
+        dependencies = WorkflowActions.deps[name]
+        if dependencies:
+            _log.info(f"Running dependencies for action. "
+                      f"action={name} dependencies={dependencies}")
+            for dep in dependencies:
+                if not self._action_was_run(dep):
+                    _log.debug(f"Running one dependency for action. "
+                               f"action={name} dependency={dep}")
+                    self.run_action(dep)
+        else:
+            _log.debug(f"No dependencies for action. action={name}")
+
+    def _action_was_run(self, name):
+        return name in self._actions_run
+
+    def _action_set_was_run(self, name):
+        self._actions_run.add(name)
+
+    def _action_clear_was_run(self, name):
+        self._actions_run.remove(name)
 
     def _get_block_map(self):
         """Builds a block map matching the schema in self.BLOCK_SCHEMA"""
@@ -552,12 +609,13 @@ class FlowsheetInterface(BlockInterface):
         nodes = key[:-1]
         leaf = key[-1]
         new_data = {
-            self.NAME_KEY: block_ui.block.name,
+            self.NAME_KEY: leaf,  # block_ui.block.name,
             self.DISP_KEY: block_ui.config.display_name,
             self.DESC_KEY: block_ui.config.description,
             self.VARS_KEY: list(block_ui.get_exported_variables()),
             self.BLKS_KEY: [],
         }
+        print(f"@@ add_to_mapping key={key} name={new_data[self.NAME_KEY]}")
         # descend to leaf, creating intermediate nodes as needed
         for k in nodes:
             next_m = None
