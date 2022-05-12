@@ -21,7 +21,7 @@ from typing import Dict
 from pyomo.environ import units as pyunits
 
 # Used to test IDAES config -> DataWrapper
-from idaes.generic_models.properties.core.pure import Perrys
+from idaes.models.properties.model_properties.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
