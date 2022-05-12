@@ -1,5 +1,6 @@
 import os
 import glob
+import numpy as np
 import pandas as pd
 
 from pyomo.environ import (
@@ -8,7 +9,7 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util import get_solver
@@ -84,7 +85,7 @@ def _build_flowsheet(unit_model_class, process_subtype):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # costing
-    m.fs.costing = ZeroOrderCosting()
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition":os.path.join(_this_dir,"wt3_test_tea_data.yaml")})
     m.fs.unit.costing = UnitModelCostingBlock(default={"flowsheet_costing_block":m.fs.costing})
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product.properties[0].flow_vol)
@@ -101,10 +102,50 @@ def _build_flowsheet(unit_model_class, process_subtype):
     # load database parameters
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
+    assert_units_consistent(m)
+
     return m
 
+def _initialize_flowsheet(m):
+    seq = SequentialDecomposition()
+    seq.options.tear_set = []
+    seq.options.iterLim = 1
+    seq.run(m, lambda u: u.initialize())
 
-def check_unit(unit_model_class, process_subtype=None, csv_file_name=None):
+    m.fs.costing.initialize()
+
+
+
+def _run_flow_in_only(m,df):
+
+    s = get_solver()
+    watertap_costing_attributes = {
+    'total_capital_cost' : [],
+    'total_fixed_operating_cost' : [],
+    'total_operating_cost' : [],
+    'LCOW' : [],
+    }
+    for _,row in df.iterrows():
+        m.fs.feed.flow_vol[0].fix(row['flow_in'] * pyunits.m**3 / pyunits.s)
+        _initialize_flowsheet(m)
+        s.solve(m)
+        for att, vals in watertap_costing_attributes.items():
+            if att == "LCOW":
+                vals.append(value(m.fs.costing.component(att))*1e+06)
+            else:
+                vals.append(value(m.fs.costing.component(att)))
+
+    for att, vals in watertap_costing_attributes.items():
+        df["WT_"+att] = vals
+
+_WT3_stone = {
+        'tci' : 'WT_total_capital_cost',
+        'fixed_op_cost' : 'WT_total_fixed_operating_cost',
+        'annual_op_cost' : 'WT_total_operating_cost',
+        'lcow' : 'WT_LCOW',
+        }
+
+def check_unit(unit_model_class, process_subtype=None, csv_file_name=None, rtol=1e-01, atol=1e-08):
 
     m = _build_flowsheet(unit_model_class, process_subtype)
 
@@ -122,4 +163,21 @@ def check_unit(unit_model_class, process_subtype=None, csv_file_name=None):
     if degrees_of_freedom(m) != 1:
         raise RuntimeError(f"Unexpected number of degrees of freedom {degrees_of_freedom(m)}")
 
-    return m, df
+    _run_flow_in_only(m, df)
+
+    all_good = True
+    for wt3_key, wt_k in _WT3_stone.items():
+        if not np.allclose(df[wt3_key], df[wt_k], rtol=rtol, atol=atol):
+            print(f"Found difference between {wt3_key} and {wt_k}")
+            all_good = False
+    if all_good:
+        print("No significant differences found")
+    else:
+        print(f"FOUND DIFFERENCES, SEE ABOVE")
+
+    return df
+
+if __name__ == "__main__":
+    from watertap.unit_models.zero_order import BufferTankZO
+
+    df = check_unit(BufferTankZO)
