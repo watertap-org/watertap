@@ -15,7 +15,6 @@ Tests for zero-order mabr model
 """
 import pytest
 
-
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -145,16 +144,10 @@ class TestMABRZO:
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
 
-        assert pytest.approx(4e-12, rel=1e-2) == value(
+        assert pytest.approx(0, abs=1e-9) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(200, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
-        )
-        assert pytest.approx(200, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
-        )
-        assert pytest.approx(0.573804, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(1105.3883, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -173,10 +166,27 @@ class TestMABRZO:
                 )
             )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
-
         model.fs.unit.report()
+
+
+@pytest.mark.unit
+def test_no_NH4_N_in_solute_list_error():
+    m = ConcreteModel()
+    m.db = Database()
+    m.db._get_technology("mabr")
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+
+    with pytest.raises(
+        ValueError,
+        match="fs.unit - key_reactant ammonium_as_nitrogen for reaction "
+        "ammonium_to_nitrate is not in the component list used by the "
+        "assigned property package.",
+    ):
+        m.fs.unit = MABRZO(default={"property_package": m.fs.params, "database": m.db})
 
 
 def test_costing():
@@ -206,11 +216,8 @@ def test_costing():
     )
 
     assert isinstance(m.fs.costing.mabr, Block)
-    assert isinstance(m.fs.costing.mabr.specific_removal, Var)
     assert isinstance(m.fs.costing.mabr.reactor_cost, Var)
-    assert isinstance(m.fs.costing.mabr.specific_air_flow, Var)
     assert isinstance(m.fs.costing.mabr.blower_cost, Var)
-
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
