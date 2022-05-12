@@ -105,12 +105,6 @@ def build():
     m.fs.disposal = Product(default={"property_package": m.fs.properties})
 
     # costing
-    m.fs.costing.cost_flow(
-        pyunits.convert(m.fs.P1.work_mechanical[0], to_units=pyunits.kW), "electricity"
-    )
-    m.fs.costing.cost_flow(
-        pyunits.convert(m.fs.P2.work_mechanical[0], to_units=pyunits.kW), "electricity"
-    )
     m.fs.P1.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing}
     )

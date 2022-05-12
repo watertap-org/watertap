@@ -185,12 +185,6 @@ class _TestLSRRO:
             if hasattr(blk, "mass_frac_phase_comp"):
                 blk.mass_frac_phase_comp["Liq", "NaCl"].ub == 0.26
 
-        # high-level checks
-        model.compute_statistics()
-        assert model.statistics.number_of_variables == self.number_of_variables
-        assert model.statistics.number_of_constraints == self.number_of_constraints
-        assert model.statistics.number_of_objectives == 1
-
         assert_units_consistent(fs)
 
     @staticmethod
@@ -319,9 +313,6 @@ class TestLSRRO_1Stage(_TestLSRRO):
 
     number_of_stages = 1
 
-    number_of_variables = 303
-    number_of_constraints = 193
-
     display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.180 kg/s, 1592 ppm
@@ -390,9 +381,6 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
 class TestLSRRO_2Stage(_TestLSRRO):
 
     number_of_stages = 2
-
-    number_of_variables = 544
-    number_of_constraints = 379
 
     display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
@@ -472,9 +460,6 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
 class TestLSRRO_3Stage(_TestLSRRO):
 
     number_of_stages = 3
-
-    number_of_variables = 785
-    number_of_constraints = 565
 
     display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
@@ -570,9 +555,6 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
 class TestLSRRO_NStage(_TestLSRRO):
 
     number_of_stages = 
-
-    number_of_variables = 
-    number_of_constraints = 
 
     display_system = 
     display_design = 
