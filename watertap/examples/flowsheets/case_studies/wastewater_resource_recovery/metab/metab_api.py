@@ -8,22 +8,23 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
 
 
 def flowsheet_for_ui():
-    model = metab.build()
-    fsi = FlowsheetInterface(
-        model.fs, {"display_name": "METAB treatment train", "variables": []}
-    )
-    fsi.set_action(WorkflowActions.build, build_flowsheet, model=model)
-    fsi.set_action(WorkflowActions.solve, solve_flowsheet, model=model)
+    fsi = FlowsheetInterface({"display_name": "METAB treatment train", "variables": []})
+    fsi.set_action(WorkflowActions.build, build_flowsheet)
+    fsi.set_action(WorkflowActions.solve, solve_flowsheet)
+    # note: don't have any flowsheet block yet, will get that in build_flowsheet()
     return fsi
 
 
-def build_flowsheet(fs, model=None, **kwargs):
+def build_flowsheet(fs, ui: FlowsheetInterface = None, **kwargs):
+    model = metab.build()
     metab.set_operating_conditions(model)
     metab.assert_degrees_of_freedom(model, 0)
     metab.assert_units_consistent(model)
+    # now we have the flowsheet block, so set it in the FlowsheetInterface object (ui)
+    ui.set_block(model)
 
 
-def solve_flowsheet(fs, model=None, **kwargs):
+def solve_flowsheet(model, **kwargs):
     "Solve the flowsheet"
     metab.initialize_system(model)
 
@@ -41,8 +42,9 @@ def solve_flowsheet(fs, model=None, **kwargs):
     metab.assert_optimal_termination(results)
     #display_costing(m)
 
-###
 
+# Terminal interactive testing
+# -----------------------------
 
 def cli_driver(fsi):
     """Dumb little interactive driver for CLI testing.
@@ -50,7 +52,7 @@ def cli_driver(fsi):
     commands = {
         "json": print_json, "quit": exit_program,
         "build": run_build, "solve": run_solve,
-        "results": print_results
+        "results": print_results, "update": update,
     }
     while True:
         try:
@@ -64,6 +66,12 @@ def cli_driver(fsi):
         else:
             print_help(cmd, commands)
     exit_program()
+
+
+def update(fsi: FlowsheetInterface):
+    """Pretend to update the values in the flowsheet"""
+    data = fsi.as_dict()
+    fsi.update(data)
 
 
 def run_build(fsi: FlowsheetInterface):
@@ -105,7 +113,7 @@ def print_json(fsi):
 
 def print_results(fsi: FlowsheetInterface):
     """Print the results of solving the flowsheet"""
-    fs = fsi.block
+    fs = fsi.block.fs
 
     print("Performance results")
     print("-------------------")
