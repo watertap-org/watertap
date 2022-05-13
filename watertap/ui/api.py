@@ -340,7 +340,7 @@ class WorkflowActions:
     solve = "solve"
     results = "get-results"
 
-    deps = {build: None, solve: [build], results: [solve]}
+    deps = {build: [], solve: [build], results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):
@@ -445,7 +445,7 @@ class FlowsheetInterface(BlockInterface):
 
     @classmethod
     def load(
-        cls, file_or_stream: Union[str, Path, TextIO], fs_block: Block
+        cls, file_or_stream: Union[str, Path, TextIO], fs: Union[Block, 'FlowsheetInterface']
     ) -> "FlowsheetInterface":
         """Load from saved state in a file into the flowsheet block ``fs_block``.
         This will modify the values in the block from the saved values using the
@@ -453,8 +453,9 @@ class FlowsheetInterface(BlockInterface):
 
         Args:
             file_or_stream: File to load from
-            fs_block: Flowsheet to modify. The BlockInterface-s in the flowsheet, and its contained blocks,
-               will be updated with values and units from the saved data.
+            fs: Flowsheet to modify. The BlockInterface-s in the flowsheet,
+                and its contained blocks, will be updated with values and units
+                from the saved data.
 
         Returns:
             Initialized flowsheet interface.
@@ -462,10 +463,13 @@ class FlowsheetInterface(BlockInterface):
         Raises:
             ValueError: Improper input data
         """
-        ui = get_block_interface(fs_block)
+        if isinstance(fs, FlowsheetInterface):
+            ui = fs
+        else:
+            ui = get_block_interface(fs)
         if ui is None:
             raise ValueError(
-                f"Flowsheet object must define FlowsheetInterface using "
+                f"Block must define FlowsheetInterface using "
                 f"``set_block_interface()`` during construction. obj={fs_block}"
             )
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
@@ -502,17 +506,8 @@ class FlowsheetInterface(BlockInterface):
         self.meta = {
             mk: data[mk] for mk in set(data.keys()) - {self.BLKS_KEY, self.NAME_KEY}
         }
-        # clear the 'solve' action and its dependencies
+        # clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
-            solve_deps = WorkflowActions.deps[WorkflowActions.solve].copy()
-            while solve_deps:
-                dep = solve_deps.pop()
-                if self._action_was_run(dep):
-                    # add dependencies of this step, etc.
-                    dep_deps = WorkflowActions.deps[dep]
-                    if dep_deps is not None:
-                        solve_deps.extend(dep_deps)
-                    self._action_clear_was_run(dep)
             self._action_clear_was_run(WorkflowActions.solve)
 
     @classmethod
@@ -581,7 +576,26 @@ class FlowsheetInterface(BlockInterface):
         return name in self._actions_run
 
     def _action_set_was_run(self, name):
-        self._actions_run.add(name)
+        self._action_clear_depends_on(name)  # mark dependees to re-run
+        self._actions_run.add(name)  # mark as run
+
+    def _action_clear_depends_on(self, name):
+        """Clear the run status of all actions that depend on this one,
+           and do the same with their dependees, etc.
+           Called from :meth:`_action_set_was_run`.
+        """
+        all_actions = WorkflowActions.deps.keys()
+        # make a list of actions that depend on this action
+        affected = [a for a in all_actions if name in WorkflowActions.deps[a]]
+        while affected:
+            # get one action that depends on this action
+            aff = affected.pop()
+            # if it was run, clear it
+            if self._action_was_run(aff):
+                self._action_clear_was_run(aff)
+            # add all actions that depend on it to the list
+            aff2 = [a for a in all_actions if aff in WorkflowActions.deps[a]]
+            affected.extend(aff2)
 
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
@@ -615,7 +629,6 @@ class FlowsheetInterface(BlockInterface):
             self.VARS_KEY: list(block_ui.get_exported_variables()),
             self.BLKS_KEY: [],
         }
-        print(f"@@ add_to_mapping key={key} name={new_data[self.NAME_KEY]}")
         # descend to leaf, creating intermediate nodes as needed
         for k in nodes:
             next_m = None
@@ -652,7 +665,8 @@ class FlowsheetInterface(BlockInterface):
         if ui:
             if cls.VARS_KEY in block_data:
                 load_result = cls._load_variables(block_data[cls.VARS_KEY], ui)
-                # save any 'missing' and 'extra' variables for this block into `load_diff`
+                # save any 'missing' and 'extra' variables for this block
+                # into `load_diff`
                 for key, val in load_result.items():
                     if val:
                         var_diff[key][cur_block_key] = val
