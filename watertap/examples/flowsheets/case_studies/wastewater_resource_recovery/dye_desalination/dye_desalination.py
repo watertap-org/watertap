@@ -44,6 +44,13 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
+    initialize_system(m)
+
+    results = solve(m)
+    assert_optimal_termination(results)
+
+    display_results(m)
+
     return m
 
 
@@ -113,6 +120,12 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
+
+
+def display_results(m):
+    unit_list = ["feed", "nanofiltration"]
+    for u in unit_list:
+        m.fs.component(u).report()
 
 
 if __name__ == "__main__":
