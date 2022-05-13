@@ -11,3 +11,4 @@ Class Documentation
 
 .. autoclass:: ZeroOrderCosting
    :members:
+   :undoc-members:
