@@ -1,3 +1,5 @@
+.. _zero_order_costing:
+
 Zero Order Costing Package
 ==========================
 
