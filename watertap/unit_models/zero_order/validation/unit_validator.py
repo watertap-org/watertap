@@ -169,8 +169,13 @@ _WT3_stone = {
 _long_name_to_WT3_name = {
     "Total Capital Investment (M\$)": "tci",
     "Unit LCOW (\$/m^3)": "lcow",
-    "Annual Operating Cost (M\$/yr)": "annual_op_cost",
+    "Annual Fixed Operating Cost (M\$/yr)": "fixed_op_cost",
+    "Annual Total Operating Cost (M\$/yr)": "annual_op_cost",
 }
+
+
+def _worst_relative_difference(a, b):
+    return (np.abs(a - b) / np.maximum(np.maximum(np.abs(a), np.abs(b)), 1e-06)).max()
 
 
 def ZeroOrderModel(data):
@@ -222,24 +227,6 @@ class ZeroOrderUnitChecker:
         ),
     ).declare_as_argument()
 
-    CONFIG.declare(
-        "rel_tol",
-        ConfigValue(
-            domain=NonNegativeFloat,
-            default=1e-01,
-            description="relative comparison tolerance",
-        ),
-    ).declare_as_argument()
-
-    CONFIG.declare(
-        "abs_tol",
-        ConfigValue(
-            domain=NonNegativeFloat,
-            default=1e-08,
-            description="absolute comparison tolerance",
-        ),
-    ).declare_as_argument()
-
     def __init__(self, **options):
         self.config = self.CONFIG()
         self.config.set_value(options)
@@ -282,6 +269,8 @@ class ZeroOrderUnitChecker:
                 f"Unexpected number of degrees of freedom {degrees_of_freedom(self.model)}"
             )
 
+        self.worst_difference = None
+
     def check_unit(self):
         df = self.comparison_dataframe
         msg = f"Checking {self.config.zero_order_model.__name__}"
@@ -290,27 +279,17 @@ class ZeroOrderUnitChecker:
         print(msg)
         _run_flow_in_only(self.model, df)
 
-        all_good = True
-        for wt3_key, wt_k in _WT3_stone.items():
-            if not np.allclose(
-                df[wt3_key],
-                df[wt_k],
-                rtol=self.config.rel_tol,
-                atol=self.config.abs_tol,
-            ):
-                print(f"Found difference between {wt3_key} and {wt_k}")
-                all_good = False
-        if all_good:
-            print("No significant differences found")
-            return True
-        else:
-            print(f"FOUND DIFFERENCES, SEE ABOVE")
-            return False
+        self.worst_difference = max(
+            _worst_relative_difference(np.array(df[wt3_key]), np.array(df[wt_k]))
+            for wt3_key, wt_k in _WT3_stone.items()
+        )
+        print(f"Worst relative difference: {self.worst_difference*100:.4f}%")
+        return self.worst_difference
 
     def get_differnces_figure(self):
         assert self.comparison_dataframe is not None
 
-        fig, ax = subplots(1, 3, sharex=True, figsize=(18, 6))
+        fig, ax = subplots(1, len(_long_name_to_WT3_name), sharex=True, figsize=(18, 6))
 
         xaxis_label = "Flow In (m^3/s)"
 
@@ -327,6 +306,8 @@ class ZeroOrderUnitChecker:
         name = f"Unit Model {self.config.zero_order_model.__name__}"
         if self.config.process_subtype:
             name += " ,subtype {self.config.process_subtype}"
+        if self.worst_difference:
+            name += f"\nWorst Relative Difference: {self.worst_difference*100:.4f}%"
         fig.suptitle(name)
         # only use the last legend
         fig.legend(*ax[idx].get_legend_handles_labels())
