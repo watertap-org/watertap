@@ -1,20 +1,102 @@
 Electrodialysis (0D)
 ====================
-This reverse osmosis (RO) unit model
-   * is 0-dimensional
-   * supports a single liquid phase only
-   * supports steady-state only
-   * is based on the solution-diffusion model and film theory
-   * assumes isothermal conditions
 
-.. index::
-   pair: watertap.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
+Introduction
+------------
 
-.. currentmodule:: watertap.unit_models.reverse_osmosis_0D
+Electrodialysis, an electrochemical seperation technology for water desalination, has been 
+utilized for decades.  Compared with other technologies such as reverse osmosis (RO),
+electridialysis showes advtanges in desalinating brackish waters with 
+moderate salinity by its less intense energy consumption, higher recovery, and robust 
+tolerance for adverse non-ionic components (e.g., silica and biological substances) in water.
+Between the electrodes of a eletrodialysis stack (a reactor module), multiple anion- and 
+cation-exchange membranes are alternatively positioned and seprated by spacers to form individual 
+cells. When operated, electrolidalysis converts electrical current to ion flux and, assisted by
+the opposite ion-exchage membranes, moves ion from one cell (diluate channel) to its adjencent cell
+(concentrate channel) in a cell-pair treatment unit (Figure 1). Recovered (desalianted) water is 
+collected from diluate channles of all cell pairs while the concentrate product can be disposed as brine 
+or retreated. 
+
+.. figure:: ../../_static/unit_models/xxx.png
+    :width: 600
+    :align: center
+
+    Figure 1. Schematic representation of a electrodialysis cell pair as a model unit
+
+
+One cell pair in a electrodialysis stack can thus be treated as a modeling unit that can multiply to
+larger scale systems.  This model establishes mathetmaical descriptions of ion and water transport in
+a cell pair and expands to simulate a stack with a specified cell-pair number.  Modeled mass transfer 
+mechanisms inlcude electrical migration and diffusion of ions and osmosis and electroosmosis of water. 
+The following key assumptions are based on. 
+
+* The concentrate and diluate channels ahve identical geometry and fluidic conditions. 
+* For each channel, component fluxes are uniform in the bulk solutions (0-dimensional assumption) 
+    and are set as the average of inlete and outlect of each channel. 
+* Co-current flow operation. 
+* Electrical current is operated below the limiting current. 
+* Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one. 
+* All ion-exchange membrane properties (ion and water transport number, resistence, permeabiliity) are
+    constant. 
+* Detailed concentration gradient effect at membrane-water interfaces is neglected. 
+* Constant pressure and temperature through each channel. 
+
+Control Volumes
+-----
+
+This model has two control volumes for the concentrate and diluate channels.
+
+* diluate_channel
+* concentrate_channel 
+
+Ports
+-----
+
+This model provides four ports (Pyomo notation in parenthesis) on the two :
+
+* inlet_diluate (inlet)
+* outlet_diluate (outlet)
+* inlet_concentrate (inlet)
+* outlet_concentrate (outlet)
+
+Sets
+----
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', 'Na_+', 'Cl_-', ...]"
+   "Membrane", :math: `na`, ['cem', ;'aem']
+
+**Users are responsible for naming any chemical additives and defining all parameters associated with them**
 
 Degrees of Freedom
 ------------------
-Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), the RO model has
+Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), this model has
+31 additional degerees of freedom that need to be fixed to fully solve the model. 15 of them are repeated over 
+the two channels (making up 30) and 1 (the electrical input) is general for both channels.  The total 31 are 
+tabulated below. 
+
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Number"
+
+   "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "["cem", "aem"], ":math:`\text{dimensionless}`", 2
+   "Water permeability", ":math:`L`", "water_permeability_membrane", "["cem", "aem"]", ":math:`\ `", 
+
+   "Voltage", ":math:`U`", "voltage", "[t]", ":math:``"
+   "Resistence of the electrode compartments", ":math:`R_{el}`", "electrodes_resistence", "[t]", ":math:`\text{mg/L}`"
+   "Cell pair number", ":math:`N`", "cell_pair_numb", "None", ":math:``"
+   "Current utilization for all mass transfer", ":math:`\xi`", "final_turbidity_ntu", "None", ":math:``"
+   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:``"
+   "Area resistence of ion exchnge membranes", ":math:`r`", "membrane_surface_resistence", "["cem", "aem"]", ":math:`\text{s}`"
+   "Cell width", ":math:`b`", "cell_width", "None", ":math: `\text{m}`"
+   "Cell length", ":math:`l`", "cell_length", "None", ":math: `\text{m}`"
+   "Thickness of ion exchange membranes", ":math:`\delta`", "memebrane_thickness", "["cem", "aem"]", ":math:`\text{m}`"
+   "diffusivity of solute in the membrane phase", ":math:`\D`", "solute_diffusivity_membrane", "[["cem", "aem"], j]", ":math:`\text{m^2/s}`"
+   "transport number of ions in the membrane phase", ":math:`t`", "ion_trans_number_membrane", "[["cem", "aem"], j]", ":math:`\text{dimensionless}`"
+   
 at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
 
 Typically, the following variables are fixed, in addition to state variables at the inlet:
