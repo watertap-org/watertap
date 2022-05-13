@@ -25,7 +25,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import product as Product
+from idaes.generic_models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.costing import UnitModelCostingBlock
 
@@ -34,15 +34,17 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
-    feed_zo,
-    nanofiltration_zo,
+    FeedZO,
+    NanofiltrationZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCostingData as ZeroOrderCosting
 
-# def main():
-#     m = build()
-#     return m
-# #
+
+def main():
+    m = build()
+    return m
+
+
 def build():
     # flowsheet set up
     m = ConcreteModel()
@@ -52,9 +54,9 @@ def build():
     m.fs.prop = prop_ZO.WaterParameterBlock(default={"solute_list": ["dye", "tds"]})
 
     # unit model
-    m.fs.feed = feed_zo(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
 
-    m.fs.nanofiltration = nanofiltration_zo(
+    m.fs.nanofiltration = NanofiltrationZO(
         default={
             "property_package": m.fs.prop,
             "database": m.db,
@@ -65,5 +67,20 @@ def build():
     m.fs.permeate = Product(default={"property_package": m.fs.prop})
     m.fs.retentate = Product(default={"property_package": m.fs.prop})
 
-    # # connections
-    # m.fs.s01 = A
+    # connections
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.nanofiltration.inlet)
+    m.fs.s02 = Arc(source=m.fs.nanofiltration.treated, destination=m.fs.permeate.inlet)
+    m.fs.s03 = Arc(
+        source=m.fs.nanofiltration.byproduct, destination=m.fs.retentate.inlet
+    )
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    # scaling
+    iscale.calculate_scaling_factors(m)
+
+    return m
+
+
+if __name__ == "__main__":
+    model = main()
