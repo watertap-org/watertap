@@ -121,6 +121,8 @@ class TestElectrodialysisVoltageConst:
         assert_units_consistent(m)
         assert degrees_of_freedom(m) == 33
         # Specify a system
+        #Note: Testing scenarios in this file are primarily in accord with an experimental
+            #setup reported by Campione et al. in Desalination 465 (2019): 79-93.
         # set the operational parameters
         m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
         m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
