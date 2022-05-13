@@ -122,10 +122,60 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
+def add_costing(m):
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "dye_desalination_global_costing.yaml",
+    )
+
+    # TODO - add costing model expressions
+
+
 def display_results(m):
     unit_list = ["feed", "nanofiltration"]
     for u in unit_list:
         m.fs.component(u).report()
+
+
+def display_costing(m):
+    # m.fs.costing.total_capital_cost.display()
+    # m.fs.costing.total_operating_cost.display()
+    # m.fs.costing.LCOD.display() #levelized cost of dye removal
+    raise ValueError("Costing model not yet implemented.")
+    # TODO - choose cost parameters of interest to display
+    # print("\nUnit Capital Costs\n")
+    # for u in m.fs.costing._registered_unit_costing:
+    #     print(
+    #         u.name,
+    #         " :   ",
+    #         value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+    #     )
+    #
+    # print("\nUtility Costs\n")
+    # for f in m.fs.costing.flow_types:
+    #     print(
+    #         f,
+    #         " :   ",
+    #         value(
+    #             pyunits.convert(
+    #                 m.fs.costing.aggregate_flow_costs[f],
+    #                 to_units=pyunits.USD_2018 / pyunits.year,
+    #             )
+    #         ),
+    #     )
+    #
+    # print("")
+    # total_capital_cost = value(
+    #     pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+    # )
+    # print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
+    #
+    # total_operating_cost = value(
+    #     pyunits.convert(
+    #         m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+    #     )
+    # )
+    # print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
 
 if __name__ == "__main__":
