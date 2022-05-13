@@ -4,6 +4,9 @@ defined_flows:
   electricity:
     value: 0.08
     units: USD_2020/kWh
+  dye:
+    value:
+    units: USD_2020/kg
 #  water_product:
 #    value:
 #    units: USD_2020/m^3
@@ -14,13 +17,36 @@ global_parameters:
   utilization_factor:
     value: 0.85
     units: dimensionless
-  capital_annualization_factor:
-    value: 0.1
-    units: 1/year
-  practical_investment_factor:
-    value: 2
+  land_cost_percent_FCI:
+    value: 0
     units: dimensionless
-  fixed_operating_cost_factor:
-    value: 0.02
+  working_capital_percent_FCI:
+    value: 0
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0
     units: 1/year
-
+  benefit_percent_of_salary:
+    value: 0
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 3.4
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 1.65
+    units: dimensionless
