@@ -14,7 +14,7 @@
 Tests for zero-order Ion exchange model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -153,36 +153,8 @@ class TestIonExchangeZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                  : Value    : Fixed : Bounds
-      Electricity Demand :   2899.6 : False : (0, None)
-           NaCl Addition : 0.061031 : False : (0, None)
-            Resin Demand : 0.013630 : False : (0, None)
-    Solute Removal [foo] :   0.0000 :  True : (0, None)
-    Solute Removal [tds] :  0.90000 :  True : (0, None)
-          Water Recovery :   1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated  Byproduct
-    Volumetric Flowrate      10.005    10.004 0.00090000
-    Mass Concentration H2O   999.50    999.59 1.1112e-07
-    Mass Concentration tds 0.099950 0.0099959     1000.0
-    Mass Concentration foo  0.39980   0.39984 1.1159e-07
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestIonExchangeZO_clinoptilolite:
@@ -299,38 +271,8 @@ class TestIonExchangeZO_clinoptilolite:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                         : Value      : Fixed : Bounds
-                             Electricity Demand :     2899.6 : False : (0, None)
-    Final mass flow of clay and nitrogen (kg/s) :     24.975 : False : (None, None)
-                                  NaCl Addition : 1.0000e-08 : False : (0, None)
-            Nitrogen-Clay Mixture Ratio (kg/kg) :   0.040000 :  True : (None, None)
-                                   Resin Demand : 1.0000e-08 : False : (0, None)
-          Solute Removal [ammonium_as_nitrogen] :    0.99900 :  True : (0, None)
-                           Solute Removal [foo] :     0.0000 :  True : (0, None)
-                                 Water Recovery :    0.97300 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                              Inlet    Treated   Byproduct
-    Volumetric Flowrate                       10.005     9.7340    0.27100
-    Mass Concentration H2O                    999.50     999.59     996.31
-    Mass Concentration ammonium_as_nitrogen 0.099950 0.00010273     3.6864
-    Mass Concentration foo                   0.39980    0.41093 3.6901e-08
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

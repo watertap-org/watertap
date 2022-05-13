@@ -15,8 +15,6 @@ Tests for zero-order CANDO+P model
 """
 import pytest
 
-from io import StringIO
-
 from pyomo.environ import (
     Block,
     Var,
@@ -206,41 +204,7 @@ class TestCANDOPZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-        model.fs.unit.report(ostream=stream)
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                                   : Value   : Fixed : Bounds
-                                       Electricity Demand :  10800. : False : (0, None)
-                                    Electricity Intensity :  4.0000 :  True : (0, None)
-                                            Oxygen Demand :  2.6250 : False : (0, None)
-    Oxygen consumed / nitrogen reacted ratio (mass basis) :  3.5000 :  True : (0, None)
-                             Reaction Extent [n_reaction] : 0.75000 : False : (None, None)
-                             Reaction Extent [p_reaction] : 0.75000 : False : (None, None)
-             Solute Removal [bioconcentrated_phosphorous] :  1.0000 :  True : (0, None)
-                                Solute Removal [nitrogen] :  0.0000 :  True : (0, None)
-                           Solute Removal [nitrous_oxide] :  1.0000 :  True : (0, None)
-                              Solute Removal [phosphates] :  0.0000 :  True : (0, None)
-                                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated   Byproduct
-    Volumetric Flowrate                            0.12200    0.12050  0.0015000
-    Mass Concentration H2O                          983.61     995.85 6.6667e-08
-    Mass Concentration nitrogen                     8.1967     2.0747 6.6670e-08
-    Mass Concentration phosphates                   8.1967     2.0747 6.6670e-08
-    Mass Concentration bioconcentrated_phosphorous  0.0000 8.2992e-10     500.00
-    Mass Concentration nitrous_oxide                0.0000 8.2992e-10     500.00
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
