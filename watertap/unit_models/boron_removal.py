@@ -465,7 +465,11 @@ class BoronRemovalData(UnitModelBlockData):
         #       [base] = (Dose/MW)
         #       TB = [HA]_inlet + [A-]_inlet (from props)
 
-        self.mol_H = Var(
+        # NOTE: These variables are internal to the unit model
+        #   and are used to establish what the mass transfer
+        #   constraints need to be in order to achieve a specific
+        #   pH and boron speciation at the exit of the unit.
+        self.conc_mol_H = Var(
             self.flowsheet().config.time,
             initialize=1e-4,
             bounds=(0, None),
@@ -473,7 +477,7 @@ class BoronRemovalData(UnitModelBlockData):
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of protons",
         )
-        self.mol_OH = Var(
+        self.conc_mol_OH = Var(
             self.flowsheet().config.time,
             initialize=1e-4,
             bounds=(0, None),
@@ -481,7 +485,7 @@ class BoronRemovalData(UnitModelBlockData):
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of hydroxide",
         )
-        self.mol_Boron = Var(
+        self.conc_mol_Boron = Var(
             self.flowsheet().config.time,
             initialize=1e-2,
             bounds=(0, None),
@@ -489,7 +493,7 @@ class BoronRemovalData(UnitModelBlockData):
             units=pyunits.mol / pyunits.m**3,
             doc="Resulting molarity of Boron",
         )
-        self.mol_Borate = Var(
+        self.conc_mol_Borate = Var(
             self.flowsheet().config.time,
             initialize=1e-2,
             bounds=(0, None),
@@ -565,23 +569,23 @@ class BoronRemovalData(UnitModelBlockData):
                     Alk += 0.0
                 else:
                     Alk += -self.ion_charge[j] * conc
-            mol_H = pyunits.convert(
-                self.mol_H[t],
+            conc_mol_H = pyunits.convert(
+                self.conc_mol_H[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            mol_OH = pyunits.convert(
-                self.mol_OH[t],
+            conc_mol_OH = pyunits.convert(
+                self.conc_mol_OH[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            mol_Borate = pyunits.convert(
-                self.mol_Borate[t],
+            conc_mol_Borate = pyunits.convert(
+                self.conc_mol_Borate[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
             mol_Base = pyunits.convert(
                 self.caustic_cation_charge * self.caustic_dose[t] / self.caustic_mw,
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            return mol_H == mol_OH + mol_Borate + Alk - mol_Base
+            return conc_mol_H == conc_mol_OH + conc_mol_Borate + Alk - mol_Base
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -594,15 +598,15 @@ class BoronRemovalData(UnitModelBlockData):
             inlet_Borate = self.control_volume.properties_in[t].conc_mol_phase_comp[
                 "Liq", self.borate_name_id
             ]
-            mol_Borate = pyunits.convert(
-                self.mol_Borate[t],
+            conc_mol_Borate = pyunits.convert(
+                self.conc_mol_Borate[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            mol_Boron = pyunits.convert(
-                self.mol_Boron[t],
+            conc_mol_Boron = pyunits.convert(
+                self.conc_mol_Boron[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            return inlet_Boron + inlet_Borate == mol_Borate + mol_Boron
+            return inlet_Boron + inlet_Borate == conc_mol_Borate + conc_mol_Boron
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -616,7 +620,7 @@ class BoronRemovalData(UnitModelBlockData):
                     / Constants.gas_constant
                     / self.control_volume.properties_out[t].temperature
                 )
-            ) == self.mol_H[t] * self.mol_OH[t]
+            ) == self.conc_mol_H[t] * self.conc_mol_OH[t]
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -630,7 +634,7 @@ class BoronRemovalData(UnitModelBlockData):
                     / Constants.gas_constant
                     / self.control_volume.properties_out[t].temperature
                 )
-            ) * self.mol_Boron[t] == self.mol_H[t] * self.mol_Borate[t]
+            ) * self.conc_mol_Boron[t] == self.conc_mol_H[t] * self.conc_mol_Borate[t]
 
         # Add constraints for mass transfer terms
         @self.Constraint(
@@ -642,7 +646,7 @@ class BoronRemovalData(UnitModelBlockData):
         def eq_mass_transfer_term(self, t, p, j):
             if j == self.boron_name_id:
                 boron_out = pyunits.convert(
-                    self.mol_Boron[t],
+                    self.conc_mol_Boron[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
@@ -656,7 +660,7 @@ class BoronRemovalData(UnitModelBlockData):
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.borate_name_id:
                 borate_out = pyunits.convert(
-                    self.mol_Borate[t],
+                    self.conc_mol_Borate[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
@@ -670,7 +674,7 @@ class BoronRemovalData(UnitModelBlockData):
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.proton_name_id:
                 p_out = pyunits.convert(
-                    self.mol_H[t],
+                    self.conc_mol_H[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
@@ -684,7 +688,7 @@ class BoronRemovalData(UnitModelBlockData):
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.hydroxide_name_id:
                 h_out = pyunits.convert(
-                    self.mol_OH[t],
+                    self.conc_mol_OH[t],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
@@ -745,8 +749,8 @@ class BoronRemovalData(UnitModelBlockData):
         # Apply guess for unit model vars
         for t in blk.flowsheet().config.time:
             # Naive guess (pH = 7)
-            blk.mol_H[t].set_value(1e-4)
-            blk.mol_OH[t].set_value(10**-14 * 1000 / blk.mol_H[t].value)
+            blk.conc_mol_H[t].set_value(1e-4)
+            blk.conc_mol_OH[t].set_value(10**-14 * 1000 / blk.conc_mol_H[t].value)
             TB = value(
                 blk.control_volume.properties_in[t].conc_mol_phase_comp[
                     "Liq", blk.boron_name_id
@@ -756,9 +760,9 @@ class BoronRemovalData(UnitModelBlockData):
                     "Liq", blk.borate_name_id
                 ]
             )
-            Ratio = 10**-9.21 * 1000 / blk.mol_H[t].value
-            blk.mol_Boron[t].set_value(TB / (1 + Ratio))
-            blk.mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
+            Ratio = 10**-9.21 * 1000 / blk.conc_mol_H[t].value
+            blk.conc_mol_Boron[t].set_value(TB / (1 + Ratio))
+            blk.conc_mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
         # ---------------------------------------------------------------------
 
         # ---------------------------------------------------------------------
@@ -774,16 +778,22 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Rescale internal variables
         for t in blk.flowsheet().config.time:
-            iscale.set_scaling_factor(blk.mol_OH[t], 100 / blk.mol_OH[t].value)
-            iscale.set_scaling_factor(blk.mol_H[t], 100 / blk.mol_H[t].value)
-            iscale.set_scaling_factor(blk.mol_Boron[t], 100 / blk.mol_Boron[t].value)
-            iscale.set_scaling_factor(blk.mol_Borate[t], 100 / blk.mol_Borate[t].value)
+            iscale.set_scaling_factor(
+                blk.conc_mol_OH[t], 100 / blk.conc_mol_OH[t].value
+            )
+            iscale.set_scaling_factor(blk.conc_mol_H[t], 100 / blk.conc_mol_H[t].value)
+            iscale.set_scaling_factor(
+                blk.conc_mol_Boron[t], 100 / blk.conc_mol_Boron[t].value
+            )
+            iscale.set_scaling_factor(
+                blk.conc_mol_Borate[t], 100 / blk.conc_mol_Borate[t].value
+            )
 
     def outlet_pH(self, time=0):
-        return -log10(value(self.mol_H[time]) / 1000)
+        return -log10(value(self.conc_mol_H[time]) / 1000)
 
     def outlet_pOH(self, time=0):
-        return -log10(value(self.mol_OH[time]) / 1000)
+        return -log10(value(self.conc_mol_OH[time]) / 1000)
 
     def propogate_initial_state(self):
         units_meta = self.config.property_package.get_metadata().get_derived_units
@@ -826,11 +836,19 @@ class BoronRemovalData(UnitModelBlockData):
                 in self.control_volume.properties_in[t].define_state_vars()
             ):
                 for ind in self.control_volume.properties_in[t].flow_mol_phase_comp:
-                    self.control_volume.properties_out[t].flow_mol_phase_comp[
-                        ind
-                    ] = value(
-                        self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
-                    )
+                    if (
+                        self.control_volume.properties_out[t]
+                        .flow_mol_phase_comp[ind]
+                        .is_fixed()
+                        == False
+                    ):
+                        self.control_volume.properties_out[t].flow_mol_phase_comp[
+                            ind
+                        ] = value(
+                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
+                                ind
+                            ]
+                        )
 
                 # Check to see if 'flow_mass_phase_comp' is constructed
                 if self.control_volume.properties_out[t].is_property_constructed(
@@ -1038,7 +1056,7 @@ class BoronRemovalData(UnitModelBlockData):
             iscale.set_scaling_factor(self.caustic_dose, sf)
 
         # Add scaling for unit model vars (without user input)
-        if iscale.get_scaling_factor(self.mol_Boron) is None:
+        if iscale.get_scaling_factor(self.conc_mol_Boron) is None:
             sf = iscale.get_scaling_factor(
                 self.control_volume.properties_in[0].conc_mol_phase_comp[
                     "Liq", self.boron_name_id
@@ -1046,9 +1064,9 @@ class BoronRemovalData(UnitModelBlockData):
                 default=1,
                 warning=False,
             )
-            iscale.set_scaling_factor(self.mol_Boron, sf / 10)
+            iscale.set_scaling_factor(self.conc_mol_Boron, sf / 10)
 
-        if iscale.get_scaling_factor(self.mol_Borate) is None:
+        if iscale.get_scaling_factor(self.conc_mol_Borate) is None:
             sf = iscale.get_scaling_factor(
                 self.control_volume.properties_in[0].conc_mol_phase_comp[
                     "Liq", self.borate_name_id
@@ -1056,10 +1074,10 @@ class BoronRemovalData(UnitModelBlockData):
                 default=1,
                 warning=False,
             )
-            iscale.set_scaling_factor(self.mol_Borate, sf / 10)
+            iscale.set_scaling_factor(self.conc_mol_Borate, sf / 10)
 
         # Scaling for H and OH
-        if iscale.get_scaling_factor(self.mol_H) is None:
+        if iscale.get_scaling_factor(self.conc_mol_H) is None:
             if self.proton_name_id in self.config.property_package.component_list:
                 sf = iscale.get_scaling_factor(
                     self.control_volume.properties_in[0].conc_mol_phase_comp[
@@ -1070,9 +1088,9 @@ class BoronRemovalData(UnitModelBlockData):
                 )
             else:
                 sf = 10
-            iscale.set_scaling_factor(self.mol_H, sf)
+            iscale.set_scaling_factor(self.conc_mol_H, sf)
 
-        if iscale.get_scaling_factor(self.mol_OH) is None:
+        if iscale.get_scaling_factor(self.conc_mol_OH) is None:
             if self.hydroxide_name_id in self.config.property_package.component_list:
                 sf = iscale.get_scaling_factor(
                     self.control_volume.properties_in[0].conc_mol_phase_comp[
@@ -1083,7 +1101,7 @@ class BoronRemovalData(UnitModelBlockData):
                 )
             else:
                 sf = 10
-            iscale.set_scaling_factor(self.mol_OH, sf)
+            iscale.set_scaling_factor(self.conc_mol_OH, sf)
 
         # Scale isothermal condition
         sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
@@ -1092,32 +1110,32 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Scaling for water dissociation and boron dissociation
         for t in self.control_volume.properties_in:
-            sf = iscale.get_scaling_factor(self.mol_H) * iscale.get_scaling_factor(
-                self.mol_OH
+            sf = iscale.get_scaling_factor(self.conc_mol_H) * iscale.get_scaling_factor(
+                self.conc_mol_OH
             )
             iscale.constraint_scaling_transform(self.eq_water_dissociation[t], sf)
         for t in self.control_volume.properties_in:
-            sf = iscale.get_scaling_factor(self.mol_Borate) * iscale.get_scaling_factor(
-                self.mol_H
-            )
+            sf = iscale.get_scaling_factor(
+                self.conc_mol_Borate
+            ) * iscale.get_scaling_factor(self.conc_mol_H)
             iscale.constraint_scaling_transform(self.eq_boron_dissociation[t], sf)
 
         # Scaling for total boron
         for t in self.control_volume.properties_in:
-            sf = iscale.get_scaling_factor(self.mol_Boron)
+            sf = iscale.get_scaling_factor(self.conc_mol_Boron)
             iscale.constraint_scaling_transform(self.eq_total_boron[t], sf)
 
         # Scaling for electroneutrality
         for t in self.control_volume.properties_in:
-            sf = iscale.get_scaling_factor(self.mol_H) + iscale.get_scaling_factor(
-                self.mol_Borate
+            sf = iscale.get_scaling_factor(self.conc_mol_H) + iscale.get_scaling_factor(
+                self.conc_mol_Borate
             )
             iscale.constraint_scaling_transform(self.eq_electroneutrality[t], sf)
 
         # Scaling for mass_transfer_term
         for t in self.control_volume.properties_in:
             for j in self.config.property_package.component_list:
-                sf = iscale.get_scaling_factor(self.mol_Borate)
+                sf = iscale.get_scaling_factor(self.conc_mol_Borate)
                 iscale.constraint_scaling_transform(
                     self.eq_mass_transfer_term[t, "Liq", j], sf
                 )

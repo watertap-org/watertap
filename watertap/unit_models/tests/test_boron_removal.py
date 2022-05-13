@@ -192,10 +192,10 @@ class TestBoronRemoval_IonPropPack_Min:
         assert isinstance(m.fs.unit.Ka_0, Param)
         assert isinstance(m.fs.unit.dH_a, Param)
 
-        assert isinstance(m.fs.unit.mol_H, Var)
-        assert isinstance(m.fs.unit.mol_OH, Var)
-        assert isinstance(m.fs.unit.mol_Boron, Var)
-        assert isinstance(m.fs.unit.mol_Borate, Var)
+        assert isinstance(m.fs.unit.conc_mol_H, Var)
+        assert isinstance(m.fs.unit.conc_mol_OH, Var)
+        assert isinstance(m.fs.unit.conc_mol_Boron, Var)
+        assert isinstance(m.fs.unit.conc_mol_Borate, Var)
 
         assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
         assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
@@ -214,6 +214,11 @@ class TestBoronRemoval_IonPropPack_Min:
 
         # set the variables
         model_setup(m)
+
+        # Modified this test to fix the desired outlet flow
+        #   of Boron and unfix the dosage needed to get that outlet
+        m.fs.unit.outlet.flow_mol_phase_comp[(0, "Liq", "B[OH]3")].fix(1.98677e-5)
+        m.fs.unit.caustic_dose.unfix()
 
         assert degrees_of_freedom(m) == 0
 
@@ -259,7 +264,7 @@ class TestBoronRemoval_IonPropPack_Min:
         assert not badly_scaled_var_values
 
         # run solver and check for optimal solution
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
     @pytest.mark.component
@@ -274,6 +279,7 @@ class TestBoronRemoval_IonPropPack_Min:
         ) == pytest.approx(1.81133e-4, rel=1e-4)
         assert value(m.fs.unit.outlet_pH()) == pytest.approx(10.171, rel=1e-4)
         assert value(m.fs.unit.outlet_pOH()) == pytest.approx(3.8257, rel=1e-4)
+        assert value(m.fs.unit.caustic_dose[0].value) == pytest.approx(10, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
@@ -344,10 +350,10 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
         assert isinstance(m.fs.unit.Ka_0, Param)
         assert isinstance(m.fs.unit.dH_a, Param)
 
-        assert isinstance(m.fs.unit.mol_H, Var)
-        assert isinstance(m.fs.unit.mol_OH, Var)
-        assert isinstance(m.fs.unit.mol_Boron, Var)
-        assert isinstance(m.fs.unit.mol_Borate, Var)
+        assert isinstance(m.fs.unit.conc_mol_H, Var)
+        assert isinstance(m.fs.unit.conc_mol_OH, Var)
+        assert isinstance(m.fs.unit.conc_mol_Boron, Var)
+        assert isinstance(m.fs.unit.conc_mol_Borate, Var)
 
         assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
         assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
@@ -499,10 +505,10 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
         assert isinstance(m.fs.unit.Ka_0, Param)
         assert isinstance(m.fs.unit.dH_a, Param)
 
-        assert isinstance(m.fs.unit.mol_H, Var)
-        assert isinstance(m.fs.unit.mol_OH, Var)
-        assert isinstance(m.fs.unit.mol_Boron, Var)
-        assert isinstance(m.fs.unit.mol_Borate, Var)
+        assert isinstance(m.fs.unit.conc_mol_H, Var)
+        assert isinstance(m.fs.unit.conc_mol_OH, Var)
+        assert isinstance(m.fs.unit.conc_mol_Boron, Var)
+        assert isinstance(m.fs.unit.conc_mol_Borate, Var)
 
         assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
         assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
@@ -798,10 +804,10 @@ class TestBoronRemoval_GenPropPack:
         assert isinstance(m.fs.unit.Ka_0, Param)
         assert isinstance(m.fs.unit.dH_a, Param)
 
-        assert isinstance(m.fs.unit.mol_H, Var)
-        assert isinstance(m.fs.unit.mol_OH, Var)
-        assert isinstance(m.fs.unit.mol_Boron, Var)
-        assert isinstance(m.fs.unit.mol_Borate, Var)
+        assert isinstance(m.fs.unit.conc_mol_H, Var)
+        assert isinstance(m.fs.unit.conc_mol_OH, Var)
+        assert isinstance(m.fs.unit.conc_mol_Boron, Var)
+        assert isinstance(m.fs.unit.conc_mol_Borate, Var)
 
         assert isinstance(m.fs.unit.eq_mass_transfer_term, Constraint)
         assert isinstance(m.fs.unit.eq_electroneutrality, Constraint)
