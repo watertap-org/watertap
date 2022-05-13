@@ -9,6 +9,6 @@ Zero Order Costing Package
 Class Documentation
 -------------------
 
-.. automodule:: ZeroOrderCosting
+.. autoclass:: ZeroOrderCosting
    :members:
    :undoc-members:
