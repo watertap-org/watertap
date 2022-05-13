@@ -33,7 +33,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.unit_models.zero_order import FeedZO
+from watertap.unit_models.zero_order import FeedZO, PumpElectricityZO
 from watertap.unit_models.zero_order.nanofiltration_zo import NanofiltrationZO
 from watertap.core.zero_order_costing import ZeroOrderCostingData as ZeroOrderCosting
 
@@ -73,7 +73,7 @@ def build():
     # unit model
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
 
-    # TODO - include pump
+    m.fs.pump = PumpElectricityZO(default={"property_package": m.fs.prop})
 
     m.fs.nanofiltration = NanofiltrationZO(
         default={
@@ -83,14 +83,15 @@ def build():
         }
     )
 
-    m.fs.permeate = Product(default={"property_package": m.fs.prop})
-    m.fs.retentate = Product(default={"property_package": m.fs.prop})
+    m.fs.permeate1 = Product(default={"property_package": m.fs.prop})
+    m.fs.retentate1 = Product(default={"property_package": m.fs.prop})
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.nanofiltration.inlet)
-    m.fs.s02 = Arc(source=m.fs.nanofiltration.treated, destination=m.fs.permeate.inlet)
-    m.fs.s03 = Arc(
-        source=m.fs.nanofiltration.byproduct, destination=m.fs.retentate.inlet
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
+    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.nanofiltration.inlet)
+    m.fs.s03 = Arc(source=m.fs.nanofiltration.treated, destination=m.fs.permeate1.inlet)
+    m.fs.s04 = Arc(
+        source=m.fs.nanofiltration.byproduct, destination=m.fs.retentate1.inlet
     )
 
     TransformationFactory("network.expand_arcs").apply_to(m)
