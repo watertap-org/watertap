@@ -33,15 +33,17 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.unit_models.zero_order import (
-    FeedZO,
-    NanofiltrationZO,
-)
+from watertap.unit_models.zero_order import FeedZO
+from watertap.unit_models.zero_order.nanofiltration_zo import NanofiltrationZO
 from watertap.core.zero_order_costing import ZeroOrderCostingData as ZeroOrderCosting
 
 
 def main():
     m = build()
+    set_operating_conditions(m)
+    assert_degrees_of_freedom(m, 0)
+    assert_units_consistent(m)
+
     return m
 
 
@@ -84,7 +86,33 @@ def build():
 
 def set_operating_conditions(m):
     # feed
-    flow_vol = 3.286e-4 * pyunits.m**3 / pyunits.s
+    flow_vol = 120 / 3600 * pyunits.m**3 / pyunits.s
+    conc_mass_dye = 2.5 * pyunits.kg / pyunits.m**3
+    conc_mass_tds = 50.0 * pyunits.kg / pyunits.m**3
+
+    m.fs.feed.flow_vol[0].fix(flow_vol)
+    m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
+    m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
+    solve(m.fs.feed)
+
+    # nanofiltration
+    m.fs.nanofiltration.load_parameters_from_database(use_default_removal=True)
+
+
+def initialize_system(m):
+    seq = SequentialDecomposition()
+    seq.options.tear_set = []
+    seq.options.iterLim = 1
+    seq.run(m, lambda u: u.initialize())
+
+
+def solve(blk, solver=None, tee=False, check_termination=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    if check_termination:
+        assert_optimal_termination(results)
+    return results
 
 
 if __name__ == "__main__":
