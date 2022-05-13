@@ -14,7 +14,6 @@
 Tests for zero-order brine concentrator model
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     Block,
@@ -149,34 +148,7 @@ class TestBrineConcentratorZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                                : Value      : Fixed : Bounds
-    Electricity intensity per Inlet Flowrate  (kWh/m3) :     23.186 : False : (None, None)
-                                Power Consumption (kW) : 8.5557e+05 : False : (0, None)
-                                  Solute Removal [tds] :    0.98000 :  True : (0, None)
-                                        Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                            Inlet  Treated  Byproduct
-    Volumetric Flowrate    10.250  9.0050    1.2450  
-    Mass Concentration H2O 975.61  999.44    803.21  
-    Mass Concentration tds 24.390 0.55525    196.79  
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class Testbrine_concentratorZO_w_default_removal:
@@ -299,35 +271,7 @@ class Testbrine_concentratorZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                                : Value      : Fixed : Bounds
-    Electricity intensity per Inlet Flowrate  (kWh/m3) :     23.186 : False : (None, None)
-                                Power Consumption (kW) : 8.5565e+05 : False : (0, None)
-                                  Solute Removal [foo] :     0.0000 :  True : (0, None)
-                                  Solute Removal [tds] :    0.98000 :  True : (0, None)
-                                        Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate      10.251  9.0060      1.2450
-    Mass Concentration H2O   975.51  999.33      803.21
-    Mass Concentration tds   24.388 0.55519      196.79
-    Mass Concentration foo 0.097551 0.11104  8.0321e-09
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

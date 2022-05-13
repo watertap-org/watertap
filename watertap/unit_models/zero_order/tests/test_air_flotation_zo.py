@@ -15,7 +15,6 @@ Tests for zero-order air flotation model
 """
 import pytest
 
-from io import StringIO
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -148,34 +147,7 @@ class TestAirFloatationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  11.880 : False : (0, None)
-    Electricity Intensity : 0.30000 :  True : (None, None)
-     Solute Removal [tss] : 0.90000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.011000 0.010099 0.00090100
-    Mass Concentration H2O   909.09   990.10     1.1099
-    Mass Concentration tss   90.909   9.9020     998.89
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestAirFlotationZO_w_default_removal:
@@ -299,36 +271,7 @@ class TestAirFlotationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  12.960 : False : (0, None)
-    Electricity Intensity : 0.30000 :  True : (None, None)
-     Solute Removal [foo] :  0.0000 :  True : (0, None)
-     Solute Removal [tss] : 0.90000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.012000 0.011099 0.00090100
-    Mass Concentration H2O   833.33   900.89     1.1099
-    Mass Concentration tss   83.333   9.0098     998.89
-    Mass Concentration foo   83.333   90.098 8.8790e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
