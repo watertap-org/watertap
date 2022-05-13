@@ -38,6 +38,7 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 
     sweep_params = {}
+    # TODO - add case structure with specific sweeps/studies
     if case_num != 0:
         raise ValueError("case_num = %d not recognized." % (case_num))
 

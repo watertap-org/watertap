@@ -51,6 +51,14 @@ def main():
 
     display_results(m)
 
+    # TODO - implement costing model
+    # add_costing(m)
+    # m.fs.costing.initialize()
+    #
+    # adjust_default_parameters(m)
+    # results = solve(m)
+    # assert_optimal_termination(results)
+    # display_costing(m)
     return m
 
 
