@@ -15,7 +15,7 @@ Tests for zero-order pump electricity model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -130,34 +130,8 @@ class TestPumpElectricityZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                    : Value  : Fixed : Bounds
-    Applied Pressure (bar) : 2.9881 : False : (0, None)
-          Electricity (kW) : 22.134 : False : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                  Inlet     Outlet  
-    Volumetric Flowrate          0.060000   0.060000
-    Mass Concentration H2O     0.00016667 0.00016667
-    Mass Concentration bod         166.67     166.67
-    Mass Concentration nitrate     333.33     333.33
-    Mass Concentration tss         500.00     500.00
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

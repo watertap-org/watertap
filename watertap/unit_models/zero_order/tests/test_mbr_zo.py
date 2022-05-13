@@ -14,7 +14,7 @@
 Tests for zero-order membrane bioreactor model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -224,46 +224,8 @@ class TestMBRZOdefault:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                              Electricity Demand :  8580.8 : False : (0, None)
-                           Electricity Intensity :  2.3670 :  True : (None, None)
-                Solute Removal [cryptosporidium] : 0.99990 :  True : (0, None)
-                            Solute Removal [eeq] : 0.88000 :  True : (0, None)
-                Solute Removal [nonvolatile_toc] : 0.60000 :  True : (0, None)
-                            Solute Removal [toc] : 0.70854 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
-                            Solute Removal [tss] : 0.50000 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated   Byproduct
-    Volumetric Flowrate                             1.0070     1.0012 0.0057772 
-    Mass Concentration H2O                          993.05     998.68    17.309 
-    Mass Concentration tss                         0.99305    0.49939    86.547 
-    Mass Concentration nonvolatile_toc             0.99305    0.39951    103.86 
-    Mass Concentration toc                         0.99305    0.29110    122.64 
-    Mass Concentration eeq                         0.99305    0.11985    152.32 
-    Mass Concentration viruses_enteric             0.99305  0.0099878    171.36 
-    Mass Concentration total_coliforms_fecal_ecoli 0.99305  0.0012005    172.89 
-    Mass Concentration cryptosporidium             0.99305 9.9878e-05    173.08 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestMBRZO_w_default_removal:
@@ -464,48 +426,8 @@ class TestMBRZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                              Electricity Demand :  8589.3 : False : (0, None)
-                           Electricity Intensity :  2.3670 :  True : (None, None)
-                Solute Removal [cryptosporidium] : 0.99990 :  True : (0, None)
-                            Solute Removal [eeq] : 0.88000 :  True : (0, None)
-                            Solute Removal [foo] :  0.0000 :  True : (0, None)
-                Solute Removal [nonvolatile_toc] : 0.60000 :  True : (0, None)
-                            Solute Removal [toc] : 0.70854 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
-                            Solute Removal [tss] : 0.50000 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated   Byproduct
-    Volumetric Flowrate                             1.0080     1.0022  0.0057772
-    Mass Concentration H2O                          992.06     997.68     17.309
-    Mass Concentration tss                         0.99206    0.49889     86.547
-    Mass Concentration nonvolatile_toc             0.99206    0.39911     103.86
-    Mass Concentration toc                         0.99206    0.29081     122.64
-    Mass Concentration eeq                         0.99206    0.11973     152.32
-    Mass Concentration viruses_enteric             0.99206  0.0099778     171.36
-    Mass Concentration total_coliforms_fecal_ecoli 0.99206  0.0011993     172.89
-    Mass Concentration cryptosporidium             0.99206 9.9788e-05     173.08
-    Mass Concentration foo                         0.99206    0.99778 1.7309e-06
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
