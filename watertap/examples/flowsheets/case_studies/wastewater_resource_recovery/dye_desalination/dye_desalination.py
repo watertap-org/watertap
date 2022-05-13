@@ -82,5 +82,10 @@ def build():
     return m
 
 
+def set_operating_conditions(m):
+    # feed
+    flow_vol = 3.286e-4 * pyunits.m**3 / pyunits.s
+
+
 if __name__ == "__main__":
     model = main()
