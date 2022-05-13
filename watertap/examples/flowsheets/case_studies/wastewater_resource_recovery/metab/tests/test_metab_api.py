@@ -1,0 +1,57 @@
+"""
+Tests for meta_api module
+"""
+import pytest
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab \
+    import metab_api
+
+WA = metab_api.WorkflowActions
+
+
+@pytest.mark.unit
+def test_flowsheet_for_ui():
+    r = metab_api.flowsheet_for_ui()
+    assert r is not None
+
+
+@pytest.mark.unit
+def test_build():
+    fsi = metab_api.flowsheet_for_ui()
+    fsi.run_action(WA.build)
+
+
+@pytest.mark.component
+def test_solve():
+    fsi = metab_api.flowsheet_for_ui()
+    fsi.run_action(WA.solve)
+
+
+@pytest.mark.unit
+def test_io(tmp_path):
+    fsi = metab_api.flowsheet_for_ui()
+    fsi.run_action(WA.build)
+    filename = "test_io.json"
+    with (tmp_path / filename).open("w") as f:
+        fsi.save(f)
+    with (tmp_path / filename).open("r") as f:
+        metab_api.FlowsheetInterface.load(f, fsi)
+
+
+@pytest.mark.unit
+def test_action_set_was_run():
+    WA = metab_api.WorkflowActions
+    interface = metab_api.FlowsheetInterface(None)
+    # pretend we ran all the steps
+    action_list = (WA.build, WA.solve, WA.results)
+    for action in action_list:
+        interface._action_set_was_run(action)
+    # They should all be marked as run
+    for action in action_list:
+        assert interface._action_was_run(action)
+    # Now saying we re-ran the build step should reset run status on solve and results
+    interface._action_set_was_run(WA.build)
+    for action in action_list:
+        if action == WA.build:
+            assert interface._action_was_run(action)
+        else:
+            assert not interface._action_was_run(action)
