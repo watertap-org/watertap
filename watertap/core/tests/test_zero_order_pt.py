@@ -14,7 +14,6 @@
 Tests for general zero-order property package
 """
 import pytest
-from io import StringIO
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -100,25 +99,4 @@ class TestPT:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-
-------------------------------------------------------------------------------------
-    Stream Table
-                            Inlet  Outlet
-    Volumetric Flowrate    1.0600  1.0600
-    Mass Concentration H2O 943.40  943.40
-    Mass Concentration A   9.4340  9.4340
-    Mass Concentration B   18.868  18.868
-    Mass Concentration C   28.302  28.302
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()

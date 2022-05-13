@@ -398,8 +398,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
 
         Args:
-            ro_type - ROType Enum indicating reverse osmosis type,
-                      default = ROType.standard
+            ro_type: ROType Enum indicating reverse osmosis type,
+                default = ROType.standard
         """
         if ro_type == ROType.standard:
             membrane_cost = blk.costing_package.reverse_osmosis_membrane_cost
@@ -424,11 +424,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
 
         Args:
-            pump_type - PumpType Enum indicating pump type,
-                        default = PumpType.high_pressure
-            cost_electricity_flow - bool, if True, the Pump's work_mechanical will
-                                    be converted to kW and costed as an electricity
-                                    default = True
+            pump_type: PumpType Enum indicating pump type,
+                default = PumpType.high_pressure
+
+            cost_electricity_flow: bool, if True, the Pump's work_mechanical will be
+                converted to kW and costed as an electricity, default = True
         """
         if pump_type == PumpType.high_pressure:
             WaterTAPCostingData.cost_high_pressure_pump(blk, cost_electricity_flow)
@@ -452,11 +452,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
 
         Args:
-            energy_recovery_device_type - EnergyRecoveryDeviceType Enum indicating ERD type,
-                                          default = EnergyRecoveryDeviceType.default
-            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
-                                    be converted to kW and costed as an electricity
-                                    default = True
+            energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
+                default = EnergyRecoveryDeviceType.default
+
+            cost_electricity_flow: bool, if True, the ERD's work_mechanical will
+                be converted to kW and costed as an electricity default = True
         """
         if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
             WaterTAPCostingData.cost_default_energy_recovery_device(blk)
@@ -473,7 +473,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         High pressure pump costing method
 
-        TODO: describe equations
+        `TODO: describe equations`
 
         Args:
             cost_electricity_flow - bool, if True, the Pump's work_mechanical will
@@ -618,11 +618,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
 
         Args:
-            mixer_type - MixerType Enum indicating mixer type,
-                         default = MixerType.default
-            **kwargs - Additional keywords for the MixerType, e.g., NaOCl
-                       and CaOH2 mixers expect the `dosing_rate` keyword
-                       argument.
+            mixer_type: MixerType Enum indicating mixer type,
+                default = MixerType.default
+
+            `**kwargs`: Additional keywords for the MixerType, e.g., NaOCl
+                and CaOH2 mixers expect the `dosing_rate` keyword
+                argument.
         """
         if mixer_type == MixerType.default:
             WaterTAPCostingData.cost_default_mixer(blk, **kwargs)
