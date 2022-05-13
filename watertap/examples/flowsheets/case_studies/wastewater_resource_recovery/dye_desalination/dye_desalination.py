@@ -73,6 +73,8 @@ def build():
     # unit model
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
 
+    # TODO - include pump
+
     m.fs.nanofiltration = NanofiltrationZO(
         default={
             "property_package": m.fs.prop,
@@ -112,6 +114,9 @@ def set_operating_conditions(m):
 
     # nanofiltration
     m.fs.nanofiltration.load_parameters_from_database(use_default_removal=True)
+
+    # pump
+    # TODO - load params, unfix pressure, set pressure constraint
 
 
 def initialize_system(m):

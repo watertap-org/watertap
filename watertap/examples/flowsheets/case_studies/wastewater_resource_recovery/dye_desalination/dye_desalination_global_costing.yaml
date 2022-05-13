@@ -5,7 +5,7 @@ defined_flows:
     value: 0.08
     units: USD_2020/kWh
   dye:
-    value:
+    value: #TODO - include this parameter
     units: USD_2020/kg
 #  water_product:
 #    value:
