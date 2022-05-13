@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for saponification property package example.
+Tests for ASM1 reaction package.
 Authors: Andrew Lee
 """
 import pytest
