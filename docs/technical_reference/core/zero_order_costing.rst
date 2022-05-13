@@ -10,5 +10,5 @@ Class Documentation
 -------------------
 
 .. autoclass:: ZeroOrderCosting
-   :members:
+   :inherited-members:
    :undoc-members:
