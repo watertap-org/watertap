@@ -68,14 +68,17 @@ def _load_csv_file(file_name):
     return pd.read_csv(file_name)
 
 
-def _build_flowsheet(unit_model_class, process_subtype):
+def _build_flowsheet(unit_model_class, process_subtype, water_source):
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["tds", "tss", "toc"]}
+        default={
+            "database": m.db,
+            "water_source": water_source,
+        }
     )
 
     # unit model
@@ -111,12 +114,8 @@ def _build_flowsheet(unit_model_class, process_subtype):
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
 
     # fix concentration for feed
-    conc_mass_tds = 0.63 * pyunits.kg / pyunits.m**3
-    conc_mass_tss = 0.006525 * pyunits.kg / pyunits.m**3
-    conc_mass_toc = 0.004 * pyunits.kg / pyunits.m**3
-    m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
-    m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
-    m.fs.feed.conc_mass_comp[0, "toc"].fix(conc_mass_toc)
+    m.fs.feed.load_feed_data_from_database(overwrite=True)
+    m.fs.feed.flow_vol[0].unfix()
 
     # load database parameters
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
@@ -206,6 +205,15 @@ class ZeroOrderUnitChecker:
     ).declare_as_argument()
 
     CONFIG.declare(
+        "water_source",
+        ConfigValue(
+            domain=str,
+            default=None,
+            description="Database water_source, if needed",
+        ),
+    ).declare_as_argument()
+
+    CONFIG.declare(
         "csv_file",
         ConfigValue(
             domain=Path(),
@@ -236,12 +244,10 @@ class ZeroOrderUnitChecker:
         self.config = self.CONFIG()
         self.config.set_value(options)
 
-        self.comparison_dataframe = None
-        self.model = None
-
-    def check_unit(self):
         self.model = _build_flowsheet(
-            self.config.zero_order_model, self.config.process_subtype
+            self.config.zero_order_model,
+            self.config.process_subtype,
+            self.config.water_source,
         )
 
         if self.config.csv_file is None:
@@ -276,6 +282,8 @@ class ZeroOrderUnitChecker:
                 f"Unexpected number of degrees of freedom {degrees_of_freedom(self.model)}"
             )
 
+    def check_unit(self):
+        df = self.comparison_dataframe
         msg = f"Checking {self.config.zero_order_model.__name__}"
         if self.config.process_subtype is not None:
             msg += f" with subtype {self.config.process_subtype}"
