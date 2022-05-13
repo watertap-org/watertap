@@ -15,7 +15,7 @@ def flowsheet_for_ui():
     return fsi
 
 
-def build_flowsheet(fs, ui: FlowsheetInterface = None, **kwargs):
+def build_flowsheet(_model, ui: FlowsheetInterface = None, **kwargs):
     model = metab.build()
     metab.set_operating_conditions(model)
     metab.assert_degrees_of_freedom(model, 0)
