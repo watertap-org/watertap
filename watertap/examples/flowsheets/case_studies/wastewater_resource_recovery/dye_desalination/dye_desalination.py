@@ -117,7 +117,12 @@ def set_operating_conditions(m):
     m.fs.nanofiltration.load_parameters_from_database(use_default_removal=True)
 
     # pump
-    # TODO - load params, unfix pressure, set pressure constraint
+    m.fs.pump.load_parameters_from_database(use_default_removal=True)
+    m.fs.pump.applied_pressure.unfix()
+
+    @m.fs.pump.applied_pressure.Constraint(doc="operating pressure")
+    def operating_pressure(m):
+        return m.fs.nanofiltration.applied_pressure == m.fs.pump.applied_pressure
 
 
 def initialize_system(m):
