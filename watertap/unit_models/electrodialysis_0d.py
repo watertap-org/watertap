@@ -267,19 +267,19 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
             doc="Water permeability coefficient",
         )
-        self.membrane_surface_resistence = Var(
+        self.membrane_surface_resistance = Var(
             self.membrane_set,
             initialize=2e-4,
             bounds=(1e-6, 1),
             units=pyunits.ohm * pyunits.meter**2,
-            doc="Surface resistence of membrane",
+            doc="Surface resistance of membrane",
         )
-        self.electrodes_resistence = Var(
+        self.electrodes_resistance = Var(
             initialize=0,
             bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.ohm * pyunits.meter**2,
-            doc="areal resistence of TWO electrode compartments of a stack",
+            doc="areal resistance of TWO electrode compartments of a stack",
         )
         self.current = Var(
             self.flowsheet().config.time,
@@ -408,8 +408,8 @@ class Electrodialysis0DData(UnitModelBlockData):
         )
         def eq_current_voltage_relation(self, t, p):
             surface_resistance_cp = (
-                self.membrane_surface_resistence["aem"]
-                + self.membrane_surface_resistence["cem"]
+                self.membrane_surface_resistance["aem"]
+                + self.membrane_surface_resistance["cem"]
                 + self.spacer_thickness
                 / (
                     0.5
@@ -433,7 +433,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                 self.current[t]
                 * (
                     surface_resistance_cp * self.cell_pair_num
-                    + self.electrodes_resistence
+                    + self.electrodes_resistance
                 )
                 == self.voltage[t] * self.cell_width * self.cell_length
             )
@@ -744,12 +744,12 @@ class Electrodialysis0DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.spacer_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.spacer_thickness, 1e4)
         if (
-            iscale.get_scaling_factor(self.membrane_surface_resistence, warning=True)
+            iscale.get_scaling_factor(self.membrane_surface_resistance, warning=True)
             is None
         ):
-            iscale.set_scaling_factor(self.membrane_surface_resistence, 1e4)
-        if iscale.get_scaling_factor(self.electrodes_resistence, warning=True) is None:
-            iscale.set_scaling_factor(self.electrodes_resistence, 1e4)
+            iscale.set_scaling_factor(self.membrane_surface_resistance, 1e4)
+        if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
+            iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
         if iscale.get_scaling_factor(self.current, warning=True) is None:
             iscale.set_scaling_factor(self.current, 1)
         if iscale.get_scaling_factor(self.voltage, warning=True) is None:
@@ -789,7 +789,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         # Constraint scaling
         for ind, c in self.eq_current_voltage_relation.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.membrane_surface_resistence)
+                c, iscale.get_scaling_factor(self.membrane_surface_resistance)
             )
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
