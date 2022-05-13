@@ -67,7 +67,7 @@ Sets
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
    "Components", ":math:`j`", "['H2O', 'Na_+', 'Cl_-', ...]"
-   "Membrane", :math: `na`, ['cem', ;'aem']
+   "Membrane", "N/A", "['cem', 'aem']"
 
 **Users are responsible for naming any chemical additives and defining all parameters associated with them**
 
@@ -76,26 +76,26 @@ Degrees of Freedom
 Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), this model has
 31 additional degerees of freedom that need to be fixed to fully solve the model. 15 of them are repeated over 
 the two channels (making up 30) and 1 (the electrical input) is general for both channels.  The total 31 are 
-tabulated below. 
-
+tabulated below.
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "Number"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number"
 
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "["cem", "aem"], ":math:`\text{dimensionless}`", 2
-   "Water permeability", ":math:`L`", "water_permeability_membrane", "["cem", "aem"]", ":math:`\ `", 
+   "Water permeability", ":math:`L`", "water_permeability_membrane", "["cem", "aem"]", ":math:`\text{m}^{-1}\text{Pa}^{-1}`", 2
+   "Voltage", ":math:`U`", "voltage", "[t]", ":math:`\text{V}`", 1
+   "Resistance of the electrode compartments", ":math:`R_{el}`", "electrodes_resistance", "[t]", ":math:`\text{mg}L}`", 1
+   "Cell pair number", ":math:`N`", "cell_pair_numb", "None", " ", 1
+   "Current utilization for all mass transfer", ":math:`\xi`", "final_turbidity_ntu", "None", ":math:``", 1
+   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", " ", 1
+   "Area resistence of ion exchnge membranes", ":math:`r`", "membrane_surface_resistence", "["cem", "aem"]", ":math:`\text{s}`" , 2
+   "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
+   "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
+   "Thickness of ion exchange membranes", ":math:`\delta`", "memebrane_thickness", "["cem", "aem"]", ":math:`\text{m}`", 2
+   "diffusivity of solute in the membrane phase", ":math:`\D`", "solute_diffusivity_membrane", "[["cem", "aem"], j]", ":math:`\text{m^2/s}`", 4
+   "transport number of ions in the membrane phase", ":math:`t`", "ion_trans_number_membrane", "[["cem", "aem"], j]", ":math:`\text{dimensionless}`", 4
 
-   "Voltage", ":math:`U`", "voltage", "[t]", ":math:``"
-   "Resistence of the electrode compartments", ":math:`R_{el}`", "electrodes_resistence", "[t]", ":math:`\text{mg/L}`"
-   "Cell pair number", ":math:`N`", "cell_pair_numb", "None", ":math:``"
-   "Current utilization for all mass transfer", ":math:`\xi`", "final_turbidity_ntu", "None", ":math:``"
-   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:``"
-   "Area resistence of ion exchnge membranes", ":math:`r`", "membrane_surface_resistence", "["cem", "aem"]", ":math:`\text{s}`"
-   "Cell width", ":math:`b`", "cell_width", "None", ":math: `\text{m}`"
-   "Cell length", ":math:`l`", "cell_length", "None", ":math: `\text{m}`"
-   "Thickness of ion exchange membranes", ":math:`\delta`", "memebrane_thickness", "["cem", "aem"]", ":math:`\text{m}`"
-   "diffusivity of solute in the membrane phase", ":math:`\D`", "solute_diffusivity_membrane", "[["cem", "aem"], j]", ":math:`\text{m^2/s}`"
-   "transport number of ions in the membrane phase", ":math:`t`", "ion_trans_number_membrane", "[["cem", "aem"], j]", ":math:`\text{dimensionless}`"
+
    
 at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
 
@@ -138,9 +138,10 @@ Variables
 ----------
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number"
 
-   "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
+   "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", ":math:`\text{dimensionless}`", 2
+   "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`\text{m^{-1}s^{-1}Pa^{-1}}`"
    "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
    "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Mass flux across membrane", ":math:`J`", "flux_mass_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
