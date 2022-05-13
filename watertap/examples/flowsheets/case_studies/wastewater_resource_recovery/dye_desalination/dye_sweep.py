@@ -37,11 +37,26 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 
-    return
+    sweep_params = {}
+    if case_num != 0:
+        raise ValueError("case_num = %d not recognized." % (case_num))
+
+    output_filename = "sensitivity_" + str(case_num) + ".csv"
+    global_results = parameter_sweep(
+        m,
+        sweep_params,
+        outputs,
+        csv_results_file_name=output_filename,
+        optimize_function=optimize_kwargs,
+        interpolate_nan_outputs=interpolate_nan_outputs,
+    )
+
+    return global_results, sweep_params
 
 
 def main(case_num=1, nx=1, interpolate_nan_outputs=True):
-    run_analysis(case_num, nx, interpolate_nan_outputs)
+    global_results, sweep_params = run_analysis(case_num, nx, interpolate_nan_outputs)
+    print(global_results)
     return
 
 
