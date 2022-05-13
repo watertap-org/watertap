@@ -25,7 +25,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.generic_models.unit_models import product as Product
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.costing import UnitModelCostingBlock
 
@@ -34,21 +34,36 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
-    FeedZO,
+    feed_zo,
     nanofiltration_zo,
 )
-from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.core.zero_order_costing import ZeroOrderCostingData as ZeroOrderCosting
 
 # def main():
 #     m = build()
 #     return m
 # #
-# # #def build()
-#     # flowsheet set up
-#     m = ConcreteModel
-#     m.db = Database()
-#
-#     m.fs = FlowsheetBlock(default = {"dynamic": False})
-#     m.fs.prop = prop_ZO.WaterParameterBlock(
-#         default = {"solute_list": []}
-#     )
+def build():
+    # flowsheet set up
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.prop = prop_ZO.WaterParameterBlock(default={"solute_list": ["dye", "tds"]})
+
+    # unit model
+    m.fs.feed = feed_zo(default={"property_package": m.fs.prop})
+
+    m.fs.nanofiltration = nanofiltration_zo(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "rHGO_dye_rejection",
+        }
+    )
+
+    m.fs.permeate = Product(default={"property_package": m.fs.prop})
+    m.fs.retentate = Product(default={"property_package": m.fs.prop})
+
+    # # connections
+    # m.fs.s01 = A
