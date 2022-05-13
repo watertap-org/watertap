@@ -1,7 +1,10 @@
 import os
 import glob
+
 import numpy as np
 import pandas as pd
+
+from matplotlib.pyplot import subplots
 
 from pyomo.common.config import ConfigDict, ConfigValue, In, Path, NonNegativeFloat
 from pyomo.environ import (
@@ -164,6 +167,12 @@ _WT3_stone = {
     "lcow": "WT_LCOW",
 }
 
+_long_name_to_WT3_name = {
+    "Total Capital Investment (M\$)": "tci",
+    "Unit LCOW (\$/m^3)": "lcow",
+    "Annual Operating Cost (M\$/yr)": "annual_op_cost",
+}
+
 
 def ZeroOrderModel(data):
     if isinstance(data, type):
@@ -290,11 +299,41 @@ class ZeroOrderUnitChecker:
             print(f"FOUND DIFFERENCES, SEE ABOVE")
             return False
 
+    def get_differnces_figure(self):
+        assert self.comparison_dataframe is not None
+
+        fig, ax = subplots(1, 3, sharex=True, figsize=(18, 6))
+
+        xaxis_label = "Flow In (m^3/s)"
+
+        df = self.comparison_dataframe
+
+        for idx, (ln, wt3n) in enumerate(_long_name_to_WT3_name.items()):
+            ax[idx].plot(df["flow_in"], df[wt3n], label="WT3", color="blue")
+            ax[idx].plot(
+                df["flow_in"], df[_WT3_stone[wt3n]], label="WT", color="orange"
+            )
+            ax[idx].set_xlabel(xaxis_label)
+            ax[idx].set_ylabel(ln)
+
+        name = f"Unit Model {self.config.zero_order_model.__name__}"
+        if self.config.process_subtype:
+            name += " ,subtype {self.config.process_subtype}"
+        fig.suptitle(name)
+        # only use the last legend
+        fig.legend(*ax[idx].get_legend_handles_labels())
+        fig.tight_layout()
+
+        return fig
+
 
 def check_unit(**kwargs):
+    from matplotlib.pyplot import show
 
     checker = ZeroOrderUnitChecker(**kwargs)
     checker.check_unit()
+    fig = checker.get_differnces_figure()
+    show()
 
     return checker
 
@@ -306,7 +345,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("unit_validator")
     config = ZeroOrderUnitChecker.CONFIG
     config.initialize_argparse(parser)
-
+    if len(sys.argv) == 1:
+        parser.print_help()
+        exit()
     args = parser.parse_args(sys.argv[1:])
     config.import_argparse(args)
 
