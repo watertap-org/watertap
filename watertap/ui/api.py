@@ -544,7 +544,18 @@ class FlowsheetInterface(BlockInterface):
         func, kwargs = self._actions[name]
         if func is None:
             raise ValueError("Undefined action. name={name}")
-        result = func(self._block, ui=self, **kwargs)
+        # Run action
+        if name == WorkflowActions.build:
+            # The 'build' action is special: takes only kwargs, and returns
+            # the block to be set as the flowsheet block in the UI
+            block = func(**kwargs)
+            if block is not None:
+                self.set_block(block)
+            result = block
+        else:
+            # All other actions take the existing block, the ui, and
+            # the keyword arguments, and return what they want to.
+            result = func(self._block, ui=self, **kwargs)
         self._action_set_was_run(name)
         return result
 
