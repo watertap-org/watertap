@@ -167,6 +167,76 @@ class TestParamBlock(object):
             ("R10", "Liq", "X_PP"): -0.4,
             ("R10", "Liq", "X_PHA"): 1,
             ("R10", "Liq", "X_TSS"): -0.69,
+            ("R11", "Liq", "S_O2"): -0.2,
+            ("R11", "Liq", "S_PO4"): -1,
+            ("R11", "Liq", "S_ALK"): 0.016 * 61,
+            ("R11", "Liq", "X_PP"): 1,
+            ("R11", "Liq", "X_PHA"): -0.2,
+            ("R11", "Liq", "X_TSS"): 3.11,
+            ("R12", "Liq", "S_N2"): 0.07,
+            ("R12", "Liq", "S_NO3"): -0.07,
+            ("R12", "Liq", "S_PO4"): -1,
+            ("R12", "Liq", "S_ALK"): 0.021 * 61,
+            ("R12", "Liq", "X_PP"): 1,
+            ("R12", "Liq", "X_PHA"): -0.2,
+            ("R12", "Liq", "X_TSS"): 3.11,
+            ("R13", "Liq", "S_O2"): -0.6,
+            ("R13", "Liq", "S_NH4"): -0.07,
+            ("R13", "Liq", "S_PO4"): -0.02,
+            ("R13", "Liq", "S_ALK"): -0.07 * 61 / 14
+            + 0.02 * 1.5 * 61 / 31,  # ~-0.004*61
+            ("R13", "Liq", "X_PAO"): 1,
+            ("R13", "Liq", "X_PHA"): -1.6,
+            ("R13", "Liq", "X_TSS"): -0.06,
+            ("R14", "Liq", "S_NH4"): -0.07,
+            ("R14", "Liq", "S_N2"): 0.21,
+            ("R14", "Liq", "S_NO3"): -0.21,
+            ("R14", "Liq", "S_PO4"): -0.02,
+            ("R14", "Liq", "S_ALK"): (-0.07 + 0.21) * 61 / 14
+            + 0.02 * 61 / 31,  # ~0.011*61
+            ("R14", "Liq", "X_PAO"): 1,
+            ("R14", "Liq", "X_PHA"): -1.6,
+            ("R14", "Liq", "X_TSS"): -0.06,
+            ("R15", "Liq", "S_NH4"): 0.032,
+            ("R15", "Liq", "S_PO4"): 0.01,
+            ("R15", "Liq", "S_ALK"): 0.032 * 61 / 14
+            - 0.01 * 1.5 * 61 / 31,  # ~0.002*61
+            ("R15", "Liq", "X_I"): 0.1,
+            ("R15", "Liq", "X_S"): 0.9,
+            ("R15", "Liq", "X_PAO"): -1,
+            ("R15", "Liq", "X_TSS"): -0.15,
+            ("R16", "Liq", "S_PO4"): 1,
+            ("R16", "Liq", "S_ALK"): -0.016 * 61,
+            ("R16", "Liq", "X_PP"): -1,
+            ("R16", "Liq", "X_TSS"): -3.23,
+            ("R17", "Liq", "S_A"): 1,
+            ("R17", "Liq", "S_ALK"): 61 * (1 / 64 - 1 / 31),  # ~-0.016*61
+            ("R17", "Liq", "X_PHA"): -1,
+            ("R17", "Liq", "X_TSS"): -0.6,
+            ("R18", "Liq", "S_O2"): -18,
+            ("R18", "Liq", "S_NH4"): -4.24,
+            ("R18", "Liq", "S_NO3"): 4.17,
+            ("R18", "Liq", "S_PO4"): -0.02,
+            ("R18", "Liq", "S_ALK"): -0.6 * 61,
+            ("R18", "Liq", "X_AUT"): 1,
+            ("R18", "Liq", "X_TSS"): 0.9,
+            ("R19", "Liq", "S_NH4"): 0.032,
+            ("R19", "Liq", "S_PO4"): 0.01,
+            ("R19", "Liq", "S_ALK"): 0.032 * 61 / 14 - 0.01 * 61 / 31,  # ~0.002*61
+            ("R19", "Liq", "X_I"): 0.1,
+            ("R19", "Liq", "X_S"): 0.9,
+            ("R19", "Liq", "X_AUT"): -1,
+            ("R19", "Liq", "X_TSS"): -0.15,
+            ("R20", "Liq", "S_PO4"): -1,
+            ("R20", "Liq", "S_ALK"): 0.048 * 61,
+            ("R20", "Liq", "X_TSS"): 1.42,
+            ("R20", "Liq", "X_MeOH"): -3.45,
+            ("R20", "Liq", "X_MeP"): 4.87,
+            ("R21", "Liq", "S_PO4"): 1,
+            ("R21", "Liq", "S_ALK"): -0.048 * 61,
+            ("R21", "Liq", "X_TSS"): -1.42,
+            ("R21", "Liq", "X_MeOH"): 3.45,
+            ("R21", "Liq", "X_MeP"): -4.87,
         }
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 20 * 21
@@ -218,23 +288,10 @@ class TestParamBlock(object):
                 "X_TSS",
             ]
 
-            print(i)
             if i in stoic:
                 assert pytest.approx(stoic[i], rel=1e-2) == value(v)
             else:
-                if i[0] in [
-                    "R1",
-                    "R2",
-                    "R3",
-                    "R4",
-                    "R5",
-                    "R6",
-                    "R7",
-                    "R8",
-                    "R9",
-                    "R10",
-                ]:
-                    assert value(v) == 0
+                assert value(v) == 0
 
 
 class TestReactionBlock(object):
