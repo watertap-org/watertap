@@ -1,4 +1,4 @@
-from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
+from pyomo.environ import ConcreteModel, assert_optimal_termination
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
@@ -80,7 +80,7 @@ def main():
 
     # resolve
     results = solver.solve(m, tee=False)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert_optimal_termination(results)
 
     print('\n---fifth display---')
     m.fs.stream[0].display()
