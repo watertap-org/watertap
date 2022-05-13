@@ -213,7 +213,12 @@ class TestBoronRemoval_IonPropPack_Min:
         assert degrees_of_freedom(m) == 6
 
         # set the variables
-        model_setup(m)
+        # For this test, we don't actually know how much
+        #   of the base to add. Instead, we have a target
+        #   exit flow of boron (see below). We will initially
+        #   guess that we want 5 mg/L of additive, but the
+        #   actual solution is 10 mg/L. 
+        model_setup(m, chem_add=5)
 
         # Modified this test to fix the desired outlet flow
         #   of Boron and unfix the dosage needed to get that outlet
