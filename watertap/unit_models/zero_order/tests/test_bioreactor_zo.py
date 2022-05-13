@@ -14,7 +14,6 @@
 Tests for zero-order bioreactor model
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     Block,
@@ -131,36 +130,7 @@ class TestBioreactorZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                       : Value      : Fixed : Bounds
-           Electricity Demand : 9.9000e-09 : False : (0, None)
-        Electricity Intensity :     0.0000 :  True : (None, None)
-       Solute Removal [boron] :    0.80000 :  True : (0, None)
-         Solute Removal [foo] :     0.0000 :  True : (0, None)
-    Solute Removal [selenium] :    0.96500 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                  Inlet    Treated
-    Volumetric Flowrate           10.003    9.7012
-    Mass Concentration H2O        999.70    999.87
-    Mass Concentration boron    0.099970  0.020616
-    Mass Concentration selenium 0.099970 0.0036078
-    Mass Concentration foo      0.099970   0.10308
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

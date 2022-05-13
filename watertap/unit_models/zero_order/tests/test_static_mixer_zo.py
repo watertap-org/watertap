@@ -14,7 +14,7 @@
 Tests for zero-order static mixer model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -114,35 +114,8 @@ class TestStaticMixerZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                   Inlet   Outlet 
-    Volumetric Flowrate          0.049103 0.049103
-    Mass Concentration H2O         855.34   855.34
-    Mass Concentration calcium     61.096   61.096
-    Mass Concentration magnesium   2.0365   2.0365
-    Mass Concentration foo       0.061096 0.061096
-    Mass Concentration sulfate     81.461   81.461
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
