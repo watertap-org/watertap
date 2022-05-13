@@ -17,11 +17,11 @@ def set_up_sensitivity(m):
     optimize_kwargs = {"check_termination": False}  # None
     opt_function = dye_desalination.solve
 
-    # add costing parameters
+    # TODO - add costing parameters
 
-    # add baselines
+    # TODO - add baselines
 
-    # create outputs
+    # TODO - create outputs
 
     return outputs, optimize_kwargs, opt_function
 
