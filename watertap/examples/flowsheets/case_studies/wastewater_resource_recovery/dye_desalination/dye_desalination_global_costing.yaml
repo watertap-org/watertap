@@ -1,0 +1,26 @@
+base_currency: USD_2020
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.08
+    units: USD_2020/kWh
+#  water_product:
+#    value:
+#    units: USD_2020/m^3
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 0.85
+    units: dimensionless
+  capital_annualization_factor:
+    value: 0.1
+    units: 1/year
+  practical_investment_factor:
+    value: 2
+    units: dimensionless
+  fixed_operating_cost_factor:
+    value: 0.02
+    units: 1/year
+
