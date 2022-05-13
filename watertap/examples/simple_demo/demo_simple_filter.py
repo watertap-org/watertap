@@ -6,8 +6,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
-import simple_prop_pack as props
-from simple_filter import Filtration
+import watertap.examples.simple_demo.simple_prop_pack as props
+from watertap.examples.simple_demo.simple_filter import Filtration
 
 def main():
     # create model, flowsheet
@@ -72,6 +72,8 @@ def main():
 
     print('second display')
     m.fs.filter.display()
+
+    return m
 
 
 if __name__ == "__main__":

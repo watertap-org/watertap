@@ -80,11 +80,10 @@ class PropParameterData(PhysicalParameterBlock):
             units=pyunits.kg / pyunits.m ** 3,
             doc='Mass density parameters')
 
-
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
-        self.set_default_scaling('dens_mass_phase', 1e-3)
+        self.set_default_scaling('dens_mass_phase', 1e-3, "Liq")
 
     @classmethod
     def define_metadata(cls, obj):

@@ -5,7 +5,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
-import simple_prop_pack as props
+import watertap.examples.simple_demo.simple_prop_pack as props
 
 def main():
     # create model, flowsheet
@@ -61,7 +61,7 @@ def main():
     solver = get_solver()
 
     results = solver.solve(m, tee=False)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert_optimal_termination(results)
 
     # display results
     print('\n---fourth display---')
@@ -84,6 +84,8 @@ def main():
 
     print('\n---fifth display---')
     m.fs.stream[0].display()
+
+    return m
 
 
 if __name__ == "__main__":
