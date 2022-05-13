@@ -15,7 +15,6 @@ Tests for zero-order anaerobic MBR-MEC model
 """
 import pytest
 
-from io import StringIO
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -190,41 +189,7 @@ class TestAnaerobicMBRMECZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                           : Value      : Fixed : Bounds
-                               Electricity Demand : 8.0000e-10 : False : (0, None)
-                            Electricity Intensity :     0.0000 :  True : (None, None)
-    Reaction Extent [cod_to_nonbiodegradable_cod] : 5.0313e-05 : False : (None, None)
-            Solute Removal [ammonium_as_nitrogen] :     0.0000 :  True : (0, None)
-                             Solute Removal [cod] :     0.0000 :  True : (0, None)
-            Solute Removal [nonbiodegradable_cod] :     1.0000 :  True : (0, None)
-        Solute Removal [phosphate_as_phosphorous] :     0.0000 :  True : (0, None)
-                                   Water Recovery :    0.39680 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                   Inlet     Treated   Byproduct
-    Volumetric Flowrate                         4.3750e-05 1.7374e-05 2.6376e-05
-    Mass Concentration H2O                          997.55     996.71     998.09
-    Mass Concentration cod                          2.3000     2.8958 3.0331e-05
-    Mass Concentration nonbiodegradable_cod     2.2857e-16 4.6045e-05     1.9076
-    Mass Concentration ammonium_as_nitrogen        0.10500    0.26444 3.0331e-05
-    Mass Concentration phosphate_as_phosphorous   0.050000    0.12595 3.0331e-05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
