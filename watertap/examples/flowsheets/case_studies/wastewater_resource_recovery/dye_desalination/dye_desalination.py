@@ -73,7 +73,13 @@ def build():
     # unit model
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
 
-    m.fs.pump = PumpElectricityZO(default={"property_package": m.fs.prop})
+    m.fs.P1 = PumpElectricityZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "default",
+        }
+    )
 
     m.fs.nanofiltration = NanofiltrationZO(
         default={
@@ -87,8 +93,8 @@ def build():
     m.fs.retentate1 = Product(default={"property_package": m.fs.prop})
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
-    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.nanofiltration.inlet)
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+    m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.nanofiltration.inlet)
     m.fs.s03 = Arc(source=m.fs.nanofiltration.treated, destination=m.fs.permeate1.inlet)
     m.fs.s04 = Arc(
         source=m.fs.nanofiltration.byproduct, destination=m.fs.retentate1.inlet
@@ -117,12 +123,9 @@ def set_operating_conditions(m):
     m.fs.nanofiltration.load_parameters_from_database(use_default_removal=True)
 
     # pump
-    m.fs.pump.load_parameters_from_database(use_default_removal=True)
-    m.fs.pump.applied_pressure.unfix()
-
-    @m.fs.pump.applied_pressure.Constraint(doc="operating pressure")
-    def operating_pressure(m):
-        return m.fs.nanofiltration.applied_pressure == m.fs.pump.applied_pressure
+    m.fs.P1.load_parameters_from_database(use_default_removal=True)
+    m.fs.P1.applied_pressure.fix(m.fs.nanofiltration.applied_pressure.get_values()[0])
+    m.fs.P1.lift_height.unfix()
 
 
 def initialize_system(m):
@@ -151,7 +154,7 @@ def add_costing(m):
 
 
 def display_results(m):
-    unit_list = ["feed", "nanofiltration"]
+    unit_list = ["feed", "nanofiltration", "P1"]
     for u in unit_list:
         m.fs.component(u).report()
 
