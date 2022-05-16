@@ -7,22 +7,13 @@ Introduction
 Boron removal is generally applied as a desalination post-treatment after the first
 Reverse Osmosis (RO) stage to shift the equilibrium of Boron (B[OH]\ :sub:`3`\) to Borate (B[OH]\ :sub:`4`\ :sup:`-`)
 so that a second RO stage can remove Borate ions from solution such that the total boron
-concentration can go below ~1 mg/L per the World Health Organization standards.
+concentration can go below ~1 mg/L per the World Health Organization standards. This
+is accomplished by adding caustic chemicals (such as sodium hydroxide (NaOH) or lime
+(Ca[OH]\ :sub:`2`\)) to the stream just before the 2nd RO stage. The goal is to shift
+the pH of the stream above around 9.5 so that the majority of total boron is in the
+ionic state of Borate. Those Borate ions would then be rejected in the 2nd RO stage.
 
-Stage 1) Coagulation (where chemical coagulants and other aids are rapidly mixed into solution)
-Stage 2) Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
-
-In this implementation of the model, the user MUST provide a measured final Turbidity (in NTU) made
-during a Jar Test for the given water source. This measurement is then used to estimate how much
-TSS would be removed during the Coagulation-Flocculation process. Users may also
-provide the specific chemical composition of additives used to achieve this final Turbidity, and
-can provide information on the level of salts in those additives. This information can be used
-to estimate an increase in total dissolved salts (TDS) that may occur due to the addition of
-those chemicals.
-
-This model also includes relationships for power usage in the rapid mixing and flocculation
-basins. Users will need to provide information for power usage such as retention times of
-each basin, mixing paddle sizes, number of mixers, etc.
+In this implementation of the model, the user MUST provide
 
 The main assumptions of the implemented model are as follows:
 
@@ -32,11 +23,11 @@ The main assumptions of the implemented model are as follows:
 4) Single liquid phase only
 5) Isothermal operation
 
-.. figure:: ../../_static/unit_models/coagulation_flocculation.png
+.. figure:: ../../_static/unit_models/BoronRemovalDiagram.png
     :width: 600
     :align: center
 
-    Figure 1. Schematic representation of a coagulation-flocculation unit modeled in WaterTAP
+    Figure 1. Schematic representation of a Boron removal unit modeled in WaterTAP
 
 Ports
 -----
@@ -172,3 +163,6 @@ References
 ----------
 M.M. Benjamin, `Water Chemistry <https://www.biblio.com/9781577666677>`_, Waveland Press,
 Inc.: Illinois, 2010, Ch. 1, 18-51.
+
+Lenntech, `Desalination Post-treatment: Boron Removal Process <https://www.lenntech.com/processes/desalination/post-treatment/post-treatments/boron-removal.htm>`_,
+Accessed May 16, 2022.
