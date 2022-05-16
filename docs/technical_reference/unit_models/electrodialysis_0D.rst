@@ -22,7 +22,7 @@ or retreated. More overview of the electrodialysis technology can be found in th
     :width: 600
     :align: center
 
-    Figure 1. Schematic representation of an electrodialysis cell pair as a model unit
+    Figure 1. Schematic representation of an electrodialysis cell pair 
 
 
 One cell pair in an electrodialysis stack can thus be treated as a modeling unit that can multiply to
