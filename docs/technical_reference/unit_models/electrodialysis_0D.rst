@@ -89,24 +89,24 @@ are parameters that should be provided in order to fully solve the model.
 .. csv-table:: **Table 2.** List of Degree of Freedom (DOF)
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number \ :sup:`1`"
 
-   "Temperature, inlet_diluate", ":math:`T`", "temperature", "None", ":math:`\text{K}`", 1
-   "Temperature, inlet_concentrate", ":math:`T`", "temperature", "None", ":math:`\text{K}`", 1
-   "Pressure, inlet_diluate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
-   "Pressure, inlet_concentrate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
-   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`\text{mol s^{-1}}`", 3
-   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`\text{mol s^{-1}}`", 3
+   "Temperature, inlet_diluate", ":math:`T`", "temperature", "None", ":math:`K`", 1
+   "Temperature, inlet_concentrate", ":math:`T`", "temperature", "None", ":math:`K`", 1
+   "Pressure, inlet_diluate",":math:`p`", "temperature", "None", ":math:`Pa`", 1
+   "Pressure, inlet_concentrate",":math:`p`", "temperature", "None", ":math:`Pa`", 1
+   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
-   "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`\text{m^{-1}s^{-1}Pa^{-1}}`", 2
-   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`\text{A}`", 1
-   "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega \text{m^2}`", 1
+   "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 2
+   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
+   "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega m^2`", 1
    "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
-   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`\text{m}` ", 1
-   "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['cem', 'aem']", ":math:`\Omega \text{m^2}`", 2
+   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`m` ", 1
+   "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['cem', 'aem']", ":math:`\Omega m^2`", 2
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
-   "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`\text{m}`", 2
-   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", ":math:`\text{m^2 s^{-1}}`", 4
+   "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`m`", 2
+   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", ":math:`m^2 s^{-1}`", 4
    "transport number of ions in the membrane phase", ":math:`t_i`", "ion_trans_number_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", "dimensionless", 4
 
 **Note**
@@ -147,11 +147,11 @@ processes are well developed and some good summaries for the electrodialysis sce
 .. csv-table:: **Table 3** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
 
-   "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left[\text{'H_2 O', 'Na^+', '\Cl^-'}\right]`"
-   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left[\text{'Na^+', '\Cl^-'}]`"
-   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left[\text{'Na^+', '\Cl^-'}]`"
-   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)+\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left[\text{'H_2 O'}]`"
-   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)-\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left[\text{'H_2 O'}]`"
+   "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', 'Na^+', 'Cl^-'\right]`"
+   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^+', 'Cl^-'\right]`"
+   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^+', 'Cl^-'\right]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)+\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)-\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
 
 Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
 
