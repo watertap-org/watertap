@@ -22,7 +22,7 @@ or retreated. More overview of the electrodialysis technology can be found in th
     :width: 600
     :align: center
 
-    Figure 1. Schematic representation of an electrodialysis cell pair 
+    Figure 1. Schematic representation of an electrodialysis cell pair
 
 
 One cell pair in an electrodialysis stack can thus be treated as a modeling unit that can multiply to
@@ -44,7 +44,7 @@ of water. The following key assumptions are based on.
 * Constant pressure and temperature through each channel. 
 
 Control Volumes
------
+---------------
 
 This model has two control volumes for the concentrate and diluate channels.
 
@@ -71,8 +71,8 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phase", ":math:`p`", "['Liq']"
-   "Component", ":math:`j`", "['H2O', 'Na_+', 'Cl_-'] \ :sup:`1`"
-   "Ion", ":math:`j`\  :sup:`2`", "['Na_+', 'Cl_-']"
+   "Component", ":math:`j`", "['H2O', 'Na_+', '\Cl_-'] \ :sup:`1`"
+   "Ion", ":math:`j`\  :sup:`2`", "['Na_+', '\Cl_-']"
    "Membrane", "n/a", "['cem', 'aem']"
 
 **Notes**
@@ -93,8 +93,8 @@ are parameters that should be provided in order to fully solve the model.
    "Temperature, inlet_concentrate", ":math:`T`", "temperature", "None", ":math:`\text{K}`", 1
    "Pressure, inlet_diluate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
    "Pressure, inlet_concentrate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
-   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', 'Cl_-']", ":math:`\text{mol s^{-1}}`", 3
-   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', 'Cl_-']", ":math:`\text{mol s^{-1}}`", 3
+   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`\text{mol s^{-1}}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`\text{mol s^{-1}}`", 3
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`\text{m^{-1}s^{-1}Pa^{-1}}`", 2
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`\text{A}`", 1
@@ -106,8 +106,8 @@ are parameters that should be provided in order to fully solve the model.
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`\text{m}`", 2
-   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', 'Cl_-']]", ":math:`\text{m^2 s^{-1}}`", 4
-   "transport number of ions in the membrane phase", ":math:`t_i`", "ion_trans_number_membrane", "[['cem', 'aem'], ['Na_+', 'Cl_-']]", "dimensionless", 4
+   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", ":math:`\text{m^2 s^{-1}}`", 4
+   "transport number of ions in the membrane phase", ":math:`t_i`", "ion_trans_number_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", "dimensionless", 4
 
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
@@ -117,9 +117,9 @@ are parameters that should be provided in order to fully solve the model.
 
 
 Solution component information
-------------------
+------------------------------
 To fully construct solution properties, users need to provide basic component information of the feed solution to use
-this model, including identity of all solute species (i.e., Na :sup:`+`, and Cl :sup:`-` for a
+this model, including identity of all solute species (i.e., Na :sup:`+`, and \Cl :sup:`-` for a
 NaCl solution), molecular weight of all component species (i.e., H\ :sub:`2`\ O, Na :sup:`+`, and Cl :sup:`-`), and charge
 and electrical mobility of all ionic species (i.e.,Na:sup:`+`, and Cl:sup:`-`). This can be provided as a solution
 dictionary in the following format (instanced by a NaCl solution).
@@ -136,9 +136,9 @@ dictionary in the following format (instanced by a NaCl solution).
 This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution.
 
 Equations
----------------------------
+---------
 
-This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and Cl :sup:`-` for a NaCl
+This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-` for a NaCl
 solution) on two control volumes (concentrate and diluate channels). Mass balance equations are summarized in **Table
 3**. Mass transfer mechanisms take account of solute electrical migration and diffusion and water osmosis and
 electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law, to simulate these
@@ -167,7 +167,7 @@ Additionally, several other equations are built to describe the electrochemical 
 All equations are coded as "constraints"(Pyomo). Isothermal and isobaric conditions apply.
 
 Nomenclature
----------------------------
+------------
 .. csv-table:: **Table 5.** Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
@@ -207,6 +207,7 @@ Nomenclature
    ":math:`out`", "Outlet",
    ":math:`cem`", "Cation exchange membrane",
    ":math:`aem`", "Anion exchange membrane",
+
 References
 ----------
 Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
