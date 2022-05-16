@@ -137,8 +137,8 @@ Equations and Relationships
    "Total Boron Balance Constraint", ":math:`C_{in,HA} + C_{in,A} = C_{HA} + C_{A}`"
    "Water Dissociation Constraint", ":math:`K_{w} = C_{H} \cdotp C_{OH}`"
    "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{HA} = C_{H} \cdotp C_{A}`"
-   "Boron mass balance", ":math:`0 = M_{HA,in} - M_{HA,out} + S_{HA}`"
-   "Boron source/sink rate", ":math:`S_{HA} = C_{HA} \cdotp Q - M_{HA,in}`"
+   "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{i,out} + C_{i} \cdotp Q`"
+   "Caustic cation mass balance", ":math:`0 = C_{caustic,in} - M_{caustic,out} + S_{caustic}`"
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
 
