@@ -139,14 +139,15 @@ Equations and Relationships
    "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{HA} = C_{H} \cdotp C_{A}`"
    "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{i,out} + C_{i} \cdotp Q`"
    "Caustic cation mass balance", ":math:`0 = C_{caustic,in} - M_{caustic,out} + S_{caustic}`"
+   "Caustic cation gain rate", ":math:`S_{caustic} = Q \cdotp \frac{D}{MW}`"
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
 
-**NOTE:** :math:`C_{H}` **is the proton concentration,** :math:`C_{OH}` **is the hydroxide concentration, ** :math:`C_{A}` **is the Borate concentration, and ** :math:`C_{HA}` **is the Boron concentration.**
+**NOTE:** :math:`C_{H}` **is the proton concentration,** :math:`C_{OH}` **is the hydroxide concentration,** :math:`C_{A}` **is the Borate concentration, and** :math:`C_{HA}` **is the Boron concentration.**
 
 **NOTE:** :math:`n_{i}` **is ion charge of component** :math:`i`
 
-**NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and ** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
+**NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
 
 References
 ----------
