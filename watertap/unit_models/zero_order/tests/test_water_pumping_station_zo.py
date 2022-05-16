@@ -14,7 +14,7 @@
 Tests for zero-order water pumping station model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -119,31 +119,8 @@ class TestWaterPumpingStationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 93.210 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet  Outlet
-    Volumetric Flowrate     1.0010  1.0010
-    Mass Concentration H2O  999.00  999.00
-    Mass Concentration foo 0.99900 0.99900
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestWaterPumpingStationZO_without_fix_pump_power_config:
@@ -230,31 +207,8 @@ class TestWaterPumpingStationZO_without_fix_pump_power_config:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 93.210 : False : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet  Outlet
-    Volumetric Flowrate     1.0010  1.0010
-    Mass Concentration H2O  999.00  999.00
-    Mass Concentration foo 0.99900 0.99900
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
