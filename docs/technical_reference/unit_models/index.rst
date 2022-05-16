@@ -12,3 +12,4 @@ Unit Models
    pressure_exchanger
    coag_floc_model
    crystallizer_0D
+   boron_removal
