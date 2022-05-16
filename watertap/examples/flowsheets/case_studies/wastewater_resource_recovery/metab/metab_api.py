@@ -1,7 +1,7 @@
 """
 Interface for flowsheet in :module:`metab`.
 """
-from watertap.ui.api import FlowsheetInterface, WorkflowActions
+from watertap.ui.api import FlowsheetInterface, WorkflowActions, export_variables
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
     metab,
 )
@@ -15,50 +15,72 @@ def flowsheet_for_ui():
     return fsi
 
 
-def build_flowsheet(_model, ui: FlowsheetInterface = None, **kwargs):
+def build_flowsheet(ui=None, **kwargs):
     model = metab.build()
     metab.set_operating_conditions(model)
     metab.assert_degrees_of_freedom(model, 0)
     metab.assert_units_consistent(model)
-    # now we have the flowsheet block, so set it in the FlowsheetInterface object (ui)
+    metab.add_costing(model)
+    model.fs.costing.initialize()
+    export_variables(
+        model.fs.costing,
+        name="METAB costing",
+        desc="Costing block for METAB model",
+        variables=[
+            "utilization_factor",
+            "TIC",
+            "maintenance_costs_percent_FCI",
+        ],
+    )
+    export_variables(
+        model.fs.metab_hydrogen.costing,
+        name="METAB hydrogen costing",
+        variables=[
+            "DCC_bead",
+            "DCC_reactor",
+            "DCC_mixer",
+            "DCC_vacuum",
+            "DCC_membrane",
+        ],
+    )
+    metab.adjust_default_parameters(model)
+    metab.assert_degrees_of_freedom(model, 0)
+
+    # set this flowsheet as the top-level block for the interface
     ui.set_block(model)
 
 
-def solve_flowsheet(model, **kwargs):
-    "Solve the flowsheet"
+def solve_flowsheet(block=None, **kwargs):
+    """Solve the flowsheet."""
+    model = block
     metab.initialize_system(model)
-
     results = metab.solve(model)
     metab.assert_optimal_termination(results)
-    # metab.display_results(model)
-
-    metab.add_costing(model)
-    model.fs.costing.initialize()
-
-    metab.adjust_default_parameters(model)
-
-    metab.assert_degrees_of_freedom(model, 0)
-    results = metab.solve(model)
-    metab.assert_optimal_termination(results)
-    #display_costing(m)
 
 
 # Terminal interactive testing
 # -----------------------------
 
-def cli_driver(fsi):
-    """Dumb little interactive driver for CLI testing.
-    """
+
+def cli_driver(fsi, args):
+    """Dumb little interactive driver for CLI testing."""
     commands = {
-        "json": print_json, "quit": exit_program,
-        "build": run_build, "solve": run_solve,
-        "results": print_results, "update": update,
+        "json": print_json,
+        "quit": exit_program,
+        "build": run_build,
+        "solve": run_solve,
+        "results": print_results,
+        "update": update,
     }
+    cli_commands = list(reversed(args))  # so pop() pulls left-to-right
     while True:
-        try:
-            cmd = input("Command> ")
-        except EOFError:
-            break
+        if cli_commands:
+            cmd = cli_commands.pop()
+        else:
+            try:
+                cmd = input("Command> ")
+            except EOFError:
+                break
         cmd = cmd.strip().lower()
         if cmd in commands:
             print(f"Running command: {cmd}")
@@ -97,6 +119,7 @@ def print_help(user_cmd, commands):
 def exit_program(*args):
     """Exit the program"""
     import sys
+
     print("Exit program.")
     sys.exit(0)
 
@@ -125,5 +148,11 @@ def print_results(fsi: FlowsheetInterface):
 
 
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        args = sys.argv[1:]
+    else:
+        args = []
     fsi = flowsheet_for_ui()
-    cli_driver(fsi)
+    cli_driver(fsi, args)
