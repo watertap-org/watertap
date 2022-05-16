@@ -213,7 +213,7 @@ class ZeroOrderUnitChecker:
         "water_source",
         ConfigValue(
             domain=str,
-            default=None,
+            default="municipal",
             description="Database water_source, if needed",
         ),
     ).declare_as_argument()

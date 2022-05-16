@@ -8,7 +8,7 @@ def run_and_print_result(name, file):
         error = checker.check_unit() 
         file.write(f"{name},{error}\n")
     except Exception as error:
-        file.write(f"{name},{error}\n")
+        file.write(f"""{name},"{error}"\n""")
 
 with open("test_results.csv", "w") as f:
     f.write("unit_name,result\n")
