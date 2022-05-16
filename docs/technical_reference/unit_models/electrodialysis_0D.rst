@@ -147,9 +147,9 @@ processes are well developed and some good summaries for the electrodialysis sce
 .. csv-table:: **Table 3** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
 
-   "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', 'Na^+', 'Cl^-'\right]`"
-   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^+', 'Cl^-'\right]`"
-   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^+', 'Cl^-'\right]`"
+   "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', 'Na^{+}', 'Cl^{-}'\right]`"
+   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^{+}', 'Cl^{-}'\right]`"
+   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['Na^{+}', 'Cl^{-}'\right]`"
    "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)+\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
    "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)-\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
 
