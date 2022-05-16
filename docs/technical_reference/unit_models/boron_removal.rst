@@ -132,15 +132,21 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Electroneutrality Constraint", ":math:`C_{H} = C_{OH} + C_{A} + Alk_{Res} - n*C_{caustic}`"
-   "TSS relationship with final Turbidity", ":math:`TSS_f = b + a(Turb_f)`"
-   "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
-   "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
-   "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
-   "TDS gain rate", ":math:`S_{TDS} = Q \cdotp {\sum_{i} \frac{D_i}{MW_{a,i}} \cdotp N_i \cdotp MW_{s,i} }`"
-   "TDS mass balance", ":math:`0 = M_{TDS,in} - M_{TDS,out} + S_{TDS}`"
+   "Electroneutrality Constraint", ":math:`C_{H} = C_{OH} + C_{A} + Alk_{Res} - n_{caustic}*C_{caustic}`"
+   "Residual Alkalinity Expression", ":math:`Alk_{Res} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
+   "Total Boron Balance Constraint", ":math:`C_{in,HA} + C_{in,A} = C_{HA} + C_{A}`"
+   "Water Dissociation Constraint", ":math:`K_{w} = C_{H} \cdotp C_{OH}`"
+   "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{HA} = C_{H} \cdotp C_{A}`"
+   "Boron mass balance", ":math:`0 = M_{HA,in} - M_{HA,out} + S_{HA}`"
+   "Boron source/sink rate", ":math:`S_{HA} = C_{HA} \cdotp Q - M_{HA,in}`"
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
+
+**NOTE:** :math:`C_{H}` **is the proton concentration,** :math:`C_{OH}` **is the hydroxide concentration, ** :math:`C_{A}` **is the Borate concentration, and ** :math:`C_{HA}` **is the Boron concentration.**
+
+**NOTE:** :math:`n_{i}` **is ion charge of component** :math:`i`
+
+**NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and ** :math:`C_{out,i}` **is the resulting concentration in the outlet stream **
 
 References
 ----------
