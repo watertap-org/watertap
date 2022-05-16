@@ -294,7 +294,8 @@ class BlockInterface(BlockSchemaDefinition):
             if self.DISP_KEY not in c:
                 c[self.DISP_KEY] = v.local_name
             if self.DESC_KEY not in c:
-                c[self.DESC_KEY] = v.doc or f"{c[self.DISP_KEY]} variable"
+                default_desc = f"{c[self.DISP_KEY]} variable"
+                c[self.DESC_KEY] = v.doc or default_desc
             if v.get_units() is not None:
                 c[self.UNIT_KEY] = str(v.get_units())
             # generate one result
@@ -324,15 +325,28 @@ def export_variables(block, variables=None, name=None, desc=None) -> BlockInterf
     cvars = config["variables"]
     if hasattr(variables, "items"):
         for var_key, var_val in variables.items():
+            _validate_export_var(block, var_key)
             var_entry = {"name": var_key}
             var_entry.update(var_val)
             cvars.append(var_entry)
     else:
         for var_name in variables:
+            _validate_export_var(block, var_name)
             var_entry = {"name": var_name}
             cvars.append(var_entry)
     interface = BlockInterface(block, config)
     return interface
+
+
+def _validate_export_var(b, n):
+    try:
+        v = getattr(b, n)
+    except AttributeError:
+        raise TypeError(f"Attempt to export non-existing variable. "
+                        f"block={b.name} attr={n}")
+    if not isinstance(v, Var):
+        raise TypeError(f"Attempt to export non-variable. block={b.name} attr={n} "
+                        f"type={type(v)}")
 
 
 class WorkflowActions:
@@ -545,17 +559,7 @@ class FlowsheetInterface(BlockInterface):
         if func is None:
             raise ValueError("Undefined action. name={name}")
         # Run action
-        if name == WorkflowActions.build:
-            # The 'build' action is special: takes only kwargs, and returns
-            # the block to be set as the flowsheet block in the UI
-            block = func(**kwargs)
-            if block is not None:
-                self.set_block(block)
-            result = block
-        else:
-            # All other actions take the existing block, the ui, and
-            # the keyword arguments, and return what they want to.
-            result = func(self._block, ui=self, **kwargs)
+        result = func(block=self._block, ui=self, **kwargs)
         self._action_set_was_run(name)
         return result
 
