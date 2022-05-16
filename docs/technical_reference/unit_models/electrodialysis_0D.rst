@@ -4,40 +4,42 @@ Electrodialysis (0D)
 Introduction
 ------------
 
-Electrodialysis, an electrochemical seperation technology for water desalination, has been 
-utilized for decades.  Compared with other technologies such as reverse osmosis (RO),
-electridialysis showes advtanges in desalinating brackish waters with 
-moderate salinity by its less intense energy consumption, higher recovery, and robust 
+Electrodialysis, an electrochemical separation technology, has been utilized to desalinate water for decades.
+Compared with other technologies, such as reverse osmosis (RO),
+electrodialysis shows advantages in desalinating brackish waters with
+moderate salinity by its less intense energy consumption, higher water recovery, and robust
 tolerance for adverse non-ionic components (e.g., silica and biological substances) in water.
-Between the electrodes of a eletrodialysis stack (a reactor module), multiple anion- and 
-cation-exchange membranes are alternatively positioned and seprated by spacers to form individual 
-cells. When operated, electrolidalysis converts electrical current to ion flux and, assisted by
-the opposite ion-exchage membranes, moves ion from one cell (diluate channel) to its adjencent cell
-(concentrate channel) in a cell-pair treatment unit (Figure 1). Recovered (desalianted) water is 
-collected from diluate channles of all cell pairs while the concentrate product can be disposed as brine 
-or retreated. 
+Between the electrodes of an electrodialysis stack (a reactor module), multiple anion- and
+cation-exchange membranes are alternately positioned and separated by spacers to form individual
+cells. When operated, electrodialysis converts electrical current to ion flux and, assisted by
+the opposite ion selectivity of cation- and anion-exchange membranes (cem and aem), moves ion from
+one cell to its adjacent cell in a cell-pair treatment unit (Figure 1). The ion-departing cell is called a **diluate
+channel** and the ion-entering cell a **concentrate channel**. Recovered (desalinated) water is
+collected from diluate channles of all cell pairs while the concentrate product can be disposed of as brine
+or retreated. More overview of the electrodialysis technology can be found in the *References*.
 
-.. figure:: ../../_static/unit_models/xxx.png
+.. figure:: ../../_static/unit_models/EDdiagram.png
     :width: 600
     :align: center
 
-    Figure 1. Schematic representation of a electrodialysis cell pair as a model unit
+    Figure 1. Schematic representation of an electrodialysis cell pair as a model unit
 
 
-One cell pair in a electrodialysis stack can thus be treated as a modeling unit that can multiply to
-larger scale systems.  This model establishes mathetmaical descriptions of ion and water transport in
-a cell pair and expands to simulate a stack with a specified cell-pair number.  Modeled mass transfer 
-mechanisms inlcude electrical migration and diffusion of ions and osmosis and electroosmosis of water. 
-The following key assumptions are based on. 
+One cell pair in an electrodialysis stack can thus be treated as a modeling unit that can multiply to
+larger-scale systems.  The presented electrodialysis model establishes mathematical descriptions of
+ion and water transport in a cell pair and expands to simulate a stack with a specified cell-pair number.
+Modeled mass transfer mechanisms include electrical migration and diffusion of ions and osmosis and electroosmosis
+of water. The following key assumptions are based on.
 
-* The concentrate and diluate channels ahve identical geometry and fluidic conditions. 
-* For each channel, component fluxes are uniform in the bulk solutions (0-dimensional assumption) 
-    and are set as the average of inlete and outlect of each channel. 
+* The concentrate and diluate channels have identical geometry and fluidic conditions.
+* For each channel, component fluxes are uniform in the bulk solutions (the 0-dimensional assumption)
+  and are set as the average of inlet and outlet of each channel.
+* Steady state: all variables are independent on time.
 * Co-current flow operation. 
 * Electrical current is operated below the limiting current. 
 * Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one. 
-* All ion-exchange membrane properties (ion and water transport number, resistence, permeabiliity) are
-    constant. 
+* All ion-exchange membrane properties (ion and water transport number, resistance, permeability) are
+  constant.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
 * Constant pressure and temperature through each channel. 
 
@@ -46,13 +48,13 @@ Control Volumes
 
 This model has two control volumes for the concentrate and diluate channels.
 
-* diluate_channel
-* concentrate_channel 
+* Diluate_channel
+* Concentrate_channel
 
 Ports
 -----
 
-This model provides four ports (Pyomo notation in parenthesis) on the two :
+On the two control volumes, this model provides four ports (Pyomo notation in parenthesis):
 
 * inlet_diluate (inlet)
 * outlet_diluate (outlet)
@@ -61,199 +63,154 @@ This model provides four ports (Pyomo notation in parenthesis) on the two :
 
 Sets
 ----
-.. csv-table::
+**Hereafter, a NaCl water solution is instanced to demonstrate the present model's use.**
+
+.. csv-table:: **Table 1.** List of Set
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
-   "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'Na_+', 'Cl_-', ...]"
-   "Membrane", "N/A", "['cem', 'aem']"
+   "Phase", ":math:`p`", "['Liq']"
+   "Component", ":math:`j`", "['H2O', 'Na_+', 'Cl_-'] \ :sup:`1`"
+   "Ion", ":math:`j`\  :sup:`2`", "['Na_+', 'Cl_-']"
+   "Membrane", "n/a", "['cem', 'aem']"
 
-**Users are responsible for naming any chemical additives and defining all parameters associated with them**
+**Notes**
+ :sup:`1` A component set for a NaCl solution is instanced here.
+ :sup:`2` "Ion" is a subset of "Component" and uses the same symbol.
+
 
 Degrees of Freedom
 ------------------
-Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), this model has
-31 additional degerees of freedom that need to be fixed to fully solve the model. 15 of them are repeated over 
-the two channels (making up 30) and 1 (the electrical input) is general for both channels.  The total 31 are 
-tabulated below.
+Applying this model to a NaCl solution yields 33 degrees of freedom (**Table 2**), among which
+temperature, pressure, and component molar flow rate are state variables that are fixed as initial conditions. The rest
+are parameters that should be provided in order to fully solve the model.
 
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number"
+.. csv-table:: **Table 2.** List of Degree of Freedom (DOF)
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number \ :sup:`1`"
 
-   "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "["cem", "aem"], ":math:`\text{dimensionless}`", 2
-   "Water permeability", ":math:`L`", "water_permeability_membrane", "["cem", "aem"]", ":math:`\text{m}^{-1}\text{Pa}^{-1}`", 2
-   "Voltage", ":math:`U`", "voltage", "[t]", ":math:`\text{V}`", 1
-   "Resistance of the electrode compartments", ":math:`R_{el}`", "electrodes_resistance", "[t]", ":math:`\text{mg}L}`", 1
-   "Cell pair number", ":math:`N`", "cell_pair_numb", "None", " ", 1
-   "Current utilization for all mass transfer", ":math:`\xi`", "final_turbidity_ntu", "None", ":math:``", 1
-   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", " ", 1
-   "Area resistence of ion exchnge membranes", ":math:`r`", "membrane_surface_resistence", "["cem", "aem"]", ":math:`\text{s}`" , 2
+   "Temperature, inlet_diluate", ":math:`T`", "temperature", "None", ":math:`\text{K}`", 1
+   "Temperature, inlet_concentrate", ":math:`T`", "temperature", "None", ":math:`\text{K}`", 1
+   "Pressure, inlet_diluate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
+   "Pressure, inlet_concentrate",":math:`p`", "temperature", "None", ":math:`\text{Pa}`", 1
+   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', 'Cl_-']", ":math:`\text{mol s^{-1}}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', 'Cl_-']", ":math:`\text{mol s^{-1}}`", 3
+   "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
+   "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`\text{m^{-1}s^{-1}Pa^{-1}}`", 2
+   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`\text{A}`", 1
+   "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega \text{m^2}`", 1
+   "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
+   "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
+   "Spacer thickness", ":math:`s`", "spacer_thickness", "none", ":math:`\text{m}` ", 1
+   "Membrane areal resistance", ":math:`r`", "membrane_surface_resistance", "['cem', 'aem']", ":math:`\Omega \text{m^2}`", 2
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
-   "Thickness of ion exchange membranes", ":math:`\delta`", "memebrane_thickness", "["cem", "aem"]", ":math:`\text{m}`", 2
-   "diffusivity of solute in the membrane phase", ":math:`\D`", "solute_diffusivity_membrane", "[["cem", "aem"], j]", ":math:`\text{m^2/s}`", 4
-   "transport number of ions in the membrane phase", ":math:`t`", "ion_trans_number_membrane", "[["cem", "aem"], j]", ":math:`\text{dimensionless}`", 4
+   "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`\text{m}`", 2
+   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', 'Cl_-']]", ":math:`\text{m^2 s^{-1}}`", 4
+   "transport number of ions in the membrane phase", ":math:`t_i`", "ion_trans_number_membrane", "[['cem', 'aem'], ['Na_+', 'Cl_-']]", "dimensionless", 4
+
+**Note**
+ :sup:`1` DOF number takes account of the indices of the corresponding parameter.
+ :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant Current"
+ or "Constant Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
+ that ensures a operational current *below the limiting current* of the feed solution.
 
 
-   
-at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
-
-Typically, the following variables are fixed, in addition to state variables at the inlet:
-    * membrane water permeability, A
-    * membrane salt permeability, B
-    * permeate pressure
-    * membrane area
-
-On the other hand, configuring the RO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 3 additional degrees of freedom. In this case, in addition to the
-previously fixed variables, we typically fix the following variables to fully specify the unit:
-
-    * feed-spacer porosity
-    * feed-channel height
-    * membrane length *or* membrane width *or* inlet Reynolds number
-
-Model Structure
+Solution component information
 ------------------
-This RO model consists of 2 ControlVolume0DBlocks: one for the feed-side and one for the permeate-side.
- 
-* The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface_in and properties_interface_out).
-* The permeate-side includes 3 StateBlocks (properties_in, properties_out, and properties_mixed). The inlet and outlet StateBlocks are used to only determine the permeate solute concentration for solvent and solute flux at the feed-side inlet and outlet, while the mixed StateBlock is used for mass balance based on the average flux.
+To fully construct solution properties, users need to provide basic component information of the feed solution to use
+this model, including identity of all solute species (i.e., Na :sup:`+`, and Cl :sup:`-` for a
+NaCl solution), molecular weight of all component species (i.e., H\ :sub:`2`\ O, Na :sup:`+`, and Cl :sup:`-`), and charge
+and electrical mobility of all ionic species (i.e.,Na:sup:`+`, and Cl:sup:`-`). This can be provided as a solution
+dictionary in the following format (instanced by a NaCl solution).
 
-Sets
-----
-.. csv-table::
-   :header: "Description", "Symbol", "Indices"
+.. code-block::
 
-   "Time", ":math:`t`", "[0]"
-   "Inlet/outlet", ":math:`x`", "['in', 'out']"
-   "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'NaCl']*"
+   ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
 
-\*Solute depends on the imported property model; example shown here is for the NaCl property model.
-
-.. _0dro_variables:
-
-Variables
-----------
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number"
-
-   "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", ":math:`\text{dimensionless}`", 2
-   "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`\text{m^{-1}s^{-1}Pa^{-1}}`"
-   "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
-   "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass flux across membrane", ":math:`J`", "flux_mass_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
-   "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
-   "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-   "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
-   "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-   "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
-   "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
-
-The following variables are only built when specific configuration key-value pairs are selected.
-
-if ``has_pressure_change`` is set to ``True``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Pressure drop", ":math:`ΔP`", "deltaP", "[t]", ":math:`\text{Pa}`"
-
-if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.fixed``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Concentration polarization modulus", ":math:`CP_{mod}`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
-
-if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf", "[t, x, j]", ":math:`\text{m/s}`"
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
-or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Feed-channel height", ":math:`h_{ch}`", "channel_height", "None", ":math:`\text{m}`"
-   "Hydraulic diameter", ":math:`d_h`", "dh", "None", ":math:`\text{m}`"
-   "Spacer porosity", ":math:`\epsilon_{sp}`", "spacer_porosity", "None", ":math:`\text{dimensionless}`"
-   "Reynolds number", ":math:`Re`", "N_Re", "[t, x]", ":math:`\text{dimensionless}`"
-
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Schmidt number", ":math:`Sc`", "N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
-   "Sherwood number", ":math:`Sh`", "N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
-or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Membrane length", ":math:`L`", "length", "None", ":math:`\text{m}`"
-   "Membrane width", ":math:`W`", "width", "None", ":math:`\text{m}`"
-
-if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Average pressure drop per unit length of feed channel", ":math:`(\frac{ΔP}{Δx})_{avg}`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
-
-if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Feed-channel velocity", ":math:`v_f`", "velocity", "[t, x]", ":math:`\text{m/s}`"
-   "Friction factor", ":math:`f`", "friction_factor_darcy", "[t, x]", ":math:`\text{dimensionless}`"
-   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
-
-.. _0dro_equations:
+This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution.
 
 Equations
------------
+---------------------------
 
-.. csv-table::
+This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and Cl :sup:`-` for a NaCl
+solution) on two control volumes (concentrate and diluate channels). Mass balance equations are summarized in **Table
+3**. Mass transfer mechanisms take account of solute electrical migration and diffusion and water osmosis and
+electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law, to simulate these
+processes are well developed and some good summaries for the electrodialysis scenario can be found in the *References*.
+
+.. csv-table:: **Table 3** Mass Balance Equations
+   :header: "Description", "Equation", "Index set"
+
+   "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left[\text{'H_2 O', 'Na^+', 'Cl^-'}\right]`"
+   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left[\text{'Na^+', 'Cl^-'}]`"
+   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^cem-t_j^aem \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^cem}{\delta ^cem} +\frac{D_j^aem}{\delta ^aem}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left[\text{'Na^+', 'Cl^-'}]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)+\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left[\text{'H_2 O'}]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^cem+t_w^aem \right)\left(\frac{I}{(bl)F}\right)-\left(L^cem+L^aem \right)\left(p_osm^C-p_osm^D \right)`", ":math:`j \in \left[\text{'H_2 O'}]`"
+
+Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
+
+.. csv-table:: **Table 4** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
-   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
-   "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
-   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
-   "Permeate-side solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
-   "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
-   "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
-   "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
-   "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
-   "Schmidt number",":math:`Sc = \frac{\mu}{\rho D}`"
-   "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
-   "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
-   "Cross-sectional area",":math:`A_c = h_{ch}W\epsilon_{sp}`"
-   "Membrane area",":math:`A_m = LW`"
-   "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
-   "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
-   "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
-   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_f^{2}`"
-   "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
-   "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
-   "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
+   "Ohm's Law", ":math:`V =  I R_{tot}`"
+   "Resistance calculation", ":math:`R_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]\left(bl\right)`"
+   "Electrical power consumption", ":math:`P=UI`"
+   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
+   "Overall current efficiency", ":math:`I\eta=\left(N_{j,in}^D-N_{j,out}^D\right)z_j F`"
 
-Class Documentation
--------------------
+All equations are coded as "constraints"(Pyomo). Isothermal and isobaric conditions apply.
 
-.. automodule:: watertap.unit_models.reverse_osmosis_0D
-    :members:
-    :noindex:
+Nomenclature
+---------------------------
+.. csv-table:: **Table 5.** Nomenclature
+   :header: "Symbol", "Description", "Unit"
 
+   "**Variables and Parameters**"
+   ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
+   ":math:`J`", "Molar flux of a component", ":math:`mol\  m^{-2}s^{-1}`"
+   ":math:`b`", "Cell/membrane width", ":math:`m`"
+   ":math:`l`", "Cell/membrane length", ":math:`m`"
+   ":math:`t`", "Ion transport number", "dimensionless"
+   ":math:`I`", "Current", ":math:`A`"
+   ":math:`U`", "Voltage over a stack", ":math:`V`"
+   ":math:`n`", "Cell pair number", "dimensionless"
+   ":math:`\xi`", "Current utilization coefficient (including ion diffusion and water electroosmosis)", "dimensionless"
+   ":math:`z`", "Ion charge", "dimensionless"
+   ":math:`F`", "Faraday constant", ":math:`C\ mol^{-1}`"
+   ":math:`D`", "Ion Diffusivity", ":math:`m^2 s^{-1}`"
+   ":math:`\delta`", "Membrane thickness", ":math:`m`"
+   ":math:`c`", "Solute concentration", ":math:`mol\ m^{-3}`"
+   ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
+   ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
+   ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
+   ":math:`R_{tot}`", "Total resistance", ":math:`\Omega`"
+   ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
+   ":math:`r_el`", "Electrode areal resistance", ":math:`\Omega m^2`"
+   ":math:`s`", "Spacer thickness", ":math:`m`"
+   ":math:`\kappa`", "Solution conductivity", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
+   ":math:`\eta`", "Current efficiency for desalination", "dimensionless"
+   ":math:`P`", "Power consumption", ":math:`W`"
+   ":math:`P_Q`", "Specific power consumption", ":math:`kW\ h\  m^{-3}`"
+   ":math:`Q`", "Volume flow rate", ":math:`m^3s^{-1}`"
+   "**Subscripts and superscripts**"
+   ":math:`C`", "Concentrate channel",
+   ":math:`D`", "Diluate channel",
+   ":math:`j`", "Component index",
+   ":math:`in`", "Inlet",
+   ":math:`out`", "Outlet",
+   ":math:`cem`", "Cation exchange membrane",
+   ":math:`aem`", "Anion exchange membrane",
+References
+----------
+Strathmann, H. (2010). Electrodialysis, a mature technology with a multitude of new applications.
+Desalination, 264(3), 268-288.
+
+Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch. 4.
+
+Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
+A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
