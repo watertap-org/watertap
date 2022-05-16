@@ -132,21 +132,13 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "TSS relationship with initial Turbidity", ":math:`TSS_o = b + a(Turb_o)`"
+   "Electroneutrality Constraint", ":math:`C_{H} = C_{OH} + C_{A} + Alk_{Res} - n*C_{caustic}`"
    "TSS relationship with final Turbidity", ":math:`TSS_f = b + a(Turb_f)`"
    "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
    "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
    "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
    "TDS gain rate", ":math:`S_{TDS} = Q \cdotp {\sum_{i} \frac{D_i}{MW_{a,i}} \cdotp N_i \cdotp MW_{s,i} }`"
    "TDS mass balance", ":math:`0 = M_{TDS,in} - M_{TDS,out} + S_{TDS}`"
-   "Rapid Mixer Total Volume", ":math:`V_r = Q \cdotp \tau_r \cdotp n_r`"
-   "Rapid Mixer Total Power Usage", ":math:`P_r = {G_r}^2 \cdotp \mu \cdotp V_r`"
-   "Flocculation Basin Total Volume", ":math:`V_f = Q \cdotp \tau_f`"
-   "Paddle Wheel Speed", ":math:`v_p = \pi \cdotp L \cdotp \omega`"
-   "Flocculation Power Usage", ":math:`P_p = 0.5 \cdotp C_D \cdotp L \cdotp w \cdotp n_w \cdotp n_p \cdotp \rho {(f \cdotp v_p)}^3`"
-   "Total Power Usage", ":math:`P_T = P_p + P_r`"
-
-**Relationships for power usage all come from Mines (2014)**
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
 
