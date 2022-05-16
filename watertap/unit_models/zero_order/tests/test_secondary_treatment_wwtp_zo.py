@@ -15,7 +15,7 @@ Tests for zero-order a WWTP with secondary treatment
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -173,38 +173,8 @@ class TestSecondaryTreatmentWWTPZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  6.5520 : False : (0, None)
-               Electricity Intensity : 0.14000 :  True : (None, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-                Solute Removal [tss] : 0.94231 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.89910 :  True : (0, None)
-                      Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.011159  0.0018414
-    Mass Concentration H2O               769.23   896.17 4.3445e-07
-    Mass Concentration viruses_enteric   76.923   9.0424     488.27
-    Mass Concentration tss               76.923   5.1700     511.73
-    Mass Concentration foo               76.923   89.617 4.3445e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

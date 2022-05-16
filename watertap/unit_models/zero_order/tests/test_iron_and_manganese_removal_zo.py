@@ -14,7 +14,7 @@
 Tests for zero-order iron and manganese removal model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -190,37 +190,8 @@ class TestIronManganeseRemovalZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                                : Value   : Fixed : Bounds
-    Electricity intensity per Inlet Flowrate  (kWh/m3) : 0.11021 : False : (None, None)
-                                Power Consumption (kW) :  4166.5 : False : (0, None)
-                                  Solute Removal [foo] :  0.0000 :  True : (0, None)
-                                 Solute Removal [iron] : 0.90000 :  True : (0, None)
-                            Solute Removal [manganese] : 0.90000 :  True : (0, None)
-                                        Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                   Inlet   Treated  Byproduct
-    Volumetric Flowrate            10.501   10.050    0.45100
-    Mass Concentration H2O         952.29   994.93     2.2173
-    Mass Concentration iron        23.807   2.4876     498.89
-    Mass Concentration manganese   23.807   2.4876     498.89
-    Mass Concentration foo       0.095229 0.099502 2.2173e-08
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

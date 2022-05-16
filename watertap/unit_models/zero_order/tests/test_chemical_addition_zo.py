@@ -14,7 +14,7 @@
 Tests for zero-order chemical addition model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import Block, ConcreteModel, Constraint, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
@@ -141,35 +141,8 @@ class TestChemAddZOAmmonia:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value      : Fixed : Bounds
-       Chemical Dosage :     1.0000 :  True : (0, None)
-         Chemical Flow : 2.0120e-06 : False : (0, None)
-    Electricity Demand : 0.00074140 : False : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                Inlet  Outlet
-    Volumetric Flowrate        1.0060  1.0060
-    Mass Concentration H2O     994.04  994.04
-    Mass Concentration sulfur 0.99404 0.99404
-    Mass Concentration toc     1.9881  1.9881
-    Mass Concentration tss     2.9821  2.9821
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
