@@ -217,7 +217,7 @@ class TestBoronRemoval_IonPropPack_Min:
         #   of the base to add. Instead, we have a target
         #   exit flow of boron (see below). We will initially
         #   guess that we want 5 mg/L of additive, but the
-        #   actual solution is 10 mg/L. 
+        #   actual solution is 10 mg/L.
         model_setup(m, chem_add=5)
 
         # Modified this test to fix the desired outlet flow
