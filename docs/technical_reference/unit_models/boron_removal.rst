@@ -146,7 +146,7 @@ Equations and Relationships
 
 **NOTE:** :math:`n_{i}` **is ion charge of component** :math:`i`
 
-**NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and ** :math:`C_{out,i}` **is the resulting concentration in the outlet stream **
+**NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and ** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
 
 References
 ----------
