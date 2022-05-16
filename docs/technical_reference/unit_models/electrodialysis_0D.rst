@@ -68,6 +68,7 @@ Sets
 .. csv-table:: **Table 1.** List of Set
    :header: "Description", "Symbol", "Indices"
 
+
    "Time", ":math:`t`", "[0]"
    "Phase", ":math:`p`", "['Liq']"
    "Component", ":math:`j`", "['H2O', 'Na_+', 'Cl_-'] \ :sup:`1`"
@@ -169,6 +170,7 @@ Nomenclature
 ---------------------------
 .. csv-table:: **Table 5.** Nomenclature
    :header: "Symbol", "Description", "Unit"
+   :widths: 10, 20, 10
 
    "**Variables and Parameters**"
    ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
