@@ -1,14 +1,13 @@
-Coagulation-Flocculation
-========================
+Boron Removal
+=============
 
 Introduction
 ------------
 
-Coagulation-Flocculation is a water treatment process  designed to remove total suspended
-solids (TSS) from solution by converting small suspended and/or colloidal matter, and some
-natural organic matter, into larger 'floccs' (or 'Sludge') that can then be separated by
-sedimentation and/or filtration (or other separation processes) later in the treatment train.
-This is accomplished in a 2-stage process:
+Boron removal is generally applied as a desalination post-treatment after the first
+Reverse Osmosis (RO) stage to shift the equilibrium of Boron (B[OH]\ :sub:`3`\) to Borate (B[OH]\ :sub:`4`\ :sup:`-`)
+so that a second RO stage can remove Borate ions from solution such that the total boron
+concentration can go below ~1 mg/L per the World Health Organization standards.
 
 Stage 1) Coagulation (where chemical coagulants and other aids are rapidly mixed into solution)
 Stage 2) Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
@@ -171,8 +170,5 @@ Equations and Relationships
 
 References
 ----------
-H. Rugner, M. Schwientek, B. Beckingham, B. Kuch, P. Grathwohl,
-Environ. Earth Sci. 69 (2013) 373-380. DOI:`10.1007/s12665-013-2307-1 <https://doi.org/10.1007/s12665-013-2307-1>`_
-
-R.O. Mines `Environmental Engineering: Principles and Practice <https://www.biblio.com/9781118801451>`_,
-1st Ed, John Wiley & Sons, 2014. Ch. 6.
+M.M. Benjamin, `Water Chemistry <https://www.biblio.com/9781577666677>`_, Waveland Press,
+Inc.: Illinois, 2010, Ch. 1, 18-51.
