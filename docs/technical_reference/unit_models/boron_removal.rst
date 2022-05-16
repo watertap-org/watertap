@@ -128,6 +128,8 @@ one of the configuration options as shown below.
 
 Equations and Relationships
 ---------------------------
+Reaction constants :math:`K_{w}` and :math:`K_{a}` are taken from the Benjamin (2010) chemistry
+textbook (see References below).
 
 .. csv-table::
    :header: "Description", "Equation"
