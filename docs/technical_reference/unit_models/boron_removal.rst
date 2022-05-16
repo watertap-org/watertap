@@ -70,7 +70,7 @@ the user must specify.
 
    "Fluid temperature", ":math:`T`", "temperature", "[t]", ":math:`\text{K}`"
    "Fluid pressure", ":math:`P`", "pressure", "[t]", ":math:`\text{Pa}`"
-   "Molar flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{mol/s}`"
+   "Molar flowrate of components", ":math:`M_j`", "flow_mol_phase_comp", "[t, 'Liq', j]", ":math:`\text{mol/s}`"
    "Caustic Chemical Dose", ":math:`D`", "caustic_dose", "[t]", ":math:`\text{mg/L}`"
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
@@ -80,47 +80,47 @@ the user must specify.
 
 Chemical Dosing Parameters
 --------------------------
-In addition to providing and fixing values for chemical additives, the users will
-need to provide parameter information for each additive including molecular weight (:math:`MW_{a,i}`),
-moles of salt that would be added per mole of additive (:math:`N_i`), and a representative molecular
-weight of the salt species that would be formed from addition of the additive (:math:`MW_{s,i}`). If a user
-does not have this information off hand, then the user can simply give a value of '0' for
-the moles of salt added per mole of additive (and dummy values for the molecular weights).
-This information is only used to estimate the rise in TDS when salts are added, so it
-is not critical for the determination of the main objective of Coagulation-Flocculation,
-which is the removal of TSS.
+In addition to providing and fixing values for the caustic additive, the users will
+need to provide a dictionary that maps specific species names from a property package
+to Boron, Borate, protons (optional), hydroxides (optional), and the cation from the
+caustic additive (optional). These are needed to establish the appropriate changes in
+the molar flow rate of each of these components and which variable they would apply to
+from the property package. Users may also optionally provide a specific name to the
+caustic chemical being added and are required to provide the molecular weight of the
+caustic additive, as well as the charge of the cation produced when the additive will
+dissociate (i.e., if the additive is NaOH, then the cation it dissociates into is
+Na\ :sup:`+`\ and it has a charge of 1).
 
-To provide this information to the unit model, users must add a 'chemical_additives'
+To provide this information to the unit model, users must add a 'chemical_mapping_data'
 dictionary to the initialization of the unit model. That dictionary must have the
 following format.
 
 .. code-block::
 
-   chem_dict = {'chem_A':
-                  {'parameter_data':
-                    {'mw_additive': (value, units),
-                     'moles_per_mole_additive': value,
-                     'mw_salt': (value, units)
-                    }
-                  },
-                'chem_B':
-                  {'parameter_data':
-                    {'mw_additive': (value, units),
-                     'moles_per_mole_additive': value,
-                     'mw_salt': (value, units)
-                    }
+   chem_dict = {
+                  'boron_name': 'name_of_species_representing_boron', #[is required]
+                  'borate_name': 'name_of_species_representing_borate', #[is required]
+                  'proton_name': 'name_of_species_representing_protons',  #[is optional]
+                  'hydroxide_name': 'name_of_species_representing_hydroxides', #[is optional]
+
+                  'caustic_additive':
+                  {
+                    'additive_name': 'name_of_the_actual_chemical', #[is optional]
+                    'cation_name': 'name_of_cation_species_in_additive', #[is optional]
+                    'mw_additive': (value, units), #[is required]
+                    'charge_additive': value, #[is required]
                   }
-              }
+               }
 
 For example, this 'chem_dict' would be passed into the model on construction as
 one of the configuration options as shown below.
 
 .. code-block::
 
-    model.fs.unit = CoagulationFlocculation(
+    model.fs.unit = BoronRemoval(
             default={
                 "property_package": model.fs.properties,
-                "chemical_additives": chem_dict,
+                "chemical_mapping_data": chem_dict,
             }
         )
 
