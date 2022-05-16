@@ -14,7 +14,7 @@
 Tests for zero-order gas-sparged membrane unit
 """
 import pytest
-from io import StringIO
+
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -253,31 +253,5 @@ class TestGasSpargedMembraneZO:
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-        model.fs.unit.report(ostream=stream)
 
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                                         : Value      : Fixed : Bounds
-                                             Electricity Demand :     368.86 : False : (0, None)
-                             Mass flow of gas extracted (kg/s)) :    0.41216 : False : (0, None)
-    Mass of gas extracted per mass flow of influent(kg/d/(kg/d) : 0.00041175 :  True : (0, None)
-                                           Solute Removal [cod] :     1.0000 :  True : (0, None)
-                                                 Water Recovery :    0.97900 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated   Byproduct
-    Volumetric Flowrate     1.0010    0.97900  0.021588 
-    Mass Concentration H2O  999.00     1000.0    953.68 
-    Mass Concentration cod 0.99900 1.0215e-15    46.322 
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
