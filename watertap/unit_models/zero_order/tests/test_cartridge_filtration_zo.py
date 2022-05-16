@@ -15,7 +15,7 @@ Tests for zero-order cartridge filtration model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -160,36 +160,8 @@ class TestCartridgeFiltrationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :  0.0086400 : False : (0, None)
-               Electricity Intensity : 0.00020000 :  True : (None, None)
-    Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.90000 :  True : (0, None)
-                      Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.012000 0.010899 0.0011010 
-    Mass Concentration H2O               833.33   917.42   0.90827 
-    Mass Concentration nonvolatile_toc   83.333   73.401    181.65 
-    Mass Concentration tss               83.333   9.1752    817.44 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestCartridgeFiltrationZO_w_default_removal:
@@ -325,38 +297,8 @@ class TestCartridgeFiltrationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :  0.0093600 : False : (0, None)
-               Electricity Intensity : 0.00020000 :  True : (None, None)
-                Solute Removal [foo] :     0.0000 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.90000 :  True : (0, None)
-                      Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.011899  0.0011010
-    Mass Concentration H2O               769.23   840.32    0.90827
-    Mass Concentration nonvolatile_toc   76.923   67.233     181.65
-    Mass Concentration tss               76.923   8.4041     817.44
-    Mass Concentration foo               76.923   84.041 7.2661e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
