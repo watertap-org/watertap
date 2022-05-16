@@ -13,15 +13,23 @@ is accomplished by adding caustic chemicals (such as sodium hydroxide (NaOH) or 
 the pH of the stream above around 9.5 so that the majority of total boron is in the
 ionic state of Borate. Those Borate ions would then be rejected in the 2nd RO stage.
 
-In this implementation of the model, the user MUST provide
+In this implementation of the model, the user MUST provide a state variable for the
+molar flow of Boron and Borate (at a minimum). Optionally, users may also have molar
+flows for protons, hydroxide anions, and the cation species associated with the caustic
+additive used in the unit. This will help track added salts and changes in pH when
+the caustic chemical is added. The unit will always provide an approximation to the
+mixture pH whether or not the user has state variables for protons in their property
+package. Users must also specify a dosage of the caustic chemical added to the reactor
+as well as the molecular weight of the chemical additive (see Chemical Dosing Parameters
+section below for more detailed information).
 
 The main assumptions of the implemented model are as follows:
 
-1) Coagulation-Flocculation can be modeled together in a single combined unit (Figure 1)
-2) Model dimensionality is limited to a 0D control volume
-3) Predicted levels of suspended solid removal can be determined solely by Jar Test measurements
-4) Single liquid phase only
-5) Isothermal operation
+1) Model dimensionality is limited to a 0D control volume
+2) Single liquid phase only
+3) Isothermal operation
+4) Only major reactions occurring within this process are Boron/Borate dissociation and water dissociation
+5) No other residual ion species change significantly when the caustic chemical is added
 
 .. figure:: ../../_static/unit_models/BoronRemovalDiagram.png
     :width: 600
@@ -44,47 +52,30 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'TDS', 'TSS', 'Sludge', ...]"
-   "Chemical Additives", ":math:`i`", "['chem_A', 'chem_B', ...]"
+   "Components", ":math:`j`", "['H2O', 'Boron', 'Borate', 'Protons', 'Hydroxide', 'Caustic_Cation', ...]"
 
-**Users are responsible for naming any chemical additives and defining all parameters associated with them**
+**Users can name the 'Components' however they want, but they must also provide the unit model with a mapping of component names to an associated state variable name used in the property package**
+
+**State variables must have 'H2O', 'Boron', and 'Borate'. All other components are optional**
 
 Degrees of Freedom and Variables
 --------------------------------
-Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
+Aside from the inlet feed state variables (i.e., temperature, pressure, component molar flowrates),
 
-the Coagulation-Flocculation model has at least an additional 13 degrees of freedom that
-the user must specify. The table below gives an outline of these.
+the boron removal model has 1 additional degree of freedom that
+the user must specify.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Fluid temperature", ":math:`T`", "temperature", "[t]", ":math:`\text{K}`"
    "Fluid pressure", ":math:`P`", "pressure", "[t]", ":math:`\text{Pa}`"
-   "Mass flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
-   "Slope relationship between measured Turbidity and TSS", ":math:`a`", "slope", "[t]", ":math:`\text{mg/L/NTU}`"
-   "Intercept relationship between measured Turbidity and TSS", ":math:`b`", "intercept", "[t]", ":math:`\text{mg/L}`"
-   "Turbidity measured before Jar Test", ":math:`Turb_o`", "initial_turbidity_ntu", "[t]", ":math:`\text{NTU}`"
-   "Turbidity measured after Jar Test", ":math:`Turb_f`", "final_turbidity_ntu", "[t]", ":math:`\text{NTU}`"
-   "Chemical Doses added during Jar Test", ":math:`D_i`", "chemical_doses", "[t, i]", ":math:`\text{mg/L}`"
-   "Retention time for each rapid mixer", ":math:`\tau_r`", "rapid_mixing_retention_time", "[t]", ":math:`\text{s}`"
-   "Number of rapid mixers in series", ":math:`n_r`", "num_rapid_mixing_basins", "None", "None"
-   "Rapid mixer velocity gradient", ":math:`G_r`", "rapid_mixing_vel_grad", "[t]", ":math:`\text{s}^-1`"
-   "Retention time of flocculation basin", ":math:`\tau_f`", "floc_retention_time", "[t]", ":math:`\text{s}`"
-   "Flocculation single paddle length (from center of rotation to blade edge)", ":math:`L`", "single_paddle_length", "None", ":math:`\text{m}`"
-   "Flocculation single paddle width", ":math:`w`", "single_paddle_width", "None", ":math:`\text{m}`"
-   "Flocculation paddle rotational speed", ":math:`\omega`", "paddle_rotational_speed", "[t]", ":math:`\text{revolutions/s}`"
-   "Flocculation paddle drag coefficient", ":math:`C_D`", "paddle_drag_coef", "[t]", "None"
-   "Flocculation paddle velocity fraction", ":math:`f`", "vel_fraction", "None", "None"
-   "Number of rotating paddle wheels", ":math:`n_w`", "num_paddle_wheels", "None", "None"
-   "Number of paddles per wheel", ":math:`n_p`", "num_paddles_per_wheel", "None", "None"
+   "Molar flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{mol/s}`"
+   "Caustic Chemical Dose", ":math:`D`", "caustic_dose", "[t]", ":math:`\text{mg/L}`"
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
 
-
-**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013) but can be substituted as needed to match any data available relating turbidity to TSS.**
-
-**NOTE: Variables for 'temperature', 'pressure', and 'flow_mass_phase_comp' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
+**NOTE: Variables for 'temperature', 'pressure', and 'flow_mol_phase_comp' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
 
 
 Chemical Dosing Parameters
