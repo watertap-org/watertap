@@ -703,7 +703,6 @@ class BoronRemovalData(UnitModelBlockData):
             elif j == self.cation_name_id:
                 c_out = pyunits.convert(
                     self.caustic_dose[t] / self.caustic_mw,
-
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 exit_rate = (
