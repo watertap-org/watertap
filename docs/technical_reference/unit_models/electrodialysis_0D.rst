@@ -31,7 +31,7 @@ ion and water transport in a cell pair and expands to simulate a stack with a sp
 Modeled mass transfer mechanisms include electrical migration and diffusion of ions and osmosis and electroosmosis
 of water. The following key assumptions are based on.
 
-* The concentrate and diluate channels have identical geometry and fluidic conditions.
+* The concentrate and diluate channels have identical geometry.
 * For each channel, component fluxes are uniform in the bulk solutions (the 0-dimensional assumption)
   and are set as the average of inlet and outlet of each channel.
 * Steady state: all variables are independent on time.
@@ -63,21 +63,26 @@ On the two control volumes, this model provides four ports (Pyomo notation in pa
 
 Sets
 ----
-**Hereafter, a NaCl water solution is instanced to demonstrate the present model's use.**
+This model can simulate the electrodialysis desalination of a water solution containing multiple species
+(neutral or ionic). All solution components ( H\ :sub:`2`\ O, neutral solutes, and ions) form a Pyomo set in the model.
+For a clear model demonstration, **this document uses a NaCl water solution as an instance hereafter.**  The user can
+nevertheless expand the component set as needed to represent other feed water conditions.
 
 .. csv-table:: **Table 1.** List of Set
    :header: "Description", "Symbol", "Indices"
 
 
-   "Time", ":math:`t`", "[0]"
+   "Time", ":math:`t`", "[t] ([0])\ :sup:`1`"
    "Phase", ":math:`p`", "['Liq']"
-   "Component", ":math:`j`", "['H2O', 'Na_+', '\Cl_-'] \ :sup:`1`"
-   "Ion", ":math:`j`\  :sup:`2`", "['Na_+', '\Cl_-']"
+   "Component", ":math:`j`", "['H2O', 'Na_+', '\Cl_-']"
+   "Ion", ":math:`j`", "['Na_+', '\Cl_-'] \  :sup:`2`"
    "Membrane", "n/a", "['cem', 'aem']"
 
 **Notes**
- :sup:`1` A component set for a NaCl solution is instanced here.
- :sup:`2` "Ion" is a subset of "Component" and uses the same symbol.
+ :sup:`1` The time set index is set as [0] in this steady-state model and is reserved majorly for the future extension
+ to a dynamic model.
+
+ :sup:`2` "Ion" is a subset of "Component" and uses the same symbol j.
 
 
 Degrees of Freedom
@@ -89,12 +94,12 @@ are parameters that should be provided in order to fully solve the model.
 .. csv-table:: **Table 2.** List of Degree of Freedom (DOF)
    :header: "Description", "Symbol", "Variable Name", "Index", "Units", "DOF Number \ :sup:`1`"
 
-   "Temperature, inlet_diluate", ":math:`T`", "temperature", "None", ":math:`K`", 1
-   "Temperature, inlet_concentrate", ":math:`T`", "temperature", "None", ":math:`K`", 1
-   "Pressure, inlet_diluate",":math:`p`", "temperature", "None", ":math:`Pa`", 1
-   "Pressure, inlet_concentrate",":math:`p`", "temperature", "None", ":math:`Pa`", 1
-   "Component molar flow rate, inlet_diluate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
-   "Component molar flow rate, inlet_concentrate", ":math:`N`", "flow_mol_phase_comp", "[[t], ['Liq'],['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
+   "Temperature, inlet_diluate", ":math:`T^D`", "temperature", "None", ":math:`K`", 1
+   "Temperature, inlet_concentrate", ":math:`T^C`", "temperature", "None", ":math:`K`", 1
+   "Pressure, inlet_diluate",":math:`p^D`", "temperature", "None", ":math:`Pa`", 1
+   "Pressure, inlet_concentrate",":math:`p^C`", "temperature", "None", ":math:`Pa`", 1
+   "Component molar flow rate, inlet_diluate", ":math:`N_{j, in}^D`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N_{j, out}^C`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 2
    "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
@@ -106,11 +111,12 @@ are parameters that should be provided in order to fully solve the model.
    "Cell width", ":math:`b`", "cell_width", "None", ":math:`\text{m}`", 1
    "Cell length", ":math:`l`", "cell_length", "None", ":math:`\text{m}`", 1
    "Thickness of ion exchange membranes", ":math:`\delta`", "membrane_thickness", "['cem', 'aem']", ":math:`m`", 2
-   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", ":math:`m^2 s^{-1}`", 4
-   "transport number of ions in the membrane phase", ":math:`t_i`", "ion_trans_number_membrane", "[['cem', 'aem'], ['Na_+', '\Cl_-']]", "dimensionless", 4
+   "diffusivity of solute in the membrane phase", ":math:`D`", "solute_diffusivity_membrane", "['cem', 'aem'], ['Na_+', '\Cl_-']", ":math:`m^2 s^{-1}`", 4
+   "transport number of ions in the membrane phase", ":math:`t_j`", "ion_trans_number_membrane", "['cem', 'aem'], ['Na_+', '\Cl_-']", "dimensionless", 4
 
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
+
  :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant Current"
  or "Constant Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
  that ensures a operational current *below the limiting current* of the feed solution.
@@ -121,7 +127,7 @@ Solution component information
 To fully construct solution properties, users need to provide basic component information of the feed solution to use
 this model, including identity of all solute species (i.e., Na :sup:`+`, and \Cl :sup:`-` for a
 NaCl solution), molecular weight of all component species (i.e., H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-`), and charge
-and electrical mobility of all ionic species (i.e.,Na:sup:`+`, and \Cl:sup:`-`). This can be provided as a solution
+and electrical mobility of all ionic species (i.e., Na :sup:`+`, and \Cl :sup:`-`). This can be provided as a solution
 dictionary in the following format (instanced by a NaCl solution).
 
 .. code-block::
@@ -164,7 +170,7 @@ Additionally, several other equations are built to describe the electrochemical 
    "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
    "Overall current efficiency", ":math:`I\eta=\left(N_{j,in}^D-N_{j,out}^D\right)z_j F`"
 
-All equations are coded as "constraints"(Pyomo). Isothermal and isobaric conditions apply.
+All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
 Nomenclature
 ------------
