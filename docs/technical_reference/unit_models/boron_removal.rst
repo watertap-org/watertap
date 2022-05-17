@@ -156,7 +156,6 @@ textbook (see References below).
 **NOTE:** :math:`Alk_{Res}` **is the approximate total alkalinity of the stream after the first RO stage and is summed over all ions that are not hydroxide or borate ions (which are already included in the electroneutrality balance)**
 
 References
-
 ----------
 M.M. Benjamin, `Water Chemistry <https://www.biblio.com/9781577666677>`_, Waveland Press,
 Inc.: Illinois, 2010, Ch. 1, 18-51.
