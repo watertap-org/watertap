@@ -125,6 +125,7 @@ class BlockSchemaDefinition:
     VALU_KEY = "value"
     INDX_KEY = "index"
     UNIT_KEY = "units"
+    CATG_KEY = "category"
 
     # Convenient form for all keys together (e.g. as kwargs)
     ALL_KEYS = dict(
@@ -136,6 +137,7 @@ class BlockSchemaDefinition:
         indx_key=INDX_KEY,
         blks_key=BLKS_KEY,
         unit_key=UNIT_KEY,
+        catg_key=CATG_KEY,
     )
 
     BLOCK_SCHEMA = {
@@ -148,6 +150,7 @@ class BlockSchemaDefinition:
                     "$name_key": {"type": "string"},
                     "$disp_key": {"type": "string"},
                     "$desc_key": {"type": "string"},
+                    "$catg_key": {"type": "string"},
                     "$vars_key": {
                         "type": "array",
                         "items": {
@@ -207,6 +210,9 @@ class BlockSchemaDefinition:
     }
 
 
+BSD = BlockSchemaDefinition  # alias
+
+
 @config_docs
 class BlockInterface(BlockSchemaDefinition):
     """Interface to a block.
@@ -241,6 +247,9 @@ class BlockInterface(BlockSchemaDefinition):
         "description", ConfigValue(description="Description for the block", domain=str)
     )
     CONFIG.declare(
+        "category", ConfigValue(description="Category for the block", domain=str)
+    )
+    CONFIG.declare(
         "variables",
         ConfigList(description="List of variables to export", domain=_var_config),
     )
@@ -262,13 +271,20 @@ class BlockInterface(BlockSchemaDefinition):
     def _init(self, block, options):
             self._block = block
             # dynamically set defaults
-            if "display_name" not in options or options["display_name"] is None:
-                options["display_name"] = self._block.name
-            if "description" not in options or options["description"] is None:
+            # Use block name if missing display name
+            if BSD.DISP_KEY not in options or options[BSD.DISP_KEY] is None:
+                options[BSD.DISP_KEY] = self._block.name
+            # Set 'none' as name of missing description
+            if BSD.DESC_KEY not in options or options[BSD.DESC_KEY] is None:
                 if self._block.doc:
-                    options["description"] = self._block.doc
+                    options[BSD.DESC_KEY] = self._block.doc
                 else:
-                    options["description"] = "none"
+                    options[BSD.DESC_KEY] = "none"
+            # Set 'default' as name of default category
+            if BlockSchemaDefinition.CATG_KEY not in options \
+                    or options[BSD.CATG_KEY] is None:
+                options[BSD.CATG_KEY] = "default"
+            # Finish setup
             self.config = self.CONFIG(options)
             set_block_interface(self._block, self)
 
@@ -319,20 +335,22 @@ class BlockInterface(BlockSchemaDefinition):
         return var_value
 
 
-def export_variables(block, variables=None, name=None, desc=None) -> BlockInterface:
+def export_variables(block, variables=None, name=None, desc=None,
+                     category=None) -> BlockInterface:
     variables = [] if variables is None else variables
-    config = {"display_name": name, "description": desc, "variables": []}
-    cvars = config["variables"]
+    config = {BSD.DISP_KEY: name, BSD.DESC_KEY: desc,
+              BSD.CATG_KEY: category, BSD.VARS_KEY: []}
+    cvars = config[BSD.VARS_KEY]
     if hasattr(variables, "items"):
         for var_key, var_val in variables.items():
             _validate_export_var(block, var_key)
-            var_entry = {"name": var_key}
+            var_entry = {BSD.NAME_KEY: var_key}
             var_entry.update(var_val)
             cvars.append(var_entry)
     else:
         for var_name in variables:
             _validate_export_var(block, var_name)
-            var_entry = {"name": var_name}
+            var_entry = {BSD.NAME_KEY: var_name}
             cvars.append(var_entry)
     interface = BlockInterface(block, config)
     return interface
@@ -639,8 +657,9 @@ class FlowsheetInterface(BlockInterface):
         leaf = key[-1]
         new_data = {
             self.NAME_KEY: leaf,  # block_ui.block.name,
-            self.DISP_KEY: block_ui.config.display_name,
-            self.DESC_KEY: block_ui.config.description,
+            self.DISP_KEY: block_ui.config.get(BSD.DISP_KEY).value(),
+            self.DESC_KEY: block_ui.config.get(BSD.DESC_KEY).value(),
+            self.CATG_KEY: block_ui.config.get(BSD.CATG_KEY).value(),
             self.VARS_KEY: list(block_ui.get_exported_variables()),
             self.BLKS_KEY: [],
         }
