@@ -550,7 +550,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "S_PO4"): -self.i_PBM,
             ("R5", "Liq", "S_ALK"): -self.i_NBM * mw_alk / mw_N
             + self.i_PBM * 1.5 * mw_alk / mw_P
-            + (1 / self.Y_H) * mw_alk / 64,
+            + (1 / self.Y_H) * mw_alk / (64 * pyo.units.kg / pyo.units.kmol),
             ("R5", "Liq", "X_AUT"): 0,
             ("R5", "Liq", "X_H"): 1,
             ("R5", "Liq", "X_I"): 0,
@@ -598,7 +598,9 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R7", "Liq", "S_NO3"): -(1 - self.Y_H) / (2.86 * self.Y_H),
             ("R7", "Liq", "S_O2"): 0,
             ("R7", "Liq", "S_PO4"): -self.i_PBM,
-            ("R7", "Liq", "S_ALK"): (1 / self.Y_H) * mw_alk / 64
+            ("R7", "Liq", "S_ALK"): (1 / self.Y_H)
+            * mw_alk
+            / (64 * pyo.units.kg / pyo.units.kmol)
             + (-self.i_NBM + (1 - self.Y_H) / (2.86 * self.Y_H)) * mw_alk / mw_N
             + self.i_PBM * 1.5 * mw_alk / mw_P,
             ("R7", "Liq", "X_AUT"): 0,
@@ -679,7 +681,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "S_NO3"): 0,
             ("R10", "Liq", "S_O2"): 0,
             ("R10", "Liq", "S_PO4"): self.Y_PO4,
-            ("R10", "Liq", "S_ALK"): mw_alk / 64 - self.Y_PO4 * 0.5 * mw_alk / mw_P,
+            ("R10", "Liq", "S_ALK"): mw_alk / (64 * pyo.units.kg / pyo.units.kmol)
+            - self.Y_PO4 * 0.5 * mw_alk / mw_P,
             ("R10", "Liq", "X_AUT"): 0,
             ("R10", "Liq", "X_H"): 0,
             ("R10", "Liq", "X_I"): 0,
@@ -716,12 +719,17 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_A"): 0,
             ("R12", "Liq", "S_F"): 0,
             ("R12", "Liq", "S_I"): 0,
-            ("R12", "Liq", "S_N2"): self.Y_PHA * mw_N / 40,
+            ("R12", "Liq", "S_N2"): self.Y_PHA
+            * mw_N
+            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R12", "Liq", "S_NH4"): 0,
-            ("R12", "Liq", "S_NO3"): -self.Y_PHA * mw_N / 40,
+            ("R12", "Liq", "S_NO3"): -self.Y_PHA
+            * mw_N
+            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R12", "Liq", "S_O2"): 0,
             ("R12", "Liq", "S_PO4"): -1,
-            ("R12", "Liq", "S_ALK"): 0.5 * mw_alk / mw_P + self.Y_PHA / 40 * mw_alk,
+            ("R12", "Liq", "S_ALK"): 0.5 * mw_alk / mw_P
+            + self.Y_PHA / (40 * pyo.units.kg / pyo.units.kmol) * mw_alk,
             ("R12", "Liq", "X_AUT"): 0,
             ("R12", "Liq", "X_H"): 0,
             ("R12", "Liq", "X_I"): 0,
@@ -759,12 +767,19 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_A"): 0,
             ("R14", "Liq", "S_F"): 0,
             ("R14", "Liq", "S_I"): 0,
-            ("R14", "Liq", "S_N2"): -(1 - 1 / self.Y_H) * 14 / 40,
+            ("R14", "Liq", "S_N2"): -(1 - 1 / self.Y_H)
+            * mw_N
+            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R14", "Liq", "S_NH4"): -self.i_NBM,
-            ("R14", "Liq", "S_NO3"): (1 - 1 / self.Y_H) * 14 / 40,
+            ("R14", "Liq", "S_NO3"): (1 - 1 / self.Y_H)
+            * mw_N
+            / (40 * pyo.units.kg / pyo.units.kmol),
             ("R14", "Liq", "S_O2"): 0,
             ("R14", "Liq", "S_PO4"): -self.i_PBM,
-            ("R14", "Liq", "S_ALK"): (-self.i_NBM - (1 - 1 / self.Y_H) * 14 / 40)
+            ("R14", "Liq", "S_ALK"): (
+                -self.i_NBM
+                - (1 - 1 / self.Y_H) * mw_N / (40 * pyo.units.kg / pyo.units.kmol)
+            )
             * mw_alk
             / mw_N
             + self.i_PBM * mw_alk / mw_P,
@@ -844,7 +859,8 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_NO3"): 0,
             ("R17", "Liq", "S_O2"): 0,
             ("R17", "Liq", "S_PO4"): 0,
-            ("R17", "Liq", "S_ALK"): mw_alk / 64 - mw_alk / 31,
+            ("R17", "Liq", "S_ALK"): mw_alk / (64 * pyo.units.kg / pyo.units.kmol)
+            - mw_alk / (31 * pyo.units.kg / pyo.units.kmol),
             ("R17", "Liq", "X_AUT"): 0,
             ("R17", "Liq", "X_H"): 0,
             ("R17", "Liq", "X_I"): 0,
@@ -1028,80 +1044,466 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             def rate_expression_rule(b, r):
                 if r == "R1":
                     # R1: Aerobic hydrolysis
-                    return b.reaction_rate[r] == 0
-                    # return b.reaction_rate[r] == pyo.units.convert(
-                    #     b.params.mu_H
-                    #     * (
-                    #         b.conc_mass_comp_ref["S_S"]
-                    #         / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
-                    #     )
-                    #     * (
-                    #         b.conc_mass_comp_ref["S_O"]
-                    #         / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                    #     )
-                    #     * b.conc_mass_comp_ref["X_BH"],
-                    #     to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    # )
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.K_H
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            / (
+                                b.params.K_X
+                                + (
+                                    b.conc_mass_comp_ref["X_S"]
+                                    / b.conc_mass_comp_ref["X_H"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R2":
                     # R2: Anoxic hydrolysis
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.K_H
+                        * b.params.eta_NO3
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            / (
+                                b.params.K_X
+                                + (
+                                    b.conc_mass_comp_ref["X_S"]
+                                    / b.conc_mass_comp_ref["X_H"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R3":
                     # R3: Anaerobic hydrolysis
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.K_H
+                        * b.params.eta_fe
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.params.K_NO3
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_H"])
+                            / (
+                                b.params.K_X
+                                + (
+                                    b.conc_mass_comp_ref["X_S"]
+                                    / b.conc_mass_comp_ref["X_H"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R4":
                     # R4: Aerobic growth on S_F
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_H
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_F"]
+                            / (b.params.K_F + b.conc_mass_comp_ref["S_F"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_F"]
+                            / (
+                                b.conc_mass_comp_ref["S_F"]
+                                + b.conc_mass_comp_ref["S_A"]
+                            )
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R5":
                     # R5: Aerobic growth on S_A
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_H
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_A"]
+                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_A"]
+                            / (
+                                b.conc_mass_comp_ref["S_F"]
+                                + b.conc_mass_comp_ref["S_A"]
+                            )
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R6":
                     # R6: Anoxic growth on S_F
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_H
+                        * b.params.eta_NO3
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_F"]
+                            / (b.params.K_F + b.conc_mass_comp_ref["S_F"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_F"]
+                            / (
+                                b.conc_mass_comp_ref["S_F"]
+                                + b.conc_mass_comp_ref["S_A"]
+                            )
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R7":
                     # R7: Anoxic growth on S_A, denitrification
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_H
+                        * b.params.eta_NO3
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_A"]
+                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_A"]
+                            / (
+                                b.conc_mass_comp_ref["S_F"]
+                                + b.conc_mass_comp_ref["S_A"]
+                            )
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R8":
                     # R8: Fermentation
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_fe
+                        * (
+                            b.params.K_O2
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.params.K_NO3
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_F"]
+                            / (b.params.K_F + b.conc_mass_comp_ref["S_F"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R9":
                     # R9: Lysis
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_H * b.conc_mass_comp_ref["X_H"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R10":
                     # R10: Storage of X_PHA
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PHA
+                        * (
+                            b.conc_mass_comp_ref["S_A"]
+                            / (b.params.K_A + b.conc_mass_comp_ref["S_A"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * (
+                            (
+                                b.conc_mass_comp_ref["X_PP"]
+                                / b.conc_mass_comp_ref["X_PAO"]
+                            )
+                            / (
+                                b.params.K_PP
+                                + (
+                                    b.conc_mass_comp_ref["X_PP"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R11":
                     # R11: Aerobic storage of X_PP
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.q_PP
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_PS + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * (
+                            (
+                                b.conc_mass_comp_ref["X_PHA"]
+                                / b.conc_mass_comp_ref["X_PAO"]
+                            )
+                            / (
+                                b.params.K_PHA
+                                + (
+                                    b.conc_mass_comp_ref["X_PHA"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                        )
+                        * (
+                            (
+                                b.params.K_MAX
+                                - (
+                                    b.conc_mass_comp_ref["X_PP"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                            / (
+                                b.params.K_IPP
+                                + b.params.K_MAX
+                                - (
+                                    b.conc_mass_comp_ref["X_PP"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R12":
                     # R12: Anoxic storage of X_PP
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.reaction_rate["R11"]
+                        * b.params.eta_NO3
+                        * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
+                        * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R13":
                     # R13: Aerobic growth of X_PAO
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_PAO
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
+                        * (
+                            (
+                                b.conc_mass_comp_ref["X_PHA"]
+                                / b.conc_mass_comp_ref["X_PAO"]
+                            )
+                            / (
+                                b.params.K_PHA
+                                + (
+                                    b.conc_mass_comp_ref["X_PHA"]
+                                    / b.conc_mass_comp_ref["X_PAO"]
+                                )
+                            )
+                        )
+                        * b.conc_mass_comp_ref["X_PAO"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R14":
                     # R14: Anoxic growth of X_PAO
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.reaction_rate["R13"]
+                        * b.params.eta_NO3
+                        * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
+                        * (
+                            b.conc_mass_comp_ref["S_NO3"]
+                            / (b.params.K_NO3 + b.conc_mass_comp_ref["S_NO3"])
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R15":
                     # R15: Lysis of X_PAO
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PAO
+                        * b.conc_mass_comp_ref["X_PAO"]
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R16":
                     # R16: Lysis of X_PP
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PP
+                        * b.conc_mass_comp_ref["X_PP"]
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R17":
                     # R17: Lysis of X_PAH
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_PHA
+                        * b.conc_mass_comp_ref["X_PHA"]
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R18":
                     # R18: Aerobic growth of X_AUT
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.mu_AUT * b.conc_mass_comp_ref["X_AUT"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R19":
                     # R19: Lysis of X_AUT
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_AUT
+                        * (
+                            b.conc_mass_comp_ref["S_O2"]
+                            / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_NH4"]
+                            / (b.params.K_NH4 + b.conc_mass_comp_ref["S_NH4"])
+                        )
+                        * (
+                            b.conc_mass_comp_ref["S_PO4"]
+                            / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
+                        )
+                        * b.conc_mass_comp_ref["X_AUT"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R20":
                     # R20: Precipitation
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_pre
+                        * b.conc_mass_comp_ref["S_PO4"]
+                        * b.conc_mass_comp_ref["X_MeOH"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 elif r == "R21":
                     # R21: Re-disolution
-                    return b.reaction_rate[r] == 0
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_red
+                        * b.conc_mass_comp_ref["X_MeP"]
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        ),
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
                 else:
                     raise BurntToast()
 

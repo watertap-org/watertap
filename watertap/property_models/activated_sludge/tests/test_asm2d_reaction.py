@@ -335,66 +335,88 @@ class TestReactionBlock(object):
         assert_units_consistent(model)
 
 
-# class TestReactor:
-#     @pytest.fixture(scope="class")
-#     def model(self):
-#         m = ConcreteModel()
+class TestAerobic:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
 
-#         m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-#         m.fs.props = ASM2dParameterBlock()
-#         m.fs.rxn_props = ASM2dReactionParameterBlock(
-#             default={"property_package": m.fs.props}
-#         )
+        m.fs.props = ASM2dParameterBlock()
+        m.fs.rxn_props = ASM2dReactionParameterBlock(
+            default={"property_package": m.fs.props}
+        )
 
-#         m.fs.R1 = CSTR(
-#             default={
-#                 "property_package": m.fs.props,
-#                 "reaction_package": m.fs.rxn_props,
-#             }
-#         )
+        m.fs.R1 = CSTR(
+            default={
+                "property_package": m.fs.props,
+                "reaction_package": m.fs.rxn_props,
+            }
+        )
 
-#         # Feed conditions based on manual mass balance of inlet and recycle streams
-#         m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
-#         m.fs.R1.inlet.temperature.fix(298.15 * units.K)
-#         m.fs.R1.inlet.pressure.fix(1 * units.atm)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_S"].fix(14.6112 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1149 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(89.324 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_BH"].fix(2542.03 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_BA"].fix(148.6 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_P"].fix(448 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_O"].fix(0.3928 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_NO"].fix(8.32 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_NH"].fix(7.696 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "S_ND"].fix(1.9404 * units.g / units.m**3)
-#         # m.fs.R1.inlet.conc_mass_comp[0, "X_ND"].fix(5.616 * units.g / units.m**3)
-#         # m.fs.R1.inlet.alkalinity.fix(4.704 * units.mol / units.m**3)
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
 
-#         m.fs.R1.volume.fix(1000 * units.m**3)
+        # Feed conditions based on manual mass balance of inlet and recycle streams
+        m.fs.R1.inlet.flow_vol.fix(18446 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(298.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        # For aerobic operation, the final spec on O2 will be on the outlet concentration
+        # This is is to account for O2 addition under aerobic operation
+        # For now, pick a reasonable positive value for initialization
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O2"].fix(10 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(16 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NO3"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_PO4"].fix(3.6 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(30 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(20 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(125 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(30 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PAO"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+        # No data on TSS from EXPOsan at this point
+        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
 
-#         return m
+        # Alkalinity was givien in mg/L based on C
+        m.fs.R1.inlet.alkalinity[0].fix(60 / 12 * units.mmol / units.liter)
 
-#     @pytest.mark.component
-#     def test_dof(self, model):
-#         assert degrees_of_freedom(model) == 0
+        m.fs.R1.volume.fix(1333 * units.m**3)
 
-#     @pytest.mark.component
-#     def test_unit_consistency(self, model):
-#         assert_units_consistent(model) == 0
+        return m
 
-#     @pytest.mark.component
-#     def test_solve(self, model):
-#         model.fs.R1.initialize()
+    @pytest.mark.component
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
 
-#         solver = get_solver()
-#         results = solver.solve(model, tee=True)
-#         assert check_optimal_termination(results)
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model) == 0
 
-#     @pytest.mark.component
-#     def test_solution(self, model):
-#         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize()
+
+        # Change spec on O2 to outlet concentration to allow for O2 addition
+        model.fs.R1.inlet.conc_mass_comp[0, "S_O2"].unfix()
+        model.fs.R1.outlet.conc_mass_comp[0, "S_O2"].fix(2 * units.mg / units.liter)
+
+        solver = get_solver()
+        results = solver.solve(model, tee=True)
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        model.fs.R1.report()
+        assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.0675, rel=1e-4)
+
+
 #         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
 #             298.15, rel=1e-4
 #         )
