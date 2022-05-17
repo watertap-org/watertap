@@ -125,6 +125,14 @@ def _build_flowsheet(unit_model_class, process_subtype, water_source):
     return m
 
 
+_column_to_component_map = {
+    "recovery": "fs.unit.recovery_frac_mass_H2O",
+    "tds": "fs.feed.conc_mass_comp[0.0, tds]",
+    "alum_dose": "fs.unit.alum_dose",
+    "polymer_dose": "fs.unit.polymer_dose",
+}
+
+
 def _initialize_flowsheet(m):
     m.fs.feed.initialize()
     m.fs.unit.initialize()
@@ -146,6 +154,10 @@ def _run_flow_in_only(m, df):
     for _, row in df.iterrows():
         if _ % 10 == 0:
             print(f"At {row['flow_in']:.6f} m^3/s")
+        for k in _column_to_component_map:
+            if k in row:
+                v = m.find_component(_column_to_component_map[k])
+                v.fix(row[k])
         m.fs.feed.flow_vol[0].fix(row["flow_in"] * pyunits.m**3 / pyunits.s)
         _initialize_flowsheet(m)
         s.solve(m)
@@ -257,6 +269,7 @@ class ZeroOrderUnitChecker:
             "fixed_op_cost",
             "annual_op_cost",
             "lcow",
+            *_column_to_component_map.keys(),
         )
 
         if set(df.columns) - set(expected_df_columns):
