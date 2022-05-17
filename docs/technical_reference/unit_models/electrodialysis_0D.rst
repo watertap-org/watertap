@@ -198,7 +198,7 @@ Nomenclature
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
    ":math:`R_{tot}`", "Total resistance", ":math:`\Omega`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
-   ":math:`r_el`", "Electrode areal resistance", ":math:`\Omega m^2`"
+   ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`s`", "Spacer thickness", ":math:`m`"
    ":math:`\kappa`", "Solution conductivity", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
    ":math:`\eta`", "Current efficiency for desalination", "dimensionless"
