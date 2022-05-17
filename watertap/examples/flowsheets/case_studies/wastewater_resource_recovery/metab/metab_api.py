@@ -26,6 +26,7 @@ def build_flowsheet(ui=None, **kwargs):
         model.fs.costing,
         name="METAB costing",
         desc="Costing block for METAB model",
+        category="costing",
         variables=[
             "utilization_factor",
             "TIC",
@@ -35,6 +36,7 @@ def build_flowsheet(ui=None, **kwargs):
     export_variables(
         model.fs.metab_hydrogen.costing,
         name="METAB hydrogen costing",
+        category="costing",
         variables=[
             "DCC_bead",
             "DCC_reactor",
