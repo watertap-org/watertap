@@ -4,7 +4,8 @@ Boron Removal
 Introduction
 ------------
 
-Boron removal is generally applied as a desalination post-treatment after the first
+Boron removal is generally applied as a post-treatment process after the first
+
 Reverse Osmosis (RO) stage to shift the equilibrium of Boron (B[OH]\ :sub:`3`\) to Borate (B[OH]\ :sub:`4`\ :sup:`-`)
 so that a second RO stage can remove Borate ions from solution such that the total boron
 concentration can go below ~1 mg/L per the World Health Organization standards. This
@@ -140,7 +141,8 @@ textbook (see References below).
    "Water Dissociation Constraint", ":math:`K_{w} = C_{H} \cdotp C_{OH}`"
    "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{HA} = C_{H} \cdotp C_{A}`"
    "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{i,out} + C_{i} \cdotp Q`"
-   "Caustic cation mass balance", ":math:`0 = C_{caustic,in} - M_{caustic,out} + S_{caustic}`"
+   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic}`"
+
    "Caustic cation gain rate", ":math:`S_{caustic} = Q \cdotp \frac{D}{MW}`"
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
@@ -151,7 +153,10 @@ textbook (see References below).
 
 **NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
 
+**NOTE:** :math:`Alk_{Res}` **is the approximate total alkalinity of the stream after the first RO stage and is summed over all ions that are not hydroxide or borate ions (which are already included in the electroneutrality balance)**
+
 References
+
 ----------
 M.M. Benjamin, `Water Chemistry <https://www.biblio.com/9781577666677>`_, Waveland Press,
 Inc.: Illinois, 2010, Ch. 1, 18-51.
