@@ -168,7 +168,7 @@ Additionally, several other equations are built to describe the electrochemical 
    "Resistance calculation", ":math:`R_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]\left(bl\right)`"
    "Electrical power consumption", ":math:`P=UI`"
    "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
-   "Overall current efficiency", ":math:`I\eta=\left(N_{j,in}^D-N_{j,out}^D\right)z_j F`"
+   "Overall current efficiency", ":math:`I\eta=\sum_{j}{\left[\left(N_{j,in}^D-N_{j,out}^D\right)z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
