@@ -15,7 +15,7 @@ Tests for zero-order settling pond model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -148,34 +148,8 @@ class TestSettlingPondZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-     Solute Removal [tss] :    0.99083 :  True : (0, None)
-           Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.011000 0.010008 0.00099183
-    Mass Concentration H2O   909.09   999.08     1.0082
-    Mass Concentration tss   90.909  0.91665     998.99
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSettlingPondZO_w_default_removal:
@@ -299,36 +273,8 @@ class TestSettlingPondZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 8.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-     Solute Removal [foo] :     0.0000 :  True : (0, None)
-     Solute Removal [tss] :    0.99083 :  True : (0, None)
-           Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.012000 0.011008 0.00099183
-    Mass Concentration H2O   833.33   908.33     1.0082
-    Mass Concentration tss   83.333  0.83338     998.99
-    Mass Concentration foo   83.333   90.842 8.0659e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

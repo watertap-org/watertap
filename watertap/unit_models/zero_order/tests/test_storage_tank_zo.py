@@ -14,7 +14,7 @@
 Tests for zero-order storage tank model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -119,37 +119,8 @@ class TestStorageTankZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-     Storage Time (hr) : 24.000 :  True : (None, None)
-    Surge Capacity (%) : 0.0000 :  True : (None, None)
-      Tank Volume (m3) : 45285. : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet   Outlet 
-    Volumetric Flowrate         0.52413  0.52413
-    Mass Concentration H2O       953.96   953.96
-    Mass Concentration toc       5.7238   5.7238
-    Mass Concentration tds      0.19079  0.19079
-    Mass Concentration eeq     0.057238 0.057238
-    Mass Concentration nitrate   7.6317   7.6317
-    Mass Concentration tss       32.435   32.435
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
