@@ -300,6 +300,23 @@ class BlockInterface:
 def export_variables(
     block, variables=None, name=None, desc=None, category=None
 ) -> BlockInterface:
+    """Export variables from the given block, optionally providing metadata
+    for the block itself. This method is really a simplified way to
+    create :class:`BlockInterface` s for models (a.k.a., blocks).
+
+    Args:
+        block: IDAES model block
+        variables: List of variable data (dict-s) to export. This is the same
+                   format specified for the variables for the "variables" item of
+                   the :class:`BlockInterface` ``CONFIG``.
+        name: Name to give this block (default=``block.name``)
+        desc: Description of the block (default=``block.doc``)
+        category: User-defined category for this block, such as "costing", that
+           can be used by the UI to group things visually. (default="default")
+
+    Returns:
+        An initialized :class:`BlockInterface` object.
+    """
     variables = [] if variables is None else variables
     config = {
         BSD.DISP_KEY: name,
@@ -528,6 +545,46 @@ class FlowsheetInterface(BlockInterface):
         if cls._schema is None:
             cls._schema = Schema(BSD.BLOCK_SCHEMA, **BSD.ALL_KEYS)
         return cls._schema
+
+    def add_action_type(self, action_type: str, deps: List[str] = None):
+        """Add a new action type to this interface.
+
+        Args:
+            action_type: Name of the action
+            deps: List of (names of) actions on which this action depends.
+                  These actions are automatically run before this one is run.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError: An action listed in 'deps' is not a standard action
+               defined in WorkflowActions, or a user action.
+            ValueError: A circular dependency was created
+        """
+        if action_type in self.ACTIONS:
+            return
+        self.ACTIONS.append(action_type)
+        if action_type in WorkflowActions.deps:
+            return
+        if deps is None:
+            deps = []   # Normalize empty dependencies to an empty list
+        else:
+            # Verify dependencies
+            for one_dep in deps:
+                if one_dep not in self.ACTIONS and one_dep not in WorkflowActions.deps:
+                    raise KeyError(f"Dependent action not found. name={one_dep}")
+                if one_dep == action_type:
+                    raise ValueError("Action cannot be dependent on itself")
+            # check for circular dependencies
+            deps_stack = deps.copy()
+            while deps_stack:
+                one_dep = deps_stack.pop()
+                if one_dep == action_type:
+                    raise ValueError("Action creates circular dependency")
+                deps_stack.extend(WorkflowActions.deps[one_dep])
+        # Add dependencies to global set
+        WorkflowActions.deps[action_type] = deps
 
     def set_action(self, name, func, **kwargs):
         """Set a function to call for a named action on the flowsheet."""
