@@ -150,12 +150,14 @@ def test_workflow_actions():
 
 @pytest.mark.unit
 def test_flowsheet_interface_constructor(mock_block):
-    FlowsheetInterface(mock_block, build_options(variables=2))
+    fsi = FlowsheetInterface(build_options(variables=2))
+    fsi.set_block(mock_block)
 
 
 @pytest.mark.unit
 def test_flowsheet_interface_as_dict(mock_block):
-    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj = FlowsheetInterface(build_options(variables=2))
+    obj.set_block(mock_block)
     d = obj.as_dict()
     fs = d["blocks"][0]
     assert "variables" in fs
@@ -163,7 +165,8 @@ def test_flowsheet_interface_as_dict(mock_block):
 
 @pytest.mark.unit
 def test_flowsheet_interface_save(mock_block, tmpdir):
-    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj = FlowsheetInterface(build_options(variables=2))
+    obj.set_block(mock_block)
     # string
     filename = "test-str.json"
     str_path = os.path.join(tmpdir, filename)
@@ -182,8 +185,8 @@ def test_flowsheet_interface_save(mock_block, tmpdir):
 
 @pytest.mark.unit
 def test_flowsheet_interface_load(mock_block, tmpdir):
-    obj = FlowsheetInterface(mock_block, build_options(variables=2))
-    obj.meta = {"vis": ["something"]}
+    obj = FlowsheetInterface(build_options(variables=2))
+    obj.set_block(mock_block)
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
     # print(f"@@ saved: {json.dumps(obj.as_dict(), indent=2)}")
@@ -193,7 +196,8 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
 
 @pytest.mark.unit
 def test_flowsheet_interface_load_missing(mock_block, tmpdir):
-    obj = FlowsheetInterface(mock_block, build_options(variables=2))
+    obj = FlowsheetInterface(build_options(variables=2))
+    obj.set_block(mock_block)
     filename = "saved.json"
     # manual save, and remove some variables
     d = obj.as_dict()
@@ -209,7 +213,8 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
 
 
 def test_flowsheet_interface_get_var(mock_block):
-    fsi = FlowsheetInterface(mock_block, build_options(variables=1))
+    fsi = FlowsheetInterface(build_options(variables=1))
+    fsi.set_block(mock_block)
     with pytest.raises(KeyError):
         fsi.get_var_missing()
     with pytest.raises(KeyError):

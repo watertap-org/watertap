@@ -44,13 +44,15 @@ def _get_method_classname(m):
 
 
 def open_file_or_stream(fos, attr, **kwargs) -> IO:
-    """Open a file or use the existing stream. Avoids adding this logic to every function that wants to provide
-       multiple ways of specifying a file.
+    """Open a file or use the existing stream. Avoids adding this logic to every
+      function that wants to provide multiple ways of specifying a file.
 
     Args:
         fos: File or stream
-        attr: Attribute to check on the ``fos`` object to see if it is a stream, e.g. "write" or "read"
-        kwargs: Additional keywords passed to the ``open`` call. Ignored if the input is a stream.
+        attr: Attribute to check on the ``fos`` object to see if it is a stream,
+          e.g. "write" or "read"
+        kwargs: Additional keywords passed to the ``open`` call. Ignored if the input
+          is a stream.
 
     Returns:
         Opened stream object
@@ -62,11 +64,13 @@ def open_file_or_stream(fos, attr, **kwargs) -> IO:
     return output
 
 
-# Utility function to automate documentation of something with a CONFIG that is not a ProcessBlock subclass
+# Utility function to automate documentation of something with a CONFIG that is
+# not a ProcessBlock subclass
 
 
 def config_docs(cls):
-    """Class decorator to insert documentation for the accepted configuration options in the constructor's docstring.
+    """Class decorator to insert documentation for the accepted configuration options
+       in the constructor's docstring.
 
     Returns:
         Decorator function
@@ -107,8 +111,9 @@ def config_docs(cls):
         format_list(doc_list, 0)
     except Exception as err:
         util_logger.warning(f"Generating configuration docstring: {err}")
-    # Add to the class constructor docstring. Assume that you can just append, i.e. the configuration
-    # argument is the last entry in the "Args" section, which is the last section.
+    # Add to the class constructor docstring. Assume that you can just append,
+    # i.e. the configuration argument is the last entry in the "Args" section,
+    # which is the last section.
     if doc_lines:
         doc_str = "\n".join(doc_lines)
         cls.__init__.__doc__ = cls.__init__.__doc__.rstrip() + "\n" + doc_str
@@ -139,18 +144,20 @@ class Schema:
         """Constructor.
 
         Args:
-            definition: Schema definition supported by underlying `fastjsonschema` parser. As of this writing,
-                        this supports drafts 04, 06, and 07. This may be a string, which can be parsed as JSON,
-                        or it can be a Python dict.
-            kwargs: If present, ``Template.substutute()`` will be applied to the JSON-string version of the input
-                    (which will be created if it starts as a Python dict), to substitute values in the
-                    schema dynamically. This uses '$var' style substitution, with any unrecognized '$<thing>'
-                    being left as-is.
+
+            definition: Schema definition supported by underlying `fastjsonschema`
+              parser. As of this writing, this supports drafts 04, 06, and 07. This
+              may be a string, which can be parsed as JSON, or it can be a Python dict.
+            kwargs: If present, ``Template.substutute()`` will be applied to the
+              JSON-string version of the input (which will be created if it starts as a
+              Python dict), to substitute values in the schema dynamically. This uses
+              '$var' style substitution, with any unrecognized '$<thing>' being left
+              as-is.
 
         Raises:
             ValueError: Substitution of kwargs in schema fails
-            JSONException: Parsing or formatting JSON fails (including converting to a string for applying the
-                           substitution parameters).
+            JSONException: Parsing or formatting JSON fails (including converting to a
+              string for applying the substitution parameters).
             SchemaException: Compiling the schema fails
         """
         # Normalize input to Python dict, optionally after applying format params
@@ -183,7 +190,8 @@ class Schema:
                     self._schema = json.loads(definition)
                 except json.JSONDecodeError as err:
                     raise JSONException(
-                        f"Parsing of schema definition after substitution of format params failed: {err}"
+                        f"Parsing of schema definition after substitution of "
+                        f"format params failed: {err}"
                     )
         # Compile input to a schema validation function
         try:
@@ -198,7 +206,8 @@ class Schema:
             json_data: Input in the form of a Python dict or JSON-format string.
 
         Returns:
-            Validation error message, or None if it is valid (think of this as "no errors")
+            Validation error message, or None if it is valid (think of this
+              as "no errors")
 
         Raises:
             JSONException: Input (string) data could not be decoded as JSON

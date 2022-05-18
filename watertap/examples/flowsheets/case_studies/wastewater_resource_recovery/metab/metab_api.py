@@ -7,7 +7,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
 )
 
 
-def flowsheet_for_ui():
+def flowsheet_interface():
     fsi = FlowsheetInterface({"display_name": "METAB treatment train", "variables": []})
     fsi.set_action(WorkflowActions.build, build_flowsheet)
     fsi.set_action(WorkflowActions.solve, solve_flowsheet)
@@ -156,5 +156,5 @@ if __name__ == "__main__":
         args = sys.argv[1:]
     else:
         args = []
-    fsi = flowsheet_for_ui()
+    fsi = flowsheet_interface()
     cli_driver(fsi, args)
