@@ -674,10 +674,10 @@ class TestCarbonationProcess:
                     }
         """
 
-        total_molar_conc = 55200 #approximation for water (mol/m^3)
-        total_molar_flow_rate = 10 #mol/s (based on inlet conditions)
-        total_volume_flow_rate = total_molar_flow_rate/total_molar_conc #m^3/s
-        input_co2_conc = 0.0005 * 10 / total_volume_flow_rate #based on inlet
+        total_molar_conc = 55200  # approximation for water (mol/m^3)
+        total_molar_flow_rate = 10  # mol/s (based on inlet conditions)
+        total_volume_flow_rate = total_molar_flow_rate / total_molar_conc  # m^3/s
+        input_co2_conc = 0.0005 * 10 / total_volume_flow_rate  # based on inlet
 
         # Neutral pH Guess (works... but needs automation)
         # Presume a neutral pH, calculate flow from assuming water solution
@@ -685,26 +685,37 @@ class TestCarbonationProcess:
         # Presume other 10% is distributed to species
         # Use pKas to given approximate speciation
         # Presume 1e-8 for remaining vapor species
-        state_args={"pressure": 101325,
-                    "temperature": 298,
-                    "flow_mol_phase_comp":
-                        {
-                            ("Liq","H_+"): 1.e-4*total_volume_flow_rate,
-                            ("Liq","OH_-"): 1.e-4*total_volume_flow_rate,
-                            ("Liq","H2CO3"): input_co2_conc*total_volume_flow_rate*0.1*0.01/100,
-                            ("Liq","HCO3_-"): input_co2_conc*total_volume_flow_rate*0.1*0.98/100,
-                            ("Liq","CO3_2-"): input_co2_conc*total_volume_flow_rate*0.1*0.01/100,
-                            ("Liq","CO2"): input_co2_conc*total_volume_flow_rate*0.9,
-                            ("Liq","H2O"): 10,
-                            ("Vap","CO2"): 1.e-8,
-                            ("Vap","H2O"): 1.e-8,
-                        }
-                    }
+        state_args = {
+            "pressure": 101325,
+            "temperature": 298,
+            "flow_mol_phase_comp": {
+                ("Liq", "H_+"): 1.0e-4 * total_volume_flow_rate,
+                ("Liq", "OH_-"): 1.0e-4 * total_volume_flow_rate,
+                ("Liq", "H2CO3"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.01
+                / 100,
+                ("Liq", "HCO3_-"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.98
+                / 100,
+                ("Liq", "CO3_2-"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.01
+                / 100,
+                ("Liq", "CO2"): input_co2_conc * total_volume_flow_rate * 0.9,
+                ("Liq", "H2O"): 10,
+                ("Vap", "CO2"): 1.0e-8,
+                ("Vap", "H2O"): 1.0e-8,
+            },
+        }
 
-
-        model.fs.unit.initialize(state_args=state_args,
-                                optarg=solver.options,
-                                outlvl=idaeslog.DEBUG)
+        model.fs.unit.initialize(
+            state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG
+        )
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
