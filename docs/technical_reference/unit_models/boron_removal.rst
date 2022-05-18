@@ -135,25 +135,35 @@ textbook (see References below).
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Electroneutrality Constraint", ":math:`C_{H} = C_{OH} + C_{A} + Alk_{Res} - n_{caustic}*C_{caustic}`"
-   "Residual Alkalinity Expression", ":math:`Alk_{Res} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
-   "Total Boron Balance Constraint", ":math:`C_{in,HA} + C_{in,A} = C_{HA} + C_{A}`"
-   "Water Dissociation Constraint", ":math:`K_{w} = C_{H} \cdotp C_{OH}`"
-   "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{HA} = C_{H} \cdotp C_{A}`"
-   "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{i,out} + C_{i} \cdotp Q`"
-   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic}`"
+   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions} - n_{caustic}*C_{caustic added}`"
 
-   "Caustic cation gain rate", ":math:`S_{caustic} = Q \cdotp \frac{D}{MW}`"
+   "Residual Ions Expression", ":math:`Res_{ions} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
+
+   "Total Boron Balance Constraint", ":math:`C_{in,HA} + C_{in,A} = C_{out,HA} + C_{out,A}`"
+
+   "Water Dissociation Constraint", ":math:`K_{w} = C_{out,H} \cdotp C_{out,OH}`"
+
+   "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{out,HA} = C_{out,H} \cdotp C_{out,A}`"
+
+   "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{out,i} + C_{out,i} \cdotp Q`"
+
+   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic added}`"
+
+
+   "Caustic cation gain rate", ":math:`S_{caustic added} = Q \cdotp \frac{D}{MW}`"
+
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
 
-**NOTE:** :math:`C_{H}` **is the proton concentration,** :math:`C_{OH}` **is the hydroxide concentration,** :math:`C_{A}` **is the Borate concentration, and** :math:`C_{HA}` **is the Boron concentration.**
+**NOTE:** :math:`C_{p,H}` **is the proton concentration,** :math:`C_{p,OH}` **is the hydroxide concentration,** :math:`C_{p,A}` **is the Borate concentration, and** :math:`C_{p,HA}` **is the Boron concentration.** :math:`p` **represents either in or out**
+
 
 **NOTE:** :math:`n_{i}` **is ion charge of component** :math:`i`
 
 **NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
 
-**NOTE:** :math:`Alk_{Res}` **is the approximate total alkalinity of the stream after the first RO stage and is summed over all ions that are not hydroxide or borate ions (which are already included in the electroneutrality balance)**
+**NOTE:** :math:`Res_{ions}` **is the sum over all ions that are not hydroxide or borate ions (which are already included in the electroneutrality balance) that are needed to enforce electroneutrality**
+
 
 References
 ----------
