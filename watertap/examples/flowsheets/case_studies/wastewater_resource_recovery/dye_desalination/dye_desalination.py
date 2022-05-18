@@ -153,6 +153,10 @@ def add_costing(m):
     )
 
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    m.fs.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.costing.cost_process()
 
     # # electricity per cost of influent
