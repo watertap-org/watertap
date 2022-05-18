@@ -189,7 +189,7 @@ def add_costing(m):
             + m.fs.costing.total_operating_cost
             + m.fs.costing.annual_energy_cost
         )
-    )  # TODO - verify the annual_energy_cost contribution to total_annualized_cost
+    )
 
     # levelized cost of dye removal
     m.fs.costing.LCODS = Expression(
@@ -203,11 +203,32 @@ def add_costing(m):
         doc="Cost of dye disposal",
     )
 
-    # # TODO - Implement LC_comp
+    # m.fs.costing.LC_comp = Set(
+    #     initialize=[
+    #         "membrane",
+    #         "pump",
+    #     ]
+    # )
+    # m.fs.costing.LCODS_comp = Expression(
+    #     m.fs.costing.LC_comp
+    # )
+    # m.fs.costing.LCODS_comp["membrane"] = (
+    #     m.fs.nanofiltration.costing.membrane_cost
+    #     * m.fs.costing.TIC
+    #     * (
+    #         m.fs.costing.capital_recovery_factor
+    #         + m.fs.costing.maintenance_costs_percent_FCI
+    #     )
+    # )/ m.fs.costing.annual_dye_removal
+
+    # m.fs.costing.LCODS_comp["pump"] = (
+    #     m.fs.P1.costing.pump_cost
+    #
+    # )/ m.fs.costing.annual_dye_removal
 
 
 def display_results(m):
-    unit_list = ["feed", "nanofiltration", "permeate1", "retentate1"]
+    unit_list = ["feed", "permeate1", "retentate1", "nanofiltration"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -216,41 +237,27 @@ def display_costing(m):
     m.fs.costing.annual_dye_disposal_cost.display()
     m.fs.costing.annual_dye_removal.display()
     m.fs.costing.annual_energy_cost.display()
-    # m.fs.costing.LCOD.display() #levelized cost of dye removal
-    # TODO - choose cost parameters of interest to display
-    # print("\nUnit Capital Costs\n")
-    # for u in m.fs.costing._registered_unit_costing:
-    #     print(
-    #         u.name,
-    #         " :   ",
-    #         value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
-    #     )
-    #
-    # print("\nUtility Costs\n")
-    # for f in m.fs.costing.flow_types:
-    #     print(
-    #         f,
-    #         " :   ",
-    #         value(
-    #             pyunits.convert(
-    #                 m.fs.costing.aggregate_flow_costs[f],
-    #                 to_units=pyunits.USD_2018 / pyunits.year,
-    #             )
-    #         ),
-    #     )
-    #
-    # print("")
-    # total_capital_cost = value(
-    #     pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
-    # )
-    # print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
-    #
-    # total_operating_cost = value(
-    #     pyunits.convert(
-    #         m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
-    #     )
-    # )
-    # print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
+
+    print("\nUnit Capital Costs\n")
+    for u in m.fs.costing._registered_unit_costing:
+        print(
+            u.name,
+            " :   ",
+            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+        )
+
+    print("")
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
+
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
+    print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
 
 if __name__ == "__main__":
