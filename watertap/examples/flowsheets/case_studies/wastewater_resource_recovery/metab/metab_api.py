@@ -1,5 +1,5 @@
 """
-Interface for flowsheet in :module:`metab`.
+Interface for flowsheet in :mod:`metab`.
 """
 from watertap.ui.api import FlowsheetInterface, WorkflowActions, export_variables
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
