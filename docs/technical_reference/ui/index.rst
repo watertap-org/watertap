@@ -13,47 +13,62 @@ without directly impacting how the models are constructed.
 
 There are two different types of users for this API:
 
-* **Model developers** should call :func:`export_variables` in their `build`
-  methods fto tell the UI which variables are intended for the user.
-* **User interface developers** should implement a module that creates a
+* :ref:`Model developers <ui-model-dev>` should call :func:`export_variables` in their `build`
+  methods to tell the UI which variables are intended for the user.
+* :ref:`User interface developers <ui-interface-dev>` should implement a module that creates a
   :class:`FlowsheetInterface` object and configures it with a flowsheet block,
   and appropriate methods bound to actions like `build` and `solve`.
 
 The rest of this page will provide more detail for each type of user.
 
+.. _ui-model-dev:
+
 Model Developer Usage
 ---------------------
 
-For a model developer, the primary interface is :func:`export_variables`. This function is applied to a
-Pyomo block (also an IDAES one) to list the names (and, optionally some additional
-information) of the variables that should be "exported" to the user interface.
-It is expected that a standard set of exported variables will be performed by each
-block (unit model, etc.) independently in the ``build`` method. For example, the
-last line of the zero-order feed's `build` method is::
+For a model developer, the primary interface is the function :func:`export_variables`.
+This function is applied to a Pyomo block (also an IDAES one) to list the names (and, optionally some additional information) of the variables that should be "exported" to the user interface.
+It is expected that a standard set of exported variables will be performed by each block (unit model, etc.) independently in the ``build`` method.
+For example, the last line of the zero-order feed's `build` method is::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
                          variables=["flow_vol", "conc_mass_comp"])
 
-At the time of that call, ``self`` is the feed block that was just built. It is
-saying to export two variables called "flow_vol" and "conc_mass_comp".
+At the time of that call, ``self`` is the feed block that was just built.
+It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 
-.. autofunction:: export_variables
+.. _ui-interface-dev:
 
 User Interface Developer Usage
 ------------------------------
+The user interface developer has to do two primary tasks:
 
-There are two steps for creating a user interface to a flowsheet:
+* :ref:`Create interfaces <ui-create-interface>` to specific flowsheets
+* :ref:`Find and use those interfaces <ui-finduse-interface>` in the logic of the UI backend
 
-1. Define a function ``flowsheet_interface`` that creates the FlowsheetInterface.
-   This object is not yet connected to an IDAES flowsheet
-   block. The function should:
+The following two sections (linked above) show how to perform those tasks.
+
+.. _ui-create-interface:
+
+Creating an interface to a flowsheet
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are two steps for **creating a user interface** to a flowsheet:
+
+1. Define a function ``flowsheet_interface()`` that creates the :class:`FlowsheetInterface` object.
+   This function should have the following signature:
+
+.. function:: flowsheet_interface() -> FlowsheetInterface
+
+   In other words, it takes no arguments and returns a :class:`FlowsheetInterface` object.
+   This object is not yet connected to an IDAES flowsheet block.
+   The function should:
 
    a. Provide metadata (a name, description) for the flowsheet in the `FlowsheetInterface` constructor.
 
    b. Optionally list flowsheet-level variables (see :ref:`ui-define-variables`)
 
-   c. Set the functions to call for "actions" -- by default, `build` and `solve` --
-      that the UI can perform on the flowsheet.
+   c. Set the functions to call for the "actions" -- by default, `build` and `solve` -- that the UI can perform on the flowsheet.
 
    For example::
 
@@ -63,8 +78,7 @@ There are two steps for creating a user interface to a flowsheet:
             fsi.set_action(WorkflowActions.solve, solve_flowsheet)
             return fsi
 
-2. Define functions for the actions defined in Step 1. These fuunctions all have
-   the following signature:
+2. Define functions for the actions defined in Step 1. These fuunctions all have the following signature:
 
 .. function:: action_function(block=None, ui=None, **kwargs)
 
@@ -92,3 +106,18 @@ There are two steps for creating a user interface to a flowsheet:
             metab.assert_optimal_termination(results)
 
 
+If you wish to define your own actions, use the :meth:`~FlowsheetInterface.add_action_type` method of the object that was created by ``flowsheet_interface()``.
+
+.. _ui-define-variables:
+
+Defining variables in more detail
++++++++++++++++++++++++++++++++++
+
+.. todo: two ways to do it (1) provide more infor to export_variables, (2) create the BlockInterface yourself.
+
+.. _ui-finduse-interface:
+
+Find and use flowsheet interfaces
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once you have created a flowsheet interface, as described in :ref:`ui-create-interface`, you need to use it in the UI backend.
