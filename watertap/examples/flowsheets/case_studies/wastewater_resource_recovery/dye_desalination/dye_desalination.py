@@ -144,13 +144,59 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def add_costing(m):
+def add_costing(m, basis="Feed"):
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "dye_desalination_global_costing.yaml",
     )
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    # add capital costs for NF module and NF pump
+    m.fs.dye_nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.dye_NFpump.costing = UnitModelCostingBlock(**costing_kwargs)
 
-    # TODO - add costing model expressions
+    m.fs.costing.cost_process()
+
+    # electricity per cost of influent
+    # TODO - verify if costing is obased on per treated volume
+    m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+
+    # levelized costs
+
+    # amount of dye in retentate - permeate = dye removed [kg/time]
+    m.fs.costing.annual_dye_removal = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.retentate1.flow_mass_comp[0, "dye"]
+                - m.fs.permeate1.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        ),
+        doc="Annual dye removal",
+    )
+
+    # total cost per year - as defined in metab.py
+    m.fs.costing.total_annualized_cost = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+    )
+
+    # levelized cost of dye removal
+    m.fs.costing.LCODS = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_dye_removal),
+        doc="Levelized Cost of Dye Separation",
+    )
+
+    # annual cost of dye disposal
+    m.fs.costing.annual_dye_disposal_cost = Expression(
+        expr=(m.fs.costing.annual_dye_removal * m.fs.costing.cost_dye_disposal),
+        doc="Cost of dye disposal",
+    )
+
+    # TODO - Implement LC_comp
 
 
 def display_results(m):

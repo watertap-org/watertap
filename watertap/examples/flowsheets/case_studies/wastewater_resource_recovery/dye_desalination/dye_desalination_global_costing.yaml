@@ -50,3 +50,8 @@ global_parameters:
     # Total Installed Cost
     value: 1.65
     units: dimensionless
+  cost_dye_disposal:
+    # cost of dye disposal
+    # TODO - change cost of dye disposal to reasonable value
+    value: 1
+    units: USD_2020/kg
