@@ -135,7 +135,8 @@ textbook (see References below).
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions} - n_{caustic}*C_{caustic added}`"
+   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions} - n_{caustic}*C_{caustic_added}`"
+
 
    "Residual Ions Expression", ":math:`Res_{ions} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
 
@@ -147,10 +148,12 @@ textbook (see References below).
 
    "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{out,i} + C_{out,i} \cdotp Q`"
 
-   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic added}`"
+   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic_added}`"
 
 
-   "Caustic cation gain rate", ":math:`S_{caustic added} = Q \cdotp \frac{D}{MW}`"
+
+   "Caustic cation gain rate", ":math:`S_{caustic_added} = Q \cdotp \frac{D}{MW}`"
+
 
 
 **NOTE:** :math:`Q` **is defined as the total volumetric flow rate and** :math:`S_{j}` **is the source/sink term for component** :math:`j`
