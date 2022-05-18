@@ -170,7 +170,7 @@ def add_costing(m):
                 to_units=pyunits.kWh / m.fs.costing.base_period,
             )
         ),
-        doc=("Energy cost associated with pumping"),
+        doc="Energy cost associated with pumping",
     )
 
     # amount of dye in retentate - permeate = dye removed [kg/time]
@@ -192,7 +192,8 @@ def add_costing(m):
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             + m.fs.costing.annual_energy_cost
-        )
+        ),
+        doc="Annual cost of treatment",
     )
 
     # levelized cost of dye removal
@@ -207,28 +208,14 @@ def add_costing(m):
         doc="Cost of dye disposal",
     )
 
-    # m.fs.costing.LC_comp = Set(
-    #     initialize=[
-    #         "membrane",
-    #         "pump",
-    #     ]
-    # )
-    # m.fs.costing.LCODS_comp = Expression(
-    #     m.fs.costing.LC_comp
-    # )
-    # m.fs.costing.LCODS_comp["membrane"] = (
-    #     m.fs.nanofiltration.costing.membrane_cost
-    #     * m.fs.costing.TIC
-    #     * (
-    #         m.fs.costing.capital_recovery_factor
-    #         + m.fs.costing.maintenance_costs_percent_FCI
-    #     )
-    # )/ m.fs.costing.annual_dye_removal
-
-    # m.fs.costing.LCODS_comp["pump"] = (
-    #     m.fs.P1.costing.pump_cost
-    #
-    # )/ m.fs.costing.annual_dye_removal
+    m.fs.costing.LCODS = Expression(
+        expr=m.fs.costing.utilization_factor
+        * m.fs.costing.total_annualized_cost
+        / pyunits.convert(
+            m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / m.fs.costing.base_period
+        ),
+        doc="Levelized cost of dye separation, on a feed flow volume basis",
+    )
 
 
 def display_results(m):
@@ -262,6 +249,13 @@ def display_costing(m):
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
+
+    levelized_cost_dye_separation = value(
+        pyunits.convert(m.fs.costing.LCODS, to_units=pyunits.USD_2018 / pyunits.m**3)
+    )
+    print(
+        f"\nLevelized Cost of Dye Separation: {levelized_cost_dye_separation:.2f} $/m3"
+    )
 
 
 if __name__ == "__main__":
