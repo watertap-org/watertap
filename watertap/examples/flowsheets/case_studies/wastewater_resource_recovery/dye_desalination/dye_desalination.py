@@ -33,9 +33,12 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.unit_models.zero_order import FeedZO, PumpElectricityZO
-from watertap.unit_models.zero_order.nanofiltration_zo import NanofiltrationZO
-from watertap.core.zero_order_costing import ZeroOrderCostingData as ZeroOrderCosting
+from watertap.unit_models.zero_order import (
+    FeedZO,
+    PumpElectricityZO,
+    NanofiltrationZO,
+)
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 
 def main():
@@ -49,16 +52,15 @@ def main():
     results = solve(m)
     assert_optimal_termination(results)
 
-    display_results(m)
+    # display_results(m)
 
-    # TODO - implement costing model
-    # add_costing(m)
-    # m.fs.costing.initialize()
+    add_costing(m)
+    m.fs.costing.initialize()
     #
     # adjust_default_parameters(m)
-    # results = solve(m)
-    # assert_optimal_termination(results)
-    # display_costing(m)
+    results = solve(m)
+    assert_optimal_termination(results)
+    display_costing(m)
     return m
 
 
@@ -144,24 +146,28 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def add_costing(m, basis="Feed"):
+def add_costing(m):
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "dye_desalination_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    # add capital costs for NF module and NF pump
-    m.fs.dye_nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.dye_NFpump.costing = UnitModelCostingBlock(**costing_kwargs)
 
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     m.fs.costing.cost_process()
 
-    # electricity per cost of influent
-    # TODO - verify if costing is obased on per treated volume
-    m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+    # # electricity per cost of influent
 
-    # levelized costs
+    m.fs.costing.annual_energy_cost = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * m.fs.costing.electricity_cost
+            * pyunits.convert(
+                m.fs.P1.electricity[0],
+                to_units=pyunits.kWh / m.fs.costing.base_period,
+            )
+        ),
+        doc=("Energy cost associated with pumping"),
+    )
 
     # amount of dye in retentate - permeate = dye removed [kg/time]
     m.fs.costing.annual_dye_removal = Expression(
@@ -181,8 +187,9 @@ def add_costing(m, basis="Feed"):
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
+            + m.fs.costing.annual_energy_cost
         )
-    )
+    )  # TODO - verify the annual_energy_cost contribution to total_annualized_cost
 
     # levelized cost of dye removal
     m.fs.costing.LCODS = Expression(
@@ -190,26 +197,26 @@ def add_costing(m, basis="Feed"):
         doc="Levelized Cost of Dye Separation",
     )
 
-    # annual cost of dye disposal
+    # # annual cost of dye disposal
     m.fs.costing.annual_dye_disposal_cost = Expression(
-        expr=(m.fs.costing.annual_dye_removal * m.fs.costing.cost_dye_disposal),
+        expr=(m.fs.costing.annual_dye_removal * m.fs.costing.dye_disposal_cost),
         doc="Cost of dye disposal",
     )
 
-    # TODO - Implement LC_comp
+    # # TODO - Implement LC_comp
 
 
 def display_results(m):
-    unit_list = ["feed", "nanofiltration", "P1"]
+    unit_list = ["feed", "nanofiltration", "permeate1", "retentate1"]
     for u in unit_list:
         m.fs.component(u).report()
 
 
 def display_costing(m):
-    # m.fs.costing.total_capital_cost.display()
-    # m.fs.costing.total_operating_cost.display()
+    m.fs.costing.annual_dye_disposal_cost.display()
+    m.fs.costing.annual_dye_removal.display()
+    m.fs.costing.annual_energy_cost.display()
     # m.fs.costing.LCOD.display() #levelized cost of dye removal
-    raise ValueError("Costing model not yet implemented.")
     # TODO - choose cost parameters of interest to display
     # print("\nUnit Capital Costs\n")
     # for u in m.fs.costing._registered_unit_costing:
