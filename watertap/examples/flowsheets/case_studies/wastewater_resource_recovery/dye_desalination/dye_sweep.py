@@ -42,14 +42,15 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
         sweep_params,
         outputs,
         csv_results_file_name=output_filename,
-        optimize_function=optimize_kwargs,
+        optimize_function=opt_function,
+        optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
     return global_results, sweep_params, m
 
 
-def main(case_num=1, nx=11, interpolate_nan_outputs=False):
+def main(case_num=1, nx=11, interpolate_nan_outputs=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
