@@ -25,13 +25,26 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     m = dye_desalination.main()
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
-    m.fs.costing.dye_disposal_cost.unfix()
 
     sweep_params = {}
 
     if case_num == 1:
-        sweep_params["dye_cost"] = LinearSample(
-            m.fs.costing.dye_disposal_cost, 5, 10, nx
+        m.fs.costing.dye_cost.unfix()
+        sweep_params["dye_cost"] = LinearSample(m.fs.costing.dye_cost, 0.1, 5, nx)
+    elif case_num == 2:
+        m.fs.costing.waste_disposal_cost.unfix()
+        sweep_params["disposal_cost"] = LinearSample(
+            m.fs.costing.waste_disposal_cost, 1, 10, nx
+        )
+    elif case_num == 3:
+        m.fs.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        sweep_params["dye_removal"] = LinearSample(
+            m.fs.nanofiltration.removal_frac_mass_solute[0, "dye"], 0.2, 0.999, nx
+        )
+    elif case_num == 4:
+        m.fs.nanofiltration.water_permeability_coefficient[0].unfix()
+        sweep_params["water_permeability"] = LinearSample(
+            m.fs.nanofiltration.water_permeability_coefficient[0], 1, 100, nx
         )
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
@@ -50,13 +63,13 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     return global_results, sweep_params, m
 
 
-def main(case_num=1, nx=11, interpolate_nan_outputs=True):
+def main(case_num=4, nx=21, interpolate_nan_outputs=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
-    comm, rank, num_procs = _init_mpi()  # TODO - resolve MPI communicator init issue
+    # comm, rank, num_procs = _init_mpi()
 
     global_results, sweep_params, m = run_analysis(
         case_num, nx, interpolate_nan_outputs
