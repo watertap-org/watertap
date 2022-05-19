@@ -185,28 +185,42 @@ def add_costing(m):
         ),
         doc="Annual dye removal",
     )
+    m.fs.costing.annual_dye_disposal = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.permeate1.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        ),
+        doc="Annual dye disposal",
+    )
 
-    # total cost per year - as defined in metab.py
+    # annual cost of dye disposal
+    m.fs.costing.annual_dye_disposal_cost = Expression(
+        expr=(m.fs.costing.annual_dye_disposal * m.fs.costing.dye_disposal_cost),
+        doc="Cost of dye disposal",
+    )
+
+    # total cost (per year)
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             + m.fs.costing.annual_energy_cost
+            + m.fs.costing.annual_dye_disposal_cost
         ),
         doc="Annual cost of treatment",
     )
 
-    # # annual cost of dye disposal
-    m.fs.costing.annual_dye_disposal_cost = Expression(
-        expr=(m.fs.costing.annual_dye_removal * m.fs.costing.dye_disposal_cost),
-        doc="Cost of dye disposal",
-    )
-
     m.fs.costing.LCOW = Expression(
-        expr=m.fs.costing.utilization_factor
-        * m.fs.costing.total_annualized_cost
-        / pyunits.convert(
-            m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / m.fs.costing.base_period
+        expr=m.fs.costing.total_annualized_cost
+        / (
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.feed.flow_vol[0],
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
         ),
         doc="Levelized cost of water, on a per unit feed flow volume basis",
     )
