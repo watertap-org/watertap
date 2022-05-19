@@ -170,10 +170,22 @@ def add_costing(m):
                 to_units=pyunits.kWh / m.fs.costing.base_period,
             )
         ),
-        doc="Energy cost associated with pumping",
+        doc="Energy cost associated with pumping kWh/time",
     )
 
-    # amount of dye in retentate - permeate = dye removed [kg/time]
+    # dye that is left in permeate
+    m.fs.costing.annual_dye_disposal = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.permeate1.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        ),
+        doc="Annual dye disposal kg/time",
+    )
+
+    # dye that is removed from feed
     m.fs.costing.annual_dye_removal = Expression(
         expr=(
             m.fs.costing.utilization_factor
@@ -183,23 +195,13 @@ def add_costing(m):
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
         ),
-        doc="Annual dye removal",
-    )
-    m.fs.costing.annual_dye_disposal = Expression(
-        expr=(
-            m.fs.costing.utilization_factor
-            * pyunits.convert(
-                m.fs.permeate1.flow_mass_comp[0, "dye"],
-                to_units=pyunits.kg / m.fs.costing.base_period,
-            )
-        ),
-        doc="Annual dye disposal",
+        doc="Annual dye removal kg/time",
     )
 
     # annual cost of dye disposal
     m.fs.costing.annual_dye_disposal_cost = Expression(
         expr=(m.fs.costing.annual_dye_disposal * m.fs.costing.dye_disposal_cost),
-        doc="Cost of dye disposal",
+        doc="Annual cost of dye disposal $/time",
     )
 
     # total cost (per year)
@@ -210,7 +212,7 @@ def add_costing(m):
             + m.fs.costing.annual_energy_cost
             + m.fs.costing.annual_dye_disposal_cost
         ),
-        doc="Annual cost of treatment",
+        doc="Annualized cost of treatment $/time",
     )
 
     m.fs.costing.LCOW = Expression(
