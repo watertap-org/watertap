@@ -37,6 +37,25 @@ For example, the last line of the zero-order feed's `build` method is::
 At the time of that call, ``self`` is the feed block that was just built.
 It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 
+Testing the model interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To make sure you are exporting the variables you meant to, you can retrieve them as a list.
+This requires two calls:
+
+1. Get the interface that is attached to the block by ``export_variables`` by calling :func:`get_block_interface`.
+2. Iterate through variables exported by that block by calling :meth:`BlockInterface.get_exported_variables`.
+   Each variable that is returned will have the same structure as an entry in the "variables" ConfigList of the :attr:`BlockInterface.CONFIG`.
+   For example, if the model block was called ``model.fs.thing``, you could do the following::
+
+        def test_variables_in_thing():
+            model = somehow_create_the_model()
+            expected_thing_names = ["foo", "bar"]
+            for thing_var in get_block_interface(model.fs.thing).get_exported_variables():
+                 assert thing_var["name"] in expected_thing_names
+
+
+
+
 .. _ui-interface-dev:
 
 User Interface Developer Usage
@@ -62,32 +81,37 @@ There are two steps for **creating a user interface** to a flowsheet:
 
    In other words, it takes no arguments and returns a :class:`FlowsheetInterface` object.
    This object is not yet connected to an IDAES flowsheet block.
-   The function should:
-
-   a. Provide metadata (a name, description) for the flowsheet in the `FlowsheetInterface` constructor.
-
-   b. Optionally list flowsheet-level variables (see :ref:`ui-define-variables`)
-
-   c. Set the functions to call for the "actions" -- by default, `build` and `solve` -- that the UI can perform on the flowsheet.
+   The function should (a) define the metadata and variables for the flowsheet using the ConfigDict documented in :attr:`BlockInterface.config`, then
+   (b) set the functions to call for the "actions" -- by default, `build` and `solve` -- that the UI can perform on the flowsheet.
 
    For example::
 
         def flowsheet_interface():
-            fsi = FlowsheetInterface({"display_name": "METAB treatment train", "variables": []})
+            fsi = FlowsheetInterface({
+              "name": "metab",
+              "display_name": "METAB treatment train",
+              "variables": [
+                  {"name": "var1", "display_name": "Variable Numero Uno",
+                   "description": "The first of the variables", "units": "m**3"},
+                  {"name": "var2", "display_name": "Variable Numero Dos",
+                   "description": "The second of the variables", "units": "m**4"}
+              ]
+            })
             fsi.set_action(WorkflowActions.build, build_flowsheet)
             fsi.set_action(WorkflowActions.solve, solve_flowsheet)
             return fsi
 
-2. Define functions for the actions defined in Step 1. These fuunctions all have the following signature:
+Note that you only need to add variables that are not already exported by the model, and that there are pretty reasonable defaults for things like the name, display_name (same as name), and description. So in most cases this will be a very simple call; the extended version was shown for didactic purposes.
 
-.. function:: action_function(block=None, ui=None, **kwargs)
+2. Define functions for the actions defined in Step 1. These functions all have the following signature:
+
+.. function:: action_function([block=None, ui=None], **kwargs)
 
     Perform an action.
 
-    Args:
-       block: Flowsheet block
-       ui: FlowsheetInterface instance
-       kwargs: Additional key
+    :param Block block: Flowsheet block
+    :param FlowsheetInterface ui: FlowsheetInterface instance
+    :param dict kwargs: Additional key/value pairs specific to this action
 
 ..
 

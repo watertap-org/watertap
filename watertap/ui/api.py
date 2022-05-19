@@ -177,7 +177,7 @@ class BlockInterface:
     """Interface to a block.
 
     Attrs:
-        config (ConfigDict): Configuration for the interface. See constructor.
+        config (ConfigDict): Configuration for the interface.
     """
 
     _var_config = ConfigDict()
@@ -197,6 +197,7 @@ class BlockInterface:
         ConfigValue(description="Units for the variable", domain=str),
     )
 
+    #: Configuration for the interface of the block
     CONFIG = ConfigDict()
     CONFIG.declare(
         BSD.DISP_KEY,
@@ -254,7 +255,7 @@ class BlockInterface:
         """Get block that is being interfaced to."""
         return self._block
 
-    def get_exported_variables(self) -> Generator[Var, None, None]:
+    def get_exported_variables(self) -> Generator[Dict, None, None]:
         """Get variables exported by the block.
 
         The returned dict is also used as the saved/loaded variable in a block;
@@ -395,7 +396,7 @@ class FlowsheetInterface(BlockInterface):
         but not found in the BlockInterface object for the corresponding block.
 
            e.g.: ``{'Flowsheet': ['foo_var', 'bar_var'],
-                    'Flowsheet.Component': ['baz_var']}``
+           'Flowsheet.Component': ['baz_var']}``
 
         Returns:
             map of block names to a list of variable names
