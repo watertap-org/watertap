@@ -45,15 +45,27 @@ For example, the last line of the zero-order feed's `build` method is::
 At the time of that call, ``self`` is the feed block that was just built.
 It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 
+There are other things about variables that can be specified, in which case instead of the simple variable name you need to use a dictionary with fields given by the "variables" section of the :class:`BlockInterface` configuration options.
+
+For example, if you wanted to mark "flow_vol" as read-only (loading it into the model will not change it), then you could do::
+
+    export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
+                         variables=[{"name":"flow_vol", "readonly": True},
+                                    "conc_mass_comp"])
+
+
+
 Lower-level interface
 ^^^^^^^^^^^^^^^^^^^^^
 Under the covers, the ``export_variables`` function creates an instance of :class:`BlockInterface` bound to the given IDAES model component, and configures it metadata for itself and its variables.
-The ``BlockInterface`` constructor uses a Pyomo ``ConfigDict``, like the IDAES unit and property models do, for configuration.
-See the :class:`BlockInterface` documentation for details on how to build this ConfigDict.
-As an example, for the export_variables call shown above, the equivalent lower-level calls would look like this::
+Therefore, you can directly call the ``BlockInterface`` constructor with the block object and a dictionary for configuration options.
+
+For example, for the `export_variables` call shown above, the equivalent lower-level calls would look like this::
 
     # as above, assume the model is in "self"
-    BlockInterface(self, {name="Feed Z0", description="Zero-Order feed block",
+    BlockInterface(self, {
+        name: "Feed Z0",
+        description: "Zero-Order feed block",
         "variables": [
             {"name": "flow_vol"},
             {"name": "conc_mass_comp"}

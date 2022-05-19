@@ -67,7 +67,8 @@ def mock_block():
     return MockBlock()
 
 
-def build_options(display_name=False, description=False, variables=0):
+def build_options(display_name=False, description=False, variables=0,
+                  readonly_variables=[]):
     opts = {}
     if display_name:
         opts["display_name"] = "foo"
@@ -77,13 +78,29 @@ def build_options(display_name=False, description=False, variables=0):
         v = []
         for i in range(min(variables, 2)):
             name = "foo" if i == 0 else "bar"
-            v.append({"display_name": f"{name} variable", "name": f"{name}_var"})
+            entry = {"display_name": f"{name} variable", "name": f"{name}_var"}
+            if i in readonly_variables:
+                entry["readonly"] = True
+            v.append(entry)
         opts["variables"] = v
     return opts
 
 
 # Tests
 # -----
+
+
+@pytest.mark.unit
+def test_export_variables_simple(mock_block):
+    export_variables(mock_block, name="Feed Z0", desc="Zero-Order feed block",
+                     variables=["foo_var", "bar_var"])
+
+
+@pytest.mark.unit
+def test_export_variables_complex(mock_block):
+    export_variables(mock_block, name="Feed Z0", desc="Zero-Order feed block",
+                     variables=[{"name": "foo_var", "readonly": True},
+                                "bar_var"])
 
 
 @pytest.mark.unit
@@ -190,7 +207,7 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
     # print(f"@@ saved: {json.dumps(obj.as_dict(), indent=2)}")
-    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename, mock_block)
+    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
     assert obj2 == obj
 
 
@@ -207,9 +224,52 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
     json.dump(d, fp)
     fp.close()
     # reload
-    obj2 = FlowsheetInterface.load(Path(tmpdir) / filename, mock_block)
+    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
     assert obj2.get_var_extra() != {}
     assert obj2.get_var_missing() == {}
+
+
+class ScalarValueBlock:
+    name = "Flowsheet"
+    doc = "flowsheet description"
+    foo_var = Var(name="foo_var", initialize=0.0, within=Reals)
+    foo_var.construct()
+    bar_var = Var(name="bar_var", initialize=0.0, within=Reals)
+    bar_var.construct()
+
+
+@pytest.mark.unit
+def test_flowsheet_interface_load_readonly(tmpdir):
+    vkey = BlockSchemaDefinition.VALU_KEY
+    block = ScalarValueBlock()
+    export_variables(block, variables=["foo_var", {"name": "bar_var", "readonly": True}])
+    obj = FlowsheetInterface({"display_name": "Flowsheet"})
+    obj.set_block(block)
+    readonly_index = 1
+    filename = "saved.json"
+    # manual save, and change the variables
+    d = obj.as_dict()
+    dblock = d["blocks"][0]
+    # Save old values, modify all the variables (add 1)
+    old_values = []
+    for var_entry in dblock["variables"]:
+        value = var_entry[vkey]
+        old_values.append(value)
+        var_entry[vkey] = value + 1
+    # Write out
+    fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
+    json.dump(d, fp)
+    fp.close()
+    # Reload
+    obj.load(Path(tmpdir) / filename)
+    # See that variables have changed, except readonly one
+    d = obj.as_dict()
+    block = d["blocks"][0]
+    for i, var_entry in block["variables"]:
+        if i == readonly_index:
+            assert var_entry[vkey] == old_values[i]
+        else:
+            assert var_entry[vkey] == old_values[i] + 1
 
 
 def test_flowsheet_interface_get_var(mock_block):

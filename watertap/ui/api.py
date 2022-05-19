@@ -83,6 +83,7 @@ class BlockSchemaDefinition:
     INDX_KEY = "index"
     UNIT_KEY = "units"
     CATG_KEY = "category"
+    RDON_KEY = "readonly"
 
     # Convenient form for all keys together (e.g. as kwargs)
     ALL_KEYS = dict(
@@ -95,6 +96,7 @@ class BlockSchemaDefinition:
         blks_key=BLKS_KEY,
         unit_key=UNIT_KEY,
         catg_key=CATG_KEY,
+        rdon_key=RDON_KEY,
     )
 
     BLOCK_SCHEMA = {
@@ -116,6 +118,7 @@ class BlockSchemaDefinition:
                                 "$name_key": {"type": "string"},
                                 "$disp_key": {"type": "string"},
                                 "$desc_key": {"type": "string"},
+                                "$rdon_key": {"type": "boolean"},
                                 "$unit_key": {"type": "string"},
                                 # scalar or indexed value
                                 # two forms:
@@ -177,21 +180,25 @@ class BlockInterface:
     """User interface for a Pyomo/IDAES block.
     """
 
-    _var_config = ConfigDict()
-    _var_config.declare(
+    VARIABLE_CONFIG = ConfigDict()
+    VARIABLE_CONFIG.declare(
         BSD.NAME_KEY, ConfigValue(description="Name of the variable", domain=str)
     )
-    _var_config.declare(
+    VARIABLE_CONFIG.declare(
         BSD.DISP_KEY,
         ConfigValue(description="Display name for the variable", domain=str),
     )
-    _var_config.declare(
+    VARIABLE_CONFIG.declare(
         BSD.DESC_KEY,
         ConfigValue(description="Description for the variable", domain=str),
     )
-    _var_config.declare(
+    VARIABLE_CONFIG.declare(
         BSD.UNIT_KEY,
         ConfigValue(description="Units for the variable", domain=str),
+    )
+    VARIABLE_CONFIG.declare(
+        BSD.RDON_KEY,
+        ConfigValue(description="Whether variable should be read-only", domain=bool),
     )
 
     #: Configuration for the interface of the block
@@ -208,7 +215,7 @@ class BlockInterface:
     )
     CONFIG.declare(
         BSD.VARS_KEY,
-        ConfigList(description="List of variables to export", domain=_var_config),
+        ConfigList(description="List of variables to export", domain=VARIABLE_CONFIG),
     )
 
     def __init__(self, block: Block, options: Dict = None):
@@ -323,16 +330,16 @@ def export_variables(
         BSD.VARS_KEY: [],
     }
     cvars = config[BSD.VARS_KEY]
-    if hasattr(variables, "items"):
-        for var_key, var_val in variables.items():
+    for var_item in variables:
+        if hasattr(var_item, "items"):
+            # Dict
+            var_key = var_item[BSD.NAME_KEY]
             _validate_export_var(block, var_key)
-            var_entry = {BSD.NAME_KEY: var_key}
-            var_entry.update(var_val)
-            cvars.append(var_entry)
-    else:
-        for var_name in variables:
-            _validate_export_var(block, var_name)
-            var_entry = {BSD.NAME_KEY: var_name}
+            cvars.append(var_item)
+        else:
+            # Name of var
+            _validate_export_var(block, var_item)
+            var_entry = {BSD.NAME_KEY: var_item}
             cvars.append(var_entry)
     interface = BlockInterface(block, config)
     return interface
@@ -473,7 +480,7 @@ class FlowsheetInterface(BlockInterface):
         json.dump(data, fp)
 
     @classmethod
-    def load(
+    def load_from(
         cls,
         file_or_stream: Union[str, Path, TextIO],
         fs: Union[Block, "FlowsheetInterface"],
@@ -503,11 +510,21 @@ class FlowsheetInterface(BlockInterface):
                 f"Block must define FlowsheetInterface using "
                 f"``set_block_interface()`` during construction. obj={fs.block}"
             )
+        ui.load(file_or_stream)
+        return ui
+
+    def load(self,  file_or_stream: Union[str, Path, TextIO]):
+        """Load from file or stream into this FlowsheetInterface.
+
+        Args:
+            file_or_stream: File to load from
+
+        Raises:
+            ValueError: Improper input data
+        """
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
-        ui.update(data)
-        # return the resulting interface of the flowsheet block
-        return ui
+        self.update(data)
 
     def update(self, data: Dict):
         """Update values in blocks in and under this interface, from data.
@@ -582,13 +599,6 @@ class FlowsheetInterface(BlockInterface):
                     raise KeyError(f"Dependent action not found. name={one_dep}")
                 if one_dep == action_type:
                     raise ValueError("Action cannot be dependent on itself")
-            # # check for circular dependencies
-            # deps_stack = deps.copy()
-            # while deps_stack:
-            #     one_dep = deps_stack.pop()
-            #     if one_dep == action_type:
-            #         raise ValueError("Action creates circular dependency")
-            #     deps_stack.extend(self._actions_deps[one_dep])
         # Add dependencies
         self._actions_deps[action_type] = deps
 
@@ -739,7 +749,6 @@ class FlowsheetInterface(BlockInterface):
             if BSD.VARS_KEY in block_data:
                 load_result = cls._load_variables(block_data[BSD.VARS_KEY], ui)
                 # save any 'missing' and 'extra' variables for this block
-                # into `load_diff`
                 for key, val in load_result.items():
                     if val:
                         var_diff[key][cur_block_key] = val
@@ -794,14 +803,17 @@ class FlowsheetInterface(BlockInterface):
             if variable_obj is None:
                 result["missing"].append(data_var)
             else:
-                data_val = data_var.get(BSD.VALU_KEY, None)
-                if data_val is not None:
-                    if isinstance(data_val, list):
-                        for item in data_val:
-                            idx, val = tuple(item[BSD.INDX_KEY]), item[BSD.VALU_KEY]
-                            variable_obj[idx] = val
-                    else:
-                        variable_obj.set_value(data_val)
+                if data_var.get(BSD.RDON_KEY, False):
+                    pass  # variable is read-only, ignore value
+                else:
+                    data_val = data_var.get(BSD.VALU_KEY, None)
+                    if data_val is not None:
+                        if isinstance(data_val, list):
+                            for item in data_val:
+                                idx, val = tuple(item[BSD.INDX_KEY]), item[BSD.VALU_KEY]
+                                variable_obj[idx] = val
+                        else:
+                            variable_obj.set_value(data_val)
                 result["extra"].remove(name)
         # return 'missing' and 'extra'
         result["extra"] = list(result["extra"])  # normalize to lists for both
