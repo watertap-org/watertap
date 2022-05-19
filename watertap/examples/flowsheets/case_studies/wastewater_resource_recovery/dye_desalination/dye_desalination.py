@@ -196,25 +196,24 @@ def add_costing(m):
         doc="Annual cost of treatment",
     )
 
-    # levelized cost of dye removal
-    m.fs.costing.LCODS = Expression(
-        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_dye_removal),
-        doc="Levelized Cost of Dye Separation",
-    )
-
     # # annual cost of dye disposal
     m.fs.costing.annual_dye_disposal_cost = Expression(
         expr=(m.fs.costing.annual_dye_removal * m.fs.costing.dye_disposal_cost),
         doc="Cost of dye disposal",
     )
 
-    m.fs.costing.LCODS = Expression(
+    m.fs.costing.LCOW = Expression(
         expr=m.fs.costing.utilization_factor
         * m.fs.costing.total_annualized_cost
         / pyunits.convert(
             m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / m.fs.costing.base_period
         ),
-        doc="Levelized cost of dye separation, on a feed flow volume basis",
+        doc="Levelized cost of water, on a per unit feed flow volume basis",
+    )
+
+    m.fs.costing.LCODS = Expression(
+        expr=m.fs.costing.total_annualized_cost / m.fs.costing.annual_dye_removal,
+        doc="Levelized cost of dye removal, on a per unit of dye removed basis",
     )
 
 
@@ -225,9 +224,9 @@ def display_results(m):
 
 
 def display_costing(m):
-    m.fs.costing.annual_dye_disposal_cost.display()
-    m.fs.costing.annual_dye_removal.display()
-    m.fs.costing.annual_energy_cost.display()
+    # m.fs.costing.annual_dye_disposal_cost.display()
+    # m.fs.costing.annual_dye_removal.display()
+    # m.fs.costing.annual_energy_cost.display()
 
     print("\nUnit Capital Costs\n")
     for u in m.fs.costing._registered_unit_costing:
@@ -250,11 +249,16 @@ def display_costing(m):
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
+    levelized_cost_water = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+    )
+    print(f"\nLevelized Cost of Water (LCOW): {levelized_cost_water:.2f} $/m3")
+
     levelized_cost_dye_separation = value(
-        pyunits.convert(m.fs.costing.LCODS, to_units=pyunits.USD_2018 / pyunits.m**3)
+        pyunits.convert(m.fs.costing.LCODS, to_units=pyunits.USD_2018 / pyunits.kg)
     )
     print(
-        f"\nLevelized Cost of Dye Separation: {levelized_cost_dye_separation:.2f} $/m3"
+        f"\nLevelized Cost of Dye Separation (LCODS): {levelized_cost_dye_separation:.2f} $/kg"
     )
 
 
