@@ -1,30 +1,38 @@
-WaterTAP User Interface
-========================
+WaterTAP User Interface API
+===========================
 
 .. py:currentmodule:: watertap.ui.api
 
-Overview
---------
+This page describes an application programming interface (API) that is designed to help communicate information about a flowsheet and its variables to a user interface layer (or possibly several different kinds of user interface layers at the same time).
+The API also provides the ability, intended for the UI developer, to update the variable values and run "actions" such as building and solving the flowsheet.
 
-The WaterTAP user interface is an application programming interface (API) that is
-designed to help communicate the variables of interest to a user interface layer,
-or possibly several different kinds of user interface layers at the same time,
-without directly impacting how the models are constructed.
+There are two distinct intended users for this API:
 
-There are two different types of users for this API:
+.. image:: /_static/terminal-icon.png
+    :height: 20px
+    :align: left
 
-* :ref:`Model developers <ui-model-dev>` should call :func:`export_variables` in their `build`
-  methods to tell the UI which variables are intended for the user.
-* :ref:`User interface developers <ui-interface-dev>` should implement a module that creates a
-  :class:`FlowsheetInterface` object and configures it with a flowsheet block,
-  and appropriate methods bound to actions like `build` and `solve`.
+:ref:`Model developers <ui-model-dev>` can select which variables to "export" to the UI for each component of the model, and provide extra metadata (display name, description) for them.
+
+.. image:: /_static/menu-icon.png
+    :height: 15px
+    :align: left
+
+:ref:`User interface developers <ui-interface-dev>` can select a flowsheet to wrap, and implement the interface to the build, solve, and possibly other actions that the UI could take with the flowsheet.
 
 The rest of this page will provide more detail for each type of user.
+
+.. image:: /_static/terminal-icon.png
+    :height: 60px
+    :align: left
 
 .. _ui-model-dev:
 
 Model Developer Usage
 ---------------------
+
+|
+
 
 For a model developer, the primary interface is the function :func:`export_variables`.
 This function is applied to a Pyomo block (also an IDAES one) to list the names (and, optionally some additional information) of the variables that should be "exported" to the user interface.
@@ -37,29 +45,33 @@ For example, the last line of the zero-order feed's `build` method is::
 At the time of that call, ``self`` is the feed block that was just built.
 It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 
-Testing the model interface
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To make sure you are exporting the variables you meant to, you can retrieve them as a list.
-This requires two calls:
+Lower-level interface
+^^^^^^^^^^^^^^^^^^^^^
+Under the covers, the ``export_variables`` function creates an instance of :class:`BlockInterface` bound to the given IDAES model component, and configures it metadata for itself and its variables.
+The ``BlockInterface`` constructor uses a Pyomo ``ConfigDict``, like the IDAES unit and property models do, for configuration.
+See the :class:`BlockInterface` documentation for details on how to build this ConfigDict.
+As an example, for the export_variables call shown above, the equivalent lower-level calls would look like this::
 
-1. Get the interface that is attached to the block by ``export_variables`` by calling :func:`get_block_interface`.
-2. Iterate through variables exported by that block by calling :meth:`BlockInterface.get_exported_variables`.
-   Each variable that is returned will have the same structure as an entry in the "variables" ConfigList of the :attr:`BlockInterface.CONFIG`.
-   For example, if the model block was called ``model.fs.thing``, you could do the following::
-
-        def test_variables_in_thing():
-            model = somehow_create_the_model()
-            expected_thing_names = ["foo", "bar"]
-            for thing_var in get_block_interface(model.fs.thing).get_exported_variables():
-                 assert thing_var["name"] in expected_thing_names
-
+    # as above, assume the model is in "self"
+    BlockInterface(self, {name="Feed Z0", description="Zero-Order feed block",
+        "variables": [
+            {"name": "flow_vol"},
+            {"name": "conc_mass_comp"}
+        ]
+    })
 
 
 
+.. image:: /_static/menu-icon.png
+    :height: 65px
+    :align: left
 .. _ui-interface-dev:
 
 User Interface Developer Usage
 ------------------------------
+
+|
+
 The user interface developer has to do two primary tasks:
 
 * :ref:`Create interfaces <ui-create-interface>` to specific flowsheets
@@ -130,14 +142,11 @@ Note that you only need to add variables that are not already exported by the mo
             metab.assert_optimal_termination(results)
 
 
-If you wish to define your own actions, use the :meth:`~FlowsheetInterface.add_action_type` method of the object that was created by ``flowsheet_interface()``.
+If you wish to define your own actions for a given flowsheet, use the :meth:`~FlowsheetInterface.add_action_type` method.
 
-.. _ui-define-variables:
+Note that you are able to specify dependencies of an action on other actions, which means that this action will automatically run the other actions (if they have not been already run).
+So, for example, the built-in "solve" action is dependent on the "build" action.
 
-Defining variables in more detail
-+++++++++++++++++++++++++++++++++
-
-.. todo: two ways to do it (1) provide more infor to export_variables, (2) create the BlockInterface yourself.
 
 .. _ui-finduse-interface:
 
@@ -145,3 +154,5 @@ Find and use flowsheet interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once you have created a flowsheet interface, as described in :ref:`ui-create-interface`, you need to use it in the UI backend.
+
+.. todo: Implement this on backend, then return and document here.
