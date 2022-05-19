@@ -382,6 +382,7 @@ class FlowsheetInterface(BlockInterface):
         """
         super().__init__(None, options)
         self._actions = {a: (None, None) for a in self.ACTIONS}
+        self._actions_deps = WorkflowActions.deps.copy()
         self.meta = {}
         self._var_diff = {}  # for recording missing/extra variables during load()
         self._actions_run = set()
@@ -563,29 +564,27 @@ class FlowsheetInterface(BlockInterface):
                defined in WorkflowActions, or a user action.
             ValueError: A circular dependency was created
         """
-        if action_type in self.ACTIONS:
+        if action_type in self._actions:
             return
-        self.ACTIONS.append(action_type)
-        if action_type in WorkflowActions.deps:
-            return
+        self._actions[action_type] = (None, None)
         if deps is None:
             deps = []   # Normalize empty dependencies to an empty list
         else:
             # Verify dependencies
             for one_dep in deps:
-                if one_dep not in self.ACTIONS and one_dep not in WorkflowActions.deps:
+                if one_dep not in self._actions and one_dep not in self._actions_deps:
                     raise KeyError(f"Dependent action not found. name={one_dep}")
                 if one_dep == action_type:
                     raise ValueError("Action cannot be dependent on itself")
-            # check for circular dependencies
-            deps_stack = deps.copy()
-            while deps_stack:
-                one_dep = deps_stack.pop()
-                if one_dep == action_type:
-                    raise ValueError("Action creates circular dependency")
-                deps_stack.extend(WorkflowActions.deps[one_dep])
-        # Add dependencies to global set
-        WorkflowActions.deps[action_type] = deps
+            # # check for circular dependencies
+            # deps_stack = deps.copy()
+            # while deps_stack:
+            #     one_dep = deps_stack.pop()
+            #     if one_dep == action_type:
+            #         raise ValueError("Action creates circular dependency")
+            #     deps_stack.extend(self._actions_deps[one_dep])
+        # Add dependencies
+        self._actions_deps[action_type] = deps
 
     def set_action(self, name, func, **kwargs):
         """Set a function to call for a named action on the flowsheet."""
@@ -620,12 +619,12 @@ class FlowsheetInterface(BlockInterface):
         return self._var_diff
 
     def _check_action(self, name):
-        if name not in self.ACTIONS:
+        if name not in self._actions:
             all_actions = ", ".join(self._actions.keys())
             raise KeyError(f"Unknown action. name={name}, known actions={all_actions}")
 
     def _run_deps(self, name):
-        dependencies = WorkflowActions.deps[name]
+        dependencies = self._actions_deps[name]
         if dependencies:
             _log.info(
                 f"Running dependencies for action. "
@@ -653,9 +652,9 @@ class FlowsheetInterface(BlockInterface):
         and do the same with their dependees, etc.
         Called from :meth:`_action_set_was_run`.
         """
-        all_actions = WorkflowActions.deps.keys()
+        all_actions = self._actions_deps.keys()
         # make a list of actions that depend on this action
-        affected = [a for a in all_actions if name in WorkflowActions.deps[a]]
+        affected = [a for a in all_actions if name in self._actions_deps[a]]
         while affected:
             # get one action that depends on this action
             aff = affected.pop()
@@ -663,7 +662,7 @@ class FlowsheetInterface(BlockInterface):
             if self._action_was_run(aff):
                 self._action_clear_was_run(aff)
             # add all actions that depend on it to the list
-            aff2 = [a for a in all_actions if aff in WorkflowActions.deps[a]]
+            aff2 = [a for a in all_actions if aff in self._actions_deps[a]]
             affected.extend(aff2)
 
     def _action_clear_was_run(self, name):

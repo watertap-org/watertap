@@ -280,3 +280,46 @@ def test_schema_performance():
 
     # should never take more than 1/50th sec per block (sub-ms times are normal)
     assert dur < (0.02 * nblocks[0] * nblocks[1])
+
+
+def test_add_action_type(mock_block):
+    fsi = FlowsheetInterface(build_options(variables=1))
+    fsi.set_block(mock_block)
+
+    # Add 2 actions:
+    #   cook <- eat
+    fsi.add_action_type("cook")
+    fsi.add_action_type("eat", deps=["cook"])
+    fsi.set_action("cook", add_action_cook, dish=_dish)
+    fsi.set_action("eat", add_action_eat)
+
+    # Check actions
+    assert fsi.get_action("cook") == (add_action_cook, {"dish": _dish})
+    assert fsi.get_action("eat") == (add_action_eat, {})
+
+    # Run actions
+    fsi.run_action("eat")
+
+    # Add some problematic actions
+    with pytest.raises(KeyError):
+        # unknown dependency
+        fsi.add_action_type("go-inside", deps=["open-door"])
+
+    with pytest.raises(ValueError):
+        # cannot depend on self
+        fsi.add_action_type("a1", deps=["a1"])
+
+
+_dish = "mac&cheese"
+_cooked = None
+
+
+def add_action_cook(dish=None, **kwargs):
+    global _cooked
+    _cooked = dish
+    print("cook")
+
+
+def add_action_eat(**kwargs):
+    assert _cooked == _dish
+    print("eat")
