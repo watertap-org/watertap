@@ -111,11 +111,11 @@ def config_docs(cls):
         format_list(doc_list, 0)
     except Exception as err:
         util_logger.warning(f"Generating configuration docstring: {err}")
-    # Add to the class docstring. Assume that you can just append,
-    # i.e. the configuration is the last thing in that docstring
+    # Add to the class constructor docstring. Assume that you can just append,
+    # i.e. the configuration is the last thing in that docstring.
     if doc_lines:
         doc_str = "\n".join(doc_lines)
-        cls.__doc__ = cls.__doc__.rstrip() + "\n" + doc_str
+        cls.__init__.__doc__ = cls.__init__.__doc__.rstrip() + "\n\n" + doc_str
     # Return modified class
     return cls
 

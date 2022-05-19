@@ -174,10 +174,7 @@ BSD = BlockSchemaDefinition  # alias
 
 @config_docs
 class BlockInterface:
-    """Interface to a block.
-
-    Attrs:
-        config (ConfigDict): Configuration for the interface.
+    """User interface for a Pyomo/IDAES block.
     """
 
     _var_config = ConfigDict()
@@ -219,7 +216,7 @@ class BlockInterface:
 
         Args:
             block: The block associated with this interface.
-            options: Configuration options
+            options: Configuration options specified by :attr:`CONFIG`
         """
         options = options or {}
         self._saved_options = options
@@ -356,11 +353,20 @@ def _validate_export_var(b, n):
 
 
 class WorkflowActions:
+    #: Build the flowsheet
     build = "build"
+
+    #: Solve the flowsheet
     solve = "solve"
+
+    #: Get flowsheet resoluts
     results = "get-results"
 
-    deps = {build: [], solve: [build], results: [solve]}
+    #: Dependencies:
+    #: results `--[depends on]-->` solve `--[depends on]-->` build
+    deps = {build: [],
+            solve: [build],
+            results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):

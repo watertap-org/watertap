@@ -156,3 +156,30 @@ Find and use flowsheet interfaces
 Once you have created a flowsheet interface, as described in :ref:`ui-create-interface`, you need to use it in the UI backend.
 
 .. todo: Implement this on backend, then return and document here.
+
+Class and function reference
+----------------------------
+
+High-level API
+^^^^^^^^^^^^^^
+
+.. autofunction:: export_variables
+
+.. autoclass:: FlowsheetInterface
+    :members:
+    :special-members: __init__, __eq__
+
+Lower-level API
+^^^^^^^^^^^^^^^
+
+.. autofunction:: get_block_interface
+
+.. autofunction:: set_block_interface
+
+.. autoclass:: BlockInterface
+    :members:
+    :special-members: __init__
+
+.. autoclass:: WorkflowActions
+    :members:
+    :undoc-members:
