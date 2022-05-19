@@ -172,5 +172,4 @@ Class Documentation
 
 .. automodule:: watertap.unit_models.reverse_osmosis_0D
     :members:
-    :noindex:
 

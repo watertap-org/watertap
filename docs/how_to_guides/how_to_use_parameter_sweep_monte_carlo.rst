@@ -116,5 +116,4 @@ Function Documentation
 ----------------------
 
 .. automodule :: watertap.tools.parameter_sweep
-   :noindex:
    :members:

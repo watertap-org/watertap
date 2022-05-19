@@ -12,11 +12,9 @@ Main API module
 .. automodule:: watertap.ui.api
     :members:
     :special-members: __init__, __eq__
-    :noindex:
 
 Utilities for the API
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: watertap.ui.api_util
     :members:
-    :noindex:

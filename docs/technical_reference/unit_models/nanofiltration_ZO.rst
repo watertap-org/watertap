@@ -81,5 +81,4 @@ Class Documentation
 
 .. automodule:: watertap.unit_models.nanofiltration_ZO
     :members:
-    :noindex:
 

@@ -103,7 +103,6 @@ Class Documentation
 
 .. automodule:: watertap.unit_models.crystallizer
     :members:
-    :noindex:
 
 
 References:

@@ -98,4 +98,3 @@ Class Documentation
 
 .. automodule:: watertap.unit_models.pressure_exchanger
     :members:
-    :noindex:

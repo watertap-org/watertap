@@ -71,4 +71,3 @@ Module Documentation
 
 .. automodule:: watertap.core.zero_order_siso.build_siso
     :members:
-    :noindex:
