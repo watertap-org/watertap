@@ -365,14 +365,7 @@ documentation for your module as generated from the source code (and docstrings)
 
     .. automodule:: watertap.<package_name>.<module_name>
         :members:
-        :noindex:
 
 The meaning of the options is the following:
 
-* ``:noindex:`` (**required**): prevents the creation of an index entry.
 * ``:members:``: include all the classes, functions, etc. in the module
-
-.. warning:: The ``:noindex:`` option **must be specified** when ``sphinx-apidoc`` is enabled (which is the default).
-    Otherwise, Sphinx will try to generate two conflicting index entries for the same module.
-    Forgetting to add ``:noindex:`` will result in warnings being emitted during the Sphinx build process.
-    This in turn causes the ReadTheDocs build, which is part of the set of automatic checks enforced as part of the WaterTAP Continuous Integration (CI) suite, to fail.
