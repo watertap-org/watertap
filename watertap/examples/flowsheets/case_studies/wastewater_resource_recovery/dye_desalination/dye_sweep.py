@@ -8,38 +8,32 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dy
 
 
 def set_up_sensitivity(m):
-    """
-    Initialize optimization sweep for specific cost parameters and baselines
-    :param m:
-    :return:
-    """
     outputs = {}
-    optimize_kwargs = {"check_termination": False}  # None
+    optimize_kwargs = {"check_termination": False}
     opt_function = dye_desalination.solve
 
-    # TODO - add costing parameters
-
-    # TODO - add baselines
-
-    # TODO - create outputs
+    # create outputs
+    outputs["LCOW"] = m.fs.costing.LCOW_comp
+    # outputs["Total_Cost"] = m.fs.costing.total_annualized_cost
+    # outputs["LCODS"] = m.fs.costing.LCODS
 
     return outputs, optimize_kwargs, opt_function
 
 
 def run_analysis(case_num, nx, interpolate_nan_outputs=True):
-    """
-    :param case_num:
-    :param nx:
-    :param interpolate_nan_outputs:
-    :return:
-    """
+
     m = dye_desalination.main()
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
+    m.fs.costing.dye_disposal_cost.unfix()
 
     sweep_params = {}
-    # TODO - add case structure with specific sweeps/studies
-    if case_num != 0:
+
+    if case_num == 1:
+        sweep_params["disposal_cost"] = LinearSample(
+            m.fs.costing.dye_disposal_cost, 5, 10, nx
+        )
+    else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
     output_filename = "sensitivity_" + str(case_num) + ".csv"
@@ -52,14 +46,24 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
 
-    return global_results, sweep_params
+    return global_results, sweep_params, m
 
 
-def main(case_num=1, nx=1, interpolate_nan_outputs=True):
-    global_results, sweep_params = run_analysis(case_num, nx, interpolate_nan_outputs)
+def main(case_num=1, nx=11, interpolate_nan_outputs=False):
+    # when from the command line
+    case_num = int(case_num)
+    nx = int(nx)
+    interpolate_nan_outputs = bool(interpolate_nan_outputs)
+
+    comm, rank, num_procs = _init_mpi()  # TODO - resolve MPI communicator init issue
+
+    global_results, sweep_params, m = run_analysis(
+        case_num, nx, interpolate_nan_outputs
+    )
     print(global_results)
-    return
+
+    return global_results, m
 
 
 if __name__ == "__main__":
-    main()
+    results, model = main()

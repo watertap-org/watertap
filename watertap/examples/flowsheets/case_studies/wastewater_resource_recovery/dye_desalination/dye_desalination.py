@@ -60,7 +60,7 @@ def main():
     # adjust_default_parameters(m)
     results = solve(m)
     assert_optimal_termination(results)
-    display_costing(m)
+    # display_costing(m)
     return m
 
 
@@ -190,7 +190,7 @@ def add_costing(m):
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
-                m.fs.retentate1.flow_mass_comp[0, "dye"]
+                m.fs.feed.flow_mass_comp[0, "dye"]
                 - m.fs.permeate1.flow_mass_comp[0, "dye"],
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
@@ -209,13 +209,13 @@ def add_costing(m):
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
-            + m.fs.costing.annual_energy_cost
+            # + m.fs.costing.annual_energy_cost
             + m.fs.costing.annual_dye_disposal_cost
         ),
         doc="Annualized cost of treatment $/time",
     )
 
-    m.fs.costing.LCOW = Expression(
+    m.fs.costing.LCOW_comp = Expression(
         expr=m.fs.costing.total_annualized_cost
         / (
             m.fs.costing.utilization_factor
@@ -268,7 +268,9 @@ def display_costing(m):
     levelized_cost_water = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"\nLevelized Cost of Water (LCOW): {levelized_cost_water:.2f} $/m3")
+    print(
+        f"\nLevelized Cost of Water Treatment (LCOWt): {levelized_cost_water:.2f} $/m3"
+    )
 
     levelized_cost_dye_separation = value(
         pyunits.convert(m.fs.costing.LCODS, to_units=pyunits.USD_2018 / pyunits.kg)
@@ -279,4 +281,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    model = main()
+    m = main()
