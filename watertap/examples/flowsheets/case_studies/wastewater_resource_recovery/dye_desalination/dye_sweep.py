@@ -13,7 +13,7 @@ def set_up_sensitivity(m):
     opt_function = dye_desalination.solve
 
     # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW_comp
+    outputs["LCOW"] = m.fs.costing.LCOW_dye_recovered
     # outputs["Total_Cost"] = m.fs.costing.total_annualized_cost
     # outputs["LCODS"] = m.fs.costing.LCODS
 
@@ -30,7 +30,7 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     sweep_params = {}
 
     if case_num == 1:
-        sweep_params["disposal_cost"] = LinearSample(
+        sweep_params["dye_cost"] = LinearSample(
             m.fs.costing.dye_disposal_cost, 5, 10, nx
         )
     else:
