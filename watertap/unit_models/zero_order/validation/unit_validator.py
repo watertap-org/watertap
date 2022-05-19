@@ -126,10 +126,10 @@ def _build_flowsheet(unit_model_class, process_subtype, water_source):
 
 
 _column_to_component_map = {
-    "recovery": "fs.unit.recovery_frac_mass_H2O",
-    "tds": "fs.feed.conc_mass_comp[0.0, tds]",
-    "alum_dose": "fs.unit.alum_dose",
-    "polymer_dose": "fs.unit.polymer_dose",
+    "recovery": ("fs.unit.recovery_frac_mass_H2O", pyunits.dimensionless),
+    "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
+    "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
+    "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
 }
 
 
@@ -156,8 +156,9 @@ def _run_flow_in_only(m, df):
             print(f"At {row['flow_in']:.6f} m^3/s")
         for k in _column_to_component_map:
             if k in row:
-                v = m.find_component(_column_to_component_map[k])
-                v.fix(row[k])
+                v, units = _column_to_component_map[k]
+                v = m.find_component(v)
+                v.fix(pyunits.convert(row[k] * units, v.get_units()))
         m.fs.feed.flow_vol[0].fix(row["flow_in"] * pyunits.m**3 / pyunits.s)
         _initialize_flowsheet(m)
         s.solve(m)
