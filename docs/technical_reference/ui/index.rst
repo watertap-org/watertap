@@ -45,7 +45,7 @@ Model Developer Usage
 
 For a model developer, the primary interface is the function :func:`export_variables`.
 This function is applied to a Pyomo block (also an IDAES one) to list the names (and, optionally some additional information) of the variables that should be "exported" to the user interface.
-It is expected that a standard set of exported variables will be performed by each block (unit model, etc.) independently in the ``build`` method.
+It is expected that a standard set of exported variables will be performed by each block (unit model, etc.) independently in the ``build`` method. To get all variables exported by the flowsheet, all the exports of sub-blocks will be gathered into a hierarchy.
 For example, the last line of the zero-order feed's `build` method is::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
@@ -93,10 +93,10 @@ User Interface Developer Usage
 
 |
 
-The user interface developer has to do two primary tasks:
+The user interface developer will use the Python API for two tasks:
 
 * :ref:`Create interfaces <ui-create-interface>` to specific flowsheets
-* :ref:`Find and use those interfaces <ui-finduse-interface>` in the logic of the UI backend
+* :ref:`Find and use those interfaces <ui-finduse-interface>` in the web server (or other UI backend)
 
 The following two sections (linked above) show how to perform those tasks.
 
@@ -185,18 +185,42 @@ The execution of dependencies are tracked so that they have the behavior one wou
 Find and use flowsheet interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. contents:: Contents
+    :local:
+    :depth: 2
+
 Once you have created a flowsheet interface, as described in :ref:`ui-create-interface`, you need to use it in the UI backend.
 
 
-.. todo:: Implement on backend, then return and document here.
+.. TODO Implement on backend, then return and document here.
 
 Finding flowsheets
 ++++++++++++++++++
-TBD
+**TBD**
 
 Interacting with flowsheets
 +++++++++++++++++++++++++++
-TBD
+**TBD**
+
+Fetch and update flowsheet values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**TBD**
+
+Get the flowsheet diagram
+~~~~~~~~~~~~~~~~~~~~~~~~~
+**TBD**
+
+Run flowsheet actions
+~~~~~~~~~~~~~~~~~~~~~
+**TBD**
+
+Save flowsheet status in a file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**TBD**
+
+Flowsheet information format
+++++++++++++++++++++++++++++
+The information about the flowsheet and all its subblocks and variables is encoded in JSON when it is transferred between the backend and the UI, or saved to a file. The form of this information is shown in the following JSON schema:
 
 .. image:: /_static/search-icon.png
     :height: 65px
