@@ -1959,7 +1959,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.variable_operating_cost = pyo.Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
+            units=blk.config.flowsheet_costing_block.base_currency
+            / blk.config.flowsheet_costing_block.base_period,
             bounds=(0, None),
             doc="Fixed operating cost of unit operation",
         )
@@ -1987,7 +1988,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 rep_rate
                 * mem_cost
                 * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m**2),
-                to_units=blk.config.flowsheet_costing_block.base_currency,
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
             )
         )
 
