@@ -1,6 +1,8 @@
 WaterTAP User Interface API
 ===========================
 
+.. include:: <isonum.txt>
+
 .. py:currentmodule:: watertap.ui.api
 
 .. contents:: Contents
@@ -163,8 +165,19 @@ Note that you only need to add variables that are not already exported by the mo
 
 If you wish to define your own actions for a given flowsheet, use the :meth:`~FlowsheetInterface.add_action_type` method.
 
-Note that you are able to specify dependencies of an action on other actions, which means that this action will automatically run the other actions (if they have not been already run).
-So, for example, the built-in "solve" action is dependent on the "build" action.
+Action dependencies
++++++++++++++++++++
+You are able to specify dependencies of an action on other actions, which means that this action will automatically run the other actions (if they have not been already run).
+
+The execution of dependencies are tracked so that they have the behavior one would expect, and are not re-run unless necessary. For example, for the built-in actions, where
+**get-results** depends on **solve** and
+**solve** depends on **build**, the following sequence of calls would run actions as shown:
+
+1. **solve** |rarr| run `build`, `solve`
+2. **solve** |rarr| run `solve` (`build` is not re-run)
+3. **get-results** |rarr| run `get-results`
+4. **build** |rarr| run `build`
+5. **get-results** |rarr| run `solve`, `get-results` (running `build` in (4) means `solve` needs to be re-run)
 
 
 .. _ui-finduse-interface:
@@ -174,7 +187,16 @@ Find and use flowsheet interfaces
 
 Once you have created a flowsheet interface, as described in :ref:`ui-create-interface`, you need to use it in the UI backend.
 
-.. todo: Implement this on backend, then return and document here.
+
+.. todo:: Implement on backend, then return and document here.
+
+Finding flowsheets
+++++++++++++++++++
+TBD
+
+Interacting with flowsheets
++++++++++++++++++++++++++++
+TBD
 
 .. image:: /_static/search-icon.png
     :height: 65px
