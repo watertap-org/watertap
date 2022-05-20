@@ -13,9 +13,9 @@ from pyomo.common.config import ConfigValue, ConfigDict, ConfigList
 import idaes.logger as idaeslog
 
 # local
-from . import api_util
-from .api_util import log_meth, config_docs, open_file_or_stream
-from .api_util import Schema
+from watertap.ui import api_util
+from watertap.ui.api_util import log_meth, config_docs, open_file_or_stream
+from watertap.ui.api_util import Schema
 
 # Global variables
 # ----------------
@@ -76,28 +76,30 @@ class BlockSchemaDefinition:
     # for all usages and validations.
     BLKS_KEY = "blocks"
     NAME_KEY = "name"
+    NAME_BLOCK_DESC = "Display name for the block"
+    NAME_VAR_DESC = "Display name for the variable"
     DISP_KEY = "display_name"
+    DISP_DESC = "Description for the variable"
     DESC_KEY = "description"
+    DESC_DESC = "Descriptive text"
     VARS_KEY = "variables"
+    VARS_DESC = "List of variables exported by this block"
     VALU_KEY = "value"
+    VALU_DESC = "Scalar or indexed variable value"
+    VALU_IDX_DESC = "Indexed variable value"
+    VALU_STR_DESC = "String value"
+    VALU_NUM_DESC = "Numerical value"
     INDX_KEY = "index"
+    INDX_DESC = "The index of an indexed variable value"
     UNIT_KEY = "units"
+    UNIT_DESC = "Units for the variable"
     CATG_KEY = "category"
+    CATG_DESC = "Category of this block, for use in UI display"
     RDON_KEY = "readonly"
+    RDON_DESC = "Whether variable should be read-only"
 
     # Convenient form for all keys together (e.g. as kwargs)
-    ALL_KEYS = dict(
-        name_key=NAME_KEY,
-        disp_key=DISP_KEY,
-        desc_key=DESC_KEY,
-        vars_key=VARS_KEY,
-        valu_key=VALU_KEY,
-        indx_key=INDX_KEY,
-        blks_key=BLKS_KEY,
-        unit_key=UNIT_KEY,
-        catg_key=CATG_KEY,
-        rdon_key=RDON_KEY,
-    )
+    ALL_KEYS = {}
 
     BLOCK_SCHEMA = {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -105,21 +107,27 @@ class BlockSchemaDefinition:
         "$defs": {
             "block_schema": {
                 "type": "object",
+                "description": "An IDAES/Pyomo block",
                 "properties": {
-                    "$name_key": {"type": "string"},
-                    "$disp_key": {"type": "string"},
-                    "$desc_key": {"type": "string"},
-                    "$catg_key": {"type": "string"},
+                    "$name_key": {"type": "string", "description": "$name_block_desc"},
+                    "$disp_key": {"type": "string", "description": "$disp_desc"},
+                    "$desc_key": {"type": "string", "description": "$desc_desc"},
+                    "$catg_key": {"type": "string", "description": "$catg_desc"},
                     "$vars_key": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "$name_key": {"type": "string"},
-                                "$disp_key": {"type": "string"},
-                                "$desc_key": {"type": "string"},
-                                "$rdon_key": {"type": "boolean"},
-                                "$unit_key": {"type": "string"},
+                                "$name_key": {"type": "string",
+                                              "description": "$name_var_desc"},
+                                "$disp_key": {"type": "string",
+                                              "description": "$disp_desc"},
+                                "$desc_key": {"type": "string",
+                                              "description": "$desc_desc"},
+                                "$rdon_key": {"type": "boolean",
+                                              "description": "$rdon_desc"},
+                                "$unit_key": {"type": "string",
+                                              "description": "$unit_desc"},
                                 # scalar or indexed value
                                 # two forms:
                                 #  {value: 1.34}  -- scalar
@@ -135,26 +143,42 @@ class BlockSchemaDefinition:
                                                 "properties": {
                                                     "$indx_key": {
                                                         "type": "array",
+                                                        "description": "$valu_idx_desc",
                                                         "items": {
                                                             "oneOf": [
-                                                                {"type": "number"},
-                                                                {"type": "string"},
+                                                                {"type": "number",
+                                                                 "description":
+                                                                 "$valu_num_desc"},
+                                                                {"type": "string",
+                                                                    "description":
+                                                                    "$valu_str_desc"},
                                                             ]
                                                         },
                                                     },
                                                     "$valu_key": {
+                                                        "description": "$valu_desc",
                                                         "oneOf": [
-                                                            {"type": "number"},
-                                                            {"type": "string"},
+                                                            {"type": "number",
+                                                             "description":
+                                                                 "$valu_num_desc"
+                                                             },
+                                                            {"type": "string",
+                                                             "description":
+                                                                 "$valu_str_desc"
+                                                             },
                                                         ]
                                                     },
-                                                    "$unit_key": {"type": "string"},
+                                                    "$unit_key": {"type": "string",
+                                                                  "description":
+                                                                  "$unit_desc"},
                                                 },
                                             },
                                         },
                                         # Scalar forms
-                                        {"type": "number"},
-                                        {"type": "string"},
+                                        {"type": "number",
+                                         "description": "$valu_num_desc"},
+                                        {"type": "string",
+                                         "description": "$valu_str_desc"},
                                     ]
                                 },
                             },
@@ -174,6 +198,13 @@ class BlockSchemaDefinition:
 
 BSD = BlockSchemaDefinition  # alias
 
+# Generate BlockSchemaDefinition.ALL_KEYS using a simple convention
+for key in BSD.__dict__:
+    if key.endswith("_KEY") or key.endswith("DESC"):
+        getattr(BSD, "ALL_KEYS")[key.lower()] = getattr(BSD, key)
+
+
+
 
 @config_docs
 class BlockInterface:
@@ -182,7 +213,7 @@ class BlockInterface:
 
     VARIABLE_CONFIG = ConfigDict()
     VARIABLE_CONFIG.declare(
-        BSD.NAME_KEY, ConfigValue(description="Name of the variable", domain=str)
+        BSD.NAME_KEY, ConfigValue(description="", domain=str)
     )
     VARIABLE_CONFIG.declare(
         BSD.DISP_KEY,
@@ -818,3 +849,41 @@ class FlowsheetInterface(BlockInterface):
         # return 'missing' and 'extra'
         result["extra"] = list(result["extra"])  # normalize to lists for both
         return result
+
+##
+
+
+def _main_usage(msg=None):
+    if msg is not None:
+        print(msg)
+    print("Usage: python api.py <command> [args..]")
+    print("Commands:")
+    print("   print-schema")
+    print("   dump-schema <file>")
+
+
+if __name__ == "__main__":
+    """Command-line functionality for developers.
+    """
+    import sys
+
+    if len(sys.argv) < 2:
+        _main_usage()
+        sys.exit(0)
+    command = sys.argv[1].lower()
+    if command == "print-schema":
+        schema = FlowsheetInterface.get_schema()
+        json.dump(schema.schema, sys.stdout, indent=2, ensure_ascii=True)
+    elif command == "dump-schema":
+        if len(sys.argv) < 3:
+            _main_usage("Filename is required")
+            sys.exit(1)
+        filename = sys.argv[2]
+        try:
+            fp = open(filename, "w", encoding="utf-8")
+        except IOError as err:
+            _main_usage(f"Cannot open {filename} for writing: {err}")
+            sys.exit(-1)
+        schema = FlowsheetInterface.get_schema()
+        json.dump(schema.schema, fp, indent=2, ensure_ascii=True)
+    sys.exit(0)

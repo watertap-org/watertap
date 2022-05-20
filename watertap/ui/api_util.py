@@ -225,5 +225,10 @@ class Schema:
             result = err.message
         return result
 
+    @property
+    def schema(self):
+        return self._schema
 
 # End schema validation
+
+
