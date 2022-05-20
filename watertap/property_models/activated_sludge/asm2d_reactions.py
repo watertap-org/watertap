@@ -13,6 +13,11 @@
 """
 ASM2d reaction package.
 
+Important Note: ASM2d reactions depend on the presences of TSS in solution, however
+TSS does not take part in the rate expressiosn. Thus, it is possible to have cases
+where there is insufficient TSS present in the system for the reactions ot occur
+resulting in an infeasible solution,
+
 Reference:
 
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
