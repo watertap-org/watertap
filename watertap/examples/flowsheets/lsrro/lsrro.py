@@ -356,6 +356,15 @@ def build(
         )
         * m.fs.costing.load_factor
     )
+    m.fs.final_permeate_concentration = Expression(
+        expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
+                                            / sum(
+                                                m.fs.product.flow_mass_phase_comp[
+                                                    0, "Liq", j
+                                                ].value
+                                                for j in ["H2O", "NaCl"]
+                                            )
+                                        )
 
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol, name="LCOW_feed")
 
@@ -1272,8 +1281,8 @@ def main():
                         for ab_tradeoff in ab_tradeoff_lst:
                             for ab_gamma in ab_gamma_factor_lst:
                                 if (
-                                    a_case == "single optimum"
-                                    and b_case == "single optimum"
+                                    a_case == "single_optimum"
+                                    and b_case == "single_optimum"
                                 ):
                                     pass
                                 elif ab_gamma != 1 and ab_tradeoff == "no constraint":
@@ -1305,12 +1314,7 @@ def main():
                                     )
                                     if check_optimal_termination(res):
                                         num_stages = value(m.fs.NumberOfStages)
-                                        total_area = value(
-                                            sum(
-                                                m.fs.ROUnits[a].area
-                                                for a in m.fs.Stages
-                                            )
-                                        )
+                                        total_area = value(m.fs.total_membrane_area)
                                         final_lcow = value(m.fs.costing.LCOW)
                                         final_lcow_feed = value(m.fs.costing.LCOW_feed)
 
@@ -1323,16 +1327,7 @@ def main():
                                             ].conc_mass_phase_comp["Liq", "NaCl"]
                                         )
                                         final_perm = value(
-                                            m.fs.product.flow_mass_phase_comp[
-                                                0, "Liq", "NaCl"
-                                            ]
-                                            / sum(
-                                                m.fs.product.flow_mass_phase_comp[
-                                                    0, "Liq", j
-                                                ].value
-                                                for j in ["H2O", "NaCl"]
-                                            )
-                                        )
+                                            m.fs.final_permeate_concentration)
 
                                         lcow_breakdown = {
                                             "primary_pump_capex": value(

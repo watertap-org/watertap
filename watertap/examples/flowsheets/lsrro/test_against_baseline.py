@@ -3,7 +3,7 @@ import os.path as path
 import numpy as np
 import pandas as pd
 
-from .lsrro_paper_analysis import main
+from .lsrro import main
 
 
 def test_against_baseline():
