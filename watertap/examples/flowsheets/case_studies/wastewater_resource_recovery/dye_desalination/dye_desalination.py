@@ -158,6 +158,34 @@ def add_costing(m):
     m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.costing.cost_process()
 
+    m.fs.costing.annual_disposal_cost = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * (
+                m.fs.costing.waste_disposal_cost
+                * pyunits.convert(
+                    m.fs.permeate1.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.costing.base_period,
+                )
+            )
+        ),
+        doc="Annual cost of waste disposal",
+    )
+
+    m.fs.costing.annual_dye_recovery_value = Expression(
+        expr=(
+            -1
+            * m.fs.costing.utilization_factor
+            * (
+                m.fs.costing.dye_cost
+                * pyunits.convert(
+                    m.fs.retentate1.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.costing.base_period,
+                )
+            )
+        ),
+        doc="Annual value of dye-retentate recovery",
+    )
     m.fs.costing.LCOW_dye_recovered = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
@@ -218,6 +246,21 @@ def display_costing(m):
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
+
+    waste_disposal_cost = value(
+        pyunits.convert(
+            m.fs.costing.annual_disposal_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
+    print(f"Total Waste Disposal Costs: {waste_disposal_cost:.4f} M$/year")
+
+    dye_recovery_cost = value(
+        pyunits.convert(
+            m.fs.costing.annual_dye_recovery_value,
+            to_units=pyunits.MUSD_2018 / pyunits.year,
+        )
+    )
+    print(f"Total Dye Recovery Costs: {dye_recovery_cost:.4f} M$/year")
 
     levelized_cost_water = value(
         pyunits.convert(
