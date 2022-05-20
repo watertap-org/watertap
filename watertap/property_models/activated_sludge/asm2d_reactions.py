@@ -1505,6 +1505,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 else:
+                    return b.reaction_rate[r] == 0
                     raise BurntToast()
 
             self.rate_expression = pyo.Constraint(
