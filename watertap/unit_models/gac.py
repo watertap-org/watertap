@@ -1,0 +1,299 @@
+###############################################################################
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#
+###############################################################################
+# Import Pyomo libraries
+from pyomo.environ import (
+    Block,
+    Set,
+    Var,
+    Param,
+    Suffix,
+    NonNegativeReals,
+    Reference,
+    units as pyunits,
+)
+from pyomo.common.config import ConfigBlock, ConfigValue, In
+
+from enum import Enum, auto
+
+# Import IDAES cores
+from idaes.core import (
+    ControlVolume0DBlock,
+    declare_process_block_class,
+    MaterialBalanceType,
+    MomentumBalanceType,
+    UnitModelBlockData,
+    useDefault,
+    MaterialFlowBasis,
+)
+from idaes.core.util import get_solver
+from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+
+__author__ = "Hunter Barber"
+
+_log = idaeslog.getLogger(__name__)
+
+###############################################################################
+"""
+First model build inputs
+"""
+# Inlet conditions
+co = 23.2  # inlet concentration [microg/L]
+# TODO: Make sure property pack supports liquid, solute_list
+# Freundlich parameters specific for contaminant and GAC particle
+k = 37.9  # (microg/gm)/(L/microg)^(1/n)
+ninv = 0.8316
+# User specified values
+kff = 1  # k reduction due to background organics
+kf = 3.29e-5  # liquid phase/film transfer rate, [m/s]
+Ds = 1.77e-13  # Surface diffusion coefficient, [m2/s]
+# Design Conditions
+ebct = 5  # empty bed contact time [min]
+eps = 0.449  # bed void fraction
+ceff = 5  # effluent concentration [microg/L]
+rhoa = 722  # apparent gac density [kg/m3]
+dp = 0.00106  # gac particle diameter[m]
+# constants a0,a1 for min stanton number to achieve constant pattern as a function of ninv and Bi
+a0 = 3.68421e0
+a1 = 13.1579
+# constants b0,b1,b2,b3,b4 for constant pattern solution as a function of ninv and Bi
+b0 = 0.784576
+b1 = 0.239663
+b2 = 0.484422
+b3 = 0.003206
+b4 = 0.134987
+# TODO: Initialize variables and add scaling
+# TODO: Convert to steady state assumption
+"""
+Second model build inputs additions
+"""
+# TODO: Add Reynolds, Schmidt, and other intermediate equations
+# Inlet conditions
+qo = 0.89 / 60  # [m3/s]
+temp = 10  # [°C]
+molvol = 98.1  # molal volume of contaminant [cm3/mol]
+# water properties
+rhow = 999.7  # [kg/m3]
+muw = 1.3097e-3  # [Ns/m2]
+# Freundlich parameters
+# TODO: Add surface diffusion coefficient correlation option
+# TODO: Add Gnielinshi liquid phase film transfer rate correlation option
+# User specified values
+taup = 1  # tortuosity of the path that the adsorbate must take as compared to the radius, dimensionless
+scf = 1.5  # shape correction factor
+# Design Conditions
+vsup = 5 / 3600  # superficial mass velocity [m/s]
+rhof = 450  # bulk gac particle density, [kg/m3]
+epsp = 0.641  #
+# TODO: Add adaptability for multiple solutes
+
+###############################################################################
+"""
+class SurfaceDiffusionCoeffVal(Enum):
+    specified = auto()  # surface diffusion coefficient is a user-specified value
+    calculated = auto() # pressure drop across membrane channel is calculated
+"""
+###############################################################################
+@declare_process_block_class("GAC")
+class GACData(UnitModelBlockData):
+    """
+    Initial Granular Activated Carbon Model
+    """
+
+    # CONFIG are options for the unit model, this simple model only has the mandatory config options
+    CONFIG = ConfigBlock()
+
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([False]),
+            default=False,
+            description="Dynamic model flag - must be False",
+            doc="""Indicates whether this model will be dynamic or not,
+    **default** = False. The filtration unit does not support dynamic
+    behavior, thus this must be False.""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Holdup construction flag - must be False",
+            doc="""Indicates whether holdup terms should be constructed or not.
+    **default** - False. The filtration unit does not have defined volume, thus
+    this must be False.""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations,
+    **default** - useDefault.
+    **Valid values:** {
+    **useDefault** - use default package from parent model or flowsheet,
+    **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
+    and used when constructing these,
+    **default** - None.
+    **Valid values:** {
+    see property package for documentation.}""",
+        ),
+    )
+    CONFIG.declare(
+        "material_balance_type",
+        ConfigValue(
+            default=MaterialBalanceType.useDefault,
+            domain=In(MaterialBalanceType),
+            description="Material balance construction flag",
+            doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.useDefault.
+    **Valid values:** {
+    **MaterialBalanceType.useDefault - refer to property package for default
+    balance type
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}""",
+        ),
+    )
+    CONFIG.declare(
+        "momentum_balance_type",
+        ConfigValue(
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+        **default** - MomentumBalanceType.pressureTotal.
+        **Valid values:** {
+        **MomentumBalanceType.none** - exclude momentum balances,
+        **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+        **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+        **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+        **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=In([False]),  # TODO: domain=In([True, False])
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
+        constructed,
+        **default** - False.
+        **Valid values:** {
+        **True** - include pressure change terms,
+        **False** - exclude pressure change terms.}""",
+        ),
+    )
+
+    ###############################################################################
+    def build(self):
+
+        super().build()
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Build control volume
+        self.treatwater = ControlVolume0DBlock(
+            default={
+                "dynamic": False,
+                "has_holdup": False,
+                "property_package": self.config.property_package,
+                "property_package_args": self.config.property_package_args,
+            }
+        )
+        self.treatwater.add_state_blocks(has_phase_equilibrium=False)
+        self.treatwater.add_material_balances(
+            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        )
+        self.treatwater.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=False,
+        )
+
+        @self.treatwater.Constraint(
+            self.flowsheet().config.time, doc="isothermal assumption for water flow"
+        )
+        def eq_isothermal(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        # Add block for spent GAC
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False  # permeate block is not an inlet
+        self.removal = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of spent gac",
+            default=tmp_dict,
+        )
+
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Isothermal assumption for spent GAC"
+        )
+        def eq_permeate_isothermal(b, t):
+            return b.treatwater.properties_in[t].temperature == b.removal[t].temperature
+
+        # Add ports
+        self.add_inlet_port(name="inlet", block=self.treatwater)
+        self.add_outlet_port(name="outlet", block=self.treatwater)
+        self.add_port(name="spent_gac", block=self.removal)
+
+        ###############################################################################
+
+        # mass transfer
+        self.mass_solute_absorb = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            initialize=1e-8,
+            bounds=(1e-8, 1e6),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -1,
+            doc="Mass of solute absorbed into GAC",
+        )
+        ###############################################################################
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Mass transfer term for solutes",
+        )
+        def eq_mass_transfer_solute(b, t, j):
+            return (
+                b.mass_solute_absorb[t, "Liq", j]
+                == -b.treatwater.mass_transfer_term[t, "Liq", j]
+                * b.config.property_package.mw_comp[j]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solvent_set,
+            doc="No mass transfer of solvents",
+        )
+        def eq_mass_transfer_solvent(b, t, j):
+            return b.treatwater.mass_transfer_term[t, "Liq", j] == 0
