@@ -576,14 +576,14 @@ class TestCarbonationProcess:
         model.fs.unit.inlet.pressure.fix(101325.0)
         model.fs.unit.inlet.temperature.fix(298.0)
 
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix(0.0)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(0.0)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix(0.0)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix(0.0)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix(1e-15)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(1e-15)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix(1e-15)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix(1e-15)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix(1e-15)
         model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix(0.0005 * 10)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix(0.0)
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix(1e-15)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix(1e-15)
         model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix((1 - 0.0005) * 10)
 
         return model
@@ -642,17 +642,87 @@ class TestCarbonationProcess:
             model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix
         )
 
+        # check if any variables are badly scaled
+        badly_scaled_var_values = {
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                model, large=1e4, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
+
     @pytest.mark.component
     def test_initialize_solver(self, equilibrium_config):
         model = equilibrium_config
 
-        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        # Exact state args (here for reference)
+        """
+        state_args={"pressure": 101324.99999999999,
+                    "temperature": 298.2092871397854,
+                    "flow_mol_phase_comp":
+                        {
+                            ("Liq","H_+"): 8.296899016805206e-07,
+                            ("Liq","OH_-"): 3.9555981844674506e-10,
+                            ("Liq","H2CO3"): 8.484140196361887e-06,
+                            ("Liq","HCO3_-"): 8.292773317392414e-07,
+                            ("Liq","CO3_2-"): 8.505061416220037e-12,
+                            ("Liq","CO2"): 0.004990670703742279,
+                            ("Liq","H2O"): 9.994990674332442,
+                            ("Vap","CO2"): 1.5870224558095792e-08,
+                            ("Vap","H2O"): 1.1845964073198763e-08,
+                        }
+                    }
+        """
+
+        total_molar_conc = 55200  # approximation for water (mol/m^3)
+        total_molar_flow_rate = 10  # mol/s (based on inlet conditions)
+        total_volume_flow_rate = total_molar_flow_rate / total_molar_conc  # m^3/s
+        input_co2_conc = 0.0005 * 10 / total_volume_flow_rate  # based on inlet
+
+        # Neutral pH Guess (works... but needs automation)
+        # Presume a neutral pH, calculate flow from assuming water solution
+        # Presume 90% of added vapor goes to Liquid
+        # Presume other 10% is distributed to species
+        # Use pKas to given approximate speciation
+        # Presume 1e-8 for remaining vapor species
+        state_args = {
+            "pressure": 101325,
+            "temperature": 298,
+            "flow_mol_phase_comp": {
+                ("Liq", "H_+"): 1.0e-4 * total_volume_flow_rate,
+                ("Liq", "OH_-"): 1.0e-4 * total_volume_flow_rate,
+                ("Liq", "H2CO3"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.01
+                / 100,
+                ("Liq", "HCO3_-"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.98
+                / 100,
+                ("Liq", "CO3_2-"): input_co2_conc
+                * total_volume_flow_rate
+                * 0.1
+                * 0.01
+                / 100,
+                ("Liq", "CO2"): input_co2_conc * total_volume_flow_rate * 0.9,
+                ("Liq", "H2O"): 10,
+                ("Vap", "CO2"): 1.0e-8,
+                ("Vap", "H2O"): 1.0e-8,
+            },
+        }
+
+        model.fs.unit.initialize(
+            state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG
+        )
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_equilibrium(self, equilibrium_config):
         model = equilibrium_config
         solver.options["max_iter"] = 100
+        assert degrees_of_freedom(model) == 0
         results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
