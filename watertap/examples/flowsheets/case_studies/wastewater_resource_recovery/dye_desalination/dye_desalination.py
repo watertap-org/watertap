@@ -60,7 +60,7 @@ def main():
     results = solve(m)
     assert_optimal_termination(results)
     display_costing(m)
-    return m
+    return m, results
 
 
 def build():
@@ -230,4 +230,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m, results = main()
