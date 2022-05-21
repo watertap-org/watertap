@@ -262,8 +262,6 @@ class FlowsheetInterface(BlockInterface):
     # Actions in the flowsheet workflow
     ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
 
-    _schema = None  # cached schema
-
     def __init__(self, info):
         """Constructor.
 
@@ -276,7 +274,6 @@ class FlowsheetInterface(BlockInterface):
         super().__init__(None, info)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self._actions_deps = WorkflowActions.deps.copy()
-        self.meta = {}
         self._var_diff = None  # for recording missing/extra variables during load()
         self._actions_run = set()
 
@@ -289,11 +286,10 @@ class FlowsheetInterface(BlockInterface):
         """After a :meth:`load`, these are the variables that were present in the input,
         but not found in the BlockInterface object for the corresponding block.
 
-           e.g.: ``{'Flowsheet': ['foo_var', 'bar_var'],
-           'Flowsheet.Component': ['baz_var']}``
+        e.g., ``{'Flowsheet': ['foo', 'bar'], 'Flowsheet.Component': ['baz']}``
 
         Returns:
-            map of block names to a list of variable names
+            Dict that maps a block name to a list of variable names
 
         Raises:
             KeyError: if :meth:`load()` has not been called.
@@ -307,10 +303,10 @@ class FlowsheetInterface(BlockInterface):
         :class:`BlockInterface` object, but not found in the input data for the
         corresponding block.
 
-           e.g.: ``{'Flowsheet': ['new1_var'], 'Flowsheet.Component': ['new2_var']}``
+           e.g.: ``{'Flowsheet': ['new1'], 'Flowsheet.Component': ['new2']}``
 
         Returns:
-            map of block names to a list of variable names
+            Dict that maps a block name to a list of variable names
 
         Raises:
             KeyError: if :meth:`load()` has not been called.
@@ -336,6 +332,10 @@ class FlowsheetInterface(BlockInterface):
             return self.as_dict() == other.as_dict()
         return False
 
+    @property
+    def meta(self):
+        return self.block_info.meta.copy()
+
     @log_meth
     def save(self, file_or_stream: Union[str, Path, TextIO]):
         """Save the current state of this instance to a file.
@@ -360,18 +360,14 @@ class FlowsheetInterface(BlockInterface):
         file_or_stream: Union[str, Path, TextIO],
         fs: Union[Block, "FlowsheetInterface"],
     ) -> "FlowsheetInterface":
-        """Load from saved state in a file into the flowsheet block ``fs_block``.
-        This will modify the values in the block from the saved values using the
-        :meth:`update()` method. See its documentation for details.
+        """Load from saved state in a file to modify a :class:`FlowsheetInterface`.
 
         Args:
             file_or_stream: File to load from
-            fs: Flowsheet to modify. The BlockInterface-s in the flowsheet,
-                and its contained blocks, will be updated with values and units
-                from the saved data.
+            fs: Flowsheet which will be updated with values and units from saved data
 
         Returns:
-            Initialized flowsheet interface.
+            Updated flowsheet interface
 
         Raises:
             ValueError: Improper input data
@@ -414,16 +410,62 @@ class FlowsheetInterface(BlockInterface):
         """
         try:
             block_info = _Block.parse_obj(data)
-        except ValidationError as err:
-            raise ValueError(f"Input data failed schema validation: {err}")
+        except ValidationError as verr:
+            raise ValueError(f"Input data failed schema validation: {verr}")
 
         self._var_diff = FlowsheetDiff(missing={}, extra={})
         self._load(block_info, self.block)
-        self.meta = block_info.meta.copy()
 
         # clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
             self._action_clear_was_run(WorkflowActions.solve)
+
+    def _load(self, load_block_info: _Block, cur_block: Block, path: str = None):
+        """Load the variables in ``block_data`` into ``cur_block``, then
+        recurse to do the same with any sub-blocks.
+        """
+        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
+        bdiff = BlockDiff()
+        ui = get_block_interface(cur_block)
+
+        if not ui:
+            bdiff.missing = [v.name for v in load_block_info.variables]
+            bdiff.extra = []
+        else:
+            info_var_names = {v.name for v in ui.block_info.variables}
+            bdiff.extra = list(info_var_names)
+            for load_var_info in load_block_info.variables:
+                details = f"block={cur_block_path} variable={load_var_info.name}"
+                if load_var_info.name not in info_var_names:
+                    _log.warn("No matching exported variable found. " + details)
+                    bdiff.missing.append(load_var_info.name)
+                elif load_var_info.readonly:
+                    _log.debug("Not setting readonly variable. " + details)
+                elif load_var_info.value is None:
+                    _log.debug("No value for variable. " + details)
+                else:
+                    var_obj = getattr(ui.block, load_var_info.name)
+                    if var_obj is None:
+                        raise ValueError("Exported variable not found in block. " +
+                                         details)
+                    if isinstance(load_var_info.value, _IndexedValue):
+                        for i, idx in enumerate(load_var_info.value.index):
+                            idx, val = tuple(idx), load_var_info.value.value[i]
+                            var_obj[idx] = val
+                    else:
+                        var_obj.set_value(load_var_info.value.value)
+                    _log.debug("Exported variable loaded. " + details)
+                    bdiff.extra.remove(load_var_info.name)
+
+            # save non-empty missing/extra
+            if bdiff.missing:
+                self._var_diff.missing[cur_block_path] = bdiff.missing
+            if bdiff.extra:
+                self._var_diff.extra[cur_block_path] = bdiff.extra
+
+        for sub_block_info in load_block_info.blocks:
+            sub_block = getattr(cur_block, sub_block_info.name)
+            self._load(sub_block_info, sub_block, path=cur_block_path)
 
     @classmethod
     def get_schema(cls) -> Dict:
@@ -544,47 +586,6 @@ class FlowsheetInterface(BlockInterface):
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
 
-    def _load(self, block_data: _Block, cur_block: Block, path: str = None):
-        """Load the variables in ``block_data`` into ``cur_block``, then
-        recurse to do the same with any sub-blocks.
-        """
-        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
-        ui = get_block_interface(cur_block)
-        block_info = ui.block_info
-        bdiff = BlockDiff()
-
-        if not ui:
-            bdiff.missing = [v.name for v in block_info.variables]
-            bdiff.extra = []
-        else:
-            bdiff.extra = [v.name for v in block_info.variables]
-            for var_info in block_info.variables:
-                var_obj = getattr(ui.block, var_info.name)
-                if var_obj is None:
-                    _log.debug(f"No block variable found. name={var_info.name}")
-                    bdiff.missing.append(var_info.name)
-                elif var_info.readonly:
-                    _log.debug(f"Not setting readonly variable. name={var_info.name}")
-                elif var_info.value is None:
-                    _log.debug(f"No value for variable. name={var_info.name}")
-                else:
-                    if isinstance(var_info.value, _IndexedValue):
-                        for i, idx in enumerate(var_info.value.index):
-                            idx, val = tuple(idx), var_info.value.value[i]
-                            var_obj[idx] = val
-                    else:
-                        var_obj.set_value(var_info.value.value)
-                    bdiff.extra.remove(var_info.name)
-
-            # save non-empty missing/extra
-            if bdiff.missing:
-                self._var_diff.missing[cur_block_path] = bdiff.missing
-            if bdiff.extra:
-                self._var_diff.extra[cur_block_path] = bdiff.extra
-
-        for sub_block_info in block_info.blocks:
-            sub_block = getattr(cur_block, sub_block_info.name)
-            self._load(sub_block_info, sub_block, path=cur_block_path)
 
 ##
 
