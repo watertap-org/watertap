@@ -109,8 +109,8 @@ def test_set_block_interface(mock_block):
     set_block_interface(mock_block, {})
     # invalid key
     data = {"test": "data"}
-    with pytest.raises(ValueError):
-        set_block_interface(mock_block, data)
+    set_block_interface(mock_block, data)
+    assert get_block_interface(mock_block).block_info.meta == data
     # ok key
     data = {"display_name": "foo"}
     set_block_interface(mock_block, data)
@@ -146,7 +146,9 @@ def test_block_interface_constructor(mock_block):
 def test_block_interface_get_exported_variables(mock_block):
     # no variables section
     obj = BlockInterface(mock_block, build_options(variables=-1))
-    assert len(list(obj.get_exported_variables())) == 0
+    exvar = list(obj.get_exported_variables())
+    print(f"Got exported variables: {exvar}")
+    assert len(exvar) == 0
     # empty variables section
     obj = BlockInterface(mock_block, build_options(variables=0))
     assert len(list(obj.get_exported_variables())) == 0
@@ -176,8 +178,8 @@ def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(build_options(variables=2))
     obj.set_block(mock_block)
     d = obj.as_dict()
-    fs = d["blocks"][0]
-    assert "variables" in fs
+    print(f"@@ as_dict={d}")
+    assert "variables" in d
 
 
 @pytest.mark.unit
@@ -218,7 +220,7 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
     filename = "saved.json"
     # manual save, and remove some variables
     d = obj.as_dict()
-    block = d["blocks"][0]
+    block = d
     block["variables"] = []
     fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
     json.dump(d, fp)
@@ -247,8 +249,7 @@ def test_flowsheet_interface_load_readonly(tmpdir):
     readonly_index = 1
     filename = "saved.json"
     # manual save, and change the variables
-    d = obj.as_dict()
-    dblock = d["blocks"][0]
+    dblock = obj.as_dict()
     # Save old values, modify all the variables (add 1)
     old_values = []
     for var_entry in dblock["variables"]:
@@ -257,13 +258,12 @@ def test_flowsheet_interface_load_readonly(tmpdir):
         var_entry["value"] = value + 1
     # Write out
     fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
-    json.dump(d, fp)
+    json.dump(dblock, fp)
     fp.close()
     # Reload
     obj.load(Path(tmpdir) / filename)
     # See that variables have changed, except readonly one
-    d = obj.as_dict()
-    block = d["blocks"][0]
+    block = obj.as_dict()
     for i, var_entry in block["variables"]:
         if i == readonly_index:
             assert var_entry["value"] == old_values[i]

@@ -9,14 +9,12 @@ from typing import Dict, List, Union, TextIO, Generator, Optional, Tuple
 
 # third-party
 from pyomo.environ import Block, Var, value
-# from pyomo.common.config import ConfigValue, ConfigDict, ConfigList
 import idaes.logger as idaeslog
 from pydantic import BaseModel, ValidationError
 
 # local
 from watertap.ui import api_util
-from watertap.ui.api_util import log_meth, config_docs, open_file_or_stream
-# from watertap.ui.api_util import Schema
+from watertap.ui.api_util import log_meth, open_file_or_stream
 
 # Global variables
 # ----------------
@@ -93,8 +91,8 @@ class _Block(BaseModel):
     description = ""
     category = "default"
     variables: List[_Variable] = None
-    blocks: List["_Block"]
-    meta: Dict
+    blocks: List["_Block"] = []
+    meta: Dict = {}
 
 
 class BlockDiff(BaseModel):
@@ -107,188 +105,8 @@ class FlowsheetDiff(BaseModel):
     extra: Dict[str, BlockDiff]
 
 
-# class BlockSchemaDefinition:
-#     """Container for the schema definition of JSON used for loading/saving blocks.
-#
-#     The BlockInterface, and thus FlowsheetInterface, classes will inherit from this class
-#     in order to pick up this definition as a set of class constants.
-#     """
-#
-#     # Standard keys for data fields (used throughout the code).
-#     # Changing the value of any of these keys should change it consistently
-#     # for all usages and validations.
-#     BLKS_KEY = "blocks"
-#     NAME_KEY = "name"
-#     NAME_BLOCK_DESC = "Display name for the block"
-#     NAME_VAR_DESC = "Display name for the variable"
-#     DISP_KEY = "display_name"
-#     DISP_DESC = "Description for the variable"
-#     DESC_KEY = "description"
-#     DESC_DESC = "Descriptive text"
-#     VARS_KEY = "variables"
-#     VARS_DESC = "List of variables exported by this block"
-#     VALU_KEY = "value"
-#     VALU_DESC = "Scalar or indexed variable value"
-#     VALU_IDX_DESC = "Indexed variable value"
-#     VALU_STR_DESC = "String value"
-#     VALU_NUM_DESC = "Numerical value"
-#     INDX_KEY = "index"
-#     INDX_DESC = "The index of an indexed variable value"
-#     UNIT_KEY = "units"
-#     UNIT_DESC = "Units for the variable"
-#     CATG_KEY = "category"
-#     CATG_DESC = "Category of this block, for use in UI display"
-#     RDON_KEY = "readonly"
-#     RDON_DESC = "Whether variable should be read-only"
-#
-#     # Convenient form for all keys together (e.g. as kwargs)
-#     ALL_KEYS = {}
-#
-#     BLOCK_SCHEMA = {
-#         "$schema": "http://json-schema.org/draft-07/schema#",
-#         "$ref": "#/$defs/block_schema",
-#         "$defs": {
-#             "block_schema": {
-#                 "type": "object",
-#                 "description": "An IDAES/Pyomo block",
-#                 "properties": {
-#                     "$name_key": {"type": "string", "description": "$name_block_desc"},
-#                     "$disp_key": {"type": "string", "description": "$disp_desc"},
-#                     "$desc_key": {"type": "string", "description": "$desc_desc"},
-#                     "$catg_key": {"type": "string", "description": "$catg_desc"},
-#                     "$vars_key": {
-#                         "type": "array",
-#                         "items": {
-#                             "type": "object",
-#                             "properties": {
-#                                 "$name_key": {"type": "string",
-#                                               "description": "$name_var_desc"},
-#                                 "$disp_key": {"type": "string",
-#                                               "description": "$disp_desc"},
-#                                 "$desc_key": {"type": "string",
-#                                               "description": "$desc_desc"},
-#                                 "$rdon_key": {"type": "boolean",
-#                                               "description": "$rdon_desc"},
-#                                 "$unit_key": {"type": "string",
-#                                               "description": "$unit_desc"},
-#                                 # scalar or indexed value
-#                                 # two forms:
-#                                 #  {value: 1.34}  -- scalar
-#                                 #  {value: [{index: [0, "H2O"], value: 1.34},
-#                                 #           {index: [1, "NaCl"], value: 3.56}, ..]}
-#                                 "$valu_key": {
-#                                     "oneOf": [
-#                                         # Indexed array form
-#                                         {
-#                                             "type": "array",
-#                                             "items": {
-#                                                 "type": "object",
-#                                                 "properties": {
-#                                                     "$indx_key": {
-#                                                         "type": "array",
-#                                                         "description": "$valu_idx_desc",
-#                                                         "items": {
-#                                                             "oneOf": [
-#                                                                 {"type": "number",
-#                                                                  "description":
-#                                                                  "$valu_num_desc"},
-#                                                                 {"type": "string",
-#                                                                     "description":
-#                                                                     "$valu_str_desc"},
-#                                                             ]
-#                                                         },
-#                                                     },
-#                                                     "$valu_key": {
-#                                                         "description": "$valu_desc",
-#                                                         "oneOf": [
-#                                                             {"type": "number",
-#                                                              "description":
-#                                                                  "$valu_num_desc"
-#                                                              },
-#                                                             {"type": "string",
-#                                                              "description":
-#                                                                  "$valu_str_desc"
-#                                                              },
-#                                                         ]
-#                                                     },
-#                                                     "$unit_key": {"type": "string",
-#                                                                   "description":
-#                                                                   "$unit_desc"},
-#                                                 },
-#                                             },
-#                                         },
-#                                         # Scalar forms
-#                                         {"type": "number",
-#                                          "description": "$valu_num_desc"},
-#                                         {"type": "string",
-#                                          "description": "$valu_str_desc"},
-#                                     ]
-#                                 },
-#                             },
-#                             "required": ["$name_key"],
-#                         },
-#                     },
-#                     "$blks_key": {
-#                         "type": "array",
-#                         "items": {"$ref": "#/$defs/block_schema"},
-#                     },
-#                 },
-#                 "required": ["$name_key", "$blks_key"],
-#             }
-#         },
-#     }
-#
-#
-# BSD = BlockSchemaDefinition  # alias
-#
-# # Generate BlockSchemaDefinition.ALL_KEYS using a simple convention
-# for key in BSD.__dict__:
-#     if key.endswith("_KEY") or key.endswith("DESC"):
-#         getattr(BSD, "ALL_KEYS")[key.lower()] = getattr(BSD, key)
-#
-#
-
-
 class BlockInterface:
     """User interface for a Pyomo/IDAES block."""
-
-    # VARIABLE_CONFIG = ConfigDict()
-    # VARIABLE_CONFIG.declare(
-    #     BSD.NAME_KEY, ConfigValue(description="", domain=str)
-    # )
-    # VARIABLE_CONFIG.declare(
-    #     BSD.DISP_KEY,
-    #     ConfigValue(description="Display name for the variable", domain=str),
-    # )
-    # VARIABLE_CONFIG.declare(
-    #     BSD.DESC_KEY,
-    #     ConfigValue(description="Description for the variable", domain=str),
-    # )
-    # VARIABLE_CONFIG.declare(
-    #     BSD.UNIT_KEY,
-    #     ConfigValue(description="Units for the variable", domain=str),
-    # )
-    # VARIABLE_CONFIG.declare(
-    #     BSD.RDON_KEY,
-    #     ConfigValue(description="Whether variable should be read-only", domain=bool),
-    # )
-    #
-    # #: Configuration for the interface of the block
-    # CONFIG = ConfigDict()
-    # CONFIG.declare(
-    #     BSD.DISP_KEY,
-    #     ConfigValue(description="Display name for the block", domain=str),
-    # )
-    # CONFIG.declare(
-    #     BSD.DESC_KEY, ConfigValue(description="Description for the block", domain=str)
-    # )
-    # CONFIG.declare(
-    #     BSD.CATG_KEY, ConfigValue(description="Category for the block", domain=str)
-    # )
-    # CONFIG.declare(
-    #     BSD.VARS_KEY,
-    #     ConfigList(description="List of variables to export", domain=VARIABLE_CONFIG),
-    # )
 
     def __init__(self, block: Union[Block, None], info: Dict = None):
         """Constructor.
@@ -299,41 +117,40 @@ class BlockInterface:
         """
         info = info or {}
         self._saved_info = info
-        self._block = None if block is None else self._init(block, info)
+        if block is None:
+            self._block = None
+        else:
+            self._init(block, info)
 
-    def _init(self, block, info):
+    def _init(self, block, info: Dict):
         self._block = block
-        # parse options into a _Block instance
+
+        # move non-known keys into 'meta', also make a copy of 'info'
+        known_keys = set(_Block.__fields__.keys())
+        meta = {key: info[key] for key in info if key not in known_keys}
+        info = {key: info[key] for key in info if key in known_keys}
+
+        # fill required values
+        if not info.get("name", None):
+            info["name"] = block.name
+
+        _log.debug(f"create block from info. dict={info}")
         block_info = _Block(**info)
-        # set defaults from values in self._block
+        # update (or create) meta from previously extracted
+        block_info.meta.update(meta)
+
+        # set optional values from values in self._block
+        if block_info.variables is None:
+            block_info.variables = []
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
             block_info.description = self._block.doc if self._block.doc else "none"
         _log.debug(f"Parsed block info. value={block_info}")
+
         # finish
         self.block_info = block_info
         set_block_interface(self._block, self)
-
-        # # dynamically set defaults
-        # # Use block name if missing display name
-        # if BSD.DISP_KEY not in options or options[BSD.DISP_KEY] is None:
-        #     options[BSD.DISP_KEY] = self._block.name
-        # # Set 'none' as name of missing description
-        # if BSD.DESC_KEY not in options or options[BSD.DESC_KEY] is None:
-        #     if self._block.doc:
-        #         options[BSD.DESC_KEY] = self._block.doc
-        #     else:
-        #         options[BSD.DESC_KEY] = "none"
-        # # Set 'default' as name of default category
-        # if (
-        #     BlockSchemaDefinition.CATG_KEY not in options
-        #     or options[BSD.CATG_KEY] is None
-        # ):
-        #     options[BSD.CATG_KEY] = "default"
-        # # Finish setup
-        # self.config = self.CONFIG(options)
-        # set_block_interface(self._block, self)
 
     @property
     def block(self):
@@ -375,39 +192,6 @@ class BlockInterface:
             result = variable.copy()
             result.value = var_val
             yield result.dict()
-
-    #     for item in self.config.variables.value():
-    #         c = {BSD.NAME_KEY: item["name"]}  # one result
-    #         # get the Pyomo Var from the block
-    #         v = getattr(self._block, item["name"])
-    #         c[BSD.VALU_KEY] = self._variable_value(v)
-    #         if BSD.DISP_KEY not in c:
-    #             c[BSD.DISP_KEY] = v.local_name
-    #         if BSD.DESC_KEY not in c:
-    #             default_desc = f"{c[BSD.DISP_KEY]} variable"
-    #             c[BSD.DESC_KEY] = v.doc or default_desc
-    #         if v.get_units() is not None:
-    #             c[BSD.UNIT_KEY] = str(v.get_units())
-    #         # generate one result
-    #         yield c
-    #
-    # def _variable_value(self, v: Var) -> Union[List, int, float, str]:
-    #     """Reformat simple or indexed variable value for export."""
-    #     if v.is_indexed():
-    #         var_value = []
-    #         # create a list of the values for each index
-    #         for idx in v.index_set():
-    #             try:
-    #                 idx_tuple = tuple(idx)
-    #             except TypeError:
-    #                 idx_tuple = (idx,)
-    #             var_value.append(
-    #                 {BSD.VALU_KEY: value(v[idx]), BSD.INDX_KEY: idx_tuple}
-    #             )
-    #     else:
-    #         var_value = value(v)  # assume int/float or str
-    #     return var_value
-    #
 
 
 def export_variables(
@@ -451,32 +235,10 @@ def export_variables(
             if error:
                 raise TypeError(error)
             var_info_list.append(var_info)
-    block_info = _Block(
+    block_info = _Block(name=name,
         display_name=name, description=desc, category=category, variables=var_info_list
     )
     return BlockInterface(block, block_info.dict())
-
-    # variables = [] if variables is None else variables
-    # config = {
-    #     BSD.DISP_KEY: name,
-    #     BSD.DESC_KEY: desc,
-    #     BSD.CATG_KEY: category,
-    #     BSD.VARS_KEY: [],
-    # }
-    # cvars = config[BSD.VARS_KEY]
-    # for var_item in variables:
-    #     if hasattr(var_item, "items"):
-    #         # Dict
-    #         var_key = var_item[BSD.NAME_KEY]
-    #         _validate_export_var(block, var_key)
-    #         cvars.append(var_item)
-    #     else:
-    #         # Name of var
-    #         _validate_export_var(block, var_item)
-    #         var_entry = {BSD.NAME_KEY: var_item}
-    #         cvars.append(var_entry)
-    # interface = BlockInterface(block, config)
-    # return interface
 
 
 class WorkflowActions:
@@ -538,7 +300,7 @@ class FlowsheetInterface(BlockInterface):
         """
         if self._var_diff is None:
             raise KeyError("get_var_missing() has no meaning before load() is called")
-        return self._var_diff.missing.dict()
+        return self._var_diff.missing
 
     def get_var_extra(self) -> Dict[str, List[str]]:
         """After a :meth:`load`, these are the variables that were in some
@@ -555,16 +317,12 @@ class FlowsheetInterface(BlockInterface):
         """
         if self._var_diff is None:
             raise KeyError("get_var_extra() has no meaning before load() is called")
-        return self._var_diff.extra.dict()
+        return self._var_diff.extra
 
     @log_meth
     def as_dict(self):
         """Return current state serialized as a dictionary."""
         return self.block_info.dict()
-        # d = self._get_block_map()
-        # d.update(self.meta)
-        # d[BSD.NAME_KEY] = "__root__"
-        # return d
 
     def __eq__(self, other) -> bool:
         """Equality test. A side effect is that both objects are serialized using
@@ -655,44 +413,17 @@ class FlowsheetInterface(BlockInterface):
              data: Data in the expected schema (see :meth:`get_schema`)
         """
         try:
-            fs = _Block.parse_obj(data)
+            block_info = _Block.parse_obj(data)
         except ValidationError as err:
             raise ValueError(f"Input data failed schema validation: {err}")
 
-        n = len(fs.blocks)
-        if n != 1:
-            names = [b.display_name for b in fs.blocks]
-            raise ValueError(f"More than one top-level blocks. n={n},names={names}")
-
         self._var_diff = FlowsheetDiff(missing={}, extra={})
-        self._load(fs.blocks[0], self.block)
-        self.meta = fs.meta.copy()
+        self._load(block_info, self.block)
+        self.meta = block_info.meta.copy()
 
         # clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
             self._action_clear_was_run(WorkflowActions.solve)
-
-        #
-        # validation_error = self.get_schema().validate(data)
-        # if validation_error:
-        #     raise ValueError(f"Input data failed schema validation: {validation_error}")
-        # # check root block
-        # top_blocks = data[BSD.BLKS_KEY]
-        # if len(top_blocks) != 1:
-        #     n = len(top_blocks)
-        #     names = [b.get(BSD.NAME_KEY, "?") for b in top_blocks]
-        #     raise ValueError(
-        #         f"There should be one top-level flowsheet block, got {n}: {names}"
-        #     )
-        # # load, starting at root block data, into the flowsheet Pyomo Block
-        # self._load(top_blocks[0], self.block, None, self._new_var_diff())
-        # # add metadata (anything not under the blocks or name in root)
-        # self.meta = {
-        #     mk: data[mk] for mk in set(data.keys()) - {BSD.BLKS_KEY, BSD.NAME_KEY}
-        # }
-        # # clear the 'solve' action
-        # if self._action_was_run(WorkflowActions.solve):
-        #     self._action_clear_was_run(WorkflowActions.solve)
 
     @classmethod
     def get_schema(cls) -> Dict:
@@ -703,10 +434,6 @@ class FlowsheetInterface(BlockInterface):
             The schema
         """
         return _Block.schema()
-        #
-        # if cls._schema is None:
-        #     cls._schema = Schema(BSD.BLOCK_SCHEMA, **BSD.ALL_KEYS)
-        # return cls._schema
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
         """Add a new action type to this interface.
@@ -817,93 +544,6 @@ class FlowsheetInterface(BlockInterface):
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
 
-    # def _get_block_map(self):
-    #     """Builds a block map matching the schema in self.BLOCK_SCHEMA"""
-    #     cur_block = _Flowsheet()
-    #     stack = [([self._block.name], self._block)]  # start at root
-    #     while stack:
-    #         key, val = stack.pop()
-    #         ui = get_block_interface(val)
-    #         if ui:
-    #             nodes, leaf = key[:-1], key[-1]
-    #             for node_name in nodes:
-    #                 next_block = None
-    #                 for sub_block in cur_block.blocks:
-    #                     if sub_block.name == node_name:
-    #                         next_block = sub_block
-    #                         break
-    #                 if next_block is None:
-    #
-    #
-    #     stack = [([self._block.name], self._block)]  # start at root
-    #     mapping = {}
-    #     # walk the tree, building mapping as we go
-    #     while stack:
-    #         key, val = stack.pop()
-    #         ui = get_block_interface(val)
-    #         if ui:
-    #             self._add_to_mapping(mapping, key, ui)
-    #         # add sub-blocks to stack so we visit them
-    #         if hasattr(val, "component_map"):
-    #             for key2, val2 in val.component_map(ctype=Block).items():
-    #                 stack.append((key + [key2], val2))
-    #     return mapping
-    #
-    # def _add_to_mapping(self, m, key, block_ui: BlockInterface):
-    #     """Add variables in this block to the mapping."""
-    #     nodes = key[:-1]
-    #     leaf = key[-1]
-    #     block_data = block_ui.copy()
-    #     # descend to leaf, creating intermediate nodes as needed
-    #     for k in nodes:
-    #         next_m = None
-    #         for sub_block in m[BSD.BLKS_KEY]:
-    #             if sub_block[BSD.NAME_KEY] == k:
-    #                 next_m = sub_block
-    #                 break
-    #         if next_m is None:
-    #             new_node = {BSD.NAME_KEY: k, BSD.BLKS_KEY: []}
-    #             m[BSD.BLKS_KEY].append(new_node)
-    #             next_m = new_node
-    #         m = next_m
-    #
-    #
-    #
-    #
-    #     nodes = key[:-1]
-    #     leaf = key[-1]
-    #     new_data = {
-    #         BSD.NAME_KEY: leaf,  # block_ui.block.name,
-    #         BSD.DISP_KEY: block_ui.config.get(BSD.DISP_KEY).value(),
-    #         BSD.DESC_KEY: block_ui.config.get(BSD.DESC_KEY).value(),
-    #         BSD.CATG_KEY: block_ui.config.get(BSD.CATG_KEY).value(),
-    #         BSD.VARS_KEY: list(block_ui.get_exported_variables()),
-    #         BSD.BLKS_KEY: [],
-    #     }
-    #     # descend to leaf, creating intermediate nodes as needed
-    #     for k in nodes:
-    #         next_m = None
-    #         for sub_block in m[BSD.BLKS_KEY]:
-    #             if sub_block[BSD.NAME_KEY] == k:
-    #                 next_m = sub_block
-    #                 break
-    #         if next_m is None:
-    #             new_node = {BSD.NAME_KEY: k, BSD.BLKS_KEY: []}
-    #             m[BSD.BLKS_KEY].append(new_node)
-    #             next_m = new_node
-    #         m = next_m
-    #     # add new item at leaf
-    #     if BSD.BLKS_KEY in m:
-    #         for sub_block in m[BSD.BLKS_KEY]:
-    #             if sub_block[BSD.NAME_KEY] == leaf:
-    #                 raise ValueError(
-    #                     f"Add mapping key failed: Already present. key={leaf}"
-    #                 )
-    #         m[BSD.BLKS_KEY].append(new_data)
-    #     else:
-    #         m[BSD.BLKS_KEY] = [new_data]
-    #     # print(f"@@ New mapping: {json.dumps(m, indent=2)}")
-
     def _load(self, block_data: _Block, cur_block: Block, path: str = None):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
@@ -935,61 +575,16 @@ class FlowsheetInterface(BlockInterface):
                     else:
                         var_obj.set_value(var_info.value.value)
                     bdiff.extra.remove(var_info.name)
-            self._var_diff.missing[cur_block_path] = bdiff.missing
-            self._var_diff.extra[cur_block_path] = bdiff.extra
+
+            # save non-empty missing/extra
+            if bdiff.missing:
+                self._var_diff.missing[cur_block_path] = bdiff.missing
+            if bdiff.extra:
+                self._var_diff.extra[cur_block_path] = bdiff.extra
 
         for sub_block_info in block_info.blocks:
             sub_block = getattr(cur_block, sub_block_info.name)
             self._load(sub_block_info, sub_block, path=cur_block_path)
-
-    # @classmethod
-    # def _load_variables(cls, variables, ui: BlockInterface) -> Dict[str, List]:
-    #     """Load the values in ``variables`` into the block interface of a block.
-    #
-    #     The only modification to the blocks is the stored value. Units, display name,
-    #     description, etc. are not changed. Input variables missing from the block and
-    #     vice-versa are noted, see return value.
-    #
-    #     Args:
-    #         variables: list of variables
-    #         ui: The interface to the block where the variables are being loaded
-    #
-    #     Returns:
-    #        A dict with two keys, each a list of variables:
-    #
-    #           - 'missing', variables that were in the input but missing from the
-    #                        block interface
-    #           - 'extra', variables that were *not* in the input but present in the
-    #                      block interface
-    #     """
-    #     result = {
-    #         "missing": [],
-    #         "extra": {v[BSD.NAME_KEY] for v in ui.config.variables.value()},
-    #     }
-    #     # Loop through the list of input variables and set corresponding variable
-    #     # values in the block, while also updating the 'missing' and 'extra' lists.
-    #     for data_var in variables:
-    #         name = data_var[BSD.NAME_KEY]
-    #         variable_obj = getattr(ui.block, name)
-    #         if variable_obj is None:
-    #             result["missing"].append(data_var)
-    #         else:
-    #             if data_var.get(BSD.RDON_KEY, False):
-    #                 pass  # variable is read-only, ignore value
-    #             else:
-    #                 data_val = data_var.get(BSD.VALU_KEY, None)
-    #                 if data_val is not None:
-    #                     if isinstance(data_val, list):
-    #                         for item in data_val:
-    #                             idx, val = tuple(item[BSD.INDX_KEY]), item[BSD.VALU_KEY]
-    #                             variable_obj[idx] = val
-    #                     else:
-    #                         variable_obj.set_value(data_val)
-    #             result["extra"].remove(name)
-    #     # return 'missing' and 'extra'
-    #     result["extra"] = list(result["extra"])  # normalize to lists for both
-    #     return result
-
 
 ##
 
