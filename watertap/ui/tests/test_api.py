@@ -240,7 +240,6 @@ class ScalarValueBlock:
 
 @pytest.mark.unit
 def test_flowsheet_interface_load_readonly(tmpdir):
-    vkey = BlockSchemaDefinition.VALU_KEY
     block = ScalarValueBlock()
     export_variables(block, variables=["foo_var", {"name": "bar_var", "readonly": True}])
     obj = FlowsheetInterface({"display_name": "Flowsheet"})
@@ -253,9 +252,9 @@ def test_flowsheet_interface_load_readonly(tmpdir):
     # Save old values, modify all the variables (add 1)
     old_values = []
     for var_entry in dblock["variables"]:
-        value = var_entry[vkey]
+        value = var_entry["value"]
         old_values.append(value)
-        var_entry[vkey] = value + 1
+        var_entry["value"] = value + 1
     # Write out
     fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
     json.dump(d, fp)
@@ -267,9 +266,9 @@ def test_flowsheet_interface_load_readonly(tmpdir):
     block = d["blocks"][0]
     for i, var_entry in block["variables"]:
         if i == readonly_index:
-            assert var_entry[vkey] == old_values[i]
+            assert var_entry["value"] == old_values[i]
         else:
-            assert var_entry[vkey] == old_values[i] + 1
+            assert var_entry["value"] == old_values[i] + 1
 
 
 def test_flowsheet_interface_get_var(mock_block):
@@ -279,67 +278,6 @@ def test_flowsheet_interface_get_var(mock_block):
         fsi.get_var_missing()
     with pytest.raises(KeyError):
         fsi.get_var_extra()
-
-
-@pytest.mark.unit
-def test_schema():
-    schema = FlowsheetInterface.get_schema()
-    assert schema.validate({}) is not None  # missing 'name' and 'blocks'
-    assert schema.validate({"name": "x", "blocks": []}) is None  # ok
-    assert (
-        schema.validate({"name": "x", "blocks": "foo"}) is not None
-    )  # blocks must be list
-    assert (
-        schema.validate({"name": "x", "blocks": [], "extra": {}}) is None
-    )  # ok (extra ok)
-    assert (
-        schema.validate({"name": "x", "blocks": [{"name": "x", "blocks": []}]}) is None
-    )  # nested
-
-
-@pytest.mark.component
-def test_schema_performance():
-    import time
-
-    schema = FlowsheetInterface.get_schema()
-
-    def section(name, num_vars):
-        d = {"name": name, "blocks": []}
-        variables = []
-        for i in range(num_vars):
-            v = {
-                "name": f"v{i}",
-                "display_name": f"variable {i}",
-                "units": "dimensionless",
-            }
-            variables.append(v)
-        d["variables"] = variables
-        return d
-
-    # build a big data object
-    d = {"name": "__root__", "blocks": []}
-    nblocks = [100, 10]
-    nvars = 100
-    for i in range(nblocks[0]):
-        block = section(f"block{i}", nvars)
-        for j in range(nblocks[1]):
-            block2 = section(f"block{i}_{j}", nvars)
-            block["blocks"].append(block2)
-        d["blocks"].append(block)
-
-    print(
-        f"validating flowsheet with {nblocks[0]  * nblocks[1]} blocks each with {nvars} variables"
-    )
-    t0 = time.time()
-    schema.validate(d)
-    t1 = time.time()
-    dur = t1 - t0
-    print(
-        f"time to validate = {dur:.3f}s or {dur/(nblocks[0]  * nblocks[1])*1000} ms/block"
-    )
-
-    # should never take more than 1/50th sec per block (sub-ms times are normal)
-    assert dur < (0.02 * nblocks[0] * nblocks[1])
 
 
 def test_add_action_type(mock_block):
