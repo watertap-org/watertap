@@ -5,12 +5,13 @@ This module defines the API for the WaterTAP user interface.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, TextIO, Generator
+from typing import Dict, List, Union, TextIO, Generator, Optional, Tuple
 
 # third-party
 from pyomo.environ import Block, Var, value
 from pyomo.common.config import ConfigValue, ConfigDict, ConfigList
 import idaes.logger as idaeslog
+from pydantic import BaseModel, Field
 
 # local
 from watertap.ui import api_util
@@ -62,6 +63,38 @@ def get_block_interface(block: Block) -> Union["BlockInterface", None]:
         The interface, or None.
     """
     return getattr(block, "ui", None)
+
+# Pydantic models
+# ---------------
+
+
+class _IndexedValue(BaseModel):
+    index: List[List[Union[str, float, int]]]
+    value: List[Union[str, float, int]]
+
+
+class _ScalarValue(BaseModel):
+    value: Union[str, float, int]
+
+
+class _Variable(BaseModel):
+    name: str
+    display_name = ""
+    description = ""
+    units = ""
+    readonly = False
+    value: Optional[Union[_IndexedValue, _ScalarValue]]
+
+
+class _Block(BaseModel):
+    display_name = ""
+    description = ""
+    category = "default"
+    variables: List[_Variable] = None
+
+
+class BlockInterfaceInfo(BaseModel):
+    blocks: List[_Block]
 
 
 class BlockSchemaDefinition:
@@ -249,7 +282,7 @@ class BlockInterface:
         ConfigList(description="List of variables to export", domain=VARIABLE_CONFIG),
     )
 
-    def __init__(self, block: Block, options: Dict = None):
+    def __init__(self, block: Block, options: Union[Dict, _Block] = None):
         """Constructor.
 
         Args:
@@ -265,25 +298,37 @@ class BlockInterface:
 
     def _init(self, block, options):
         self._block = block
-        # dynamically set defaults
-        # Use block name if missing display name
-        if BSD.DISP_KEY not in options or options[BSD.DISP_KEY] is None:
-            options[BSD.DISP_KEY] = self._block.name
-        # Set 'none' as name of missing description
-        if BSD.DESC_KEY not in options or options[BSD.DESC_KEY] is None:
-            if self._block.doc:
-                options[BSD.DESC_KEY] = self._block.doc
-            else:
-                options[BSD.DESC_KEY] = "none"
-        # Set 'default' as name of default category
-        if (
-            BlockSchemaDefinition.CATG_KEY not in options
-            or options[BSD.CATG_KEY] is None
-        ):
-            options[BSD.CATG_KEY] = "default"
-        # Finish setup
-        self.config = self.CONFIG(options)
+        # parse options into a _Block instance
+        block_info = options if isinstance(options, _Block) else _Block(**options)
+        # set defaults from values in self._block
+        if block_info.display_name == "":
+            block_info.display_name = self._block.name
+        if block_info.description == "":
+            block_info.description = self._block.doc if self._block.doc else "none"
+        _log.debug(f"Parsed block info. value={block_info}")
+        # finish
+        self.config = block_info
         set_block_interface(self._block, self)
+
+        # # dynamically set defaults
+        # # Use block name if missing display name
+        # if BSD.DISP_KEY not in options or options[BSD.DISP_KEY] is None:
+        #     options[BSD.DISP_KEY] = self._block.name
+        # # Set 'none' as name of missing description
+        # if BSD.DESC_KEY not in options or options[BSD.DESC_KEY] is None:
+        #     if self._block.doc:
+        #         options[BSD.DESC_KEY] = self._block.doc
+        #     else:
+        #         options[BSD.DESC_KEY] = "none"
+        # # Set 'default' as name of default category
+        # if (
+        #     BlockSchemaDefinition.CATG_KEY not in options
+        #     or options[BSD.CATG_KEY] is None
+        # ):
+        #     options[BSD.CATG_KEY] = "default"
+        # # Finish setup
+        # self.config = self.CONFIG(options)
+        # set_block_interface(self._block, self)
 
     @property
     def block(self):
@@ -300,41 +345,59 @@ class BlockInterface:
             Generates a series of dict-s with keys:
                {name, display_name, description, value}.
         """
-        for item in self.config.variables.value():
-            c = {BSD.NAME_KEY: item["name"]}  # one result
-            # get the Pyomo Var from the block
-            v = getattr(self._block, item["name"])
-            c[BSD.VALU_KEY] = self._variable_value(v)
-            if BSD.DISP_KEY not in c:
-                c[BSD.DISP_KEY] = v.local_name
-            if BSD.DESC_KEY not in c:
-                default_desc = f"{c[BSD.DISP_KEY]} variable"
-                c[BSD.DESC_KEY] = v.doc or default_desc
-            if v.get_units() is not None:
-                c[BSD.UNIT_KEY] = str(v.get_units())
-            # generate one result
-            yield c
+        for variable in self.config.variables:
+            block_var = getattr(self._block, variable.name)
+            if block_var.is_indexed():
+                index_list, value_list = [], []
+                for var_idx in block_var.index_set():
+                    try:
+                        index_list.append(tuple(var_idx))
+                    except TypeError:
+                        index_list.append((var_idx, ))
+                    value_list.append(value(block_var[var_idx]))
+                print(f"@@ create indexed value from index={index_list} and value(s)={value_list}")
+                var_val = _IndexedValue(index=index_list, value=value_list)
+            else:
+                var_val = _ScalarValue(value=value(block_var))
+            result = variable.copy()
+            result.value = var_val
+            yield result.dict()
 
-    def _variable_value(self, v: Var) -> Union[List, int, float, str]:
-        """Reformat simple or indexed variable value for export."""
-        if v.is_indexed():
-            var_value = []
-            # create a list of the values for each index
-            for idx in v.index_set():
-                try:
-                    idx_tuple = tuple(idx)
-                except TypeError:
-                    idx_tuple = (idx,)
-                var_value.append(
-                    {BSD.VALU_KEY: value(v[idx]), BSD.INDX_KEY: idx_tuple}
-                )
-        else:
-            var_value = value(v)  # assume int/float or str
-        return var_value
-
+    #     for item in self.config.variables.value():
+    #         c = {BSD.NAME_KEY: item["name"]}  # one result
+    #         # get the Pyomo Var from the block
+    #         v = getattr(self._block, item["name"])
+    #         c[BSD.VALU_KEY] = self._variable_value(v)
+    #         if BSD.DISP_KEY not in c:
+    #             c[BSD.DISP_KEY] = v.local_name
+    #         if BSD.DESC_KEY not in c:
+    #             default_desc = f"{c[BSD.DISP_KEY]} variable"
+    #             c[BSD.DESC_KEY] = v.doc or default_desc
+    #         if v.get_units() is not None:
+    #             c[BSD.UNIT_KEY] = str(v.get_units())
+    #         # generate one result
+    #         yield c
+    #
+    # def _variable_value(self, v: Var) -> Union[List, int, float, str]:
+    #     """Reformat simple or indexed variable value for export."""
+    #     if v.is_indexed():
+    #         var_value = []
+    #         # create a list of the values for each index
+    #         for idx in v.index_set():
+    #             try:
+    #                 idx_tuple = tuple(idx)
+    #             except TypeError:
+    #                 idx_tuple = (idx,)
+    #             var_value.append(
+    #                 {BSD.VALU_KEY: value(v[idx]), BSD.INDX_KEY: idx_tuple}
+    #             )
+    #     else:
+    #         var_value = value(v)  # assume int/float or str
+    #     return var_value
+    #
 
 def export_variables(
-    block, variables=None, name=None, desc=None, category=None
+    block, variables=None, name="", desc="", category=""
 ) -> BlockInterface:
     """Export variables from the given block, optionally providing metadata
     for the block itself. This method is really a simplified way to
@@ -353,27 +416,40 @@ def export_variables(
     Returns:
         An initialized :class:`BlockInterface` object.
     """
-    variables = [] if variables is None else variables
-    config = {
-        BSD.DISP_KEY: name,
-        BSD.DESC_KEY: desc,
-        BSD.CATG_KEY: category,
-        BSD.VARS_KEY: [],
-    }
-    cvars = config[BSD.VARS_KEY]
-    for var_item in variables:
-        if hasattr(var_item, "items"):
-            # Dict
-            var_key = var_item[BSD.NAME_KEY]
-            _validate_export_var(block, var_key)
-            cvars.append(var_item)
-        else:
-            # Name of var
-            _validate_export_var(block, var_item)
-            var_entry = {BSD.NAME_KEY: var_item}
-            cvars.append(var_entry)
-    interface = BlockInterface(block, config)
-    return interface
+    var_info_list = []
+    if variables is not None:
+        for v in variables:
+            if not hasattr(v, "items"):
+                var_info = _Variable(name=v)
+            else:
+                var_info = _Variable(**v)
+            _validate_export_var(block, var_info.name)
+            var_info_list.append(var_info)
+    block_info = _Block(display_name=name, description=desc, category=category,
+                        variables=var_info_list)
+    return BlockInterface(block, block_info)
+
+    # variables = [] if variables is None else variables
+    # config = {
+    #     BSD.DISP_KEY: name,
+    #     BSD.DESC_KEY: desc,
+    #     BSD.CATG_KEY: category,
+    #     BSD.VARS_KEY: [],
+    # }
+    # cvars = config[BSD.VARS_KEY]
+    # for var_item in variables:
+    #     if hasattr(var_item, "items"):
+    #         # Dict
+    #         var_key = var_item[BSD.NAME_KEY]
+    #         _validate_export_var(block, var_key)
+    #         cvars.append(var_item)
+    #     else:
+    #         # Name of var
+    #         _validate_export_var(block, var_item)
+    #         var_entry = {BSD.NAME_KEY: var_item}
+    #         cvars.append(var_entry)
+    # interface = BlockInterface(block, config)
+    # return interface
 
 
 def _validate_export_var(b, n):
