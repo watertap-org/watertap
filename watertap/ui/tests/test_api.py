@@ -110,7 +110,7 @@ def test_set_block_interface(mock_block):
     # invalid key
     data = {"test": "data"}
     set_block_interface(mock_block, data)
-    assert get_block_interface(mock_block).block_info.meta == data
+    assert get_block_interface(mock_block)._block_info.meta == data
     # ok key
     data = {"display_name": "foo"}
     set_block_interface(mock_block, data)

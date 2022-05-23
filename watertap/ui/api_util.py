@@ -1,43 +1,7 @@
 """
 Utility functions for the ``api`` module.
 """
-# standard library
-import inspect
-import json
-import functools
-from string import Template
-from typing import Dict, Union, Optional, IO
-
-#: Set this logger from the api module
-util_logger = None
-
-
-def log_meth(meth):
-    @functools.wraps(meth)
-    def wrapper(*args, **kwargs):
-        name = _get_method_classname(meth)
-        util_logger.debug(f"Begin {name}")
-        try:
-            result = meth(*args, **kwargs)
-        except Exception as e:
-            error_msg = f"Error in {name}"
-            util_logger.exception(error_msg)
-            raise e
-        util_logger.debug(f"End {name}")
-        return result
-
-    return wrapper
-
-
-def _get_method_classname(m):
-    """Get class name for method, assuming method is bound and class has __dict__."""
-    for k, v in inspect.getmembers(m):
-        if k == "__qualname__":
-            return v
-    return "<unknown>"
-
-
-# End logging
+from typing import IO
 
 
 def open_file_or_stream(fos, attr, **kwargs) -> IO:

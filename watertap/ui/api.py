@@ -5,7 +5,7 @@ This module defines the API for the WaterTAP user interface.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, TextIO, Generator, Optional, Tuple
+from typing import Dict, List, Union, TextIO, Generator
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -14,7 +14,8 @@ from pydantic import BaseModel, ValidationError
 
 # local
 from watertap.ui import api_util
-from watertap.ui.api_util import log_meth, open_file_or_stream
+from watertap.ui.api_util import open_file_or_stream
+from watertap.ui import api_model as model
 
 # Global variables
 # ----------------
@@ -38,13 +39,13 @@ def set_block_interface(block, data: Union["BlockInterface", Dict]):
 
     Args:
         block: Block to wrap
-        data: The interface information to set, either as a :class:`BlockInterface` object or
+        data: The interface info to set, either as a :class:`BlockInterface` object or
               as the config dict needed to create one.
 
     Returns:
         None
     """
-    if isinstance(data, BlockInterface):
+    if hasattr(data, "get_exported_variables"):
         obj = data
     else:
         obj = BlockInterface(block, data)
@@ -61,38 +62,6 @@ def get_block_interface(block: Block) -> Union["BlockInterface", None]:
         The interface, or None.
     """
     return getattr(block, "ui", None)
-
-
-# Pydantic models
-# ---------------
-
-
-class _IndexedValue(BaseModel):
-    index: List[List[Union[str, float, int]]]
-    value: List[Union[str, float, int]]
-
-
-class _ScalarValue(BaseModel):
-    value: Union[str, float, int]
-
-
-class _Variable(BaseModel):
-    name: str
-    display_name = ""
-    description = ""
-    units = ""
-    readonly = False
-    value: Optional[Union[_IndexedValue, _ScalarValue]]
-
-
-class _Block(BaseModel):
-    name: str
-    display_name = ""
-    description = ""
-    category = "default"
-    variables: List[_Variable] = None
-    blocks: List["_Block"] = []
-    meta: Dict = {}
 
 
 class BlockDiff(BaseModel):
@@ -119,6 +88,7 @@ class BlockInterface:
         self._saved_info = info
         if block is None:
             self._block = None
+            self._block_info = None
         else:
             self._init(block, info)
 
@@ -126,7 +96,7 @@ class BlockInterface:
         self._block = block
 
         # move non-known keys into 'meta', also make a copy of 'info'
-        known_keys = set(_Block.__fields__.keys())
+        known_keys = set(model.Block.__fields__.keys())
         meta = {key: info[key] for key in info if key not in known_keys}
         info = {key: info[key] for key in info if key in known_keys}
 
@@ -135,7 +105,7 @@ class BlockInterface:
             info["name"] = block.name
 
         _log.debug(f"create block from info. dict={info}")
-        block_info = _Block(**info)
+        block_info = model.Block(**info)
         # update (or create) meta from previously extracted
         block_info.meta.update(meta)
 
@@ -149,7 +119,7 @@ class BlockInterface:
         _log.debug(f"Parsed block info. value={block_info}")
 
         # finish
-        self.block_info = block_info
+        self._block_info = block_info
         set_block_interface(self._block, self)
 
     @property
@@ -157,41 +127,47 @@ class BlockInterface:
         """Get block that is being interfaced to."""
         return self._block
 
-    def get_exported_variables(self) -> Generator[Dict, None, None]:
+    def get_exported_variables(self) -> Dict[str, Dict]:
         """Get variables exported by the block.
 
         The returned dict is also used as the saved/loaded variable in a block;
         i.e., it is called from ``FlowsheetInterface.load()`` and ``.save()``.
 
         Return:
-            Generates a series of dict-s with keys:
-               {name, display_name, description, value}.
+            Generates a dict: {<var-name>: {display_name, description, value}}
         """
-        for variable in self.block_info.variables:
-            block_var = getattr(self._block, variable.name)
-            if block_var.is_indexed():
-                index_list, value_list = [], []
-                for var_idx in block_var.index_set():
-                    try:
-                        index_list.append(tuple(var_idx))
-                    except TypeError:
-                        index_list.append((var_idx,))
-                    value_list.append(value(block_var[var_idx]))
-                _log.debug(
-                    f"add indexed variable. block={self._block.name},"
-                    f"name={variable.name},index={index_list},"
-                    f"value={value_list}"
-                )
-                var_val = _IndexedValue(index=index_list, value=value_list)
-            else:
-                var_val = _ScalarValue(value=value(block_var))
-                _log.debug(
-                    f"add scalar value. block={self._block.name},"
-                    f"name={variable.name},value={var_val}"
-                )
-            result = variable.copy()
-            result.value = var_val
-            yield result.dict()
+        result = {}
+        for var_name, variable in self._block_info.variables.items():
+            var_val = self._get_block_variable_value(self._block, var_name)
+            v = variable.copy()
+            v.value = var_val
+            result[var_name] = v.dict()
+        return result
+
+    @staticmethod
+    def _get_block_variable_value(block, var_name):
+        block_var = getattr(block, var_name)
+        if block_var.is_indexed():
+            index_list, value_list = [], []
+            for var_idx in block_var.index_set():
+                try:
+                    index_list.append(tuple(var_idx))
+                except TypeError:
+                    index_list.append((var_idx,))
+                value_list.append(value(block_var[var_idx]))
+            _log.debug(
+                f"add indexed variable. block={block.name},"
+                f"name={var_name},index={index_list},"
+                f"value={value_list}"
+            )
+            var_val = model.IndexedValue(index=index_list, value=value_list)
+        else:
+            var_val = model.ScalarValue(value=value(block_var))
+            _log.debug(
+                f"add scalar value. block={block.name},"
+                f"name={var_name},value={var_val}"
+            )
+        return var_val
 
 
 def export_variables(
@@ -203,9 +179,7 @@ def export_variables(
 
     Args:
         block: IDAES model block
-        variables: List of variable data (dict-s) to export. This is the same
-                   format specified for the variables for the "variables" item of
-                   the :class:`BlockInterface` ``CONFIG``.
+        variables: List of variable names of dict of variable data to export.
         name: Name to give this block (default=``block.name``)
         desc: Description of the block (default=``block.doc``)
         category: User-defined category for this block, such as "costing", that
@@ -224,19 +198,22 @@ def export_variables(
         except AttributeError:
             return "not found. " + info
 
-    var_info_list = []
+    var_info_dict = {}
     if variables is not None:
-        for v in variables:
-            if not hasattr(v, "items"):
-                var_info = _Variable(name=v)
-            else:
-                var_info = _Variable(**v)
-            error = var_check(block, var_info.name)
+        if hasattr(variables, "items"):
+            var_info_dict = {name: model.Variable(**val)
+                             for name, val in variables.items()}
+        else:
+            var_info_dict = {name: model.Variable() for name in variables}
+        for name in var_info_dict:
+            error = var_check(block, name)
             if error:
                 raise TypeError(error)
-            var_info_list.append(var_info)
-    block_info = _Block(name=name,
-        display_name=name, description=desc, category=category, variables=var_info_list
+    block_info = model.Block(
+        display_name=name,
+        description=desc,
+        category=category,
+        variables=var_info_dict,
     )
     return BlockInterface(block, block_info.dict())
 
@@ -279,7 +256,7 @@ class FlowsheetInterface(BlockInterface):
 
     # Public methods
 
-    def set_block(self, block):
+    def set_block(self, block: Block):
         self._init(block, self._saved_info)
 
     def get_var_missing(self) -> Dict[str, List[str]]:
@@ -315,10 +292,61 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError("get_var_extra() has no meaning before load() is called")
         return self._var_diff.extra
 
-    @log_meth
     def as_dict(self):
         """Return current state serialized as a dictionary."""
-        return self.block_info.dict()
+        _log.debug("as_dict:start")
+        if self._block_info is None:
+            _log.debug("as_dict:end. status=error")
+            raise ValueError("Cannot serialize before `set_block()` is called")
+        d = self._get_block_interface_tree().dict()
+        _log.debug("as_dict:end. status=ok")
+        return d
+
+    def _get_block_interface_tree(self):
+        """Get all block interfaces in this block and sub-blocks,
+        creating a complete 'tree' with intermediate placeholders where needed.
+        """
+        # use a stack that has the path and object for each new block to visit
+        path = [self.block.name]
+        stack = [(path, self._block)]
+        tree = self._block_info.copy()
+        tree.blocks = {}
+        # keep going until no more blocks to visit
+        while stack:
+            path, block = stack.pop()
+            # if there is a block interface, add it to the tree
+            ui = get_block_interface(block)
+            if ui:
+                self._add_to_tree(tree, path, ui)
+            # add any found sub-blocks to the stack
+            if hasattr(block, "component_map"):
+                for sb_name, sb_val in block.component_map(ctype=Block).items():
+                    stack.append((path + [sb_name], sb_val))
+        return tree
+
+    def _add_to_tree(self, tree: model.Block, path: List[str], ui: BlockInterface):
+        """Add one block interface, with the provided path, to the tree."""
+        node_names = path[:-1]
+        leaf_name = path[-1]
+        node = tree
+        # descend to leaf, creating intermediate nodes as we go
+        for name in node_names:
+            sb = node.blocks.get(name, None)
+            # create if not found
+            if not sb:
+                sb = model.Block(name=name)
+                node.blocks[name] = sb
+            # descend
+            node = sb
+        # check that leaf is not there, already (why would it be?!)
+        if leaf_name in node.blocks:
+            raise ValueError(f"Duplicate node. path={path}")
+        # add leaf
+        leaf = ui._block_info.copy()
+        for name, variable in leaf.variables.items():
+            print(f"@@ {name} val = {self._get_block_variable_value(ui.block, name)}")
+            variable.value = self._get_block_variable_value(ui.block, name)
+        node.blocks[leaf_name] = ui._block_info
 
     def __eq__(self, other) -> bool:
         """Equality test. A side effect is that both objects are serialized using
@@ -334,9 +362,8 @@ class FlowsheetInterface(BlockInterface):
 
     @property
     def meta(self):
-        return self.block_info.meta.copy()
+        return self._block_info.meta.copy()
 
-    @log_meth
     def save(self, file_or_stream: Union[str, Path, TextIO]):
         """Save the current state of this instance to a file.
 
@@ -350,9 +377,11 @@ class FlowsheetInterface(BlockInterface):
             IOError: Could not open or use the output file
             TypeError: Unable to serialize as JSON
         """
+        _log.debug("save:start")
         fp = open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
         data = self.as_dict()
         json.dump(data, fp)
+        _log.debug("save:end. status=ok")
 
     @classmethod
     def load_from(
@@ -372,16 +401,19 @@ class FlowsheetInterface(BlockInterface):
         Raises:
             ValueError: Improper input data
         """
+        _log.debug(f"load_from:start")
         if isinstance(fs, FlowsheetInterface):
             ui = fs
         else:
             ui = get_block_interface(fs)
         if ui is None:
+            _log.debug(f"load_from:end. status=error")
             raise ValueError(
                 f"Block must define FlowsheetInterface using "
                 f"``set_block_interface()`` during construction. obj={fs.block}"
             )
         ui.load(file_or_stream)
+        _log.debug(f"load_from:end. status=ok")
         return ui
 
     def load(self, file_or_stream: Union[str, Path, TextIO]):
@@ -393,9 +425,11 @@ class FlowsheetInterface(BlockInterface):
         Raises:
             ValueError: Improper input data
         """
+        _log.debug(f"load:start. source={file_or_stream}")
         fp = open_file_or_stream(file_or_stream, "read", mode="r", encoding="utf-8")
         data = json.load(fp)
         self.update(data)
+        _log.debug(f"load:end. source={file_or_stream},status=ok")
 
     def update(self, data: Dict):
         """Update values in blocks in and under this interface, from data.
@@ -408,9 +442,11 @@ class FlowsheetInterface(BlockInterface):
          Args:
              data: Data in the expected schema (see :meth:`get_schema`)
         """
+        _log.debug(f"update:start")
         try:
-            block_info = _Block.parse_obj(data)
+            block_info = model.Block.parse_obj(data)
         except ValidationError as verr:
+            _log.debug(f"update:end. status=error")
             raise ValueError(f"Input data failed schema validation: {verr}")
 
         self._var_diff = FlowsheetDiff(missing={}, extra={})
@@ -419,8 +455,9 @@ class FlowsheetInterface(BlockInterface):
         # clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
             self._action_clear_was_run(WorkflowActions.solve)
+        _log.debug(f"update:end. status=ok")
 
-    def _load(self, load_block_info: _Block, cur_block: Block, path: str = None):
+    def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
         """Load the variables in ``block_data`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
         """
@@ -429,14 +466,14 @@ class FlowsheetInterface(BlockInterface):
         ui = get_block_interface(cur_block)
 
         if not ui:
-            bdiff.missing = [v.name for v in load_block_info.variables]
+            bdiff.missing = list(load_block_info.variables.keys())
             bdiff.extra = []
         else:
-            info_var_names = {v.name for v in ui.block_info.variables}
-            bdiff.extra = list(info_var_names)
-            for load_var_info in load_block_info.variables:
-                details = f"block={cur_block_path} variable={load_var_info.name}"
-                if load_var_info.name not in info_var_names:
+            info_vars = ui._block_info.variables
+            bdiff.extra = list(info_vars.keys())
+            for load_var_name, load_var_info in load_block_info.variables.items():
+                details = f"block={cur_block_path} variable={load_var_name}"
+                if load_var_name not in info_vars:
                     _log.warn("No matching exported variable found. " + details)
                     bdiff.missing.append(load_var_info.name)
                 elif load_var_info.readonly:
@@ -444,18 +481,19 @@ class FlowsheetInterface(BlockInterface):
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
                 else:
-                    var_obj = getattr(ui.block, load_var_info.name)
+                    var_obj = getattr(ui.block, load_var_name)
                     if var_obj is None:
-                        raise ValueError("Exported variable not found in block. " +
-                                         details)
-                    if isinstance(load_var_info.value, _IndexedValue):
+                        raise ValueError(
+                            "Exported variable not found in block. " + details
+                        )
+                    if isinstance(load_var_info.value, model.IndexedValue):
                         for i, idx in enumerate(load_var_info.value.index):
                             idx, val = tuple(idx), load_var_info.value.value[i]
                             var_obj[idx] = val
                     else:
                         var_obj.set_value(load_var_info.value.value)
                     _log.debug("Exported variable loaded. " + details)
-                    bdiff.extra.remove(load_var_info.name)
+                    bdiff.extra.remove(load_var_name)
 
             # save non-empty missing/extra
             if bdiff.missing:
@@ -463,9 +501,9 @@ class FlowsheetInterface(BlockInterface):
             if bdiff.extra:
                 self._var_diff.extra[cur_block_path] = bdiff.extra
 
-        for sub_block_info in load_block_info.blocks:
-            sub_block = getattr(cur_block, sub_block_info.name)
-            self._load(sub_block_info, sub_block, path=cur_block_path)
+        for sb_name, sb_info in load_block_info.blocks.items():
+            sub_block = getattr(cur_block, sb_name)
+            self._load(sb_info, sub_block, path=cur_block_path)
 
     @classmethod
     def get_schema(cls) -> Dict:
@@ -475,7 +513,7 @@ class FlowsheetInterface(BlockInterface):
         Returns:
             The schema
         """
-        return _Block.schema()
+        return model.Block.schema()
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
         """Add a new action type to this interface.
@@ -518,9 +556,9 @@ class FlowsheetInterface(BlockInterface):
         self._check_action(name)
         return self._actions[name]
 
-    @log_meth
     def run_action(self, name):
         """Run the named action's function."""
+        _log.debug(f"run_action:start. name={name}")
         self._check_action(name)
         if self._action_was_run(name):
             _log.info(f"Skip duplicate run of action. name={name}")
@@ -528,10 +566,12 @@ class FlowsheetInterface(BlockInterface):
         self._run_deps(name)
         func, kwargs = self._actions[name]
         if func is None:
+            _log.debug(f"run_action:end. name={name},status=error")
             raise ValueError("Undefined action. name={name}")
         # Run action
         result = func(block=self._block, ui=self, **kwargs)
         self._action_set_was_run(name)
+        _log.debug(f"run_action:end. name={name},status=ok")
         return result
 
     # Protected methods
