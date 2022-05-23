@@ -13,9 +13,8 @@ def set_up_sensitivity(m):
     opt_function = dye_desalination.solve
 
     # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW_dye_recovered
-    # outputs["Total_Cost"] = m.fs.costing.total_annualized_cost
-    # outputs["LCODS"] = m.fs.costing.LCODS
+    # outputs["LCOW"] = m.fs.costing.LCOW_dye_recovered
+    outputs["LCOT"] = m.fs.costing.LCOT_dye_mass
 
     return outputs, optimize_kwargs, opt_function
 
@@ -60,10 +59,10 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
             m.fs.costing.nanofiltration.membrane_cost, 1, 100, nx
         )
     elif case_num == 6:
-        m.fs.costing.dye_cost.unfix()
+        m.fs.costing.dye_mass_cost.unfix()
         m.fs.costing.waste_disposal_cost.unfix()
 
-        sweep_params["dye_cost"] = LinearSample(m.fs.costing.dye_cost, 0, 10, nx)
+        sweep_params["dye_cost"] = LinearSample(m.fs.costing.dye_mass_cost, 0, 1, nx)
         sweep_params["waste_disposal"] = LinearSample(
             m.fs.costing.waste_disposal_cost, 0, 10, nx
         )
@@ -90,7 +89,7 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     return global_results, sweep_params, m
 
 
-def main(case_num=7, nx=10, interpolate_nan_outputs=True):
+def main(case_num=6, nx=10, interpolate_nan_outputs=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)

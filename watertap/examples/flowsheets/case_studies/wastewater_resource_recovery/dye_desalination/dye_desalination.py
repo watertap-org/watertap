@@ -158,6 +158,27 @@ def add_costing(m):
     m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.costing.cost_process()
 
+    m.fs.costing.dye_recovery_mass = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.retentate1.flow_mass_comp[0, "dye"],
+            to_units=pyunits.kg / m.fs.costing.base_period,
+        ),
+        doc="Mass of dye in retentate per year",
+    )
+
+    m.fs.costing.value_dye_recovery_mass = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * m.fs.costing.dye_mass_cost
+            * pyunits.convert(
+                m.fs.retentate1.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        ),
+        doc="Dollar value of dye in the retentate priced by mass",
+    )
+
     m.fs.costing.annual_disposal_cost = Expression(
         expr=(
             m.fs.costing.utilization_factor
@@ -172,10 +193,9 @@ def add_costing(m):
         doc="Annual cost of waste disposal",
     )
 
-    m.fs.costing.annual_dye_recovery_value = Expression(
+    m.fs.costing.value_dye_recovery_flow = Expression(
         expr=(
-            -1
-            * m.fs.costing.utilization_factor
+            m.fs.costing.utilization_factor
             * (
                 m.fs.costing.dye_cost
                 * pyunits.convert(
@@ -212,6 +232,22 @@ def add_costing(m):
             )
         ),
         doc="Levelized cost of water treated with dye recovery through NF",
+    )
+
+    m.fs.costing.LCOT_dye_mass = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+            + m.fs.costing.utilization_factor
+            * m.fs.costing.waste_disposal_cost
+            * pyunits.convert(
+                m.fs.permeate1.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
+            - m.fs.costing.value_dye_recovery_mass
+        )
+        / m.fs.costing.dye_recovery_mass,
+        doc="Levelized cost of treatment on a basis of dye recovered",
     )
 
 
@@ -254,22 +290,41 @@ def display_costing(m):
     )
     print(f"Total Waste Disposal Costs: {waste_disposal_cost:.4f} M$/year")
 
-    dye_recovery_cost = value(
-        pyunits.convert(
-            m.fs.costing.annual_dye_recovery_value,
+    dye_recovery_cost_flow = value(
+        -1
+        * pyunits.convert(
+            m.fs.costing.value_dye_recovery_flow,
             to_units=pyunits.MUSD_2018 / pyunits.year,
         )
     )
-    print(f"Total Dye Recovery Costs: {dye_recovery_cost:.4f} M$/year")
+    print(
+        f"\nTotal Dye Recovery Costs (flow basis): {dye_recovery_cost_flow:.4f} M$/year"
+    )
 
     levelized_cost_water = value(
         pyunits.convert(
             m.fs.costing.LCOW_dye_recovered, to_units=pyunits.USD_2018 / pyunits.m**3
         )
     )
-    print(
-        f"\nLevelized Cost of Water Treatment (LCOWt): {levelized_cost_water:.2f} $/m3"
+    print(f"Levelized Cost of Water Treatment (LCOWt): {levelized_cost_water:.2f} $/m3")
+
+    dye_recovery_cost_mass = value(
+        -1
+        * pyunits.convert(
+            m.fs.costing.value_dye_recovery_mass,
+            to_units=pyunits.MUSD_2018 / pyunits.year,
+        )
     )
+    print(
+        f"\nTotal Dye Recovery Costs (mass basis): {dye_recovery_cost_mass:.4f} M$/year"
+    )
+
+    levelized_cost_treatment = value(
+        pyunits.convert(
+            m.fs.costing.LCOT_dye_mass, to_units=pyunits.USD_2018 / pyunits.kg
+        )
+    )
+    print(f"Levelized Cost of Treatment (LCOT): {levelized_cost_treatment:.2f} $/kg")
 
 
 if __name__ == "__main__":
