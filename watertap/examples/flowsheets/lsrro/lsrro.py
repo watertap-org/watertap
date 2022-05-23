@@ -90,7 +90,7 @@ def run_lsrro_case(
     has_calculated_concentration_polarization=None,
     has_calculated_ro_pressure_drop=None,
     permeate_quality_limit=None,
-    ABgamma_factor=None,
+    AB_gamma_factor=None,
     B_max=None,
     number_of_RO_finite_elements=10,
 ):
@@ -120,7 +120,7 @@ def run_lsrro_case(
         AB_tradeoff,
         A_value,
         permeate_quality_limit,
-        ABgamma_factor,
+        AB_gamma_factor,
         B_max,
     )
     res = solve(m, raise_on_failure=False, tee=False)
@@ -841,7 +841,7 @@ def optimize_set_up(
     AB_tradeoff=ABTradeoff.none,
     A_value=None,
     permeate_quality_limit=None,
-    ABgamma_factor=None,
+    AB_gamma_factor=None,
     B_max=None,
 ):
     """
@@ -932,7 +932,7 @@ def optimize_set_up(
         or AB_tradeoff == ABTradeoff.inequality_constraint
     ):
         m.fs.AB_tradeoff_coeff = Param(initialize=0.01333, mutable=True)
-        m.fs.AB_tradeoff_coeff.set_value(ABgamma_factor * value(m.fs.AB_tradeoff_coeff))
+        m.fs.AB_tradeoff_coeff.set_value(AB_gamma_factor * value(m.fs.AB_tradeoff_coeff))
 
     # unfix stages
     for idx, stage in m.fs.ROUnits.items():
@@ -1308,7 +1308,7 @@ def main():
                                         has_calculated_concentration_polarization=True,  # default to True
                                         has_calculated_ro_pressure_drop=True,  # default to True
                                         A_value=5 / 3.6e11,  # default to 5LMH/bar
-                                        ABgamma_factor=ab_gamma,  # default to 1 or None
+                                        AB_gamma_factor=ab_gamma,  # default to 1 or None
                                         B_max=B_max,
                                         number_of_RO_finite_elements=number_of_RO_finite_elements,
                                     )
