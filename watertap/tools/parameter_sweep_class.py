@@ -146,6 +146,23 @@ class _ParameterSweepBase(ABC):
             else:
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
+    # ================================================================
+
+    def _aggregate_results_arr(global_results_dict, num_cases, comm, rank, num_procs):
+
+        global_results = np.zeros(
+            (num_cases, len(global_results_dict["outputs"])), dtype=np.float64
+        )
+
+        if rank == 0:
+            for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+                global_results[:, i] = item["value"][:num_cases]
+
+        if num_procs > 1:  # pragma: no cover
+            comm.Bcast(global_results, root=0)
+
+        return global_results
+
 # def _init_mpi(mpi_comm=None):
 #
 #     if mpi_comm is None:
@@ -207,22 +224,22 @@ class _ParameterSweepBase(ABC):
 # ================================================================
 
 
-def _update_model_values(m, param_dict, values):
-
-    for k, item in enumerate(param_dict.values()):
-
-        param = item.pyomo_object
-
-        if param.is_variable_type():
-            # Fix the single value to values[k]
-            param.fix(values[k])
-
-        elif param.is_parameter_type():
-            # Fix the single value to values[k]
-            param.set_value(values[k])
-
-        else:
-            raise RuntimeError(f"Unrecognized Pyomo object {param}")
+# def _update_model_values(m, param_dict, values):
+#
+#     for k, item in enumerate(param_dict.values()):
+#
+#         param = item.pyomo_object
+#
+#         if param.is_variable_type():
+#             # Fix the single value to values[k]
+#             param.fix(values[k])
+#
+#         elif param.is_parameter_type():
+#             # Fix the single value to values[k]
+#             param.set_value(values[k])
+#
+#         else:
+#             raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
 
 # ================================================================
