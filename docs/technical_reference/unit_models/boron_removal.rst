@@ -143,19 +143,12 @@ textbook (see References below).
    :header: "Description", "Equation"
 
    "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions}`"
-
    "Residual Ions Expression", ":math:`Res_{ions} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
-
    "Total Boron Balance Constraint", ":math:`C_{in,HA} + C_{in,A} = C_{out,HA} + C_{out,A}`"
-
    "Water Dissociation Constraint", ":math:`K_{w} = C_{out,H} \cdotp C_{out,OH}`"
-
    "Boron Dissociation Constraint", ":math:`K_{a} \cdotp C_{out,HA} = C_{out,H} \cdotp C_{out,A}`"
-
    "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{out,i} + C_{out,i} \cdotp Q`"
-
-   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic}`"
-
+   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + \frac{S_{caustic} \cdotp m}{MW}`"
    "Reactor Volume", ":math:`V = Q \cdotp \theta`"
 
 
@@ -172,6 +165,7 @@ textbook (see References below).
 
 **NOTE:** :math:`\theta` **is the hydraulic retention time for the reactor**
 
+**NOTE:** :math:`m` **is the molar ratio of cations formed per mole of caustic added and** :math:`MW` **is the molecular weight of the caustic additive**
 
 References
 ----------
