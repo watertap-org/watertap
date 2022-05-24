@@ -102,6 +102,7 @@ def model_setup(
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
     m.fs.unit.caustic_dose_rate.fix(chem_add)
+    m.fs.unit.reactor_volume.fix(1)
 
 
 # Helper function to automate scaling
@@ -216,10 +217,10 @@ class TestBoronRemoval_IonPropPack_Min:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 7
+        assert degrees_of_freedom(m) == 8
 
         # set the variables
-        state={
+        state = {
             "H2O": 100,
             "H_+": 1e-7,
             "OH_-": 1e-7,
@@ -299,7 +300,9 @@ class TestBoronRemoval_IonPropPack_Min:
         ) == pytest.approx(1.81133e-4, rel=1e-4)
         assert value(m.fs.unit.outlet_pH()) == pytest.approx(10.171, rel=1e-4)
         assert value(m.fs.unit.outlet_pOH()) == pytest.approx(3.8257, rel=1e-4)
-        assert value(m.fs.unit.caustic_dose_rate[0].value) == pytest.approx(1.8e-5, rel=1e-4)
+        assert value(m.fs.unit.caustic_dose_rate[0].value) == pytest.approx(
+            1.8e-5, rel=1e-4
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -388,7 +391,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 8
+        assert degrees_of_freedom(m) == 9
 
         # set the variables
         model_setup(m, chem_add=1.8e-4)
@@ -543,7 +546,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 7
+        assert degrees_of_freedom(m) == 8
 
         # set the variables
         model_setup(m, chem_add=0)
@@ -870,7 +873,7 @@ class TestBoronRemoval_GenPropPack:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 9
+        assert degrees_of_freedom(m) == 10
 
         # set the variables
         model_setup(m, chem_add=1.8e-6)
@@ -914,10 +917,10 @@ class TestBoronRemoval_GenPropPack:
 
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
-        ) == pytest.approx(1.20345e-4, rel=1e-4)
+        ) == pytest.approx(1.20783e-4, rel=1e-4)
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
-        ) == pytest.approx(7.99268e-5, rel=1e-4)
+        ) == pytest.approx(8.02173e-5, rel=1e-4)
         assert value(m.fs.unit.outlet_pH()) == pytest.approx(9.0330, rel=1e-4)
         assert value(m.fs.unit.outlet_pOH()) == pytest.approx(4.9633, rel=1e-4)
 

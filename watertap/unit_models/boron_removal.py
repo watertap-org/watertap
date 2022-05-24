@@ -504,6 +504,23 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Resulting molarity of Borate",
         )
 
+        # Variables for volume and retention time
+        self.reactor_volume = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.m**3,
+            doc="Volume of the reactor",
+        )
+        self.reactor_retention_time = Var(
+            self.flowsheet().config.time,
+            initialize=500,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.s,
+            doc="Hydraulic retention time of the reactor",
+        )
+
         # Build control volume for feed side
         self.control_volume = ControlVolume0DBlock(
             default={
@@ -550,6 +567,18 @@ class BoronRemovalData(UnitModelBlockData):
                     self.control_volume.properties_out[t].temperature
                     == self.control_volume.properties_in[t].temperature
                 )
+
+        # Constraints for volume and retention time
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Reactor volume constraint",
+        )
+        def eq_reactor_volume(self, t):
+            return (
+                self.reactor_volume
+                == self.control_volume.properties_out[t].flow_vol_phase["Liq"]
+                * self.reactor_retention_time[t]
+            )
 
         # Constraints for mass transfer terms
         @self.Constraint(
@@ -701,7 +730,9 @@ class BoronRemovalData(UnitModelBlockData):
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.cation_name_id:
                 dose_rate = pyunits.convert(
-                    self.caustic_dose_rate[t] / self.caustic_mw * self.additive_molar_ratio,
+                    self.caustic_dose_rate[t]
+                    / self.caustic_mw
+                    * self.additive_molar_ratio,
                     to_units=units_meta("amount") / units_meta("time"),
                 )
                 return self.control_volume.mass_transfer_term[t, p, j] == dose_rate
@@ -845,6 +876,23 @@ class BoronRemovalData(UnitModelBlockData):
                                 ind
                             ]
                         )
+
+                # Check to see if 'flow_vol_phase' is constructed
+                if self.control_volume.properties_out[t].is_property_constructed(
+                    "flow_vol_phase"
+                ):
+                    sum = 0
+                    for ind in self.control_volume.properties_in[t].flow_mol_phase_comp:
+                        sum += self.control_volume.properties_in[t].flow_mol_phase_comp[
+                            ind
+                        ]
+                    approx_dens = pyunits.convert(
+                        55000 * pyunits.mol / pyunits.m**3,
+                        to_units=units_meta("amount") * units_meta("length") ** -3,
+                    )
+                    self.control_volume.properties_out[t].flow_vol_phase["Liq"] = (
+                        sum / approx_dens
+                    )
 
                 # Check to see if 'flow_mass_phase_comp' is constructed
                 if self.control_volume.properties_out[t].is_property_constructed(
@@ -1048,8 +1096,20 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Add scaling for unit model vars (with user input)
         if iscale.get_scaling_factor(self.caustic_dose_rate) is None:
-            sf = iscale.get_scaling_factor(self.caustic_dose_rate, default=1e4, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.caustic_dose_rate, default=1e4, warning=True
+            )
             iscale.set_scaling_factor(self.caustic_dose_rate, sf)
+
+        if iscale.get_scaling_factor(self.reactor_volume) is None:
+            sf = iscale.get_scaling_factor(self.reactor_volume, default=1, warning=True)
+            iscale.set_scaling_factor(self.reactor_volume, sf)
+
+        if iscale.get_scaling_factor(self.reactor_retention_time) is None:
+            sf = iscale.get_scaling_factor(
+                self.reactor_retention_time, default=1e-2, warning=True
+            )
+            iscale.set_scaling_factor(self.reactor_retention_time, sf)
 
         # Add scaling for unit model vars (without user input)
         if iscale.get_scaling_factor(self.conc_mol_Boron) is None:
@@ -1103,6 +1163,11 @@ class BoronRemovalData(UnitModelBlockData):
         sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
         for t in self.control_volume.properties_in:
             iscale.constraint_scaling_transform(self.eq_isothermal[t], sf)
+
+        # Scale reactor volume constraint
+        sf = iscale.get_scaling_factor(self.reactor_volume)
+        for t in self.control_volume.properties_in:
+            iscale.constraint_scaling_transform(self.eq_reactor_volume[t], sf)
 
         # Scaling for water dissociation and boron dissociation
         for t in self.control_volume.properties_in:
