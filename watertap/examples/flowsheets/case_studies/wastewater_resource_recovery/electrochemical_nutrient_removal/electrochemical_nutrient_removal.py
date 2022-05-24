@@ -54,7 +54,7 @@ def main():
     add_costing(m)
 
     solve(m)
-    # display_costing(m)
+    display_costing(m)
     return m
 
 
@@ -123,8 +123,23 @@ def add_costing(m):
 
     m.fs.costing.cost_process()
     # TODO- verify flow basis for electricity intensity and LCOW
-    m.fs.costing.add_electricity_intensity(m.fs.product_struvite.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product_struvite.properties[0].flow_vol)
+    m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
+
+    m.fs.costing.LCOS = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+        / (
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.product_struvite.properties[0].flow_mass_comp["struvite"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        ),
+        doc="Levelized cost of struvite",
+    )
 
     # initialize
     m.fs.costing.initialize()
@@ -150,6 +165,57 @@ def display_results(m):
     unit_list = ["feed", "product_H2O", "product_struvite", "electroNP"]
     for u in unit_list:
         m.fs.component(u).report()
+
+
+def display_costing(m):
+    print("\nUnit Capital Costs\n")
+    for u in m.fs.costing._registered_unit_costing:
+        print(
+            u.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
+            ),
+        )
+    print("\nUtility Costs\n")
+    for f in m.fs.costing.flow_types:
+        print(
+            f,
+            " :    {price:0.3f} M$/year".format(
+                price=value(
+                    pyunits.convert(
+                        m.fs.costing.aggregate_flow_costs[f],
+                        to_units=pyunits.MUSD_2018 / pyunits.year,
+                    )
+                )
+            ),
+        )
+
+    print("")
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.3f} M$")
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
+    print(f"Total Operating Costs: {total_operating_cost:.3f} M$/year")
+    electricity_intensity = value(
+        pyunits.convert(
+            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+        )
+    )
+    print(f"Electricity Intensity: {electricity_intensity:.3f} kWh/m^3")
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+
+    LCOS = value(
+        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
+    )
+    print(f"Levelized Cost of Struvite: {LCOS:.3f} $/kg")
 
 
 if __name__ == "__main__":
