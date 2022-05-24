@@ -1,6 +1,6 @@
-## Fixes/Addresses:
+## Fixes/Resolves:
 
-(replace this with the issue # fixed or addressed, if no issue exists then a brief statement of what this PR does)
+(replace this with the issue # fixed or resolved, if no issue exists then a brief statement of what this PR does)
 
 ## Summary/Motivation:
 
