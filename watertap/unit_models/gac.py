@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-# Import Pyomo libraries
+
 from pyomo.environ import (
     Block,
     Set,
@@ -25,7 +25,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from enum import Enum, auto
 
-# Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
@@ -256,8 +255,14 @@ class GACData(UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time, doc="Isothermal assumption for spent GAC"
         )
-        def eq_permeate_isothermal(b, t):
+        def eq_isothermal_adsorbate(b, t):
             return b.treatwater.properties_in[t].temperature == b.removal[t].temperature
+
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Isobaric assumption for spent GAC"
+        )
+        def eq_isobaric_adsorbate(b, t):
+            return b.treatwater.properties_in[t].pressure == b.removal[t].pressure
 
         # Add ports
         self.add_inlet_port(name="inlet", block=self.treatwater)
@@ -265,19 +270,21 @@ class GACData(UnitModelBlockData):
         self.add_port(name="spent_gac", block=self.removal)
 
         ###############################################################################
-
+        # Variable declaration
         # mass transfer
         self.mass_solute_absorb = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            initialize=1e-8,
-            bounds=(1e-8, 1e6),
+            initialize=1,
+            bounds=(1e-12, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
             doc="Mass of solute absorbed into GAC",
         )
+
         ###############################################################################
+        # TODO: Support mole or mass based property packs
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,
@@ -297,3 +304,123 @@ class GACData(UnitModelBlockData):
         )
         def eq_mass_transfer_solvent(b, t, j):
             return b.treatwater.mass_transfer_term[t, "Liq", j] == 0
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.component_list,
+            doc="Contaminant absorbed",
+        )
+        def eq_mass_transfer_absorbed(b, t, j):
+            return (
+                b.removal[t].get_material_flow_terms("Liq", j)
+                == -b.treatwater.mass_transfer_term[t, "Liq", j]
+            )
+
+    # ---------------------------------------------------------------------
+    # initialize method
+    def initialize_build(
+        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+    ):
+        """
+        General wrapper for pressure changer initialization routines
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        # Set solver options
+        opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # Initialize holdup block
+        flags = blk.treatwater.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize control volume block
+        # Set state_args from inlet state
+        if state_args is None:
+            state_args = {}
+            state_dict = blk.treatwater.properties_in[
+                blk.flowsheet().config.time.first()
+            ].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        # initialize spent gac additional port
+        blk.removal.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 2 Complete.")
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        # ---------------------------------------------------------------------
+        # Release inlet control volume state
+        blk.treatwater.release_state(flags, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # scaling for gac created variables
+        for (t, p, j), v in self.mass_solute_absorb.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf = iscale.get_scaling_factor(
+                    self.treatwater.properties_in[t].get_material_flow_terms(p, j)
+                )
+                iscale.set_scaling_factor(v, sf)
+
+        # transforming constraints
+        for (t, j), c in self.eq_mass_transfer_solute.items():
+            sf = iscale.get_scaling_factor(self.mass_solute_absorb[t, "Liq", j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, j), c in self.eq_mass_transfer_solvent.items():
+            sf = 1
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, j), c in self.eq_mass_transfer_absorbed.items():
+            if j in self.config.property_package.solute_set:
+                sf = iscale.get_scaling_factor(self.mass_solute_absorb[t, "Liq", j])
+                iscale.constraint_scaling_transform(c, sf)
+            if j in self.config.property_package.solvent_set:
+                sf = 1
+                iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.treatwater.eq_isothermal.items():
+            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_isothermal_adsorbate.items():
+            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_isobaric_adsorbate.items():
+            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].pressure)
+            iscale.constraint_scaling_transform(c, sf)
