@@ -43,6 +43,8 @@ def main():
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
+
+    display_results(m)
     return m
 
 
@@ -112,7 +114,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    unit_list = ["feed", "permeate1", "retentate1", "nanofiltration"]
+    unit_list = ["feed", "permeate", "retentate", "electroNP"]
     for u in unit_list:
         m.fs.component(u).report()
 
