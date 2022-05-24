@@ -85,7 +85,7 @@ def main():
     )
 
     # TODO: Switch specifications to Feed model and arc to GAC, test GAC embedded touch of needed properties
-    m.fs.gac.amt_solute_absorb[0, "Liq", "DCE"].fix(1e-4)
+    m.fs.gac.solute_absorb[0, "Liq", "DCE"].fix(1e-4)
 
     # TODO: Add variable scaling
     m.fs.properties.set_default_scaling(
@@ -118,10 +118,8 @@ def main():
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    # m.fs.gac.display()
-    print("specified mass removal", m.fs.gac.amt_solute_absorb[0, "Liq", "DCE"].value)
     m.fs.gac.treatwater.mass_transfer_term.display()
-    m.fs.gac.amt_solute_absorb.display()
+    m.fs.gac.solute_absorb.display()
 
 
 if __name__ == "__main__":

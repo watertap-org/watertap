@@ -45,7 +45,7 @@ __author__ = "Hunter Barber"
 
 _log = idaeslog.getLogger(__name__)
 
-###############################################################################
+# ---------------------------------------------------------------------
 """
 First model build inputs
 """
@@ -99,13 +99,13 @@ rhof = 450  # bulk gac particle density, [kg/m3]
 epsp = 0.641  #
 # TODO: Add adaptability for multiple solutes
 
-###############################################################################
+# ---------------------------------------------------------------------
 """
 class SurfaceDiffusionCoeffVal(Enum):
     specified = auto()  # surface diffusion coefficient is a user-specified value
     calculated = auto() # pressure drop across membrane channel is calculated
 """
-###############################################################################
+# ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
 class GACData(UnitModelBlockData):
     """
@@ -211,7 +211,7 @@ class GACData(UnitModelBlockData):
         ),
     )
 
-    ###############################################################################
+    # ---------------------------------------------------------------------
     def build(self):
 
         super().build()
@@ -271,10 +271,10 @@ class GACData(UnitModelBlockData):
         self.add_outlet_port(name="outlet", block=self.treatwater)
         self.add_port(name="spent_gac", block=self.removal)
 
-        ###############################################################################
+        # ---------------------------------------------------------------------
         # Variable declaration
         # mass transfer
-        self.amt_solute_absorb = Var(
+        self.solute_absorb = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
@@ -285,7 +285,7 @@ class GACData(UnitModelBlockData):
             doc="Moles of solute absorbed into GAC",
         )
 
-        ###############################################################################
+        # ---------------------------------------------------------------------
         # TODO: Support mole or mass based property packs
         @self.Constraint(
             self.flowsheet().config.time,
@@ -294,7 +294,7 @@ class GACData(UnitModelBlockData):
         )
         def eq_mass_transfer_solute(b, t, j):
             return (
-                b.amt_solute_absorb[t, "Liq", j]
+                b.solute_absorb[t, "Liq", j]
                 == -b.treatwater.mass_transfer_term[t, "Liq", j]
             )
 
@@ -304,7 +304,8 @@ class GACData(UnitModelBlockData):
             doc="No mass transfer of solvents",
         )
         def eq_mass_transfer_solvent(b, t, j):
-            return b.treatwater.mass_transfer_term[t, "Liq", j] == 1e-8  #
+            return b.treatwater.mass_transfer_term[t, "Liq", j] == 0
+            # will set to flow_mol_phase_comp.lb of 1e-8
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -387,11 +388,12 @@ class GACData(UnitModelBlockData):
         blk.treatwater.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
+    # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         # scaling for gac created variables
-        for (t, p, j), v in self.amt_solute_absorb.items():
+        for (t, p, j), v in self.solute_absorb.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
                     self.treatwater.properties_in[t].get_material_flow_terms(p, j)
@@ -400,19 +402,19 @@ class GACData(UnitModelBlockData):
 
         # transforming constraints
         for (t, j), c in self.eq_mass_transfer_solute.items():
-            sf = iscale.get_scaling_factor(self.amt_solute_absorb[t, "Liq", j])
+            sf = iscale.get_scaling_factor(self.solute_absorb[t, "Liq", j])
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, j), c in self.eq_mass_transfer_solvent.items():
-            sf = 1e-2
+            sf = 1
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, j), c in self.eq_mass_transfer_absorbed.items():
             if j in self.config.property_package.solute_set:
-                sf = iscale.get_scaling_factor(self.amt_solute_absorb[t, "Liq", j])
+                sf = iscale.get_scaling_factor(self.solute_absorb[t, "Liq", j])
                 iscale.constraint_scaling_transform(c, sf)
             if j in self.config.property_package.solvent_set:
-                sf = 1e-2
+                sf = 1
                 iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.treatwater.eq_isothermal.items():
