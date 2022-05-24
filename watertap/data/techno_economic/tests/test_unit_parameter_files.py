@@ -79,6 +79,7 @@ def test_unit_parameter_files(tech):
         "coag_and_floc",
         "constructed_wetlands",
         "deep_well_injection",
+        "electrochemical_nutrient_removal",
         "energy_recovery",
         "evaporation_pond",
         "filter_press",

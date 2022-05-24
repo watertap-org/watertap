@@ -14,7 +14,6 @@
 Tests for general zero-order property package
 """
 import pytest
-from io import StringIO
 import os
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
@@ -130,7 +129,7 @@ class TestSIDOR:
         assert len(model.fs.unit.solute_treated_equation) == 3
 
         assert isinstance(model.fs.unit.reaction_set, Set)
-        assert isinstance(model.fs.unit.generation_ratio, Param)
+        assert isinstance(model.fs.unit.generation_ratio, Var)
 
         assert isinstance(model.fs.unit.reaction_conversion, Var)
         assert isinstance(model.fs.unit.extent_of_reaction, Var)
@@ -293,37 +292,7 @@ class TestSIDOR:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                    : Value   : Fixed : Bounds
-    Reaction Extent [Rxn1] :  8.0000 : False : (None, None)
-    Reaction Extent [Rxn2] :  2.0000 : False : (None, None)
-        Solute Removal [A] : 0.50000 :  True : (0, None)
-        Solute Removal [B] : 0.40000 :  True : (0, None)
-        Solute Removal [C] :  0.0000 :  True : (0, None)
-            Water Recovery : 0.85000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                            Inlet  Treated  Byproduct
-    Volumetric Flowrate    1.0600 0.89947     0.16113
-    Mass Concentration H2O 943.40  943.30      929.25
-    Mass Concentration A   9.4340  1.1118      6.2062
-    Mass Concentration B   18.868  17.344      64.544
-    Mass Concentration C   28.302  38.245  6.2062e-13
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSIDORErrors:

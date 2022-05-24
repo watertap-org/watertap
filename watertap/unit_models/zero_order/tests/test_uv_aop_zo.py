@@ -14,7 +14,7 @@
 Tests for zero-order UV-AOP model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -161,45 +161,8 @@ class TestUVAOPZO_with_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value    : Fixed : Bounds
-                              Electricity Demand :   3605.0 : False : (0, None)
-                           Electricity Intensity :  0.10000 :  True : (None, None)
-                           Oxidant Dosage (mg/L) :   5.0000 :  True : (None, None)
-                             Oxidant Flow (kg/s) : 0.050070 : False : (0, None)
-                Solute Removal [cryptosporidium] :  0.99999 :  True : (0, None)
-                            Solute Removal [toc] :  0.17461 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :  0.99999 :  True : (0, None)
-                            Solute Removal [tss] :   0.0000 :  True : (0, None)
-                Solute Removal [viruses_enteric] :  0.96540 :  True : (0, None)
-          UV Reduced Equivalent Dosage (mJ/cm^2) :   100.00 :  True : (None, None)
-                        UV Transmittance of Feed :  0.90000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet    Treated 
-    Volumetric Flowrate                              10.014     10.005
-    Mass Concentration H2O                           998.60     999.53
-    Mass Concentration viruses_enteric             0.099860  0.0034581
-    Mass Concentration tss                          0.29958    0.29986
-    Mass Concentration toc                          0.19972    0.16500
-    Mass Concentration cryptosporidium              0.49930 5.4974e-06
-    Mass Concentration total_coliforms_fecal_ecoli  0.29958 1.7992e-06
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestUVAOPZO_subtype_no_default_removal:
@@ -334,43 +297,8 @@ class TestUVAOPZO_subtype_no_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value    : Fixed : Bounds
-                              Electricity Demand :   3604.0 : False : (0, None)
-                           Electricity Intensity :  0.10000 :  True : (None, None)
-                           Oxidant Dosage (mg/L) :   5.0000 :  True : (None, None)
-                             Oxidant Flow (kg/s) : 0.050055 : False : (0, None)
-                Solute Removal [cryptosporidium] :  0.99999 :  True : (0, None)
-                            Solute Removal [toc] :  0.17461 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :  0.99999 :  True : (0, None)
-                Solute Removal [viruses_enteric] :  0.96540 :  True : (0, None)
-          UV Reduced Equivalent Dosage (mJ/cm^2) :   100.00 :  True : (None, None)
-                        UV Transmittance of Feed :  0.90000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet    Treated 
-    Volumetric Flowrate                              10.011     10.002
-    Mass Concentration H2O                           998.90     999.83
-    Mass Concentration viruses_enteric             0.099890  0.0034591
-    Mass Concentration toc                          0.19978    0.16505
-    Mass Concentration cryptosporidium              0.49945 5.4991e-06
-    Mass Concentration total_coliforms_fecal_ecoli  0.29967 1.7997e-06
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

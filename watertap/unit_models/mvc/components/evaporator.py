@@ -366,16 +366,18 @@ class EvaporatorData(UnitModelBlockData):
     ):
         """
         General wrapper for pressure changer initialization routines
-        Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
+
+        Args:
+            state_args: a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating which solver to use during
+            outlvl: sets output level of initialization routine
+            optarg: solver options dictionary object (default=None)
+            solver: str indicating which solver to use during
                      initialization (default = None)
-        Returns: None
+        Returns:
+            None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -460,8 +462,10 @@ class EvaporatorData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         var_dict = {
             "Heat transfer": self.feed_side.heat_transfer,
-            "Evaporator temperature": self.feed_side.properties_brine[0].temperature,
-            "Evaporator pressure": self.feed_side.properties_brine[0].pressure,
+            "Evaporator temperature": self.feed_side.properties_brine[
+                time_point
+            ].temperature,
+            "Evaporator pressure": self.feed_side.properties_brine[time_point].pressure,
         }
 
         return {"vars": var_dict}
