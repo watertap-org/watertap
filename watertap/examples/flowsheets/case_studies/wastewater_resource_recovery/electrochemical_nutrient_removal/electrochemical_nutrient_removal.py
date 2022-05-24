@@ -28,6 +28,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.unit_models import Product
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -36,6 +37,7 @@ from watertap.unit_models.zero_order import (
     FeedZO,
     ElectroNPZO,
 )
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 
 def main():
@@ -45,16 +47,13 @@ def main():
     assert_units_consistent(m)
     initialize_system(m)
 
-    results = solve(m)
-    assert_optimal_termination(results)
+    solve(m)
 
     display_results(m)
 
-    # add_costing(m)
-    # m.fs.costing.initialize()
-    #
-    # results = solve(m)
-    # assert_optimal_termination(results)
+    add_costing(m)
+
+    solve(m)
     # display_costing(m)
     return m
 
@@ -108,6 +107,27 @@ def set_operating_conditions(m):
 
     # electroNP
     m.fs.electroNP.load_parameters_from_database(use_default_removal=True)
+
+
+def add_costing(m):
+    # yaml file path
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "case_1617.yaml",
+    )
+
+    # add costing block
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    m.fs.electroNP.costing = UnitModelCostingBlock(**costing_kwargs)
+
+    m.fs.costing.cost_process()
+    # TODO- verify flow basis for electricity intensity and LCOW
+    m.fs.costing.add_electricity_intensity(m.fs.product_struvite.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product_struvite.properties[0].flow_vol)
+
+    # initialize
+    m.fs.costing.initialize()
 
 
 def initialize_system(m):
