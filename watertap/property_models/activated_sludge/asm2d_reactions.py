@@ -41,7 +41,7 @@ from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 
@@ -81,7 +81,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         # R14: Anoxic growth of X_PAO
         # R15: Lysis of X_PAO
         # R16: Lysis of X_PP
-        # R17: Lysis of X_PAH
+        # R17: Lysis of X_PHA
         # R18: Aerobic growth of X_AUT
         # R19: Lysis of X_AUT
         # R20: Precipitation
@@ -955,7 +955,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             ("R20", "Liq", "X_PP"): 0,
             ("R20", "Liq", "X_S"): 0,
             ("R20", "Liq", "X_TSS"): 1.42,
-            # R21: Re-disolution
+            # R21: Re-dissolution
             ("R21", "Liq", "H2O"): 0,
             ("R21", "Liq", "S_A"): 0,
             ("R21", "Liq", "S_F"): 0,
@@ -1516,7 +1516,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             self.rate_expression = pyo.Constraint(
                 self.params.rate_reaction_idx,
                 rule=rate_expression_rule,
-                doc="ASM1 rate expressions",
+                doc="ASM2d rate expressions",
             )
 
         except AttributeError:

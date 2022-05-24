@@ -38,7 +38,7 @@ from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 

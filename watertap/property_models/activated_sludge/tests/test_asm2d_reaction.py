@@ -385,7 +385,7 @@ class TestAerobic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(EPS * units.mg / units.liter)
 
         # Alkalinity was givien in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(60 / 12 * units.mmol / units.liter)
+        m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1333 * units.m**3)
 
@@ -423,10 +423,10 @@ class TestAerobic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            13.357e-3, rel=1e-4
+            13.434e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            23.516e-3, rel=1e-4
+            23.541e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -435,7 +435,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.575e-3, rel=1e-4
+            15.630e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -444,16 +444,16 @@ class TestAerobic:
             2e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.4864e-3, rel=1e-4
+            3.4931e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            42.208e-3, rel=1e-4
+            42.134e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            25.121e-3, rel=1e-4
+            25.122e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
             0, abs=1e-4
@@ -471,13 +471,13 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            117.73e-3, rel=1e-4
+            117.76e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            5.6619e-3, rel=1e-4
+            5.5807e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            5.0858e-3, rel=1e-4
+            5.1753e-3, rel=1e-4
         )
 
 
@@ -529,7 +529,7 @@ class TestAnoxic:
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(100 * units.mg / units.liter)
 
         # Alkalinity was givien in mg/L based on C
-        m.fs.R1.inlet.alkalinity[0].fix(60 / 12 * units.mmol / units.liter)
+        m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)
 
@@ -619,5 +619,5 @@ class TestAnoxic:
             98.505e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            5.0082e-3, rel=1e-4
+            5.0916e-3, rel=1e-4
         )
