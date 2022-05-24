@@ -31,6 +31,7 @@ from idaes.generic_models.unit_models import Product
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
+from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.unit_models.zero_order import (
     FeedZO,
     ElectroNPZO,
@@ -39,8 +40,8 @@ from watertap.unit_models.zero_order import (
 
 def main():
     m = build()
-    # set_operating_conditions(m)
-    # assert_degrees_of_freedom(m,0)
+    set_operating_conditions(m)
+    assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
     return m
 
@@ -80,12 +81,14 @@ def build():
 def set_operating_conditions(m):
     # feed
     flow_vol = 37.9 / 3600 * pyunits.m**3 / pyunits.s
-    conc_n = 715 * pyunits.kg / pyunits.m**3
-    conc_p = 715 * pyunits.kg / pyunits.m**3
+    conc_nitrogen = 0.715 * pyunits.kg / pyunits.m**3
+    conc_phosphorus = 0.715 * pyunits.kg / pyunits.m**3
+    conc_struvite = 0 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
-    m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_n)
-    m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_p)
+    m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_nitrogen)
+    m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_phosphorus)
+    m.fs.feed.conc_mass_comp[0, "struvite"].fix(conc_struvite)
     solve(m.fs.feed)
 
     # electroNP
@@ -106,6 +109,12 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
+
+
+def display_results(m):
+    unit_list = ["feed", "permeate1", "retentate1", "nanofiltration"]
+    for u in unit_list:
+        m.fs.component(u).report()
 
 
 if __name__ == "__main__":
