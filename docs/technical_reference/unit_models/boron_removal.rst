@@ -72,7 +72,7 @@ the user must specify.
    "Fluid pressure", ":math:`P`", "pressure", "[t]", ":math:`\text{Pa}`"
    "Molar flowrate of components", ":math:`M_j`", "flow_mol_phase_comp", "[t, 'Liq', j]", ":math:`\text{mol/s}`"
    "Caustic Chemical Dose Rate", ":math:`S_{caustic}`", "caustic_dose_rate", "[t]", ":math:`\text{kg/s}`"
-   "Reactor Volume", ":math:`V`", "reactor_volume", "None", ":math:`\text{m \ :sup:`3`}`"
+   "Reactor Volume", ":math:`V`", "reactor_volume", "None", ":math:`\text{m}^{3}`"
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
 
