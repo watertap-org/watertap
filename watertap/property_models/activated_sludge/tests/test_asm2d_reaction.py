@@ -410,14 +410,12 @@ class TestAerobic:
         solver = get_solver()
         results = solver.solve(model, tee=True)
         assert check_optimal_termination(results)
-        assert False
 
     @pytest.mark.component
     def test_solution(self, model):
         # EXPOsan calculations appear to be slightly off from this implementation
         # It is supected that this is due ot an error in the EXPOsan stoichiometric
         # coefficient for alkalinity
-        model.fs.R1.report()
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
