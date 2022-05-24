@@ -17,7 +17,7 @@ import pytest
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-from pyomo.environ import ConcreteModel, Var
+from pyomo.environ import ConcreteModel, Var, units as pyunits
 
 from watertap.core import ZeroOrderBaseData
 from watertap.core import WaterParameterBlock
@@ -433,7 +433,14 @@ class TestZOBase:
                 "Mass Concentration C": pytest.approx(250.000, rel=1e-4),
                 "Mass Concentration H2O": pytest.approx(250.000, rel=1e-4),
                 "Volumetric Flowrate": pytest.approx(0.004, rel=1e-4),
-            }
+            },
+            "Units": {
+                "Mass Concentration A": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration B": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration C": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration H2O": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/s"),
+            },
         }
 
         assert stable.to_dict() == expected
