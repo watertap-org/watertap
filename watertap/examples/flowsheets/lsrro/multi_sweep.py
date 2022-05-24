@@ -24,16 +24,6 @@ from pyomo.environ import (
 )
 
 
-# TODO:
-# -change number of nodes for 1DRO (finite_elements argument in 1dro) in LSRRO flowsheet (lssro_paper_analysis.py) from 3 to at least 10
-#       - higher than 10 nodes if not computationally problematic on cluster
-# - decide number of steps we want for sweep parameters
-# - BONUS: add separate case without concentration polarization (just set argument `has_CP=False`) for SI?
-# - add cases for sensitivity analyses
-# - mention biggest change to flowsheet IN CASE issues arise in broader sweep--> added another pressure exchanger to first stage
-# - anything else?
-
-
 def lsrro_presweep(
     number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
 ):
@@ -63,8 +53,6 @@ def run_case(number_of_stages, nx):
     m = lsrro_presweep(number_of_stages=number_of_stages)
 
     # Sweep parameters ------------------------------------------------------------------------
-    # don't think we want to sweep stages unless we modify flowsheet and have a mutable parameter that links to all Stage Sets
-    # sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8)
 
     sweep_params["Feed Concentration"] = LinearSample(
         m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"], 5, 250, nx
@@ -73,9 +61,6 @@ def run_case(number_of_stages, nx):
     sweep_params["Volumetric Recovery Rate"] = LinearSample(
         m.fs.water_recovery, 0.3, 0.9, nx
     )
-
-    # Checking sweep on max LSRRO stage pressure
-    # sweep_params['Max LSRRO Pressure'] = LinearSample(m.fs.lsrro_max_pressure, 40e5, 125e5, nx)
 
     output_filename = f"param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv"
 
@@ -361,11 +346,6 @@ def run_case(number_of_stages, nx):
         outputs,
         csv_results_file_name=output_filename,
         optimize_function=lsrro_case.solve,
-        # optimize_kwargs={'solver': None, 'tee': True, 'raise_on_failure': True},
-        # reinitialize_function=lsrro_case.initialize,
-        # reinitialize_kwargs={'verbose': True, 'solver': None},
-        # reinitialize_before_sweep=True,
-        debugging_data_dir=os.path.split(output_filename)[0] + "/local",
         interpolate_nan_outputs=True,
     )
 
