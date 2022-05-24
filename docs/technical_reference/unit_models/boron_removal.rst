@@ -57,13 +57,12 @@ Sets
 
 **Users can name the 'Components' however they want, but they must also provide the unit model with a mapping of component names to an associated state variable name used in the property package**
 
-**State variables must have 'H2O', 'Boron', and 'Borate'. All other components are optional**
+**State variables must have 'H2O', 'Boron', 'Borate', and 'Caustic_Cation'. All other components are optional**
 
 Degrees of Freedom and Variables
 --------------------------------
 Aside from the inlet feed state variables (i.e., temperature, pressure, component molar flowrates),
-
-the boron removal model has 1 additional degree of freedom that
+the boron removal model has 2 additional degree of freedoms that
 the user must specify.
 
 .. csv-table::
@@ -72,7 +71,8 @@ the user must specify.
    "Fluid temperature", ":math:`T`", "temperature", "[t]", ":math:`\text{K}`"
    "Fluid pressure", ":math:`P`", "pressure", "[t]", ":math:`\text{Pa}`"
    "Molar flowrate of components", ":math:`M_j`", "flow_mol_phase_comp", "[t, 'Liq', j]", ":math:`\text{mol/s}`"
-   "Caustic Chemical Dose", ":math:`D`", "caustic_dose", "[t]", ":math:`\text{mg/L}`"
+   "Caustic Chemical Dose Rate", ":math:`S_{caustic}`", "caustic_dose_rate", "[t]", ":math:`\text{kg/s}`"
+   "Reactor Volume", ":math:`V`", "reactor_volume", "None", ":math:`\text{m \ :sup:`3`}`"
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
 
@@ -84,13 +84,20 @@ Chemical Dosing Parameters
 In addition to providing and fixing values for the caustic additive, the users will
 need to provide a dictionary that maps specific species names from a property package
 to Boron, Borate, protons (optional), hydroxides (optional), and the cation from the
-caustic additive (optional). These are needed to establish the appropriate changes in
+caustic additive (required). These are needed to establish the appropriate changes in
 the molar flow rate of each of these components and which variable they would apply to
 from the property package. Users may also optionally provide a specific name to the
 caustic chemical being added and are required to provide the molecular weight of the
-caustic additive, as well as the charge of the cation produced when the additive will
-dissociate (i.e., if the additive is NaOH, then the cation it dissociates into is
-Na\ :sup:`+`\ and it has a charge of 1).
+caustic additive, as well as the moles of cations produced when the additive will
+dissociate
+
+Example
+^^^^^^^
+If the additive is NaOH, then the moles of
+Na\ :sup:`+`\ produced from dissociation is 1. Thus, the
+'moles_cation_per_additive' would be 1.
+
+i.e., 1 NaOH --> 1 Na\ :sup:`+`\ + 1 OH\ :sup:`-`
 
 To provide this information to the unit model, users must add a 'chemical_mapping_data'
 dictionary to the initialization of the unit model. That dictionary must have the
@@ -107,9 +114,9 @@ following format.
                   'caustic_additive':
                   {
                     'additive_name': 'name_of_the_actual_chemical', #[is optional]
-                    'cation_name': 'name_of_cation_species_in_additive', #[is optional]
+                    'cation_name': 'name_of_cation_species_in_additive', #[is required]
                     'mw_additive': (value, units), #[is required]
-                    'charge_additive': value, #[is required]
+                    'moles_cation_per_additive': value, #[is required]
                   }
                }
 
@@ -135,8 +142,7 @@ textbook (see References below).
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions} - n_{caustic}*C_{caustic_added}`"
-
+   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions}`"
 
    "Residual Ions Expression", ":math:`Res_{ions} = -{\sum_{i} n_i \cdotp C_{out,i} }`"
 
@@ -148,11 +154,9 @@ textbook (see References below).
 
    "Component (for Boron, Borate, Protons, and Hydroxide) mass balance", ":math:`0 = - M_{out,i} + C_{out,i} \cdotp Q`"
 
-   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic_added}`"
+   "Caustic cation mass balance", ":math:`0 = M_{caustic,in} - M_{caustic,out} + S_{caustic}`"
 
-
-
-   "Caustic cation gain rate", ":math:`S_{caustic_added} = Q \cdotp \frac{D}{MW}`"
+   "Reactor Volume", ":math:`V = Q \cdotp \theta`"
 
 
 
@@ -160,12 +164,13 @@ textbook (see References below).
 
 **NOTE:** :math:`C_{p,H}` **is the proton concentration,** :math:`C_{p,OH}` **is the hydroxide concentration,** :math:`C_{p,A}` **is the Borate concentration, and** :math:`C_{p,HA}` **is the Boron concentration.** :math:`p` **represents either in or out**
 
-
 **NOTE:** :math:`n_{i}` **is ion charge of component** :math:`i`
 
 **NOTE:** :math:`C_{in,i}` **is the concentration from the inlet stream and** :math:`C_{out,i}` **is the resulting concentration in the outlet stream**
 
 **NOTE:** :math:`Res_{ions}` **is the sum over all ions that are not hydroxide or borate ions (which are already included in the electroneutrality balance) that are needed to enforce electroneutrality**
+
+**NOTE:** :math:`\theta` **is the hydraulic retention time for the reactor**
 
 
 References
