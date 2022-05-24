@@ -14,7 +14,7 @@
 Tests for zero-order Ozone/AOP model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -199,52 +199,8 @@ class TestOzoneAOPZO_with_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
-                             Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
-                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
-                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
-                        Ozone Contact Time (min) :  1.0000 :  True : (None, None)
-                         Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
-                  Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
-                    Ozone Unit Power Demand (kW) :  49609. : False : (0, None)
-                                 Ozone/TOC Ratio :  1.0001 : False : (None, None)
-                Solute Removal [cryptosporidium] : 0.29479 :  True : (0, None)
-                            Solute Removal [eeq] : 0.98943 :  True : (0, None)
-                Solute Removal [giardia_lamblia] : 0.90324 :  True : (0, None)
-                            Solute Removal [toc] : 0.72830 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99723 :  True : (0, None)
-                            Solute Removal [tss] :  0.0000 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99723 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet  Treated
-    Volumetric Flowrate                            0.10700  0.10209
-    Mass Concentration H2O                          934.58   979.53
-    Mass Concentration cryptosporidium              9.3458   6.9078
-    Mass Concentration toc                          9.3458   2.6613
-    Mass Concentration giardia_lamblia              9.3458  0.94780
-    Mass Concentration eeq                          9.3458  0.10350
-    Mass Concentration total_coliforms_fecal_ecoli  9.3458 0.027182
-    Mass Concentration viruses_enteric              9.3458 0.027182
-    Mass Concentration tss                          9.3458   9.7953
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestOzoneAOPZO_w_o_default_removal:
@@ -402,50 +358,8 @@ class TestOzoneAOPZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
-                             Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
-                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
-                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
-                        Ozone Contact Time (min) :  1.0000 :  True : (None, None)
-                         Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
-                  Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
-                    Ozone Unit Power Demand (kW) :  49609. : False : (0, None)
-                                 Ozone/TOC Ratio :  1.0001 : False : (None, None)
-                Solute Removal [cryptosporidium] : 0.29479 :  True : (0, None)
-                            Solute Removal [eeq] : 0.98943 :  True : (0, None)
-                Solute Removal [giardia_lamblia] : 0.90324 :  True : (0, None)
-                            Solute Removal [toc] : 0.72830 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99723 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99723 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet  Treated
-    Volumetric Flowrate                            0.10700  0.10119
-    Mass Concentration H2O                          934.58   988.27
-    Mass Concentration cryptosporidium              9.3458   6.9694
-    Mass Concentration toc                          9.3458   2.6851
-    Mass Concentration giardia_lamblia              18.692   1.9125
-    Mass Concentration eeq                          9.3458  0.10442
-    Mass Concentration total_coliforms_fecal_ecoli  9.3458 0.027425
-    Mass Concentration viruses_enteric              9.3458 0.027425
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

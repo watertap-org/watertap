@@ -11,9 +11,8 @@
 #
 ###############################################################################
 import pytest
-from io import StringIO
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -63,28 +62,26 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.compressor.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.compressor                                                       Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
+    assert pytest.approx(1.1534e5, rel=1e-4) == value(
+        m.fs.compressor.control_volume.work[0]
+    )
+    assert pytest.approx(1e-08, rel=1e-4) == value(
+        m.fs.compressor.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(1.0, rel=1e-4) == value(
+        m.fs.compressor.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+    )
+    assert pytest.approx(429.57, rel=1e-4) == value(
+        m.fs.compressor.outlet.temperature[0]
+    )
+    assert pytest.approx(1.0e5, rel=1e-4) == value(m.fs.compressor.outlet.pressure[0])
 
-    Variables: 
-
-    Key            : Value      : Fixed : Bounds
-        Efficiency :    0.80000 :  True : (1e-08, 1)
-    Pressure ratio :     2.0000 :  True : (1, 10)
-              Work : 1.1534e+05 : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                           Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08 1.0000e-08
-    flow_mass_phase_comp ('Vap', 'H2O')     1.0000     1.0000
-    temperature                             350.00     429.57
-    pressure                                50000. 1.0000e+05
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    m.fs.compressor.report()
+    perf_dict = m.fs.compressor._get_performance_contents()
+    assert perf_dict == {
+        "vars": {
+            "Pressure ratio": m.fs.compressor.pressure_ratio,
+            "Efficiency": m.fs.compressor.efficiency,
+            "Work": m.fs.compressor.control_volume.work[0],
+        }
+    }
