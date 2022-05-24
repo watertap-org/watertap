@@ -13,3 +13,4 @@ Unit Models
    coag_floc_model
    crystallizer_0D
    boron_removal
+   electrodialysis_0D
