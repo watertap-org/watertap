@@ -59,8 +59,8 @@ def build():
 
     # components
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.permeate = Product(default={"property_package": m.fs.prop})
-    m.fs.retentate = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_struvite = Product(default={"property_package": m.fs.prop})
     m.fs.electroNP = ElectroNPZO(
         default={
             "property_package": m.fs.prop,
@@ -70,8 +70,10 @@ def build():
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.electroNP.inlet)
-    m.fs.s02 = Arc(source=m.fs.electroNP.treated, destination=m.fs.permeate.inlet)
-    m.fs.s03 = Arc(source=m.fs.electroNP.byproduct, destination=m.fs.retentate.inlet)
+    m.fs.s02 = Arc(source=m.fs.electroNP.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s03 = Arc(
+        source=m.fs.electroNP.byproduct, destination=m.fs.product_struvite.inlet
+    )
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -114,7 +116,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    unit_list = ["feed", "permeate", "retentate", "electroNP"]
+    unit_list = ["feed", "product_H2O", "product_struvite", "electroNP"]
     for u in unit_list:
         m.fs.component(u).report()
 
