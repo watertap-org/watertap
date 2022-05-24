@@ -206,9 +206,9 @@ class BoronRemovalData(UnitModelBlockData):
             'caustic_additive':
                 {
                     'additive_name': 'name_of_the_actual_chemical', #[is optional]
-                    'cation_name': 'name_of_cation_species_in_additive', #[is optional]
+                    'cation_name': 'name_of_cation_species_in_additive', #[is required]
                     'mw_additive': (value, units), #[is required]
-                    'charge_additive': value, #[is required]
+                    'moles_cation_per_additive': value, #[is required]
                 },
             }
 
@@ -244,7 +244,7 @@ class BoronRemovalData(UnitModelBlockData):
             + "     {'additive_name': 'NaOH',                    #[is OPTIONAL]\n"
             + "      'cation_name': 'Na_+',                      #[is required]\n"
             + "      'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]\n"
-            + "      'charge_additive': 1,                       #[is required]\n"
+            + "      'moles_cation_per_additive': 1,             #[is required]\n"
             + "     }, \n"
             + "}\n\n"
         )
@@ -267,7 +267,7 @@ class BoronRemovalData(UnitModelBlockData):
             )
         if (
             "mw_additive" not in self.config.chemical_mapping_data["caustic_additive"]
-            or "charge_additive"
+            or "moles_cation_per_additive"
             not in self.config.chemical_mapping_data["caustic_additive"]
             or "cation_name"
             not in self.config.chemical_mapping_data["caustic_additive"]
@@ -397,31 +397,31 @@ class BoronRemovalData(UnitModelBlockData):
             from_units=self.config.chemical_mapping_data["caustic_additive"][
                 "mw_additive"
             ][1],
-            to_units=pyunits.mg / pyunits.mol,
+            to_units=pyunits.kg / pyunits.mol,
         )
         self.caustic_mw = Param(
             mutable=True,
             initialize=mw_add,
             domain=NonNegativeReals,
-            units=pyunits.mg / pyunits.mol,
+            units=pyunits.kg / pyunits.mol,
             doc="Molecular weight of the caustic additive",
         )
-        self.caustic_cation_charge = Param(
+        self.additive_molar_ratio = Param(
             mutable=True,
             initialize=self.config.chemical_mapping_data["caustic_additive"][
-                "charge_additive"
+                "moles_cation_per_additive"
             ],
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Charge of the caustic additive",
+            doc="Moles of cation per moles of caustic additive",
         )
-        self.caustic_dose = Var(
+        self.caustic_dose_rate = Var(
             self.flowsheet().config.time,
             initialize=0,
             bounds=(0, None),
             domain=NonNegativeReals,
-            units=pyunits.mg / pyunits.L,
-            doc="Dosages of the set of caustic additive",
+            units=pyunits.kg / pyunits.s,
+            doc="Dosage rate of the set of caustic additive",
         )
 
         # Reaction parameters
@@ -700,14 +700,11 @@ class BoronRemovalData(UnitModelBlockData):
                 loss_rate = input_rate - exit_rate
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.cation_name_id:
-                c_out = pyunits.convert(
-                    self.caustic_dose[t] / self.caustic_mw,
-                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                dose_rate = pyunits.convert(
+                    self.caustic_dose_rate[t] / self.caustic_mw * self.additive_molar_ratio,
+                    to_units=units_meta("amount") / units_meta("time"),
                 )
-                exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase[p] * c_out
-                )
-                return self.control_volume.mass_transfer_term[t, p, j] == exit_rate
+                return self.control_volume.mass_transfer_term[t, p, j] == dose_rate
             else:
                 return self.control_volume.mass_transfer_term[t, p, j] == 0.0
 
@@ -1050,9 +1047,9 @@ class BoronRemovalData(UnitModelBlockData):
         self.propogate_initial_state()
 
         # Add scaling for unit model vars (with user input)
-        if iscale.get_scaling_factor(self.caustic_dose) is None:
-            sf = iscale.get_scaling_factor(self.caustic_dose, default=1, warning=True)
-            iscale.set_scaling_factor(self.caustic_dose, sf)
+        if iscale.get_scaling_factor(self.caustic_dose_rate) is None:
+            sf = iscale.get_scaling_factor(self.caustic_dose_rate, default=1e4, warning=True)
+            iscale.set_scaling_factor(self.caustic_dose_rate, sf)
 
         # Add scaling for unit model vars (without user input)
         if iscale.get_scaling_factor(self.conc_mol_Boron) is None:

@@ -83,7 +83,7 @@ solver = get_solver()
 # Helper function for multiple test setup
 def model_setup(
     m,
-    chem_add=10,
+    chem_add=1.8e-5,
     state={
         "H2O": 100,
         "H_+": 1e-7,
@@ -101,7 +101,7 @@ def model_setup(
         idx = (0, "Liq", j)
         if idx in m.fs.unit.inlet.flow_mol_phase_comp:
             m.fs.unit.inlet.flow_mol_phase_comp[idx].fix(state[j])
-    m.fs.unit.caustic_dose.fix(chem_add)
+    m.fs.unit.caustic_dose_rate.fix(chem_add)
 
 
 # Helper function to automate scaling
@@ -160,7 +160,7 @@ class TestBoronRemoval_IonPropPack_Min:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         m.fs.unit = BoronRemoval(
@@ -190,8 +190,8 @@ class TestBoronRemoval_IonPropPack_Min:
         assert hasattr(m.fs.unit, "control_volume")
 
         assert isinstance(m.fs.unit.caustic_mw, Param)
-        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
-        assert isinstance(m.fs.unit.caustic_dose, Var)
+        assert isinstance(m.fs.unit.additive_molar_ratio, Param)
+        assert isinstance(m.fs.unit.caustic_dose_rate, Var)
 
         assert isinstance(m.fs.unit.Kw_0, Param)
         assert isinstance(m.fs.unit.dH_w, Param)
@@ -233,12 +233,12 @@ class TestBoronRemoval_IonPropPack_Min:
         #   exit flow of boron (see below). We will initially
         #   guess that we want 5 mg/L of additive, but the
         #   actual solution is 10 mg/L.
-        model_setup(m, chem_add=5, state=state)
+        model_setup(m, chem_add=0.9e-5, state=state)
 
         # Modified this test to fix the desired outlet flow
         #   of Boron and unfix the dosage needed to get that outlet
         m.fs.unit.outlet.flow_mol_phase_comp[(0, "Liq", "B[OH]3")].fix(1.98677e-5)
-        m.fs.unit.caustic_dose.unfix()
+        m.fs.unit.caustic_dose_rate.unfix()
 
         assert degrees_of_freedom(m) == 0
 
@@ -299,7 +299,7 @@ class TestBoronRemoval_IonPropPack_Min:
         ) == pytest.approx(1.81133e-4, rel=1e-4)
         assert value(m.fs.unit.outlet_pH()) == pytest.approx(10.171, rel=1e-4)
         assert value(m.fs.unit.outlet_pOH()) == pytest.approx(3.8257, rel=1e-4)
-        assert value(m.fs.unit.caustic_dose[0].value) == pytest.approx(10, rel=1e-4)
+        assert value(m.fs.unit.caustic_dose_rate[0].value) == pytest.approx(1.8e-5, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
@@ -332,7 +332,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         m.fs.unit = BoronRemoval(
@@ -362,8 +362,8 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
         assert hasattr(m.fs.unit, "control_volume")
 
         assert isinstance(m.fs.unit.caustic_mw, Param)
-        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
-        assert isinstance(m.fs.unit.caustic_dose, Var)
+        assert isinstance(m.fs.unit.additive_molar_ratio, Param)
+        assert isinstance(m.fs.unit.caustic_dose_rate, Var)
 
         assert isinstance(m.fs.unit.Kw_0, Param)
         assert isinstance(m.fs.unit.dH_w, Param)
@@ -391,7 +391,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
         assert degrees_of_freedom(m) == 8
 
         # set the variables
-        model_setup(m, chem_add=100)
+        model_setup(m, chem_add=1.8e-4)
 
         assert degrees_of_freedom(m) == 0
 
@@ -487,7 +487,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         m.fs.unit = BoronRemoval(
@@ -517,8 +517,8 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
         assert hasattr(m.fs.unit, "control_volume")
 
         assert isinstance(m.fs.unit.caustic_mw, Param)
-        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
-        assert isinstance(m.fs.unit.caustic_dose, Var)
+        assert isinstance(m.fs.unit.additive_molar_ratio, Param)
+        assert isinstance(m.fs.unit.caustic_dose_rate, Var)
 
         assert isinstance(m.fs.unit.Kw_0, Param)
         assert isinstance(m.fs.unit.dH_w, Param)
@@ -814,7 +814,7 @@ class TestBoronRemoval_GenPropPack:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is required]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         m.fs.unit = BoronRemoval(
@@ -844,8 +844,8 @@ class TestBoronRemoval_GenPropPack:
         assert hasattr(m.fs.unit, "control_volume")
 
         assert isinstance(m.fs.unit.caustic_mw, Param)
-        assert isinstance(m.fs.unit.caustic_cation_charge, Param)
-        assert isinstance(m.fs.unit.caustic_dose, Var)
+        assert isinstance(m.fs.unit.additive_molar_ratio, Param)
+        assert isinstance(m.fs.unit.caustic_dose_rate, Var)
 
         assert isinstance(m.fs.unit.Kw_0, Param)
         assert isinstance(m.fs.unit.dH_w, Param)
@@ -873,7 +873,7 @@ class TestBoronRemoval_GenPropPack:
         assert degrees_of_freedom(m) == 9
 
         # set the variables
-        model_setup(m, chem_add=1)
+        model_setup(m, chem_add=1.8e-6)
 
         assert degrees_of_freedom(m) == 0
 
@@ -956,7 +956,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = (
@@ -978,7 +978,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = (
@@ -1012,7 +1012,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = (
@@ -1035,7 +1035,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = (
@@ -1057,7 +1057,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Im_Batman",  # [is optional]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = (
@@ -1077,7 +1077,7 @@ class TestBoronRemoval_BadConfigs:
             "boron_name": "B[OH]3",  # [is required]
             "caustic_additive": {
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = "Missing some required information in 'chemical_mapping_data' "
@@ -1094,7 +1094,7 @@ class TestBoronRemoval_BadConfigs:
             "boron_name": "B[OH]3",  # [is required]
             "borate_name": "B[OH]4_-",  # [is required]
             "caustic_additive": {
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = "Missing some required information in 'chemical_mapping_data' "
@@ -1113,7 +1113,7 @@ class TestBoronRemoval_BadConfigs:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is required]
                 "mw_additive": 40,  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = "Did not provide a tuple for 'mw_additive' "
@@ -1363,7 +1363,7 @@ class TestBoronRemoval_BadConfigs_Generic:
             "caustic_additive": {
                 "cation_name": "Na_+",  # [is required]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
-                "charge_additive": 1,  # [is required]
+                "moles_cation_per_additive": 1,  # [is required]
             },
         }
         error_msg = "Property Package CANNOT contain 'inherent_reactions' "
