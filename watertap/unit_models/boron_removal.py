@@ -242,7 +242,7 @@ class BoronRemovalData(UnitModelBlockData):
             + " 'hydroxide_name': 'OH_-',  #[is OPTIONAL]\n"
             + " 'caustic_additive': \n"
             + "     {'additive_name': 'NaOH',                    #[is OPTIONAL]\n"
-            + "      'cation_name': 'Na_+',                      #[is OPTIONAL]\n"
+            + "      'cation_name': 'Na_+',                      #[is required]\n"
             + "      'mw_additive': (40, pyunits.g/pyunits.mol), #[is required]\n"
             + "      'charge_additive': 1,                       #[is required]\n"
             + "     }, \n"
@@ -268,6 +268,8 @@ class BoronRemovalData(UnitModelBlockData):
         if (
             "mw_additive" not in self.config.chemical_mapping_data["caustic_additive"]
             or "charge_additive"
+            not in self.config.chemical_mapping_data["caustic_additive"]
+            or "cation_name"
             not in self.config.chemical_mapping_data["caustic_additive"]
         ):
             raise ConfigurationError(
@@ -555,7 +557,7 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Electroneutrality condition",
         )
         def eq_electroneutrality(self, t):
-            Alk = 0
+            ResIons = 0
             for j in self.ion_charge:
                 conc = self.control_volume.properties_out[t].conc_mol_phase_comp[
                     "Liq", j
@@ -566,9 +568,9 @@ class BoronRemovalData(UnitModelBlockData):
                     or j == self.proton_name_id
                     or j == self.hydroxide_name_id
                 ):
-                    Alk += 0.0
+                    ResIons += 0.0
                 else:
-                    Alk += -self.ion_charge[j] * conc
+                    ResIons += -self.ion_charge[j] * conc
             conc_mol_H = pyunits.convert(
                 self.conc_mol_H[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
@@ -581,11 +583,8 @@ class BoronRemovalData(UnitModelBlockData):
                 self.conc_mol_Borate[t],
                 to_units=units_meta("amount") * units_meta("length") ** -3,
             )
-            mol_Base = pyunits.convert(
-                self.caustic_cation_charge * self.caustic_dose[t] / self.caustic_mw,
-                to_units=units_meta("amount") * units_meta("length") ** -3,
-            )
-            return conc_mol_H == conc_mol_OH + conc_mol_Borate + Alk - mol_Base
+
+            return conc_mol_H == conc_mol_OH + conc_mol_Borate + ResIons
 
         @self.Constraint(
             self.flowsheet().config.time,

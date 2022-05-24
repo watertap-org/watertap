@@ -137,11 +137,17 @@ class TestBoronRemoval_IonPropPack_Min:
         m.fs = FlowsheetBlock(default={"dynamic": False})
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
-            "solute_list": ["B[OH]3", "B[OH]4_-"],
-            "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
+            "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+"],
+            "mw_data": {
+                "H2O": 18e-3,
+                "B[OH]3": 61.83e-3,
+                "B[OH]4_-": 78.83e-3,
+                "Na_+": 23e-3,
+            },
             "charge": {
                 "B[OH]3": 0,
                 "B[OH]4_-": -1,
+                "Na_+": 1,
             },
         }
 
@@ -149,12 +155,12 @@ class TestBoronRemoval_IonPropPack_Min:
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
 
         map = {
-            "boron_name": "B[OH]3",
-            "borate_name": "B[OH]4_-",
+            "boron_name": "B[OH]3",  # [is required]
+            "borate_name": "B[OH]4_-",  # [is required]
             "caustic_additive": {
-                "additive_name": "NaOH",
-                "mw_additive": (40, pyunits.g / pyunits.mol),
-                "charge_additive": 1,
+                "cation_name": "Na_+",  # [is optional]
+                "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
+                "charge_additive": 1,  # [is required]
             },
         }
         m.fs.unit = BoronRemoval(
@@ -171,7 +177,7 @@ class TestBoronRemoval_IonPropPack_Min:
         m = min_boron_removal_model
 
         assert isinstance(m.fs.unit.ion_charge, Param)
-        assert len(m.fs.unit.ion_charge) == 1
+        assert len(m.fs.unit.ion_charge) == 2
 
         assert hasattr(m.fs.unit, "boron_name_id")
         assert hasattr(m.fs.unit, "borate_name_id")
@@ -210,15 +216,24 @@ class TestBoronRemoval_IonPropPack_Min:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 6
+        assert degrees_of_freedom(m) == 7
 
         # set the variables
+        state={
+            "H2O": 100,
+            "H_+": 1e-7,
+            "OH_-": 1e-7,
+            "B[OH]3": 2e-4,
+            "B[OH]4_-": 1e-6,
+            "Na_+": 1e-15,
+            "HCO3_-": 1e-4,
+        }
         # For this test, we don't actually know how much
         #   of the base to add. Instead, we have a target
         #   exit flow of boron (see below). We will initially
         #   guess that we want 5 mg/L of additive, but the
         #   actual solution is 10 mg/L.
-        model_setup(m, chem_add=5)
+        model_setup(m, chem_add=5, state=state)
 
         # Modified this test to fix the desired outlet flow
         #   of Boron and unfix the dosage needed to get that outlet
@@ -431,12 +446,12 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
 
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
-        ) == pytest.approx(6.71420e-7, rel=1e-4)
+        ) == pytest.approx(1.36911e-6, rel=1e-4)
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
-        ) == pytest.approx(2.00341e-4, rel=1e-4)
-        assert value(m.fs.unit.outlet_pH()) == pytest.approx(11.685, rel=1e-4)
-        assert value(m.fs.unit.outlet_pOH()) == pytest.approx(2.3108, rel=1e-4)
+        ) == pytest.approx(1.99642e-4, rel=1e-4)
+        assert value(m.fs.unit.outlet_pH()) == pytest.approx(11.375, rel=1e-4)
+        assert value(m.fs.unit.outlet_pOH()) == pytest.approx(2.6218, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
@@ -658,6 +673,33 @@ class TestBoronRemoval_GenPropPack:
                     },
                     # End parameter_data
                 },
+                "Na_+": {
+                    "type": Cation,
+                    "charge": 1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (23, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (
+                            55.2,
+                            pyunits.kmol * pyunits.m**-3,
+                        ),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
                 "OH_-": {
                     "type": Anion,
                     "charge": -1,
@@ -770,6 +812,7 @@ class TestBoronRemoval_GenPropPack:
             "proton_name": "H_+",  # [is optional]
             "hydroxide_name": "OH_-",  # [is optional]
             "caustic_additive": {
+                "cation_name": "Na_+",  # [is required]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
                 "charge_additive": 1,  # [is required]
             },
@@ -788,7 +831,7 @@ class TestBoronRemoval_GenPropPack:
         m = gen_boron_removal_model
 
         assert isinstance(m.fs.unit.ion_charge, Param)
-        assert len(m.fs.unit.ion_charge) == 3
+        assert len(m.fs.unit.ion_charge) == 4
 
         assert hasattr(m.fs.unit, "boron_name_id")
         assert hasattr(m.fs.unit, "borate_name_id")
@@ -827,7 +870,7 @@ class TestBoronRemoval_GenPropPack:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(m)
-        assert degrees_of_freedom(m) == 8
+        assert degrees_of_freedom(m) == 9
 
         # set the variables
         model_setup(m, chem_add=1)
@@ -871,12 +914,12 @@ class TestBoronRemoval_GenPropPack:
 
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.boron_name_id]
-        ) == pytest.approx(1.61991e-4, rel=1e-4)
+        ) == pytest.approx(1.20345e-4, rel=1e-4)
         assert value(
             m.fs.unit.outlet.flow_mol_phase_comp[0, "Liq", m.fs.unit.borate_name_id]
-        ) == pytest.approx(3.82806e-5, rel=1e-4)
-        assert value(m.fs.unit.outlet_pH()) == pytest.approx(8.5842, rel=1e-4)
-        assert value(m.fs.unit.outlet_pOH()) == pytest.approx(5.4121, rel=1e-4)
+        ) == pytest.approx(7.99268e-5, rel=1e-4)
+        assert value(m.fs.unit.outlet_pH()) == pytest.approx(9.0330, rel=1e-4)
+        assert value(m.fs.unit.outlet_pOH()) == pytest.approx(4.9633, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
@@ -1068,6 +1111,7 @@ class TestBoronRemoval_BadConfigs:
             "boron_name": "B[OH]3",  # [is required]
             "borate_name": "B[OH]4_-",  # [is required]
             "caustic_additive": {
+                "cation_name": "Na_+",  # [is required]
                 "mw_additive": 40,  # [is required]
                 "charge_additive": 1,  # [is required]
             },
@@ -1130,6 +1174,33 @@ class TestBoronRemoval_BadConfigs_Generic:
                     # Parameter data is always associated with the methods defined above
                     "parameter_data": {
                         "mw": (1, pyunits.g / pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (
+                            55.2,
+                            pyunits.kmol * pyunits.m**-3,
+                        ),
+                        "cp_mol_liq_comp_coeff": (
+                            75.312,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),
+                        "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                        "entr_mol_form_liq_comp_ref": (
+                            0,
+                            pyunits.J / pyunits.K / pyunits.mol,
+                        ),
+                    },
+                    # End parameter_data
+                },
+                "Na_+": {
+                    "type": Cation,
+                    "charge": 1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (23, pyunits.g / pyunits.mol),
                         "dens_mol_liq_comp_coeff": (
                             55.2,
                             pyunits.kmol * pyunits.m**-3,
@@ -1290,6 +1361,7 @@ class TestBoronRemoval_BadConfigs_Generic:
             "boron_name": "B[OH]3",  # [is required]
             "borate_name": "B[OH]4_-",  # [is required]
             "caustic_additive": {
+                "cation_name": "Na_+",  # [is required]
                 "mw_additive": (40, pyunits.g / pyunits.mol),  # [is required]
                 "charge_additive": 1,  # [is required]
             },
