@@ -69,8 +69,8 @@ _results_headers = {
     "membrane_agg_costs": "fs.costing.membrane_aggregate_lcow",
 }
 
-_csv_files = glob.glob(
-    os.path.join(_this_file_path, "paper_analysis_baselines", "*.csv")
+_csv_files = sorted(
+    glob.glob(os.path.join(_this_file_path, "paper_analysis_baselines", "*.csv"))
 )
 
 _dfs = {os.path.basename(csv_file): pd.read_csv(csv_file) for csv_file in _csv_files}
