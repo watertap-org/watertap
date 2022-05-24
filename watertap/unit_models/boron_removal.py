@@ -574,11 +574,11 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Reactor volume constraint",
         )
         def eq_reactor_volume(self, t):
-            return (
-                self.reactor_volume
-                == self.control_volume.properties_out[t].flow_vol_phase["Liq"]
-                * self.reactor_retention_time[t]
+            Q = pyunits.convert(
+                self.control_volume.properties_out[t].flow_vol_phase["Liq"],
+                to_units=pyunits.m**3 / pyunits.s,
             )
+            return self.reactor_volume == Q * self.reactor_retention_time[t]
 
         # Constraints for mass transfer terms
         @self.Constraint(
