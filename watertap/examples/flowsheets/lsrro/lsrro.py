@@ -361,7 +361,7 @@ def build(
                                             / sum(
                                                 m.fs.product.flow_mass_phase_comp[
                                                     0, "Liq", j
-                                                ].value
+                                                ]
                                                 for j in ["H2O", "NaCl"]
                                             )
                                         )

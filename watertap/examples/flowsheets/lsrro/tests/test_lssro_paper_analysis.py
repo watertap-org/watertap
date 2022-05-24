@@ -87,15 +87,23 @@ def test_against_paper_analysis(csv_file, row_index):
         for property_name, (converter, argument) in _input_headers.items()
     }
     number_of_stages = input_arguments["number_of_stages"]
-    model, results = run_lsrro_case(**input_arguments)
+    model, results = run_lsrro_case(
+        **input_arguments,
+        has_NaCl_solubility_limit=True,
+        permeate_quality_limit=1000e-6,
+        has_calculated_concentration_polarization=True,
+        has_calculated_ro_pressure_drop=True,
+        A_value=5 / 3.6e11,
+        B_max=None,
+        number_of_RO_finite_elements=10
+    )
 
     if check_optimal_termination(results):
         for property_name, flowsheet_attribute in _results_headers.items():
-            assert pytest.approx(
-                row["property_name"],
+            assert float(row[property_name]) == pytest.approx(
                 value(model.find_component(flowsheet_attribute)),
-                rtol=1e-4,
+                rel=1e-3,
             )
     else:
         for property_name in _results_headers:
-            assert math.isnan(row["property_name"])
+            assert math.isnan(float(row[property_name]))
