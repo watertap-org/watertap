@@ -252,6 +252,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # ==========================================================================
+
         self.width = Var(
             initialize=1,
             bounds=(1e-1, 1e3),
