@@ -24,8 +24,6 @@ import glob
 import math
 import pytest
 import os
-import sys
-import platform
 
 import pandas as pd
 
@@ -37,6 +35,8 @@ from watertap.examples.flowsheets.lsrro.lsrro import (
     ABTradeoff,
     run_lsrro_case,
 )
+
+from .gah_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -79,30 +79,12 @@ _test_cases = [
     (csv_file, idx) for csv_file, df in _dfs.items() for idx in range(len(df))
 ]
 
-# comment out these lines if you want to run the entire baseline
-_supported_systems = ["Linux", "Windows"]
-_number_of_python_versions = 3
-_python_version_index = sys.version_info.minor % _number_of_python_versions
-
-_this_platform = platform.system()
-try:
-    _platform_index = _supported_systems.index(_this_platform)
-except ValueError:
-    _platform_index = None
-
-if _platform_index is None:
-    _test_cases = []
-else:
-    _test_cases = [
-        test_case
-        for idx, test_case in enumerate(_test_cases)
-        if (idx % len(_supported_systems) == _platform_index)
-        and (idx % _number_of_python_versions == _python_version_index)
-    ]
-# END code to comment out
+# comment out this line if you want to run the entire baseline
+_test_cases = get_test_cases_subset(_test_cases)
 
 
 @pytest.mark.parametrize("csv_file, row_index", _test_cases)
+@pytest.mark.component
 def test_against_paper_analysis(csv_file, row_index):
 
     row = _dfs[csv_file].iloc[row_index]

@@ -18,49 +18,37 @@
 #       scenarios we run, so we get coverage in expectation.
 
 import os
-import sys
-import platform
 import pytest
 
+import numpy as np
 import pandas as pd
 
 from watertap.examples.flowsheets.lsrro.multi_sweep import run_case
+
+from .gah_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
 _test_cases = list(range(1, 9))
 
-# comment out these lines if you want to run the entire baseline
-_supported_systems = ["Linux", "Windows"]
-_number_of_python_versions = 3
-_python_version_index = sys.version_info.minor % _number_of_python_versions
-
-_this_platform = platform.system()
-try:
-    _platform_index = _supported_systems.index(_this_platform)
-except ValueError:
-    _platform_index = None
-
-if _platform_index is None:
-    _test_cases = []
-else:
-    _test_cases = [
-        test_case
-        for idx, test_case in enumerate(_test_cases)
-        if (idx % len(_supported_systems) == _platform_index)
-        and (idx % _number_of_python_versions == _python_version_index)
-    ]
-# END code to comment out
-
-
-@pytest.fixture(scope="module")
-def cleanup_parameter_sweep_files():
-    yield
-    ## TODO: remove any files that could
-    ##       have been created by the
-    ##       parameter sweep
+# comment out this line if you want to run the entire baseline
+_test_cases = get_test_cases_subset(_test_cases)
 
 
 @pytest.mark.parametrize("test_case_index", _test_cases)
-def test_against_multisweep(test_case_index, cleanup_parameter_sweep_files):
-    run_case(test_case_index, 2)
+@pytest.mark.integration
+def test_against_multisweep(test_case_index, tmp_path):
+    csv_file_name = f"{test_case_index}_stage_results_LSRRO.csv"
+    csv_test_file_name = os.path.join(tmp_path, csv_file_name)
+    csv_baseline_file_name = os.path.join(
+        _this_file_path, "parameter_sweep_baselines", csv_file_name
+    )
+    run_case(test_case_index, 2, output_filename=csv_test_file_name)
+
+    baseline = pd.read_csv(csv_baseline_file_name).astype(float)
+    test = pd.read_csv(csv_test_file_name).astype(float)
+
+    if not np.isclose(baseline, test, equal_nan=True, rtol=1e-03).all():
+        raise ValueError(
+            f"Difference between baseline and test for {test_case_index}-stage parameter sweep"
+        )

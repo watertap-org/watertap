@@ -102,12 +102,14 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        "numpy",
     ],
     extras_require={
         "testing": [
             "pytest",
             "json-schema-for-humans",
             "mongomock",
+            "pandas",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx

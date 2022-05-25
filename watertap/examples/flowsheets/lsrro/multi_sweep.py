@@ -124,13 +124,7 @@ def run_case(number_of_stages, nx, output_filename=None):
     )
 
     outputs["Primary Pump Capex LCOW"] = m.fs.costing.primary_pump_capex_lcow
-
-    m.fs.zero_expression = Expression(expr=0)
-
-    if number_of_stages > 1:
-        outputs["Booster Pump Capex LCOW"] = m.fs.costing.booster_pump_capex_lcow
-    else:
-        outputs["Booster Pump Capex LCOW"] = m.fs.zero_expression
+    outputs["Booster Pump Capex LCOW"] = m.fs.costing.booster_pump_capex_lcow
 
     outputs["ERD Capex LCOW"] = m.fs.costing.erd_capex_lcow
     outputs["Membrane Capex LCOW"] = m.fs.costing.membrane_capex_lcow
@@ -310,6 +304,8 @@ def run_case(number_of_stages, nx, output_filename=None):
             for idx, pump in m.fs.PrimaryPumps.items()
         }
     )
+
+    m.fs.zero_expression = Expression(expr=0.0)
 
     outputs["Booster Pump SEC-Stage 1"] = m.fs.zero_expression
     outputs.update(
