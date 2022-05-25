@@ -11,12 +11,6 @@
 #
 ###############################################################################
 
-# TODO: Load and spot-check base cases corresponding to 2, 3, and 4 stage systems
-# for 35g/L, 70g/L, and 125 g/L feed concentrations as base-line coverage for LSRRO flowsheet
-
-# TODO: Maybe we want to randomly generate which of the various test
-#       scenarios we run, so we get coverage in expectation.
-
 # TODO: If needed for coverage, *build* and set operating conditions for,
 #       but do not *solve*, the cross of all the options.
 

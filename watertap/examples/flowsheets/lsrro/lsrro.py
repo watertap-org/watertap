@@ -290,7 +290,7 @@ def build(
         )
     )
     m.fs.net_pump_work = Expression(
-        expr=m.fs.total_pump_work - m.fs.recovered_pump_work
+        expr=m.fs.total_pump_work + m.fs.recovered_pump_work
     )
 
     # additional parameters, variables or expressions ---------------------------------------------------------------------------

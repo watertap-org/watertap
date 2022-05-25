@@ -11,12 +11,6 @@
 #
 ###############################################################################
 
-# TODO: Load and spot-check parameter sweep analysis corresponding to
-#       s*_stage/results_LSRRO.csv's for stages 1-8
-
-# TODO: Maybe we want to randomly generate which of the various test
-#       scenarios we run, so we get coverage in expectation.
-
 import os
 import pytest
 
