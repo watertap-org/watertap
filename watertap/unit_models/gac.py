@@ -274,15 +274,214 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Variable declaration
         # mass transfer
-        self.solute_absorb = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
+        self.contam_removal = Var(
             self.config.property_package.solute_set,
-            initialize=1e-4,
-            bounds=(1e-8, 1e6),
+            initialize=0.9,
+            bounds=(0, 1),
             domain=NonNegativeReals,
-            units=units_meta("amount") * units_meta("time") ** -1,
+            units=pyunits.dimensionless,
             doc="Moles of solute absorbed into GAC",
+        )
+
+        self.freund_ninv = Var(
+            initialize=0.5,
+            bounds=(0, 5),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Freundlich 1/n parameter",
+        )
+
+        # TODO: Figure out non-fixed exponent
+        self.freund_k = Var(
+            initialize=10,
+            bounds=(0, 1000),
+            domain=NonNegativeReals,
+            units=((units_meta("length") ** 3) * units_meta("mass") ** -1) ** 0.8316,
+            doc="Freundlich k parameter",
+        )
+
+        self.ebct = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Empty bed contact time",
+        )
+
+        self.eps_bed = Var(
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="GAC bed void fraction",
+        )
+
+        self.thru = Var(
+            initialize=10,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Mass throughput",
+        )
+
+        self.tau = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Packed bed contact time",
+        )
+
+        self.replace_time = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Replace time for saturated GAC",
+        )
+
+        # ---------------------------------------------------------------------
+        # GAC particle properties
+        self.particle_rho_app = Var(
+            initialize=800,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("length") ** -3,
+            doc="GAC particle apparent density",
+        )
+
+        self.particle_dp = Var(
+            initialize=0.001,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="GAC particle diameter",
+        )
+
+        self.kf = Var(
+            initialize=1e-5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Liquid phase film transfer rate",
+        )
+
+        self.ds = Var(
+            initialize=1e-12,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2 * units_meta("time") ** -1,
+            doc="Surface diffusion coefficient",
+        )
+
+        # ---------------------------------------------------------------------
+        # Minimum conditions to achieve a constant pattern solution
+        self.min_st = Var(
+            initialize=10,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Minimum Stanton number",
+        )
+
+        self.min_ebct = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Minimum empty bed contact time",
+        )
+
+        self.min_tau = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Minimum packed bed contact time",
+        )
+
+        self.min_time = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Minimum elapsed time",
+        )
+
+        # ---------------------------------------------------------------------
+        # Constants in regressed equations
+        self.a0 = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Stanton equation parameter",
+        )
+
+        self.a1 = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Stanton equation parameter",
+        )
+
+        self.b0 = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Throughput equation parameter",
+        )
+
+        self.b1 = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Throughput equation parameter",
+        )
+
+        self.b2 = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Throughput equation parameter",
+        )
+
+        self.b3 = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Throughput equation parameter",
+        )
+
+        self.b4 = Var(
+            initialize=0.1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Throughput equation parameter",
+        )
+
+        # ---------------------------------------------------------------------
+        # Intermediate variables
+        self.dg = Var(
+            initialize=1000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Solute distribution parameter",
+        )
+
+        self.bi = Var(
+            initialize=10,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Solute distribution parameter",
         )
 
         # ---------------------------------------------------------------------
@@ -294,7 +493,8 @@ class GACData(UnitModelBlockData):
         )
         def eq_mass_transfer_solute(b, t, j):
             return (
-                b.solute_absorb[t, "Liq", j]
+                b.contam_removal[j]
+                * b.treatwater.properties_in[t].get_material_flow_terms("Liq", j)
                 == -b.treatwater.mass_transfer_term[t, "Liq", j]
             )
 
@@ -317,6 +517,78 @@ class GACData(UnitModelBlockData):
                 b.removal[t].get_material_flow_terms("Liq", j)
                 == -b.treatwater.mass_transfer_term[t, "Liq", j]
             )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Solute distribution parameter",
+        )
+        def eq_dg(b, t, j):
+            return b.dg * b.eps_bed * b.treatwater.properties_in[
+                t
+            ].conc_mass_phase_comp["Liq", j] == b.particle_rho_app * b.freund_k * (
+                b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
+                ** b.freund_ninv
+            )
+
+        @self.Constraint(doc="Biot number")
+        def eq_bi(b):
+            return b.bi * b.ds * b.dg * b.eps_bed == b.kf * (b.particle_dp / 2) * (
+                1 - b.eps_bed
+            )
+
+        @self.Constraint(
+            doc="Minimum Stanton number to achieve constant pattern solution"
+        )
+        def eq_min_st_CPS(b):
+            return b.min_st == b.a0 * b.bi + b.a1
+
+        @self.Constraint(
+            doc="Minimum empty bed contact time to achieve constant pattern solution"
+        )
+        def eq_min_ebct_CPS(b):
+            return b.min_ebct * (1 - b.eps_bed) * b.kf == b.min_st * (b.particle_dp / 2)
+
+        @self.Constraint(
+            doc="Minimum packed bed contact time to achieve constant pattern solution"
+        )
+        def eq_min_tau(b):
+            return b.min_tau == b.eps_bed * b.min_ebct
+
+        @self.Constraint(doc="Minimum elapsed time for constant pattern solution")
+        def eq_min_time_CPS(b):
+            return b.min_time == b.min_tau * (b.dg + 1) * b.thru
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Throughput based on 5-parameter regression",
+        )
+        def eq_thru(b, t, j):
+            return b.thru == b.b0 + b.b1 * (
+                (
+                    b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
+                    / b.treatwater.properties_out[t].conc_mass_phase_comp["Liq", j]
+                )
+                ** b.b2
+            ) + b.b3 / (
+                1.01
+                - (
+                    (
+                        b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
+                        / b.treatwater.properties_out[t].conc_mass_phase_comp["Liq", j]
+                    )
+                    ** b.b4
+                )
+            )
+
+        @self.Constraint(doc="residence time")
+        def eq_tau(b):
+            return b.tau == b.eps_bed * b.ebct
+
+        @self.Constraint(doc="Bed replacement time")
+        def eq_replacement_time(b):
+            return b.replace_time == b.min_time + (b.tau - b.min_tau) * (b.dg + 1)
 
     # ---------------------------------------------------------------------
     # initialize method
@@ -351,6 +623,12 @@ class GACData(UnitModelBlockData):
             solver=solver,
             state_args=state_args,
         )
+
+        blk.treatwater.properties_in[0].conc_mass_phase_comp
+        blk.treatwater.properties_in[0].flow_vol_phase["Liq"]
+        blk.treatwater.properties_out[0].conc_mass_phase_comp
+        blk.treatwater.properties_out[0].flow_vol_phase["Liq"]
+
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize permeate
@@ -393,16 +671,12 @@ class GACData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # scaling for gac created variables
-        for (t, p, j), v in self.solute_absorb.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(
-                    self.treatwater.properties_in[t].get_material_flow_terms(p, j)
-                )
-                iscale.set_scaling_factor(v, sf)
 
         # transforming constraints
         for (t, j), c in self.eq_mass_transfer_solute.items():
-            sf = iscale.get_scaling_factor(self.solute_absorb[t, "Liq", j])
+            sf = iscale.get_scaling_factor(
+                self.treatwater.properties_in[t].flow_mol_phase_comp["Liq", j]
+            )
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, j), c in self.eq_mass_transfer_solvent.items():
@@ -411,7 +685,9 @@ class GACData(UnitModelBlockData):
 
         for (t, j), c in self.eq_mass_transfer_absorbed.items():
             if j in self.config.property_package.solute_set:
-                sf = iscale.get_scaling_factor(self.solute_absorb[t, "Liq", j])
+                sf = iscale.get_scaling_factor(
+                    self.treatwater.properties_in[t].flow_mol_phase_comp["Liq", j]
+                )
                 iscale.constraint_scaling_transform(c, sf)
             if j in self.config.property_package.solvent_set:
                 sf = 1

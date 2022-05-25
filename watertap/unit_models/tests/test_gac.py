@@ -38,7 +38,7 @@ def main():
 
     # set solver
     solver = SolverFactory("ipopt")
-    solver.options = {"tol": 1e-8, "nlp_scaling_method": "user-scaling"}
+    solver.options = {"tol": 1e-10, "nlp_scaling_method": "user-scaling"}
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -63,7 +63,7 @@ def main():
         "flow_mol_phase_comp", 1e-1, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e3, index=("Liq", "DCE")
+        "flow_mol_phase_comp", 1e5, index=("Liq", "DCE")
     )
     # touch properties
     m.fs.feed.properties[0].conc_mass_phase_comp
@@ -78,14 +78,29 @@ def main():
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): 1e-3,  # assumed basis in m**3/s
+            ("flow_vol_phase", "Liq"): 1,  # 1e-3,  # assumed basis in m**3/s
             ("conc_mass_phase_comp", ("Liq", "DCE")): 23.2,  # 2.32e-5,
         },
         hold_state=True,  # fixes the calculated component mass flow rates
     )
 
     # TODO: Switch specifications to Feed model and arc to GAC, test GAC embedded touch of needed properties
-    m.fs.gac.solute_absorb[0, "Liq", "DCE"].fix(1e-4)
+    m.fs.gac.contam_removal["DCE"].fix(0.95)
+    m.fs.gac.freund_k.fix(37.9)
+    m.fs.gac.freund_ninv.fix(0.8316)
+    m.fs.gac.ebct.fix(300)  # seconds
+    m.fs.gac.eps_bed.fix(0.449)
+    m.fs.gac.particle_rho_app.fix(722)
+    m.fs.gac.particle_dp.fix(0.00106)
+    m.fs.gac.kf.fix(3.29e-5)
+    m.fs.gac.ds.fix(1.77e-13)
+    m.fs.gac.a0.fix(3.68421)
+    m.fs.gac.a1.fix(13.1579)
+    m.fs.gac.b0.fix(0.784576)
+    m.fs.gac.b1.fix(0.239663)
+    m.fs.gac.b2.fix(0.484422)
+    m.fs.gac.b3.fix(0.003206)
+    m.fs.gac.b4.fix(0.134987)
 
     # TODO: Add variable scaling
     m.fs.properties.set_default_scaling(
@@ -113,13 +128,14 @@ def main():
     # assert results.solver.termination_condition == TerminationCondition.optimal
 
     # displays
-    # m.fs.feed.properties[0].conc_mass_phase_comp.display()
     st = create_stream_table_dataframe(
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    m.fs.gac.treatwater.mass_transfer_term.display()
-    m.fs.gac.solute_absorb.display()
+    m.fs.gac.treatwater.properties_in[0].conc_mass_phase_comp.display()
+    m.fs.gac.treatwater.properties_out[0].conc_mass_phase_comp.display()
+    # m.fs.gac.display()
+    m.fs.feed.display()
 
 
 if __name__ == "__main__":
