@@ -319,7 +319,7 @@ class ZeroOrderUnitChecker:
 
         name = f"Unit Model {self.config.zero_order_model.__name__}"
         if self.config.process_subtype:
-            name += " ,subtype {self.config.process_subtype}"
+            name += f", subtype {self.config.process_subtype}"
         if self.worst_difference:
             name += f"\nWorst Relative Difference: {self.worst_difference*100:.4f}%"
         fig.suptitle(name)
