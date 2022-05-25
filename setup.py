@@ -131,6 +131,7 @@ setup(
             "*.json",
             "*.yaml",
             "*.yml",
+            "*.csv",
         ],
     },
     entry_points={
