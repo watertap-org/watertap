@@ -24,7 +24,7 @@ from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 from watertap.examples.flowsheets.lsrro import lsrro
 
 
-def lsrro_presweep(
+def _lsrro_presweep(
     number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
 ):
     m = lsrro.build(
@@ -46,11 +46,37 @@ def lsrro_presweep(
     return m
 
 
-def run_case(number_of_stages, nx):
+def run_case(number_of_stages, nx, output_filename=None):
+    """
+    Run the parameter sweep tool on the LSRRO flowsheet, sweeping over feed
+    concentration from 5 to 250 kg/m^3 and water recovery from 30% to 90%.
+
+    Arguments
+    ---------
+    number_of_stages (int) : The number of LSRRO Stages (including the initial RO stage).
+    nx (int) : The number of points for both feed concentration and water recovery. The
+               total number of points swept will be nx^2.
+    output_filename (str, optional): The place to write the parameter sweeep results
+               csv file. By default it is
+               ./param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv
+
+    Returns
+    -------
+    global_results (numpy array) : The raw values from the parameter sweep
+    sweep_params (dict) : The dictionary of samples
+    model (Pyomo ConcreteModel) : The LSRRO flowsheet used for parameter sweeps
+
+    """
+
+    if output_filename is None:
+        output_filename = (
+            f"param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv"
+        )
+
     sweep_params = {}
     outputs = {}
 
-    m = lsrro_presweep(number_of_stages=number_of_stages)
+    m = _lsrro_presweep(number_of_stages=number_of_stages)
 
     # Sweep parameters ------------------------------------------------------------------------
 
@@ -61,8 +87,6 @@ def run_case(number_of_stages, nx):
     sweep_params["Volumetric Recovery Rate"] = LinearSample(
         m.fs.water_recovery, 0.3, 0.9, nx
     )
-
-    output_filename = f"param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv"
 
     # Outputs  -------------------------------------------------------------------------------
     outputs["LCOW"] = m.fs.costing.LCOW
