@@ -39,10 +39,10 @@ def test_against_multisweep(test_case_index, tmp_path):
     )
     run_case(test_case_index, 2, output_filename=csv_test_file_name)
 
-    baseline = pd.read_csv(csv_baseline_file_name).astype(float)
-    test = pd.read_csv(csv_test_file_name).astype(float)
+    baseline = pd.read_csv(csv_baseline_file_name).astype(float).T.to_dict()
+    test = pd.read_csv(csv_test_file_name).astype(float).T.to_dict()
 
-    if not np.isclose(baseline, test, equal_nan=True, rtol=1e-02).all():
-        raise ValueError(
-            f"Difference between baseline and test for {test_case_index}-stage parameter sweep"
-        )
+    assert len(baseline) == len(test)
+
+    for k in test:
+        assert pytest.approx( test[k], nan_ok=True, rel=1e-02, abs=1e-07 ) == baseline[k]
