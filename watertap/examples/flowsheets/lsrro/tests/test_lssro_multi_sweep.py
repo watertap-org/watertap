@@ -42,7 +42,7 @@ def test_against_multisweep(test_case_index, tmp_path):
     baseline = pd.read_csv(csv_baseline_file_name).astype(float)
     test = pd.read_csv(csv_test_file_name).astype(float)
 
-    if not np.isclose(baseline, test, equal_nan=True, rtol=1e-03).all():
+    if not np.isclose(baseline, test, equal_nan=True, rtol=1e-02).all():
         raise ValueError(
             f"Difference between baseline and test for {test_case_index}-stage parameter sweep"
         )

@@ -18,7 +18,7 @@ helper for splitting up the LSRRO testing jobs between the GHA runners
 import sys
 import platform
 
-_supported_systems = ["Linux", "Windows"]
+_supported_systems = ["Windows", "Linux"]
 _number_of_python_versions = 3
 _python_version_index = sys.version_info.minor % _number_of_python_versions
 
