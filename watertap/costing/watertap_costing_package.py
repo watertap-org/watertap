@@ -50,7 +50,6 @@ class PumpType(StrEnum):
 
 
 class EnergyRecoveryDeviceType(StrEnum):
-    default = "default"
     pressure_exchanger = "pressure_exchanger"
 
 
@@ -443,7 +442,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_energy_recovery_device(
         blk,
-        energy_recovery_device_type=EnergyRecoveryDeviceType.default,
+        energy_recovery_device_type=EnergyRecoveryDeviceType.pressure_exchanger,
         cost_electricity_flow=True,
     ):
         """
@@ -453,14 +452,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
-                default = EnergyRecoveryDeviceType.default
+                default = EnergyRecoveryDeviceType.pressure_exchanger.
 
             cost_electricity_flow: bool, if True, the ERD's work_mechanical will
                 be converted to kW and costed as an electricity default = True
         """
-        if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
-            WaterTAPCostingData.cost_default_energy_recovery_device(blk)
-        elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
+        if energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
             WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
         else:
             raise ConfigurationError(
@@ -544,47 +541,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.unit_model.control_volume.properties_in[t0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
             ),
-        )
-        if cost_electricity_flow:
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
-                ),
-                "electricity",
-            )
-
-    @staticmethod
-    def cost_default_energy_recovery_device(blk, cost_electricity_flow=True):
-        """
-        Energy recovery device costing method
-
-        TODO: describe equations
-
-        Args:
-            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
-                                    be converted to kW and costed as an electricity
-                                    default = True
-        """
-        t0 = blk.flowsheet().time.first()
-        make_capital_cost_var(blk)
-        unit_cv_in = blk.unit_model.control_volume.properties_in[t0]
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == blk.costing_package.energy_recovery_device_linear_coefficient
-            * (
-                pyo.units.convert(
-                    (
-                        sum(
-                            unit_cv_in.flow_mass_phase_comp["Liq", j]
-                            for j in blk.unit_model.config.property_package.component_list
-                        )
-                        / unit_cv_in.dens_mass_phase["Liq"]
-                    ),
-                    pyo.units.m**3 / pyo.units.hour,
-                )
-                / (pyo.units.m**3 / pyo.units.hour)
-            )
-            ** blk.costing_package.energy_recovery_device_exponent
         )
         if cost_electricity_flow:
             blk.costing_package.cost_flow(
