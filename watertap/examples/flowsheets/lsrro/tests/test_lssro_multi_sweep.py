@@ -23,7 +23,7 @@ from .gah_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
-_test_cases = list(range(1, 9))
+_test_cases = list(range(1, 6))
 
 # comment out this line if you want to run the entire baseline
 _test_cases = get_test_cases_subset(_test_cases)
@@ -45,4 +45,4 @@ def test_against_multisweep(test_case_index, tmp_path):
     assert len(baseline) == len(test)
 
     for k in test:
-        assert pytest.approx( test[k], nan_ok=True, rel=1e-02, abs=1e-07 ) == baseline[k]
+        assert pytest.approx(test[k], nan_ok=True, rel=1e-02, abs=1e-07) == baseline[k]
