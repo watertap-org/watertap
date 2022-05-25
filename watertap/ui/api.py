@@ -1,6 +1,17 @@
 """
 This module defines the API for the WaterTAP user interface.
 
+Provides these abilitites:
+
+  * Specify which blocks/variables to export the UI
+  * Save/load/update the state of all exported blocks and variables
+  * Specify functions to implement standard flowsheet "actions"
+  * An interface for running these actions that understands simple dependencies
+    (running A requires B must have been run first).
+  * Add user-specified action names and functions in addition to standard ones
+  * Load a mapping of names to flowsheet modules from a configuration file, and
+    also allow standard and user-specified metadata from that file.
+
 """
 import json
 import logging
@@ -292,8 +303,12 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError("get_var_extra() has no meaning before load() is called")
         return self._var_diff.extra
 
-    def as_dict(self):
-        """Return current state serialized as a dictionary."""
+    def as_dict(self) -> Dict:
+        """Return current state serialized as a dictionary.
+
+        Returns:
+            Dictionary with all the UI-exported blocks and variables.
+        """
         _log.debug("as_dict:start")
         if self._block_info is None:
             _log.debug("as_dict:end. status=error")
@@ -302,51 +317,6 @@ class FlowsheetInterface(BlockInterface):
         _log.debug("as_dict:end. status=ok")
         return d
 
-    def _get_block_interface_tree(self):
-        """Get all block interfaces in this block and sub-blocks,
-        creating a complete 'tree' with intermediate placeholders where needed.
-        """
-        # use a stack that has the path and object for each new block to visit
-        path = [self.block.name]
-        stack = [(path, self._block)]
-        tree = self._block_info.copy()
-        tree.blocks = {}
-        # keep going until no more blocks to visit
-        while stack:
-            path, block = stack.pop()
-            # if there is a block interface, add it to the tree
-            ui = get_block_interface(block)
-            if ui:
-                self._add_to_tree(tree, path, ui)
-            # add any found sub-blocks to the stack
-            if hasattr(block, "component_map"):
-                for sb_name, sb_val in block.component_map(ctype=Block).items():
-                    stack.append((path + [sb_name], sb_val))
-        return tree
-
-    def _add_to_tree(self, tree: model.Block, path: List[str], ui: BlockInterface):
-        """Add one block interface, with the provided path, to the tree."""
-        node_names = path[:-1]
-        leaf_name = path[-1]
-        node = tree
-        # descend to leaf, creating intermediate nodes as we go
-        for name in node_names:
-            sb = node.blocks.get(name, None)
-            # create if not found
-            if not sb:
-                sb = model.Block(name=name)
-                node.blocks[name] = sb
-            # descend
-            node = sb
-        # check that leaf is not there, already (why would it be?!)
-        if leaf_name in node.blocks:
-            raise ValueError(f"Duplicate node. path={path}")
-        # add leaf
-        leaf = ui._block_info.copy()
-        for name, variable in leaf.variables.items():
-            print(f"@@ {name} val = {self._get_block_variable_value(ui.block, name)}")
-            variable.value = self._get_block_variable_value(ui.block, name)
-        node.blocks[leaf_name] = ui._block_info
 
     def __eq__(self, other) -> bool:
         """Equality test. A side effect is that both objects are serialized using
@@ -361,7 +331,9 @@ class FlowsheetInterface(BlockInterface):
         return False
 
     @property
-    def meta(self):
+    def meta(self) -> Dict:
+        """Flowsheet-level metadata.
+        """
         return self._block_info.meta.copy()
 
     def save(self, file_or_stream: Union[str, Path, TextIO]):
@@ -450,60 +422,24 @@ class FlowsheetInterface(BlockInterface):
             raise ValueError(f"Input data failed schema validation: {verr}")
 
         self._var_diff = FlowsheetDiff(missing={}, extra={})
-        self._load(block_info, self.block)
+
+        # There shuold be one root block at top-level, which we will use.
+        # This is because the very top-level block is anonymous and used to
+        # hold flowsheet-level metadata.
+        root_keys = list(block_info.blocks.keys())
+        if len(root_keys) != 1:
+            _log.error(f"Only one root block expected. blocks={root_keys}")
+        root_block_name = root_keys[0]
+        root_block_info = block_info.blocks[root_block_name]
+
+        _log.debug(f"Update load. root-block={root_block_name}")
+        self._load(root_block_info, self.block)
 
         # clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
             self._action_clear_was_run(WorkflowActions.solve)
         _log.debug(f"update:end. status=ok")
 
-    def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
-        """Load the variables in ``block_data`` into ``cur_block``, then
-        recurse to do the same with any sub-blocks.
-        """
-        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
-        bdiff = BlockDiff()
-        ui = get_block_interface(cur_block)
-
-        if not ui:
-            bdiff.missing = list(load_block_info.variables.keys())
-            bdiff.extra = []
-        else:
-            info_vars = ui._block_info.variables
-            bdiff.extra = list(info_vars.keys())
-            for load_var_name, load_var_info in load_block_info.variables.items():
-                details = f"block={cur_block_path} variable={load_var_name}"
-                if load_var_name not in info_vars:
-                    _log.warn("No matching exported variable found. " + details)
-                    bdiff.missing.append(load_var_info.name)
-                elif load_var_info.readonly:
-                    _log.debug("Not setting readonly variable. " + details)
-                elif load_var_info.value is None:
-                    _log.debug("No value for variable. " + details)
-                else:
-                    var_obj = getattr(ui.block, load_var_name)
-                    if var_obj is None:
-                        raise ValueError(
-                            "Exported variable not found in block. " + details
-                        )
-                    if isinstance(load_var_info.value, model.IndexedValue):
-                        for i, idx in enumerate(load_var_info.value.index):
-                            idx, val = tuple(idx), load_var_info.value.value[i]
-                            var_obj[idx] = val
-                    else:
-                        var_obj.set_value(load_var_info.value.value)
-                    _log.debug("Exported variable loaded. " + details)
-                    bdiff.extra.remove(load_var_name)
-
-            # save non-empty missing/extra
-            if bdiff.missing:
-                self._var_diff.missing[cur_block_path] = bdiff.missing
-            if bdiff.extra:
-                self._var_diff.extra[cur_block_path] = bdiff.extra
-
-        for sb_name, sb_info in load_block_info.blocks.items():
-            sub_block = getattr(cur_block, sb_name)
-            self._load(sb_info, sub_block, path=cur_block_path)
 
     @classmethod
     def get_schema(cls) -> Dict:
@@ -576,6 +512,105 @@ class FlowsheetInterface(BlockInterface):
 
     # Protected methods
 
+    def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
+        """Load the variables in ``block_data`` into ``cur_block``, then
+        recurse to do the same with any sub-blocks.
+
+        Called from :meth:`load`.
+        """
+        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
+        bdiff = BlockDiff()
+        ui = get_block_interface(cur_block)
+
+        if not ui:
+            bdiff.missing = list(load_block_info.variables.keys())
+            bdiff.extra = []
+        else:
+            info_vars = ui._block_info.variables
+            bdiff.extra = list(info_vars.keys())
+            for load_var_name, load_var_info in load_block_info.variables.items():
+                details = f"block={cur_block_path} variable={load_var_name}"
+                if load_var_name not in info_vars:
+                    _log.warn("No matching exported variable found. " + details)
+                    bdiff.missing.append(load_var_info.name)
+                elif load_var_info.readonly:
+                    _log.debug("Not setting readonly variable. " + details)
+                elif load_var_info.value is None:
+                    _log.debug("No value for variable. " + details)
+                else:
+                    var_obj = getattr(ui.block, load_var_name)
+                    if var_obj is None:
+                        raise ValueError(
+                            "Exported variable not found in block. " + details
+                        )
+                    if isinstance(load_var_info.value, model.IndexedValue):
+                        for i, idx in enumerate(load_var_info.value.index):
+                            idx, val = tuple(idx), load_var_info.value.value[i]
+                            var_obj[idx] = val
+                    else:
+                        var_obj.set_value(load_var_info.value.value)
+                    _log.debug("Exported variable loaded. " + details)
+                    bdiff.extra.remove(load_var_name)
+
+            # save non-empty missing/extra
+            if bdiff.missing:
+                self._var_diff.missing[cur_block_path] = bdiff.missing
+            if bdiff.extra:
+                self._var_diff.extra[cur_block_path] = bdiff.extra
+
+        for sb_name, sb_info in load_block_info.blocks.items():
+            _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
+            sub_block = getattr(cur_block, sb_name)
+            self._load(sb_info, sub_block, path=cur_block_path)
+
+    def _get_block_interface_tree(self):
+        """Get all block interfaces in this block and sub-blocks,
+        creating a complete 'tree' with intermediate placeholders where needed.
+
+        Called from :meth:`as_dict`.
+        """
+        # use a stack that has the path and object for each new block to visit
+        path = [self.block.name]
+        stack = [(path, self._block)]
+        tree = self._block_info.copy()
+        tree.blocks = {}
+        # keep going until no more blocks to visit
+        while stack:
+            path, block = stack.pop()
+            # if there is a block interface, add it to the tree
+            ui = get_block_interface(block)
+            if ui:
+                self._add_to_tree(tree, path, ui)
+            # add any found sub-blocks to the stack
+            if hasattr(block, "component_map"):
+                for sb_name, sb_val in block.component_map(ctype=Block).items():
+                    stack.append((path + [sb_name], sb_val))
+        return tree
+
+    def _add_to_tree(self, tree: model.Block, path: List[str], ui: BlockInterface):
+        """Add one block interface, with the provided path, to the tree."""
+        node_names = path[:-1]
+        leaf_name = path[-1]
+        _log.debug(f"Add leaf to tree. path={path}")
+        node = tree
+        # descend to leaf, creating intermediate nodes as we go
+        for name in node_names:
+            sb = node.blocks.get(name, None)
+            # create if not found
+            if not sb:
+                sb = model.Block(name=name)
+                node.blocks[name] = sb
+            # descend
+            node = sb
+        # check that leaf is not there, already (why would it be?!)
+        if leaf_name in node.blocks:
+            raise ValueError(f"Duplicate node. path={path}")
+        # add leaf
+        leaf = ui._block_info.copy()
+        for name, variable in leaf.variables.items():
+            variable.value = self._get_block_variable_value(ui.block, name)
+        node.blocks[leaf_name] = ui._block_info
+
     def _check_action(self, name):
         if name not in self._actions:
             all_actions = ", ".join(self._actions.keys())
@@ -626,6 +661,36 @@ class FlowsheetInterface(BlockInterface):
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
 
+
+class FlowsheetModuleFinder:
+    def __init__(self, from_file=None, data=None, on_error=None):
+        self._err_cb = None
+        self._data = {}
+        if data:
+            self._init(data)
+        elif from_file:
+            self.load(from_file)
+
+    def _init(self, data):
+        # maybe load into a pydantic model?
+        # then check that the modules are find-able and have the bootstrap method
+        # what to do if not.. look at self._err_cb
+        pass
+
+    def load(self, file_or_stream):
+        pass
+
+    def keys(self):
+        return self._data.keys()
+
+    def __getitem__(self, module_name):
+        item = self._data.get(module_name, None)
+        if item is None:
+            raise KeyError(f"Module not found: {module_name}")
+        return item
+
+    def __len__(self):
+        return len(list(self._data.keys()))
 
 ##
 

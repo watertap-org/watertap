@@ -8,7 +8,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
 
 
 def flowsheet_interface():
-    fsi = FlowsheetInterface({"display_name": "METAB treatment train", "variables": []})
+    fsi = FlowsheetInterface({"display_name": "METAB treatment train"})
     fsi.set_action(WorkflowActions.build, build_flowsheet)
     fsi.set_action(WorkflowActions.solve, solve_flowsheet)
     # note: don't have any flowsheet block yet, will get that in build_flowsheet()
@@ -49,7 +49,7 @@ def build_flowsheet(ui=None, **kwargs):
     metab.assert_degrees_of_freedom(model, 0)
 
     # set this flowsheet as the top-level block for the interface
-    ui.set_block(model)
+    ui.set_block(model.fs)
 
 
 def solve_flowsheet(block=None, **kwargs):
