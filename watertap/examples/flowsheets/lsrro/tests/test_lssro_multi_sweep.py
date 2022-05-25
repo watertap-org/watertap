@@ -45,4 +45,4 @@ def test_against_multisweep(test_case_index, tmp_path):
     assert len(baseline) == len(test)
 
     for k in test:
-        assert pytest.approx(test[k], nan_ok=True, rel=1e-02, abs=1e-07) == baseline[k]
+        assert pytest.approx(baseline[k], nan_ok=True, rel=1e-02, abs=1e-07) == test[k]

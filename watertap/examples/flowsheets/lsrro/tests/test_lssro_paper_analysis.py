@@ -100,8 +100,8 @@ def test_against_paper_analysis(csv_file, row_index):
 
     if check_optimal_termination(results):
         for property_name, flowsheet_attribute in _results_headers.items():
-            assert float(row[property_name]) == pytest.approx(
-                value(model.find_component(flowsheet_attribute)),
+            assert value(model.find_component(flowsheet_attribute)) == pytest.approx(
+                float(row[property_name]),
                 rel=1e-3,
             )
     else:
