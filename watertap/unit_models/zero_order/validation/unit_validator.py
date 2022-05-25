@@ -130,6 +130,7 @@ _column_to_component_map = {
     "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
+    "chem_dose" : ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
 }
 
 
