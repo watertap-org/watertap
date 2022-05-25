@@ -17,6 +17,8 @@
 # TODO: Maybe we want to randomly generate which of the various test
 #       scenarios we run, so we get coverage in expectation.
 
-# from watertap.examples.flowsheet.lsrro.multi_sweep import
+import os
+
+from watertap.examples.flowsheets.lsrro.multi_sweep import run_case
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))

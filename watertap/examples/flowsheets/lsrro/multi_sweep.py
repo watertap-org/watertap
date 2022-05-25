@@ -11,10 +11,7 @@
 #
 ###############################################################################
 import os
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
-from watertap.examples.flowsheets.lsrro import (
-    lsrro_paper_analysis as lsrro_case,
-)
+
 from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
@@ -23,23 +20,26 @@ from pyomo.environ import (
     Param,
 )
 
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+from watertap.examples.flowsheets.lsrro import lsrro
+
 
 def lsrro_presweep(
     number_of_stages=2, A_value=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True
 ):
-    m = lsrro_case.build(
+    m = lsrro.build(
         number_of_stages=number_of_stages,
         has_NaCl_solubility_limit=True,
         has_calculated_concentration_polarization=has_CP,
         has_calculated_ro_pressure_drop=True,
     )
-    lsrro_case.set_operating_conditions(m)
-    lsrro_case.initialize(m)
-    lsrro_case.solve(m)
+    lsrro.set_operating_conditions(m)
+    lsrro.initialize(m)
+    lsrro.solve(m)
     m.fs.feed.flow_mass_phase_comp.unfix()
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "NaCl"].fix()
     m.fs.feed.properties[0].flow_vol_phase["Liq"].fix()
-    lsrro_case.optimize_set_up(
+    lsrro.optimize_set_up(
         m, A_value=A_value, permeate_quality_limit=permeate_quality_limit
     )
 
@@ -345,7 +345,7 @@ def run_case(number_of_stages, nx):
         sweep_params,
         outputs,
         csv_results_file_name=output_filename,
-        optimize_function=lsrro_case.solve,
+        optimize_function=lsrro.solve,
         interpolate_nan_outputs=True,
     )
 
