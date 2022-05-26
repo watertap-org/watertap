@@ -38,7 +38,7 @@ def main():
 
     # set solver
     solver = SolverFactory("ipopt")
-    solver.options = {"tol": 1e-10, "nlp_scaling_method": "user-scaling"}
+    solver.options = {"tol": 1e-8, "nlp_scaling_method": "user-scaling"}
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -86,18 +86,19 @@ def main():
     )
 
     # gac specifications
-    m.fs.gac.contam_removal["DCE"].fix(0.95)
+    # trial from Hand, 1984
+    m.fs.gac.contam_removal_frac["DCE"].fix(0.95)
     m.fs.gac.dg.fix(
         19775.77393009003
     )  # TODO: correct units probelm to fix m.fs.gac.freund_k
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
     m.fs.gac.eps_bed.fix(0.449)
-    m.fs.gac.particle_rho_app.fix(722)
+    m.fs.gac.replace_saturation_frac["DCE"].fix(0.95)
+    m.fs.gac.particle_dens_app.fix(722)
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
     m.fs.gac.ds.fix(1.77e-13)
-    """
     m.fs.gac.a0.fix(3.68421)
     m.fs.gac.a1.fix(13.1579)
     m.fs.gac.b0.fix(0.784576)
@@ -105,8 +106,7 @@ def main():
     m.fs.gac.b2.fix(0.484422)
     m.fs.gac.b3.fix(0.003206)
     m.fs.gac.b4.fix(0.134987)
-    """
-    # TODO: Add variable scaling
+
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e-1, index=("Liq", "H2O")
     )

@@ -46,58 +46,7 @@ __author__ = "Hunter Barber"
 _log = idaeslog.getLogger(__name__)
 
 # ---------------------------------------------------------------------
-"""
-First model build inputs
-"""
-# Inlet conditions
-co = 23.2  # inlet concentration [microg/L]
-# TODO: Make sure property pack supports liquid, solute_list
-# Freundlich parameters specific for contaminant and GAC particle
-k = 37.9  # (microg/gm)/(L/microg)^(1/n)
-ninv = 0.8316
-# User specified values
-kff = 1  # k reduction due to background organics
-kf = 3.29e-5  # liquid phase/film transfer rate, [m/s]
-Ds = 1.77e-13  # Surface diffusion coefficient, [m2/s]
-# Design Conditions
-ebct = 5  # empty bed contact time [min]
-eps = 0.449  # bed void fraction
-ceff = 5  # effluent concentration [microg/L]
-rhoa = 722  # apparent gac density [kg/m3]
-dp = 0.00106  # gac particle diameter[m]
-# constants a0,a1 for min stanton number to achieve constant pattern as a function of ninv and Bi
-a0 = 3.68421e0
-a1 = 13.1579
-# constants b0,b1,b2,b3,b4 for constant pattern solution as a function of ninv and Bi
-b0 = 0.784576
-b1 = 0.239663
-b2 = 0.484422
-b3 = 0.003206
-b4 = 0.134987
-# TODO: Initialize variables and add scaling
-# TODO: Convert to steady state assumption
-"""
-Second model build inputs additions
-"""
-# TODO: Add Reynolds, Schmidt, and other intermediate equations
-# Inlet conditions
-qo = 0.89 / 60  # [m3/s]
-temp = 10  # [°C]
-molvol = 98.1  # molal volume of contaminant [cm3/mol]
-# water properties
-rhow = 999.7  # [kg/m3]
-muw = 1.3097e-3  # [Ns/m2]
-# Freundlich parameters
-# TODO: Add surface diffusion coefficient correlation option
-# TODO: Add Gnielinshi liquid phase film transfer rate correlation option
-# User specified values
-taup = 1  # tortuosity of the path that the adsorbate must take as compared to the radius, dimensionless
-scf = 1.5  # shape correction factor
-# Design Conditions
-vsup = 5 / 3600  # superficial mass velocity [m/s]
-rhof = 450  # bulk gac particle density, [kg/m3]
-epsp = 0.641  #
-# TODO: Add adaptability for multiple solutes
+
 
 # ---------------------------------------------------------------------
 """
@@ -105,6 +54,8 @@ class SurfaceDiffusionCoeffVal(Enum):
     specified = auto()  # surface diffusion coefficient is a user-specified value
     calculated = auto() # pressure drop across membrane channel is calculated
 """
+
+
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
 class GACData(UnitModelBlockData):
@@ -273,14 +224,14 @@ class GACData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Variable declaration
-        # mass transfer
-        self.contam_removal = Var(
+        # mass transfer TODO: Add capacity for multiple solutes
+        self.contam_removal_frac = Var(
             self.config.property_package.solute_set,
             initialize=0.9,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Moles of solute absorbed into GAC",
+            doc="Desired removal fraction of key contaminant",
         )
 
         self.freund_ninv = Var(
@@ -309,13 +260,13 @@ class GACData(UnitModelBlockData):
         )
 
         self.ebct = Var(
-            initialize=100,
+            initialize=500,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="Empty bed contact time",
         )
-        """
+
         self.thru = Var(
             initialize=10,
             bounds=(0, None),
@@ -333,17 +284,34 @@ class GACData(UnitModelBlockData):
         )
 
         self.replace_time = Var(
-            initialize=100,
+            initialize=1e8,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="Replace time for saturated GAC",
         )
-        """
+
         # ---------------------------------------------------------------------
         # GAC particle properties
-        self.particle_rho_app = Var(
-            initialize=800,
+        self.replace_saturation_frac = Var(
+            self.config.property_package.solute_set,
+            initialize=0.9,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Fraction of carbon saturation before replacement",
+        )
+
+        self.particle_dens_app = Var(
+            initialize=1000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("length") ** -3,
+            doc="GAC particle apparent density",
+        )
+
+        self.particle_dens_bulk = Var(
+            initialize=500,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("length") ** -3,
@@ -373,7 +341,7 @@ class GACData(UnitModelBlockData):
             units=units_meta("length") ** 2 * units_meta("time") ** -1,
             doc="Surface diffusion coefficient",
         )
-        """
+
         # ---------------------------------------------------------------------
         # Minimum conditions to achieve a constant pattern solution
         self.min_st = Var(
@@ -385,7 +353,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.min_ebct = Var(
-            initialize=100,
+            initialize=1000,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -393,7 +361,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.min_tau = Var(
-            initialize=100,
+            initialize=1000,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -401,7 +369,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.min_time = Var(
-            initialize=100,
+            initialize=1e8,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -465,11 +433,11 @@ class GACData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="Throughput equation parameter",
         )
-        """
+
         # ---------------------------------------------------------------------
         # Intermediate variables
         self.dg = Var(
-            initialize=1000,
+            initialize=1e5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -481,7 +449,17 @@ class GACData(UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Solute distribution parameter",
+            doc="Biot number",
+        )
+
+        # ---------------------------------------------------------------------
+        # Performance Variables
+        self.particle_mass_req = Var(
+            initialize=1e-4,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -1,
+            doc="GAC usage and replacement rate",
         )
 
         # ---------------------------------------------------------------------
@@ -493,7 +471,7 @@ class GACData(UnitModelBlockData):
         )
         def eq_mass_transfer_solute(b, t, j):
             return (
-                b.contam_removal[j]
+                b.contam_removal_frac[j]
                 * b.treatwater.properties_in[t].get_material_flow_terms("Liq", j)
                 == -b.treatwater.mass_transfer_term[t, "Liq", j]
             )
@@ -526,7 +504,7 @@ class GACData(UnitModelBlockData):
         def eq_dg(b, t, j):
             return b.dg * b.eps_bed * b.treatwater.properties_in[
                 t
-            ].conc_mass_phase_comp["Liq", j] == b.particle_rho_app * b.freund_k * (
+            ].conc_mass_phase_comp["Liq", j] == b.particle_dens_app * b.freund_k * (
                 b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
                 ** b.freund_ninv
             )
@@ -537,51 +515,36 @@ class GACData(UnitModelBlockData):
                 1 - b.eps_bed
             )
 
-    """
         @self.Constraint(
             doc="Minimum Stanton number to achieve constant pattern solution"
         )
-        def eq_min_st_CPS(b):
+        def eq_min_st_cps(b):
             return b.min_st == b.a0 * b.bi + b.a1
 
         @self.Constraint(
             doc="Minimum empty bed contact time to achieve constant pattern solution"
         )
-        def eq_min_ebct_CPS(b):
+        def eq_min_ebct_cps(b):
             return b.min_ebct * (1 - b.eps_bed) * b.kf == b.min_st * (b.particle_dp / 2)
 
         @self.Constraint(
             doc="Minimum packed bed contact time to achieve constant pattern solution"
         )
-        def eq_min_tau(b):
+        def eq_min_tau_cps(b):
             return b.min_tau == b.eps_bed * b.min_ebct
 
-        @self.Constraint(doc="Minimum elapsed time for constant pattern solution")
-        def eq_min_time_CPS(b):
-            return b.min_time == b.min_tau * (b.dg + 1) * b.thru
-
         @self.Constraint(
-            self.flowsheet().config.time,
             self.config.property_package.solute_set,
             doc="Throughput based on 5-parameter regression",
         )
-        def eq_thru(b, t, j):
+        def eq_thru(b, j):
             return b.thru == b.b0 + b.b1 * (
-                (
-                    b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
-                    / b.treatwater.properties_out[t].conc_mass_phase_comp["Liq", j]
-                )
-                ** b.b2
-            ) + b.b3 / (
-                1.01
-                - (
-                    (
-                        b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
-                        / b.treatwater.properties_out[t].conc_mass_phase_comp["Liq", j]
-                    )
-                    ** b.b4
-                )
-            )
+                (b.replace_saturation_frac[j]) ** b.b2
+            ) + b.b3 / (1.01 - ((b.replace_saturation_frac[j]) ** b.b4))
+
+        @self.Constraint(doc="Minimum elapsed time for constant pattern solution")
+        def eq_min_time_cps(b):
+            return b.min_time == b.min_tau * (b.dg + 1) * b.thru
 
         @self.Constraint(doc="residence time")
         def eq_tau(b):
@@ -590,7 +553,20 @@ class GACData(UnitModelBlockData):
         @self.Constraint(doc="Bed replacement time")
         def eq_replacement_time(b):
             return b.replace_time == b.min_time + (b.tau - b.min_tau) * (b.dg + 1)
-    """
+
+        @self.Constraint(doc="Relate void fraction and GAC densities")
+        def eq_bed_void_fraction(b):
+            return b.eps_bed == 1 - (b.particle_dens_bulk / b.particle_dens_app)
+
+        @self.Constraint(doc="Bed replacement mass required")
+        def eq_replacement_mass(b):
+            return (
+                b.particle_mass_req * b.replace_time
+                == b.treatwater.properties_in[0].flow_vol_phase["Liq"]
+                * b.particle_dens_bulk
+                * b.tau
+            )
+
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
@@ -661,6 +637,10 @@ class GACData(UnitModelBlockData):
         # Release Inlet state
         blk.treatwater.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+    # TODO: def _get_performance_contents(self, time_point=0):
+    # TODO: def _get_stream_table_contents(self, time_point=0):
+    # TODO: def get_costing(self, module=None, **kwargs):
 
     # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
