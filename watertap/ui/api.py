@@ -13,6 +13,7 @@ Provides these abilitites:
     also allow standard and user-specified metadata from that file.
 
 """
+import importlib
 import json
 import logging
 from pathlib import Path
@@ -21,7 +22,8 @@ from typing import Dict, List, Union, TextIO, Generator
 # third-party
 from pyomo.environ import Block, Var, value
 import idaes.logger as idaeslog
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
+import yaml
 
 # local
 from watertap.ui import api_util
@@ -661,38 +663,96 @@ class FlowsheetInterface(BlockInterface):
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
 
+#
+# the following is just speculative -- do not use
+#
 
-class FlowsheetModuleFinder:
+
+class FlowsheetModuleParameter(BaseModel):
+    description: str  #: parameter description
+    datatype: str   #: expected param type (for front-end)
+
+
+class FlowsheetModule(BaseModel):
+    name: str  #: display name
+    description: str  #: description of module
+    diagram_file: Union[FilePath, str] = ""  #: diagram file, if any
+    parameters: Dict[str, FlowsheetModuleParameter] = {}  #: parameters, if any
+
+
+class FlowsheetModuleConfig(BaseModel):
+    data_directory: DirectoryPath  #: relative paths for diagram_file from here
+    modules = Dict[str, FlowsheetModule]  #: dotted.module.path to module info map
+
+
+class FlowsheetModuleDict:
+    """Dict-like interface to information about some flowsheet modules.
+    """
     def __init__(self, from_file=None, data=None, on_error=None):
         self._err_cb = None
-        self._data = {}
+        self._conf = {}
         if data:
             self._init(data)
         elif from_file:
             self.load(from_file)
 
     def _init(self, data):
-        # maybe load into a pydantic model?
-        # then check that the modules are find-able and have the bootstrap method
-        # what to do if not.. look at self._err_cb
-        pass
+        m = FlowsheetModuleConfig.parse_obj(data)
+        for mod_name, mod_conf in m.modules.items():
+            try:
+                mod_obj = importlib.import_module(mod_name)
+                diagram_path = self._get_diagram_file(m, mod_conf)
+                self._conf[mod_name] = {
+                    "module": mod_obj,
+                    "diagram": diagram_path,
+                    "name": mod_conf.name,
+                    "description": mod_conf.description,
+                    "parameters": mod_conf.parameters.dict()
+                }
+            except ImportError as err:
+                if self._err_cb:
+                    self._err_cb(mod_conf, err)
+                else:
+                    raise
+
+    @staticmethod
+    def _get_diagram_file(m: FlowsheetModuleConfig,
+                          mod_conf: FlowsheetModule) -> Union[Path, str]:
+        df_path = ""
+        if mod_conf.diagram_file:
+            df = mod_conf.diagram_file
+            if m.data_directory:
+                df_path = m.data_directory / df
+            else:
+                df_path = df
+        return str(df_path)
 
     def load(self, file_or_stream):
-        pass
+        fp = api_util.open_file_or_stream(file_or_stream, encoding="utf-8")
+        data = yaml.safe_load(fp)
+        self._init(data)
 
     def keys(self):
-        return self._data.keys()
+        return self._conf.keys()
+
+    def items(self):
+        return self._conf.items()
 
     def __getitem__(self, module_name):
-        item = self._data.get(module_name, None)
+        item = self._conf.get(module_name, None)
         if item is None:
             raise KeyError(f"Module not found: {module_name}")
         return item
 
     def __len__(self):
-        return len(list(self._data.keys()))
+        return len(self._conf)
 
-##
+    def dict(self):
+        return self._conf
+
+#
+# end speculative section
+#
 
 
 def _main_usage(msg=None):
