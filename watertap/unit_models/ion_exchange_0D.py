@@ -287,19 +287,19 @@ class IonExchangeODData(UnitModelBlockData):
             doc='Bed porosity [-]'
         )
 
-        # self.col_height = Var(
-        #     initialize=2,  
-        #     bounds=(0.6, 12),  
-        #     units=pyunits.m,
-        #     doc='Column height [m]' 
-        # )
+        self.col_height = Var(
+            initialize=2,  
+            bounds=(0.6, 12),  
+            units=pyunits.m,
+            doc='Column height [m]' 
+        )
 
-        # self.col_vol = Var(
-        #     initialize=10,  
-        #     bounds=(0, 75),  
-        #     units=pyunits.m**3,
-        #     doc='Column volume of one unit [m3]'
-        # )
+        self.col_vol = Var(
+            initialize=10,  
+            bounds=(0, 75),  
+            units=pyunits.m**3,
+            doc='Column volume of one unit [m3]'
+        )
 
 
         # ====== Kinetic variables ====== #
@@ -374,7 +374,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.vel_bed = Var(
             initialize=0.0086,  
-            bounds=(0, 0.009),  
+            bounds=(0, 0.01),  # MWH, Perry's
             units=pyunits.m / pyunits.s,
             doc='Velocity through resin bed [m/s]'
         )
@@ -404,7 +404,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.Sc = Var(
             ion_set,
-            initialize=686.5,  
+            initialize=700,  
             # bounds=(0, 60),
             units=pyunits.dimensionless,
             doc='Schmidt number'
@@ -412,7 +412,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.Sh = Var(
             ion_set,
-            initialize=30.4,  
+            initialize=30,  
             # bounds=(0, 60),
             units=pyunits.dimensionless,
             doc='Sherwood number'
@@ -511,13 +511,6 @@ class IonExchangeODData(UnitModelBlockData):
             ion_set,
             doc="Langmuir isotherm",
         )
-        # def eq_langmuir(b, j):
-        #     prop_in = b.properties_in[0]
-        #     prop_out = b.properties_out[0]
-        #     return b.R_eq[j] == (prop_out.conc_equiv_phase_comp['Liq', j] / prop_in.conc_equiv_phase_comp['Liq', j] * 
-        #             (1 - b.resin_eq_capacity / b.resin_max_capacity)) / \
-        #                 (b.resin_eq_capacity / b.resin_max_capacity * \
-        #                     (1 - prop_out.conc_equiv_phase_comp['Liq', j] / prop_in.conc_equiv_phase_comp['Liq', j]))
 
         def eq_langmuir(b, j):
             return b.R_eq[j] == (b.c_norm[j] * 
@@ -683,11 +676,7 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(ion_set, doc='Fixed pattern soln')
 
         def eq_fixed_pattern_soln(b, j):
-            # prop_in = b.properties_in[0]
-            # prop_out = b.properties_out[0]
-            # c_norm = prop_out.conc_equiv_phase_comp['Liq', j] / prop_in.conc_equiv_phase_comp['Liq', j]
-            return (b.lh == (log(b.c_norm[j]) - b.R_eq[j] * log(1 - b.c_norm[j])) / 
-            (1 - b.R_eq[j]) + 1)
+            return (b.lh == (log(b.c_norm[j]) - b.R_eq[j] * log(1 - b.c_norm[j])) / (1 - b.R_eq[j]) + 1)
 
         @self.Constraint(doc='Flow waste')
 
@@ -705,7 +694,6 @@ class IonExchangeODData(UnitModelBlockData):
             return (prop_in.flow_vol_phase['Liq'] == prop_out.flow_vol_phase['Liq'] + prop_waste.flow_vol_phase['Liq'])
 
         @self.Constraint(doc='Bed depth to diameter ratio')
-
         
         def eq_bed_depth_to_diam_ratio(b):
             return (b.bed_depth / b.bed_diam == 5)
@@ -729,6 +717,17 @@ class IonExchangeODData(UnitModelBlockData):
 
         def eq_holdup(b):
             return (b.holdup == 21 + 99.72 * pyunits.convert(b.vel_bed, to_units=pyunits.cm/pyunits.s) ** 0.28)
+
+        @self.Constraint(doc='Column height')
+
+        def eq_col_height(b):
+            return (b.col_height == b.bed_depth + b.distributor_h + b.underdrain_h)
+
+
+        @self.Constraint(doc='Column vol')
+
+        def eq_col_vol(b):
+            return (b.col_vol == b.col_height * b.bed_area)
 
     def initialize(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
