@@ -13,3 +13,4 @@ Unit Models
    coag_floc_model
    crystallizer_0D
    electrodialysis_0D
+   zero_order_unit_models/index
