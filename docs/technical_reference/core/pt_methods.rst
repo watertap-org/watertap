@@ -1,3 +1,5 @@
+.. _pt_methods:
+
 Pass Through Unit Helper Methods
 ================================
 
