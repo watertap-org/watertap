@@ -325,19 +325,18 @@ def build(
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
-    # Expressions for parameter sweep ------------------------------------------------------------------------------
-    m.fs.product.properties[
-        0
-    ].mass_frac_phase_comp  # Final permeate concentration as mass fraction
-    m.fs.feed.properties[
-        0
-    ].conc_mass_phase_comp  # Touch feed concentration as mass concentration
-    m.fs.disposal.properties[
-        0
-    ].conc_mass_phase_comp  # Touch final brine concentration as mass concentration
-    m.fs.disposal.properties[
-        0
-    ].mass_frac_phase_comp  # Touch final brine concentration as mass fraction
+    # Expressions for parameter sweep -----------------------------------------
+    # Final permeate concentration as mass fraction
+    m.fs.product.properties[0].mass_frac_phase_comp
+
+    # Touch feed concentration as mass concentration
+    m.fs.feed.properties[0].conc_mass_phase_comp
+
+    # Touch final brine concentration as mass concentration
+    m.fs.disposal.properties[0].conc_mass_phase_comp
+
+    # Touch final brine concentration as mass fraction
+    m.fs.disposal.properties[0].mass_frac_phase_comp
 
     m.fs.mass_water_recovery = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]
@@ -466,7 +465,7 @@ def build(
         + m.fs.costing.membrane_replacement_lcow
     )
 
-    # Connections --------------------------------------------------------------------------------------------------
+    # Connections ------------------------------------------------------------
     # Connect the feed to the first pump
     m.fs.feed_to_pump = Arc(
         source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet
@@ -898,7 +897,6 @@ def optimize_set_up(
     # unfix eq pumps
     for idx, pump in m.fs.BoosterPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
-        # pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.max_ro_pressure_con = Constraint(
             expr=(
                 m.fs.ro_min_pressure,
@@ -910,7 +908,6 @@ def optimize_set_up(
             pump.max_ro_pressure_con,
             iscale.get_scaling_factor(pump.control_volume.properties_out[0].pressure),
         )
-        # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
     if B_case == BCase.single_optimum:
@@ -950,7 +947,6 @@ def optimize_set_up(
         stage.area.setub(20000)
         stage.width.setlb(0.1)
         stage.width.setub(1000)
-        # stage.length.setub(8)
 
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
@@ -992,7 +988,6 @@ def optimize_set_up(
             elif A_case == ACase.fixed:
                 if not isinstance(A_value, (int, float)):
                     raise TypeError("A_value must be a numeric value")
-                    # raise TypeError('A value for A_value must be provided')
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_value)
             else:
@@ -1045,21 +1040,18 @@ def optimize_set_up(
                 pass
 
     min_avg_flux = 1  # minimum average water flux [kg/m2-h]
-    min_avg_flux = (
-        min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s
-    )  # [kg/m2-s]
+    # [kg/m2-s]
+    min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s
 
     # additional constraints
     if water_recovery is not None:
-        m.fs.water_recovery.fix(
-            water_recovery
-        )  # product mass flow rate fraction of feed [-]
+        # product mass flow rate fraction of feed [-]
+        m.fs.water_recovery.fix(water_recovery)
     if Cbrine is not None:
+        # Final brine concentration
         m.fs.ROUnits[m.fs.Stages.last()].feed_side.properties[
             0, 1
-        ].conc_mass_phase_comp["Liq", "NaCl"].fix(
-            Cbrine
-        )  # Final brine concentration
+        ].conc_mass_phase_comp["Liq", "NaCl"].fix(Cbrine)
 
     # add upper bound for permeate concentration
     if permeate_quality_limit is not None:
@@ -1131,9 +1123,6 @@ def display_state(m):
         print_state(f"RO {stage} permeate", m.fs.ROUnits[stage].permeate)
         print_state(f"RO {stage} retentate", m.fs.ROUnits[stage].retentate)
         wr = m.fs.ROUnits[stage].recovery_vol_phase[0, "Liq"].value
-        # TODO: add rejection_phase_comp to 1DRO; currently, only 0DRO has this variable.
-        # sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
-        # print(f"Stage {stage} Volumetric water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
         if stage == m.fs.FirstStage:
             pass
