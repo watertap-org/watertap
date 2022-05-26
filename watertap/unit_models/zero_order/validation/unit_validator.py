@@ -130,7 +130,7 @@ _column_to_component_map = {
     "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
-    "chem_dose" : ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
+    "chem_dose": ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
 }
 
 
@@ -142,7 +142,7 @@ def _initialize_flowsheet(m):
     m.fs.costing.initialize()
 
 
-def _run_flow_in_only(m, df):
+def _run_analysis(m, df, extra_columns):
 
     s = get_solver()
     watertap_costing_attributes = {
@@ -151,16 +151,24 @@ def _run_flow_in_only(m, df):
         "total_operating_cost": [],
         "LCOW": [],
     }
-    print("Starting analsys")
-    for _, row in df.iterrows():
+    total_number = len(df.index)
+    print(f"Starting analsys, found {total_number} points")
+    for _, index in enumerate(df.index):
+        if extra_columns:
+            index, flow_in = index[:-1], index[-1]
+        else:
+            index, flow_in = [], index
         if _ % 10 == 0:
-            print(f"At {row['flow_in']:.6f} m^3/s")
-        for k in _column_to_component_map:
-            if k in row:
-                v, units = _column_to_component_map[k]
-                v = m.find_component(v)
-                v.fix(pyunits.convert(row[k] * units, v.get_units()))
-        m.fs.feed.flow_vol[0].fix(row["flow_in"] * pyunits.m**3 / pyunits.s)
+            msg = f"At {_}/{total_number} "
+            for name, val in zip(extra_columns, index):
+                msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
+            msg += f"flow_in={flow_in:.4f}m^3/s"
+            print(msg)
+        m.fs.feed.flow_vol[0].fix(flow_in * pyunits.m**3 / pyunits.s)
+        for name, val in zip(extra_columns, index):
+            var, units = _column_to_component_map[name]
+            var = m.find_component(var)
+            var.fix(pyunits.convert(val * units, var.get_units()))
         _initialize_flowsheet(m)
         s.solve(m)
         for att, vals in watertap_costing_attributes.items():
@@ -284,6 +292,9 @@ class ZeroOrderUnitChecker:
                 f"Unexpected number of degrees of freedom {degrees_of_freedom(self.model)}"
             )
 
+        self._extra_columns = [k for k in _column_to_component_map if k in df.columns]
+        df.set_index(self._extra_columns + ["flow_in"], inplace=True)
+
         self.worst_difference = None
 
     def check_unit(self):
@@ -292,8 +303,8 @@ class ZeroOrderUnitChecker:
         if self.config.process_subtype is not None:
             msg += f" with subtype {self.config.process_subtype}"
         print(msg)
-        _run_flow_in_only(self.model, df)
 
+        _run_analysis(self.model, df, self._extra_columns)
         self.worst_difference = max(
             _worst_relative_difference(np.array(df[wt3_key]), np.array(df[wt_k]))
             for wt3_key, wt_k in _WT3_stone.items()
@@ -302,33 +313,57 @@ class ZeroOrderUnitChecker:
         return self.worst_difference
 
     def get_differnces_figure(self):
-        assert self.comparison_dataframe is not None
+        assert self.worst_difference is not None
 
-        fig, ax = subplots(1, len(_long_name_to_WT3_name), sharex=True, figsize=(18, 6))
-
-        xaxis_label = "Flow In (m^3/s)"
-
-        df = self.comparison_dataframe
-
-        for idx, (ln, wt3n) in enumerate(_long_name_to_WT3_name.items()):
-            ax[idx].plot(df["flow_in"], df[wt3n], label="WT3", color="blue")
-            ax[idx].plot(
-                df["flow_in"], df[_WT3_stone[wt3n]], label="WT", color="orange"
+        if self._extra_columns:
+            figure_iterator = (
+                (
+                    k,
+                    self.comparison_dataframe.iloc[indices].droplevel(
+                        self._extra_columns
+                    ),
+                )
+                for k, indices in self.comparison_dataframe.groupby(
+                    level=list(range(len(self._extra_columns)))
+                ).indices.items()
             )
-            ax[idx].set_xlabel(xaxis_label)
-            ax[idx].set_ylabel(ln)
+        else:
+            figure_iterator = ((None, self.comparison_dataframe),)
 
-        name = f"Unit Model {self.config.zero_order_model.__name__}"
-        if self.config.process_subtype:
-            name += f", subtype {self.config.process_subtype}"
-        if self.worst_difference:
-            name += f"\nWorst Relative Difference: {self.worst_difference*100:.4f}%"
-        fig.suptitle(name)
-        # only use the last legend
-        fig.legend(*ax[idx].get_legend_handles_labels())
-        fig.tight_layout()
+        figs = {}
+        for index, df in figure_iterator:
+            fig, ax = subplots(
+                1, len(_long_name_to_WT3_name), sharex=True, figsize=(18, 6)
+            )
 
-        return fig
+            xaxis_label = "Flow In (m^3/s)"
+
+            for idx, (ln, wt3n) in enumerate(_long_name_to_WT3_name.items()):
+                ax[idx].plot(df[wt3n], label="WT3", color="blue")
+                ax[idx].plot(df[_WT3_stone[wt3n]], label="WT", color="orange")
+                ax[idx].set_xlabel(xaxis_label)
+                ax[idx].set_ylabel(ln)
+
+            name = f"Unit Model {self.config.zero_order_model.__name__}"
+            if self.config.process_subtype:
+                name += f", subtype {self.config.process_subtype}"
+            if index is not None:
+                if len(self._extra_columns) <= 1:
+                    attrname = self._extra_columns[0]
+                    name += f"{attrname}={index:.6f}{_column_to_component_map[attrname][1]} "
+                else:
+                    for attrname, val in zip(self._extra_columns, index):
+                        name += f"{attrname}={val:.6f}{_column_to_component_map[attrname][1]} "
+            if self.worst_difference:
+                name += f"\nWorst Relative Difference: {self.worst_difference*100:.4f}%"
+            fig.suptitle(name)
+            # only use the last legend
+            fig.legend(*ax[idx].get_legend_handles_labels())
+            fig.tight_layout()
+
+            figs[index] = fig
+
+        return figs[None] if index is None else figs
 
 
 def check_unit(**kwargs):
