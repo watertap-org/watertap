@@ -4,7 +4,7 @@ Utility functions for the ``api`` module.
 from typing import IO
 
 
-def open_file_or_stream(fos, attr, **kwargs) -> IO:
+def open_file_or_stream(fos, attr="read", **kwargs) -> IO:
     """Open a file or use the existing stream. Avoids adding this logic to every
       function that wants to provide multiple ways of specifying a file.
 
