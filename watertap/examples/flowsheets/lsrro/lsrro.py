@@ -32,13 +32,12 @@ from pyomo.environ import (
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
-from idaes.generic_models.costing import UnitModelCostingBlock
-from idaes.generic_models.unit_models import Feed, Product, Mixer
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Feed, Product, Mixer
+from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
