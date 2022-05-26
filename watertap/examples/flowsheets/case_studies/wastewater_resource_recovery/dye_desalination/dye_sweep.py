@@ -13,7 +13,7 @@ def set_up_sensitivity(m):
     opt_function = dye_desalination.solve
 
     # create outputs
-    # outputs["LCOW"] = m.fs.costing.LCOW_dye_recovered
+    outputs["LCOW"] = m.fs.costing.LCOW_dye_recovered
     outputs["LCOT"] = m.fs.costing.LCOT_dye_mass
 
     return outputs, optimize_kwargs, opt_function
@@ -28,8 +28,10 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     sweep_params = {}
 
     if case_num == 1:
-        m.fs.costing.dye_cost.unfix()
-        sweep_params["dye_cost"] = LinearSample(m.fs.costing.dye_cost, 0.1, 5, nx)
+        m.fs.costing.dye_retentate_cost.unfix()
+        sweep_params["dye_retentate_cost"] = LinearSample(
+            m.fs.costing.dye_retentate_cost, 0.1, 5, nx
+        )
 
     elif case_num == 2:
         m.fs.costing.waste_disposal_cost.unfix()
@@ -89,13 +91,11 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     return global_results, sweep_params, m
 
 
-def main(case_num=6, nx=10, interpolate_nan_outputs=True):
+def main(case_num=1, nx=11, interpolate_nan_outputs=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
-
-    # comm, rank, num_procs = _init_mpi()
 
     global_results, sweep_params, m = run_analysis(
         case_num, nx, interpolate_nan_outputs
