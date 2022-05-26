@@ -1,3 +1,5 @@
+.. _electricity_methods:
+
 Helper Methods for Electricity Demand
 =====================================
 
