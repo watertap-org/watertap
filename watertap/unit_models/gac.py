@@ -300,14 +300,6 @@ class GACData(UnitModelBlockData):
             doc="Freundlich k parameter",
         )
 
-        self.ebct = Var(
-            initialize=100,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time"),
-            doc="Empty bed contact time",
-        )
-
         self.eps_bed = Var(
             initialize=0.5,
             bounds=(0, 1),
@@ -316,6 +308,14 @@ class GACData(UnitModelBlockData):
             doc="GAC bed void fraction",
         )
 
+        self.ebct = Var(
+            initialize=100,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Empty bed contact time",
+        )
+        """
         self.thru = Var(
             initialize=10,
             bounds=(0, None),
@@ -339,7 +339,7 @@ class GACData(UnitModelBlockData):
             units=units_meta("time"),
             doc="Replace time for saturated GAC",
         )
-
+        """
         # ---------------------------------------------------------------------
         # GAC particle properties
         self.particle_rho_app = Var(
@@ -373,7 +373,7 @@ class GACData(UnitModelBlockData):
             units=units_meta("length") ** 2 * units_meta("time") ** -1,
             doc="Surface diffusion coefficient",
         )
-
+        """
         # ---------------------------------------------------------------------
         # Minimum conditions to achieve a constant pattern solution
         self.min_st = Var(
@@ -465,7 +465,7 @@ class GACData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="Throughput equation parameter",
         )
-
+        """
         # ---------------------------------------------------------------------
         # Intermediate variables
         self.dg = Var(
@@ -537,6 +537,7 @@ class GACData(UnitModelBlockData):
                 1 - b.eps_bed
             )
 
+    """
         @self.Constraint(
             doc="Minimum Stanton number to achieve constant pattern solution"
         )
@@ -589,7 +590,7 @@ class GACData(UnitModelBlockData):
         @self.Constraint(doc="Bed replacement time")
         def eq_replacement_time(b):
             return b.replace_time == b.min_time + (b.tau - b.min_tau) * (b.dg + 1)
-
+    """
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
@@ -623,11 +624,6 @@ class GACData(UnitModelBlockData):
             solver=solver,
             state_args=state_args,
         )
-
-        blk.treatwater.properties_in[0].conc_mass_phase_comp
-        blk.treatwater.properties_in[0].flow_vol_phase["Liq"]
-        blk.treatwater.properties_out[0].conc_mass_phase_comp
-        blk.treatwater.properties_out[0].flow_vol_phase["Liq"]
 
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
