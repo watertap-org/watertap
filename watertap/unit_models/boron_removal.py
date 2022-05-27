@@ -672,62 +672,33 @@ class BoronRemovalData(UnitModelBlockData):
             doc="Mass transfer term",
         )
         def eq_mass_transfer_term(self, t, p, j):
-            if j == self.boron_name_id:
-                boron_out = pyunits.convert(
-                    self.conc_mol_Boron[t],
+            map = {
+                self.boron_name_id: self.conc_mol_Boron[t],
+                self.borate_name_id: self.conc_mol_Borate[t],
+                self.proton_name_id: self.conc_mol_H[t],
+                self.hydroxide_name_id: self.conc_mol_OH[t],
+            }
+
+            if (
+                j == self.boron_name_id
+                or j == self.borate_name_id
+                or j == self.proton_name_id
+                or j == self.hydroxide_name_id
+            ):
+                c_out = pyunits.convert(
+                    map[j],
                     to_units=units_meta("amount") * units_meta("length") ** -3,
                 )
                 input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
-                    p, self.boron_name_id
+                    p, j
                 ]
                 exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase[p] * boron_out
+                    self.control_volume.properties_out[t].flow_vol_phase[p] * c_out
                 )
 
                 loss_rate = input_rate - exit_rate
                 return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
-            elif j == self.borate_name_id:
-                borate_out = pyunits.convert(
-                    self.conc_mol_Borate[t],
-                    to_units=units_meta("amount") * units_meta("length") ** -3,
-                )
-                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
-                    p, self.borate_name_id
-                ]
-                exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase[p] * borate_out
-                )
 
-                loss_rate = input_rate - exit_rate
-                return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
-            elif j == self.proton_name_id:
-                p_out = pyunits.convert(
-                    self.conc_mol_H[t],
-                    to_units=units_meta("amount") * units_meta("length") ** -3,
-                )
-                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
-                    p, self.proton_name_id
-                ]
-                exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase[p] * p_out
-                )
-
-                loss_rate = input_rate - exit_rate
-                return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
-            elif j == self.hydroxide_name_id:
-                h_out = pyunits.convert(
-                    self.conc_mol_OH[t],
-                    to_units=units_meta("amount") * units_meta("length") ** -3,
-                )
-                input_rate = self.control_volume.properties_in[t].flow_mol_phase_comp[
-                    p, self.hydroxide_name_id
-                ]
-                exit_rate = (
-                    self.control_volume.properties_out[t].flow_vol_phase[p] * h_out
-                )
-
-                loss_rate = input_rate - exit_rate
-                return self.control_volume.mass_transfer_term[t, p, j] == -loss_rate
             elif j == self.cation_name_id:
                 dose_rate = pyunits.convert(
                     self.caustic_dose_rate[t]
@@ -736,6 +707,7 @@ class BoronRemovalData(UnitModelBlockData):
                     to_units=units_meta("amount") / units_meta("time"),
                 )
                 return self.control_volume.mass_transfer_term[t, p, j] == dose_rate
+
             else:
                 return self.control_volume.mass_transfer_term[t, p, j] == 0.0
 
@@ -806,14 +778,16 @@ class BoronRemovalData(UnitModelBlockData):
         # Rescale internal variables
         for t in blk.flowsheet().config.time:
             iscale.set_scaling_factor(
-                blk.conc_mol_OH[t], 100 / blk.conc_mol_OH[t].value
-            )
-            iscale.set_scaling_factor(blk.conc_mol_H[t], 100 / blk.conc_mol_H[t].value)
-            iscale.set_scaling_factor(
-                blk.conc_mol_Boron[t], 100 / blk.conc_mol_Boron[t].value
+                blk.conc_mol_OH[t], max(100 / blk.conc_mol_OH[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_Borate[t], 100 / blk.conc_mol_Borate[t].value
+                blk.conc_mol_H[t], max(100 / blk.conc_mol_H[t].value, 100)
+            )
+            iscale.set_scaling_factor(
+                blk.conc_mol_Boron[t], max(100 / blk.conc_mol_Boron[t].value, 100)
+            )
+            iscale.set_scaling_factor(
+                blk.conc_mol_Borate[t], max(100 / blk.conc_mol_Borate[t].value, 100)
             )
 
     def outlet_pH(self, time=0):
@@ -824,9 +798,50 @@ class BoronRemovalData(UnitModelBlockData):
 
     def propogate_initial_state(self):
         units_meta = self.config.property_package.get_metadata().get_derived_units
-        i = 0
-        for t in self.control_volume.properties_in:
 
+        # This is a helper function to automate some of the logic behind
+        #   setting good initial guesses for state vars and properties
+        def _propogation_helper(
+            name, prop_in, prop_out, is_indexed=False, func=None, obj=None
+        ):
+            if name in prop_in.define_state_vars():
+                if is_indexed == False:
+                    if prop_out.component(name).is_fixed() == False:
+                        prop_out.component(name).set_value(
+                            value(prop_in.component(name))
+                        )
+                else:
+                    for ind in prop_in.component(name):
+                        if prop_out.component(name)[ind].is_fixed() == False:
+                            prop_out.component(name)[ind] = value(
+                                prop_in.component(name)[ind]
+                            )
+            if (
+                prop_out.is_property_constructed(name)
+                and not name in prop_in.define_state_vars()
+            ):
+                if is_indexed == False:
+                    if func == None and prop_in.is_property_constructed(name):
+                        prop_out.component(name).set_value(
+                            value(prop_in.component(name))
+                        )
+                    else:
+                        prop_out.component(name).set_value(func(obj))
+                        if prop_in.is_property_constructed(name):
+                            prop_in.component(name).set_value(func(obj))
+                else:
+                    for ind in prop_out.component(name):
+                        if func == None and prop_in.is_property_constructed(name):
+                            prop_out.component(name)[ind] = value(
+                                prop_in.component(name)[ind]
+                            )
+                        else:
+                            prop_out.component(name)[ind] = func(obj, ind)
+                            if prop_in.is_property_constructed(name):
+                                prop_in.component(name)[ind] = func(obj, ind)
+
+        t0 = self.flowsheet().time.first()
+        for t in self.control_volume.properties_in:
             # Should check 'define_state_vars' to see if user has provided
             #   state vars that are outside of the checks in this function
             if (
@@ -841,249 +856,153 @@ class BoronRemovalData(UnitModelBlockData):
                     "state variable basis to apply the 'propogate_initial_state' method"
                 )
 
-            if i == 0:
-                t0 = t
+            _propogation_helper(
+                "pressure",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=False,
+            )
 
-            if "pressure" in self.control_volume.properties_in[t].define_state_vars():
-                self.control_volume.properties_out[t].pressure = value(
-                    self.control_volume.properties_in[t0].pressure
-                )
+            _propogation_helper(
+                "temperature",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=False,
+            )
 
-            if (
-                "temperature"
-                in self.control_volume.properties_in[t].define_state_vars()
-            ):
-                self.control_volume.properties_out[t].temperature = value(
-                    self.control_volume.properties_in[t0].temperature
-                )
+            _propogation_helper(
+                "flow_mol_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+            )
 
-            # If flow_mol_phase_comp is state var
-            if (
-                "flow_mol_phase_comp"
-                in self.control_volume.properties_in[t].define_state_vars()
-            ):
+            def _flow_vol_calc(self, no_index):
+                sum = 0
                 for ind in self.control_volume.properties_in[t].flow_mol_phase_comp:
-                    if (
-                        self.control_volume.properties_out[t]
-                        .flow_mol_phase_comp[ind]
-                        .is_fixed()
-                        == False
-                    ):
-                        self.control_volume.properties_out[t].flow_mol_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                        )
+                    sum += self.control_volume.properties_in[t].flow_mol_phase_comp[ind]
+                approx_dens = pyunits.convert(
+                    55000 * pyunits.mol / pyunits.m**3,
+                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                )
+                return sum / approx_dens
 
-                # Check to see if 'flow_vol_phase' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "flow_vol_phase"
-                ):
-                    sum = 0
-                    for ind in self.control_volume.properties_in[t].flow_mol_phase_comp:
-                        sum += self.control_volume.properties_in[t].flow_mol_phase_comp[
-                            ind
+            _propogation_helper(
+                "flow_vol_phase",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_flow_vol_calc,
+                obj=self,
+            )
+
+            def _flow_mass_calc(self, ind):
+                return value(
+                    self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
+                    * self.control_volume.properties_in[t0].mw_comp[ind[1]]
+                )
+
+            _propogation_helper(
+                "flow_mass_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_flow_mass_calc,
+                obj=self,
+            )
+
+            def _mole_frac_calc(self, ind):
+                return value(
+                    self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
+                    / sum(
+                        self.control_volume.properties_in[t0].flow_mol_phase_comp[
+                            ind[0], j
                         ]
-                    approx_dens = pyunits.convert(
-                        55000 * pyunits.mol / pyunits.m**3,
-                        to_units=units_meta("amount") * units_meta("length") ** -3,
+                        for j in self.config.property_package.component_list
                     )
-                    self.control_volume.properties_out[t].flow_vol_phase["Liq"] = (
-                        sum / approx_dens
+                )
+
+            _propogation_helper(
+                "mole_frac_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_mole_frac_calc,
+                obj=self,
+            )
+
+            def _mass_frac_calc(self, ind):
+                return value(
+                    self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
+                    * self.control_volume.properties_in[t0].mw_comp[ind[1]]
+                    / sum(
+                        self.control_volume.properties_in[t0].flow_mol_phase_comp[
+                            ind[0], j
+                        ]
+                        * self.control_volume.properties_in[t0].mw_comp[j]
+                        for j in self.config.property_package.component_list
                     )
+                )
 
-                # Check to see if 'flow_mass_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "flow_mass_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].flow_mass_phase_comp:
-                        self.control_volume.properties_out[t].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                        )
+            _propogation_helper(
+                "mass_frac_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_mass_frac_calc,
+                obj=self,
+            )
 
-                        self.control_volume.properties_in[t].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                        )
-
-                # Check to see if 'mole_frac_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "mole_frac_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].mole_frac_phase_comp:
-                        self.control_volume.properties_out[t].mole_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
-
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].mole_frac_phase_comp:
-                        self.control_volume.properties_in[t].mole_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
-
-                # Check to see if 'mass_frac_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "mass_frac_phase_comp"
-                ):
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].mass_frac_phase_comp:
-                        self.control_volume.properties_out[t].mass_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                * self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
-
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].mass_frac_phase_comp:
-                        self.control_volume.properties_in[t].mass_frac_phase_comp[
-                            ind
-                        ] = value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                * self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
-
-                # Check to see if 'conc_mol_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "conc_mol_phase_comp"
-                ):
-                    approx_dens = pyunits.convert(
-                        55000 * pyunits.mol / pyunits.m**3,
-                        to_units=units_meta("amount") * units_meta("length") ** -3,
+            def _conc_mol_calc(self, ind):
+                approx_dens = pyunits.convert(
+                    55000 * pyunits.mol / pyunits.m**3,
+                    to_units=units_meta("amount") * units_meta("length") ** -3,
+                )
+                return approx_dens * value(
+                    self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
+                    / sum(
+                        self.control_volume.properties_in[t0].flow_mol_phase_comp[
+                            ind[0], j
+                        ]
+                        for j in self.config.property_package.component_list
                     )
-                    for ind in self.control_volume.properties_in[t].conc_mol_phase_comp:
-                        self.control_volume.properties_out[t].conc_mol_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
+                )
 
-                    for ind in self.control_volume.properties_in[t].conc_mol_phase_comp:
-                        self.control_volume.properties_in[t].conc_mol_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
+            _propogation_helper(
+                "conc_mol_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_conc_mol_calc,
+                obj=self,
+            )
 
-                # Check to see if 'conc_mass_phase_comp' is constructed
-                if self.control_volume.properties_out[t].is_property_constructed(
-                    "conc_mass_phase_comp"
-                ):
-                    approx_dens = pyunits.convert(
-                        1000 * pyunits.kg / pyunits.m**3,
-                        to_units=units_meta("mass") * units_meta("length") ** -3,
+            def _conc_mass_calc(self, ind):
+                approx_dens = pyunits.convert(
+                    1000 * pyunits.kg / pyunits.m**3,
+                    to_units=units_meta("mass") * units_meta("length") ** -3,
+                )
+                return approx_dens * value(
+                    self.control_volume.properties_in[t0].flow_mol_phase_comp[ind]
+                    * self.control_volume.properties_in[t0].mw_comp[ind[1]]
+                    / sum(
+                        self.control_volume.properties_in[t0].flow_mol_phase_comp[
+                            ind[0], j
+                        ]
+                        * self.control_volume.properties_in[t0].mw_comp[j]
+                        for j in self.config.property_package.component_list
                     )
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].conc_mass_phase_comp:
-                        self.control_volume.properties_out[t].conc_mass_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                * self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
+                )
 
-                    for ind in self.control_volume.properties_in[
-                        t
-                    ].conc_mass_phase_comp:
-                        self.control_volume.properties_in[t].conc_mass_phase_comp[
-                            ind
-                        ] = approx_dens * value(
-                            self.control_volume.properties_in[t0].flow_mol_phase_comp[
-                                ind
-                            ]
-                            * self.control_volume.properties_in[t0].mw_comp[ind[1]]
-                            / sum(
-                                self.control_volume.properties_in[
-                                    t0
-                                ].flow_mol_phase_comp[ind[0], j]
-                                * self.control_volume.properties_in[t0].mw_comp[j]
-                                for j in self.config.property_package.component_list
-                            )
-                        )
+            _propogation_helper(
+                "conc_mass_phase_comp",
+                self.control_volume.properties_in[t],
+                self.control_volume.properties_out[t],
+                is_indexed=True,
+                func=_conc_mass_calc,
+                obj=self,
+            )
 
-            i += 1
         # End Loop
 
     def calculate_scaling_factors(self):
