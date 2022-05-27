@@ -573,7 +573,6 @@ class FlowsheetInterface(BlockInterface):
         Called from :meth:`load`.
         """
         cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
-        print(f"@@ load: cur_block_path={cur_block_path}")
         bdiff = BlockDiff()
         ui = get_block_interface(cur_block)
 
