@@ -881,14 +881,12 @@ def test_assert_electroneutrality_get_property():
         )
 
     # check error when electroneutralit condition violated for stringent tolerance
+    #   Changed the error message to look for the correct pattern instead of
+    #   exact match of the numeric value in the string
     stream[0].flow_mol_phase_comp.unfix()
     with pytest.raises(
         AssertionError,
-        match=re.escape(
-            "Electroneutrality condition violated in fs.stream[0]. "
-            "Ion concentrations should be adjusted to bring "
-            "the result of 9.09E-13 closer towards 0."
-        ),
+        match=re.escape("Electroneutrality condition violated in fs.stream[0]. "),
     ):
         stream[0].assert_electroneutrality(
             defined_state=False, adjust_by_ion="Cl_-", tol=1e-18

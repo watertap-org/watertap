@@ -1,3 +1,5 @@
+.. _diso_methods:
+
 Double Inlet - Single Outlet Helper Methods
 ===========================================
 
