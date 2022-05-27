@@ -12,6 +12,40 @@ Provides these abilitites:
   * Load a mapping of names to flowsheet modules from a configuration file, and
     also allow standard and user-specified metadata from that file.
 
+Exchange format for flowsheet data::
+
+    {
+        "blocks": {
+            "Flowsheet": {
+                "category": "default" OR "<category-name>",
+                "display_name": "<name>",
+                "description": "<descriptive text>",
+                "variables": {
+                    "<name>": {
+                        "value": <number or string>
+                          OR
+                        "value": {"index": [[<index list1>], [<index list2>], ..],
+                                  "value": [<value1>, <value2>, ..]}
+                        "display_name": "<name>"
+                        "description": "<descriptive text>",
+                        "units": "<units for value>",
+                        "readonly": <True or False>
+                    },
+                    ...
+                },
+                "blocks": {
+                   << Same structure as Flowsheet block for each sub-block, which may
+                      of course have its own sub-blocks, etc. >>
+                },
+                "meta": {
+                    << block-level metadata (currently unused) >>
+                }
+            }
+        }
+        "meta": {
+           << flowsheet-level metadata >>
+        }
+    }
 """
 import importlib
 import json
@@ -192,7 +226,7 @@ def export_variables(
 
     Args:
         block: IDAES model block
-        variables: List of variable names of dict of variable data to export.
+        variables: List of variable names, or dict, of variable data to export.
         name: Name to give this block (default=``block.name``)
         desc: Description of the block (default=``block.doc``)
         category: User-defined category for this block, such as "costing", that
@@ -200,10 +234,13 @@ def export_variables(
 
     Returns:
         An initialized :class:`BlockInterface` object.
+
+    Raises:
+        ValueError: bad form for an input value
     """
 
     def var_check(b, n):
-        info = "block={b.name},attr={n}"
+        info = f"block={b.name},attr={n}"
         try:
             obj = getattr(b, n)
             if not isinstance(obj, Var):
@@ -213,15 +250,25 @@ def export_variables(
 
     var_info_dict = {}
     if variables is not None:
-        if hasattr(variables, "items"):
+        if hasattr(variables, "items"):  # dict-like
             var_info_dict = {name: model.Variable(**val)
                              for name, val in variables.items()}
         else:
-            var_info_dict = {name: model.Variable() for name in variables}
+            # make a single string into a list of them
+            if isinstance(variables, str):
+                variables = (variables,)
+            try:
+                for name in variables:
+                    if not isinstance(name, str):
+                        raise TypeError(f"'{name}' is not a string")
+                    var_info_dict[name] = model.Variable()
+            except TypeError as err:
+                raise ValueError(f"Expected list of variable names for 'variables': "
+                                 f"{err}")
         for name in var_info_dict:
             error = var_check(block, name)
             if error:
-                raise TypeError(error)
+                raise ValueError(error)
     block_info = model.Block(
         display_name=name,
         description=desc,
@@ -316,6 +363,11 @@ class FlowsheetInterface(BlockInterface):
             _log.debug("as_dict:end. status=error")
             raise ValueError("Cannot serialize before `set_block()` is called")
         d = self._get_block_interface_tree().dict()
+
+        # clean up top-level (don't need block descriptors)
+        for top_level_key in "variables", "display_name", "description", "category":
+            del d[top_level_key]
+
         _log.debug("as_dict:end. status=ok")
         return d
 
@@ -521,6 +573,7 @@ class FlowsheetInterface(BlockInterface):
         Called from :meth:`load`.
         """
         cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
+        print(f"@@ load: cur_block_path={cur_block_path}")
         bdiff = BlockDiff()
         ui = get_block_interface(cur_block)
 
@@ -529,13 +582,18 @@ class FlowsheetInterface(BlockInterface):
             bdiff.extra = []
         else:
             info_vars = ui._block_info.variables
-            bdiff.extra = list(info_vars.keys())
+            bdiff.extra = set(info_vars.keys())
             for load_var_name, load_var_info in load_block_info.variables.items():
                 details = f"block={cur_block_path} variable={load_var_name}"
+                # stop if variable is not known for this block
                 if load_var_name not in info_vars:
                     _log.warn("No matching exported variable found. " + details)
                     bdiff.missing.append(load_var_info.name)
-                elif load_var_info.readonly:
+                    continue
+                # set corresponding block variable's value, if (a) not read-only, and
+                # (b) there is a value in the loaded variable
+                bdiff.extra.remove(load_var_name)  # remove block var from 'extra'
+                if load_var_info.readonly:
                     _log.debug("Not setting readonly variable. " + details)
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
@@ -552,13 +610,12 @@ class FlowsheetInterface(BlockInterface):
                     else:
                         var_obj.set_value(load_var_info.value.value)
                     _log.debug("Exported variable loaded. " + details)
-                    bdiff.extra.remove(load_var_name)
 
             # save non-empty missing/extra
             if bdiff.missing:
                 self._var_diff.missing[cur_block_path] = bdiff.missing
             if bdiff.extra:
-                self._var_diff.extra[cur_block_path] = bdiff.extra
+                self._var_diff.extra[cur_block_path] = list(bdiff.extra)
 
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
@@ -571,22 +628,28 @@ class FlowsheetInterface(BlockInterface):
 
         Called from :meth:`as_dict`.
         """
-        # use a stack that has the path and object for each new block to visit
+        # use a stack that has the path and object for each new block to visit,
+        # and initialize with this block; this means the flowsheet root block
+        # will be the first (and only) block in the "blocks" map
         path = [self.block.name]
         stack = [(path, self._block)]
-        tree = self._block_info.copy()
-        tree.blocks = {}
+        tree = model.Block()
+
         # keep going until no more blocks to visit
         while stack:
             path, block = stack.pop()
-            # if there is a block interface, add it to the tree
+
+            # If there is a block interface, add it to the tree.
+            # Don't add blocks with no UI, since we may never need to add them.
             ui = get_block_interface(block)
             if ui:
                 self._add_to_tree(tree, path, ui)
-            # add any found sub-blocks to the stack
+
+            # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
                 for sb_name, sb_val in block.component_map(ctype=Block).items():
                     stack.append((path + [sb_name], sb_val))
+
         return tree
 
     def _add_to_tree(self, tree: model.Block, path: List[str], ui: BlockInterface):
@@ -600,17 +663,25 @@ class FlowsheetInterface(BlockInterface):
             sb = node.blocks.get(name, None)
             # create if not found
             if not sb:
-                sb = model.Block(name=name)
+                new_sb = model.Block(name=name)
                 node.blocks[name] = sb
+            else:
+                # avoid modifying existing Block model when we set variable values
+                new_sb = sb.copy()
+                new_sb.blocks = {}
             # descend
-            node = sb
+            node = new_sb
+
         # check that leaf is not there, already (why would it be?!)
         if leaf_name in node.blocks:
             raise ValueError(f"Duplicate node. path={path}")
-        # add leaf
+
+        # create leaf and set its variable values from the block
         leaf = ui._block_info.copy()
         for name, variable in leaf.variables.items():
             variable.value = self._get_block_variable_value(ui.block, name)
+
+        # add leaf to blocks
         node.blocks[leaf_name] = ui._block_info
 
     def _check_action(self, name):
@@ -668,87 +739,87 @@ class FlowsheetInterface(BlockInterface):
 #
 
 
-class FlowsheetModuleParameter(BaseModel):
-    description: str  #: parameter description
-    datatype: str   #: expected param type (for front-end)
-
-
-class FlowsheetModule(BaseModel):
-    name: str  #: display name
-    description: str  #: description of module
-    diagram_file: Union[FilePath, str] = ""  #: diagram file, if any
-    parameters: Dict[str, FlowsheetModuleParameter] = {}  #: parameters, if any
-
-
-class FlowsheetModuleConfig(BaseModel):
-    data_directory: DirectoryPath  #: relative paths for diagram_file from here
-    modules = Dict[str, FlowsheetModule]  #: dotted.module.path to module info map
-
-
-class FlowsheetModuleDict:
-    """Dict-like interface to information about some flowsheet modules.
-    """
-    def __init__(self, from_file=None, data=None, on_error=None):
-        self._err_cb = None
-        self._conf = {}
-        if data:
-            self._init(data)
-        elif from_file:
-            self.load(from_file)
-
-    def _init(self, data):
-        m = FlowsheetModuleConfig.parse_obj(data)
-        for mod_name, mod_conf in m.modules.items():
-            try:
-                mod_obj = importlib.import_module(mod_name)
-                diagram_path = self._get_diagram_file(m, mod_conf)
-                self._conf[mod_name] = {
-                    "module": mod_obj,
-                    "diagram": diagram_path,
-                    "name": mod_conf.name,
-                    "description": mod_conf.description,
-                    "parameters": mod_conf.parameters.dict()
-                }
-            except ImportError as err:
-                if self._err_cb:
-                    self._err_cb(mod_conf, err)
-                else:
-                    raise
-
-    @staticmethod
-    def _get_diagram_file(m: FlowsheetModuleConfig,
-                          mod_conf: FlowsheetModule) -> Union[Path, str]:
-        df_path = ""
-        if mod_conf.diagram_file:
-            df = mod_conf.diagram_file
-            if m.data_directory:
-                df_path = m.data_directory / df
-            else:
-                df_path = df
-        return str(df_path)
-
-    def load(self, file_or_stream):
-        fp = api_util.open_file_or_stream(file_or_stream, encoding="utf-8")
-        data = yaml.safe_load(fp)
-        self._init(data)
-
-    def keys(self):
-        return self._conf.keys()
-
-    def items(self):
-        return self._conf.items()
-
-    def __getitem__(self, module_name):
-        item = self._conf.get(module_name, None)
-        if item is None:
-            raise KeyError(f"Module not found: {module_name}")
-        return item
-
-    def __len__(self):
-        return len(self._conf)
-
-    def dict(self):
-        return self._conf
+# class FlowsheetModuleParameter(BaseModel):
+#     description: str  #: parameter description
+#     datatype: str   #: expected param type (for front-end)
+#
+#
+# class FlowsheetModule(BaseModel):
+#     name: str  #: display name
+#     description: str  #: description of module
+#     diagram_file: Union[FilePath, str] = ""  #: diagram file, if any
+#     parameters: Dict[str, FlowsheetModuleParameter] = {}  #: parameters, if any
+#
+#
+# class FlowsheetModuleConfig(BaseModel):
+#     data_directory: DirectoryPath  #: relative paths for diagram_file from here
+#     modules = Dict[str, FlowsheetModule]  #: dotted.module.path to module info map
+#
+#
+# class FlowsheetModuleDict:
+#     """Dict-like interface to information about some flowsheet modules.
+#     """
+#     def __init__(self, from_file=None, data=None, on_error=None):
+#         self._err_cb = None
+#         self._conf = {}
+#         if data:
+#             self._init(data)
+#         elif from_file:
+#             self.load(from_file)
+#
+#     def _init(self, data):
+#         m = FlowsheetModuleConfig.parse_obj(data)
+#         for mod_name, mod_conf in m.modules.items():
+#             try:
+#                 mod_obj = importlib.import_module(mod_name)
+#                 diagram_path = self._get_diagram_file(m, mod_conf)
+#                 self._conf[mod_name] = {
+#                     "module": mod_obj,
+#                     "diagram": diagram_path,
+#                     "name": mod_conf.name,
+#                     "description": mod_conf.description,
+#                     "parameters": mod_conf.parameters.dict()
+#                 }
+#             except ImportError as err:
+#                 if self._err_cb:
+#                     self._err_cb(mod_conf, err)
+#                 else:
+#                     raise
+#
+#     @staticmethod
+#     def _get_diagram_file(m: FlowsheetModuleConfig,
+#                           mod_conf: FlowsheetModule) -> Union[Path, str]:
+#         df_path = ""
+#         if mod_conf.diagram_file:
+#             df = mod_conf.diagram_file
+#             if m.data_directory:
+#                 df_path = m.data_directory / df
+#             else:
+#                 df_path = df
+#         return str(df_path)
+#
+#     def load(self, file_or_stream):
+#         fp = api_util.open_file_or_stream(file_or_stream, encoding="utf-8")
+#         data = yaml.safe_load(fp)
+#         self._init(data)
+#
+#     def keys(self):
+#         return self._conf.keys()
+#
+#     def items(self):
+#         return self._conf.items()
+#
+#     def __getitem__(self, module_name):
+#         item = self._conf.get(module_name, None)
+#         if item is None:
+#             raise KeyError(f"Module not found: {module_name}")
+#         return item
+#
+#     def __len__(self):
+#         return len(self._conf)
+#
+#     def dict(self):
+#         return self._conf
 
 #
 # end speculative section

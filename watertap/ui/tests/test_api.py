@@ -75,13 +75,13 @@ def build_options(display_name=False, description=False, variables=0,
     if description:
         opts["description"] = "This is a foo"
     if variables >= 0:
-        v = []
+        v = {}
         for i in range(min(variables, 2)):
             name = "foo" if i == 0 else "bar"
-            entry = {"display_name": f"{name} variable", "name": f"{name}_var"}
+            entry = {"display_name": f"{name} variable"}
             if i in readonly_variables:
                 entry["readonly"] = True
-            v.append(entry)
+            v[f"{name}_var"] = entry
         opts["variables"] = v
     return opts
 
@@ -98,9 +98,15 @@ def test_export_variables_simple(mock_block):
 
 @pytest.mark.unit
 def test_export_variables_complex(mock_block):
-    export_variables(mock_block, name="Feed Z0", desc="Zero-Order feed block",
-                     variables=[{"name": "foo_var", "readonly": True},
-                                "bar_var"])
+    kw = dict(name="Feed Z0", desc="Zero-Order feed block")
+    # bad 'variables'
+    for bad_vars in [[{"name": "foo_var"}, "bar_var"], 12, "foo"]:
+        with pytest.raises(ValueError):
+            export_variables(mock_block,  variables=bad_vars, **kw)
+    # ok
+    for ok_vars in [["foo_var", "bar_var"], {"foo_var": {"readonly": True,
+                                                         "display_name": "The Foo"}}]:
+        export_variables(mock_block, variables=ok_vars, **kw)
 
 
 @pytest.mark.unit
@@ -146,18 +152,18 @@ def test_block_interface_constructor(mock_block):
 def test_block_interface_get_exported_variables(mock_block):
     # no variables section
     obj = BlockInterface(mock_block, build_options(variables=-1))
-    exvar = list(obj.get_exported_variables())
+    exvar = obj.get_exported_variables()
     print(f"Got exported variables: {exvar}")
     assert len(exvar) == 0
     # empty variables section
     obj = BlockInterface(mock_block, build_options(variables=0))
-    assert len(list(obj.get_exported_variables())) == 0
+    assert len(obj.get_exported_variables()) == 0
     # 1 variable
     obj = BlockInterface(mock_block, build_options(variables=1))
-    assert len(list(obj.get_exported_variables())) == 1
+    assert len(obj.get_exported_variables()) == 1
     # 2 variables
     obj = BlockInterface(mock_block, build_options(variables=2))
-    assert len(list(obj.get_exported_variables())) == 2
+    assert len(obj.get_exported_variables()) == 2
 
 
 @pytest.mark.unit
@@ -178,8 +184,17 @@ def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(build_options(variables=2))
     obj.set_block(mock_block)
     d = obj.as_dict()
-    print(f"@@ as_dict={d}")
-    assert "variables" in d
+
+    # only blocks/meta at top-level
+    assert "blocks" in d
+    assert "meta" in d
+    assert "variables" not in d
+
+    # whole tamale in root block
+    assert len(d["blocks"]) == 1
+    root = list(d["blocks"].keys())[0]
+    for v in "variables", "display_name", "description", "category":
+        assert v in d["blocks"][root]
 
 
 @pytest.mark.unit
@@ -220,9 +235,10 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
     filename = "saved.json"
     # manual save, and remove some variables
     d = obj.as_dict()
-    block = d
-    block["variables"] = []
-    fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
+    block = d["blocks"]["Flowsheet"]
+    block["variables"] = {}
+    fpath = Path(tmpdir) / filename
+    fp = open(fpath, "w", encoding="utf-8")
     json.dump(d, fp)
     fp.close()
     # reload
@@ -243,16 +259,18 @@ class ScalarValueBlock:
 @pytest.mark.unit
 def test_flowsheet_interface_load_readonly(tmpdir):
     block = ScalarValueBlock()
-    export_variables(block, variables=["foo_var", {"name": "bar_var", "readonly": True}])
+    export_variables(block, variables={"foo_var": {}, "bar_var":{"readonly": True}})
     obj = FlowsheetInterface({"display_name": "Flowsheet"})
     obj.set_block(block)
     readonly_index = 1
     filename = "saved.json"
     # manual save, and change the variables
     dblock = obj.as_dict()
+    root = list(dblock["blocks"].keys())[0]
+    root_block = dblock["blocks"][root]
     # Save old values, modify all the variables (add 1)
     old_values = []
-    for var_entry in dblock["variables"]:
+    for var_entry in root_block["variables"]:
         value = var_entry["value"]
         old_values.append(value)
         var_entry["value"] = value + 1
@@ -264,7 +282,9 @@ def test_flowsheet_interface_load_readonly(tmpdir):
     obj.load(Path(tmpdir) / filename)
     # See that variables have changed, except readonly one
     block = obj.as_dict()
-    for i, var_entry in block["variables"]:
+    root = list(block["blocks"].keys())[0]
+    root_block = block["blocks"][root]
+    for i, var_entry in root_block["variables"]:
         if i == readonly_index:
             assert var_entry["value"] == old_values[i]
         else:
