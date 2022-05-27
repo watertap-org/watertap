@@ -79,7 +79,7 @@ the user must specify. The table below gives an outline of these.
    "Chemical Doses added during Jar Test", ":math:`D_i`", "chemical_doses", "[t, i]", ":math:`\text{mg/L}`"
    "Retention time for each rapid mixer", ":math:`\tau_r`", "rapid_mixing_retention_time", "[t]", ":math:`\text{s}`"
    "Number of rapid mixers in series", ":math:`n_r`", "num_rapid_mixing_basins", "None", "None"
-   "Rapid mixer velocity gradient", ":math:`G_r`", "rapid_mixing_vel_grad", "[t]", ":math:`\text{s}^-1`"
+   "Rapid mixer velocity gradient", ":math:`G_r`", "rapid_mixing_vel_grad", "[t]", ":math:`\text{s}^{-1}`"
    "Retention time of flocculation basin", ":math:`\tau_f`", "floc_retention_time", "[t]", ":math:`\text{s}`"
    "Flocculation single paddle length (from center of rotation to blade edge)", ":math:`L`", "single_paddle_length", "None", ":math:`\text{m}`"
    "Flocculation single paddle width", ":math:`w`", "single_paddle_width", "None", ":math:`\text{m}`"

@@ -76,6 +76,10 @@ global_params = [
 
 @declare_process_block_class("ZeroOrderCosting")
 class ZeroOrderCostingData(FlowsheetCostingBlockData):
+    """
+    General costing package for zero-order processes.
+    """
+
     CONFIG = FlowsheetCostingBlockData.CONFIG()
     CONFIG.declare(
         "case_study_definition",
