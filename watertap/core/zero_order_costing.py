@@ -185,7 +185,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.land_cost = pyo.Var(
             initialize=0,
             units=self.base_currency,
-            doc="Land costs - based on aggregate captial costs",
+            doc="Land costs - based on aggregate capital costs",
         )
         self.working_capital = pyo.Var(
             initialize=0,
