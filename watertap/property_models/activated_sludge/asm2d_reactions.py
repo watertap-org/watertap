@@ -39,6 +39,7 @@ from idaes.core import (
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 
 # Some more information about this module
@@ -1049,7 +1050,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             def rate_expression_rule(b, r):
                 if r == "R1":
                     # R1: Aerobic hydrolysis
-                    return b.reaction_rate[r] * 1e3 == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1070,7 +1071,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R2":
                     # R2: Anoxic hydrolysis
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
                         * b.params.eta_NO3
                         * (
@@ -1096,7 +1097,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R3":
                     # R3: Anaerobic hydrolysis
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.K_H
                         * b.params.eta_fe
                         * (
@@ -1122,7 +1123,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R4":
                     # R4: Aerobic growth on S_F
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1156,7 +1157,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R5":
                     # R5: Aerobic growth on S_A
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1190,7 +1191,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R6":
                     # R6: Anoxic growth on S_F
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
                         * b.params.eta_NO3
                         * (
@@ -1229,7 +1230,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R7":
                     # R7: Anoxic growth on S_A, denitrification
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_H
                         * b.params.eta_NO3
                         * (
@@ -1268,7 +1269,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R8":
                     # R8: Fermentation
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.q_fe
                         * (
                             b.params.K_O2
@@ -1291,7 +1292,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R9":
                     # R9: Lysis
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_H * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
@@ -1325,7 +1326,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R11":
                     # R11: Aerobic storage of X_PP
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.q_PP
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1374,7 +1375,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R12":
                     # R12: Anoxic storage of X_PP
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.reaction_rate["R11"]
                         * b.params.eta_NO3
                         * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
@@ -1386,7 +1387,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R13":
                     # R13: Aerobic growth of X_PAO
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_PAO
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1422,7 +1423,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R14":
                     # R14: Anoxic growth of X_PAO
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.reaction_rate["R13"]
                         * b.params.eta_NO3
                         * (b.params.K_O2 / b.conc_mass_comp_ref["S_O2"])
@@ -1434,7 +1435,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R15":
                     # R15: Lysis of X_PAO
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PAO
                         * b.conc_mass_comp_ref["X_PAO"]
                         * (
@@ -1445,7 +1446,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R16":
                     # R16: Lysis of X_PP
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PP
                         * b.conc_mass_comp_ref["X_PP"]
                         * (
@@ -1456,7 +1457,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R17":
                     # R17: Lysis of X_PAH
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_PHA
                         * b.conc_mass_comp_ref["X_PHA"]
                         * (
@@ -1467,13 +1468,13 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R18":
                     # R18: Aerobic growth of X_AUT
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_AUT * b.conc_mass_comp_ref["X_AUT"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R19":
                     # R19: Lysis of X_AUT
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_AUT
                         * (
                             b.conc_mass_comp_ref["S_O2"]
@@ -1492,7 +1493,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R20":
                     # R20: Precipitation
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.k_pre
                         * b.conc_mass_comp_ref["S_PO4"]
                         * b.conc_mass_comp_ref["X_MeOH"],
@@ -1500,7 +1501,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                     )
                 elif r == "R21":
                     # R21: Re-disolution
-                    return 1e3 * b.reaction_rate[r] == 1e3 * pyo.units.convert(
+                    return b.reaction_rate[r] == pyo.units.convert(
                         b.params.k_red
                         * b.conc_mass_comp_ref["X_MeP"]
                         * (
@@ -1526,3 +1527,11 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for i, c in self.rate_expression.items():
+            # TODO: Need to work out how to calculate good scaling factors
+            # instead of a fixed 1e3.
+            iscale.constraint_scaling_transform(c, 1e3, overwrite=True)

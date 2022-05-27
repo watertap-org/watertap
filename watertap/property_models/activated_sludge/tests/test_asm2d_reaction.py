@@ -45,6 +45,7 @@ from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
     ASM2dReactionBlock,
 )
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -354,6 +355,8 @@ class TestAerobic:
             }
         )
 
+        iscale.calculate_scaling_factors(m.fs)
+
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
 
@@ -499,6 +502,8 @@ class TestAnoxic:
                 "reaction_package": m.fs.rxn_props,
             }
         )
+
+        iscale.calculate_scaling_factors(m.fs)
 
         # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
         EPS = 1e-8
