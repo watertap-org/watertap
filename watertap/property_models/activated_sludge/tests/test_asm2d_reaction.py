@@ -414,7 +414,7 @@ class TestAerobic:
     @pytest.mark.component
     def test_solution(self, model):
         # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due ot an error in the EXPOsan stoichiometric
+        # It is supected that this is due to an error in the EXPOsan stoichiometric
         # coefficient for alkalinity
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
@@ -423,10 +423,10 @@ class TestAerobic:
         )
         assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
-            13.434e-3, rel=1e-4
+            13.440e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
-            23.541e-3, rel=1e-4
+            23.543e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
             30e-3, rel=1e-4
@@ -435,7 +435,7 @@ class TestAerobic:
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            15.630e-3, rel=1e-4
+            15.632e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
             0, abs=1e-4
@@ -444,13 +444,13 @@ class TestAerobic:
             2e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
-            3.4931e-3, rel=1e-4
+            3.4932e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
             0, abs=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            42.134e-3, rel=1e-4
+            42.128e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
             25.122e-3, rel=1e-4
@@ -474,10 +474,10 @@ class TestAerobic:
             117.76e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            5.5807e-3, rel=1e-4
+            5.5762e-3, rel=1e-4
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
-            5.1753e-3, rel=1e-4
+            5.1754e-3, rel=1e-4
         )
 
 
@@ -556,7 +556,7 @@ class TestAnoxic:
     @pytest.mark.component
     def test_solution(self, model):
         # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due ot an error in the EXPOsan stoichiometric
+        # It is supected that this is due to an error in the EXPOsan stoichiometric
         # coefficient for alkalinity
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
