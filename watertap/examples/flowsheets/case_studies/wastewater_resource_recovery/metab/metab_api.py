@@ -94,7 +94,7 @@ def cli_driver(fsi, args):
 
 def update(fsi: FlowsheetInterface):
     """Pretend to update the values in the flowsheet"""
-    data = fsi.as_dict()
+    data = fsi.dict()
     fsi.update(data)
 
 
@@ -132,7 +132,7 @@ def print_json(fsi):
 
     print("Flowsheet data")
     print("--------------")
-    print(json.dumps(fsi.as_dict(), indent=2))
+    print(json.dumps(fsi.dict(), indent=2))
     print("--------------")
 
 

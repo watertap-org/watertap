@@ -67,8 +67,9 @@ def mock_block():
     return MockBlock()
 
 
-def build_options(display_name=False, description=False, variables=0,
-                  readonly_variables=[]):
+def build_options(
+    display_name=False, description=False, variables=0, readonly_variables=[]
+):
     opts = {}
     if display_name:
         opts["display_name"] = "foo"
@@ -92,8 +93,12 @@ def build_options(display_name=False, description=False, variables=0,
 
 @pytest.mark.unit
 def test_export_variables_simple(mock_block):
-    export_variables(mock_block, name="Feed Z0", desc="Zero-Order feed block",
-                     variables=["foo_var", "bar_var"])
+    export_variables(
+        mock_block,
+        name="Feed Z0",
+        desc="Zero-Order feed block",
+        variables=["foo_var", "bar_var"],
+    )
 
 
 @pytest.mark.unit
@@ -102,10 +107,12 @@ def test_export_variables_complex(mock_block):
     # bad 'variables'
     for bad_vars in [[{"name": "foo_var"}, "bar_var"], 12, "foo"]:
         with pytest.raises(ValueError):
-            export_variables(mock_block,  variables=bad_vars, **kw)
+            export_variables(mock_block, variables=bad_vars, **kw)
     # ok
-    for ok_vars in [["foo_var", "bar_var"], {"foo_var": {"readonly": True,
-                                                         "display_name": "The Foo"}}]:
+    for ok_vars in [
+        ["foo_var", "bar_var"],
+        {"foo_var": {"readonly": True, "display_name": "The Foo"}},
+    ]:
         export_variables(mock_block, variables=ok_vars, **kw)
 
 
@@ -114,9 +121,9 @@ def test_set_block_interface(mock_block):
     # no keys
     set_block_interface(mock_block, {})
     # invalid key
-    data = {"test": "data"}
+    data = {"meta": {"test": "data"}}
     set_block_interface(mock_block, data)
-    assert get_block_interface(mock_block)._block_info.meta == data
+    assert get_block_interface(mock_block).meta["test"] == data["meta"]["test"]
     # ok key
     data = {"display_name": "foo"}
     set_block_interface(mock_block, data)
@@ -183,7 +190,7 @@ def test_flowsheet_interface_constructor(mock_block):
 def test_flowsheet_interface_as_dict(mock_block):
     obj = FlowsheetInterface(build_options(variables=2))
     obj.set_block(mock_block)
-    d = obj.as_dict()
+    d = obj.dict()
 
     # only blocks/meta at top-level
     assert "blocks" in d
@@ -223,7 +230,7 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     obj.set_block(mock_block)
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
-    # print(f"@@ saved: {json.dumps(obj.as_dict(), indent=2)}")
+    # print(f"@@ saved: {json.dumps(obj.dict(), indent=2)}")
     obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
     assert obj2 == obj
 
@@ -234,7 +241,7 @@ def test_flowsheet_interface_load_missing(mock_block, tmpdir):
     obj.set_block(mock_block)
     filename = "saved.json"
     # manual save, and remove some variables
-    d = obj.as_dict()
+    d = obj.dict()
     block = d["blocks"]["Flowsheet"]
     block["variables"] = {}
     fpath = Path(tmpdir) / filename
@@ -259,13 +266,13 @@ class ScalarValueBlock:
 @pytest.mark.unit
 def test_flowsheet_interface_load_readonly(tmpdir):
     block = ScalarValueBlock()
-    export_variables(block, variables={"foo_var": {}, "bar_var":{"readonly": True}})
+    export_variables(block, variables={"foo_var": {}, "bar_var": {"readonly": True}})
     obj = FlowsheetInterface({"display_name": "Flowsheet"})
     obj.set_block(block)
     readonly_index = 1
     filename = "saved.json"
     # manual save, and change the variables
-    dblock = obj.as_dict()
+    dblock = obj.dict()
     root = list(dblock["blocks"].keys())[0]
     root_block = dblock["blocks"][root]
     # Save old values, modify all the variables (add 1)
@@ -281,7 +288,7 @@ def test_flowsheet_interface_load_readonly(tmpdir):
     # Reload
     obj.load(Path(tmpdir) / filename)
     # See that variables have changed, except readonly one
-    block = obj.as_dict()
+    block = obj.dict()
     root = list(block["blocks"].keys())[0]
     root_block = block["blocks"][root]
     for i, var_entry in root_block["variables"]:
@@ -341,3 +348,94 @@ def add_action_cook(dish=None, **kwargs):
 def add_action_eat(**kwargs):
     assert _cooked == _dish
     print("eat")
+
+
+def test_flowsheet_interface_parameters(mock_block):
+    fsi = FlowsheetInterface({"display_name": "Add parameter test"})
+    fsi.set_block(mock_block)
+    # add some params
+    fsi.add_parameter("p1", choices=["1", "2", "3"])
+    fsi.add_parameter("p2", vrange=(0.1, 99))
+    fsi.add_parameter("p3", vtype=str)
+    fsi.add_parameter("p4", vtype=float)
+    fsi.add_parameter("p5", vtype=int)
+    # initial value
+    assert fsi.get_parameter("p1") is None
+    # conflicting add constraint
+    with pytest.raises(ValueError):
+        fsi.add_parameter("x", choices=[1, 2], vrange=[0, 1])
+    # no type for add
+    with pytest.raises(ValueError):
+        fsi.add_parameter("x")
+    # bad types for add
+    for bt_kw in (
+        {"choices": []},
+        {"choices": {}},
+        {"vrange": []},
+        {"vrange": 3},
+        {"vrange": ("low", "high")},
+        {"choices": [fsi, json]},
+        {"vrange": (1, 2, 3)},
+    ):
+        with pytest.raises(ValueError):
+            fsi.add_parameter("x", **bt_kw)
+    # correct
+    for name, val in (("p1", "3"), ("p2", 5), ("p3", "hello"), ("p4", 1.23e4)):
+        fsi.set_parameter(name, val)
+        assert fsi.get_parameter(name) == val
+    # not present
+    with pytest.raises(KeyError):
+        fsi.set_parameter("foo", 1)
+    with pytest.raises(KeyError):
+        fsi.get_parameter("foo")
+    # incorrect value
+    for name, val in (("p1", "hello"), ("p2", -1)):
+        with pytest.raises(ValueError):
+            fsi.set_parameter(name, val)
+    # incorrect type
+    for name, val in (("p1", 3), ("p2", "5"), ("p3", 3), ("p4", "5"), ("p5", 1.2)):
+        with pytest.raises(TypeError):
+            fsi.set_parameter(name, val)
+
+
+def test_flowsheet_interface_parameters_meta(mock_block):
+    fsi = FlowsheetInterface({"display_name": "Parameter test"})
+    fsi.set_block(mock_block)
+    fsi.add_parameter("p1", choices=["1", "2", "3"])
+    fsi.add_parameter("p2", vrange=(0.1, 99))
+    fsi.add_parameter("p3", vtype=str)
+    fsi.add_parameter("p4", vtype="float")
+    fsi.add_parameter("p5", vtype=int)
+    fsi.set_parameter("p1", "1")
+    fsi.set_parameter("p2", 0.5)
+    d = fsi.dict()
+    print(f"dict()={d}")
+    d_param = d["blocks"][MockBlock.name]["meta"]["parameters"]
+    param = {
+        "p1": {"choices": ["1", "2", "3"], "range": None, "type": "str", "val": "1"},
+        "p2": {"choices": None, "range": (0.1, 99.0), "type": "float", "val": 0.5},
+        "p3": {"choices": None, "range": None, "type": "str", "val": None},
+        "p4": {"choices": None, "range": None, "type": "float", "val": None},
+        "p5": {"choices": None, "range": None, "type": "int", "val": None},
+    }
+    assert d_param.keys() == param.keys()
+    for key, val in param.items():
+        assert val == d_param[key]
+
+
+def test_load_save_parameters(mock_block, tmpdir):
+    fsi = FlowsheetInterface({"display_name": "Parameter test"})
+    fsi.set_block(mock_block)
+    fsi.add_parameter("p1", choices=["1", "2", "3"])
+    fsi.add_parameter("p2", vrange=(0.1, 99))
+    fname = "parameter-test.json"
+    fpath = tmpdir / fname
+    with fpath.open("w", encoding="utf-8") as fp:
+        fsi.save(fp)
+    # debug:
+    with fpath.open("r", encoding="utf=8") as fp:
+        print("--data--")
+        print(fp.read())
+        print("---end--")
+    with fpath.open("r", encoding="utf=8") as fp:
+        fsi.load(fp)

@@ -9,8 +9,7 @@ Provides these abilitites:
   * An interface for running these actions that understands simple dependencies
     (running A requires B must have been run first).
   * Add user-specified action names and functions in addition to standard ones
-  * Load a mapping of names to flowsheet modules from a configuration file, and
-    also allow standard and user-specified metadata from that file.
+  o Load a mapping of names to flowsheet modules from a configuration file
 
 Exchange format for flowsheet data::
 
@@ -38,20 +37,29 @@ Exchange format for flowsheet data::
                       of course have its own sub-blocks, etc. >>
                 },
                 "meta": {
-                    << block-level metadata (currently unused) >>
+                    << block-level metadata (see ``meta`` below) >>
                 }
             }
         }
         "meta": {
-           << flowsheet-level metadata >>
+            "parameters": {
+               "<name>": {
+                 "choices": [<value1>, <value2>, ..],
+                  "range": (<min>, <max>),
+                  "type": "str" OR "int" OR "float",
+                  "val": <value>
+                },
+                ...
+             }
+            << other user-defined metadata >>
         }
     }
 """
-import importlib
+import builtins
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, TextIO, Generator
+from typing import Dict, List, Union, TextIO
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -142,19 +150,16 @@ class BlockInterface:
     def _init(self, block, info: Dict):
         self._block = block
 
-        # move non-known keys into 'meta', also make a copy of 'info'
-        known_keys = set(model.Block.__fields__.keys())
-        meta = {key: info[key] for key in info if key not in known_keys}
-        info = {key: info[key] for key in info if key in known_keys}
+        info = info.copy()
 
         # fill required values
         if not info.get("name", None):
             info["name"] = block.name
+        if not info.get("meta", None):
+            info["meta"] = model.BlockMeta()
 
         _log.debug(f"create block from info. dict={info}")
         block_info = model.Block(**info)
-        # update (or create) meta from previously extracted
-        block_info.meta.update(meta)
 
         # set optional values from values in self._block
         if block_info.variables is None:
@@ -173,6 +178,121 @@ class BlockInterface:
     def block(self):
         """Get block that is being interfaced to."""
         return self._block
+
+    @property
+    def meta(self) -> Dict:
+        """Block metadata.
+        """
+        return self._block_info.meta.dict()
+
+    def add_parameter(self, name: str, choices=None, vrange=None,
+                      vtype: Union[type, str] = None):
+        """Add a constrained parameter type to the flowsheet.
+        Initial value of parameter will be ``None``.
+
+        Args:
+            name: Parameter name
+            choices: List of possible values
+            vrange: Range for numeric values (min <= x <= max)
+            vtype: Expected type for value. Can be inferred from choices/vrange, but
+                   must be present if neither of those options are given.
+                   One of 'str', 'int', 'float', either as string or builtin type.
+
+        Raises:
+            ValueError: conflicting or incorrect arguments
+        """
+        if self._block_info is None:
+            raise ValueError("Must set block first")
+
+        if choices is not None and vrange is not None:
+            raise ValueError("Options 'choices' and 'range' cannot both be defined")
+
+        # validate inputs
+        if choices is not None:
+            try:
+                v0 = choices[0]
+                if type(v0) not in (str, int, float):
+                    raise TypeError("Elements must be int, str, or floats")
+            except (IndexError, TypeError, KeyError) as err:
+                raise ValueError(f"Bad type for 'choices': {err}")
+        if vrange is not None:
+            try:
+                if len(vrange) != 2:
+                    raise IndexError("The 'vrange' must be a tuple of length 2")
+                v0 = vrange[0]
+                if type(v0) not in (int, float):
+                    raise TypeError("Elements must be ints or floats")
+            except (IndexError, TypeError, KeyError) as err:
+                raise ValueError(f"Bad type for 'vrange': {err}")
+
+        # infer type if not given
+        if vtype is None:
+            if choices is not None:
+                vtype = type(choices[0]).__name__
+            elif vrange is not None:
+                vtype = type(vrange[0]).__name__
+            else:
+                raise ValueError("Must give one of 'vtype', 'choices', or 'vrange'")
+        elif isinstance(vtype, type):
+            # convert actual type to its name
+            vtype = vtype.__name__
+        if vtype not in ("str", "int", "float"):
+            raise ValueError(f"Argument for 'vtype' value must be a str, int, or float."
+                             f" value={vtype}")
+
+        self._block_info.meta.parameters[name] = dict(choices=choices, range=vrange,
+                                                      type=vtype, val=None)
+
+    def set_parameter(self, name: str, val: Union[float, int, str]):
+        """Set the value for a flowsheet parameter.
+
+        Args:
+            name: Name of parameter to set
+            val: Value for parameter
+
+        Raises:
+            KeyError: unknown parameter
+            TypeError: wrong type for this parameter
+            ValueError: invalid value for this parameter
+        """
+        p = self._block_info.meta.parameters.get(name, None)
+        if p is None:
+            raise KeyError(f"Unkown parameter. name={name}")
+        p_type = getattr(builtins, p["type"])  # convert to a type obj
+        if type(val) != p_type:
+            if type(val) is int and p_type is float:
+                val = float(val)
+            else:
+                raise TypeError(f"Wrong type for value. val={val} type={type(val)} "
+                                f"expected-type={p_type}")
+        p_choices, p_range = p["choices"], p["range"]
+        if p_choices is not None:
+            if val not in p_choices:
+                raise ValueError(f"Value not in choices. "
+                                 f"value={val} choices={p_choices}")
+        elif p_range is not None:
+            if val < p_range[0] or val > p_range[1]:
+                raise ValueError(f"Value out of range. value={val} "
+                                 f"min={p_range[0]} max={p_range[1]}")
+        # if all the checking is ok, set parameter
+        p["val"] = val
+
+    def get_parameter(self, name: str) -> Union[float, int, str]:
+        """Get the value of a flowsheet parameter.
+
+        Args:
+            name: Name of parameter to get
+
+        Returns:
+            Value for parameter. Will be ``None`` if not set.
+
+        Raises:
+            KeyError: unknown parameter
+        """
+        p = self._block_info.meta.parameters.get(name, None)
+        if p is None:
+            raise KeyError(f"Unkown parameter. name={name}")
+        return p["val"]
 
     def get_exported_variables(self) -> Dict[str, Dict]:
         """Get variables exported by the block.
@@ -293,6 +413,7 @@ class WorkflowActions:
     deps = {build: [], solve: [build], results: [solve]}
 
 
+
 class FlowsheetInterface(BlockInterface):
     """Interface to the UI for a flowsheet."""
 
@@ -352,15 +473,15 @@ class FlowsheetInterface(BlockInterface):
             raise KeyError("get_var_extra() has no meaning before load() is called")
         return self._var_diff.extra
 
-    def as_dict(self) -> Dict:
+    def dict(self) -> Dict:
         """Return current state serialized as a dictionary.
 
         Returns:
             Dictionary with all the UI-exported blocks and variables.
         """
-        _log.debug("as_dict:start")
+        _log.debug("dict:start")
         if self._block_info is None:
-            _log.debug("as_dict:end. status=error")
+            _log.debug("dict:end. status=error")
             raise ValueError("Cannot serialize before `set_block()` is called")
         d = self._get_block_interface_tree().dict()
 
@@ -368,27 +489,21 @@ class FlowsheetInterface(BlockInterface):
         for top_level_key in "variables", "display_name", "description", "category":
             del d[top_level_key]
 
-        _log.debug("as_dict:end. status=ok")
+        _log.debug("dict:end. status=ok")
         return d
-
 
     def __eq__(self, other) -> bool:
         """Equality test. A side effect is that both objects are serialized using
-        :meth:`as_dict()`.
+        :meth:`dict()`.
 
         Returns:
-            Equality of ``as_dict()`` applied to self and 'other'.
+            Equality of ``dict()`` applied to self and 'other'.
             If it's not defined on 'other', then False.
         """
-        if hasattr(other, "as_dict") and callable(other.as_dict):
-            return self.as_dict() == other.as_dict()
+        if hasattr(other, "dict") and callable(other.dict):
+            return self.dict() == other.dict()
         return False
 
-    @property
-    def meta(self) -> Dict:
-        """Flowsheet-level metadata.
-        """
-        return self._block_info.meta.copy()
 
     def save(self, file_or_stream: Union[str, Path, TextIO]):
         """Save the current state of this instance to a file.
@@ -405,7 +520,7 @@ class FlowsheetInterface(BlockInterface):
         """
         _log.debug("save:start")
         fp = open_file_or_stream(file_or_stream, "write", mode="w", encoding="utf-8")
-        data = self.as_dict()
+        data = self.dict()
         json.dump(data, fp)
         _log.debug("save:end. status=ok")
 
@@ -489,16 +604,15 @@ class FlowsheetInterface(BlockInterface):
         _log.debug(f"Update load. root-block={root_block_name}")
         self._load(root_block_info, self.block)
 
-        # clear the 'solve' action
+        # special case: clear the 'solve' action
         if self._action_was_run(WorkflowActions.solve):
             self._action_clear_was_run(WorkflowActions.solve)
         _log.debug(f"update:end. status=ok")
 
-
     @classmethod
     def get_schema(cls) -> Dict:
         """Get a schema that can validate the exported JSON representation from
-        :meth:`as_dict()` or, equivalently, :meth:`save()`.
+        :meth:`dict()` or, equivalently, :meth:`save()`.
 
         Returns:
             The schema
@@ -625,7 +739,7 @@ class FlowsheetInterface(BlockInterface):
         """Get all block interfaces in this block and sub-blocks,
         creating a complete 'tree' with intermediate placeholders where needed.
 
-        Called from :meth:`as_dict`.
+        Called from :meth:`dict`.
         """
         # use a stack that has the path and object for each new block to visit,
         # and initialize with this block; this means the flowsheet root block

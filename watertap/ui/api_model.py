@@ -1,8 +1,8 @@
 """
 Model for the data that is created and consumed by the user interface API.
 """
-from typing import List, Union, Optional, Dict
-from pydantic import BaseModel
+from typing import List, Union, Optional, Dict, Tuple, Type
+from pydantic import BaseModel, Extra
 
 
 class IndexedValue(BaseModel):
@@ -22,12 +22,20 @@ class Variable(BaseModel):
     value: Optional[Union[IndexedValue, ScalarValue]]
 
 
+class BlockMeta(BaseModel):
+    parameters: Dict = {}
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = Extra.allow
+
+
 class Block(BaseModel):
     display_name = ""
     description = ""
     category = "default"
     variables: Dict[str, Variable] = {}
     blocks: Dict[str, "Block"] = {}
-    meta: Dict = {}
+    meta: BlockMeta = BlockMeta()
 
 
