@@ -21,7 +21,7 @@ def set_up_sensitivity(m):
 
 def run_analysis(case_num, nx, interpolate_nan_outputs=True):
 
-    m = electrochemical_nutrient_removal.main()
+    m = electrochemical_nutrient_removal.main()[0]
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 
