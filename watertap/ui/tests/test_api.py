@@ -24,6 +24,13 @@ class MockSubBlock1:
 class MockSubBlock2:
     name = "subblock2"
     doc = "sub-block 2"
+    # sub-blocks
+    subblock2_1 = MockSubBlock1()
+    set_block_interface(subblock2_1, {})
+
+    def component_map(self, **kwargs):
+        return {"subblock2-1": getattr(self, "subblock2_1")}
+
 
 
 class MockSubBlock3:
@@ -439,3 +446,23 @@ def test_load_save_parameters(mock_block, tmpdir):
         print("---end--")
     with fpath.open("r", encoding="utf=8") as fp:
         fsi.load(fp)
+
+
+def test_find_flowsheet_interfaces_simpleconfig():
+    interfaces1 = list(find_flowsheet_interfaces())
+    assert len(interfaces1) > 0
+    interfaces2 = list(find_flowsheet_interfaces(config={
+        "packages": ["watertap"]
+    }))
+    assert interfaces2 == interfaces1
+
+
+def test_find_flowsheet_interfaces_fileconfig(tmpdir):
+    conf_filename = "x.yaml"
+    conf_path = tmpdir / conf_filename
+    with conf_path.open(mode="w", encoding="utf-8") as f:
+        f.write("packages:\n")
+        f.write("  - watertap\n")
+    interfaces1 = list(find_flowsheet_interfaces(conf_path))
+    interfaces2 = list(find_flowsheet_interfaces())
+    assert interfaces2 == interfaces1

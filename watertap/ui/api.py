@@ -56,10 +56,11 @@ Exchange format for flowsheet data::
     }
 """
 import builtins
+import importlib
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, TextIO
+from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable
 
 # third-party
 from pyomo.environ import Block, Var, value
@@ -181,12 +182,12 @@ class BlockInterface:
 
     @property
     def meta(self) -> Dict:
-        """Block metadata.
-        """
+        """Block metadata."""
         return self._block_info.meta.dict()
 
-    def add_parameter(self, name: str, choices=None, vrange=None,
-                      vtype: Union[type, str] = None):
+    def add_parameter(
+        self, name: str, choices=None, vrange=None, vtype: Union[type, str] = None
+    ):
         """Add a constrained parameter type to the flowsheet.
         Initial value of parameter will be ``None``.
 
@@ -237,11 +238,14 @@ class BlockInterface:
             # convert actual type to its name
             vtype = vtype.__name__
         if vtype not in ("str", "int", "float"):
-            raise ValueError(f"Argument for 'vtype' value must be a str, int, or float."
-                             f" value={vtype}")
+            raise ValueError(
+                f"Argument for 'vtype' value must be a str, int, or float."
+                f" value={vtype}"
+            )
 
-        self._block_info.meta.parameters[name] = dict(choices=choices, range=vrange,
-                                                      type=vtype, val=None)
+        self._block_info.meta.parameters[name] = dict(
+            choices=choices, range=vrange, type=vtype, val=None
+        )
 
     def set_parameter(self, name: str, val: Union[float, int, str]):
         """Set the value for a flowsheet parameter.
@@ -263,17 +267,22 @@ class BlockInterface:
             if type(val) is int and p_type is float:
                 val = float(val)
             else:
-                raise TypeError(f"Wrong type for value. val={val} type={type(val)} "
-                                f"expected-type={p_type}")
+                raise TypeError(
+                    f"Wrong type for value. val={val} type={type(val)} "
+                    f"expected-type={p_type}"
+                )
         p_choices, p_range = p["choices"], p["range"]
         if p_choices is not None:
             if val not in p_choices:
-                raise ValueError(f"Value not in choices. "
-                                 f"value={val} choices={p_choices}")
+                raise ValueError(
+                    f"Value not in choices. " f"value={val} choices={p_choices}"
+                )
         elif p_range is not None:
             if val < p_range[0] or val > p_range[1]:
-                raise ValueError(f"Value out of range. value={val} "
-                                 f"min={p_range[0]} max={p_range[1]}")
+                raise ValueError(
+                    f"Value out of range. value={val} "
+                    f"min={p_range[0]} max={p_range[1]}"
+                )
         # if all the checking is ok, set parameter
         p["val"] = val
 
@@ -371,8 +380,9 @@ def export_variables(
     var_info_dict = {}
     if variables is not None:
         if hasattr(variables, "items"):  # dict-like
-            var_info_dict = {name: model.Variable(**val)
-                             for name, val in variables.items()}
+            var_info_dict = {
+                name: model.Variable(**val) for name, val in variables.items()
+            }
         else:
             # make a single string into a list of them
             if isinstance(variables, str):
@@ -383,8 +393,9 @@ def export_variables(
                         raise TypeError(f"'{name}' is not a string")
                     var_info_dict[name] = model.Variable()
             except TypeError as err:
-                raise ValueError(f"Expected list of variable names for 'variables': "
-                                 f"{err}")
+                raise ValueError(
+                    f"Expected list of variable names for 'variables': " f"{err}"
+                )
         for name in var_info_dict:
             error = var_check(block, name)
             if error:
@@ -411,7 +422,6 @@ class WorkflowActions:
     #: Dependencies:
     #: results `--[depends on]-->` solve `--[depends on]-->` build
     deps = {build: [], solve: [build], results: [solve]}
-
 
 
 class FlowsheetInterface(BlockInterface):
@@ -503,7 +513,6 @@ class FlowsheetInterface(BlockInterface):
         if hasattr(other, "dict") and callable(other.dict):
             return self.dict() == other.dict()
         return False
-
 
     def save(self, file_or_stream: Union[str, Path, TextIO]):
         """Save the current state of this instance to a file.
@@ -847,99 +856,71 @@ class FlowsheetInterface(BlockInterface):
     def _action_clear_was_run(self, name):
         self._actions_run.remove(name)
 
-#
-# the following is just speculative -- do not use
-#
+
+def find_flowsheet_interfaces(
+    config: Union[str, Path, Dict] = {"packages": ["watertap"]}
+):
+    """Find flowsheets in Python packages/modules."""
+    result = {}
+    c = _load_config(config)
+    for package in c.get("packages", []):
+        _log.info(f"Find interfaces for package: begin. name={package}")
+        for module, fsi_func in _get_interfaces(package):
+            fsi = fsi_func()
+            result[module] = fsi
+        _log.info(
+            f"Find interfaces for package: end. name={package} count={len(result)}"
+        )
+    return result
 
 
-# class FlowsheetModuleParameter(BaseModel):
-#     description: str  #: parameter description
-#     datatype: str   #: expected param type (for front-end)
-#
-#
-# class FlowsheetModule(BaseModel):
-#     name: str  #: display name
-#     description: str  #: description of module
-#     diagram_file: Union[FilePath, str] = ""  #: diagram file, if any
-#     parameters: Dict[str, FlowsheetModuleParameter] = {}  #: parameters, if any
-#
-#
-# class FlowsheetModuleConfig(BaseModel):
-#     data_directory: DirectoryPath  #: relative paths for diagram_file from here
-#     modules = Dict[str, FlowsheetModule]  #: dotted.module.path to module info map
-#
-#
-# class FlowsheetModuleDict:
-#     """Dict-like interface to information about some flowsheet modules.
-#     """
-#     def __init__(self, from_file=None, data=None, on_error=None):
-#         self._err_cb = None
-#         self._conf = {}
-#         if data:
-#             self._init(data)
-#         elif from_file:
-#             self.load(from_file)
-#
-#     def _init(self, data):
-#         m = FlowsheetModuleConfig.parse_obj(data)
-#         for mod_name, mod_conf in m.modules.items():
-#             try:
-#                 mod_obj = importlib.import_module(mod_name)
-#                 diagram_path = self._get_diagram_file(m, mod_conf)
-#                 self._conf[mod_name] = {
-#                     "module": mod_obj,
-#                     "diagram": diagram_path,
-#                     "name": mod_conf.name,
-#                     "description": mod_conf.description,
-#                     "parameters": mod_conf.parameters.dict()
-#                 }
-#             except ImportError as err:
-#                 if self._err_cb:
-#                     self._err_cb(mod_conf, err)
-#                 else:
-#                     raise
-#
-#     @staticmethod
-#     def _get_diagram_file(m: FlowsheetModuleConfig,
-#                           mod_conf: FlowsheetModule) -> Union[Path, str]:
-#         df_path = ""
-#         if mod_conf.diagram_file:
-#             df = mod_conf.diagram_file
-#             if m.data_directory:
-#                 df_path = m.data_directory / df
-#             else:
-#                 df_path = df
-#         return str(df_path)
-#
-#     def load(self, file_or_stream):
-#         fp = api_util.open_file_or_stream(file_or_stream, encoding="utf-8")
-#         data = yaml.safe_load(fp)
-#         self._init(data)
-#
-#     def keys(self):
-#         return self._conf.keys()
-#
-#     def items(self):
-#         return self._conf.items()
-#
-#     def __getitem__(self, module_name):
-#         item = self._conf.get(module_name, None)
-#         if item is None:
-#             raise KeyError(f"Module not found: {module_name}")
-#         return item
-#
-#     def __len__(self):
-#         return len(self._conf)
-#
-#     def dict(self):
-#         return self._conf
-
-#
-# end speculative section
-#
+def _load_config(c) -> Dict:
+    if isinstance(c, dict):
+        data = c
+    else:
+        stream = open_file_or_stream(c, mode="r", encoding="utf-8")
+        data = yaml.safe_load(stream)
+    return data
 
 
-def _main_usage(msg=None):
+def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]:
+    # import package
+    pkg = importlib.import_module(package_name)
+    # use special _ROOT variable if it exists, else package path
+    pkg_path = getattr(pkg, "_ROOT", Path(pkg.__file__).parent)
+    # if package is not a directory (e.g. a zip file), give up
+    if not pkg_path.is_dir():
+        raise IOError(f"Cannot load from package: not a directory. name={package_name}")
+    # find all python files under the package path
+    _log.info(f"Find all Python files. package-path={pkg_path}")
+    for mod_path in pkg_path.glob("**/*.py"):
+        nm = mod_path.name
+        # skip tests, __init__, and "protected" modules
+        if nm.startswith("_") or nm.startswith("test_"):
+            continue
+        # compute module path
+        mod_relpath = mod_path.relative_to(pkg_path)
+        # convert from posix path to module name by stripping ".py"
+        # suffix and replacing slashes with dots
+        mod_relname = mod_relpath.as_posix()[:-3].replace("/", ".")
+        mod_name = package_name + "." + mod_relname
+        # import the module
+        _log.debug(f"Importing module. name={mod_name}")
+        try:
+            mod = importlib.import_module(mod_name)
+        except Exception as err:
+            _log.warning(f"Skipping module due to import error: {err}. name={mod_name}")
+            continue
+        # look for special interface function
+        func = getattr(mod, "flowsheet_interface", None)
+        # if found, yield this module and function as a result
+        if func is not None:
+            yield mod_name, func
+
+
+# -----------------------------------------
+
+def _main_usage(msg=None):  # pragma: no cover
     if msg is not None:
         print(msg)
     print("Usage: python api.py <command> [args..]")
@@ -948,7 +929,7 @@ def _main_usage(msg=None):
     print("   dump-schema <file>")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     """Command-line functionality for developers."""
     import sys
 
