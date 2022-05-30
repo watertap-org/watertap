@@ -49,6 +49,9 @@ extensions = [
     "nbsphinx",  # Jupyter notebooks as docs
 ]
 
+mathjax3_config = {'chtml': {'displayAlign': 'left',
+                             'displayIndent': '2em'}}
+
 autosectionlabel_prefix_document = True
 autodoc_warningiserror = False  # suppress warnings during autodoc
 
