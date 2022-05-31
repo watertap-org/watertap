@@ -79,7 +79,7 @@ Other technoeconomic factors used to calculate various system metrics, capital, 
 =============================================  ====================  =====================================  ===============  ==============================================================================
 Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                 100%               Percentage of year plant is operating
 Plant lifetime                                    :math:`L`           ``plant_lifetime``                     30 yr              Expected lifetime of unit process
-Electricity price                                 :math:`P`           ``electricity``                             $0.0595/kWh        Electricity price in 2019 USD.
+Electricity price                                 :math:`P`           ``electricity``                        $0.0595/kWh        Electricity price in 2019 USD.
 Land cost factor                                  :math:`f_{land}`    ``land_cost_percent_FCI``              0.15%              Unit process land cost as percentage of capital cost
 Working capital cost factor                       :math:`f_{work}`    ``working_capital_percent_FCI``        5%                 Unit process working capital cost as percentage of capital cost
 Salaries cost factor                              :math:`f_{sal}`     ``salaries_percent_FCI``               0.1%               Unit process salaries cost as percentage of capital cost
