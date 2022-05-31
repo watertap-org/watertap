@@ -28,7 +28,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
   from watertap.core.zero_order_costing import ZeroOrderCosting
   from watertap.core.wt_database import Database
   from watertap.core.zero_order_properties import WaterParameterBlock
-  #from watertap.unit_models.zero_order import MyZOUnit
+  from watertap.unit_models.zero_order import MyZOUnit
 
 
   m = ConcreteModel()
@@ -36,7 +36,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
   m.fs = FlowsheetBlock(default{"dynamic": False})
   m.fs.params = WaterParameterBlock(default={"solute_list": ["comp_a", "comp_b", "comp_c"]})
   m.fs.costing = ZeroOrderCosting()
-  #m.fs.unit = MyZOUnit(default={"property_package": m.fs.params, "database": m.db)
+  m.fs.unit = MyZOUnit(default={"property_package": m.fs.params, "database": m.db)
 
   # Add necessary statements to fix component flows prior to solve
 
@@ -67,7 +67,7 @@ Calculations for each of these costs are presented below.
 Costing Index and Technoeconomic Factors
 ----------------------------------------
 
-Costing indices are available in ``default_case_study.yaml`` located in the data/techno_economoic folder. 
+Costing indices are available in ``default_case_study.yaml`` located in the data/techno_economic folder.
 
 WaterTAP uses the Consumer Price Index (CPI) to help account for the time-value of investments and are used in the capital
 and operating cost calculations. Unit process capital costs are adjusted to the year of the case study. The default year is 2018. 
@@ -79,7 +79,7 @@ Other technoeconomic factors used to calculate various system metrics, capital, 
 =============================================  ====================  =====================================  ===============  ==============================================================================
 Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                 100%               Percentage of year plant is operating
 Plant lifetime                                    :math:`L`           ``plant_lifetime``                     30 yr              Expected lifetime of unit process
-Electricity price                                 :math:`P`               ?????                              $0.0595/kWh        Electricity price in 2019 USD.
+Electricity price                                 :math:`P`           ``electricity``                             $0.0595/kWh        Electricity price in 2019 USD.
 Land cost factor                                  :math:`f_{land}`    ``land_cost_percent_FCI``              0.15%              Unit process land cost as percentage of capital cost
 Working capital cost factor                       :math:`f_{work}`    ``working_capital_percent_FCI``        5%                 Unit process working capital cost as percentage of capital cost
 Salaries cost factor                              :math:`f_{sal}`     ``salaries_percent_FCI``               0.1%               Unit process salaries cost as percentage of capital cost
@@ -110,10 +110,10 @@ In general, unit process capital costs :math:`C_{ZO,u}` for zero order unit mode
 
 :math:`Q_{basis}`, :math:`A`, and :math:`B` are specific to the unit model and can be found in the unit model ``.yaml`` file.
 The :math:`A` value has units of USD for the costing reference year of the unit. For example, if the unit costing model
-is from a reference that used 2015 USD, the units for :math:`A` are ``USD_2015``. After calculating the costs in 2015 USD, WaterTAP 
+is from a reference that used 2015 USD, the units for :math:`A` are ``USD_2015``. After calculating the costs in 2015 USD, WaterTAP
 adjusts the cost to the user-specified year via the Consumer Price Index.
 
-The total capital cost of a zero order model :math:`C_{ZO,tot}` includes the land cost :math:`C_{land}` and working 
+The total capital cost of a zero order model :math:`C_{ZO,tot}` includes the land cost :math:`C_{land}` and working
 capital costs :math:`C_{work}`:
 
     .. math::
@@ -131,8 +131,8 @@ Where:
 Custom Capital Cost Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are several zero order models that have costing relationships that do not follow this general form. If that is the case, a custom costing method can 
-be added to this base class to perform that calculation. 
+There are several zero order models that have costing relationships that do not follow this general form. If that is the case, a custom costing method can
+be added to this base class to perform that calculation.
 
 Zero order models that have custom capital costing methods include:
 
@@ -166,7 +166,7 @@ Zero order models that have custom capital costing methods include:
 
 To add a custom capital calculation method, the unit module class must be part of the ``import`` statement at the top of this file
 and there must be an entry in the ``unit_mapping`` dictionary that maps the unit model class to the costing method. Convention is to name the method
-``cost_unit_class_name`` without the "ZO" at the end of the class. For example, if the unit model class is ``MyUnitZO``, the custom cost method would be 
+``cost_unit_class_name`` without the "ZO" at the end of the class. For example, if the unit model class is ``MyUnitZO``, the custom cost method would be
 ``cost_my_unit`` and ``MyUnitZO: cost_my_unit`` would be an entry in the ``unit_mapping`` dictionary found in this file.
 
 Operating Cost Calculations
@@ -210,7 +210,7 @@ annual chemical costs are calculated as:
 
 Where :math:`D` is the dose of chemical :math:`k` and :math:`C` is the unit cost of chemical :math:`k`.
 
-Electricity costs :math:`C_{elec}` are based on the energy intensity :math:`E` of the unit process 
+Electricity costs :math:`C_{elec}` are based on the energy intensity :math:`E` of the unit process
 (see individual unit model documentation for details).
 The annual electricity costs are calculated as:
 
