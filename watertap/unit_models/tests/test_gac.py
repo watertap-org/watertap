@@ -30,7 +30,9 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.ion_DSPMDE_prop_pack_GACadjusted import (
+    DSPMDEParameterBlock,
+)
 from watertap.unit_models.gac import GAC
 
 
@@ -86,11 +88,11 @@ def main():
     )
 
     # gac specifications
-    # trial from Hand, 1984
+    # trial problem from Hand, 1984 for removal of trace DCE
     m.fs.gac.contam_removal_frac["DCE"].fix(0.95)
     m.fs.gac.dg.fix(
         19775.77393009003
-    )  # TODO: correct units probelm to fix m.fs.gac.freund_k
+    )  # TODO: correct units problem to fix m.fs.gac.freund_k
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
     m.fs.gac.eps_bed.fix(0.449)
@@ -99,6 +101,7 @@ def main():
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
     m.fs.gac.ds.fix(1.77e-13)
+    # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(3.68421)
     m.fs.gac.a1.fix(13.1579)
     m.fs.gac.b0.fix(0.784576)
@@ -123,10 +126,7 @@ def main():
     # solving
     assert_units_consistent(m)  # check that units are consistent
     print("Degrees of freedom:", degrees_of_freedom(m))
-
-    assert (
-        degrees_of_freedom(m) == 0
-    )  # check that the degrees of freedom are what we expect
+    assert degrees_of_freedom(m) == 0
 
     results = solver.solve(m, tee=False)
     assert results.solver.termination_condition == TerminationCondition.optimal

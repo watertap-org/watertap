@@ -46,15 +46,12 @@ __author__ = "Hunter Barber"
 _log = idaeslog.getLogger(__name__)
 
 # ---------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------
+# TODO: Start of adding user options for specific variables to reduce required input
 """
 class SurfaceDiffusionCoeffVal(Enum):
     specified = auto()  # surface diffusion coefficient is a user-specified value
     calculated = auto() # pressure drop across membrane channel is calculated
 """
-
 
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
@@ -170,7 +167,7 @@ class GACData(UnitModelBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # Build control volume
+        # build control volume
         self.treatwater = ControlVolume0DBlock(
             default={
                 "dynamic": False,
@@ -194,7 +191,7 @@ class GACData(UnitModelBlockData):
         def eq_isothermal(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
-        # Add block for spent GAC
+        # add block for spent GAC
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
@@ -223,8 +220,8 @@ class GACData(UnitModelBlockData):
         self.add_port(name="spent_gac", block=self.removal)
 
         # ---------------------------------------------------------------------
-        # Variable declaration
-        # mass transfer TODO: Add capacity for multiple solutes
+        # variable declaration
+        # mass transfer TODO: Add model capacity for multiple solutes
         self.contam_removal_frac = Var(
             self.config.property_package.solute_set,
             initialize=0.9,
@@ -247,6 +244,7 @@ class GACData(UnitModelBlockData):
             initialize=10,
             bounds=(0, 1000),
             domain=NonNegativeReals,
+            # TODO: Correct variable units
             units=((units_meta("length") ** 3) * units_meta("mass") ** -1) ** 0.8316,
             doc="Freundlich k parameter",
         )
@@ -463,7 +461,8 @@ class GACData(UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
-        # TODO: Support mole or mass based property packs
+        # TODO: Add support mole or mass based property packs
+        # TODO: Ensure other phases in addition to 'Liq' can be handled
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,
@@ -568,6 +567,7 @@ class GACData(UnitModelBlockData):
             )
 
     # ---------------------------------------------------------------------
+    # TODO: Correct initialization procedure from starting at an infeasible point, add robustness for intialization and scaling
     # initialize method
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
