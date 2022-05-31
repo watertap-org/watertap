@@ -920,7 +920,10 @@ def optimize_set_up(
             m.fs.ROUnits[m.fs.LSRRO_Stages.first()].B_comp[0, "NaCl"]
         )
         m.fs.B_comp_system.setlb(3.5e-8)
-        m.fs.B_comp_system.setub(3.5e-8 * 1e2)
+        if B_max is None:
+            m.fs.B_comp_system.setub(3.5e-8 * 1e2)
+        else:
+            m.fs.B_comp_system.setub(m.fs.B_max)
     if A_case == ACase.single_optimum:
         m.fs.A_comp_system = Var(
             domain=NonNegativeReals,
