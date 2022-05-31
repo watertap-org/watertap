@@ -23,6 +23,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
   from pyomo.environ import ConcreteModel
   
   from idaes.core import FlowsheetBlock
+
   from watertap.core.zero_order_costing import ZeroOrderCosting
   from watertap.core.wt_database import Database
   from watertap.core.zero_order_properties import WaterParameterBlock
@@ -41,7 +42,7 @@ The code below shows an outline of how the ZeroOrderCostingData class is intende
 Costing Zero Order Models
 -------------------------
 
-The ZeroOrderCostingData class includes variables and constraints necessary to process-wide costs:
+The ZeroOrderCostingData class includes variables and constraints necessary to calculate process-wide costs:
 
 =============================================  ====================  =====================================  ==============================================================================
                  Cost                               Variable                 Name                               Description
@@ -95,8 +96,6 @@ The capital recovery factor is calculated with:
     .. math::
 
         f_{crf} = \frac{ f_{wacc} (1 + f_{wacc}) ^ L}{ (1 + f_{wacc}) ^ L - 1}
-
-
 
 
 Capital Cost Calculations
@@ -226,6 +225,8 @@ The Levelized Cost Of Water (LCOW) [$/m3] is a metric used to assess the technoe
     .. math::
 
         LCOW = \frac{ f_{crf} C_{ZO,tot} + C_{op,tot} }{Q f_{util} }
+
+
 
 .. autoclass:: ZeroOrderCostingData
     :members:
