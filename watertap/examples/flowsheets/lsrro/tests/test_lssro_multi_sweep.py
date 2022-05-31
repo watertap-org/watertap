@@ -19,7 +19,7 @@ import pandas as pd
 
 from watertap.examples.flowsheets.lsrro.multi_sweep import run_case
 
-from .gah_divider import get_test_cases_subset
+from .gha_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 

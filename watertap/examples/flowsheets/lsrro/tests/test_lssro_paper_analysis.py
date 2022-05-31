@@ -30,7 +30,7 @@ from watertap.examples.flowsheets.lsrro.lsrro import (
     run_lsrro_case,
 )
 
-from .gah_divider import get_test_cases_subset
+from .gha_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
