@@ -12,6 +12,8 @@
 ###############################################################################
 
 # Import Pyomo libraries
+from email.policy import default
+from logging import warning
 from pyomo.environ import (
     Block,
     Set,
@@ -524,7 +526,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Apply transformation to concentrate
         self.concentrate.apply_transformation()
-        print("?????????????", self.diluate.length_domain.parent_block(),len(length_set),type(length_set),len(self.concentrate.length_domain))
+        #print("?????????????", self.diluate.length_domain.parent_block(),len(length_set),type(length_set),len(self.concentrate.length_domain))
 
         # Add ports (creates inlets and outlets for each channel)
         self.add_inlet_port(name="inlet_diluate", block=self.diluate)
@@ -594,7 +596,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             doc="electricity input condition for diluate channel",
         )
-        def eq_elec_input_condition_D(self, t, x, p):
+        def eq_elec_input_condition_diluate(self, t, x, p):
             if self.config.operation_mode == 'Constant_Current':
                 print("!!!This is Constant_Current model")
                 return self.diluate.i_x_D[t, x] * self.cell_width * self.cell_length == self.current_applied[t]
@@ -626,7 +628,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             doc="electricity input condition for concentrate channel",
         )
-        def eq_elec_input_condition_C(self, t, x, p):
+        def eq_elec_input_condition_concentrate(self, t, x, p):
             if self.config.operation_mode == 'Constant_Current':
                 print("!!!This is Constant_Current model")
                 return self.concentrate.i_x_C[t, x] * self.cell_width * self.cell_length == self.current_applied[t]
@@ -797,6 +799,45 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Set solver options
         opt = get_solver(solver, optarg)
 
+        for k in blk.keys():
+            for set in blk[k].diluate.properties:
+               # print('SET9', blk[k].diluate.properties.items().
+                if "flow_mol_phase_comp" not in blk[k].diluate.properties[set].define_state_vars():
+                    raise ConfigurationError(
+                            "Electrodialysis1D unit model requires "
+                            "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
+                            "state variable basis to apply the 'propogate_initial_state' method"
+                        )
+                if "teperature" in blk[k].diluate.properties[set].define_state_vars():
+                    blk[k].diluate.properties[set].temperature = value(blk[k].diluate.properties[(0.0, 0.0)].temperature)
+                if "pressure" in blk[k].diluate.properties[set].define_state_vars():
+                    blk[k].diluate.properties[set].pressure = value(blk[k].diluate.properties[(0.0, 0.0)].pressure)
+                if "flow_mol_phase_comp" in blk[k].diluate.properties[set].define_state_vars():
+                    for ind in blk[k].diluate.properties[set].flow_mol_phase_comp:
+                        blk[k].diluate.properties[set].flow_mol_phase_comp[ind] = value(blk[k].diluate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind])
+                if "flow_mass_phase_comp" in blk[k].diluate.properties[set].define_state_vars():
+                    for ind in blk[k].diluate.properties[set].flow_mass_phase_comp:
+                        blk[k].diluate.properties[set].flow_mass_phase_comp[ind] = value(blk[k].diluate.properties[(0.0, 0.0)].flow_mass_phase_comp[ind])
+
+            for set in blk[k].concentrate.properties:
+               # print('SET9', blk[k].diluate.properties.items().
+                if "flow_mol_phase_comp" not in blk[k].concentrate.properties[set].define_state_vars():
+                    raise ConfigurationError(
+                            "Electrodialysis1D unit model requires "
+                            "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
+                            "state variable basis to apply the 'propogate_initial_state' method"
+                        )
+                if "teperature" in blk[k].concentrate.properties[set].define_state_vars():
+                    blk[k].concentrate.properties[set].temperature = value(blk[k].concentrate.properties[(0.0, 0.0)].temperature)
+                if "pressure" in blk[k].diluate.properties[set].define_state_vars():
+                    blk[k].concentrate.properties[set].pressure = value(blk[k].concentrate.properties[(0.0, 0.0)].pressure)
+                if "flow_mol_phase_comp" in blk[k].concentrate.properties[set].define_state_vars():
+                    for ind in blk[k].concentrate.properties[set].flow_mol_phase_comp:
+                        blk[k].concentrate.properties[set].flow_mol_phase_comp[ind] = value(blk[k].concentrate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind])
+                if "flow_mass_phase_comp" in blk[k].concentrate.properties[set].define_state_vars():
+                    for ind in blk[k].concentrate.properties[set].flow_mass_phase_comp:
+                        blk[k].concentrate.properties[set].flow_mass_phase_comp[ind] = value(blk[k].concentrate.properties[(0.0, 0.0)].flow_mass_phase_comp[ind])
+
         # ---------------------------------------------------------------------
         # Initialize diluate block
         flags = blk.diluate.initialize(
@@ -840,94 +881,13 @@ class Electrodialysis1DData(UnitModelBlockData):
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         blk.concentrate.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-    '''
+    
 
-    def propogate_initial_state(self):
-
-        i = 0
-        for set in self.diluate.properties:
-
-            # Should check 'define_state_vars' to see if user has provided
-            #   state vars that are outside of the checks in this function
-            if (
-                "flow_mol_phase_comp"
-                not in self.diluate.properties[set].define_state_vars()
-            ):
-                raise ConfigurationError(
-                    "Electrodialysis1D unit model requires "
-                    "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
-                    "state variable basis to apply the 'propogate_initial_state' method"
-                )
-
-            t = set[0]
-            x = set[1]
-            if i == 0:
-                intial_set = (t, x)
-
-            if "pressure" in self.diluate.properties[set].define_state_vars():
-                self.diluate.properties[set].pressure = value(
-                    self.diluate.properties[intial_set].pressure
-                )
-                self.concentrate.properties[set].pressure = value(
-                    self.concentrate.properties[intial_set].pressure
-                )
-
-            if "temperature" in self.diluate.properties[set].define_state_vars():
-                self.diluate.properties[set].temperature = value(
-                    self.diluate.properties[intial_set].temperature
-                )
-                self.concentrate.properties[set].temperature = value(
-                    self.concentrate.properties[intial_set].temperature
-                )
-
-            if (
-                "flow_mol_phase_comp"
-                in self.diluate.properties[set].define_state_vars()
-            ):
-                for ind in self.diluate.properties[set].flow_mol_phase_comp:
-                    self.diluate.properties[set].flow_mol_phase_comp[ind] = value(
-                        self.diluate.properties[intial_set].flow_mol_phase_comp[ind]
-                    )
-                    self.concentrate.properties[set].flow_mol_phase_comp[
-                        ind
-                    ] = value(
-                        self.concentrate.properties[
-                            intial_set
-                        ].flow_mol_phase_comp[ind]
-                    )
-
-                # Check to see if 'flow_mass_phase_comp' is constructed
-                if self.diluate.properties[set].is_property_constructed(
-                    "flow_mass_phase_comp"
-                ):
-                    for ind in self.diluate.properties[set].flow_mass_phase_comp:
-                        self.diluate.properties[set].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self.diluate.properties[intial_set].flow_mol_phase_comp[
-                                ind
-                            ]
-                        )
-                        self.concentrate.properties[set].flow_mass_phase_comp[
-                            ind
-                        ] = value(
-                            self.concentrate.properties[
-                                intial_set
-                            ].flow_mol_phase_comp[ind]
-                        )
-
-            i += 1
-    '''
-    '''
+    
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        # First, should set some values for all state vars based on inlet state
-        #   We do this here because good scaling factors will depend on the
-        #   starting values for the state vars
-        self.propogate_initial_state()
 
         # Scaling factors that user may setup
         if iscale.get_scaling_factor(self.cell_width) is None:
@@ -936,28 +896,52 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.membrane_thickness) is None:
             sf = iscale.get_scaling_factor(
-                self.membrane_thickness, default=1e3, warning=False
+                self.membrane_thickness, default=1e4, warning=False
             )
             iscale.set_scaling_factor(self.membrane_thickness, sf)
 
-        if iscale.get_scaling_factor(self.ion_diffusivity_membrane) is None:
+        if iscale.get_scaling_factor(self.solute_diffusivity_membrane) is None:
             sf = iscale.get_scaling_factor(
-                self.ion_diffusivity_membrane, default=1e9, warning=False
+                self.solute_diffusivity_membrane, default=1e10, warning=False
             )
-            iscale.set_scaling_factor(self.ion_diffusivity_membrane, sf)
+            iscale.set_scaling_factor(self.solute_diffusivity_membrane, sf)
 
         if iscale.get_scaling_factor(self.water_permeability_membrane) is None:
             sf = iscale.get_scaling_factor(
-                self.water_permeability_membrane, default=1e10, warning=False
+                self.water_permeability_membrane, default=1e14, warning=False
             )
             iscale.set_scaling_factor(self.water_permeability_membrane, sf)
+
+        if iscale.get_scaling_factor(self.spacer_thickness) is None:
+            sf = iscale.get_scaling_factor(
+                self.spacer_thickness, default=1e4, warning=False
+            )
+            iscale.set_scaling_factor(self.spacer_thickness, sf)
+
+        if iscale.get_scaling_factor(self.electrodes_resistance) is None:
+            sf = iscale.get_scaling_factor(
+                self.electrodes_resistance, default=1e4, warning=False
+            )
+            iscale.set_scaling_factor(self.electrodes_resistance, sf)
+
+        if iscale.get_scaling_factor(self.current_applied) is None:
+            sf = iscale.get_scaling_factor(
+                self.current_applied, default=1, warning=False
+            )
+            iscale.set_scaling_factor(self.current_applied, sf)
+
+        if iscale.get_scaling_factor(self.voltage) is None:
+            sf = iscale.get_scaling_factor(
+                self.voltage, default=1e-1, warning=False
+            )
+            iscale.set_scaling_factor(self.voltage, sf)
 
         if iscale.get_scaling_factor(self.diluate.area) is None:
             sf = iscale.get_scaling_factor(
                 self.diluate.area, default=1, warning=False
             )
             iscale.set_scaling_factor(self.diluate.area, sf)
-
+        #print('AAAA',value(self.diluate.area))
         if iscale.get_scaling_factor(self.concentrate.area) is None:
             sf = iscale.get_scaling_factor(
                 self.concentrate.area, default=1, warning=False
@@ -982,405 +966,145 @@ class Electrodialysis1DData(UnitModelBlockData):
                 self.diluate.length, default=1, warning=False
             )
         iscale.constraint_scaling_transform(self.eq_equal_length, sf)
+    
+        # set the flow rate scaling factor constant throughout all finite elements. 
+        for set in self.diluate.properties:
+             if "flow_mol_phase_comp" in self.diluate.properties[set].define_state_vars():
+                for ind in self.diluate.properties[set].flow_mol_phase_comp:
+                    sf_flow = iscale.get_scaling_factor(self.diluate.properties[(0.0,0.0)].flow_mol_phase_comp[ind], default =1, warning = True)
+                    iscale.set_scaling_factor(self.diluate.properties[set].flow_mol_phase_comp[ind], sf_flow)
 
-        # Scaling factors for isothermal temperature
-        if (
-            iscale.get_scaling_factor(
-                self.diluate.properties[0, self.first_element].temperature
-            )
-            is None
-        ):
-            sf = iscale.get_scaling_factor(
-                self.diluate.properties[0, self.first_element].temperature,
-                default=1e-2,
-                warning=True,
-            )
-        if (
-            iscale.get_scaling_factor(
-                self.concentrate.properties[0, self.first_element].temperature
-            )
-            is None
-        ):
-            sf = iscale.get_scaling_factor(
-                self.concentrate.properties[0, self.first_element].temperature,
-                default=1e-2,
-                warning=True,
-            )
-
-        sf = iscale.get_scaling_factor(
-            self.concentrate.properties[0, self.first_element].temperature
-        )
-        for t in self.flowsheet().time:
-            for x in self.difference_elements:
-                iscale.constraint_scaling_transform(self.eq_isothermal_diluate[t, x], sf)
+        for set in self.concentrate.properties:
+             if "flow_mol_phase_comp" in self.concentrate.properties[set].define_state_vars():
+                for ind in self.concentrate.properties[set].flow_mol_phase_comp:
+                    sf_flow = iscale.get_scaling_factor(self.concentrate.properties[(0.0,0.0)].flow_mol_phase_comp[ind], default =1, warning = True)
+                    iscale.set_scaling_factor(self.concentrate.properties[set].flow_mol_phase_comp[ind], sf_flow)
+                    
+        #Transform constraint scaling 
+        for ind, c in self.eq_equal_length.items():
                 iscale.constraint_scaling_transform(
-                    self.eq_isothermal_concentrate[t, x], sf
+                    c, iscale.get_scaling_factor(self.diluate.length)
+                )   
+
+        for ind, c in self.eq_elec_input_condition_diluate.items():
+            if self.config.operation_mode == 'Constant_Current':
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.current_applied[ind[0]])
+                )
+            else:
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.voltage[ind[0]])
+                )
+        for ind, c in self.eq_elec_input_condition_concentrate.items():
+            if self.config.operation_mode == 'Constant_Current':
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.current_applied[ind[0]])
+                )
+            else:
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.voltage[ind[0]])
                 )
 
-        # Iterate through and evaluate constraints to approximate scaling
-        for p in self.config.property_package.phase_list:
-            for j in self.config.property_package.component_list:
-                for t in self.flowsheet().time:
-                    # This index is tracking the first time through the x loop
-                    ix = 0
-                    for x in self.difference_elements:
+        for ind, c in self.eq_mass_transfer_term_diluate.items():
+            if ind[3]== 'H2O':
+                sf_osm = (
+                        1e-3
+                        * 0.018
+                        * iscale.get_scaling_factor(self.water_permeability_membrane)
+                        * ((iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].pressure_osm_phase[ind[2]]))**2 + (iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].pressure_osm_phase[ind[2]]))**2
+                        )** 0.5
+                    )
+                sf_eleosm = Constants.faraday_constant
+                iscale.constraint_scaling_transform(
+                    c, (sf_osm ** 2 + sf_eleosm ** 2) ** 0.5
+                )
+            elif ind in self.config.property_package.ion_set:
+                sf_diff = (
+                        iscale.get_scaling_factor(self.solute_diffusivity_membrane)
+                        / iscale.get_scaling_factor(self.membrane_thickness)
+                        * (((iscale.get_scaling_factor(
+                            self.concentrate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2 
+                            +(iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2) ** 0.5)
+                        )
+                sf_elemig = Constants.faraday_constant
+                iscale.constraint_scaling_transform(
+                    c, (sf_diff ** 2 + sf_elemig ** 2) ** 0.5
+                )
+            else: 
+                iscale.constraint_scaling_transform(
+                    c,
+                        iscale.get_scaling_factor(self.solute_diffusivity_membrane)
+                        / iscale.get_scaling_factor(self.membrane_thickness)
+                        * (((iscale.get_scaling_factor(
+                            self.concentrate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2 
+                            +(iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2) ** 0.5)
+                        
+                )
+        for ind, c in self.eq_mass_transfer_term_concentrate.items():
+            if ind[3]== 'H2O':
+                sf_osm = (
+                        1e-3
+                        * 0.018
+                        * iscale.get_scaling_factor(self.water_permeability_membrane)
+                        * ((iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].pressure_osm_phase[ind[2]]))**2 + (iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].pressure_osm_phase[ind[2]]))**2
+                        )** 0.5
+                    )
+                sf_eleosm = Constants.faraday_constant
+                iscale.constraint_scaling_transform(
+                    c, (sf_osm ** 2 + sf_eleosm ** 2) ** 0.5
+                )
+            elif ind in self.config.property_package.ion_set:
+                sf_diff = (
+                        iscale.get_scaling_factor(self.solute_diffusivity_membrane)
+                        / iscale.get_scaling_factor(self.membrane_thickness)
+                        * (((iscale.get_scaling_factor(
+                            self.concentrate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2 
+                            +(iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2) ** 0.5)
+                        )
+                sf_elemig = Constants.faraday_constant
+                iscale.constraint_scaling_transform(
+                    c, (sf_diff ** 2 + sf_elemig ** 2) ** 0.5
+                )
+            else: 
+                iscale.constraint_scaling_transform(
+                    c, 
+                        iscale.get_scaling_factor(self.solute_diffusivity_membrane)
+                        / iscale.get_scaling_factor(self.membrane_thickness)
+                        * (((iscale.get_scaling_factor(
+                            self.concentrate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2 
+                            +(iscale.get_scaling_factor(
+                            self.diluate.properties[(ind[0],ind[1])
+                            ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2) ** 0.5)
+                        
+                )
+                
 
-                        # Reset scaling factors for _flow_terms
-                        sf_flow = iscale.get_scaling_factor(
-                            self.diluate._flow_terms[t, x, p, j]
-                        )
-                        if sf_flow >= 1000:
-                            sf_flow = 1000
-                        if sf_flow <= 0.001:
-                            sf_flow = 0.001
-                        iscale.set_scaling_factor(
-                            self.diluate._flow_terms[t, x, p, j], sf_flow
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.diluate._flow_terms[t, 0, p, j], sf_flow
-                            )
-
-                        sf_flow = iscale.get_scaling_factor(
-                            self.concentrate._flow_terms[t, x, p, j]
-                        )
-                        if sf_flow >= 1000:
-                            sf_flow = 1000
-                        if sf_flow <= 0.001:
-                            sf_flow = 0.001
-                        iscale.set_scaling_factor(
-                            self.concentrate._flow_terms[t, x, p, j], sf_flow
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.concentrate._flow_terms[t, 0, p, j], sf_flow
-                            )
-
-                        ix += 1
-
-                        # Calculations for nonelec_flux
-                        sf1 = 0
-                        if p == "Liq":
-                            if j == "H2O":
-                                Posm_D = self.diluate.properties[
-                                    t, x
-                                ].pressure_osm_phase[p]
-                                Posm_C = self.concentrate.properties[
-                                    t, x
-                                ].pressure_osm_phase[p]
-                                L_cem = pyunits.convert(
-                                    self.water_permeability_membrane["cem"],
-                                    to_units=units_meta("length")
-                                    * units_meta("time") ** -1
-                                    * units_meta("pressure") ** -1,
-                                )
-                                L_aem = pyunits.convert(
-                                    self.water_permeability_membrane["aem"],
-                                    to_units=units_meta("length")
-                                    * units_meta("time") ** -1
-                                    * units_meta("pressure") ** -1,
-                                )
-                                sf1 = (L_cem + L_aem) * (
-                                    Posm_C
-                                    * self.concentrate.properties[
-                                        t, x
-                                    ].conc_mol_phase_comp[p, j]
-                                )
-                            elif (
-                                j in self.config.property_package.anion_set
-                                or j in self.config.property_package.cation_set
-                            ):
-                                cem_rat = pyunits.convert(
-                                    (
-                                        self.ion_diffusivity_membrane["cem", j]
-                                        / self.membrane_thickness["cem"]
-                                    ),
-                                    to_units=units_meta("length")
-                                    * units_meta("time") ** -1,
-                                )
-                                aem_rat = pyunits.convert(
-                                    (
-                                        self.ion_diffusivity_membrane["aem", j]
-                                        / self.membrane_thickness["aem"]
-                                    ),
-                                    to_units=units_meta("length")
-                                    * units_meta("time") ** -1,
-                                )
-                                sf1 = -(cem_rat + aem_rat) * (
-                                    self.concentrate.properties[
-                                        t, x
-                                    ].conc_mol_phase_comp[p, j]
-                                )
-
-                            else:
-                                sf1 = 0.0
-                        else:
-                            sf1 = 0.0
-
-                        if abs(value(sf1)) < 0.001:
-                            sf1 = 0.001
-
-                        iscale.set_scaling_factor(
-                            self.nonelec_flux[t, x, p, j], 1 / abs(value(sf1))
-                        )
-                        iscale.constraint_scaling_transform(
-                            self.eq_nonelec_flux[t, x, p, j], 1 / abs(value(sf1))
-                        )
-
-                        # Calculations for elec_flux
-                        sf2 = 0
-                        if p == "Liq":
-                            if j == "H2O":
-                                sf2 = 0
-                            elif (
-                                j in self.config.property_package.anion_set
-                                or j in self.config.property_package.cation_set
-                            ):
-                                sf2 = 0
-                            else:
-                                sf2 = 0.0
-                        else:
-                            sf2 = 0
-
-                        if abs(value(sf2)) < 0.001:
-                            sf2 = 0.001
-
-                        iscale.set_scaling_factor(
-                            self.elec_flux[t, x, p, j], 1 / abs(value(sf2))
-                        )
-                        iscale.constraint_scaling_transform(
-                            self.eq_elec_flux[t, x, p, j], 1 / abs(value(sf2))
-                        )
-
-                        # Calculations for mass transfer constraints
-                        sf3 = 0
-                        width = pyunits.convert(
-                            self.cell_width, to_units=units_meta("length")
-                        )
-                        sf3 = sf1 * width + sf2 * width
-                        if abs(value(sf3)) < 0.001:
-                            sf3 = 0.001
-                        iscale.constraint_scaling_transform(
-                            self.eq_mass_transfer_term_diluate[t, x, p, j],
-                            1 / abs(value(sf3)),
-                        )
-                        iscale.constraint_scaling_transform(
-                            self.eq_mass_transfer_term_concentrate[t, x, p, j],
-                            1 / abs(value(sf3)),
-                        )
-
-                    # End x
-                # End t
-            # End j
-        # End p
-
-        # Check for existence of true-to-apparent species info (comes from the Generic Property Package)
-        for t in self.flowsheet().time:
-            # This index is tracking the first time through the x loop
-            ix = 0
-            for x in self.difference_elements:
-
-                # Constraints to scale
-                if self.diluate.properties[t, x].is_property_constructed(
-                    "true_to_appr_species"
-                ):
-                    for set in self.diluate.properties[t, x].true_to_appr_species:
-                        p = set[0]
-                        j = set[1]
-                        iscale.constraint_scaling_transform(
-                            self.diluate.properties[t, x].true_to_appr_species[
-                                p, j
-                            ],
-                            1,
-                        )
-                        if ix == 0:
-                            iscale.constraint_scaling_transform(
-                                self.diluate.properties[t, 0].true_to_appr_species[
-                                    p, j
-                                ],
-                                1,
-                            )
-                if self.concentrate.properties[t, x].is_property_constructed(
-                    "true_to_appr_species"
-                ):
-                    for set in self.concentrate.properties[
-                        t, x
-                    ].true_to_appr_species:
-                        p = set[0]
-                        j = set[1]
-                        iscale.constraint_scaling_transform(
-                            self.concentrate.properties[t, x].true_to_appr_species[
-                                p, j
-                            ],
-                            1,
-                        )
-                        if ix == 0:
-                            iscale.constraint_scaling_transform(
-                                self.concentrate.properties[
-                                    t, 0
-                                ].true_to_appr_species[p, j],
-                                1,
-                            )
-
-                if self.diluate.properties[t, x].is_property_constructed(
-                    "appr_mole_frac_constraint"
-                ):
-                    for set in self.diluate.properties[
-                        t, x
-                    ].appr_mole_frac_constraint:
-                        p = set[0]
-                        j = set[1]
-                        iscale.constraint_scaling_transform(
-                            self.diluate.properties[t, x].appr_mole_frac_constraint[
-                                p, j
-                            ],
-                            1,
-                        )
-                        if ix == 0:
-                            iscale.constraint_scaling_transform(
-                                self.diluate.properties[
-                                    t, 0
-                                ].appr_mole_frac_constraint[p, j],
-                                1,
-                            )
-                if self.concentrate.properties[t, x].is_property_constructed(
-                    "appr_mole_frac_constraint"
-                ):
-                    for set in self.concentrate.properties[
-                        t, x
-                    ].appr_mole_frac_constraint:
-                        p = set[0]
-                        j = set[1]
-                        iscale.constraint_scaling_transform(
-                            self.concentrate.properties[
-                                t, x
-                            ].appr_mole_frac_constraint[p, j],
-                            1,
-                        )
-                        if ix == 0:
-                            iscale.constraint_scaling_transform(
-                                self.concentrate.properties[
-                                    t, 0
-                                ].appr_mole_frac_constraint[p, j],
-                                1,
-                            )
-
-                # Variables to scale
-                if self.diluate.properties[t, x].is_property_constructed(
-                    "flow_mol_phase_comp_apparent"
-                ):
-                    for set in self.diluate.properties[
-                        t, x
-                    ].flow_mol_phase_comp_apparent:
-                        p = set[0]
-                        j = set[1]
-                        sf = iscale.get_scaling_factor(
-                            self.diluate.properties[t, x].flow_mol_phase_comp[p, j]
-                        )
-                        iscale.set_scaling_factor(
-                            self.diluate.properties[
-                                t, x
-                            ].flow_mol_phase_comp_apparent[p, j],
-                            sf,
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.diluate.properties[
-                                    t, 0
-                                ].flow_mol_phase_comp_apparent[p, j],
-                                sf,
-                            )
-                if self.concentrate.properties[t, x].is_property_constructed(
-                    "flow_mol_phase_comp_apparent"
-                ):
-                    for set in self.concentrate.properties[
-                        t, x
-                    ].flow_mol_phase_comp_apparent:
-                        p = set[0]
-                        j = set[1]
-                        sf = iscale.get_scaling_factor(
-                            self.concentrate.properties[t, x].flow_mol_phase_comp[
-                                p, j
-                            ]
-                        )
-                        iscale.set_scaling_factor(
-                            self.concentrate.properties[
-                                t, x
-                            ].flow_mol_phase_comp_apparent[p, j],
-                            sf,
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.concentrate.properties[
-                                    t, 0
-                                ].flow_mol_phase_comp_apparent[p, j],
-                                sf,
-                            )
-
-                if self.diluate.properties[t, x].is_property_constructed(
-                    "mole_frac_phase_comp_apparent"
-                ):
-                    for set in self.diluate.properties[
-                        t, x
-                    ].mole_frac_phase_comp_apparent:
-                        p = set[0]
-                        j = set[1]
-                        sf = iscale.get_scaling_factor(
-                            self.diluate.properties[t, x].mole_frac_phase_comp[p, j]
-                        )
-                        iscale.set_scaling_factor(
-                            self.diluate.properties[
-                                t, x
-                            ].mole_frac_phase_comp_apparent[p, j],
-                            sf,
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.diluate.properties[
-                                    t, 0
-                                ].mole_frac_phase_comp_apparent[p, j],
-                                sf,
-                            )
-                if self.concentrate.properties[t, x].is_property_constructed(
-                    "mole_frac_phase_comp_apparent"
-                ):
-                    for set in self.concentrate.properties[
-                        t, x
-                    ].mole_frac_phase_comp_apparent:
-                        p = set[0]
-                        j = set[1]
-                        sf = iscale.get_scaling_factor(
-                            self.concentrate.properties[t, x].mole_frac_phase_comp[
-                                p, j
-                            ]
-                        )
-                        iscale.set_scaling_factor(
-                            self.concentrate.properties[
-                                t, x
-                            ].mole_frac_phase_comp_apparent[p, j],
-                            sf,
-                        )
-                        if ix == 0:
-                            iscale.set_scaling_factor(
-                                self.concentrate.properties[
-                                    t, 0
-                                ].mole_frac_phase_comp_apparent[p, j],
-                                sf,
-                            )
-
-                ix += 1
-            # End x
-        # End t
-
-        # # TODO: Add scaling factors
-'''
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Diluate Side Inlet": self.inlet_diluate,
-                "Concentrate Side Inlet": self.inlet_concentrate,
-                "Diluate Side Outlet": self.outlet_diluate,
-                "Concentrate Side Outlet": self.outlet_concentrate,
+                "Diluate Channel Inlet": self.inlet_diluate,
+                "Concentrate Channel Inlet": self.inlet_concentrate,
+                "Diluate Channel Outlet": self.outlet_diluate,
+                "Concentrate Channel Outlet": self.outlet_concentrate,
             },
             time_point=time_point,
         )
+    
