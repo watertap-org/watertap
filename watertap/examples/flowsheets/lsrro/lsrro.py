@@ -591,7 +591,7 @@ def set_operating_conditions(m, Cin=None):
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
     spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
-    width = 5  # membrane width factor [m]
+    width = 5  # effective membrane width [m]
     area = 100  # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
