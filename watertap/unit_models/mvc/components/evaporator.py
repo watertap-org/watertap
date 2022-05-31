@@ -470,6 +470,7 @@ class EvaporatorData(UnitModelBlockData):
 
         return {"vars": var_dict}
 
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
