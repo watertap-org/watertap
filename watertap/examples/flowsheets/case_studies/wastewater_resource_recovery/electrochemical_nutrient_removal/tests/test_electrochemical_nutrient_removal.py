@@ -19,6 +19,32 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.elec
 
 
 @pytest.mark.component
-def test_treatment():
+def test_electroNP():
     m, results = main()
     assert_optimal_termination(results)
+
+    # test feed water flow
+    assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
+        10.512, rel=1e-3
+    )
+    assert value(m.fs.feed.properties[0].flow_mass_comp["nitrogen"]) == pytest.approx(
+        0.00752, rel=1e-5
+    )
+    assert value(m.fs.feed.properties[0].flow_mass_comp["phosphorus"]) == pytest.approx(
+        0.00752, rel=1e-5
+    )
+    assert value(m.fs.feed.properties[0].flow_mass_comp["struvite"]) == pytest.approx(
+        0, rel=1e-10
+    )
+
+    # test struvite product flow
+    assert value(
+        m.fs.product_struvite.properties[0].flow_mass_comp["H2O"]
+    ) == pytest.approx(0, rel=1e-10)
+    assert value(
+        m.fs.product_struvite.properties[0].flow_mass_comp["phosphorus"]
+    ) == pytest.approx(0, rel=1e-10)
+
+    # test costing
+    assert value(m.fs.costing.LCOW) == pytest.approx(76.191, rel=1e-3)  # in $/m**3
+    assert value(m.fs.costing.LCOS) == pytest.approx(128.387, rel=1e-3)
