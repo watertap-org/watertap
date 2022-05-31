@@ -74,22 +74,6 @@ and operating cost calculations. Unit process capital costs are adjusted to the 
 
 Other technoeconomic factors used to calculate various system metrics, capital, and operating costs are presented in the table below:
 
-=============================================  ====================  =====================================  ===============  ==============================================================================
-                 Cost factor                     Variable                 Name                               Default Value    Description
-=============================================  ====================  =====================================  ===============  ==============================================================================
-Plant capacity utilization factor                 :math:`f_{util}`    ``utilization_factor``                 100%               Percentage of year plant is operating
-Plant lifetime                                    :math:`L`           ``plant_lifetime``                     30 yr              Expected lifetime of unit process
-Electricity price                                 :math:`P`           ``electricity``                        $0.0595/kWh        Electricity price in 2019 USD.
-Land cost factor                                  :math:`f_{land}`    ``land_cost_percent_FCI``              0.15%              Unit process land cost as percentage of capital cost
-Working capital cost factor                       :math:`f_{work}`    ``working_capital_percent_FCI``        5%                 Unit process working capital cost as percentage of capital cost
-Salaries cost factor                              :math:`f_{sal}`     ``salaries_percent_FCI``               0.1%               Unit process salaries cost as percentage of capital cost
-Maintenance cost factor                           :math:`f_{maint}`   ``maintenance_costs_percent_FCI``      0.8%               Unit process maintenance costs as percentage of capital cost
-Lab cost factor                                   :math:`f_{lab}`     ``laboratory_fees_percent_FCI``        0.3%               Unit process laboratory costs as percentage of capital cost
-Insurance/taxes cost factor                       :math:`f_{ins}`     ``insurance_and_taxes_percent_FCI``    0.2%               Unit process insurance & taxes cost as percentage of capital cost
-Benefits cost factor                              :math:`f_{ben}`     ``benefit_percent_of_salary``          90%                Unit process benefits cost as percentage of salary costs
-Weighted average cost of capital factor           :math:`f_{wacc}`    ``wacc``                               5%                 Weighted average cost of capital over plant lifetime
-Capital recovery factor                           :math:`f_{crf}`     ``capital_recovery_factor``            6.51%              Calculated from default :math:`f_{WACC}` and :math:`L` values
-=============================================  ====================  =====================================  ===============  ==============================================================================
 
 
 The capital recovery factor is calculated with:
