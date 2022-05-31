@@ -740,7 +740,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,  # todo: revisit
-            bounds=(1e-8, None),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.s,
             doc="Mole flow rate",
@@ -769,7 +769,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-8, 1.001),
+            bounds=(0, 1.001),
             units=pyunits.kg / pyunits.kg,
             doc="Mass fraction",
         )
@@ -841,7 +841,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=0.001,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -869,7 +869,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=500,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             units=pyunits.mol * pyunits.m**-3,
             doc="Molar concentration",
         )
@@ -889,7 +889,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-8, 2e3),
+            bounds=(0, 2e3),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -909,7 +909,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             units=pyunits.kg / pyunits.s,
             doc="Component Mass flowrate",
         )
@@ -929,7 +929,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-8, 1.001),
+            bounds=(0, 1.001),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
@@ -947,7 +947,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.molality_comp = Var(
             self.params.ion_set | self.params.solute_set,
             initialize=1,
-            bounds=(1e-8, 10),
+            bounds=(0, 10),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )

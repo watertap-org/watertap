@@ -1,3 +1,5 @@
+.. _sidor_methods:
+
 Reactive Single Inlet - Double Outlet Helper Methods
 ====================================================
 
