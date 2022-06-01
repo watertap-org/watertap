@@ -407,7 +407,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.electric_potential_grad_feed_interface = Var(
             self.flowsheet().config.time,
             io_list,
-            initialize=1,  # TODO: revisit
+            initialize=-1e-8,  # TODO: revisit
             domain=Reals,
             units=pyunits.V
             * pyunits.m
@@ -568,7 +568,10 @@ class NanofiltrationData(UnitModelBlockData):
             doc="Volumetric water flux at inlet and outlet",
         )
         def flux_vol_water(b, t, x):
-            prop = b.feed_side.properties_in[t]
+            if not x:
+                prop = b.feed_side.properties_in[t]
+            elif x:
+                prop = b.feed_side.properties_out[t]
             return (
                 b.flux_mol_phase_comp[t, x, "Liq", "H2O"]
                 * prop.mw_comp["H2O"]
@@ -2009,7 +2012,7 @@ class NanofiltrationData(UnitModelBlockData):
         # for con in self.eq_recovery_vol_phase.values():
         #     iscale.constraint_scaling_transform(con, 1e2)
         for con in self.eq_rejection_intrinsic_phase_comp.values():
-            iscale.constraint_scaling_transform(con, 1e3)
+            iscale.constraint_scaling_transform(con, 1)
         # for con in self.eq_N_Sc_comp.values():
         #     iscale.constraint_scaling_transform(con, 1e-1)
         # for con in self.eq_N_Pe_comp.values():
