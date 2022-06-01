@@ -13,6 +13,8 @@
 import pytest
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 from watertap.unit_models.electrodialysis_0d import Electrodialysis0D
+from watertap.costing import WaterTAPCosting
+from watertap.costing.watertap_costing_package import ElectrodialysisCostType
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
@@ -34,6 +36,7 @@ from idaes.core import (
     MomentumBalanceType,
     EnergyBalanceType,
 )
+from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
@@ -255,6 +258,54 @@ class TestElectrodialysisVoltageConst:
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
         ) == pytest.approx(0.71, rel=5e-2)
+
+    @pytest.mark.component
+    def test_costing(self, electrodialysis_cell1):
+        m = electrodialysis_cell1
+        blk = m.fs.unit
+
+        # NOTE: This should probably move into the build of the model
+        #       and not be here after everything else
+        # # TODO: Create another test were this is done closer to
+        #        the beginning.
+        m.fs.costing = WaterTAPCosting()
+
+        # Set costing var
+        m.fs.costing.electrodialysis_membrane_cost.set_value(60)
+        m.fs.costing.factor_membrane_replacement.set_value(0.2)
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {
+                    "cost_type": ElectrodialysisCostType.default
+                },
+            },
+        )
+        m.fs.costing.cost_process()
+
+        assert_units_consistent(m)
+
+        assert degrees_of_freedom(m) == 0
+
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        expected_capex = (
+            blk.cell_pair_num
+            * blk.cell_width
+            * blk.cell_length
+            * m.fs.costing.electrodialysis_membrane_cost
+        )
+        assert pytest.approx(value(expected_capex), rel=1e-3) == value(
+            m.fs.costing.total_capital_cost
+        )
+        assert pytest.approx(12.324, rel=1e-3) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(94.800, rel=1e-3) == value(
+            m.fs.costing.total_investment_cost
+        )
 
 
 class TestElectrodialysisCurrentConst:

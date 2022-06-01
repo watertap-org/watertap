@@ -227,7 +227,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.spacer_thickness = Var(
             initialize=0.0001,
             units=pyunits.meter,
-            doc="The distance between the concecutive aem and cem",
+            doc="The distance between the consecutive aem and cem",
         )
 
         # Material and Operational properties

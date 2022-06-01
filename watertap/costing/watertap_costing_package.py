@@ -36,6 +36,7 @@ from watertap.unit_models import (
     Crystallization,
     Pump,
     EnergyRecoveryDevice,
+    Electrodialysis0D,
 )
 
 
@@ -58,6 +59,10 @@ class MixerType(StrEnum):
     default = "default"
     NaOCl = "NaOCl"
     CaOH2 = "CaOH2"
+
+
+class ElectrodialysisCostType(StrEnum):
+    default = "default"
 
 
 class CrystallizerCostType(StrEnum):
@@ -196,6 +201,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=1,
             doc="CaOH2 purity",
             units=pyo.units.dimensionless,
+        )
+
+        self.electrodialysis_membrane_cost = pyo.Var(
+            initialize=30,
+            doc="Electrodialysis membrane cost",
+            units=self.base_currency / (pyo.units.meter**2),
         )
 
         self.fc_crystallizer_fob_unit_cost = pyo.Var(
@@ -703,6 +714,26 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
+    def cost_electrodialysis(blk, cost_type=ElectrodialysisCostType.default):
+        """
+        Function for costing the Electrodialysis unit
+
+        Args:
+            cost_type - Option for electrodialysis cost function type - (UNKNOWN)
+        """
+        # # TODO: Clean up cost type options
+        if cost_type == ElectrodialysisCostType.default:
+            membrane_cost = blk.costing_package.electrodialysis_membrane_cost
+        else:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for cost_type:"
+                f" {cost_type}. Argument must be a member of the ElectrodialysisCostType Enum."
+            )
+        cost_electrodialysis_membranes(
+            blk, membrane_cost, blk.costing_package.factor_membrane_replacement
+        )
+
+    @staticmethod
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
         Function for costing the FC crystallizer by the mass flow of produced crystals.
@@ -790,6 +821,7 @@ WaterTAPCostingData.unit_mapping = {
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
+    Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
 }
 
 
@@ -834,6 +866,45 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
         == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area
+    )
+
+
+def cost_electrodialysis_membranes(blk, membrane_cost, factor_membrane_replacement):
+    """
+    Generic function for costing the membranes in an electrodialysis unit.
+    Assumes the unit_model has a `cell_pair_num`, `cell_width`, and `cell_length`
+    set of variables used to size the total membrane area.
+
+    Args:
+        membrane_cost - The cost of the membrane in currency per area
+        factor_membrane_replacement - Membrane replacement factor
+                                      [fraction of membrane replaced/year]
+
+    """
+    _make_capital_cost_var(blk)
+    _make_fixed_operating_cost_var(blk)
+
+    blk.membrane_cost = pyo.Expression(expr=membrane_cost)
+    blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost
+        == blk.membrane_cost
+        * (
+            blk.unit_model.cell_pair_num
+            * blk.unit_model.cell_width
+            * blk.unit_model.cell_length
+        )
+    )
+    blk.fixed_operating_cost_constraint = pyo.Constraint(
+        expr=blk.fixed_operating_cost
+        == blk.factor_membrane_replacement
+        * blk.membrane_cost
+        * (
+            blk.unit_model.cell_pair_num
+            * blk.unit_model.cell_width
+            * blk.unit_model.cell_length
+        )
     )
 
 
