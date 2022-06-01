@@ -45,7 +45,6 @@ def main():
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    initialize_system(m)
 
     solve(m)
 
@@ -107,6 +106,8 @@ def set_operating_conditions(m):
 
     # electroNP
     m.fs.electroNP.load_parameters_from_database(use_default_removal=True)
+
+    initialize_system(m)
 
 
 def add_costing(m):

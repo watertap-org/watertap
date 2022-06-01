@@ -12,41 +12,86 @@
 ###############################################################################
 
 import pytest
+from idaes.core.util import get_solver
 from pyomo.environ import value, assert_optimal_termination
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal import (
-    main,
+from pyomo.util.check_units import assert_units_consistent
+from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
+    electrochemical_nutrient_removal as electroNP,
 )
 
+solver = get_solver()
 
-@pytest.mark.component
-def test_electroNP():
-    m, results = main()
-    assert_optimal_termination(results)
 
-    # test feed water flow
-    assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
-        10.512, rel=1e-3
-    )
-    assert value(m.fs.feed.properties[0].flow_mass_comp["nitrogen"]) == pytest.approx(
-        0.00752, rel=1e-5
-    )
-    assert value(m.fs.feed.properties[0].flow_mass_comp["phosphorus"]) == pytest.approx(
-        0.00752, rel=1e-5
-    )
-    assert value(m.fs.feed.properties[0].flow_mass_comp["struvite"]) == pytest.approx(
-        0, rel=1e-10
-    )
+class TestElectroNPFlowsheet:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m = electroNP.build()
+        return m  # return model
 
-    # test struvite product flow
-    assert value(
-        m.fs.product_struvite.properties[0].flow_mass_comp["H2O"]
-    ) == pytest.approx(0, rel=1e-10)
-    assert value(
-        m.fs.product_struvite.properties[0].flow_mass_comp["phosphorus"]
-    ) == pytest.approx(0, rel=1e-10)
+    @pytest.mark.unit()
+    def test_build(self, system_frame):
+        m = system_frame
+        assert_units_consistent(m)
+        assert_degrees_of_freedom(m, 10)
 
-    # TODO - resolve discrepency between feed H2O mass flowrate and product_water H2O mass flowrate
+    @pytest.mark.component
+    def test_set_operating_conditions(self, system_frame):
+        m = system_frame
+        electroNP.set_operating_conditions(m)
 
-    # test costing
-    assert value(m.fs.costing.LCOW) == pytest.approx(76.191, rel=1e-3)  # in $/m**3
-    assert value(m.fs.costing.LCOS) == pytest.approx(128.387, rel=1e-3)
+        # test feed water flow
+        assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
+            10.512723, rel=1e-3
+        )
+        assert value(
+            m.fs.feed.properties[0].flow_mass_comp["nitrogen"]
+        ) == pytest.approx(0.00752736, rel=1e-5)
+        assert value(
+            m.fs.feed.properties[0].flow_mass_comp["phosphorus"]
+        ) == pytest.approx(0.00752736, rel=1e-5)
+        assert value(
+            m.fs.feed.properties[0].flow_mass_comp["struvite"]
+        ) == pytest.approx(0, abs=1e-10)
+
+    @pytest.mark.component
+    def test_solve(self, system_frame):
+        m = system_frame
+        results = electroNP.solve(m)
+        assert_optimal_termination(results)
+
+        # check two struvite product flow
+        assert value(
+            m.fs.product_struvite.properties[0].flow_mass_comp["struvite"]
+        ) == pytest.approx(0.006247, rel=1e-3)
+        assert value(
+            m.fs.product_struvite.properties[0].flow_mass_comp["phosphorus"]
+        ) == pytest.approx(0, abs=1e-6)
+
+        # check two water product flow
+        assert value(
+            m.fs.product_H2O.properties[0].flow_mass_comp["H2O"]
+        ) == pytest.approx(10.475, rel=1e-3)
+        assert value(
+            m.fs.product_H2O.properties[0].flow_mass_comp["struvite"]
+        ) == pytest.approx(0, abs=1e-6)
+
+    @pytest.mark.component
+    def test_costing(self, system_frame):
+        m = system_frame
+
+        electroNP.add_costing(m)
+        m.fs.costing.initialize()
+        results = electroNP.solve(m)
+
+        assert_optimal_termination(results)
+
+        # check costing
+        assert value(m.fs.costing.LCOW) == pytest.approx(75.319, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOS) == pytest.approx(126.918, rel=1e-3)
+
+    @pytest.mark.component
+    def test_display(self, system_frame):
+        m = system_frame
+        electroNP.display_results(m)
+        electroNP.display_costing(m)
