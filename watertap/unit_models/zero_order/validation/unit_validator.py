@@ -12,6 +12,7 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
+    check_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -170,12 +171,21 @@ def _run_analysis(m, df, extra_columns):
             var = m.find_component(var)
             var.fix(pyunits.convert(val * units, var.get_units()))
         _initialize_flowsheet(m)
-        s.solve(m)
-        for att, vals in watertap_costing_attributes.items():
-            if att == "LCOW":
-                vals.append(value(m.fs.costing.component(att)) * 1e06)
-            else:
-                vals.append(value(m.fs.costing.component(att)))
+        result = s.solve(m)
+        if check_optimal_termination(result):
+            for att, vals in watertap_costing_attributes.items():
+                if att == "LCOW":
+                    vals.append(value(m.fs.costing.component(att)) * 1e06)
+                else:
+                    vals.append(value(m.fs.costing.component(att)))
+        else:
+            msg = "WARNING: point "
+            for name, val in zip(extra_columns, index):
+                msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
+            msg += f"flow_in={flow_in:.4f}m^3/s was infeasible"
+            print(msg)
+            for att, vals in watertap_costing_attributes.items():
+                vals.append(float("nan"))
 
     for att, vals in watertap_costing_attributes.items():
         df["WT_" + att] = vals
@@ -249,6 +259,15 @@ class ZeroOrderUnitChecker:
         ),
     ).declare_as_argument()
 
+    CONFIG.declare(
+        "run_all_samples",
+        ConfigValue(
+            domain=bool,
+            default=False,
+            description="Run every row in the CSV file",
+        ),
+    ).declare_as_argument()
+
     def __init__(self, **options):
         self.config = self.CONFIG()
         self.config.set_value(options)
@@ -260,11 +279,9 @@ class ZeroOrderUnitChecker:
         )
 
         if self.config.csv_file is None:
-            self.comparison_dataframe = _guess_and_load_csv_file(self.model.fs.unit)
+            df = _guess_and_load_csv_file(self.model.fs.unit)
         else:
-            self.comparison_dataframe = _load_csv_file(self.config.csv_file)
-
-        df = self.comparison_dataframe
+            df = _load_csv_file(self.config.csv_file)
 
         expected_df_columns = (
             "unit",
@@ -293,9 +310,17 @@ class ZeroOrderUnitChecker:
             )
 
         self._extra_columns = [k for k in _column_to_component_map if k in df.columns]
+        if not self.config.run_all_samples:
+            # down sample to min/max box
+            sample_columns = self._extra_columns + ["flow_in"]
+            for c in sample_columns:
+                df = df[(df[c] == df[c].max()) | (df[c] == df[c].min())]
+            # sanity check
+            assert len(df) == 2 ** len(sample_columns)
         df.set_index(self._extra_columns + ["flow_in"], inplace=True)
 
         self.worst_difference = None
+        self.comparison_dataframe = df
 
     def check_unit(self):
         df = self.comparison_dataframe
@@ -367,12 +392,12 @@ class ZeroOrderUnitChecker:
 
 
 def check_unit(**kwargs):
-    from matplotlib.pyplot import show
+    # from matplotlib.pyplot import show
 
     checker = ZeroOrderUnitChecker(**kwargs)
     checker.check_unit()
-    fig = checker.get_differnces_figure()
-    show()
+    # fig = checker.get_differnces_figure()
+    # show()
 
     return checker
 
