@@ -45,6 +45,8 @@ def test_electroNP():
         m.fs.product_struvite.properties[0].flow_mass_comp["phosphorus"]
     ) == pytest.approx(0, rel=1e-10)
 
+    # TODO - resolve discrepency between feed H2O mass flowrate and product_water H2O mass flowrate
+
     # test costing
     assert value(m.fs.costing.LCOW) == pytest.approx(76.191, rel=1e-3)  # in $/m**3
     assert value(m.fs.costing.LCOS) == pytest.approx(128.387, rel=1e-3)
