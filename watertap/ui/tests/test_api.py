@@ -159,25 +159,8 @@ def test_block_interface_constructor(mock_block):
         obj = BlockInterface(
             mock_block, build_options(display_name=disp, description=desc)
         )
-        obj.get_exported_variables()  # force looking at contents
+        obj.dict()  # force looking at contents
 
-
-@pytest.mark.unit
-def test_block_interface_get_exported_variables(mock_block):
-    # no variables section
-    obj = BlockInterface(mock_block, build_options(variables=-1))
-    exvar = obj.get_exported_variables()
-    print(f"Got exported variables: {exvar}")
-    assert len(exvar) == 0
-    # empty variables section
-    obj = BlockInterface(mock_block, build_options(variables=0))
-    assert len(obj.get_exported_variables()) == 0
-    # 1 variable
-    obj = BlockInterface(mock_block, build_options(variables=1))
-    assert len(obj.get_exported_variables()) == 1
-    # 2 variables
-    obj = BlockInterface(mock_block, build_options(variables=2))
-    assert len(obj.get_exported_variables()) == 2
 
 
 @pytest.mark.unit
@@ -466,3 +449,13 @@ def test_find_flowsheet_interfaces_fileconfig(tmpdir):
     interfaces1 = list(find_flowsheet_interfaces(conf_path))
     interfaces2 = list(find_flowsheet_interfaces())
     assert interfaces2 == interfaces1
+
+
+def test_flowsheet_display_name(mock_block):
+    dname = "display"
+    desc = "description"
+    fsi = FlowsheetInterface({"display_name": dname, "description": desc})
+    fsi.set_block(mock_block)
+    assert fsi.display_name == dname
+    assert fsi.description == desc
+
