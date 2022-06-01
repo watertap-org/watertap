@@ -132,6 +132,8 @@ _column_to_component_map = {
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
     "chem_dose": ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
+    # NOTE: flow_in needs to be always last
+    "flow_in": ("fs.feed.flow_vol[0]", pyunits.m**3 / pyunits.s),
 }
 
 
@@ -143,7 +145,7 @@ def _initialize_flowsheet(m):
     m.fs.costing.initialize()
 
 
-def _run_analysis(m, df, extra_columns):
+def _run_analysis(m, df, columns):
 
     s = get_solver()
     watertap_costing_attributes = {
@@ -153,20 +155,16 @@ def _run_analysis(m, df, extra_columns):
         "LCOW": [],
     }
     total_number = len(df.index)
+    infeasible_points = []
     print(f"Starting analsys, found {total_number} points")
     for _, index in enumerate(df.index):
-        if extra_columns:
-            index, flow_in = index[:-1], index[-1]
-        else:
-            index, flow_in = [], index
-        if _ % 10 == 0:
-            msg = f"At {_}/{total_number} "
-            for name, val in zip(extra_columns, index):
-                msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
-            msg += f"flow_in={flow_in:.4f}m^3/s"
-            print(msg)
-        m.fs.feed.flow_vol[0].fix(flow_in * pyunits.m**3 / pyunits.s)
-        for name, val in zip(extra_columns, index):
+        if len(columns) == 1:
+            index = [index]
+        msg = f"At {_+1}/{total_number} "
+        for name, val in zip(columns, index):
+            msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
+        print(msg)
+        for name, val in zip(columns, index):
             var, units = _column_to_component_map[name]
             var = m.find_component(var)
             var.fix(pyunits.convert(val * units, var.get_units()))
@@ -180,15 +178,20 @@ def _run_analysis(m, df, extra_columns):
                     vals.append(value(m.fs.costing.component(att)))
         else:
             msg = "WARNING: point "
-            for name, val in zip(extra_columns, index):
+            inf_point = {}
+            for name, val in zip(columns, index):
                 msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
-            msg += f"flow_in={flow_in:.4f}m^3/s was infeasible"
+                inf_point[name] = val
+            msg += "was infeasible."
             print(msg)
             for att, vals in watertap_costing_attributes.items():
                 vals.append(float("nan"))
+            infeasible_points.append(inf_point)
 
     for att, vals in watertap_costing_attributes.items():
         df["WT_" + att] = vals
+
+    return infeasible_points
 
 
 _WT3_stone = {
@@ -206,8 +209,11 @@ _long_name_to_WT3_name = {
 }
 
 
-def _worst_relative_difference(a, b):
-    return (np.abs(a - b) / np.maximum(np.maximum(np.abs(a), np.abs(b)), 1e-06)).max()
+def _calculate_relative_difference(a, b):
+    """
+    assume b is the reference
+    """
+    return np.abs(a - b) / np.maximum(np.abs(b), 1e-06)
 
 
 def ZeroOrderModel(data):
@@ -309,17 +315,17 @@ class ZeroOrderUnitChecker:
                 f"Unexpected number of degrees of freedom {degrees_of_freedom(self.model)}"
             )
 
-        self._extra_columns = [k for k in _column_to_component_map if k in df.columns]
+        self._columns = [k for k in _column_to_component_map if k in df.columns]
         if not self.config.run_all_samples:
             # down sample to min/max box
-            sample_columns = self._extra_columns + ["flow_in"]
-            for c in sample_columns:
+            for c in self._columns:
                 df = df[(df[c] == df[c].max()) | (df[c] == df[c].min())]
             # sanity check
-            assert len(df) == 2 ** len(sample_columns)
-        df.set_index(self._extra_columns + ["flow_in"], inplace=True)
+            assert len(df) == 2 ** len(self._columns)
+        df.set_index(self._columns, inplace=True)
 
         self.worst_difference = None
+        self.infeasible_points = None
         self.comparison_dataframe = df
 
     def check_unit(self):
@@ -329,27 +335,56 @@ class ZeroOrderUnitChecker:
             msg += f" with subtype {self.config.process_subtype}"
         print(msg)
 
-        _run_analysis(self.model, df, self._extra_columns)
-        self.worst_difference = max(
-            _worst_relative_difference(np.array(df[wt3_key]), np.array(df[wt_k]))
-            for wt3_key, wt_k in _WT3_stone.items()
-        )
-        print(f"Worst relative difference: {self.worst_difference*100:.4f}%")
+        self.infeasible_points = _run_analysis(self.model, df, self._columns)
+
+        max_diff = -1.0
+        max_name = None
+        arg_max = None
+        for wt3_k, wt_k in _WT3_stone.items():
+            key = f"{wt3_k}_{wt_k}_relative_diff"
+            df[key] = _calculate_relative_difference(
+                np.array(df[wt_k]), np.array(df[wt3_k])
+            )
+            max_for_key = df[key].max()
+            if max_for_key > max_diff:
+                arg_max = df[key].argmax()
+                max_diff = max_for_key
+                max_name = wt_k
+
+        self.worst_difference = max_diff
+        self.worst_difference_name = max_name
+        self.worst_difference_point = arg_max
+        msg = "Worst relative difference"
+        if self.infeasible_points:
+            msg += " among *feasible* points"
+        msg += f": {self.worst_difference*100:.4f}% in {self.worst_difference_name} at "
+        max_index = df.index[arg_max] if len(self._columns) > 1 else [df.index[arg_max]]
+        for name, val in zip(self._columns, max_index):
+            msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
+        print(msg)
+        if self.infeasible_points:
+            print("Infeasible points:")
+            for inf_point in self.infeasible_points:
+                msg = "\t"
+                for name, val in inf_point.items():
+                    msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
+                print(msg)
+
         return self.worst_difference
 
     def get_differnces_figure(self):
         assert self.worst_difference is not None
 
-        if self._extra_columns:
+        if len(self._columns) > 1:
             figure_iterator = (
                 (
                     k,
                     self.comparison_dataframe.iloc[indices].droplevel(
-                        self._extra_columns
+                        self._columns[:-1]
                     ),
                 )
                 for k, indices in self.comparison_dataframe.groupby(
-                    level=list(range(len(self._extra_columns)))
+                    level=list(range(len(self._columns[:-1])))
                 ).indices.items()
             )
         else:
@@ -373,11 +408,11 @@ class ZeroOrderUnitChecker:
             if self.config.process_subtype:
                 name += f", subtype {self.config.process_subtype}"
             if index is not None:
-                if len(self._extra_columns) <= 1:
-                    attrname = self._extra_columns[0]
+                if len(self._columns) <= 2:
+                    attrname = self._columns[0]
                     name += f"{attrname}={index:.6f}{_column_to_component_map[attrname][1]} "
                 else:
-                    for attrname, val in zip(self._extra_columns, index):
+                    for attrname, val in zip(self._columns, index):
                         name += f"{attrname}={val:.6f}{_column_to_component_map[attrname][1]} "
             if self.worst_difference:
                 name += f"\nWorst Relative Difference: {self.worst_difference*100:.4f}%"
