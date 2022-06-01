@@ -485,7 +485,7 @@ class NanofiltrationData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=0.5,
-                bounds=(1e-3, 2),
+                bounds=(0, None),
                 domain=NonNegativeReals,
                 units=units_meta("length") / units_meta("time"),
                 doc="Crossflow velocity in feed channel at inlet and outlet",
