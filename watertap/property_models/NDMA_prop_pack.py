@@ -86,9 +86,9 @@ class NDMAParameterData(PhysicalParameterBlock):
         self.Liq = LiquidPhase()
 
         # heat capacity
-        self.cp = Param(mutable=False,
-                        initialize=4.2e3,
-                        units=pyunits.J / (pyunits.kg * pyunits.K))
+        self.cp = Param(
+            mutable=False, initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K)
+        )
 
         # molecular weight
         mw_comp_data = {"H2O": 18.01528e-3, "NDMA": 74.0819e-3}
@@ -395,7 +395,7 @@ class NDMAStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize={("Liq", "H2O"): 0.999999926, ("Liq", "NDMA"): 74e-9},
-            bounds=(1e-12, None),
+            bounds=(1e-18, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -425,7 +425,7 @@ class NDMAStateBlockData(StateBlockData):
             self.params.component_list,
             initialize={("Liq", "H2O"): 0.999999926, ("Liq", "NDMA"): 74e-9},
             bounds=(
-                1e-12,
+                1e-18,
                 None,
             ),  # upper bound set to None because of stability benefits
             units=pyunits.dimensionless,
@@ -452,11 +452,10 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b):  # constant density, NDMA concentration is always minimal
-            return (
-                b.dens_mass_phase["Liq"]
-                == b.params.dens_mass
-            )
+        def rule_dens_mass_phase(
+            b,
+        ):  # constant density, NDMA concentration is always minimal
+            return b.dens_mass_phase["Liq"] == b.params.dens_mass
 
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
@@ -464,7 +463,7 @@ class NDMAStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(1e-18, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -491,7 +490,7 @@ class NDMAStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-3, 2e3),
+            bounds=(1e-18, 2e3),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -511,7 +510,7 @@ class NDMAStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-12, None),
+            bounds=(1e-18, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate",
         )
@@ -531,7 +530,7 @@ class NDMAStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-12, None),
+            bounds=(1e-18, None),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
@@ -548,8 +547,8 @@ class NDMAStateBlockData(StateBlockData):
     def _molality_comp(self):
         self.molality_comp = Var(
             ["NDMA"],
-            initialize=7.4e-8,
-            bounds=(1e-12, 1e-3),
+            initialize=1,
+            bounds=(1e-18, 10),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
@@ -570,9 +569,12 @@ class NDMAStateBlockData(StateBlockData):
         temperature_ref = 273.15 * pyunits.K
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
-            return (b.params.cp
-                    * sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
-                    * (b.temperature - temperature_ref))
+            return (
+                b.params.cp
+                * sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * (b.temperature - temperature_ref)
+            )
+
         self.enth_flow = Expression(rule=rule_enth_flow)
 
     # -----------------------------------------------------------------------------
@@ -602,7 +604,7 @@ class NDMAStateBlockData(StateBlockData):
         return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(self):
-        return MaterialFlowBasis.molar
+        return MaterialFlowBasis.mass
 
     def define_state_vars(self):
         """Define state vars."""
@@ -738,13 +740,21 @@ class NDMAStateBlockData(StateBlockData):
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
 
+        if self.is_property_constructed("enth_flow"):
+            sf = (
+                iscale.get_scaling_factor(self.params.cp)
+                * iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
+                * 1e-1
+            )  # temperature change on the order of 1e1
+            iscale.set_scaling_factor(self.enth_flow, sf)
+
         # property relationships with phase index, but simple constraint
-        v_str_lst_simple = ['dens_mass_phase', 'flow_vol_phase']
+        v_str_lst_simple = ["dens_mass_phase", "flow_vol_phase"]
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, 'eq_' + v_str)
+                c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationship indexed by component

@@ -31,6 +31,7 @@ class TestNDMAroperty_idaes(PropertyTestHarness_idaes):
         self.prop_args = {}
         self.has_density_terms = False
 
+
 class TestNDMAProperty(PropertyTestHarness):
     def configure(self):
         self.prop_pack = props.NDMAParameterBlock
@@ -47,14 +48,73 @@ class TestNDMAProperty(PropertyTestHarness):
         }  # 3 state vars, but pressure is not active
         self.default_solution = {
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.999999926,
-            ("mass_frac_phase_comp", ("Liq", "NDMA")): 0.035,
-            ("dens_mass_phase", "Liq"): 1021.5,
-            ("flow_vol_phase", "Liq"): 9.790e-4,
-            ("conc_mass_phase_comp", ("Liq", "H2O")): 985.7,
-            ("conc_mass_phase_comp", ("Liq", "NDMA")): 35.75,
-            ("flow_mol_phase_comp", ("Liq", "H2O")): 100,
-            ("flow_mol_phase_comp", ("Liq", "NDMA")): 0.5989,
-            ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9889,
-            ("mole_frac_phase_comp", ("Liq", "NDMA")): 1.106e-2,
-            ("molality_comp", "NDMA"): 0.6206,
+            ("mass_frac_phase_comp", ("Liq", "NDMA")): 74e-9,
+            ("dens_mass_phase", "Liq"): 997,
+            ("flow_vol_phase", "Liq"): 1.003e-3,
+            ("conc_mass_phase_comp", ("Liq", "H2O")): 997,
+            ("conc_mass_phase_comp", ("Liq", "NDMA")): 7.3778e-5,
+            ("flow_mol_phase_comp", ("Liq", "H2O")): 55.5084,
+            ("flow_mol_phase_comp", ("Liq", "NDMA")): 9.9889e-7,
+            ("mole_frac_phase_comp", ("Liq", "H2O")): 0.999999982,
+            ("mole_frac_phase_comp", ("Liq", "NDMA")): 1.7995e-8,
+            ("molality_comp", "NDMA"): 9.9889e-7,
+        }
+
+
+@pytest.mark.component
+class TestNDMAPropertySolution_1(PropertyRegressionTest):
+    def configure(self):
+        self.prop_pack = props.NDMAParameterBlock
+        self.param_args = {}
+
+        self.solver = "ipopt"
+        self.optarg = {"nlp_scaling_method": "user-scaling"}
+
+        self.scaling_args = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
+            ("flow_mass_phase_comp", ("Liq", "NDMA")): 1e2,
+        }
+        self.state_args = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 0.95,
+            ("flow_mass_phase_comp", ("Liq", "NDMA")): 0.05,
+            ("temperature", None): 273.15 + 25,
+            ("pressure", None): 1e5,
+        }
+        self.regression_solution = {
+            ("mass_frac_phase_comp", ("Liq", "H2O")): 0.95,
+            ("mass_frac_phase_comp", ("Liq", "NDMA")): 0.05,
+            ("dens_mass_phase", "Liq"): 997,
+            ("flow_vol_phase", "Liq"): 1.003e-3,
+            ("conc_mass_phase_comp", ("Liq", "H2O")): 947.15,
+            ("conc_mass_phase_comp", ("Liq", "NDMA")): 49.85,
+            ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
+            ("flow_mol_phase_comp", ("Liq", "NDMA")): 0.6749,
+            ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9874,
+            ("mole_frac_phase_comp", ("Liq", "NDMA")): 1.2637e-2,
+            ("molality_comp", "NDMA"): 0.7105,
+        }
+
+
+@pytest.mark.component
+class TestNDMACalculateState_1(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.NDMAParameterBlock
+        self.param_args = {}
+
+        self.solver = "ipopt"
+        self.optarg = {"nlp_scaling_method": "user-scaling"}
+
+        self.scaling_args = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 1e-1,
+            ("flow_mass_phase_comp", ("Liq", "NDMA")): 1e1,
+        }
+        self.var_args = {
+            ("flow_vol_phase", "Liq"): 2e-2,
+            ("mass_frac_phase_comp", ("Liq", "NDMA")): 0.05,
+            ("temperature", None): 273.15 + 25,
+            ("pressure", None): 1e5,
+        }
+        self.state_solution = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 18.943,
+            ("flow_mass_phase_comp", ("Liq", "NDMA")): 0.997,
         }
