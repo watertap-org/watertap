@@ -9,26 +9,26 @@ WA = metab_api.WorkflowActions
 
 
 @pytest.mark.unit
-def test_flowsheet_for_ui():
-    r = metab_api.flowsheet_for_ui()
+def test_flowsheet_interface():
+    r = metab_api.flowsheet_interface()
     assert r is not None
 
 
 @pytest.mark.unit
 def test_build():
-    fsi = metab_api.flowsheet_for_ui()
+    fsi = metab_api.flowsheet_interface()
     fsi.run_action(WA.build)
 
 
 @pytest.mark.component
 def test_solve():
-    fsi = metab_api.flowsheet_for_ui()
+    fsi = metab_api.flowsheet_interface()
     fsi.run_action(WA.solve)
 
 
 @pytest.mark.unit
 def test_io(tmp_path):
-    fsi = metab_api.flowsheet_for_ui()
+    fsi = metab_api.flowsheet_interface()
     fsi.run_action(WA.build)
     filename = "test_io.json"
     with (tmp_path / filename).open("w") as f:

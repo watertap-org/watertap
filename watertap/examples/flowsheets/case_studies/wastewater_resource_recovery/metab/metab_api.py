@@ -140,7 +140,7 @@ def print_json(fsi):
 
 def print_results(fsi: FlowsheetInterface):
     """Print the results of solving the flowsheet"""
-    fs = fsi.block.fs
+    fs = fsi.block
 
     print("Performance results")
     print("-------------------")
