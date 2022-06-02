@@ -113,7 +113,7 @@ class IXParameterData(PhysicalParameterBlock):
         # self.H2O = Solvent()
         # self.NaCl = Solute()
 
-       # phases
+        # phases
         self.Liq = AqueousPhase()
 
         # list to hold all species (including water)
@@ -202,7 +202,6 @@ class IXParameterData(PhysicalParameterBlock):
             doc="Ion charge",
         )
 
-
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -224,9 +223,9 @@ class IXParameterData(PhysicalParameterBlock):
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
-                "diffus_phase_comp": {"method" : "_diffus_phase_comp"},
+                "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 # "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
-                # "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
+                "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
@@ -238,8 +237,7 @@ class IXParameterData(PhysicalParameterBlock):
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
                 "mw_comp": {"method": "_mw_comp"},
-                "charge_comp": {"method": "_charge_comp"}
-
+                "charge_comp": {"method": "_charge_comp"},
             }
         )
 
@@ -323,13 +321,12 @@ class _IXStateBlock(StateBlock):
         for k in self.keys():
             if self[k].is_property_constructed("visc_k_phase"):
                 self[k].visc_k_phase["Liq"].set_value(
-                    self[k].visc_d_phase["Liq"]
-                    / self[k].dens_mass_phase["Liq"]
+                    self[k].visc_d_phase["Liq"] / self[k].dens_mass_phase["Liq"]
                 )
 
             if self[k].is_property_constructed("dens_mass_phase"):
                 self[k].dens_mass_phase["Liq"].set_value(1000)
-            
+
             # Vars indexed by component (and phase)
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("flow_mass_phase_comp"):
@@ -366,9 +363,10 @@ class _IXStateBlock(StateBlock):
                         / self[k].params.mw_comp[j]
                     )
                 if self[k].is_property_constructed("conc_equiv_phase_comp"):
-                    if j == 'H2O':
+                    if j == "H2O":
                         self[k].conc_equiv_phase_comp["Liq", j].set_value(
-                            self[k].conc_mol_phase_comp["Liq", j])
+                            self[k].conc_mol_phase_comp["Liq", j]
+                        )
                     else:
                         self[k].conc_equiv_phase_comp["Liq", j].set_value(
                             self[k].conc_mol_phase_comp["Liq", j]
@@ -387,9 +385,6 @@ class _IXStateBlock(StateBlock):
                         self[k].flow_mol_phase_comp["Liq", j]
                         / self[k].params.charge_comp[j]
                     )
-
-               
-        
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -600,7 +595,6 @@ class IXStateBlockData(StateBlockData):
     # -----------------------------------------------------------------------------
     # Property Methods
 
-
     def _flow_mass_phase_comp(self):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
@@ -621,25 +615,25 @@ class IXStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_flow_mass_phase_comp
         )
 
-    # def _flow_equiv_phase_comp(self):
-    #     self.flow_equiv_phase_comp = Var(
-    #         self.params.phase_list,
-    #         self.params.component_list,
-    #         initialize=100,
-    #         bounds=(1e-6, None),
-    #         units=pyunits.mol / pyunits.s,
-    #         doc="Equivalent flowrate",
-    #     )
+    def _flow_equiv_phase_comp(self):
+        self.flow_equiv_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=100,
+            bounds=(1e-6, None),
+            units=pyunits.mol / pyunits.s,
+            doc="Equivalent flowrate",
+        )
 
-    #     def rule_flow_equiv_phase_comp(b, j):
-    #         return (
-    #             b.flow_equiv_phase_comp["Liq", j]
-    #             == b.flow_mol_phase_comp["Liq", j] / b.params.charge_comp[j]
-    #         )
+        def rule_flow_equiv_phase_comp(b, j):
+            return (
+                b.flow_equiv_phase_comp["Liq", j]
+                == b.flow_mol_phase_comp["Liq", j] / b.params.charge_comp[j]
+            )
 
-    #     self.eq_flow_mol_phase_comp = Constraint(
-    #         self.params.component_list, rule=rule_flow_equiv_phase_comp
-    #     )
+        self.eq_flow_mol_phase_comp = Constraint(
+            self.params.component_list, rule=rule_flow_equiv_phase_comp
+        )
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -692,21 +686,20 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, j):
-            if j == 'H2O':
+            if j == "H2O":
                 return (
-                    b.conc_mol_phase_comp["Liq", j] 
-                    == b.conc_equiv_phase_comp["Liq", j] 
+                    b.conc_mol_phase_comp["Liq", j] == b.conc_equiv_phase_comp["Liq", j]
                 )
             else:
                 return (
-                    b.conc_mol_phase_comp["Liq", j] 
+                    b.conc_mol_phase_comp["Liq", j]
                     == b.conc_equiv_phase_comp["Liq", j] * b.params.charge_comp[j]
                 )
 
         self.eq_conc_equiv_phase_comp = Constraint(
             self.params.component_list, rule=rule_conc_equiv_phase_comp
         )
-        
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -718,8 +711,11 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp["Liq", j] / sum(
-                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list)
+            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
+                "Liq", j
+            ] / sum(
+                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
+            )
 
         self.eq_mass_frac_phase_comp = Constraint(
             self.params.component_list, rule=rule_mass_frac_phase_comp
@@ -763,14 +759,14 @@ class IXStateBlockData(StateBlockData):
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
-            ['Liq'],
+            ["Liq"],
             initialize=1e3,
             bounds=(5e2, 2e3),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b):  
+        def rule_dens_mass_phase(b):
             return b.dens_mass_phase["Liq"] == 1000 * pyunits.kg * pyunits.m**-3
 
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
@@ -788,7 +784,8 @@ class IXStateBlockData(StateBlockData):
             return (
                 b.flow_vol_phase["Liq"]
                 == sum(
-                    b.flow_mol_phase_comp["Liq", j] * b.mw_comp[j] for j in self.params.component_list
+                    b.flow_mol_phase_comp["Liq", j] * b.mw_comp[j]
+                    for j in self.params.component_list
                 )
                 / b.dens_mass_phase["Liq"]
             )
@@ -801,24 +798,23 @@ class IXStateBlockData(StateBlockData):
 
         self.flow_vol = Expression(rule=rule_flow_vol)
 
-
     def _visc_k_phase(self):
         self.visc_k_phase = Var(
-            ['Liq'],
+            ["Liq"],
             initialize=1e-6,
             bounds=(9e-7, 5e-2),
             units=pyunits.m**2 / pyunits.s,
             doc="Kinematic Viscosity",
         )
 
-        def rule_visc_k_phase(b):  
+        def rule_visc_k_phase(b):
             return (
                 b.visc_d_phase["Liq"]
                 == b.visc_k_phase["Liq"] * b.dens_mass_phase["Liq"]
             )
 
         self.eq_visc_k_phase = Constraint(rule=rule_visc_k_phase)
-    
+
     def _diffus_phase_comp(self):
         add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
 
@@ -831,7 +827,6 @@ class IXStateBlockData(StateBlockData):
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
 
-
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -840,8 +835,6 @@ class IXStateBlockData(StateBlockData):
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
         return self.flow_equiv_phase_comp[p, j]
-
-
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -880,7 +873,7 @@ class IXStateBlockData(StateBlockData):
                 # sf = iscale.get_scaling_factor(
                 #     self.flow_mol_phase_comp["Liq", j], default=1, warning=True
                 # )
-                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], 1E3)
+                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], 1e3)
 
         # scaling factors for parameters
         for j, v in self.mw_comp.items():
@@ -894,7 +887,7 @@ class IXStateBlockData(StateBlockData):
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-3)
-        
+
         for p, v in self.visc_d_phase.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.visc_d_phase[p], 1e3)
@@ -903,260 +896,148 @@ class IXStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.visc_k_phase[p], 1e6)
 
-        # if self.is_property_constructed("mole_frac_phase_comp"):
-        #     for j in self.params.component_list:
-        #         if (
-        #             iscale.get_scaling_factor(self.mole_frac_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             if j == "H2O":
-        #                 iscale.set_scaling_factor(
-        #                     self.mole_frac_phase_comp["Liq", j], 1
-        #                 )
-        #             else:
-        #                 sf = iscale.get_scaling_factor(
-        #                     self.flow_mol_phase_comp["Liq", j]
-        #                 ) / iscale.get_scaling_factor(
-        #                     self.flow_mol_phase_comp["Liq", "H2O"]
-        #                 )
-        #                 iscale.set_scaling_factor(
-        #                     self.mole_frac_phase_comp["Liq", j], sf
-        #                 )
+        if self.is_property_constructed("mole_frac_phase_comp"):
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.mole_frac_phase_comp["Liq", j])
+                    is None
+                ):
+                    if j == "H2O":
+                        iscale.set_scaling_factor(
+                            self.mole_frac_phase_comp["Liq", j], 1
+                        )
+                    else:
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j]
+                        ) / iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", "H2O"]
+                        )
+                        iscale.set_scaling_factor(
+                            self.mole_frac_phase_comp["Liq", j], sf
+                        )
 
-        # if self.is_property_constructed("flow_mass_phase_comp"):
-        #     for j in self.params.component_list:
-        #         if (
-        #             iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             sf = iscale.get_scaling_factor(
-        #                 self.flow_mol_phase_comp["Liq", j], default=1
-        #             ) * iscale.get_scaling_factor(self.mw_comp[j])
-        #             iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", j], sf)
+        if self.is_property_constructed("flow_mass_phase_comp"):
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mol_phase_comp["Liq", j], default=1
+                    ) * iscale.get_scaling_factor(self.mw_comp[j])
+                    iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", j], sf)
 
-        # if self.is_property_constructed("mass_frac_phase_comp"):
-        #     for j in self.params.component_list:
-        #         comp = self.params.get_component(j)
-        #         if (
-        #             iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             if comp.is_solute():
-        #                 sf = iscale.get_scaling_factor(
-        #                     self.flow_mass_phase_comp["Liq", j], default=1
-        #                 ) / iscale.get_scaling_factor(
-        #                     self.flow_mass_phase_comp["Liq", "H2O"], default=1
-        #                 )
-        #                 iscale.set_scaling_factor(
-        #                     self.mass_frac_phase_comp["Liq", j], sf
-        #                 )
-        #             else:
-        #                 iscale.set_scaling_factor(
-        #                     self.mass_frac_phase_comp["Liq", j], 1
-        #                 )
+        if self.is_property_constructed("mass_frac_phase_comp"):
+            for j in self.params.component_list:
+                comp = self.params.get_component(j)
+                if (
+                    iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
+                    is None
+                ):
+                    if comp.is_solute():
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", j], default=1
+                        ) / iscale.get_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", "H2O"], default=1
+                        )
+                        iscale.set_scaling_factor(
+                            self.mass_frac_phase_comp["Liq", j], sf
+                        )
+                    else:
+                        iscale.set_scaling_factor(
+                            self.mass_frac_phase_comp["Liq", j], 1
+                        )
 
-        # if self.is_property_constructed("conc_mass_phase_comp"):
-        #     for j in self.params.component_list:
-        #         sf_dens = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
-        #         if (
-        #             iscale.get_scaling_factor(self.conc_mass_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             if j == "H2O":
-        #                 # solvents typically have a mass fraction between 0.5-1
-        #                 iscale.set_scaling_factor(
-        #                     self.conc_mass_phase_comp["Liq", j], sf_dens
-        #                 )
-        #             else:
-        #                 iscale.set_scaling_factor(
-        #                     self.conc_mass_phase_comp["Liq", j],
-        #                     sf_dens
-        #                     * iscale.get_scaling_factor(
-        #                         self.mass_frac_phase_comp["Liq", j],
-        #                         default=1,
-        #                         warning=True,
-        #                     ),
-        #                 )
+        if self.is_property_constructed("conc_mass_phase_comp"):
+            for j in self.params.component_list:
+                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+                if (
+                    iscale.get_scaling_factor(self.conc_mass_phase_comp["Liq", j])
+                    is None
+                ):
+                    if j == "H2O":
+                        iscale.set_scaling_factor(
+                            self.conc_mass_phase_comp["Liq", j], sf_dens
+                        )
+                    else:
+                        iscale.set_scaling_factor(
+                            self.conc_mass_phase_comp["Liq", j],
+                            sf_dens
+                            * iscale.get_scaling_factor(
+                                self.mass_frac_phase_comp["Liq", j],
+                                default=1,
+                                warning=True,
+                            ),
+                        )
 
-        # if self.is_property_constructed("conc_mol_phase_comp"):
-        #     for j in self.params.component_list:
-        #         if (
-        #             iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             sf = iscale.get_scaling_factor(
-        #                 self.conc_mass_phase_comp["Liq", j]
-        #             ) / iscale.get_scaling_factor(self.mw_comp[j])
-        #             iscale.set_scaling_factor(self.conc_mol_phase_comp["Liq", j], sf)
+        if self.is_property_constructed("conc_mol_phase_comp"):
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.conc_mass_phase_comp["Liq", j]
+                    ) / iscale.get_scaling_factor(self.mw_comp[j])
+                    iscale.set_scaling_factor(self.conc_mol_phase_comp["Liq", j], sf)
 
-        # if self.is_property_constructed("conc_equiv_phase_comp"):
-        #     for j in self.params.component_list:
-        #         if (
-        #             iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
-        #             is None
-        #         ):
-        #             sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-                     
-        #             iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
+        if self.is_property_constructed("conc_equiv_phase_comp"):
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
 
-        # # these variables do not typically require user input,
-        # # will not override if the user does provide the scaling factor
+                    iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
 
-        # if self.is_property_constructed("flow_vol_phase"):
-        #     sf = (
-        #         iscale.get_scaling_factor(
-        #             self.flow_mol_phase_comp["Liq", "H2O"], default=1
-        #         )
-        #         * iscale.get_scaling_factor(self.mw_comp["H2O"])
-        #         / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
-        #     )
-        #     iscale.set_scaling_factor(self.flow_vol_phase, sf)
+        # these variables do not typically require user input,
+        # will not override if the user does provide the scaling factor
 
-        # if self.is_property_constructed("flow_vol"):
-        #     sf = iscale.get_scaling_factor(self.flow_vol_phase)
-        #     iscale.set_scaling_factor(self.flow_vol, sf)
+        if self.is_property_constructed("flow_vol_phase"):
+            sf = (
+                iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1
+                )
+                * iscale.get_scaling_factor(self.mw_comp["H2O"])
+                / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+            )
+            iscale.set_scaling_factor(self.flow_vol_phase, sf)
 
-        # if self.is_property_constructed("ionic_strength"):
-        #     if iscale.get_scaling_factor(self.ionic_strength) is None:
-        #         sf = min(
-        #             iscale.get_scaling_factor(self.molality_comp[j])
-        #             for j in self.params.ion_set | self.params.solute_set
-        #         )
-        #         iscale.set_scaling_factor(self.ionic_strength, sf)
-
-        # transforming constraints
-        # property relationships with no index, simple constraint
-
-        # # property relationships with phase index, but simple constraint
-        # for v_str in [
-        #     "flow_vol_phase",
-        #     "dens_mass_phase",
-        #     "visc_k_phase"
-        # ]:
-        #     if self.is_property_constructed(v_str):
-        #         v = getattr(self, v_str)
-        #         sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
-        #         c = getattr(self, "eq_" + v_str)
-        #         iscale.constraint_scaling_transform(c, sf)
-
-
-        # # property relationships indexed by component and phase
-        # v_str_lst_phase_comp = [
-        #     "mass_frac_phase_comp",
-        #     "conc_mass_phase_comp",
-        #     "flow_mass_phase_comp",
-        #     "conc_mol_phase_comp",
-        #     "conc_equiv_phase_comp",
-        # ]
-        # for v_str in v_str_lst_phase_comp:
-        #     if self.is_property_constructed(v_str):
-        #         v_comp = getattr(self, v_str)
-        #         c_comp = getattr(self, "eq_" + v_str)
-        #         for j, c in c_comp.items():
-        #             sf = iscale.get_scaling_factor(
-        #                 v_comp["Liq", j], default=1, warning=True
-        #             )
-        #             iscale.constraint_scaling_transform(c, sf)
-
-        # setting scaling factors for variables
-
-        # for j, v in self.mw_comp.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
-
-        # for p, v in self.dens_mass_phase.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(self.dens_mass_phase[p], 1E-3)
-
-        # for p, v in self.visc_d_phase.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(self.visc_d_phase[p], 1E3)
-
-        # for p, v in self.visc_k_phase.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(self.visc_k_phase[p], 1E6)
-
-        # for ind, v in self.diffus_phase_comp.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1E10)
-        
-        # if self.is_property_constructed("mass_frac_phase_comp"):
-        #     for j in self.params.component_list:
-        #         comp = self.params.get_component(j)
-        #         if iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])is None:
-        #             if comp.is_solute():
-        #                 sf = iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", j], default=1) / iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"], default=1)
-        #                 iscale.set_scaling_factor(self.mass_frac_phase_comp["Liq", j], sf)
-        #             else:
-        #                 iscale.set_scaling_factor(self.mass_frac_phase_comp["Liq", j], 1)
-
-        # flow_mol_H2O_sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'])
-        # mw_H2O_sf = iscale.get_scaling_factor(self.mw_comp['H2O'])
-        # dens_sf = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-        # for j in self.params.component_list:
-        #     flow_mol_sf = value(self.flow_mol_phase_comp['Liq', j]) ** -1
-        #     mw_sf = iscale.get_scaling_factor(self.mw_comp[j])
-        #     if j == 'H2O':
-        #         iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], flow_mol_sf)
-        #         iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', j], flow_mol_sf * mw_sf)
-        #         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
-        #         iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], dens_sf)
-        #         iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], dens_sf / mw_sf)
-        #     else:
-        #         iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], flow_mol_sf)
-        #         iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', j], flow_mol_sf * mw_sf)
-        #         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
-        #         iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], dens_sf)
-        #         iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], dens_sf / mw_sf)
-        #         iscale.set_scaling_factor(self.flow_vol_phase['Liq', j], (flow_mol_H2O_sf * mw_H2O_sf) / dens_sf)
-
-
-
-        # if self.is_property_constructed("molality_comp"):
-        #     for j in self.params.component_list:
-        #         if isinstance(getattr(self.params, j), Solute):
-        #             if iscale.get_scaling_factor(self.molality_comp[j]) is None:
-        #                 sf = iscale.get_scaling_factor(
-        #                     self.mass_frac_phase_comp["Liq", j]
-        #                 )
-        #                 sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-        #                 iscale.set_scaling_factor(self.molality_comp[j], sf)
+        if self.is_property_constructed("flow_vol"):
+            sf = iscale.get_scaling_factor(self.flow_vol_phase)
+            iscale.set_scaling_factor(self.flow_vol, sf)
 
         # transforming constraints
         # property relationships with no index, simple constraint
 
         # property relationships with phase index, but simple constraint
-        # for v_str in [
-        #     "flow_vol_phase",
-        #     "dens_mass_phase",
-        #     "visc_k_phase"
-        # ]:
-        #     if self.is_property_constructed(v_str):
-        #         v = getattr(self, v_str)
-        #         sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
-        #         c = getattr(self, "eq_" + v_str)
-        #         iscale.constraint_scaling_transform(c, sf)
+        for v_str in ["flow_vol_phase", "dens_mass_phase", "visc_k_phase"]:
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
+                c = getattr(self, "eq_" + v_str)
+                iscale.constraint_scaling_transform(c, sf)
 
         # property relationship indexed by component
 
-
         # property relationships indexed by component and phase
-        # v_str_lst_phase_comp = [
-        #     "mass_frac_phase_comp",
-        #     # "equiv_frac_phase_comp",
-        #     # "mole_frac_phase_comp",
-        #     "flow_mass_phase_comp",
-        #     "flow_equiv_phase_comp",
-        #     "conc_mass_phase_comp",
-        #     "conc_mol_phase_comp",
-        #     "conc_equiv_phase_comp"
-        # ]
-        # for v_str in v_str_lst_phase_comp:
-        #     if self.is_property_constructed(v_str):
-        #         v_comp = getattr(self, v_str)
-        #         c_comp = getattr(self, "eq_" + v_str)
-        #         for j, c in c_comp.items():
-        #             sf = iscale.get_scaling_factor(
-        #                 v_comp["Liq", j], default=1, warning=True
-        #             )
-        #             iscale.constraint_scaling_transform(c, sf)
+        v_str_lst_phase_comp = [
+            "mass_frac_phase_comp",
+            # "equiv_frac_phase_comp",
+            # "mole_frac_phase_comp",
+            "flow_mass_phase_comp",
+            "flow_equiv_phase_comp",
+            "conc_mass_phase_comp",
+            "conc_mol_phase_comp",
+            "conc_equiv_phase_comp",
+        ]
+        for v_str in v_str_lst_phase_comp:
+            if self.is_property_constructed(v_str):
+                v_comp = getattr(self, v_str)
+                c_comp = getattr(self, "eq_" + v_str)
+                for j, c in c_comp.items():
+                    sf = iscale.get_scaling_factor(
+                        v_comp["Liq", j], default=1, warning=True
+                    )
+                    iscale.constraint_scaling_transform(c, sf)
