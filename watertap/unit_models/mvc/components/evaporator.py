@@ -219,22 +219,18 @@ class EvaporatorData(UnitModelBlockData):
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package_feed
         tmp_dict["defined_state"] = True  # feed inlet defined
-        self.properties_feed = (
-            self.config.property_package_feed.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of feed inlet",
-                default=tmp_dict,
-            )
+        self.properties_feed = self.config.property_package_feed.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of feed inlet",
+            default=tmp_dict,
         )
 
         # Brine state block
         tmp_dict["defined_state"] = False  # brine outlet not yet defined
-        self.properties_brine = (
-            self.config.property_package_feed.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of brine outlet",
-                default=tmp_dict,
-            )
+        self.properties_brine = self.config.property_package_feed.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of brine outlet",
+            default=tmp_dict,
         )
 
         # Vapor state block
@@ -242,12 +238,10 @@ class EvaporatorData(UnitModelBlockData):
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package_vapor
         tmp_dict["defined_state"] = False  # vapor outlet not yet defined
-        self.properties_vapor = (
-            self.config.property_package_vapor.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of vapor outlet",
-                default=tmp_dict,
-            )
+        self.properties_vapor = self.config.property_package_vapor.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of vapor outlet",
+            default=tmp_dict,
         )
 
         # Add block for condenser constraints
@@ -328,7 +322,9 @@ class EvaporatorData(UnitModelBlockData):
 
     def connect_to_condenser(self, condenser_blk):
         # Temperature difference in
-        @self.connection_to_condenser.Constraint(self.flowsheet().time, doc="Temperature difference in")
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Temperature difference in"
+        )
         def eq_delta_temperature_in(b, t):
             return (
                 self.delta_temperature_in
@@ -337,7 +333,9 @@ class EvaporatorData(UnitModelBlockData):
             )
 
         # Temperature difference out
-        @self.connection_to_condenser.Constraint(self.flowsheet().time, doc="Temperature difference out")
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Temperature difference out"
+        )
         def eq_delta_temperature_out(b, t):
             return (
                 self.delta_temperature_out
@@ -346,13 +344,20 @@ class EvaporatorData(UnitModelBlockData):
             )
 
         # Heat transfer between feed side and condenser
-        @self.connection_to_condenser.Constraint(self.flowsheet().time, doc="Heat transfer balance")
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Heat transfer balance"
+        )
         def eq_heat_balance(b, t):
             return self.heat_transfer == -condenser_blk.control_volume.heat[t]
 
-
     def initialize_build(
-        blk, delta_temperature_in=None, delta_temperature_out=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        delta_temperature_in=None,
+        delta_temperature_out=None,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -423,16 +428,19 @@ class EvaporatorData(UnitModelBlockData):
 
         # check degrees of freedom
         under_constrained_flag = False
-        #if degrees_of_freedom(blk) != 0:
-        if not blk.delta_temperature_in.is_fixed() and not blk.delta_temperature_out.is_fixed():
-            if delta_temperature_in != None and delta_temperature_out!= None:
+        # if degrees_of_freedom(blk) != 0:
+        if (
+            not blk.delta_temperature_in.is_fixed()
+            and not blk.delta_temperature_out.is_fixed()
+        ):
+            if delta_temperature_in != None and delta_temperature_out != None:
                 blk.delta_temperature_in.fix(delta_temperature_in)
                 blk.delta_temperature_out.fix(delta_temperature_out)
                 under_constrained_flag = True
             else:
                 raise RuntimeError(
-                    "The model has {} degrees of freedom rather than 0 for initialization." 
-                    " This error suggests that temperature differences have not been fixed" 
+                    "The model has {} degrees of freedom rather than 0 for initialization."
+                    " This error suggests that temperature differences have not been fixed"
                     " for initialization.".format(degrees_of_freedom(blk))
                 )
         # Solve unit

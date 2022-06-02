@@ -61,9 +61,7 @@ def build(m):
     m.fs.s01 = Arc(
         source=m.fs.evaporator.outlet_vapor, destination=m.fs.compressor.inlet
     )
-    m.fs.s02 = Arc(
-        source=m.fs.compressor.outlet, destination=m.fs.condenser.inlet
-    )
+    m.fs.s02 = Arc(source=m.fs.compressor.outlet, destination=m.fs.condenser.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.evaporator.connect_to_condenser(m.fs.condenser)
 
@@ -106,14 +104,14 @@ def specify(m):
     m.fs.evaporator.inlet_feed.pressure[0].fix(1e5)  # Pa
 
     # Evaporator
-    #m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
+    # m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
     m.fs.evaporator.area.fix(400)  # m^2
 
     # Compressor
     m.fs.compressor.pressure_ratio = 2
-    m.fs.compressor.control_volume.work.fix(5.8521e+05)
+    m.fs.compressor.control_volume.work.fix(5.8521e05)
     m.fs.compressor.efficiency.fix(0.8)
 
 
@@ -123,7 +121,9 @@ def initialize(m, solver=None):
     optarg = solver.options
 
     # initialize evaporator
-    m.fs.evaporator.initialize_build(delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.INFO_HIGH)
+    m.fs.evaporator.initialize_build(
+        delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.INFO_HIGH
+    )
 
     # initialize compressor
     propagate_state(m.fs.s01)
@@ -132,6 +132,7 @@ def initialize(m, solver=None):
     # initialize condenser
     propagate_state(m.fs.s02)
     m.fs.condenser.initialize_build(heat=-m.fs.evaporator.heat_transfer.value)
+
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
@@ -146,7 +147,7 @@ def test_mvc():
     assert degrees_of_freedom(m) == 0
 
     solver = get_solver()
-    initialize(m,solver=solver)
+    initialize(m, solver=solver)
 
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
@@ -158,9 +159,7 @@ def test_mvc():
     # evaporator values
     assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
     assert m.fs.evaporator.lmtd.value == pytest.approx(30.44, rel=1e-3)
-    assert m.fs.evaporator.heat_transfer.value == pytest.approx(
-        1.2176e7, rel=1e-3
-    )
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.2176e7, rel=1e-3)
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
