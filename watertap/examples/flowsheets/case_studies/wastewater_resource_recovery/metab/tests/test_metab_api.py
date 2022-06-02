@@ -34,7 +34,7 @@ def test_io(tmp_path):
     with (tmp_path / filename).open("w") as f:
         fsi.save(f)
     with (tmp_path / filename).open("r") as f:
-        metab_api.FlowsheetInterface.load(f, fsi)
+        fsi.load(f)
 
 
 @pytest.mark.unit
