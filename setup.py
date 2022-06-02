@@ -102,6 +102,8 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        # for UI API models (though may be generally useful)
+        "pydantic",
     ],
     extras_require={
         "testing": [
