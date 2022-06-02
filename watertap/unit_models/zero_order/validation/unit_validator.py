@@ -341,7 +341,7 @@ class ZeroOrderUnitChecker:
         max_name = None
         arg_max = None
         for wt3_k, wt_k in _WT3_stone.items():
-            key = f"{wt3_k}_{wt_k}_relative_diff"
+            key = f"{wt3_k}_relative_diff"
             df[key] = _calculate_relative_difference(
                 np.array(df[wt_k]), np.array(df[wt3_k])
             )
@@ -362,6 +362,10 @@ class ZeroOrderUnitChecker:
         for name, val in zip(self._columns, max_index):
             msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
         print(msg)
+        print("\nAll relative differences:")
+        cols = [col for col in df.columns if "relative_diff" in col]
+        print(df[cols])
+        print("")
         if self.infeasible_points:
             print("Infeasible points:")
             for inf_point in self.infeasible_points:
