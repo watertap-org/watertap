@@ -419,7 +419,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.io_list,
             solute_set,
             initialize=5e-5,
-            bounds=(1e-8, 1e-3),
+            bounds=(0, 1e-3),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Component mass transfer coefficient in feed channel at inlet and outlet",
@@ -435,7 +435,7 @@ class NanofiltrationData(UnitModelBlockData):
         )
         self.area = Var(
             initialize=50,
-            bounds=(1e-2, 1e3),
+            bounds=(0, 1e3),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="Membrane area",
@@ -1093,37 +1093,37 @@ class NanofiltrationData(UnitModelBlockData):
             )
 
         # Experimental constraint: Electroneutrality of final permeate
-        @self.Constraint(
-            self.flowsheet().config.time,
-            phase_list,
-            doc="Electroneutrality in mixed permeate",
-        )
-        def eq_electroneutrality_mixed_permeate(b, t, p):
-            return (
-                sum(
-                    b.mixed_permeate[t].conc_mol_phase_comp[p, j]
-                    * b.mixed_permeate[t].charge_comp[j]
-                    for j in solute_set
-                )
-                == 0
-            )
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     phase_list,
+        #     doc="Electroneutrality in mixed permeate",
+        # )
+        # def eq_electroneutrality_mixed_permeate(b, t, p):
+        #     return (
+        #         sum(
+        #             b.mixed_permeate[t].conc_mol_phase_comp[p, j]
+        #             * b.mixed_permeate[t].charge_comp[j]
+        #             for j in solute_set
+        #         )
+        #         == 0
+        #     )
 
         #
-        # Experimental constraint: feed electroneutrality
-        @self.Constraint(
-            self.flowsheet().config.time,
-            phase_list,
-            doc="Electroneutrality at feed outlet",
-        )
-        def eq_electroneutrality_feed_outlet(b, t, p):
-            prop = b.feed_side.properties_out[t]
-            return (
-                sum(
-                    prop.conc_mol_phase_comp[p, j] * prop.charge_comp[j]
-                    for j in solute_set
-                )
-                == 0
-            )
+        # Experimental constraint: feed electroneutrality --- may be degenerate constraint
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     phase_list,
+        #     doc="Electroneutrality at feed outlet",
+        # )
+        # def eq_electroneutrality_feed_outlet(b, t, p):
+        #     prop = b.feed_side.properties_out[t]
+        #     return (
+        #         sum(
+        #             prop.conc_mol_phase_comp[p, j] * prop.charge_comp[j]
+        #             for j in solute_set
+        #         )
+        #         == 0
+        #     )
 
         # Experimental constraint: electroneutrality inside membrane- identified as degenerate constraint
         # @self.Constraint(
@@ -1574,6 +1574,41 @@ class NanofiltrationData(UnitModelBlockData):
                 time_point
             ].flow_mol_phase_comp["Liq", j]
 
+            var_dict[
+                f"Molar Concentration of {j} @ Feed Inlet"
+            ] = self.feed_side.properties_in[time_point].conc_mol_phase_comp["Liq", j]
+            var_dict[
+                f"Molar Concentration of {j} @ Feed Outlet"
+            ] = self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
+            var_dict[
+                f"Molar Concentration of {j} @ Final Permeate"
+            ] = self.mixed_permeate[time_point].conc_mol_phase_comp["Liq", j]
+
+            for x in self.io_list:
+                if not x:
+                    io = "Inlet"
+                    prop_feed = self.feed_side.properties_in[0]
+                elif x:
+                    io = "Outlet"
+                    prop_feed = self.feed_side.properties_out[0]
+
+                var_dict[
+                    f"Molar Concentration of {j} @ Membrane Interface, {io}"
+                ] = self.feed_side.properties_interface[
+                    time_point, x
+                ].conc_mol_phase_comp[
+                    "Liq", j
+                ]
+                var_dict[
+                    f"Molar Concentration of {j} @ Pore Entrance, {io}"
+                ] = self.pore_entrance[time_point, x].conc_mol_phase_comp["Liq", j]
+                var_dict[
+                    f"Molar Concentration of {j} @ Pore Exit, {io}"
+                ] = self.pore_exit[time_point, x].conc_mol_phase_comp["Liq", j]
+                var_dict[
+                    f"Molar Concentration of {j} @ Permeate, {io}"
+                ] = self.permeate_side[time_point, x].conc_mol_phase_comp["Liq", j]
+
         for j in (
             self.config.property_package.solute_set
             | self.config.property_package.ion_set
@@ -1618,16 +1653,6 @@ class NanofiltrationData(UnitModelBlockData):
                 f"Intrinsic Rejection of {j}"
             ] = self.rejection_intrinsic_phase_comp[time_point, "Liq", j]
 
-            var_dict[
-                f"Molar Concentration of {j} @ Feed Inlet"
-            ] = self.feed_side.properties_in[time_point].conc_mol_phase_comp["Liq", j]
-            var_dict[
-                f"Molar Concentration of {j} @ Feed Outlet"
-            ] = self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
-            var_dict[
-                f"Molar Concentration of {j} @ Final Permeate"
-            ] = self.mixed_permeate[time_point].conc_mol_phase_comp["Liq", j]
-
             if self.feed_side.properties_in[time_point].is_property_constructed(
                 "pressure_osm_phase"
             ):
@@ -1648,23 +1673,6 @@ class NanofiltrationData(UnitModelBlockData):
                 elif x:
                     io = "Outlet"
                     prop_feed = self.feed_side.properties_out[0]
-
-                var_dict[
-                    f"Molar Concentration of {j} @ Membrane Interface, {io}"
-                ] = self.feed_side.properties_interface[
-                    time_point, x
-                ].conc_mol_phase_comp[
-                    "Liq", j
-                ]
-                var_dict[
-                    f"Molar Concentration of {j} @ Pore Entrance, {io}"
-                ] = self.pore_entrance[time_point, x].conc_mol_phase_comp["Liq", j]
-                var_dict[
-                    f"Molar Concentration of {j} @ Pore Exit, {io}"
-                ] = self.pore_exit[time_point, x].conc_mol_phase_comp["Liq", j]
-                var_dict[
-                    f"Molar Concentration of {j} @ Permeate, {io}"
-                ] = self.permeate_side[time_point, x].conc_mol_phase_comp["Liq", j]
 
                 var_dict[
                     f"Osmotic Pressure @ Membrane Interface, {io} (Pa)"
@@ -1994,12 +2002,12 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(con, 1e-5)
         for con in self.eq_electroneutrality_permeate.values():
             iscale.constraint_scaling_transform(con, 1e-5)
-        for con in self.eq_electroneutrality_feed_outlet.values():
-            iscale.constraint_scaling_transform(con, 1e-5)
+        # for con in self.eq_electroneutrality_feed_outlet.values():
+        #     iscale.constraint_scaling_transform(con, 1e-5)
         # for con in self.eq_electroneutrality_in_membrane.values(): # degenerate constraint
         #     iscale.constraint_scaling_transform(con, 1e-5)
-        for con in self.eq_electroneutrality_mixed_permeate.values():
-            iscale.constraint_scaling_transform(con, 1e-5)
+        # for con in self.eq_electroneutrality_mixed_permeate.values():
+        #     iscale.constraint_scaling_transform(con, 1e-5)
 
         # for con in self.eq_area.values():
         #     iscale.constraint_scaling_transform(con, 1)
@@ -2015,10 +2023,8 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(con, 1)
         # for con in self.eq_N_Sc_comp.values():
         #     iscale.constraint_scaling_transform(con, 1e-1)
-        # for con in self.eq_N_Pe_comp.values():
-        #     iscale.constraint_scaling_transform(con, 1e-5)
-        # for con in self.eq_N_Pe_comp.values():
-        #     iscale.constraint_scaling_transform(con, 1e-5)
+        for con in self.eq_N_Pe_comp.values():
+            iscale.constraint_scaling_transform(con, 1e-10)
         # for con in self.eq_velocity.values():
         #     iscale.constraint_scaling_transform(con, 1e3)
         # for con in self.eq_pressure_permeate_io.values():
