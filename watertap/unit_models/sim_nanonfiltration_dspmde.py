@@ -170,11 +170,9 @@ if __name__ == "__main__":
 
     # m.fs.unit.velocity[0, 0].fix(0.1)
 
-    m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.5)
+    m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.50)
     m.fs.unit.width.fix(1.249)
     # m.fs.unit.area.fix(50)
-    # m.fs.unit.flux_mol_phase_comp[0, 0, 'Liq', 'H2O'].fix(7.55e-6*1000/18e-3)
-    # m.fs.unit.flux_mol_phase_comp[0, 1, 'Liq', 'H2O'].fix(7.55e-6*1000/18e-3)
 
     # m.fs.unit.flux_vol_water_avg.fix(1.67e-06)
     # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
@@ -202,6 +200,11 @@ if __name__ == "__main__":
         },
         outlvl=idaeslog.DEBUG,
     )
+    # deactivating the following constraint (eq_solute_solvent_flux: Js = Jw*permeate concentration)
+    # yields rejection rates in line with what
+    # would be expected, which is the main surface-level issue with the model now:
+    # predicted rejection rates are erroneously close to 0 for ALL ions when the following constraint is active.
+    # m.fs.unit.eq_solute_solvent_flux.deactivate()
 
     # Use of Degeneracy Hunter for troubleshooting model.
     m.fs.dummy_objective = Objective(expr=0)
@@ -223,7 +226,6 @@ if __name__ == "__main__":
     # # #
     #
     # # m.fs.unit.eq_water_flux.deactivate()
-    # m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
     # m.fs.unit.eq_electroneutrality_feed_outlet.deactivate()
     # # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
     # # m.fs.unit.eq_permeate_isothermal.activate()
@@ -317,8 +319,8 @@ if __name__ == "__main__":
                 f"Number of badly scaled vars = {len(list(iscale.badly_scaled_var_generator(m)))}"
             )
             print("SECOND SOLVE FAILED...............................")
-    #
-    # print(f'Degrees of freedom ={degrees_of_freedom(m)} ')
+
+    print(f"Degrees of freedom ={degrees_of_freedom(m)} ")
     #
     # print_infeasible_constraints(m, print_expression=True, print_variables=True, output_file='infeasible_w_kf.log')
     #
@@ -335,13 +337,14 @@ if __name__ == "__main__":
     #     Js_model.append(model)
     #     Js_check_model.append(check/model)
     #
-    dh.check_residuals(tol=1e-10)
-    dh.check_variable_bounds(tol=1e-2, relative=True)
-    try:
-        dh.check_rank_equality_constraints()
-    except:
-        ds2 = dh.find_candidate_equations(verbose=True, tee=True)
-        ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    # More Degeneracy Hunter troubleshooting
+    # dh.check_residuals(tol=1e-10)
+    # dh.check_variable_bounds(tol=1e-2, relative=True)
+    # try:
+    #     dh.check_rank_equality_constraints()
+    # except:
+    #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
+    #     ids = dh.find_irreducible_degenerate_sets(verbose=True)
 # ####################################################################################
 #     import numpy as np
 #     # old_vars_list = [print(i) for i in list(variables_in_activated_equalities_set(m.fs.unit))]
