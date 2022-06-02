@@ -29,8 +29,6 @@ from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
-np.set_printoptions(linewidth=200)
-
 # ================================================================
 
 
@@ -88,6 +86,39 @@ class FixedSample(_Sample):
 class LinearSample(FixedSample):
     def sample(self, num_samples):
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
+
+    def setup(self, lower_limit, upper_limit, num_samples):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+        self.num_samples = num_samples
+
+
+# ================================================================
+
+
+class GeomSample(FixedSample):
+    def sample(self, num_samples):
+        return np.geomspace(
+            self.lower_limit, self.upper_limit, self.num_samples, endpoint=True
+        )
+
+    def setup(self, lower_limit, upper_limit, num_samples):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+        self.num_samples = num_samples
+
+
+# ================================================================
+
+
+class ReverseGeomSample(FixedSample):
+    def sample(self, num_samples):
+        return (
+            (self.upper_limit + self.lower_limit)
+            - np.geomspace(
+                self.lower_limit, self.upper_limit, self.num_samples, endpoint=True
+            )
+        )[::-1]
 
     def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
@@ -479,6 +510,14 @@ def _update_local_output_dict(
 
 
 def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
+
+    # Before we can create the global dictionary, we need to delete the pyomo
+    # object contained within the dictionary
+    for key, val in local_output_dict.items():
+        if key != "solve_successful":
+            for subval in val.values():
+                if "_pyo_obj" in subval:
+                    del subval["_pyo_obj"]
 
     if num_procs == 1:
         global_output_dict = local_output_dict
@@ -962,7 +1001,7 @@ def parameter_sweep(
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
-                                       argument of this function is ``model``\. The default uses the
+                                       argument of this function is ``model``. The default uses the
                                        default IDAES solver, raising an exception if the termination
                                        condition is not optimal.
 

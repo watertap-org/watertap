@@ -14,7 +14,7 @@
 Tests for zero-order Chlorination model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -152,42 +152,8 @@ class TestChlorinationZO_with_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value      : Fixed : Bounds
-                           CT Value ((mg*min)/L) :     450.00 :  True : (None, None)
-                 Chlorine Decay Rate (mg/(L*hr)) :     3.0000 :  True : (None, None)
-                            Chlorine Dose (mg/L) :     9.5000 : False : (None, None)
-                               Contact Time (hr) :     1.5000 :  True : (None, None)
-                              Electricity Demand :   0.018540 : False : (0, None)
-                           Electricity Intensity : 5.0000e-05 :  True : (None, None)
-                  Initial Chlorine Demand (mg/L) :     0.0000 :  True : (None, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :    0.99915 :  True : (0, None)
-                            Solute Removal [tss] :     0.0000 :  True : (0, None)
-                Solute Removal [viruses_enteric] :    0.99966 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated
-    Volumetric Flowrate                            0.10300   0.10100
-    Mass Concentration H2O                          970.87    990.09
-    Mass Concentration total_coliforms_fecal_ecoli  9.7087 0.0084355
-    Mass Concentration viruses_enteric              9.7087 0.0033267
-    Mass Concentration tss                          9.7087    9.9009
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestChlorinationZO_w_o_default_removal:
@@ -295,40 +261,8 @@ class TestChlorinationZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value      : Fixed : Bounds
-                           CT Value ((mg*min)/L) :     450.00 :  True : (None, None)
-                 Chlorine Decay Rate (mg/(L*hr)) :     3.0000 :  True : (None, None)
-                            Chlorine Dose (mg/L) :     9.5000 : False : (None, None)
-                               Contact Time (hr) :     1.5000 :  True : (None, None)
-                              Electricity Demand :   0.018360 : False : (0, None)
-                           Electricity Intensity : 5.0000e-05 :  True : (None, None)
-                  Initial Chlorine Demand (mg/L) :     0.0000 :  True : (None, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :    0.99915 :  True : (0, None)
-                Solute Removal [viruses_enteric] :    0.99966 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated
-    Volumetric Flowrate                            0.10200   0.10000
-    Mass Concentration H2O                          980.39    999.99
-    Mass Concentration total_coliforms_fecal_ecoli  9.8039 0.0085199
-    Mass Concentration viruses_enteric              9.8039 0.0033600
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

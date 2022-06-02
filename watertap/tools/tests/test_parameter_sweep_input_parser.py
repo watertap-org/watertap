@@ -79,6 +79,20 @@ class TestInputParser:
                 "lower_limit": 10,
                 "upper_limit": 20,
             },
+            "e_val": {
+                "type": "GeomSample",
+                "param": "fs.a",
+                "lower_limit": 1,
+                "upper_limit": 10,
+                "num_samples": 3,
+            },
+            "f_val": {
+                "type": "ReverseGeomSample",
+                "param": "fs.a",
+                "lower_limit": 1,
+                "upper_limit": 10,
+                "num_samples": 3,
+            },
         }
 
         with open(filename, "w") as fp:

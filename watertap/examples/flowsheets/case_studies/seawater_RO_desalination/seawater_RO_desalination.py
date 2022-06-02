@@ -635,7 +635,10 @@ def add_costing(m):
     # RO Train
     # RO equipment is costed using more detailed costing package
     desal.P1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.ro_costing}
+        default={
+            "flowsheet_costing_block": m.fs.ro_costing,
+            "costing_method_arguments": {"cost_electricity_flow": False},
+        }
     )
     desal.RO.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.ro_costing}
@@ -650,7 +653,10 @@ def add_costing(m):
             default={"flowsheet_costing_block": m.fs.ro_costing}
         )
         desal.P2.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.ro_costing}
+            default={
+                "flowsheet_costing_block": m.fs.ro_costing,
+                "costing_method_arguments": {"cost_electricity_flow": False},
+            }
         )
     elif m.erd_type == "pump_as_turbine":
         pass

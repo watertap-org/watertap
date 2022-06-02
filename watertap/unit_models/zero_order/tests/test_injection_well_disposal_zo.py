@@ -15,7 +15,7 @@ Tests for zero-order intrusion mitigation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -118,35 +118,8 @@ class TestInjectionWellDisposalZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  201.39 : False : (0, None)
-    Electricity Intensity : 0.40959 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet   Outlet 
-    Volumetric Flowrate         0.13658  0.13658
-    Mass Concentration H2O       900.60   900.60
-    Mass Concentration tss       29.288   29.288
-    Mass Concentration sulfate 0.036610 0.036610
-    Mass Concentration foo       4.9057   4.9057
-    Mass Concentration bar       65.166   65.166
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

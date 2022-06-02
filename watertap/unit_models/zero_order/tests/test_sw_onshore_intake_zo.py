@@ -14,7 +14,7 @@
 Tests for zero-order seawater onshore intake model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -108,31 +108,8 @@ class TestSWOnshoreIntakeZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 3685.2 : False : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Outlet 
-    Volumetric Flowrate      10.001   10.001
-    Mass Concentration H2O   999.90   999.90
-    Mass Concentration foo 0.099990 0.099990
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

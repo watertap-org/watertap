@@ -49,6 +49,8 @@ extensions = [
     "nbsphinx",  # Jupyter notebooks as docs
 ]
 
+mathjax3_config = {"chtml": {"displayAlign": "left", "displayIndent": "2em"}}
+
 autosectionlabel_prefix_document = True
 autodoc_warningiserror = False  # suppress warnings during autodoc
 
@@ -103,3 +105,22 @@ myst_heading_anchors = 2
 myst_footnote_transition = True
 myst_dmath_double_inline = True
 panels_add_bootstrap_css = False
+
+
+def run_apidoc(*args):
+    # NOTE the env var must be set before importing apidoc, or the options will have no effect
+    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance,noindex"
+    from sphinx.ext import apidoc
+
+    args = [
+        "../watertap",
+        "../watertap/*tests",
+        "-o",
+        "apidoc",
+        "--force",
+    ]
+    apidoc.main(args)
+
+
+def setup(app):
+    app.connect("builder-inited", run_apidoc)

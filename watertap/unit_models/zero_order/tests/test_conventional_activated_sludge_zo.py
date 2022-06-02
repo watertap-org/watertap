@@ -15,7 +15,7 @@ Tests for zero-order conventional activated sludge process
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -171,38 +171,8 @@ class TestCASZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  6.5520 : False : (0, None)
-               Electricity Intensity : 0.14000 :  True : (None, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-                Solute Removal [tss] : 0.50000 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                      Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.011509  0.0014910
-    Mass Concentration H2O               769.23   868.80    0.67069
-    Mass Concentration viruses_enteric   76.923  0.86889     663.98
-    Mass Concentration tss               76.923   43.444     335.35
-    Mass Concentration foo               76.923   86.889 5.3655e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
