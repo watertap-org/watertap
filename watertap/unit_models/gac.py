@@ -245,7 +245,7 @@ class GACData(UnitModelBlockData):
             bounds=(0, 1000),
             domain=NonNegativeReals,
             # TODO: Correct variable units
-            units=((units_meta("length") ** 3) * units_meta("mass") ** -1) ** 0.8316,
+            units=pyunits.dimensionless,  # ((units_meta("length") ** 3) * units_meta("mass") ** -1) ** 0.8316,
             doc="Freundlich k parameter",
         )
 
@@ -501,9 +501,14 @@ class GACData(UnitModelBlockData):
             doc="Solute distribution parameter",
         )
         def eq_dg(b, t, j):
+            freund_k_units = (
+                (units_meta("length") ** 3) * units_meta("mass") ** -1
+            ) ** b.freund_ninv
             return b.dg * b.eps_bed * b.treatwater.properties_in[
                 t
-            ].conc_mass_phase_comp["Liq", j] == b.particle_dens_app * b.freund_k * (
+            ].conc_mass_phase_comp[
+                "Liq", j
+            ] == b.particle_dens_app * b.freund_k * freund_k_units * (
                 b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
                 ** b.freund_ninv
             )
