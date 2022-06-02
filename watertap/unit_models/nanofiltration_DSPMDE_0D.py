@@ -445,7 +445,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.5,
-            bounds=(1e-3, 1 - 1e-6),
+            bounds=(0, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Volumetric-based recovery",
         )
@@ -455,14 +455,14 @@ class NanofiltrationData(UnitModelBlockData):
         ):
             self.length = Var(
                 initialize=10,
-                bounds=(0.1, 5e2),
+                bounds=(0, 5e2),
                 domain=NonNegativeReals,
                 units=units_meta("length"),
                 doc="Effective membrane length",
             )
             self.width = Var(
                 initialize=5,
-                bounds=(0.1, 5e2),
+                bounds=(0, 5e2),
                 domain=NonNegativeReals,
                 units=units_meta("length"),
                 doc="Effective feed-channel width",
@@ -470,7 +470,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.channel_height = Var(
                 initialize=1e-3,
                 domain=NonNegativeReals,
-                bounds=(1e-4, 5e-3),
+                bounds=(0, 5e-3),
                 units=units_meta("length"),
                 doc="Feed channel height",
             )
