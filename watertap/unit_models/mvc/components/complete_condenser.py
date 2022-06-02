@@ -222,7 +222,7 @@ class CompressorData(UnitModelBlockData):
         solver=None,
         optarg=None,
         hold_state=False,
-        heat=None
+        heat=None,
     ):
         """
         General wrapper for pressure changer initialization routines
