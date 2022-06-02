@@ -194,6 +194,11 @@ class BlockInterface:
     def description(self):
         return self._fs_block().description
 
+    def dict(self):
+        if self._block_info is None:
+            return {}
+        return self._block_info.dict()
+
     def _fs_block(self):
         if self._block_info is None:
             raise ValueError("Must set block first")
@@ -202,8 +207,7 @@ class BlockInterface:
     def add_parameter(
         self, name: str, choices=None, vrange=None, vtype: Union[type, str] = None
     ):
-        """Add a constrained parameter type to the flowsheet.
-        Initial value of parameter will be ``None``.
+        """Add a constrained parameter type. Initial value of parameter will be ``None``.
 
         Args:
             name: Parameter name
