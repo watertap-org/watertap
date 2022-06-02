@@ -30,7 +30,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
 )
 
-from watertap.property_models.ion_DSPMDE_prop_pack_GACadjusted import (
+from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
 )
 from watertap.unit_models.gac import GAC

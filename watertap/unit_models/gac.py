@@ -240,6 +240,7 @@ class GACData(UnitModelBlockData):
         )
 
         # TODO: Figure out non-fixed exponent
+        # TODO: Determine whether unit correction procedure interferes with regressed k values
         self.freund_k = Var(
             initialize=10,
             bounds=(0, 1000),
@@ -501,11 +502,13 @@ class GACData(UnitModelBlockData):
             doc="Solute distribution parameter",
         )
         def eq_dg(b, t, j):
-            return b.dg * b.eps_bed * b.treatwater.properties_in[
-                t
-            ].conc_mass_phase_comp["Liq", j] == b.particle_dens_app * b.freund_k * (
+            return b.dg * b.eps_bed * (
+                b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
+            ) == b.particle_dens_app * b.freund_k * (
                 b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
                 ** b.freund_ninv
+            ) * (
+                1 - b.eps_bed
             )
 
         @self.Constraint(doc="Biot number")
