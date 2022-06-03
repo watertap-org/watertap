@@ -47,8 +47,6 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    initialize_system(m)
-
     results = solve(m)
     assert_optimal_termination(results)
 
@@ -127,6 +125,7 @@ def set_operating_conditions(m):
     m.fs.P1.load_parameters_from_database(use_default_removal=True)
     m.fs.P1.applied_pressure.fix(m.fs.nanofiltration.applied_pressure.get_values()[0])
     m.fs.P1.lift_height.unfix()
+    initialize_system(m)
 
 
 def initialize_system(m):
