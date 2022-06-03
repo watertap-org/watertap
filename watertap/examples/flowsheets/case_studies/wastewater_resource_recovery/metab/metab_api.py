@@ -66,97 +66,85 @@ def solve_flowsheet(block=None, **kwargs):
     metab.assert_optimal_termination(results)
 
 
-# Terminal interactive testing
-# -----------------------------
-
-
-def cli_driver(fsi, args):
-    """Dumb little interactive driver for CLI testing."""
-    commands = {
-        "json": print_json,
-        "quit": exit_program,
-        "build": run_build,
-        "solve": run_solve,
-        "results": print_results,
-        "update": update,
-    }
-    cli_commands = list(reversed(args))  # so pop() pulls left-to-right
-    while True:
-        if cli_commands:
-            cmd = cli_commands.pop()
-        else:
-            try:
-                cmd = input("Command> ")
-            except EOFError:
-                break
-        cmd = cmd.strip().lower()
-        if cmd in commands:
-            print(f"Running command: {cmd}")
-            commands[cmd](fsi)
-        else:
-            print_help(cmd, commands)
-    exit_program()
-
-
-def update(fsi: FlowsheetInterface):
-    """Pretend to update the values in the flowsheet"""
-    data = fsi.dict()
-    fsi.update(data)
-
-
-def run_build(fsi: FlowsheetInterface):
-    """Build the flowsheet"""
-    fsi.run_action(WorkflowActions.build)
-
-
-def run_solve(fsi: FlowsheetInterface):
-    """Solve the flowsheet"""
-    fsi.run_action(WorkflowActions.solve)
-
-
-def print_help(user_cmd, commands):
-    if user_cmd != "":
-        print(f"'{user_cmd}' is not a command.")
-    print(f"Commands:")
-    for cmd_key, cmd_val in commands.items():
-        desc = cmd_val.__doc__
-        desc = "" if desc is None else desc.strip()
-        print(f"  {cmd_key} - {desc}")
-
-
-def exit_program(*args):
-    """Exit the program"""
+if __name__ == "__main__":  # pragma: no cover
     import sys
 
-    print("Exit program.")
-    sys.exit(0)
+    def cli_driver(fsi, args):
+        """Dumb little interactive driver for CLI testing."""
+        commands = {
+            "json": print_json,
+            "quit": exit_program,
+            "build": run_build,
+            "solve": run_solve,
+            "results": print_results,
+            "update": update,
+        }
+        cli_commands = list(reversed(args))  # so pop() pulls left-to-right
+        while True:
+            if cli_commands:
+                cmd = cli_commands.pop()
+            else:
+                try:
+                    cmd = input("Command> ")
+                except EOFError:
+                    break
+            cmd = cmd.strip().lower()
+            if cmd in commands:
+                print(f"Running command: {cmd}")
+                commands[cmd](fsi)
+            else:
+                print_help(cmd, commands)
+        exit_program()
 
+    def update(fsi: FlowsheetInterface):
+        """Pretend to update the values in the flowsheet"""
+        data = fsi.dict()
+        fsi.update(data)
 
-def print_json(fsi):
-    """Print the flowsheet as JSON"""
-    import json
+    def run_build(fsi: FlowsheetInterface):
+        """Build the flowsheet"""
+        fsi.run_action(WorkflowActions.build)
 
-    print("Flowsheet data")
-    print("--------------")
-    print(json.dumps(fsi.dict(), indent=2))
-    print("--------------")
+    def run_solve(fsi: FlowsheetInterface):
+        """Solve the flowsheet"""
+        fsi.run_action(WorkflowActions.solve)
 
+    def print_help(user_cmd, commands):
+        if user_cmd != "":
+            print(f"'{user_cmd}' is not a command.")
+        print(f"Commands:")
+        for cmd_key, cmd_val in commands.items():
+            desc = cmd_val.__doc__
+            desc = "" if desc is None else desc.strip()
+            print(f"  {cmd_key} - {desc}")
 
-def print_results(fsi: FlowsheetInterface):
-    """Print the results of solving the flowsheet"""
-    fs = fsi.block
+    def exit_program(*args):
+        """Exit the program"""
+        import sys
 
-    print("Performance results")
-    print("-------------------")
-    metab.display_results(fs)
+        print("Exit program.")
+        sys.exit(0)
 
-    print("Costing results")
-    print("---------------")
-    metab.display_costing(fs)
+    def print_json(fsi):
+        """Print the flowsheet as JSON"""
+        import json
 
+        print("Flowsheet data")
+        print("--------------")
+        print(json.dumps(fsi.dict(), indent=2))
+        print("--------------")
 
-if __name__ == "__main__":
-    import sys
+    def print_results(fsi: FlowsheetInterface):
+        """Print the results of solving the flowsheet"""
+        fs = fsi.block
+
+        print("Performance results")
+        print("-------------------")
+        metab.display_results(fs)
+
+        print("Costing results")
+        print("---------------")
+        metab.display_costing(fs)
 
     if len(sys.argv) > 1:
         args = sys.argv[1:]
