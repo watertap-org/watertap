@@ -208,7 +208,8 @@ if __name__ == "__main__":
     # m.fs.unit.eq_solute_solvent_flux.deactivate()
     # (2) Interfacial partitioning equation at the permeate, relating pore exit concentration to bulk permeate concentration
     # m.fs.unit.eq_interfacial_partitioning_permeate.deactivate() # deactivating yields higher, more practical rejection rates
-    # (3) Js = diffusion term + convection term + electromigration term , i.e., Extended Nernst Planck equation representing solute flux in the membrane pore domain
+    # (3) Js = diffusion term + convection term + electromigration term
+    # i.e., Extended Nernst Planck equation representing solute flux in the membrane pore domain
     # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
 
     # Use of Degeneracy Hunter for troubleshooting model.
