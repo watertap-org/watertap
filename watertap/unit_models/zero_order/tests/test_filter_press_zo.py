@@ -14,7 +14,7 @@
 Tests for zero-order filter press model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -176,34 +176,8 @@ class TestFilterPressZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                         : Value      : Fixed : Bounds
-    Filter Press Capacity (ft3) :     9153.6 : False : (None, None)
-        Filter Press Power (kW) :     156.61 : False : (0, None)
-           Solute Removal [tss] :    0.98000 :  True : (0, None)
-                 Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated   Byproduct
-    Volumetric Flowrate    0.024000 0.00046010  0.023540 
-    Mass Concentration H2O   41.667    0.21734    42.477 
-    Mass Concentration tss   958.33     999.78    957.52 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

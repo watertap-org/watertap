@@ -51,7 +51,8 @@
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
         In this case, we are getting all reactions associated with a system of water
-        and lime (Ca[OH]2). We should get three reactions now:
+        and lime (Ca[OH]2). We should get three reactions now::
+
             H2O <--> H_+ + OH_-
             CaOH <--> Ca + OH
             Ca(OH)2 <--> Ca + 2 OH

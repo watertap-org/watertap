@@ -15,7 +15,7 @@ Tests for zero-order bioreactor with simple reactions
 """
 import pytest
 import os
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Block,
@@ -135,36 +135,8 @@ class TestMetabZO_hydrogen:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                               : Value     : Fixed : Bounds
-                   Electricity Demand :    368.28 : False : (0, None)
-    Reaction Extent [cod_to_hydrogen] : 0.0022000 : False : (None, None)
-                 Solute Removal [cod] :    0.0000 :  True : (0, None)
-            Solute Removal [hydrogen] :    1.0000 :  True : (0, None)
-                Thermal Energy Demand :    79.537 : False : (0, None)
-                       Water Recovery :    1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                   Inlet    Treated   Byproduct
-    Volumetric Flowrate         0.0010100  0.0010078 1.1066e-08
-    Mass Concentration H2O         990.10     992.26 9.7518e-09
-    Mass Concentration cod         9.9010     7.7396 9.1163e-09
-    Mass Concentration hydrogen    0.0000 1.2301e-12     1000.0
-====================================================================================
-"""
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestMetabZO_methane:
@@ -264,38 +236,8 @@ class TestMetabZO_methane:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :     60.024 : False : (0, None)
-    Reaction Extent [cod_to_methane] :  0.0059000 : False : (None, None)
-                Solute Removal [cod] :     0.0000 :  True : (0, None)
-           Solute Removal [hydrogen] :     0.0000 :  True : (0, None)
-            Solute Removal [methane] :     1.0000 :  True : (0, None)
-               Thermal Energy Demand : 1.0088e-14 : False : (0, None)
-                      Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                   Inlet    Treated   Byproduct
-    Volumetric Flowrate         0.0010100  0.0010041 5.9590e-07
-    Mass Concentration H2O         990.10     995.92 1.6781e-08
-    Mass Concentration cod         9.9010     4.0833 1.6929e-08
-    Mass Concentration hydrogen    0.0000 1.0047e-11 1.6929e-08
-    Mass Concentration methane     0.0000 2.7912e-09     1000.0
-====================================================================================
-"""
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestMetabZO_hydrogen_cost:
@@ -391,7 +333,7 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(3.091e6, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(4.505e5, rel=1e-3) == value(
+        assert pytest.approx(5069532.966912, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -399,7 +341,7 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(5.432e5, rel=1e-3) == value(
+        assert pytest.approx(5162268.806429799, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
@@ -503,7 +445,7 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(3.881e7, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(5.631e6, rel=1e-3) == value(
+        assert pytest.approx(63369162.086399995, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -511,7 +453,8 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(6.795e6, rel=1e-3) == value(
+
+        assert pytest.approx(64533387.715684555, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs

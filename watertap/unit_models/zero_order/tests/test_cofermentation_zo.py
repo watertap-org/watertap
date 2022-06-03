@@ -15,7 +15,7 @@ Tests for zero-order cofermentation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -204,34 +204,8 @@ class TestCofermentationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 1.0000e-14 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-     Solute Removal [cod] :    0.70000 :  True : (0, None)
-           Water Recovery :     0.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet 1    Inlet 2    Treated 
-    Volumetric Flowrate    3.7153e-07 3.7153e-08 7.8892e-09
-    Mass Concentration H2O     930.22     990.00 1.2675e-06
-    Mass Concentration cod     69.782     10.000     1000.0
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 @pytest.mark.unit

@@ -15,7 +15,7 @@ Tests for zero-order tri media filtration model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -190,42 +190,8 @@ class TestTriMediaFiltrationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :   0.024300 : False : (0, None)
-               Electricity Intensity : 0.00045000 :  True : (None, None)
-                Solute Removal [eeq] :    0.20000 :  True : (0, None)
-            Solute Removal [nitrate] :    0.80000 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.95000 :  True : (0, None)
-                      Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.015000 0.011650 0.0033500 
-    Mass Concentration H2O               666.67   772.53    298.51 
-    Mass Concentration eeq               66.667   68.670    59.701 
-    Mass Concentration nonvolatile_toc   66.667   68.670    59.701 
-    Mass Concentration toc               66.667   68.670    59.701 
-    Mass Concentration nitrate           66.667   17.167    238.81 
-    Mass Concentration tss               66.667   4.2918    283.58 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestTriMediaFiltrationZO_w_default_removal:
@@ -387,44 +353,8 @@ class TestTriMediaFiltrationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :   0.025920 : False : (0, None)
-               Electricity Intensity : 0.00045000 :  True : (None, None)
-                Solute Removal [eeq] :    0.20000 :  True : (0, None)
-                Solute Removal [foo] :     0.0000 :  True : (0, None)
-            Solute Removal [nitrate] :    0.80000 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.95000 :  True : (0, None)
-                      Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.016000 0.012650  0.0033500
-    Mass Concentration H2O               625.00   711.46     298.51
-    Mass Concentration eeq               62.500   63.241     59.701
-    Mass Concentration nonvolatile_toc   62.500   63.241     59.701
-    Mass Concentration toc               62.500   63.241     59.701
-    Mass Concentration nitrate           62.500   15.810     238.81
-    Mass Concentration tss               62.500   3.9526     283.58
-    Mass Concentration foo               62.500   79.051 2.3881e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

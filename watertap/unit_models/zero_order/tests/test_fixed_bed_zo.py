@@ -14,7 +14,7 @@
 Tests for zero-order fixed bed model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -212,40 +212,8 @@ class TestFixedBedZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                     : Value    : Fixed : Bounds
-         Acetic Acid Demand :   1799.0 : False : (0, None)
-    Activated Carbon Demand :   58.448 : False : (0, None)
-          Anthracite Demand :   64.048 : False : (0, None)
-    Cationic Polymer Demand :   49.057 : False : (0, None)
-         Electricity Demand :   3082.6 : False : (0, None)
-      Electricity Intensity : 0.085618 :  True : (None, None)
-    Ferric Chlorided Demand :   359.80 : False : (0, None)
-     Phosphoric Acid Demand :   152.17 : False : (0, None)
-                Sand Demand :   64.897 : False : (0, None)
-       Solute Removal [bod] :  0.90000 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated
-    Volumetric Flowrate      10.001    10.000
-    Mass Concentration H2O   999.90    999.99
-    Mass Concentration bod 0.099990 0.0099999
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestFixedBedZO_w_default_removal:
@@ -392,41 +360,8 @@ class TestFixedBedZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                     : Value    : Fixed : Bounds
-         Acetic Acid Demand :   1799.7 : False : (0, None)
-    Activated Carbon Demand :   58.469 : False : (0, None)
-          Anthracite Demand :   64.072 : False : (0, None)
-    Cationic Polymer Demand :   49.073 : False : (0, None)
-         Electricity Demand :   3083.8 : False : (0, None)
-      Electricity Intensity : 0.085618 :  True : (None, None)
-    Ferric Chlorided Demand :   359.95 : False : (0, None)
-     Phosphoric Acid Demand :   152.23 : False : (0, None)
-                Sand Demand :   64.921 : False : (0, None)
-       Solute Removal [bod] :  0.90000 :  True : (0, None)
-       Solute Removal [foo] :   0.0000 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet    Treated
-    Volumetric Flowrate      10.005    10.004
-    Mass Concentration H2O   999.50    999.59
-    Mass Concentration bod 0.099950 0.0099959
-    Mass Concentration foo  0.39980   0.39984
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

@@ -1,3 +1,5 @@
+.. _sido_methods:
+
 Single Inlet - Double Outlet Helper Methods
 ===========================================
 

@@ -15,7 +15,7 @@ Tests for zero-order well field model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -134,35 +134,8 @@ class TestDeepWellInjectionZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                    : Value  : Fixed : Bounds
-        Electricity Demand : 22.109 : False : (0, None)
-    Pipe Diameter (inches) : 8.0000 :  True : (None, None)
-     Pipe Distance (miles) : 0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet     Outlet  
-    Volumetric Flowrate         0.060000   0.060000
-    Mass Concentration H2O    0.00016667 0.00016667
-    Mass Concentration sulfur     166.67     166.67
-    Mass Concentration toc        333.33     333.33
-    Mass Concentration tss        500.00     500.00
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

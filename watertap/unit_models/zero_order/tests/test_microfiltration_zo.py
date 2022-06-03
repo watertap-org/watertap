@@ -15,7 +15,7 @@ Tests for zero-order microfiltration model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -180,40 +180,8 @@ class TestMicroFiltrationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  9.0720 : False : (0, None)
-               Electricity Intensity : 0.18000 :  True : (None, None)
-    Solute Removal [cryptosporidium] : 0.99900 :  True : (0, None)
-                Solute Removal [eeq] : 0.30000 :  True : (0, None)
-                Solute Removal [toc] : 0.10000 :  True : (0, None)
-                Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.95000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.014000 0.011131 0.0028690 
-    Mass Concentration H2O               714.29   853.47    174.28 
-    Mass Concentration eeq               71.429   62.887    104.57 
-    Mass Concentration toc               71.429   80.855    34.855 
-    Mass Concentration tss               71.429   2.6952    338.10 
-    Mass Concentration cryptosporidium   71.429 0.089839    348.20 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestMicroFiltrationZO_w_default_removal:
@@ -356,42 +324,8 @@ class TestMicroFiltrationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  9.7200 : False : (0, None)
-               Electricity Intensity : 0.18000 :  True : (None, None)
-    Solute Removal [cryptosporidium] : 0.99900 :  True : (0, None)
-                Solute Removal [eeq] : 0.30000 :  True : (0, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-                Solute Removal [toc] : 0.10000 :  True : (0, None)
-                Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.95000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.015000 0.012131  0.0028690
-    Mass Concentration H2O               666.67   783.12     174.28
-    Mass Concentration eeq               66.667   57.703     104.57
-    Mass Concentration toc               66.667   74.190     34.855
-    Mass Concentration tss               66.667   2.4730     338.10
-    Mass Concentration cryptosporidium   66.667 0.082433     348.20
-    Mass Concentration foo               66.667   82.433 2.7884e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

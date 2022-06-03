@@ -35,16 +35,19 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
     Zero-Order model for a gas-sparged membrane.
     This unit is similar to a SIDO, but there is technically a third outlet for gas extraction.
     Three StateBlocks are added with corresponding Ports:
+
         * properties_inlet
         * properties_treated
         * properties_byproduct
 
     Two additional variables are added:
+
         * recovery_vol (indexed by time)
         * removal_frac_mass_solute (indexed by time and solute)
 
     Four additional constraints are added to represent the material balances, with modifications
     to account for gas extraction.
+
         * water_recovery_equation (indexed by time)
         * flow_balance (indexed by time)
         * solute_removal_equation (indexed by time and solute)
