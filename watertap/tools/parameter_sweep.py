@@ -511,6 +511,14 @@ def _update_local_output_dict(
 
 def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
 
+    # Before we can create the global dictionary, we need to delete the pyomo
+    # object contained within the dictionary
+    for key, val in local_output_dict.items():
+        if key != "solve_successful":
+            for subval in val.values():
+                if "_pyo_obj" in subval:
+                    del subval["_pyo_obj"]
+
     if num_procs == 1:
         global_output_dict = local_output_dict
     else:  # pragma: no cover
