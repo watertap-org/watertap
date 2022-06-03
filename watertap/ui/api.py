@@ -64,6 +64,7 @@ from pathlib import Path
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable
 
 # third-party
+import pyomo.core
 from pyomo.environ import Block, Var, value
 import idaes.logger as idaeslog
 from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
@@ -81,10 +82,7 @@ from watertap.ui import api_model as model
 # -------
 
 _log = idaeslog.getLogger(__name__)
-
 _log.setLevel(logging.DEBUG)
-
-api_util.util_logger = _log
 
 
 # Functions and classes
@@ -141,6 +139,7 @@ class BlockInterface:
             block: The block associated with this interface.
             info: Configuration options
         """
+        self._var_diff = None  # for recording missing/extra variables during load()
         info = info or {}
         self._saved_info = info
         if block is None:
@@ -149,7 +148,7 @@ class BlockInterface:
         else:
             self._init(block, info)
 
-    def _init(self, block, info: Dict):
+    def _init(self, block: Block, info: Dict):
         self._block = block
 
         info = info.copy()
@@ -194,282 +193,15 @@ class BlockInterface:
     def description(self):
         return self._fs_block().description
 
-    def dict(self):
-        if self._block_info is None:
-            return {}
-        return self._block_info.dict()
+    # def dict(self):
+    #     if self._block_info is None:
+    #         return {}
+    #     return self._block_info.dict()
 
     def _fs_block(self):
         if self._block_info is None:
             raise ValueError("Must set block first")
         return self._block_info
-
-    def add_parameter(
-        self, name: str, choices=None, vrange=None, vtype: Union[type, str] = None
-    ):
-        """Add a constrained parameter type. Initial value of parameter will be ``None``.
-
-        Args:
-            name: Parameter name
-            choices: List of possible values
-            vrange: Range for numeric values (min <= x <= max)
-            vtype: Expected type for value. Can be inferred from choices/vrange, but
-                   must be present if neither of those options are given.
-                   One of 'str', 'int', 'float', either as string or builtin type.
-
-        Raises:
-            ValueError: conflicting or incorrect arguments
-        """
-        if self._block_info is None:
-            raise ValueError("Must set block first")
-
-        if choices is not None and vrange is not None:
-            raise ValueError("Options 'choices' and 'range' cannot both be defined")
-
-        # validate inputs
-        if choices is not None:
-            try:
-                v0 = choices[0]
-                if type(v0) not in (str, int, float):
-                    raise TypeError("Elements must be int, str, or floats")
-            except (IndexError, TypeError, KeyError) as err:
-                raise ValueError(f"Bad type for 'choices': {err}")
-        if vrange is not None:
-            try:
-                if len(vrange) != 2:
-                    raise IndexError("The 'vrange' must be a tuple of length 2")
-                v0 = vrange[0]
-                if type(v0) not in (int, float):
-                    raise TypeError("Elements must be ints or floats")
-            except (IndexError, TypeError, KeyError) as err:
-                raise ValueError(f"Bad type for 'vrange': {err}")
-
-        # infer type if not given
-        if vtype is None:
-            if choices is not None:
-                vtype = type(choices[0]).__name__
-            elif vrange is not None:
-                vtype = type(vrange[0]).__name__
-            else:
-                raise ValueError("Must give one of 'vtype', 'choices', or 'vrange'")
-        elif isinstance(vtype, type):
-            # convert actual type to its name
-            vtype = vtype.__name__
-        if vtype not in ("str", "int", "float"):
-            raise ValueError(
-                f"Argument for 'vtype' value must be a str, int, or float."
-                f" value={vtype}"
-            )
-
-        self._block_info.meta.parameters[name] = dict(
-            choices=choices, range=vrange, type=vtype, val=None
-        )
-
-    def set_parameter(self, name: str, val: Union[float, int, str]):
-        """Set the value for a flowsheet parameter.
-
-        Args:
-            name: Name of parameter to set
-            val: Value for parameter
-
-        Raises:
-            KeyError: unknown parameter
-            TypeError: wrong type for this parameter
-            ValueError: invalid value for this parameter
-        """
-        p = self._block_info.meta.parameters.get(name, None)
-        if p is None:
-            raise KeyError(f"Unkown parameter. name={name}")
-        p_type = getattr(builtins, p["type"])  # convert to a type obj
-        if type(val) != p_type:
-            if type(val) is int and p_type is float:
-                val = float(val)
-            else:
-                raise TypeError(
-                    f"Wrong type for value. val={val} type={type(val)} "
-                    f"expected-type={p_type}"
-                )
-        p_choices, p_range = p["choices"], p["range"]
-        if p_choices is not None:
-            if val not in p_choices:
-                raise ValueError(
-                    f"Value not in choices. " f"value={val} choices={p_choices}"
-                )
-        elif p_range is not None:
-            if val < p_range[0] or val > p_range[1]:
-                raise ValueError(
-                    f"Value out of range. value={val} "
-                    f"min={p_range[0]} max={p_range[1]}"
-                )
-        # if all the checking is ok, set parameter
-        p["val"] = val
-
-    def get_parameter(self, name: str) -> Union[float, int, str]:
-        """Get the value of a flowsheet parameter.
-
-        Args:
-            name: Name of parameter to get
-
-        Returns:
-            Value for parameter. Will be ``None`` if not set.
-
-        Raises:
-            KeyError: unknown parameter
-        """
-        p = self._block_info.meta.parameters.get(name, None)
-        if p is None:
-            raise KeyError(f"Unkown parameter. name={name}")
-        return p["val"]
-
-    @staticmethod
-    def _get_block_variable_value(block, var_name):
-        block_var = getattr(block, var_name)
-        if block_var.is_indexed():
-            index_list, value_list = [], []
-            for var_idx in block_var.index_set():
-                try:
-                    index_list.append(tuple(var_idx))
-                except TypeError:
-                    index_list.append((var_idx,))
-                value_list.append(value(block_var[var_idx]))
-            _log.debug(
-                f"add indexed variable. block={block.name},"
-                f"name={var_name},index={index_list},"
-                f"value={value_list}"
-            )
-            var_val = model.IndexedValue(index=index_list, value=value_list)
-        else:
-            var_val = model.ScalarValue(value=value(block_var))
-            _log.debug(
-                f"add scalar value. block={block.name},"
-                f"name={var_name},value={var_val}"
-            )
-        return var_val
-
-
-def export_variables(
-    block, variables=None, name="", desc="", category=""
-) -> BlockInterface:
-    """Export variables from the given block, optionally providing metadata
-    for the block itself. This method is really a simplified way to
-    create :class:`BlockInterface` s for models (a.k.a., blocks).
-
-    Args:
-        block: IDAES model block
-        variables: List of variable names, or dict, of variable data to export.
-          If it is a dict, the following fields may be present:
-
-            value : scalar
-               <number or string>
-
-            value : indexed
-               {"index": [[<index list1>], [<index list2>], ..],
-                "value": [<value1>, <value2>, ..]}
-
-            display_name
-                Name to display for the variable (default name in the model)
-
-            description
-                Description of the variable (default is ``.doc`` of the variable, or nothing)
-
-            units
-                Units for the variable, in a standard string generated by Pyomo units.
-
-            readonly
-                If False (the default), the variable can be modified in the UI.
-                If True, it should not be. Note that this is not known to the model, i.e.,
-                setting this to True does not change the variable to an (IDAES) parameter.
-
-        name: Name to give this block (default=``block.name``)
-        desc: Description of the block (default=``block.doc``)
-        category: User-defined category for this block, such as "costing", that
-           can be used by the UI to group things visually. (default="default")
-
-    Returns:
-        An initialized :class:`BlockInterface` object.
-
-    Raises:
-        ValueError: bad form for an input value
-    """
-
-    def var_check(b, n):
-        info = f"block={b.name},attr={n}"
-        try:
-            obj = getattr(b, n)
-            if not isinstance(obj, Var):
-                return "not a variable. " + info + f",type={type(obj)}"
-        except AttributeError:
-            return "not found. " + info
-
-    var_info_dict = {}
-    if variables is not None:
-        if hasattr(variables, "items"):  # dict-like
-            var_info_dict = {
-                name: model.Variable(**val) for name, val in variables.items()
-            }
-        else:
-            # make a single string into a list of them
-            if isinstance(variables, str):
-                variables = (variables,)
-            try:
-                for name in variables:
-                    if not isinstance(name, str):
-                        raise TypeError(f"'{name}' is not a string")
-                    var_info_dict[name] = model.Variable()
-            except TypeError as err:
-                raise ValueError(
-                    f"Expected list of variable names for 'variables': " f"{err}"
-                )
-        for name in var_info_dict:
-            error = var_check(block, name)
-            if error:
-                raise ValueError(error)
-    block_info = model.Block(
-        display_name=name,
-        description=desc,
-        category=category,
-        variables=var_info_dict,
-    )
-    return BlockInterface(block, block_info.dict())
-
-
-class WorkflowActions:
-    #: Build the flowsheet
-    build = "build"
-
-    #: Solve the flowsheet
-    solve = "solve"
-
-    #: Get flowsheet resoluts
-    results = "get-results"
-
-    #: Dependencies:
-    #: results `--[depends on]-->` solve `--[depends on]-->` build
-    deps = {build: [], solve: [build], results: [solve]}
-
-
-class FlowsheetInterface(BlockInterface):
-    """Interface to the UI for a flowsheet."""
-
-    # Actions in the flowsheet workflow
-    ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
-
-    def __init__(self, info):
-        """Constructor.
-
-        Use :meth:`set_block()` to set the root model block, once the
-        flowsheet has been built.
-
-        Args:
-            info: Options for the :class:`BlockInterface` constructor
-        """
-        super().__init__(None, info)
-        self._actions = {a: (None, None) for a in self.ACTIONS}
-        self._actions_deps = WorkflowActions.deps.copy()
-        self._var_diff = None  # for recording missing/extra variables during load()
-        self._actions_run = set()
-
-    # Public methods
 
     def set_block(self, block: Block):
         self._init(block, self._saved_info)
@@ -637,11 +369,6 @@ class FlowsheetInterface(BlockInterface):
         _log.debug(f"Update load. root-block={root_block_name}")
         self._load(root_block_info, self.block)
 
-        # special case: clear the 'solve' action
-        if self._action_was_run(WorkflowActions.solve):
-            self._action_clear_was_run(WorkflowActions.solve)
-        _log.debug(f"update:end. status=ok")
-
     @classmethod
     def get_schema(cls) -> Dict:
         """Get a schema that can validate the exported JSON representation from
@@ -652,66 +379,147 @@ class FlowsheetInterface(BlockInterface):
         """
         return model.Block.schema()
 
-    def add_action_type(self, action_type: str, deps: List[str] = None):
-        """Add a new action type to this interface.
+    def add_parameter(
+        self, name: str, choices=None, vrange=None, vtype: Union[type, str] = None
+    ):
+        """Add a constrained parameter type. Initial value of parameter will be ``None``.
 
         Args:
-            action_type: Name of the action
-            deps: List of (names of) actions on which this action depends.
-                  These actions are automatically run before this one is run.
-
-        Returns:
-            None
+            name: Parameter name
+            choices: List of possible values
+            vrange: Range for numeric values (min <= x <= max)
+            vtype: Expected type for value. Can be inferred from choices/vrange, but
+                   must be present if neither of those options are given.
+                   One of 'str', 'int', 'float', either as string or builtin type.
 
         Raises:
-            KeyError: An action listed in 'deps' is not a standard action
-               defined in WorkflowActions, or a user action.
-            ValueError: A circular dependency was created
+            ValueError: conflicting or incorrect arguments
         """
-        if action_type in self._actions:
-            return
-        self._actions[action_type] = (None, None)
-        if deps is None:
-            deps = []  # Normalize empty dependencies to an empty list
+        if self._block_info is None:
+            raise ValueError("Must set block first")
+
+        if choices is not None and vrange is not None:
+            raise ValueError("Options 'choices' and 'range' cannot both be defined")
+
+        # validate inputs
+        if choices is not None:
+            try:
+                v0 = choices[0]
+                if type(v0) not in (str, int, float):
+                    raise TypeError("Elements must be int, str, or floats")
+            except (IndexError, TypeError, KeyError) as err:
+                raise ValueError(f"Bad type for 'choices': {err}")
+        if vrange is not None:
+            try:
+                if len(vrange) != 2:
+                    raise IndexError("The 'vrange' must be a tuple of length 2")
+                v0 = vrange[0]
+                if type(v0) not in (int, float):
+                    raise TypeError("Elements must be ints or floats")
+            except (IndexError, TypeError, KeyError) as err:
+                raise ValueError(f"Bad type for 'vrange': {err}")
+
+        # infer type if not given
+        if vtype is None:
+            if choices is not None:
+                vtype = type(choices[0]).__name__
+            elif vrange is not None:
+                vtype = type(vrange[0]).__name__
+            else:
+                raise ValueError("Must give one of 'vtype', 'choices', or 'vrange'")
+        elif isinstance(vtype, type):
+            # convert actual type to its name
+            vtype = vtype.__name__
+        if vtype not in ("str", "int", "float"):
+            raise ValueError(
+                f"Argument for 'vtype' value must be a str, int, or float."
+                f" value={vtype}"
+            )
+
+        self._block_info.meta.parameters[name] = dict(
+            choices=choices, range=vrange, type=vtype, val=None
+        )
+
+    def set_parameter(self, name: str, val: Union[float, int, str]):
+        """Set the value for a flowsheet parameter.
+
+        Args:
+            name: Name of parameter to set
+            val: Value for parameter
+
+        Raises:
+            KeyError: unknown parameter
+            TypeError: wrong type for this parameter
+            ValueError: invalid value for this parameter
+        """
+        p = self._block_info.meta.parameters.get(name, None)
+        if p is None:
+            raise KeyError(f"Unkown parameter. name={name}")
+        p_type = getattr(builtins, p["type"])  # convert to a type obj
+        if type(val) != p_type:
+            if type(val) is int and p_type is float:
+                val = float(val)
+            else:
+                raise TypeError(
+                    f"Wrong type for value. val={val} type={type(val)} "
+                    f"expected-type={p_type}"
+                )
+        p_choices, p_range = p["choices"], p["range"]
+        if p_choices is not None:
+            if val not in p_choices:
+                raise ValueError(
+                    f"Value not in choices. " f"value={val} choices={p_choices}"
+                )
+        elif p_range is not None:
+            if val < p_range[0] or val > p_range[1]:
+                raise ValueError(
+                    f"Value out of range. value={val} "
+                    f"min={p_range[0]} max={p_range[1]}"
+                )
+        # if all the checking is ok, set parameter
+        p["val"] = val
+
+    def get_parameter(self, name: str) -> Union[float, int, str]:
+        """Get the value of a flowsheet parameter.
+
+        Args:
+            name: Name of parameter to get
+
+        Returns:
+            Value for parameter. Will be ``None`` if not set.
+
+        Raises:
+            KeyError: unknown parameter
+        """
+        p = self._block_info.meta.parameters.get(name, None)
+        if p is None:
+            raise KeyError(f"Unkown parameter. name={name}")
+        return p["val"]
+
+    @staticmethod
+    def _get_block_variable_value(block, var_name):
+        block_var = getattr(block, var_name)
+        if block_var.is_indexed():
+            index_list, value_list = [], []
+            for var_idx in block_var.index_set():
+                try:
+                    index_list.append(tuple(var_idx))
+                except TypeError:
+                    index_list.append((var_idx,))
+                value_list.append(value(block_var[var_idx]))
+            _log.debug(
+                f"add indexed variable. block={block.name},"
+                f"name={var_name},index={index_list},"
+                f"value={value_list}"
+            )
+            var_val = model.IndexedValue(index=index_list, value=value_list)
         else:
-            # Verify dependencies
-            for one_dep in deps:
-                if one_dep not in self._actions and one_dep not in self._actions_deps:
-                    raise KeyError(f"Dependent action not found. name={one_dep}")
-                if one_dep == action_type:
-                    raise ValueError("Action cannot be dependent on itself")
-        # Add dependencies
-        self._actions_deps[action_type] = deps
-
-    def set_action(self, name, func, **kwargs):
-        """Set a function to call for a named action on the flowsheet."""
-        self._check_action(name)
-        self._actions[name] = (func, kwargs)
-
-    def get_action(self, name):
-        """Get the action that was set with :meth:`set_action`."""
-        self._check_action(name)
-        return self._actions[name]
-
-    def run_action(self, name):
-        """Run the named action's function."""
-        _log.debug(f"run_action:start. name={name}")
-        self._check_action(name)
-        if self._action_was_run(name):
-            _log.info(f"Skip duplicate run of action. name={name}")
-            return None
-        self._run_deps(name)
-        func, kwargs = self._actions[name]
-        if func is None:
-            _log.debug(f"run_action:end. name={name},status=error")
-            raise ValueError("Undefined action. name={name}")
-        # Run action
-        result = func(block=self._block, ui=self, **kwargs)
-        self._action_set_was_run(name)
-        _log.debug(f"run_action:end. name={name},status=ok")
-        return result
-
-    # Protected methods
+            var_val = model.ScalarValue(value=value(block_var))
+            _log.debug(
+                f"add scalar value. block={block.name},"
+                f"name={var_name},value={var_val}"
+            )
+        return var_val
 
     def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
         """Load the variables in ``block_data`` into ``cur_block``, then
@@ -798,7 +606,7 @@ class FlowsheetInterface(BlockInterface):
 
         return tree
 
-    def _add_to_tree(self, tree: model.Block, path: List[str], ui: BlockInterface):
+    def _add_to_tree(self, tree: model.Block, path: List[str], ui: "BlockInterface"):
         """Add one block interface, with the provided path, to the tree."""
         node_names = path[:-1]
         leaf_name = path[-1]
@@ -829,6 +637,198 @@ class FlowsheetInterface(BlockInterface):
 
         # add leaf to blocks
         node.blocks[leaf_name] = ui._block_info
+
+
+def export_variables(
+    block, variables=None, name="", desc="", category=""
+) -> BlockInterface:
+    """Export variables from the given block, optionally providing metadata
+    for the block itself. This method is really a simplified way to
+    create :class:`BlockInterface` s for models (a.k.a., blocks).
+
+    Args:
+        block: IDAES model block
+        variables: List of variable names, or dict, of variable data to export.
+          If it is a dict, the following fields may be present:
+
+            value : scalar
+               <number or string>
+
+            value : indexed
+               {"index": [[<index list1>], [<index list2>], ..],
+                "value": [<value1>, <value2>, ..]}
+
+            display_name
+                Name to display for the variable (default name in the model)
+
+            description
+                Description of the variable (default is ``.doc`` of the variable, or nothing)
+
+            units
+                Units for the variable, in a standard string generated by Pyomo units.
+
+            readonly
+                If False (the default), the variable can be modified in the UI.
+                If True, it should not be. Note that this is not known to the model, i.e.,
+                setting this to True does not change the variable to an (IDAES) parameter.
+
+        name: Name to give this block (default=``block.name``)
+        desc: Description of the block (default=``block.doc``)
+        category: User-defined category for this block, such as "costing", that
+           can be used by the UI to group things visually. (default="default")
+
+    Returns:
+        An initialized :class:`BlockInterface` object.
+
+    Raises:
+        ValueError: bad form for an input value
+    """
+
+    def var_check(b, n):
+        info = f"block={b.name},attr={n}"
+        try:
+            obj = getattr(b, n)
+            if not isinstance(obj, Var):
+                return "not a variable. " + info + f",type={type(obj)}"
+        except AttributeError:
+            return "not found. " + info
+
+    var_info_dict = {}
+    if variables is not None:
+        if hasattr(variables, "items"):  # dict-like
+            var_info_dict = {
+                name: model.Variable(**val) for name, val in variables.items()
+            }
+        else:
+            # make a single string into a list of them
+            if isinstance(variables, str):
+                variables = (variables,)
+            try:
+                for name in variables:
+                    if not isinstance(name, str):
+                        raise TypeError(f"'{name}' is not a string")
+                    var_info_dict[name] = model.Variable()
+            except TypeError as err:
+                raise ValueError(
+                    f"Expected list of variable names for 'variables': " f"{err}"
+                )
+        for name in var_info_dict:
+            error = var_check(block, name)
+            if error:
+                raise ValueError(error)
+    block_info = model.Block(
+        display_name=name,
+        description=desc,
+        category=category,
+        variables=var_info_dict,
+    )
+    return BlockInterface(block, block_info.dict())
+
+
+class WorkflowActions:
+    #: Build the flowsheet
+    build = "build"
+
+    #: Solve the flowsheet
+    solve = "solve"
+
+    #: Get flowsheet resoluts
+    results = "get-results"
+
+    #: Dependencies:
+    #: results `--[depends on]-->` solve `--[depends on]-->` build
+    deps = {build: [], solve: [build], results: [solve]}
+
+
+class FlowsheetInterface(BlockInterface):
+    """Interface to the UI for a flowsheet."""
+
+    # Actions in the flowsheet workflow
+    ACTIONS = [WorkflowActions.build, WorkflowActions.solve]
+
+    def __init__(self, info):
+        """Constructor.
+
+        Use :meth:`set_block()` to set the root model block, once the
+        flowsheet has been built.
+
+        Args:
+            info: Options for the :class:`BlockInterface` constructor
+        """
+        super().__init__(None, info)
+        self._actions = {a: (None, None) for a in self.ACTIONS}
+        self._actions_deps = WorkflowActions.deps.copy()
+        self._actions_run = set()
+
+    # Public methods
+
+    def update(self, data: Dict):
+        super().update(data)
+        # clear the 'solve' action
+        if self._action_was_run(WorkflowActions.solve):
+            self._action_clear_was_run(WorkflowActions.solve)
+        _log.debug(f"update:end. status=ok")
+
+    def add_action_type(self, action_type: str, deps: List[str] = None):
+        """Add a new action type to this interface.
+
+        Args:
+            action_type: Name of the action
+            deps: List of (names of) actions on which this action depends.
+                  These actions are automatically run before this one is run.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError: An action listed in 'deps' is not a standard action
+               defined in WorkflowActions, or a user action.
+            ValueError: A circular dependency was created
+        """
+        if action_type in self._actions:
+            return
+        self._actions[action_type] = (None, None)
+        if deps is None:
+            deps = []  # Normalize empty dependencies to an empty list
+        else:
+            # Verify dependencies
+            for one_dep in deps:
+                if one_dep not in self._actions and one_dep not in self._actions_deps:
+                    raise KeyError(f"Dependent action not found. name={one_dep}")
+                if one_dep == action_type:
+                    raise ValueError("Action cannot be dependent on itself")
+        # Add dependencies
+        self._actions_deps[action_type] = deps
+
+    def set_action(self, name, func, **kwargs):
+        """Set a function to call for a named action on the flowsheet."""
+        self._check_action(name)
+        self._actions[name] = (func, kwargs)
+
+    def get_action(self, name):
+        """Get the action that was set with :meth:`set_action`."""
+        self._check_action(name)
+        return self._actions[name]
+
+    def run_action(self, name):
+        """Run the named action's function."""
+        _log.debug(f"run_action:start. name={name}")
+        self._check_action(name)
+        if self._action_was_run(name):
+            _log.info(f"Skip duplicate run of action. name={name}")
+            return None
+        self._run_deps(name)
+        func, kwargs = self._actions[name]
+        if func is None:
+            _log.debug(f"run_action:end. name={name},status=error")
+            raise ValueError("Undefined action. name={name}")
+        # Run action
+        result = func(block=self._block, ui=self, **kwargs)
+        self._action_set_was_run(name)
+        _log.debug(f"run_action:end. name={name},status=ok")
+        return result
+
+    # Protected methods
 
     def _check_action(self, name):
         if name not in self._actions:
@@ -918,8 +918,12 @@ def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]
     # find all python files under the package path
     _log.info(f"Find all Python files. package-path={pkg_path}")
     for mod_path in pkg_path.glob("**/*.py"):
+        # skip test dirs
+        if "tests" in mod_path.parts:
+            continue
+        # get name
         nm = mod_path.name
-        # skip tests, __init__, and "protected" modules
+        # skip test files, __init__, and "protected" modules
         if nm.startswith("_") or nm.startswith("test_"):
             continue
         # compute module path
