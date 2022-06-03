@@ -74,7 +74,9 @@ for i, u in enumerate(unit_name_list):
         f.write("-" * len("Costing Method"))
         f.write(f"\n{list[count]}")
         count += 1
-        f.write(f"\nSee documentation for the zero-order costing package.\n")
+        f.write(
+            f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
+        )
         f.write("\n.. index::")
         f.write(f"\n{list[count]}\n")
         count += 1
