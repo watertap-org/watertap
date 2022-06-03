@@ -255,7 +255,7 @@ class CrystallizationData(UnitModelBlockData):
         )
 
         self.volume_suspension = Var(
-            initialize=0,
+            initialize=1,
             bounds=(0, None),
             units=pyunits.m**3,
             doc="Crystallizer minimum active volume, i.e. volume of liquid-solid suspension",

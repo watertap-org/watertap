@@ -15,7 +15,7 @@ Tests for zero-order coagulation/flocculation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -234,43 +234,8 @@ class TestCoagFlocZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                               : Value      : Fixed : Bounds
-                   Alum Dosage (mg/L) :     10.000 :  True : (0, None)
-                     Alum Flow (kg/s) : 0.00013000 : False : (0, None)
-              Floc Basin Volume (m^3) :     9.3600 : False : (None, None)
-                      Floc Power (kW) :    0.17971 : False : (None, None)
-            Floc Retention Time (min) :     12.000 :  True : (None, None)
-         Floc Velocity Gradient (1/s) :     80.000 :  True : (None, None)
-                Polymer Dosage (mg/L) :    0.10000 :  True : (0, None)
-                  Polymer Flow (kg/s) : 1.3000e-06 : False : (0, None)
-         Rapid Mix Basin Volume (m^3) :   0.071500 : False : (None, None)
-                 Rapid Mix Power (kW) :   0.057915 : False : (None, None)
-         Rapid Mix Retention Time (s) :     5.5000 :  True : (None, None)
-    Rapid Mix Velocity Gradient (1/s) :     900.00 :  True : (None, None)
-         Total Power Consumption (kW) :    0.23763 : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Outlet 
-    Volumetric Flowrate    0.013000 0.013000
-    Mass Concentration H2O   769.23   769.23
-    Mass Concentration tss   230.77   230.77
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

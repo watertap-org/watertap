@@ -18,3 +18,4 @@ Technical Reference
     :maxdepth: 1
 
     edb/index
+    ui/index

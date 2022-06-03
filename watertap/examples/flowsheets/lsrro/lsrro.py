@@ -109,9 +109,6 @@ def build(number_of_stages=2):
         pump.costing = UnitModelCostingBlock(
             default={"flowsheet_costing_block": m.fs.costing}
         )
-        m.fs.costing.cost_flow(
-            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity"
-        )
 
     # Add the equalizer pumps
     m.fs.BoosterPumps = Pump(
@@ -120,9 +117,6 @@ def build(number_of_stages=2):
     for pump in m.fs.BoosterPumps.values():
         pump.costing = UnitModelCostingBlock(
             default={"flowsheet_costing_block": m.fs.costing}
-        )
-        m.fs.costing.cost_flow(
-            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity"
         )
 
     # Add the stages ROs
@@ -149,12 +143,6 @@ def build(number_of_stages=2):
         default={
             "flowsheet_costing_block": m.fs.costing,
         }
-    )
-    m.fs.costing.cost_flow(
-        pyunits.convert(
-            m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW
-        ),
-        "electricity",
     )
 
     # additional variables or expressions

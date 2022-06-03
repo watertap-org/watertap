@@ -15,7 +15,6 @@ Tests for zero-order aeration basin model
 """
 import pytest
 
-from io import StringIO
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -160,36 +159,7 @@ class TestAerationBasinZO_no_default:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  17.810 : False : (0, None)
-               Electricity Intensity : 0.41227 :  True : (None, None)
-                Solute Removal [bod] : 0.70000 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                      Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.012000 0.010310  0.0016900
-    Mass Concentration H2O               833.33   969.93 4.7337e-07
-    Mass Concentration viruses_enteric   83.333  0.96993     585.80
-    Mass Concentration bod               83.333   29.098     414.20
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestAerationBasinZO_w_default_removal:
@@ -327,38 +297,7 @@ class TestAerationBasinZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  19.294 : False : (0, None)
-               Electricity Intensity : 0.41227 :  True : (None, None)
-                Solute Removal [bod] : 0.70000 :  True : (0, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                      Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.011310  0.0016900
-    Mass Concentration H2O               769.23   884.17 4.7337e-07
-    Mass Concentration viruses_enteric   76.923  0.88417     585.80
-    Mass Concentration bod               76.923   26.525     414.20
-    Mass Concentration foo               76.923   88.417 4.7337e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

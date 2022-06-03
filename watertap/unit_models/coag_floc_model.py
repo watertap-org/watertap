@@ -66,9 +66,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             domain=In([False]),
             default=False,
-            description="Dynamic model flag - must be False",
+            description="Dynamic model flag; must be False",
             doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. The filtration unit does not support dynamic
+    **default**: False. The filtration unit does not support dynamic
     behavior, thus this must be False.""",
         ),
     )
@@ -78,9 +78,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             default=False,
             domain=In([False]),
-            description="Holdup construction flag - must be False",
+            description="Holdup construction flag; must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
+    **default**: False. The filtration unit does not have defined volume, thus
     this must be False.""",
         ),
     )
@@ -171,10 +171,13 @@ class CoagulationFlocculationData(UnitModelBlockData):
         ConfigValue(
             default={},
             domain=dict,
-            description="""Dictionary of chemical additives used in coagulation process,
+            description="Specification of chemical additives used in coagulation process",
+            doc="""
+        A dict of chemical additives used in coagulation process
         along with their molecular weights, the moles of salt produced per mole of
         chemical added, and the molecular weights of the salt produced by the chemical
-        additive with the format of: \n
+        additive with the format of::
+
             {'chem_name_1':
                 {'parameter_data':
                     {
@@ -191,7 +194,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
                     'mw_salt': (value, units)
                     }
                 },
-            } """,
+            }
+
+        """,
         ),
     )
 

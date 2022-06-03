@@ -15,7 +15,7 @@ Tests for zero-order surface discharge model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -133,36 +133,8 @@ class TestSurfaceDischargeZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 60.174 : False : (0, None)
-         Pipe Diameter : 8.0000 :  True : (None, None)
-         Pipe Distance : 0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet  Outlet
-    Volumetric Flowrate        0.16330 0.16330
-    Mass Concentration H2O      734.84  734.84
-    Mass Concentration toc      6.1237  6.1237
-    Mass Concentration nitrate  12.247  12.247
-    Mass Concentration sulfate  1.8371  1.8371
-    Mass Concentration bar      244.95  244.95
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSurfaceDischargeZOsubtype:
@@ -263,36 +235,8 @@ class TestSurfaceDischargeZOsubtype:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 60.174 : False : (0, None)
-         Pipe Diameter : 8.0000 :  True : (None, None)
-         Pipe Distance : 70.000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet  Outlet
-    Volumetric Flowrate        0.16330 0.16330
-    Mass Concentration H2O      734.84  734.84
-    Mass Concentration toc      6.1237  6.1237
-    Mass Concentration nitrate  12.247  12.247
-    Mass Concentration sulfate  1.8371  1.8371
-    Mass Concentration bar      244.95  244.95
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

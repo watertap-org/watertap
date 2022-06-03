@@ -18,3 +18,4 @@ from .nanofiltration_ZO import NanofiltrationZO
 from .pressure_exchanger import PressureExchanger
 from .ion_exchange_0D import IonExchange0D
 from .pressure_changer import Pump, EnergyRecoveryDevice
+from .crystallizer import Crystallization
