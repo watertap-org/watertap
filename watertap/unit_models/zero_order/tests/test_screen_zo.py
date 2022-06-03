@@ -15,7 +15,7 @@ Tests for zero-order screen model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -173,38 +173,8 @@ class TestScreenZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 1.0000e-08 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-     Solute Removal [bod] :    0.30000 :  True : (0, None)
-     Solute Removal [foo] :     0.0000 :  True : (0, None)
-     Solute Removal [tss] :    0.60000 :  True : (0, None)
-           Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet  Treated  Byproduct
-    Volumetric Flowrate     1.0030  1.0020   0.0010000
-    Mass Concentration H2O  997.01  997.90      100.00
-    Mass Concentration bod 0.99701 0.69860      300.00
-    Mass Concentration tss 0.99701 0.39920      600.00
-    Mass Concentration foo 0.99701 0.99800  1.0000e-05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

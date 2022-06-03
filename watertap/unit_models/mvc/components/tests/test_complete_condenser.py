@@ -11,9 +11,8 @@
 #
 ###############################################################################
 import pytest
-from io import StringIO
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -57,26 +56,16 @@ def test_complete_condense():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.unit.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
+    assert pytest.approx(-2.4358e6, rel=1e-4) == value(m.fs.unit.control_volume.heat[0])
+    assert pytest.approx(1.0, rel=1e-4) == value(
+        m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(1e-10, rel=1e-4) == value(
+        m.fs.unit.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+    )
+    assert pytest.approx(5.0e4, rel=1e-4) == value(m.fs.unit.outlet.pressure[0])
 
-    Variables: 
+    m.fs.unit.report()
 
-    Key       : Value       : Fixed : Bounds
-    Heat duty : -2.4358e+06 : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                           Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08     1.0000
-    flow_mass_phase_comp ('Vap', 'H2O')     1.0000 1.0000e-10
-    temperature                             400.00     340.00
-    pressure                                50000.     50000.
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    perf_dict = m.fs.unit._get_performance_contents()
+    assert perf_dict == {"vars": {"Heat duty": m.fs.unit.control_volume.heat[0]}}

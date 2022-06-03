@@ -14,7 +14,7 @@
 Tests for zero-order evaporation pond model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -267,45 +267,8 @@ class TestEvaporationPondZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                        : Value      : Fixed : Bounds
-       Evaporation rate (mm/d) :     7.1673 : False : (None, None)
-             Pond area (acres) :     7176.3 : False : (None, None)
-         Pond dike height (ft) :     8.0000 :  True : (None, None)
-      Solute Removal [calcium] :    0.98000 :  True : (0, None)
-    Solute Removal [magnesium] :    0.98000 :  True : (0, None)
-      Solute Removal [nitrate] :    0.98000 :  True : (0, None)
-      Solute Removal [sulfate] :    0.98000 :  True : (0, None)
-          Solute Removal [tds] :    0.98000 :  True : (0, None)
-          Solute Removal [tss] :    0.98000 :  True : (0, None)
-                Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                  Inlet  Treated  Byproduct
-    Volumetric Flowrate          1.4110 0.028021   1.3830  
-    Mass Concentration H2O       7.0872 0.035688   7.2300  
-    Mass Concentration tds       87.172   87.791   87.160  
-    Mass Concentration magnesium 323.18   325.47   323.13  
-    Mass Concentration calcium   559.18   563.15   559.10  
-    Mass Concentration nitrate   7.0872   7.1375   7.0862  
-    Mass Concentration sulfate   7.7959   7.8513   7.7948  
-    Mass Concentration tss       8.5046   8.5650   8.5034  
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

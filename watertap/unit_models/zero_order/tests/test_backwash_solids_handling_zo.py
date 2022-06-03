@@ -14,7 +14,6 @@
 Tests for zero-order backwash solids handling model
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     Block,
@@ -153,38 +152,7 @@ class TestBackwashSolidsHandling_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                      : Value   : Fixed : Bounds
-          Electricity Demand :  3686.3 : False : (0, None)
-        Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [nitrate] : 0.95000 :  True : (0, None)
-        Solute Removal [toc] : 0.95000 :  True : (0, None)
-        Solute Removal [tss] : 0.95000 :  True : (0, None)
-              Water Recovery : 0.95000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet    Treated  Byproduct
-    Volumetric Flowrate          10.004    9.5011    0.50285
-    Mass Concentration H2O       999.60    999.88     994.33
-    Mass Concentration nitrate 0.099960 0.0052625     1.8892
-    Mass Concentration tss     0.099960 0.0052625     1.8892
-    Mass Concentration toc     0.099960 0.0052625     1.8892
-    Mass Concentration foo     0.099960   0.10525 1.9887e-08
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

@@ -14,7 +14,7 @@
 Tests for zero-order granular activated carbon model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -163,38 +163,8 @@ class TestGACZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value    : Fixed : Bounds
-             Activated Carbon Demand :   1983.6 : False : (0, None)
-                  Electricity Demand :   637.99 : False : (0, None)
-               Electricity Intensity : 0.017718 : False : (None, None)
-              Empty Bed Contact Time :  0.16667 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
-                Solute Removal [tss] :  0.97000 :  True : (0, None)
-                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet    Treated  Byproduct
-    Volumetric Flowrate                  10.002    9.6008  0.40117  
-    Mass Concentration H2O               999.80    999.91   997.08  
-    Mass Concentration tss             0.099980 0.0031247   2.4179  
-    Mass Concentration nonvolatile_toc 0.099980  0.083326  0.49854  
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestGACZO_w_default_removal:
@@ -322,39 +292,8 @@ class TestGACZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                              : Value    : Fixed : Bounds
-             Activated Carbon Demand :   1983.8 : False : (0, None)
-                  Electricity Demand :   638.05 : False : (0, None)
-               Electricity Intensity : 0.017718 : False : (None, None)
-              Empty Bed Contact Time :  0.16667 :  True : (0, None)
-                Solute Removal [foo] :   0.0000 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
-                Solute Removal [tss] :  0.97000 :  True : (0, None)
-                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet    Treated  Byproduct
-    Volumetric Flowrate                  10.003    9.6018    0.40117
-    Mass Concentration H2O               999.70    999.81     997.08
-    Mass Concentration tss             0.099970 0.0031244     2.4179
-    Mass Concentration nonvolatile_toc 0.099970  0.083317    0.49854
-    Mass Concentration foo             0.099970   0.10415 2.4927e-08
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

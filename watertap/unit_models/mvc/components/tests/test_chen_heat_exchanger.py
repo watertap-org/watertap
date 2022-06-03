@@ -12,9 +12,8 @@
 ###############################################################################
 import sys
 import pytest
-from io import StringIO
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -86,35 +85,24 @@ def test_heat_exchanger():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.unit.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
+    assert pytest.approx(89050.0, rel=1e-4) == value(m.fs.unit.heat_duty[0])
+    assert pytest.approx(1.0, rel=1e-4) == value(
+        m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(0.01, rel=1e-4) == value(
+        m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+    )
+    assert pytest.approx(328.69, rel=1e-4) == value(m.fs.unit.hot_outlet.temperature[0])
+    assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.hot_outlet.pressure[0])
+    assert pytest.approx(0.5, rel=1e-4) == value(
+        m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(0.01, rel=1e-4) == value(
+        m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+    )
+    assert pytest.approx(340.78, rel=1e-4) == value(
+        m.fs.unit.cold_outlet.temperature[0]
+    )
+    assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.cold_outlet.pressure[0])
 
-    Variables: 
-
-    Key            : Value  : Fixed : Bounds
-           HX Area : 5.0000 :  True : (0, None)
-    HX Coefficient : 1000.0 :  True : (0, None)
-         Heat Duty : 89050. : False : (None, None)
-
-    Expressions: 
-
-    Key             : Value
-    Delta T Driving : 17.810
-         Delta T In : 9.2239
-        Delta T Out : 30.689
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
-    flow_mass_phase_comp ('Liq', 'H2O')     1.0000      1.0000     0.50000     0.50000 
-    flow_mass_phase_comp ('Liq', 'TDS')   0.010000    0.010000    0.010000    0.010000 
-    temperature                             350.00      328.69      298.00      340.78 
-    pressure                            2.0000e+05  2.0000e+05  2.0000e+05  2.0000e+05 
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    m.fs.unit.report()

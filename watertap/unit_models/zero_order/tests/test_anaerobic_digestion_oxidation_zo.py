@@ -15,7 +15,6 @@ Tests for zero-order anaerobic digestion oxidation model
 """
 import pytest
 
-from io import StringIO
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -158,36 +157,7 @@ class TestAnaerobicDigestionOxidationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  6.4800 : False : (0, None)
-    Electricity Intensity : 0.15000 :  True : (None, None)
-     Solute Removal [bod] : 0.97000 :  True : (0, None)
-     Solute Removal [tss] : 0.75000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.012000 0.010279 0.0017210 
-    Mass Concentration H2O   833.33   972.76   0.58106 
-    Mass Concentration tss   83.333   24.321    435.79 
-    Mass Concentration bod   83.333   2.9186    563.63 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestAnaerobicDigestionOxidationZO_w_default_removal:
@@ -323,38 +293,7 @@ class TestAnaerobicDigestionOxidationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  7.0200 : False : (0, None)
-    Electricity Intensity : 0.15000 :  True : (None, None)
-     Solute Removal [bod] : 0.97000 :  True : (0, None)
-     Solute Removal [foo] :  0.0000 :  True : (0, None)
-     Solute Removal [tss] : 0.75000 :  True : (0, None)
-           Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.013000 0.011279  0.0017210
-    Mass Concentration H2O   769.23   886.51    0.58106
-    Mass Concentration tss   76.923   22.165     435.79
-    Mass Concentration bod   76.923   2.6598     563.63
-    Mass Concentration foo   76.923   88.660 4.6485e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():
