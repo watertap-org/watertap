@@ -224,3 +224,58 @@ class ParameterSweepWriter:
                 grp.create_dataset(key, data=output_dict[key])
 
         f.close()
+
+    def _write_to_csv(
+        self,
+        sweep_params,
+        global_values,
+        global_results_dict,
+        global_results_arr,
+        rank,
+        csv_results_file_name,
+        interpolate_nan_outputs,
+    ):
+
+        # Create the dataframe that is going to be written to a CSV
+        global_save_data = np.hstack((global_values, global_results_arr))
+
+        if rank == 0:
+            data_header = ",".join(itertools.chain(sweep_params))
+            for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+                data_header = ",".join([data_header, key])
+
+            if csv_results_file_name is not None:
+                # Write the CSV
+                np.savetxt(
+                    csv_results_file_name,
+                    global_save_data,
+                    header=data_header,
+                    delimiter=",",
+                    fmt="%.6e",
+                )
+
+                # If we want the interpolated output_list in CSV
+                if interpolate_nan_outputs:
+                    global_results_clean = _interp_nan_values(
+                        global_values, global_results_arr
+                    )
+                    global_save_data_clean = np.hstack(
+                        (global_values, global_results_clean)
+                    )
+
+                    head, tail = os.path.split(csv_results_file_name)
+
+                    if head == "":
+                        interp_file = "interpolated_%s" % (tail)
+                    else:
+                        interp_file = "%s/interpolated_%s" % (head, tail)
+
+                    np.savetxt(
+                        interp_file,
+                        global_save_data_clean,
+                        header=data_header,
+                        delimiter=",",
+                        fmt="%.6e",
+                    )
+
+        return global_save_data
