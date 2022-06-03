@@ -15,7 +15,7 @@ Tests for zero-order dissolved air flotation model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -170,38 +170,8 @@ class TestAirDissolvedFloatationZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value    : Fixed : Bounds
-                 Electricity Demand :   2.7000 : False : (0, None)
-              Electricity Intensity : 0.050000 :  True : (None, None)
-               Solute Removal [bod] :  0.95000 :  True : (0, None)
-    Solute Removal [oil_and_grease] :  0.95000 :  True : (0, None)
-               Solute Removal [tss] :  0.95000 :  True : (0, None)
-                     Water Recovery :  0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated  Byproduct
-    Volumetric Flowrate               0.015000 0.010249 0.0047510 
-    Mass Concentration H2O              666.67   975.61   0.21048 
-    Mass Concentration bod              66.667   4.8785    199.96 
-    Mass Concentration oil_and_grease   200.00   14.636    599.87 
-    Mass Concentration tss              66.667   4.8785    199.96 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestDissolvedAirFlotationZO_w_default_removal:
@@ -334,40 +304,8 @@ class TestDissolvedAirFlotationZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                             : Value    : Fixed : Bounds
-                 Electricity Demand :   2.8800 : False : (0, None)
-              Electricity Intensity : 0.050000 :  True : (None, None)
-               Solute Removal [bod] :  0.95000 :  True : (0, None)
-               Solute Removal [foo] :   0.0000 :  True : (0, None)
-    Solute Removal [oil_and_grease] :  0.95000 :  True : (0, None)
-               Solute Removal [tss] :  0.95000 :  True : (0, None)
-                     Water Recovery :  0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                        Inlet   Treated  Byproduct
-    Volumetric Flowrate               0.016000 0.011249  0.0047510
-    Mass Concentration H2O              625.00   888.88    0.21048
-    Mass Concentration bod              62.500   4.4448     199.96
-    Mass Concentration oil_and_grease   187.50   13.335     599.87
-    Mass Concentration tss              62.500   4.4448     199.96
-    Mass Concentration foo              62.500   88.897 1.6839e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

@@ -14,7 +14,7 @@
 Tests for zero-order CO2 addition model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -120,36 +120,8 @@ class TestCO2AdditionZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet   Outlet 
-    Volumetric Flowrate        0.034130 0.034130
-    Mass Concentration H2O       293.00   293.00
-    Mass Concentration toc       87.899   87.899
-    Mass Concentration tds       2.9300   2.9300
-    Mass Concentration eeq      0.87899  0.87899
-    Mass Concentration nitrate   117.20   117.20
-    Mass Concentration tss       498.10   498.10
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

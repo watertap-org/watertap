@@ -15,7 +15,7 @@ Tests for zero-order sludge tank model.
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -204,42 +204,8 @@ class TestSludgeTankZO_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                      : Value      : Fixed : Bounds
-          Electricity Demand : 8.0000e-10 : False : (0, None)
-       Electricity Intensity :     0.0000 :  True : (None, None)
-        Solute Removal [eeq] :     0.0000 :  True : (0, None)
-    Solute Removal [nitrate] :     0.0000 :  True : (0, None)
-        Solute Removal [tds] :     0.0000 :  True : (0, None)
-        Solute Removal [toc] :     0.0000 :  True : (0, None)
-        Solute Removal [tss] :    0.99000 :  True : (0, None)
-              Water Recovery :    0.99999 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet   Treated  Byproduct
-    Volumetric Flowrate        0.034130 0.017300   0.016830
-    Mass Concentration H2O       293.00   578.03  0.0059418
-    Mass Concentration toc       87.899   173.41 4.7534e-08
-    Mass Concentration tds       2.9300   5.7804 4.7534e-08
-    Mass Concentration eeq      0.87899   1.7341 4.7534e-08
-    Mass Concentration nitrate   117.20   231.22 4.7534e-08
-    Mass Concentration tss       498.10   9.8266     999.99
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestSludgeTankZO_w_o_default_removal:
@@ -364,34 +330,8 @@ class TestSludgeTankZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-     Solute Removal [tss] :    0.99000 :  True : (0, None)
-           Water Recovery :    0.99999 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.027000 0.010170  0.016830 
-    Mass Concentration H2O   370.37   983.28 0.0059418 
-    Mass Concentration tss   629.63   16.716    999.99 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

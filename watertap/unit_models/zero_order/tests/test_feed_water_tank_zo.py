@@ -15,7 +15,7 @@ Tests for zero-order feed water tank model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -110,32 +110,8 @@ class TestFeedWaterTankZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                             Inlet   Outlet 
-    Volumetric Flowrate    0.011000 0.011000
-    Mass Concentration H2O   909.09   909.09
-    Mass Concentration tss   90.909   90.909
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

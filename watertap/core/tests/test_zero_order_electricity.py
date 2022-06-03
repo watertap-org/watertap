@@ -14,7 +14,6 @@
 Tests for general zero-order property package
 """
 import pytest
-from io import StringIO
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -116,31 +115,7 @@ class TestConstantIntensity:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value  : Fixed : Bounds
-       Electricity Demand : 420.00 : False : (0, None)
-    Electricity Intensity : 10.000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-    Empty DataFrame
-    Columns: []
-    Index: []
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestPumpElectricity:
@@ -211,27 +186,4 @@ class TestPumpElectricity:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value    : Fixed : Bounds
-    Electricity Demand : 0.023248 : False : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-    Empty DataFrame
-    Columns: []
-    Index: []
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()

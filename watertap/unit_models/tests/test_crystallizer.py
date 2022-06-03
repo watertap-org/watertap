@@ -44,6 +44,10 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+from idaes.generic_models.costing import UnitModelCostingBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.costing.watertap_costing_package import CrystallizerCostType
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -286,6 +290,19 @@ class TestCrystallization:
 
     @pytest.mark.component
     def test_initialize(self, Crystallizer_frame):
+        # Add costing function, then initialize
+        m = Crystallizer_frame
+        m.fs.costing = WaterTAPCosting()
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {
+                    "cost_type": CrystallizerCostType.mass_basis
+                },
+            },
+        )
+        m.fs.costing.cost_process()
+
         initialization_tester(Crystallizer_frame)
 
     # @pytest.mark.component
@@ -401,9 +418,11 @@ class TestCrystallization:
         assert pytest.approx(1.619, rel=1e-3) == value(b.volume_suspension)
         # Residence time
         assert pytest.approx(1.0228, rel=1e-3) == value(b.t_res)
+        # Mass-basis costing
+        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
     @pytest.mark.component
-    def test_solution2(self, Crystallizer_frame):
+    def test_solution2_masscosting(self, Crystallizer_frame):
         m = Crystallizer_frame
         b = m.fs.unit
         b.crystal_growth_rate.fix(5e-8)
@@ -427,3 +446,44 @@ class TestCrystallization:
         assert pytest.approx(1.5427, rel=1e-3) == value(b.diameter_crystallizer)
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
+        # Mass-basis costing
+        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+
+    @pytest.mark.component
+    def test_solution2_volumecosting(self, Crystallizer_frame):
+        # Same problem as above, but different costing approach.
+        # Other results should remain the same.
+        m = Crystallizer_frame
+        b = m.fs.unit
+        b.crystal_growth_rate.fix(5e-8)
+        b.souders_brown_constant.fix(0.0244)
+        b.crystal_median_length.fix(0.4e-3)
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {
+                    "cost_type": CrystallizerCostType.volume_basis
+                },
+            },
+        )
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        # Test that report function works
+        b.report()
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Residence time
+        assert pytest.approx(
+            value(b.crystal_median_length / (3.67 * 3600 * b.crystal_growth_rate)),
+            rel=1e-3,
+        ) == value(b.t_res)
+        # Check crystallizer diameter
+        assert pytest.approx(1.5427, rel=1e-3) == value(b.diameter_crystallizer)
+        # Minimum active volume
+        assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
+        # Volume-basis costing
+        assert pytest.approx(199000, rel=1e-3) == value(m.fs.costing.total_capital_cost)

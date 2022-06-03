@@ -76,6 +76,10 @@ global_params = [
 
 @declare_process_block_class("ZeroOrderCosting")
 class ZeroOrderCostingData(FlowsheetCostingBlockData):
+    """
+    General costing package for zero-order processes.
+    """
+
     CONFIG = FlowsheetCostingBlockData.CONFIG()
     CONFIG.declare(
         "case_study_definition",
@@ -181,12 +185,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.land_cost = pyo.Var(
             initialize=0,
             units=self.base_currency,
-            doc="Land costs - based on aggregate captial costs",
+            doc="Land costs - based on aggregate capital costs",
         )
         self.working_capital = pyo.Var(
             initialize=0,
             units=self.base_currency,
-            doc="Working capital - based on aggregate captial costs",
+            doc="Working capital - based on aggregate capital costs",
         )
         self.total_capital_cost = pyo.Var(
             initialize=0, units=self.base_currency, doc="Total capital cost of process"
@@ -209,7 +213,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.salary_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Salary costs - based on aggregate captial costs",
+            doc="Salary costs - based on aggregate capital costs",
         )
         self.benefits_cost = pyo.Var(
             initialize=0,
@@ -219,17 +223,17 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.maintenance_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Maintenance costs - based on aggregate captial costs",
+            doc="Maintenance costs - based on aggregate capital costs",
         )
         self.laboratory_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Laboratory costs - based on aggregate captial costs",
+            doc="Laboratory costs - based on aggregate capital costs",
         )
         self.insurance_and_taxes_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Insurance and taxes costs - based on aggregate captial costs",
+            doc="Insurance and taxes costs - based on aggregate capital costs",
         )
         self.total_fixed_operating_cost = pyo.Var(
             initialize=0,
@@ -978,11 +982,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["specific_removal", "reactor_cost", "specific_air_flow", "blower_cost"],
+            ["reactor_cost", "blower_cost"],
         )
 
         # Add cost variable and constraint
@@ -994,17 +998,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         DCC_reactor = pyo.units.convert(
-            blk.unit_model.properties_treated[t0].flow_vol
-            * blk.unit_model.properties_treated[t0].conc_mass_comp[
-                "ammonium_as_nitrogen"
-            ]
-            / A
-            * B,
+            blk.unit_model.properties_treated[t0].flow_mass_comp["ammonium_as_nitrogen"]
+            / blk.unit_model.nitrogen_removal_rate
+            * A,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         DCC_blower = pyo.units.convert(
-            blk.unit_model.blower_size * C * D,
+            blk.unit_model.reactor_area * blk.unit_model.air_flow_rate[t0] * B,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
