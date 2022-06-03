@@ -734,9 +734,11 @@ class IonExchangeODData(UnitModelBlockData):
             prop_out = b.properties_out[0]
             prop_waste = b.properties_waste[0]
             return (
-                prop_in.flow_vol_phase["Liq"] * b.mass_in[j]
-                == prop_out.flow_vol_phase["Liq"] * b.mass_out[j]
-                + prop_waste.flow_vol_phase["Liq"] * b.mass_removed[j]
+                prop_in.flow_vol_phase["Liq"] * prop_in.conc_equiv_phase_comp["Liq", j]
+                == prop_out.flow_vol_phase["Liq"]
+                * prop_out.conc_equiv_phase_comp["Liq", j]
+                + prop_waste.flow_vol_phase["Liq"]
+                * prop_waste.conc_equiv_phase_comp["Liq", j]
             )
 
         @self.Constraint(ion_set, doc="Influent total mass of ion")
@@ -971,9 +973,13 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.t_breakthru, 1e-5)
 
-        # iscale.set_scaling_factor(
-        #     self.t_contact, 1E-3
-        # )
+        iscale.set_scaling_factor(self.t_waste, 1e-3)
+
+        iscale.set_scaling_factor(self.mass_in, 1e-3)
+
+        iscale.set_scaling_factor(self.mass_removed, 1e-3)
+
+        iscale.set_scaling_factor(self.mass_out, 1e-3)
 
         # iscale.set_scaling_factor(
         #     self.num_transfer_units, 1E-4
@@ -1057,45 +1063,45 @@ class IonExchangeODData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
 
         # TODO
-        # var_dict = {}
-        # var_dict["Breakthrough Time"] = self.t_breakthru
-        # var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
-        # var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
-        # var_dict["Resin Particle Diameter"] = self.resin_diam
-        # var_dict["Resin Bulk Density"] = self.resin_bulk_dens
-        # var_dict["Resin Particle Density"] = self.resin_particle_dens
-        # var_dict["Sphericity"] = self.sphericity
-        # for i in self.config.property_package.ion_set:
-        #     ion = i.replace('_', '')
-        #     keq = f'Resin Selecitivity for {ion}'
-        #     req = f'Resin Separation Factor for {ion}'
-        #     var_dict[keq] = self.K_eq[i]
-        #     var_dict[req] = self.R_eq[i]
-        # var_dict["Bed Volume"] = self.bed_vol
-        # var_dict["Bed Depth"] = self.bed_depth
-        # var_dict["Bed Diameter"] = self.bed_diam
-        # var_dict["Bed Porosity"] = self.bed_porosity
-        # var_dict["Number Transfer Units"] = self.num_transfer_units
-        # var_dict["Dimensionless Time"] = self.dimensionless_time
-        # var_dict["LH of Constant Pattern Sol'n."] = self.lh
-        # var_dict["Partition Ratio"] = self.partition_ratio
-        # for i in self.config.property_package.ion_set:
-        #     ion = i.replace('_', '')
-        #     kf = f'Fluid Mass Transfer Coeff. for {ion}'
-        #     kd = f'Rate Coeff. for {ion}'
-        #     var_dict[kf] = self.fluid_mass_transfer_coeff[i]
-        #     var_dict[kd] = self.rate_coeff[i]
-        # var_dict["Minimum bed velocity"] = self.vel_min
-        # var_dict["Bed Velocity"] = self.vel_bed
-        # var_dict["Holdup"] = self.holdup
-        # for i in self.config.property_package.ion_set:
-        #     ion = i.replace('_', '')
-        #     sc = f'Sc for {ion}'
-        #     sh = f'Sh for {ion}'
-        #     var_dict[sc] = self.Sc[i]
-        #     var_dict[sh] = self.Sh[i]
-        # var_dict["Re"] = self.Re
-        # var_dict["Pe (bed)"] = self.Re
-        # var_dict["Pe (particle)"] = self.Re
+        var_dict = {}
+        var_dict["Breakthrough Time"] = self.t_breakthru
+        var_dict["Total Resin Capacity [eq/L]"] = self.resin_max_capacity
+        var_dict["Usable Resin Capacity [eq/L]"] = self.resin_eq_capacity
+        var_dict["Resin Particle Diameter"] = self.resin_diam
+        var_dict["Resin Bulk Density"] = self.resin_bulk_dens
+        var_dict["Resin Particle Density"] = self.resin_particle_dens
+        var_dict["Sphericity"] = self.sphericity
+        for i in self.config.property_package.ion_set:
+            ion = i.replace("_", "")
+            keq = f"Resin Selecitivity for {ion}"
+            req = f"Resin Separation Factor for {ion}"
+            var_dict[keq] = self.K_eq[i]
+            var_dict[req] = self.R_eq[i]
+        var_dict["Bed Volume"] = self.bed_vol
+        var_dict["Bed Depth"] = self.bed_depth
+        var_dict["Bed Diameter"] = self.bed_diam
+        var_dict["Bed Porosity"] = self.bed_porosity
+        var_dict["Number Transfer Units"] = self.num_transfer_units
+        var_dict["Dimensionless Time"] = self.dimensionless_time
+        var_dict["LH of Constant Pattern Sol'n."] = self.lh
+        var_dict["Partition Ratio"] = self.partition_ratio
+        for i in self.config.property_package.ion_set:
+            ion = i.replace("_", "")
+            kf = f"Fluid Mass Transfer Coeff. for {ion}"
+            kd = f"Rate Coeff. for {ion}"
+            var_dict[kf] = self.fluid_mass_transfer_coeff[i]
+            var_dict[kd] = self.rate_coeff[i]
+        var_dict["Minimum bed velocity"] = self.vel_min
+        var_dict["Bed Velocity"] = self.vel_bed
+        var_dict["Holdup"] = self.holdup
+        for i in self.config.property_package.ion_set:
+            ion = i.replace("_", "")
+            sc = f"Sc for {ion}"
+            sh = f"Sh for {ion}"
+            var_dict[sc] = self.Sc[i]
+            var_dict[sh] = self.Sh[i]
+        var_dict["Re"] = self.Re
+        var_dict["Pe (bed)"] = self.Pe_bed
+        var_dict["Pe (particle)"] = self.Pe_p
 
         return {"vars": var_dict}
