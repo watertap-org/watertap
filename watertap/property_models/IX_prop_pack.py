@@ -370,7 +370,7 @@ class _IXStateBlock(StateBlock):
                     else:
                         self[k].conc_equiv_phase_comp["Liq", j].set_value(
                             self[k].conc_mol_phase_comp["Liq", j]
-                            / self[k].params.charge_comp[j]
+                            / abs(self[k].params.charge_comp[j])
                         )
                 if self[k].is_property_constructed("mole_frac_phase_comp"):
                     self[k].mole_frac_phase_comp["Liq", j].set_value(
@@ -383,7 +383,7 @@ class _IXStateBlock(StateBlock):
                 if self[k].is_property_constructed("flow_equiv_phase_comp"):
                     self[k].flow_equiv_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
-                        / self[k].params.charge_comp[j]
+                        / abs(self[k].params.charge_comp[j])
                     )
 
         # Check when the state vars are fixed already result in dof 0
@@ -626,10 +626,9 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_flow_equiv_phase_comp(b, j):
-            return (
-                b.flow_equiv_phase_comp["Liq", j]
-                == b.flow_mol_phase_comp["Liq", j] / b.params.charge_comp[j]
-            )
+            return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
+                "Liq", j
+            ] / abs(b.params.charge_comp[j])
 
         self.eq_flow_mol_phase_comp = Constraint(
             self.params.component_list, rule=rule_flow_equiv_phase_comp
@@ -691,10 +690,9 @@ class IXStateBlockData(StateBlockData):
                     b.conc_mol_phase_comp["Liq", j] == b.conc_equiv_phase_comp["Liq", j]
                 )
             else:
-                return (
-                    b.conc_mol_phase_comp["Liq", j]
-                    == b.conc_equiv_phase_comp["Liq", j] * b.params.charge_comp[j]
-                )
+                return b.conc_mol_phase_comp["Liq", j] == b.conc_equiv_phase_comp[
+                    "Liq", j
+                ] * abs(b.params.charge_comp[j])
 
         self.eq_conc_equiv_phase_comp = Constraint(
             self.params.component_list, rule=rule_conc_equiv_phase_comp
