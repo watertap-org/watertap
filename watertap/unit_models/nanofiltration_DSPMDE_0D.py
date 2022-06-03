@@ -611,6 +611,20 @@ class NanofiltrationData(UnitModelBlockData):
                 + b.pore_exit[t, x].conc_mol_phase_comp[p, j]
             ) / len(io_list)
 
+        # OBSERVED rejection of each ion ------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solute_set,
+            doc="Observed solute rejection",
+        )
+        def rejection_observed_phase_comp(b, t, p, j):
+            return (
+                1
+                - b.mixed_permeate[t].conc_mol_phase_comp[p, j]
+                / b.feed_side.properties_in[t].conc_mol_phase_comp[p, j]
+            )
+
         # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
         #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
         #  additional variable in the model that is independent of aforementioned parameters which are used in

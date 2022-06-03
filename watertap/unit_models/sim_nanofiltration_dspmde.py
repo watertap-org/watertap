@@ -200,17 +200,22 @@ if __name__ == "__main__":
         },
         outlvl=idaeslog.DEBUG,
     )
-    # deactivating the following constraint (eq_solute_solvent_flux: Js = Jw*permeate concentration)
+    # deactivating one of the following constraints
     # yields rejection rates in line with what
     # would be expected, which is the main surface-level issue with the model now:
-    # predicted rejection rates are erroneously close to 0 for ALL ions when the following constraint is active.
+    # predicted rejection rates are erroneously close to 0 for ALL ions when all of the following constraints are active.
+    # (1) Js = Jw*permeate concentration constraint
     # m.fs.unit.eq_solute_solvent_flux.deactivate()
+    # (2) Interfacial partitioning equation at the permeate, relating pore exit concentration to bulk permeate concentration
+    # m.fs.unit.eq_interfacial_partitioning_permeate.deactivate() # deactivating yields higher, more practical rejection rates
+    # (3) Js = diffusion term + convection term + electromigration term , i.e., Extended Nernst Planck equation representing solute flux in the membrane pore domain
+    # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
 
     # Use of Degeneracy Hunter for troubleshooting model.
-    m.fs.dummy_objective = Objective(expr=0)
+    # m.fs.dummy_objective = Objective(expr=0)
     # # solver.options['max_iter'] = 0
     # solver.solve(m, tee=True)
-    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
     # dh.check_residuals(tol=0.1)
     # assert False
     # ##############################################################################################################
@@ -234,7 +239,6 @@ if __name__ == "__main__":
     # # m.fs.unit.eq_mass_transfer_feed.activate()
     # # m.fs.unit.eq_permeate_production.deactivate()
     # # #
-    # # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
     # # m.fs.unit.eq_recovery_mol_phase_comp.activate()
     # # m.fs.unit.eq_pore_isothermal.activate()
     # # m.fs.unit.feed_side.eq_feed_interface_isothermal.activate()
@@ -252,7 +256,6 @@ if __name__ == "__main__":
     # # m.fs.unit.eq_area.activate()
     # #
     # # m.fs.unit.eq_interfacial_partitioning_feed.activate()
-    # # m.fs.unit.eq_interfacial_partitioning_permeate.deactivate() # deactivating yields higher, more practical rejection rates
     # # m.fs.unit.eq_electroneutrality_interface.activate()
     # # m.fs.unit.eq_electroneutrality_pore.activate()
     # # m.fs.unit.eq_electroneutrality_permeate.activate()
@@ -345,42 +348,44 @@ if __name__ == "__main__":
     # except:
     #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
     #     ids = dh.find_irreducible_degenerate_sets(verbose=True)
-# ####################################################################################
-#     import numpy as np
-#     # old_vars_list = [print(i) for i in list(variables_in_activated_equalities_set(m.fs.unit))]
-#     m.fs.del_component(m.fs.dummy_objective)
-#     for i, var in enumerate(m.fs.unit.component_data_objects(Var)):
-#         # if var not in old_vars_list:
-#         #     pass
-#         # else:
-#         if not i:
-#             old_vars = [var.name, value(var)]
-#         else:
-#             old_vars.append([var.name, value(var)])
-#     new_model = deepcopy(m)
-#     for i, var in enumerate(new_model.component_data_objects(Var)):
-#         # if var not in old_vars_list:
-#         #     pass
-#         # else:
-#         print(var)
-#         if i>0:
-#             new_model.fs.del_component(new_model.fs.dummy_objective)
-#
-#         new_model.fs.dummy_objective = Objective(expr=var, sense=-1)
-#         # try:
-#         #     results = solver.solve(new_model, tee=False)
-#         #     assert_optimal_termination(results)
-#         #     if not i:
-#         #         new_vars = [var.name, value(var)]
-#         #     else:
-#         #         new_vars.append([var.name, value(var)])
-#         #     del new_model
-#         #     new_model = deepcopy(m)
-#         # except:
-#         #     new_vars = ["NaN", "NaN"]
-#         #     if not i:
-#         #         new_vars = ["NaN", "NaN"]
-#         #     else:
-#         #         new_vars.append(["NaN", "NaN"])
-#         #     del new_model
-#         #     new_model = deepcopy(m)
+    # ####################################################################################
+    #     import numpy as np
+    #     # old_vars_list = [print(i) for i in list(variables_in_activated_equalities_set(m.fs.unit))]
+    #     m.fs.del_component(m.fs.dummy_objective)
+    #     for i, var in enumerate(m.fs.unit.component_data_objects(Var)):
+    #         # if var not in old_vars_list:
+    #         #     pass
+    #         # else:
+    #         if not i:
+    #             old_vars = [var.name, value(var)]
+    #         else:
+    #             old_vars.append([var.name, value(var)])
+    #     new_model = deepcopy(m)
+    #     for i, var in enumerate(new_model.component_data_objects(Var)):
+    #         # if var not in old_vars_list:
+    #         #     pass
+    #         # else:
+    #         print(var)
+    #         if i>0:
+    #             new_model.fs.del_component(new_model.fs.dummy_objective)
+    #
+    #         new_model.fs.dummy_objective = Objective(expr=var, sense=-1)
+    #         # try:
+    #         #     results = solver.solve(new_model, tee=False)
+    #         #     assert_optimal_termination(results)
+    #         #     if not i:
+    #         #         new_vars = [var.name, value(var)]
+    #         #     else:
+    #         #         new_vars.append([var.name, value(var)])
+    #         #     del new_model
+    #         #     new_model = deepcopy(m)
+    #         # except:
+    #         #     new_vars = ["NaN", "NaN"]
+    #         #     if not i:
+    #         #         new_vars = ["NaN", "NaN"]
+    #         #     else:
+    #         #         new_vars.append(["NaN", "NaN"])
+    #         #     del new_model
+    #         #     new_model = deepcopy(m)
+    b.rejection_intrinsic_phase_comp.display()
+    b.rejection_observed_phase_comp.display()
