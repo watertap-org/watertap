@@ -538,15 +538,11 @@ def display_costing(fs):
     )
     print(f"Levelized Cost of COD Removal: {LCOCR:.4f} $/kg")
     LCOH = value(
-        pyunits.convert(
-            fs.costing.LCOH, to_units=fs.costing.base_currency / pyunits.kg
-        )
+        pyunits.convert(fs.costing.LCOH, to_units=fs.costing.base_currency / pyunits.kg)
     )
     print(f"Levelized Cost of Hydrogen: {LCOH:.4f} $/kg")
     LCOM = value(
-        pyunits.convert(
-            fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg
-        )
+        pyunits.convert(fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg)
     )
     print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
 

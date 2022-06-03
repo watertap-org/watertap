@@ -88,8 +88,12 @@ class FeedZOData(FeedData):
             self.flowsheet().time, comp_list, rule=rule_C
         )
         # For the UI
-        export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
-                         variables=["flow_vol", "conc_mass_comp"])
+        export_variables(
+            self,
+            name="Feed Z0",
+            desc="Zero-Order feed block",
+            variables=["flow_vol", "conc_mass_comp"],
+        )
 
     def load_feed_data_from_database(self, overwrite=False):
         """

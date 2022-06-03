@@ -130,12 +130,17 @@ class MetabZOData(ZeroOrderBaseData):
         self._perf_var_dict["Electricity Demand"] = self.electricity
         self._perf_var_dict["Thermal Energy Demand"] = self.heat
 
-        export_variables(self, name="METAB Z0",
-                         desc="Zero-Order model for a METAB bioreactor",
-                         variables=["volume",
-                                "hydraulic_retention_time",
-                                "electricity",
-                                "heat",
-                                "energy_electric_mixer_vol",
-                                "energy_electric_vacuum_flow_vol_byproduct",
-                                "energy_thermal_flow_vol_inlet"])
+        export_variables(
+            self,
+            name="METAB Z0",
+            desc="Zero-Order model for a METAB bioreactor",
+            variables=[
+                "volume",
+                "hydraulic_retention_time",
+                "electricity",
+                "heat",
+                "energy_electric_mixer_vol",
+                "energy_electric_vacuum_flow_vol_byproduct",
+                "energy_thermal_flow_vol_inlet",
+            ],
+        )

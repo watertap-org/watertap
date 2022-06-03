@@ -32,7 +32,6 @@ class MockSubBlock2:
         return {"subblock2-1": getattr(self, "subblock2_1")}
 
 
-
 class MockSubBlock3:
     name = "subblock3"
     doc = "sub-block 3"
@@ -160,7 +159,6 @@ def test_block_interface_constructor(mock_block):
             mock_block, build_options(display_name=disp, description=desc)
         )
         obj.dict()  # force looking at contents
-
 
 
 @pytest.mark.unit
@@ -434,9 +432,7 @@ def test_load_save_parameters(mock_block, tmpdir):
 def test_find_flowsheet_interfaces_simpleconfig():
     interfaces1 = list(find_flowsheet_interfaces())
     assert len(interfaces1) > 0
-    interfaces2 = list(find_flowsheet_interfaces(config={
-        "packages": ["watertap"]
-    }))
+    interfaces2 = list(find_flowsheet_interfaces(config={"packages": ["watertap"]}))
     assert interfaces2 == interfaces1
 
 
@@ -458,4 +454,3 @@ def test_flowsheet_display_name(mock_block):
     fsi.set_block(mock_block)
     assert fsi.display_name == dname
     assert fsi.description == desc
-

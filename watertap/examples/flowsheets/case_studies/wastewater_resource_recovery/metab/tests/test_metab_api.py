@@ -2,8 +2,9 @@
 Tests for meta_api module
 """
 import pytest
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab \
-    import metab_api
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
+    metab_api,
+)
 
 WA = metab_api.WorkflowActions
 

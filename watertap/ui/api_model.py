@@ -11,7 +11,7 @@ class IndexedValue(BaseModel):
 
 
 class ScalarValue(BaseModel):
-    value: Union[float, str]   # do not change order!
+    value: Union[float, str]  # do not change order!
 
 
 class Variable(BaseModel):
@@ -37,5 +37,3 @@ class Block(BaseModel):
     variables: Dict[str, Variable] = {}
     blocks: Dict[str, "Block"] = {}
     meta: BlockMeta = BlockMeta()
-
-

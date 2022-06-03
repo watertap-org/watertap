@@ -25,4 +25,3 @@ def open_file_or_stream(fos, attr="tell", **kwargs) -> IO:
     else:
         output = open(fos, **kwargs)
     return output
-
