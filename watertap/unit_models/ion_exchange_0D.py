@@ -307,7 +307,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.t_breakthru = Var(
-            initialize=2004642,
+            initialize=1e7,
             # bounds=(0, 4.3E6),  #DOW, ~7 weeks max breakthru time
             bounds=(0, None),
             units=pyunits.s,
@@ -319,6 +319,13 @@ class IonExchangeODData(UnitModelBlockData):
             # bounds=(300, 1500),
             units=pyunits.s,
             doc="Contact time [s]",
+        )
+
+        self.t_waste = Var(
+            initialize=12,
+            bounds=(1, None),
+            units=pyunits.hr,
+            doc="Regen + Rinse + Backwash time [s]",
         )
 
         self.num_transfer_units = Var(
@@ -470,13 +477,6 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=12,
             bounds=(1, None),
             units=pyunits.dimensionless,
-            doc="BV to rinse/backwash/regen",
-        )
-
-        self.t_waste = Var(
-            initialize=12,
-            bounds=(1, None),
-            units=pyunits.hr,
             doc="BV to rinse/backwash/regen",
         )
 
@@ -799,7 +799,7 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_temp_conservation(b):
             return b.properties_in[0].temperature == b.properties_out[0].temperature
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
