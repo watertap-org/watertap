@@ -109,17 +109,11 @@ panels_add_bootstrap_css = False
 
 def run_apidoc(*args):
     # NOTE the env var must be set before importing apidoc, or the options will have no effect
-    #os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
+    # os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
     os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance,noindex"
     from sphinx.ext import apidoc
 
-    args = [
-        "../watertap",
-        "../watertap/*tests",
-        "-o",
-        "apidoc",
-        "--force"
-    ]
+    args = ["../watertap", "../watertap/*tests", "-o", "apidoc", "--force"]
     apidoc.main(args)
 
 
