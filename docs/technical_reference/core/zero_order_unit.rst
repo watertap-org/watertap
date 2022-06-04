@@ -1,3 +1,5 @@
+.. _ZeroOrderBaseData:
+
 Zero Order Unit Model Base Class
 ================================
 
@@ -11,7 +13,7 @@ The zero-order unit model base class is intended to form the basis for a library
 Usage
 -----
 
-Ther ZeroOrderBaseData class contains no variables or constraints of its own - rather it is intended to be used as the starting point for construction of zero-order type models for specific unit operations.
+The ZeroOrderBaseData class contains no variables or constraints of its own - rather it is intended to be used as the starting point for construction of zero-order type models for specific unit operations.
 
 The code below shows an outline of how the ZeroOrderBaseData class is intended to be used to develop custom zero-order type models.
 
