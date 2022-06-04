@@ -238,36 +238,34 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # Crystallizer operating cost information from literature
         self.crystallizer_steam_unit_cost = pyo.Var(
-            initialize=0.004, 
-            units=pyo.units.USD_2018 / (pyo.units.meter**3), 
+            initialize=0.004,
+            units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
         )
 
         self.crystallizer_electricity_unit_cost = pyo.Var(
-            initialize=0.065, 
-            units=pyo.units.USD_2018/pyo.units.kWh, 
+            initialize=0.065,
+            units=pyo.units.USD_2018 / pyo.units.kWh,
             doc="Electricity cost, Panagopoulos (2019)",
         )
 
-
         self.crystallizer_steam_pressure = pyo.Var(
-            initialize=3, 
-            units=pyo.units.bar, 
+            initialize=3,
+            units=pyo.units.bar,
             doc="Steam pressure (gauge) for crystallizer heating: 3 bar default based on Dutta example",
         )
 
         self.crystallizer_efficiency_pump = pyo.Var(
-            initialize=0.7, 
-            units=pyo.units.dimensionless, 
+            initialize=0.7,
+            units=pyo.units.dimensionless,
             doc="Crystallizer pump efficiency - assumed",
         )
 
         self.crystallizer_pump_head_height = pyo.Var(
-            initialize=1, 
-            units=pyo.units.m, 
+            initialize=1,
+            units=pyo.units.m,
             doc="Crystallizer pump head height -  assumed, unvalidated",
         )
-
 
         # fix the parameters
         for var in self.component_objects(pyo.Var):
@@ -762,6 +760,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
         Function for costing the FC crystallizer by the mass flow of produced crystals.
+        The operating cost model assumes that heat is supplied via condensation of saturated steam (see Dutta et al.)
 
         Args:
             cost_type - Option for crystallizer cost function type - volume or mass basis
@@ -891,7 +890,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             -9.48654 * pyo.units.dimensionless,
         ]
         psat = (
-            pyo.units.convert(pressure_sat, to_units=pyo.units.kPa) + 101.325 * pyo.units.kPa
+            pyo.units.convert(pressure_sat, to_units=pyo.units.kPa)
+            + 101.325 * pyo.units.kPa
         )
         temperature_sat = tsat_constants[0] + tsat_constants[1] / (
             pyo.log(psat / tsat_constants[2]) + tsat_constants[3]
