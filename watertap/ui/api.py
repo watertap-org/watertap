@@ -158,13 +158,13 @@ class BlockInterface:
             info["name"] = block.name
         if not info.get("meta", None):
             info["meta"] = model.BlockMeta()
+        if info.get("variables", None) is None:
+            info["variables"] = []
 
         _log.debug(f"create block from info. dict={info}")
         block_info = model.Block(**info)
 
         # set optional values from values in self._block
-        if block_info.variables is None:
-            block_info.variables = []
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
@@ -192,11 +192,6 @@ class BlockInterface:
     @property
     def description(self):
         return self._fs_block().description
-
-    # def dict(self):
-    #     if self._block_info is None:
-    #         return {}
-    #     return self._block_info.dict()
 
     def _fs_block(self):
         if self._block_info is None:
@@ -316,7 +311,7 @@ class BlockInterface:
             _log.debug(f"load_from:end. status=error")
             raise ValueError(
                 f"Block must define FlowsheetInterface using "
-                f"``set_block_interface()`` during construction. obj={fs.block}"
+                f"``set_block_interface()`` during construction"
             )
         ui.load(file_or_stream)
         _log.debug(f"load_from:end. status=ok")
@@ -357,13 +352,8 @@ class BlockInterface:
 
         self._var_diff = FlowsheetDiff(missing={}, extra={})
 
-        # There shuold be one root block at top-level, which we will use.
-        # This is because the very top-level block is anonymous and used to
-        # hold flowsheet-level metadata.
-        root_keys = list(block_info.blocks.keys())
-        if len(root_keys) != 1:
-            _log.error(f"Only one root block expected. blocks={root_keys}")
-        root_block_name = root_keys[0]
+        # There should be one root block at top-level, which we will use.
+        root_block_name = block_info.get_sole_subblock()
         root_block_info = block_info.blocks[root_block_name]
 
         _log.debug(f"Update load. root-block={root_block_name}")

@@ -12,6 +12,7 @@ import pytest
 # from pyomo.environ import units as pyunits
 from pyomo.environ import Var, Set, Reals
 from watertap.ui.api import *
+from watertap.ui.api_util import flatten_tree
 
 # Mocking and fixtures
 
@@ -81,7 +82,9 @@ def build_options(
         opts["display_name"] = "foo"
     if description:
         opts["description"] = "This is a foo"
-    if variables >= 0:
+    if variables is None:
+        opts["variables"] = None
+    elif variables >= 0:
         v = {}
         for i in range(min(variables, 2)):
             name = "foo" if i == 0 else "bar"
@@ -95,6 +98,45 @@ def build_options(
 
 # Tests
 # -----
+
+
+@pytest.mark.unit
+def test_no_block():
+    b = BlockInterface(None)
+    with pytest.raises(ValueError):
+        _ = b.description
+    with pytest.raises(ValueError):
+        _ = b.dict()
+
+
+class HasDict:
+    def __init__(self, value):
+        self._d = value
+
+    def dict(self):
+        return self._d
+
+
+@pytest.mark.unit
+def test_eq():
+    b1 = BlockInterface(None)
+    b2 = BlockInterface(None)
+    with pytest.raises(ValueError):
+        _ = b1 == b2
+
+    block_1 = Block(name="hello")
+    block_2 = Block(name="hello")
+    b1.set_block(block_1)
+    b2.set_block(block_2)
+    assert b1 == b2
+
+    pseudo = HasDict({})
+    assert b1 != pseudo
+
+    pseudo = HasDict(b1.dict())
+    assert b1 == pseudo
+
+    assert b1 != "hello"
 
 
 @pytest.mark.unit
@@ -159,6 +201,8 @@ def test_block_interface_constructor(mock_block):
             mock_block, build_options(display_name=disp, description=desc)
         )
         obj.dict()  # force looking at contents
+    obj = BlockInterface(mock_block, build_options(variables=None))
+    obj.dict()
 
 
 @pytest.mark.unit
@@ -218,9 +262,15 @@ def test_flowsheet_interface_load(mock_block, tmpdir):
     obj.set_block(mock_block)
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
-    # print(f"@@ saved: {json.dumps(obj.dict(), indent=2)}")
+
     obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
     assert obj2 == obj
+
+    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, obj)
+    assert obj2 == obj
+
+    with pytest.raises(ValueError):
+        _ = FlowsheetInterface.load_from(Path(tmpdir) / filename, None)
 
 
 @pytest.mark.unit
@@ -340,6 +390,9 @@ def add_action_eat(**kwargs):
 
 def test_flowsheet_interface_parameters(mock_block):
     fsi = FlowsheetInterface({"display_name": "Add parameter test"})
+    # must set block first
+    with pytest.raises(ValueError):
+        fsi.add_parameter("p1")
     fsi.set_block(mock_block)
     # add some params
     fsi.add_parameter("p1", choices=["1", "2", "3"])
@@ -347,6 +400,11 @@ def test_flowsheet_interface_parameters(mock_block):
     fsi.add_parameter("p3", vtype=str)
     fsi.add_parameter("p4", vtype=float)
     fsi.add_parameter("p5", vtype=int)
+    # bad type
+    with pytest.raises(ValueError):
+        fsi.add_parameter("px", vtype="foo")
+    with pytest.raises(ValueError):
+        fsi.add_parameter("px", vtype=dict)
     # initial value
     assert fsi.get_parameter("p1") is None
     # conflicting add constraint
@@ -447,6 +505,7 @@ def test_find_flowsheet_interfaces_fileconfig(tmpdir):
     assert interfaces2 == interfaces1
 
 
+@pytest.mark.unit
 def test_flowsheet_display_name(mock_block):
     dname = "display"
     desc = "description"
@@ -454,3 +513,106 @@ def test_flowsheet_display_name(mock_block):
     fsi.set_block(mock_block)
     assert fsi.display_name == dname
     assert fsi.description == desc
+
+
+@pytest.mark.unit
+def test_block_update(mock_block):
+    b = BlockInterface(mock_block)
+    # too few blocks
+    with pytest.raises(ValueError):
+        b.update({"garbage": "yes"})
+    # bad type for blocks
+    with pytest.raises(ValueError):
+        b.update({"blocks": [1, 2, 3]})
+    # too many blocks
+    with pytest.raises(ValueError):
+        b.update({"blocks": {"a": {}, "b": {}}})
+
+
+@pytest.mark.unit
+def test_get_schema():
+    _ = BlockInterface.get_schema()
+
+
+def generate_tree(depth):
+    import random
+
+    flattened = []
+
+    def generate_level(parent, path, num_children, ndepth, p_vars=0.5):
+        for i in range(num_children):
+            name = "".join(["abcpqrxyz"[random.randint(0, 8)] for j in range(8)])
+            name = f"{ndepth}:{name}"
+            full_name = path + "." + name
+            b = {
+                "category": "default",
+                "display_name": f"{name} block",
+                "description": f"{name} block description",
+                "blocks": {},
+                "variables": {},
+            }
+            if random.random() <= p_vars:
+                num_vars = random.randint(1, 4)
+                for vnum in range(1, num_vars + 1):
+                    var_name = f"{name}_v{vnum}"
+                    b["variables"][var_name] = {
+                        "value": 123,
+                        "display_name": f"v{vnum} display",
+                        "description": f"v{vnum} description",
+                        "units": "g",
+                        "readonly": False,
+                    }
+                b["meta"] = {
+                    "parameters": {f"{name}_param": {"range": [1, 10]}},
+                    "user-defined": "value",
+                }
+            parent["blocks"][name] = b
+
+            fb = b.copy()
+            del fb["blocks"]
+            flattened.append((full_name, fb))
+
+            if ndepth > 0:
+                b_children = random.randint(2, 5)
+                generate_level(b, full_name, b_children, ndepth - 1)
+
+    root = {
+        "blocks": {
+            "Flowsheet": {
+                "category": "default",
+                "display_name": f"Flowsheet block",
+                "description": f"Flowsheet description",
+                "blocks": {},
+                "variables": {},
+            }
+        },
+    }
+
+    generate_level(root["blocks"]["Flowsheet"], "Flowsheet", 3, depth - 1)
+
+    return root, flattened
+
+
+@pytest.mark.unit
+def test_flatten_tree():
+    from operator import itemgetter
+
+    tree, ftree = generate_tree(depth=2)
+    ftree.sort(key=itemgetter(0))
+    assert ftree == flatten_tree(tree, tuple_keys=False)
+
+    # tuple-keys should have same result
+    ft2 = flatten_tree(tree, tuple_keys=True)
+    # turn list keys back into strings
+    ft2_c = [(".".join(x[0]), x[1]) for x in ft2]
+    assert ftree == ft2_c
+
+    # 'fast' variation: no copy, no sort
+    tree, ftree = generate_tree(depth=2)
+    ft_keys = {item[0] for item in ftree}
+    ft = flatten_tree(tree, copy_value=False, sort=False, tuple_keys=True)
+    # make sure all keys match
+    assert len(ft) == len(ftree)
+    for item in ft:
+        key = ".".join(item[0])
+        assert key in ft_keys

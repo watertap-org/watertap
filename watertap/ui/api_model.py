@@ -1,8 +1,11 @@
 """
 Model for the data that is created and consumed by the user interface API.
 """
+import logging
 from typing import List, Union, Optional, Dict, Tuple, Type
 from pydantic import BaseModel, Extra
+
+_log = logging.getLogger(__name__)
 
 
 class IndexedValue(BaseModel):
@@ -37,3 +40,10 @@ class Block(BaseModel):
     variables: Dict[str, Variable] = {}
     blocks: Dict[str, "Block"] = {}
     meta: BlockMeta = BlockMeta()
+
+    def get_sole_subblock(self):
+        keys = list(self.blocks.keys())
+        if len(keys) != 1:
+            adj = "many" if len(keys) > 1 else "few"
+            raise ValueError(f"Too {adj} sub-blocks. expected=1 got={len(keys)}")
+        return keys[0]

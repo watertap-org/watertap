@@ -1,8 +1,9 @@
 """
 Utility functions for the ``api`` module.
 """
+from operator import itemgetter
 from pathlib import Path
-from typing import IO
+from typing import IO, Dict, List, Tuple, Union
 
 
 def open_file_or_stream(fos, attr="tell", **kwargs) -> IO:
@@ -25,3 +26,54 @@ def open_file_or_stream(fos, attr="tell", **kwargs) -> IO:
     else:
         output = open(fos, **kwargs)
     return output
+
+
+def flatten_tree(
+    tree: Dict, tuple_keys: bool = False, copy_value: bool = True, sort: bool = True
+) -> List[Tuple[Union[List[str], str], Dict]]:
+    """Flatten a tree of blocks.
+
+    Args:
+        tree: The tree of blocks. See :mod:`watertap.ui.api` for details on the
+          format. Should start like: ``{ "blocks": { "Flowsheet": { ... } } }``
+        tuple_keys: Controls whether the flattened keys should be a tuple of
+         strings or a single dotted string.
+        copy_value: If True, make a copy of the value and remove the "blocks"
+          from it. Otherwise, the values are references to the input.
+        sort: If True, sort the result by keys before returning it.
+
+    Returns:
+        List of tuples of (key, value), where key is the full path to the block and
+        the value is the value of the block.
+    """
+    flattened = []
+
+    def flatten_subtree(path, subtree):
+        blocks = subtree["blocks"]
+        for name, val in blocks.items():
+            if tuple_keys:
+                full_name = tuple(list(path) + [name])
+            else:
+                full_name = f"{path}.{name}"
+            if copy_value:
+                item = val.copy()
+                del item["blocks"]
+            else:
+                item = val
+            flattened.append((full_name, item))
+            flatten_subtree(full_name, val)
+
+    # start with first (only) block at first level
+    root_blocks = tree["blocks"]
+    root_key = list(root_blocks.keys())[0]
+    root_block = root_blocks[root_key]
+    if tuple_keys:
+        flatten_subtree((root_key,), root_block)
+    else:
+        flatten_subtree(root_key, root_block)
+
+    # sort by full path to item
+    if sort:
+        flattened.sort(key=itemgetter(0))
+
+    return flattened
