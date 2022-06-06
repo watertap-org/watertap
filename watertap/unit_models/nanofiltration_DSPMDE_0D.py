@@ -350,12 +350,10 @@ class NanofiltrationData(UnitModelBlockData):
             io_list,
             phase_list,
             solvent_solute_set,
-            initialize=(
-                lambda b, t, x, p, j: 2.78e-2 if j in solvent_set else 4e-6
-            ),  # TODO: divided mass solvent by .018 and solute by .25
-            bounds=lambda b, t, x, p, j: (5e-5, 1.5)
-            if j in solvent_set
-            else (4e-12, 1e-2),  # TODO: keep checking these
+            initialize=(lambda b, t, x, p, j: 2.78e-2 if j in solvent_set else 4e-6),
+            # bounds=lambda b, t, x, p, j: (0, 1.5)
+            # if j in solvent_set
+            # else (0, 1e-2),  # TODO: keep checking these
             domain=NonNegativeReals,
             units=units_meta("amount")
             * units_meta("length") ** -2
@@ -505,7 +503,7 @@ class NanofiltrationData(UnitModelBlockData):
                 self.io_list,
                 solute_set,
                 initialize=1e5,
-                bounds=(5e3, None),  # TODO:unsure of value ranges at the moment
+                # bounds=(5e3, None),  # TODO:unsure of value ranges at the moment
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Peclet number at inlet and outlet",
@@ -1083,6 +1081,22 @@ class NanofiltrationData(UnitModelBlockData):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # Experimental constraint
+        @self.feed_side.Constraint(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Equal volumetric flow for bulk feed and interface",
+        )
+        def eq_equal_flow_vol_feed_interface(b, t, x):
+            if not x:
+                bulk = b.properties_in[t]
+            else:
+                bulk = b.properties_out[t]
+            return (
+                bulk.flow_vol_phase["Liq"]
+                == b.properties_interface[t, x].flow_vol_phase["Liq"]
+            )
+
+        # Experimental constraint
         @self.Constraint(
             self.flowsheet().config.time,
             io_list,
@@ -1104,6 +1118,25 @@ class NanofiltrationData(UnitModelBlockData):
             return (
                 b.permeate_side[t, x].flow_vol_phase["Liq"]
                 == b.mixed_permeate[t].flow_vol_phase["Liq"]
+            )
+
+        # Experimental constraint
+        @self.Constraint(
+            self.flowsheet().config.time,
+            io_list,
+            solvent_solute_set,
+            doc="Mass fraction of water in permeate related to water flux",
+        )
+        def eq_mass_frac_permeate(b, t, x, j):
+            return (
+                b.permeate_side[t, x].mass_frac_phase_comp["Liq", j]
+                * sum(
+                    b.flux_mol_phase_comp[t, x, "Liq", jj]
+                    * b.config.property_package.mw_comp[jj]
+                    for jj in b.config.property_package.component_list
+                )
+                == self.flux_mol_phase_comp[t, x, "Liq", j]
+                * b.config.property_package.mw_comp[j]
             )
 
         # Experimental constraint: Electroneutrality of final permeate

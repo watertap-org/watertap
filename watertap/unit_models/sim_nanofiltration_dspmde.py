@@ -166,13 +166,13 @@ if __name__ == "__main__":
     m.fs.unit.spacer_porosity.fix(0.85)
     m.fs.unit.spacer_mixing_efficiency.fix()
     m.fs.unit.spacer_mixing_length.fix()
-    m.fs.unit.channel_height.fix(5e-4)
+    m.fs.unit.channel_height.fix(1e-3)
 
-    # m.fs.unit.velocity[0, 0].fix(0.1)
+    m.fs.unit.velocity[0, 0].fix(0.25)
 
-    m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.50)
-    m.fs.unit.width.fix(1.249)
-    # m.fs.unit.area.fix(50)
+    # m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.50)
+    # m.fs.unit.width.fix(1.249)
+    m.fs.unit.area.fix(50)
 
     # m.fs.unit.flux_vol_water_avg.fix(1.67e-06)
     # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
@@ -185,7 +185,8 @@ if __name__ == "__main__":
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
     )
-
+    # m.fs.unit.eq_solute_solvent_flux.deactivate()
+    m.fs.unit.eq_mass_frac_permeate.deactivate()
     iscale.calculate_scaling_factors(m.fs.unit)
 
     print(
@@ -213,10 +214,10 @@ if __name__ == "__main__":
     # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
 
     # Use of Degeneracy Hunter for troubleshooting model.
-    # m.fs.dummy_objective = Objective(expr=0)
-    # # solver.options['max_iter'] = 0
+    m.fs.dummy_objective = Objective(expr=0)
+    # solver.options['max_iter'] = 0
     # solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
     # dh.check_residuals(tol=0.1)
     # assert False
     # ##############################################################################################################
