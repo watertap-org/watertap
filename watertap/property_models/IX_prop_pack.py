@@ -101,6 +101,16 @@ class IXParameterData(PhysicalParameterBlock):
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
     )
 
+    CONFIG.declare(
+        "reference_cation",
+        ConfigValue(default="H_+", domain=str, description="Reference Cation"),
+    )
+
+    CONFIG.declare(
+        "reference_anion",
+        ConfigValue(default="OH_-", domain=str, description="Reference Anion"),
+    )
+
     def build(self):
         """
         Callable method for Block construction.
