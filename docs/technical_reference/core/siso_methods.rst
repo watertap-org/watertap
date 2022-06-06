@@ -1,3 +1,5 @@
+.. _siso_methods:
+
 Single Inlet - Single Outlet Helper Methods
 ===========================================
 
