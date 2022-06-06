@@ -271,8 +271,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.costing = WaterTAPCosting()
 
         # Set costing var
-        m.fs.costing.electrodialysis_membrane_cost.set_value(60)
-        m.fs.costing.factor_membrane_replacement.set_value(0.2)
+        m.fs.costing.electrodialysis_total_membrane_cost.set_value(86)
+        m.fs.costing.factor_electrodialysis_membrane_housing_replacement.set_value(0.2)
 
         m.fs.unit.costing = UnitModelCostingBlock(
             default={
@@ -291,19 +291,13 @@ class TestElectrodialysisVoltageConst:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        expected_capex = (
-            blk.cell_pair_num
-            * blk.cell_width
-            * blk.cell_length
-            * m.fs.costing.electrodialysis_membrane_cost
-        )
-        assert pytest.approx(value(expected_capex), rel=1e-3) == value(
+        assert pytest.approx(388.6800, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(12.324, rel=1e-3) == value(
+        assert pytest.approx(46.70975, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(94.800, rel=1e-3) == value(
+        assert pytest.approx(777.3600, rel=1e-3) == value(
             m.fs.costing.total_investment_cost
         )
 
