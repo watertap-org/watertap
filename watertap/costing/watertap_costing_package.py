@@ -735,27 +735,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "CaOH2"
         )
 
-    # @staticmethod
-    # def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
-    #     """
-    #     Function for costing the FC crystallizer by the mass flow of produced crystals.
-
-    #     Args:
-    #         cost_type - Option for crystallizer cost function type - volume or mass basis
-    #     """
-    #     if (
-    #         cost_type == CrystallizerCostType.default
-    #         or cost_type == CrystallizerCostType.mass_basis
-    #     ):
-    #         WaterTAPCostingData.cost_crystallizer_by_crystal_mass(blk)
-    #     elif cost_type == CrystallizerCostType.volume_basis:
-    #         WaterTAPCostingData.cost_crystallizer_by_volume(blk)
-    #     else:
-    #         raise ConfigurationError(
-    #             f"{blk.unit_model.name} received invalid argument for cost_type:"
-    #             f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
-    #         )
-
     @staticmethod
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
