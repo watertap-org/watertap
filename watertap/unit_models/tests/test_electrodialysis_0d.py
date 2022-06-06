@@ -265,9 +265,7 @@ class TestElectrodialysisVoltageConst:
         blk = m.fs.unit
 
         # NOTE: This should probably move into the build of the model
-        #       and not be here after everything else
-        # # TODO: Create another test were this is done closer to
-        #        the beginning.
+        #       and not be here after everything else (see next test)
         m.fs.costing = WaterTAPCosting()
 
         # Set costing var
@@ -316,6 +314,19 @@ class TestElectrodialysisCurrentConst:
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
         m.fs.unit.config.operation_mode = "Constant_Current"
+
+        # Adding costing at model construction for testing
+        m.fs.costing = WaterTAPCosting()
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {
+                    "cost_type": ElectrodialysisCostType.default
+                },
+            },
+        )
+        # This function constructs all the costing vars and constraints
+        m.fs.costing.cost_process()
         return m
 
     @pytest.mark.unit
@@ -492,6 +503,16 @@ class TestElectrodialysisCurrentConst:
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(1.330e-4, rel=5e-3)
+
+        assert pytest.approx(388.6800, rel=1e-3) == value(
+            m.fs.costing.total_capital_cost
+        )
+        assert pytest.approx(46.10169, rel=1e-3) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(777.3600, rel=1e-3) == value(
+            m.fs.costing.total_investment_cost
+        )
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell2):
