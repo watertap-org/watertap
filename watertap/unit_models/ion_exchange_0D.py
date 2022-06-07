@@ -160,16 +160,60 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Diffusivity of ion resin [m2/s]",  # Perry's
         )
 
-        self.vel_min_A = Param(initialize=150, units=pyunits.dimensionless)  # Perry's
-
-        self.vel_min_B = Param(initialize=1.75, units=pyunits.dimensionless)  # Perry's
-
         self.underdrain_h = Param(
             initialize=0.5, units=pyunits.m, doc="Underdrain height [m]"  # Perry's
         )
 
         self.distributor_h = Param(
             initialize=1.5, units=pyunits.m, doc="Distributor height [m]"  # Perry's
+        )
+
+        self.holdup_A = Param(
+            initialize=21, units=pyunits.dimensionless, doc="Holdup eq A parameter"
+        )
+
+        self.holdup_B = Param(
+            initialize=99.72, units=pyunits.dimensionless, doc="Holdup eq B parameter"
+        )
+
+        self.holdup_exp = Param(
+            initialize=0.28, units=pyunits.dimensionless, doc="Holdup eq exponent"
+        )
+
+        self.Pe_p_A = Param(
+            initialize=0.05,
+            units=pyunits.dimensionless,
+            doc="Pe particle eq A parameter",
+        )
+
+        self.Pe_p_exp = Param(
+            initialize=0.48, units=pyunits.dimensionless, doc="Pe particle eq exp"
+        )
+
+        self.Sh_A = Param(
+            initialize=1.09, units=pyunits.dimensionless, doc="Sh eq A parameter"
+        )
+
+        self.Sh_exp = Param(
+            initialize=0.33, units=pyunits.dimensionless, doc="Sh eq exp"
+        )
+
+        self.t_waste_param = Param(
+            initialize=0.01,
+            units=pyunits.dimensionless,
+            doc="Ratio of breakthru to waste time",
+        )
+
+        self.vel_bed_ratio = Param(
+            initialize=2.5,
+            units=pyunits.dimensionless,
+            doc="Ratio of min to max bed velocity",
+        )
+
+        self.bed_depth_to_diam_ratio = Param(
+            initialize=2.5,
+            units=pyunits.dimensionless,
+            doc="Min ratio of bed depth to diameter",
         )
 
         # ====== Resin variables ====== #
@@ -209,19 +253,12 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Resin particle density [kg/L]",
         )
 
-        self.sphericity = Var(
-            initialize=0.95,
-            bounds=(0.4, 1),
-            units=pyunits.dimensionless,
-            doc="Resin sphericity [-]",
-        )
-
         self.K_eq = Var(
             ion_set,
             initialize=5,
             bounds=(0.5, 10),
             units=pyunits.dimensionless,
-            doc="Selectivity coefficient [-]",  ## ??
+            doc="Selectivity coefficient [-]",
         )
 
         self.R_eq = Var(
@@ -229,7 +266,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.2,
             bounds=(0, 1.1),
             units=pyunits.dimensionless,
-            doc="Separation factor [-]",  ## ??
+            doc="Separation factor [-]",
         )
 
         self.resin_surf_per_vol = Var(
@@ -250,13 +287,13 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_diam = Var(
             initialize=0.4,
-            bounds=(0.1, 4),  # DOW
+            bounds=(0.01, 4),  # DOW
             units=pyunits.m,
             doc="Bed diameter [m]",
         )
 
         self.bed_depth = Var(
-            initialize=4, bounds=(0.6, 12), units=pyunits.m, doc="Bed depth [m]"
+            initialize=4, bounds=(0.1, 12), units=pyunits.m, doc="Bed depth [m]"
         )
 
         self.bed_area = Var(
@@ -341,6 +378,14 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Number of transfer units [-]",
         )
 
+        self.HTU = Var(
+            ion_set,
+            initialize=0.5,
+            bounds=(0, 1),
+            units=pyunits.m,
+            doc="Height of a transfer unit",
+        )
+
         self.dimensionless_time = Var(
             initialize=1,
             bounds=(0, 1),
@@ -368,7 +413,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=1e3,
             bounds=(0, None),
             units=pyunits.mol,
-            doc="Removed mass of ion",
+            doc="Sorbed mass of ion",
         )
 
         self.mass_out = Var(
@@ -379,52 +424,28 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Effluent mass of ion",
         )
 
-        # self.vol_in = Var(
-        #     # ion_set,
-        #     initialize=1e3,
-        #     bounds=(0, None),
-        #     units=pyunits.m**3,
-        #     doc="Influent mass of ion",
-        # )
-
-        # self.vol_out = Var(
-        #     # ion_set,
-        #     initialize=1e3,
-        #     bounds=(0, None),
-        #     units=pyunits.m**3,
-        #     doc="Removed mass of ion",
-        # )
-
-        # self.vol_waste = Var(
-        #     # ion_set,
-        #     initialize=1e3,
-        #     bounds=(0, None),
-        #     units=pyunits.m**3,
-        #     doc="Effluent mass of ion",
-        # )
-
         # # ====== Hydrodynamic variables ====== #
 
         self.vel_min = Var(
             initialize=0.0048,
-            # bounds=(0, 0.009),
-            bounds=(0, None),
+            bounds=(0, 0.009),
+            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Minimum bed velocity [m/s]",
         )
 
         self.vel_bed = Var(
             initialize=0.0086,
-            # bounds=(0, 0.01),  # MWH, Perry's
-            bounds=(0, None),
+            bounds=(0, 0.02),  # MWH, Perry's
+            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Velocity through resin bed [m/s]",
         )
 
         self.vel_inter = Var(
             initialize=0.0173,
-            # bounds=(0, 0.02),
-            bounds=(0, None),
+            bounds=(0, 0.07),
+            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Interstitial velocity [m/s]",
         )
@@ -434,6 +455,13 @@ class IonExchangeODData(UnitModelBlockData):
             bounds=(90, 250),
             units=pyunits.dimensionless,
             doc="Holdup percent [-]",
+        )
+
+        self.sfr = Var(
+            initialize=12,
+            bounds=(4, 40),
+            units=pyunits.hr**-1,
+            doc="Service flow rate [BV/hr]",
         )
 
         # # ====== Dimensionless variables ====== #
@@ -481,29 +509,6 @@ class IonExchangeODData(UnitModelBlockData):
             bounds=(0, 1),
             units=pyunits.dimensionless,
             doc="Dimensionless concentration",
-        )
-
-        self.c_br = Var(
-            ion_set,
-            initialize=5,
-            # bounds=(0, 1),
-            units=pyunits.mol / pyunits.m**3,
-            doc="Breakthrough concentration",
-        )
-
-        self.HTU = Var(
-            ion_set,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.m,
-            doc="Height of a transfer unit",
-        )
-
-        self.sfr = Var(
-            initialize=12,
-            bounds=(4, 40),
-            units=pyunits.hr**-1,
-            doc="Service flow rate [BV/hr]",
         )
 
         self.bv_to_waste = Param(
@@ -571,26 +576,9 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_resin_eq_capacity(b):
             return b.resin_eq_capacity <= b.resin_max_capacity
 
-        # @self.Constraint(ion_set, doc="Breakthrough concentration")
-        # def eq_br(b, j):
-        #     prop_in = b.properties_in[0]
-        #     return b.c_norm[j] == b.c_br[j] / prop_in.conc_equiv_phase_comp["Liq", j]
-
-        # =========== HYDRODYNAMICS ===========
-
-        # @self.Constraint(
-        #     doc="Min bed velocity")
-
-        # def eq_vel_min(b):
-        #     prop_in = b.properties_in[0]
-        #     return (b.gravity * (pyunits.convert(b.resin_particle_dens, to_units=pyunits.kg/pyunits.m**3) - prop_in.dens_mass_phase['Liq']) ==
-        #             (b.vel_min_A * prop_in.visc_d_phase['Liq'] * b.vel_min) / (b.sphericity ** 2 * b.resin_diam ** 2) * \
-        #             (1 - b.bed_porosity) / (b.bed_porosity ** 3) +
-        #             (b.vel_min_B * prop_in.dens_mass_phase['Liq'] * b.vel_min ** 2) / (b.sphericity * b.resin_diam * b.bed_porosity ** 3))
-
         @self.Constraint(doc="Bed velocity ub")
         def eq_vel_bed_ub(b):
-            return b.vel_bed <= 1.8 * b.vel_min
+            return b.vel_bed <= b.vel_bed_ratio * b.vel_min
 
         @self.Constraint(doc="Bed velocity lb")
         def eq_vel_bed_lb(b):
@@ -599,10 +587,6 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(doc="Interstitial velocity")
         def eq_vel_inter(b):
             return b.vel_inter == b.vel_bed / b.bed_porosity
-
-        @self.Constraint(doc="Resin particle density")
-        def eq_resin_particle_dens(b):
-            return b.resin_particle_dens == b.resin_bulk_dens / (1 - b.bed_porosity)
 
         @self.Constraint(doc="Resin surface area per vol")
         def eq_resin_surf_per_vol(b):
@@ -615,10 +599,9 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(doc="Contact time")
         def eq_t_contact2(b):
             prop_in = b.properties_in[0]
-            return (
-                b.bed_depth / b.vel_inter
-                == (b.bed_porosity * b.bed_vol) / prop_in.flow_vol_phase["Liq"]
-            )
+            return (b.bed_depth * b.bed_porosity) / b.vel_bed == (
+                b.bed_porosity * b.bed_vol
+            ) / prop_in.flow_vol_phase["Liq"]
 
         # =========== DIMENSIONLESS ===========
 
@@ -637,7 +620,10 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(ion_set, doc="Sherwood number")
         def eq_Sh(b, j):
-            return b.Sh[j] == 1.09 / b.bed_porosity * b.Re**0.33 * b.Sc[j] ** 0.33
+            return (
+                b.Sh[j]
+                == b.Sh_A / b.bed_porosity * b.Re**b.Sh_exp * b.Sc[j] ** b.Sh_exp
+            )
 
         @self.Constraint(doc="Bed Peclet number")
         def eq_Pe_bed(b):
@@ -645,7 +631,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Particle Peclet number")
         def eq_Pe_p(b):
-            return b.Pe_p == 0.05 * b.Re**0.48
+            return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
 
         @self.Constraint(doc="Service flow rate")
         def eq_sfr(b):
@@ -668,7 +654,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Bed depth to bed diameter ratio")
         def eq_bed_depth_to_diam_ratio(b):
-            return b.bed_depth / b.bed_diam >= 3
+            return b.bed_depth / b.bed_diam >= b.bed_depth_to_diam_ratio
 
         # @self.Constraint(doc="Column height")
         # def eq_col_height(b):
@@ -677,15 +663,6 @@ class IonExchangeODData(UnitModelBlockData):
         # @self.Constraint(doc="Column vol")
         # def eq_col_vol(b):
         #     return b.col_vol == b.col_height * b.bed_area
-
-        # @self.Constraint(doc='Bed volume calculation')
-
-        # def eq_bed_vol2(b):
-        # prop_in = b.properties_in[0]
-        # return (((b.pi * (b.bed_diam / 2 ) ** 2) * b.bed_depth) == \
-        # return (b.bed_vol ==
-        #     (prop_in.flow_vol_phase['Liq'] * b.t_contact * sum(prop_in.conc_equiv_phase_comp['Liq', j] for j in ion_set)) /
-        #             (pyunits.convert(b.resin_eq_capacity * b.resin_bulk_dens, to_units=pyunits.mol/pyunits.m**3)))
 
         # =========== KINETICS ===========
         @self.Constraint(ion_set, doc="Fluid mass transfer coeff")
@@ -756,31 +733,10 @@ class IonExchangeODData(UnitModelBlockData):
 
         # =========== MASS BALANCE ===========
 
-        # @self.Constraint(doc="Flow waste")
-        # def eq_flow_waste(b):
-        #     prop_in = b.properties_in[0]
-        #     prop_waste = b.properties_waste[0]
-        #     return prop_waste.flow_vol_phase["Liq"] == pyunits.convert(
-        #         (b.bv_to_waste * b.bed_vol) / (b.t_waste + b.t_breakthru),
-        #         to_units=pyunits.m**3 / pyunits.s,
-        #     )
-
-        # @self.Constraint(doc="Vol waste")
-        # def eq_vol_waste(b):
-        #     prop_in = b.properties_in[0]
-        #     prop_waste = b.properties_waste[0]
-        #     return b.vol_waste == prop_in.flow_vol_phase["Liq"] * b.t_waste
-
-        # @self.Constraint(doc="Vol out")
-        # def eq_vol_out(b):
-        #     prop_in = b.properties_in[0]
-        #     prop_waste = b.properties_waste[0]
-        #     return b.vol_out == prop_in.flow_vol_phase["Liq"] * b.t_breakthru
-
         @self.Constraint(doc="Waste time")
         def eq_waste_time(b):
             # TODO be better here
-            return b.t_waste == 0.05 * b.t_breakthru
+            return b.t_waste == b.t_waste_param * b.t_breakthru
 
         @self.Constraint(ion_set, doc="Flow conservation")
         def eq_flow_conservation(b, j):
@@ -842,13 +798,14 @@ class IonExchangeODData(UnitModelBlockData):
                 prop_in.flow_vol_phase["Liq"] * b.t_waste
             )
 
-        @self.Constraint(doc="Holdup")
+        @self.Constraint(doc="Column holdup")
         def eq_holdup(b):
             return (
                 b.holdup
-                == 21
-                + 99.72
-                * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s) ** 0.28
+                == b.holdup_A
+                + b.holdup_B
+                * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
+                ** b.holdup_exp
             )
 
         @self.Constraint()
@@ -909,10 +866,7 @@ class IonExchangeODData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
         state_args_out = deepcopy(state_args)
-        # for p, j in blk.properties_out.phase_component_set:
-        #     state_args_out["flow_mol_phase_comp"][p, j] = 0.95 * state_args[
-        #         "flow_mol_phase_comp"
-        #     ]["Liq", j]
+
         blk.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -923,10 +877,7 @@ class IonExchangeODData(UnitModelBlockData):
         blk.state_args = state_args
 
         state_args_waste = deepcopy(state_args)
-        # for p, j in blk.properties_waste.phase_component_set:
-        #     state_args_waste["flow_mol_phase_comp"][p, j] = 0.05 * state_args[
-        #         "flow_mol_phase_comp"
-        #     ]["Liq", j]
+
         blk.state_args_waste = state_args_waste
 
         blk.properties_waste.initialize(
@@ -950,82 +901,7 @@ class IonExchangeODData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        ion_set = self.config.property_package.ion_set
-
-        # iscale.set_scaling_factor(
-        #     self.Re, 1
-        # )
-
-        # # for ion in ion_set:
-        # iscale.set_scaling_factor(
-        #     self.Sc, 1E-2
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.Sh, 0.1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.Pe_p, 1E2
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.Pe_bed, 1E-3
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.resin_max_capacity, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.resin_eq_capacity, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.resin_diam, 1E4
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.resin_bulk_dens, 10
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.resin_particle_dens, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.sphericity, 10
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.K_eq, 1
-        # )
-
         iscale.set_scaling_factor(self.R_eq, 10)
-
-        # iscale.set_scaling_factor(
-        #     self.resin_surf_per_vol, 1E-3
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.bed_diam, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.bed_depth, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.bed_porosity, 10
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.col_height, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.partition_ratio, 1E-3
-        # )
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
@@ -1041,26 +917,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.mass_out, 1)
 
-        # iscale.set_scaling_factor(
-        #     self.num_transfer_units, 1E-4
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.dimensionless_time, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.lh, 1
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.vel_min, 1E3
-        # )
-
-        # iscale.set_scaling_factor(
-        #     self.vel_bed, 1E3
-        # )
-
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
             sf = iscale.get_scaling_factor(self.R_eq)
@@ -1070,30 +926,6 @@ class IonExchangeODData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.t_breakthru)
             iscale.constraint_scaling_transform(c, sf)
 
-        # for ind, c in self.eq_langmuir.items():
-        #     sf = iscale.get_scaling_factor(self.R_eq[ind])
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for _, c in self.eq_vel_min.items():
-        #     sf = iscale.get_scaling_factor(self.vel_min)
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for _, c in self.eq_vel_inter.items():
-        #     sf = iscale.get_scaling_factor(self.vel_inter)
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for _, c in self.eq_resin_surf_per_vol.items():
-        #     sf = iscale.get_scaling_factor(self.resin_surf_per_vol)
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for _, c in self.eq_t_contact.items():
-        #     sf = iscale.get_scaling_factor(self.t_contact)
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for _, c in self.eq_partition_ratio.items():
-        #     sf = iscale.get_scaling_factor(self.partition_ratio)
-        #     iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
             sf = iscale.get_scaling_factor(self.fluid_mass_transfer_coeff[ind])
             iscale.constraint_scaling_transform(c, sf)
@@ -1101,14 +933,6 @@ class IonExchangeODData(UnitModelBlockData):
         for ind, c in self.eq_rate_coeff.items():
             sf = iscale.get_scaling_factor(self.rate_coeff[ind])
             iscale.constraint_scaling_transform(c, sf)
-
-        # for ind, c in self.eq_Sc.items():
-        #     sf = iscale.get_scaling_factor(self.Sc[ind])
-        #     iscale.constraint_scaling_transform(c, sf)
-
-        # for ind, c in self.eq_Sh.items():
-        #     sf = iscale.get_scaling_factor(self.Sh[ind])
-        #     iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -1130,7 +954,6 @@ class IonExchangeODData(UnitModelBlockData):
         var_dict["Resin Particle Diameter"] = self.resin_diam
         var_dict["Resin Bulk Density"] = self.resin_bulk_dens
         var_dict["Resin Particle Density"] = self.resin_particle_dens
-        var_dict["Sphericity"] = self.sphericity
         for i in self.config.property_package.ion_set:
             ion = i.replace("_", "")
             keq = f"Resin Selecitivity for {ion}"
