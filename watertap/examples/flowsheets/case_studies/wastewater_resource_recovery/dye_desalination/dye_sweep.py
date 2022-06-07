@@ -119,4 +119,4 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, model = main()
+    results, model = main(*sys.argv[1:])
