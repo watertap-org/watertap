@@ -101,6 +101,7 @@ class IXParameterData(PhysicalParameterBlock):
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
     )
 
+    # reference_cation and reference_anion for use in future prop pack development
     CONFIG.declare(
         "reference_cation",
         ConfigValue(default="H_+", domain=str, description="Reference Cation"),
@@ -119,10 +120,6 @@ class IXParameterData(PhysicalParameterBlock):
 
         self._state_block_class = IXStateBlock
 
-        # components
-        # self.H2O = Solvent()
-        # self.NaCl = Solute()
-
         # phases
         self.Liq = AqueousPhase()
 
@@ -137,6 +134,8 @@ class IXParameterData(PhysicalParameterBlock):
         self.anion_set = Set()
         self.solute_set = Set()
         self.ion_set = Set()
+        self.reference_cation = self.config.reference_cation
+        self.reference_anion = self.config.reference_anion
 
         for j in self.config.solute_list:
             if j in self.config.charge:
@@ -221,7 +220,7 @@ class IXParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
-        self.set_default_scaling("diffus_phase_comp", 1e9, index="Liq")
+        self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
         self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
 
     @classmethod
@@ -287,7 +286,7 @@ class _IXStateBlock(StateBlock):
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
-                         flow_equiv_phase_comp : value at which to initialize
+                         flow_mol_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
@@ -391,10 +390,15 @@ class _IXStateBlock(StateBlock):
                         )
                     )
                 if self[k].is_property_constructed("flow_equiv_phase_comp"):
-                    self[k].flow_equiv_phase_comp["Liq", j].set_value(
-                        self[k].flow_mol_phase_comp["Liq", j]
-                        / abs(self[k].params.charge_comp[j])
-                    )
+                    if j == "H2O":
+                        self[k].flow_equiv_phase_comp["Liq", j].set_value(
+                            self[k].flow_mol_phase_comp["Liq", j]
+                        )
+                    else:
+                        self[k].flow_equiv_phase_comp["Liq", j].set_value(
+                            self[k].flow_mol_phase_comp["Liq", j]
+                            / abs(self[k].params.charge_comp[j])
+                        )
 
         # Check when the state vars are fixed already result in dof 0
         for k in self.keys():
@@ -579,7 +583,7 @@ class IXStateBlockData(StateBlockData):
         self.flow_mol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=0.1,  # todo: revisit
+            initialize=0.1,
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.s,
@@ -636,12 +640,16 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_flow_equiv_phase_comp(b, j):
+            if j == "H2O":
+                return (
+                    b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp["Liq", j]
+                )
             return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
                 "Liq", j
             ] / abs(b.params.charge_comp[j])
 
-        self.eq_flow_mol_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_equiv_phase_comp
+        self.eq_flow_equiv_phase_comp = Constraint(
+            self.params.ion_set, rule=rule_flow_equiv_phase_comp
         )
 
     def _conc_mass_phase_comp(self):
@@ -747,7 +755,7 @@ class IXStateBlockData(StateBlockData):
     #     )
 
     # def _equiv_frac_phase_comp(self):
-    #     self.quiv_frac_phase_comp = Var(
+    #     self.equiv_frac_phase_comp = Var(
     #         self.params.phase_list,
     #         self.params.component_list,
     #         initialize=0.5,
@@ -871,17 +879,25 @@ class IXStateBlockData(StateBlockData):
         super().calculate_scaling_factors()
 
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
-            # sf = iscale.get_scaling_factor(
-            #     self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=True
-            # )
-            iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], 0.1)
+            sf = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp["Liq", "H2O"], default=0.1, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
+            iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.ion_set | self.params.solute_set:
+        for j in self.params.component_list:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
-                # sf = iscale.get_scaling_factor(
-                #     self.flow_mol_phase_comp["Liq", j], default=1, warning=True
-                # )
-                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], 1e3)
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", j], default=1, warning=True
+                )
+                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
+
+        for j in self.params.ion_set:
+            if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", j]) is None:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", j], default=1e3, warning=True
+                )
+                iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", j], sf)
 
         # scaling factors for parameters
         for j, v in self.mw_comp.items():

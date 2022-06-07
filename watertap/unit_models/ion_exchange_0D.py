@@ -117,7 +117,7 @@ class IonExchangeODData(UnitModelBlockData):
 
     CONFIG.declare(
         "target_ion",
-        ConfigValue(default="Ca_2+", domain=str, description="Reference Anion"),
+        ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
     )
 
     def build(self):
