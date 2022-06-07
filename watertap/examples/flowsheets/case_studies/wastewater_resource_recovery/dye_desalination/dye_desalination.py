@@ -251,7 +251,7 @@ def add_costing(m):
 
 
 def display_results(m):
-    unit_list = ["feed", "permeate1", "retentate1", "nanofiltration"]
+    unit_list = ["feed", "P1", "nanofiltration"]
     for u in unit_list:
         m.fs.component(u).report()
 
