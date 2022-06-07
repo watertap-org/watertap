@@ -21,6 +21,7 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination import (
     build,
     set_operating_conditions,
+    initialize_system,
     solve,
     add_costing,
     display_costing,
@@ -47,6 +48,7 @@ class TestDyeFlowsheet:
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
         set_operating_conditions(m)
+        initialize_system(m)
 
         # test feed conditions
         assert pytest.approx(31.583, rel=1e-3) == value(
