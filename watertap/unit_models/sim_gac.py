@@ -16,6 +16,7 @@ from pyomo.environ import (
     SolverFactory,
     TerminationCondition,
     TransformationFactory,
+    Objective,
 )
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
@@ -29,6 +30,7 @@ from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
 )
+from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
@@ -127,16 +129,26 @@ def main():
     assert_units_consistent(m)  # check that units are consistent
     print("Degrees of freedom:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-
+    """
+    # initialization testing
+    solver.options['max_iter'] = 0
+    m.obj = Objective(expr=0)   # dummy for DegeneracyHunter
+    results = solver.solve(m, tee=False)
+    dh = DegeneracyHunter(m, solver=SolverFactory('cbc'))
+    # dh.check_residuals(tol=10)
+    # dh.check_variable_bounds(tol=1e-3)
+    """
+    # run simulation
+    solver.options["max_iter"] = 1000
     results = solver.solve(m, tee=False)
     assert results.solver.termination_condition == TerminationCondition.optimal
-
+    # '''
     # displays
     st = create_stream_table_dataframe(
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    m.fs.gac.display()
+    # m.fs.gac.display()
 
 
 if __name__ == "__main__":

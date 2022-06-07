@@ -18,10 +18,12 @@ from pyomo.environ import (
     Param,
     Suffix,
     NonNegativeReals,
+    PositiveReals,
     Reference,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.dae import ContinuousSet, DerivativeVar
 
 from enum import Enum, auto
 
@@ -291,6 +293,16 @@ class GACData(UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
+        # Steady state assumption variables
+        self.num_active_beds = Var(
+            initialize=5,
+            bounds=(1, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Number of active beds in parallel, one additional bed offline for replacement",
+        )
+
+        # ---------------------------------------------------------------------
         # GAC particle properties
         self.replace_saturation_frac = Var(
             self.config.property_package.solute_set,
@@ -454,7 +466,7 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Performance Variables
         self.particle_mass_req = Var(
-            initialize=1e-4,
+            initialize=1e-2,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
@@ -464,6 +476,7 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # TODO: Add support mole or mass based property packs
         # TODO: Ensure other phases in addition to 'Liq' can be handled
+
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,
@@ -540,6 +553,12 @@ class GACData(UnitModelBlockData):
         def eq_min_tau_cps(b):
             return b.min_tau == b.eps_bed * b.min_ebct
 
+        @self.Constraint(doc="residence time")
+        def eq_tau(b):
+            return b.tau == b.eps_bed * b.ebct
+
+        # ---------------------------------------------------------------------
+        # loop for beds in parallel
         @self.Constraint(
             self.config.property_package.solute_set,
             doc="Throughput based on 5-parameter regression",
@@ -553,13 +572,11 @@ class GACData(UnitModelBlockData):
         def eq_min_time_cps(b):
             return b.min_time == b.min_tau * (b.dg + 1) * b.thru
 
-        @self.Constraint(doc="residence time")
-        def eq_tau(b):
-            return b.tau == b.eps_bed * b.ebct
-
         @self.Constraint(doc="Bed replacement time")
         def eq_replacement_time(b):
             return b.replace_time == b.min_time + (b.tau - b.min_tau) * (b.dg + 1)
+
+        # ---------------------------------------------------------------------
 
         @self.Constraint(doc="Relate void fraction and GAC densities")
         def eq_bed_void_fraction(b):
@@ -601,17 +618,6 @@ class GACData(UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
-        flags = blk.treatwater.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-        )
-
-        init_log.info_high("Initialization Step 1 Complete.")
-        # ---------------------------------------------------------------------
-        # Initialize permeate
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
@@ -627,24 +633,45 @@ class GACData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
+        # TODO: Determine if scale of the flowrate matters for this initialization
+        # specify conditions to solve at a feasible point during initialization
+        for j in blk.config.property_package.solute_set:
+            state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-5
+
+        for j in blk.config.property_package.solvent_set:
+            state_args["flow_mol_phase_comp"][("Liq", j)] = 100
+
+        # Initialize control volume
+        flags = blk.treatwater.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize adsorbate port
+
         blk.removal.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
         )
-        init_log.info_high("Initialization Step 2 Complete.")
 
-        # ---------------------------------------------------------------------
+        init_log.info_high("Initialization Step 2 Complete.")
+        # --------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.treatwater.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+    # ---------------------------------------------------------------------
 
     # TODO: def _get_performance_contents(self, time_point=0):
     # TODO: def _get_stream_table_contents(self, time_point=0):
@@ -654,9 +681,93 @@ class GACData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # scaling for gac created variables
+        # overwrite default scaling
 
-        # transforming constraints
+        # scaling for gac created variables
+        for j in self.contam_removal_frac.keys():
+            if iscale.get_scaling_factor(self.contam_removal_frac[j]) is None:
+                iscale.set_scaling_factor(self.contam_removal_frac[j], 1)
+
+        if iscale.get_scaling_factor(self.freund_ninv) is None:
+            iscale.set_scaling_factor(self.freund_ninv, 1)
+
+        if iscale.get_scaling_factor(self.freund_k) is None:
+            iscale.set_scaling_factor(self.freund_k, 1)
+
+        if iscale.get_scaling_factor(self.eps_bed) is None:
+            iscale.set_scaling_factor(self.eps_bed, 1)
+
+        if iscale.get_scaling_factor(self.ebct) is None:
+            iscale.set_scaling_factor(self.ebct, 1e-2)
+
+        if iscale.get_scaling_factor(self.thru) is None:
+            iscale.set_scaling_factor(self.thru, 1)
+
+        if iscale.get_scaling_factor(self.tau) is None:
+            iscale.set_scaling_factor(self.tau, 1e-2)
+
+        if iscale.get_scaling_factor(self.replace_time) is None:
+            iscale.set_scaling_factor(self.replace_time, 1e-6)
+
+        if iscale.get_scaling_factor(self.num_active_beds) is None:
+            iscale.set_scaling_factor(self.num_active_beds, 1)
+
+        for j in self.contam_removal_frac.keys():
+            if iscale.get_scaling_factor(self.replace_saturation_frac[j]) is None:
+                iscale.set_scaling_factor(self.replace_saturation_frac[j], 1)
+
+        if iscale.get_scaling_factor(self.particle_dens_app) is None:
+            iscale.set_scaling_factor(self.particle_dens_app, 1e-2)
+
+        if iscale.get_scaling_factor(self.particle_dens_bulk) is None:
+            iscale.set_scaling_factor(self.particle_dens_bulk, 1e-2)
+
+        if iscale.get_scaling_factor(self.particle_dp) is None:
+            iscale.set_scaling_factor(self.particle_dp, 1e3)
+
+        if iscale.get_scaling_factor(self.kf) is None:
+            iscale.set_scaling_factor(self.kf, 1e5)
+
+        if iscale.get_scaling_factor(self.ds) is None:
+            iscale.set_scaling_factor(self.ds, 1e13)
+
+        if iscale.get_scaling_factor(self.min_st) is None:
+            iscale.set_scaling_factor(self.min_st, 1e-1)
+
+        if iscale.get_scaling_factor(self.min_ebct) is None:
+            iscale.set_scaling_factor(self.min_ebct, 1e-3)
+
+        if iscale.get_scaling_factor(self.min_tau) is None:
+            iscale.set_scaling_factor(self.min_tau, 1e-2)
+
+        if iscale.get_scaling_factor(self.min_time) is None:
+            iscale.set_scaling_factor(self.min_time, 1e-7)
+
+        iscale.set_scaling_factor(self.a0, 1)
+        iscale.set_scaling_factor(self.a1, 1)
+        iscale.set_scaling_factor(self.b0, 1)
+        iscale.set_scaling_factor(self.b1, 1)
+        iscale.set_scaling_factor(self.b2, 1)
+        iscale.set_scaling_factor(self.b3, 10)
+        iscale.set_scaling_factor(self.b4, 1)
+
+        if iscale.get_scaling_factor(self.dg) is None:
+            iscale.set_scaling_factor(self.dg, 1e-4)
+
+        if iscale.get_scaling_factor(self.bi) is None:
+            iscale.set_scaling_factor(self.bi, 1)
+
+        if iscale.get_scaling_factor(self.particle_mass_req) is None:
+            iscale.set_scaling_factor(self.particle_mass_req, 1e2)
+
+        # (optional) transforming constraints
+        """
+        for (t, j), c in self.eq_mass_transfer_absorbed.items():
+            if j in self.config.property_package.solvent_set:
+                sf = 1e-12
+                iscale.constraint_scaling_transform(c, sf)
+
+
         for (t, j), c in self.eq_mass_transfer_solute.items():
             sf = iscale.get_scaling_factor(
                 self.treatwater.properties_in[t].flow_mol_phase_comp["Liq", j]
@@ -688,3 +799,4 @@ class GACData(UnitModelBlockData):
         for ind, c in self.eq_isobaric_adsorbate.items():
             sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].pressure)
             iscale.constraint_scaling_transform(c, sf)
+        """
