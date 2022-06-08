@@ -177,6 +177,7 @@ def _run_analysis(m, df, columns):
     }
     total_number = len(df.index)
     print(f"Starting analysis, found {total_number} points")
+    infeasible_points = []
 
     for _, index in enumerate(df.index):
         if len(columns) == 1:
