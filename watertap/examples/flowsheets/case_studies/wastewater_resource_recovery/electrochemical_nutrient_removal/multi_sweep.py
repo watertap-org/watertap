@@ -48,11 +48,17 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
         raise ValueError(f"{case_num} is not yet implemented")
 
     output_filename = "sensitivity_" + str(case_num) + ".csv"
+
+    output_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        output_filename,
+    )
+
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=output_filename,
+        csv_results_file_name=output_path,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
