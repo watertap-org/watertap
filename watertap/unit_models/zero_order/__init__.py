@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
@@ -33,6 +34,7 @@ from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
 from .electrochemical_nutrient_removal_zo import ElectroNPZO
 from .energy_recovery_zo import EnergyRecoveryZO
+from .hydrothermal_gasification_zo import HTGZO
 from .iron_and_manganese_removal_zo import IronManganeseRemovalZO
 from .landfill_zo import LandfillZO
 from .pump_electricity_zo import PumpElectricityZO
@@ -50,6 +52,7 @@ from .screen_zo import ScreenZO
 from .sedimentation_zo import SedimentationZO
 from .settling_pond_zo import SettlingPondZO
 from .smp_zo import SMPZO
+from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .tramp_oil_tank_zo import TrampOilTankZO
 from .tri_media_filtration_zo import TriMediaFiltrationZO
 from .coag_and_floc_zo import CoagulationFlocculationZO
