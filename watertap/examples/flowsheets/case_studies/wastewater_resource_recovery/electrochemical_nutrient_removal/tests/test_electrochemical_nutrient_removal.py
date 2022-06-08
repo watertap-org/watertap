@@ -39,7 +39,7 @@ class TestElectroNPFlowsheet:
     def test_build(self, system_frame):
         m = system_frame
         assert_units_consistent(m)
-        assert_degrees_of_freedom(m, 10)
+        assert_degrees_of_freedom(m, 13)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
@@ -94,8 +94,8 @@ class TestElectroNPFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(75.319, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOS) == pytest.approx(126.918, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(75.330, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOS) == pytest.approx(126.935, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

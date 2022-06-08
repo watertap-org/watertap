@@ -35,6 +35,7 @@ import watertap.core.zero_order_properties as prop_ZO
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.unit_models.zero_order import (
     FeedZO,
+    PumpElectricityZO,
     ElectroNPZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -77,6 +78,13 @@ def build():
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
     m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
     m.fs.product_struvite = Product(default={"property_package": m.fs.prop})
+    m.fs.pump = PumpElectricityZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "default",
+        }
+    )
     m.fs.electroNP = ElectroNPZO(
         default={
             "property_package": m.fs.prop,
@@ -85,9 +93,10 @@ def build():
     )
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.electroNP.inlet)
-    m.fs.s02 = Arc(source=m.fs.electroNP.treated, destination=m.fs.product_H2O.inlet)
-    m.fs.s03 = Arc(
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
+    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.electroNP.inlet)
+    m.fs.s03 = Arc(source=m.fs.electroNP.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s04 = Arc(
         source=m.fs.electroNP.byproduct, destination=m.fs.product_struvite.inlet
     )
 
@@ -111,6 +120,9 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "struvite"].fix(conc_struvite)
     solve(m.fs.feed)
 
+    # pump
+    m.fs.pump.load_parameters_from_database(use_default_removal=True)
+
     # electroNP
     m.fs.electroNP.load_parameters_from_database(use_default_removal=True)
 
@@ -128,6 +140,7 @@ def add_costing(m):
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
     m.fs.electroNP.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
     # TODO- verify flow basis for electricity intensity and LCOW
@@ -167,7 +180,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    unit_list = ["feed", "product_H2O", "product_struvite", "electroNP"]
+    unit_list = ["feed", "pump", "electroNP"]
     for u in unit_list:
         m.fs.component(u).report()
 
