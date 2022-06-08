@@ -27,9 +27,7 @@ import idaes.logger as idaeslogger
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.core.zero_order_costing import ZeroOrderCosting
-from watertap.unit_models.zero_order import (
-    FeedZO,
-)
+from watertap.unit_models.zero_order import FeedZO, OzoneAOPZO
 
 idaeslogger.getLogger("idaes.init").setLevel("CRITICAL")
 _this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -128,9 +126,29 @@ def _build_flowsheet(unit_model_class, process_subtype, water_source):
 _column_to_component_map = {
     "recovery": ("fs.unit.recovery_frac_mass_H2O", pyunits.dimensionless),
     "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
+    "toc": ("fs.feed.conc_mass_comp[0.0, toc]", pyunits.mg / pyunits.L),
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
     "chem_dose": ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
+    "avg_storage_time": ("fs.unit.storage_time", pyunits.hr),  # storage_tank
+    "surge_cap": ("fs.unit.surge_capacity", pyunits.dimensionless),  # storage_tank
+    "h2o2_dose": ("fs.unit.oxidant_dose", pyunits.mg / pyunits.L),  # uv_aop
+    "uv_dose": (
+        "fs.unit.uv_reduced_equivalent_dose",
+        pyunits.mJ / pyunits.cm**2,
+    ),  # uv + uv_aop
+    "uvt": ("fs.unit.uv_transmittance_in", pyunits.dimensionless),  # uv + uv_aop
+    "ebct": ("fs.unit.empty_bed_contact_time", pyunits.minute),  # gac
+    "hours_per_day_operation": (
+        "fs.unit.hours_per_day_operation",
+        pyunits.hr / pyunits.day,
+    ),  # filter_press
+    "cycle_time_hr": ("fs.unit.cycle_time", pyunits.hr),  # filter_press
+    "settling_velocity": (
+        "fs.unit.settling_velocity",
+        pyunits.m / pyunits.s,
+    ),  # sedimentation
+    "piping_distance": ("fs.unit.pipe_distance", pyunits.mile),  # deep_well_injection
 }
 
 
@@ -152,7 +170,7 @@ def _run_analysis(m, df, extra_columns):
         "LCOW": [],
     }
     total_number = len(df.index)
-    print(f"Starting analsys, found {total_number} points")
+    print(f"Starting analysis, found {total_number} points")
     for _, index in enumerate(df.index):
         if extra_columns:
             index, flow_in = index[:-1], index[-1]
@@ -168,6 +186,8 @@ def _run_analysis(m, df, extra_columns):
         for name, val in zip(extra_columns, index):
             var, units = _column_to_component_map[name]
             var = m.find_component(var)
+            if str(var) == "fs.unit.oxidant_dose" and isinstance(m.fs.unit, OzoneAOPZO):
+                continue
             var.fix(pyunits.convert(val * units, var.get_units()))
         _initialize_flowsheet(m)
         s.solve(m)
