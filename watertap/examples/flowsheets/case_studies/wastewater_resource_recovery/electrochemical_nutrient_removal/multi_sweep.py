@@ -47,7 +47,7 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
-    output_filename = "sensitivity_" + str(case_num)
+    output_filename = "sensitivity_" + str(case_num) + ".csv"
     global_results = parameter_sweep(
         m,
         sweep_params,
