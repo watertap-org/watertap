@@ -25,12 +25,12 @@ from pyomo.network import Arc
 
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
-from idaes.generic_models.unit_models import Feed, Separator, Mixer, Product
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from idaes.generic_models.unit_models.heat_exchanger import (
+from idaes.models.unit_models import Feed, Separator, Mixer, Product
+from idaes.models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
@@ -50,37 +50,14 @@ def main():
     # build
     m = build()
     set_operating_conditions(m)
-
+    display_stream_states(m)
+    assert False
     initialize_system(m)
-    # m.fs.evaporator.connect_to_condenser(m.fs.condenser)
-    print(degrees_of_freedom(m))
     print("Initialization")
-
-    # assert False
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
-    recovery = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
-        "Vap", "H2O"
-    ].value / (
-        m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "TDS"].value
-        + m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "H2O"].value
-    )
-    print("First solve")
-    print("Recovery: ", recovery)
-    print(
-        "Evaporator temperature: ",
-        m.fs.evaporator.properties_brine[0].temperature.value,
-    )
-    print("Evaporator pressure: ", m.fs.evaporator.properties_brine[0].pressure.value)
-    print("Evaporator area: ", m.fs.evaporator.area.value)
-    print(
-        "Compressor outlet temperature: ", m.fs.compressor.outlet.temperature[0].value
-    )
-    print("Compressor outlet pressure: ", m.fs.compressor.outlet.pressure[0].value)
-    print("Compressor work: ", m.fs.compressor.control_volume.work[0].value)
-    print("Condenser outlet temperature: ", m.fs.condenser.outlet.temperature[0].value)
-    print("Condenser outlet pressure: ", m.fs.condenser.outlet.pressure[0].value)
+    assert False
 
     m.fs.objective = Objective(
         expr=-m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
@@ -228,11 +205,21 @@ def build():
 
 def set_operating_conditions(m):
     # Feed inlet
+    # m.fs.pump_feed.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    # m.fs.pump_feed.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.05)
+    # m.fs.pump_feed.inlet.temperature[0].fix(273.15 + 25)
+    # m.fs.pump_feed.inlet.pressure[0].fix(101325)
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(10)
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(0.05)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
     m.fs.feed.properties[0].pressure.fix(101325)
-    # evaporator feed inlet
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.05)
+
+    m.fs.feed.display()
+    assert False
+
+    # Split ratio
+
+    # Heat exchangers
 
     # evaporator specifications
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
@@ -247,7 +234,7 @@ def set_operating_conditions(m):
     m.fs.compressor.efficiency.fix(0.8)
 
     # check degrees of freedom
-    print(degrees_of_freedom(m))
+    print('DOF after setting operating conditions: ', degrees_of_freedom(m))
 
 
 def initialize_system(m, solver=None):
@@ -280,13 +267,27 @@ def display_system(m):
         + m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "H2O"].value
     )
     print("Recovery: ", recovery)
-
+    print("Evaporator heat transfer: ", m.fs.evaporator.heat_transfer.value)
+    print("Condenser heat transfer: ", m.fs.condenser.control_volume.heat[0].value)
 
 def display_stream_states(m):
     print("Feed")
-    # print('Temperature: %.3f')
-    print("Evaporator heat transfer: ", m.fs.evaporator.heat_transfer.value)
-    print("Condenser heat transfer: ", m.fs.condenser.control_volume.heat[0].value)
+    print("Feed water mass flow ", m.fs.pump_feed.inlet.flow_mass_phase_comp[0, 'Liq','H2O'].value)
+    print("Feed TDS mass flow   ", m.fs.pump_feed.inlet.flow_mass_phase_comp['Liq','TDS'].value)
+    print("Feed temperature     ", m.fs.feed.inlet.temperature[0].value)
+    print("Feed pressure        ", m.fs.feed.inlet.pressure[0].value)
+
+    print("Preheated Feed")
+
+    print("Brine")
+
+    print("Vapor")
+
+    print("Compressed vapor")
+
+    print("Distillate")
+
+
     print("Feed inlet enth_flow: ", value(m.fs.evaporator.properties_feed[0].enth_flow))
     print(
         "Brine inlet enth_flow: ", value(m.fs.evaporator.properties_brine[0].enth_flow)
@@ -303,6 +304,21 @@ def display_stream_states(m):
         "Condenser outlet enth_flow: ",
         m.fs.condenser.control_volume.properties_out[0].enth_flow_phase["Liq"].value,
     )
+
+    print("Recovery: ", recovery)
+    print(
+        "Evaporator temperature: ",
+        m.fs.evaporator.properties_brine[0].temperature.value,
+    )
+    print("Evaporator pressure: ", m.fs.evaporator.properties_brine[0].pressure.value)
+    print("Evaporator area: ", m.fs.evaporator.area.value)
+    print(
+        "Compressor outlet temperature: ", m.fs.compressor.outlet.temperature[0].value
+    )
+    print("Compressor outlet pressure: ", m.fs.compressor.outlet.pressure[0].value)
+    print("Compressor work: ", m.fs.compressor.control_volume.work[0].value)
+    print("Condenser outlet temperature: ", m.fs.condenser.outlet.temperature[0].value)
+    print("Condenser outlet pressure: ", m.fs.condenser.outlet.pressure[0].value)
 
 
 if __name__ == "__main__":
