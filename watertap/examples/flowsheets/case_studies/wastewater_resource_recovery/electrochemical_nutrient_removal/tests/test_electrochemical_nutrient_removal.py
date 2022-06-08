@@ -16,8 +16,14 @@ from idaes.core.util import get_solver
 from pyomo.environ import value, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
-    electrochemical_nutrient_removal as electroNP,
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal import (
+    build,
+    set_operating_conditions,
+    initialize_system,
+    solve,
+    add_costing,
+    display_results,
+    display_costing,
 )
 
 solver = get_solver()
@@ -26,7 +32,7 @@ solver = get_solver()
 class TestElectroNPFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = electroNP.build()
+        m = build()
         return m  # return model
 
     @pytest.mark.unit()
@@ -38,7 +44,8 @@ class TestElectroNPFlowsheet:
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
-        electroNP.set_operating_conditions(m)
+        set_operating_conditions(m)
+        initialize_system(m)
 
         # test feed water flow
         assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
@@ -57,7 +64,7 @@ class TestElectroNPFlowsheet:
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
-        results = electroNP.solve(m)
+        results = solve(m)
         assert_optimal_termination(results)
 
         # check two struvite product flow
@@ -80,9 +87,9 @@ class TestElectroNPFlowsheet:
     def test_costing(self, system_frame):
         m = system_frame
 
-        electroNP.add_costing(m)
+        add_costing(m)
         m.fs.costing.initialize()
-        results = electroNP.solve(m)
+        results = solve(m)
 
         assert_optimal_termination(results)
 
@@ -93,5 +100,5 @@ class TestElectroNPFlowsheet:
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        electroNP.display_results(m)
-        electroNP.display_costing(m)
+        display_results(m)
+        display_costing(m)

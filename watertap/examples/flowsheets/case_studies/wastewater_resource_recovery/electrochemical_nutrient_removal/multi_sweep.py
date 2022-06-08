@@ -11,10 +11,10 @@
 #
 ###############################################################################
 
+import sys
 from watertap.tools.parameter_sweep import (
     _init_mpi,
     LinearSample,
-    UniformSample,
     parameter_sweep,
 )
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal as electrochemical_nutrient_removal
@@ -32,7 +32,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 
     m = electrochemical_nutrient_removal.main()[0]
 
@@ -62,6 +62,4 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    results, sweep_params, m = run_analysis(
-        case_num=1, nx=11, interpolate_nan_outputs=False
-    )
+    results, sweep_params, m = run_analysis(*sys.argv[1:])
