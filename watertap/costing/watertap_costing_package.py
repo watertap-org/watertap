@@ -744,8 +744,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Args:
             cost_type - Option for electrodialysis cost function type - (UNKNOWN)
         """
-        # # TODO: Clean up cost type options
         t0 = blk.flowsheet().time.first()
+
+        # # TODO: Clean up cost type options
         if cost_type == ElectrodialysisCostType.default:
             membrane_cost = blk.costing_package.electrodialysis_total_membrane_cost
             spacer_cost = blk.costing_package.electrodialysis_total_flowspacer_cost
