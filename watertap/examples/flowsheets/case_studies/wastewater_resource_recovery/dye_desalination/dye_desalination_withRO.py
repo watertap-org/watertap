@@ -88,13 +88,16 @@ def build(erd_type="pressure_exchanger"):
     # define blocks
     dye_sep = m.fs.dye_separation = Block()
     desal = m.fs.desalination = Block()
+    print("\ndefine blocks:")
+    check_dof(m)
 
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop_nf})
     m.fs.dye_retentate = Product(default={"property_package": m.fs.prop_nf})
-
     m.fs.permeate = Product(default={"property_package": m.fs.prop_ro})
     m.fs.brine = Product(default={"property_package": m.fs.prop_ro})
+    print("\ndefine fs i/o:")
+    check_dof(m)
 
     # nanofiltration components
     dye_sep.P1 = PumpElectricityZO(
@@ -104,6 +107,8 @@ def build(erd_type="pressure_exchanger"):
             "process_subtype": "default",
         }
     )
+    print("\ndefine pump electricity ZO")
+    check_dof(m)
 
     dye_sep.nanofiltration = NanofiltrationZO(
         default={
@@ -112,7 +117,8 @@ def build(erd_type="pressure_exchanger"):
             "process_subtype": "rHGO_dye_rejection",
         }
     )
-
+    print("\ndefine NF ZO")
+    check_dof(m)
     # reverse osmosis components
 
     desal.P2 = Pump(default={"property_package": m.fs.prop_ro})
@@ -125,8 +131,12 @@ def build(erd_type="pressure_exchanger"):
             "concentration_polarization_type": ConcentrationPolarizationType.calculated,
         }
     )
+    print("\ndefine RO Od")
+    check_dof(m)
+
     desal.RO.width.setub(2000)
     desal.RO.area.setub(20000)
+
     if erd_type == "pressure_exchanger":
         desal.S1 = Separator(
             default={"property_package": m.fs.prop_ro, "outlet_list": ["P2", "PXR"]}
@@ -148,6 +158,8 @@ def build(erd_type="pressure_exchanger"):
             "be pressure_exchanger or pump_as_turbine"
             "".format(erd_type)
         )
+    print("\nset PX/erd conditions")
+    check_dof(m)
 
     # translator blocks
     m.fs.tb_nf_ro = Translator(
@@ -156,20 +168,25 @@ def build(erd_type="pressure_exchanger"):
             "outlet_property_package": m.fs.prop_ro,
         }
     )
+    print("\ntranslator block")
+    check_dof(m)
 
     @m.fs.tb_nf_ro.Constraint(["H2O", "dye"])
     def eq_flow_mass_comp(blk, j):
         if j == "dye":
             return (
-                blk.properties_in[0].flow_mass_comp[j]
+                blk.properties_in[0].flow_mass_comp["dye"]
                 + blk.properties_in[0].flow_mass_comp["tds"]
                 == blk.properties_out[0].flow_mass_phase_comp["Liq", "TDS"]
             )
         else:
             return (
-                blk.properties_in[0].flow_mass_comp[j]
-                == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+                blk.properties_in[0].flow_mass_comp["H2O"]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
             )
+
+    print("\nAdd constraint between nf/ro")
+    check_dof(m)
 
     # connections
     m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
@@ -207,6 +224,8 @@ def build(erd_type="pressure_exchanger"):
     m.fs.s_permeate = Arc(source=desal.RO.permeate, destination=m.fs.permeate.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
+    print("\nExpand network arcs")
+    check_dof(m)
 
     # scaling
     m.fs.prop_ro.set_default_scaling("flow_mass_phase_comp", 1e-3, index=("Liq", "H2O"))
@@ -224,7 +243,6 @@ def build(erd_type="pressure_exchanger"):
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
-    check_dof(m)
     return m
 
 
@@ -246,22 +264,22 @@ def set_operating_conditions(m):
 
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
+    print("\nLoad NF parameters from database")
     check_dof(m)
 
-    # pump
+    # nf pump
     dye_sep.P1.load_parameters_from_database(use_default_removal=True)
     dye_sep.P1.applied_pressure.fix(
         dye_sep.nanofiltration.applied_pressure.get_values()[0]
     )
     dye_sep.P1.lift_height.unfix()
+    print("\nLoad/fix low pressure pump parameters")
     check_dof(m)
 
     # desalination
     desal.P2.efficiency_pump.fix(0.80)
     operating_pressure = 70e5 * pyunits.Pa
     desal.P2.control_volume.properties_out[0].pressure.fix(operating_pressure)
-    check_dof(m)
-
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
@@ -271,12 +289,12 @@ def set_operating_conditions(m):
     desal.RO.area.fix(
         flow_vol * 4.5e4 * pyunits.s / pyunits.m
     )  # TODO - verify this value and change as needed based on CP effects
-    check_dof(m)
-
     desal.RO.feed_side.properties_in[0].temperature.fix(temperature)
     desal.RO.feed_side.properties_in[0].pressure = value(
         operating_pressure
     )  # TODO - check if this is the right variable to fix
+
+    print("\nLoad/fix RO parameters")
     check_dof(m)
 
     if m.erd_type == "pressure_exchanger":
@@ -290,6 +308,7 @@ def set_operating_conditions(m):
         desal.ERD.control_volume.properties_out[0].pressure.fix(
             pressure
         )  # atmospheric pressure [Pa]
+    print("\nFix PX/ERD parameters")
     check_dof(m)
 
 
