@@ -4,16 +4,16 @@ defined_flows:
   electricity:
     value: 0.08
     units: USD_2020/kWh
-  dye:
+  dye_retentate:
     # cost of dye in salt water
     value: 1
     units: USD_2020/m**3
   waste_disposal:
     value: 1
     units: USD_2020/m**3
-  salt_water:
+  dye_mass:
     value: 0.1
-    units: USD_2020/m**3
+    units: USD_2020/kg
 global_parameters:
   plant_lifetime:
     value: 30
