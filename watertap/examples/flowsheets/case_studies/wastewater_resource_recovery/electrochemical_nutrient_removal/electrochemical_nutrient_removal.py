@@ -126,8 +126,6 @@ def set_operating_conditions(m):
     # electroNP
     m.fs.electroNP.load_parameters_from_database(use_default_removal=True)
 
-    initialize_system(m)
-
 
 def add_costing(m):
     # yaml file path
@@ -143,7 +141,7 @@ def add_costing(m):
     m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
-    # TODO- verify flow basis for electricity intensity and LCOW
+
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
