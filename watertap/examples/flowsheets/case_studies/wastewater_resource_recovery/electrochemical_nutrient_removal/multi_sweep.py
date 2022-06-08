@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-
+import os
 import sys
 from watertap.tools.parameter_sweep import (
     _init_mpi,
