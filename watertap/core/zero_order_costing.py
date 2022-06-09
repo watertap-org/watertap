@@ -185,12 +185,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.land_cost = pyo.Var(
             initialize=0,
             units=self.base_currency,
-            doc="Land costs - based on aggregate captial costs",
+            doc="Land costs - based on aggregate capital costs",
         )
         self.working_capital = pyo.Var(
             initialize=0,
             units=self.base_currency,
-            doc="Working capital - based on aggregate captial costs",
+            doc="Working capital - based on aggregate capital costs",
         )
         self.total_capital_cost = pyo.Var(
             initialize=0, units=self.base_currency, doc="Total capital cost of process"
@@ -213,7 +213,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.salary_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Salary costs - based on aggregate captial costs",
+            doc="Salary costs - based on aggregate capital costs",
         )
         self.benefits_cost = pyo.Var(
             initialize=0,
@@ -223,17 +223,17 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.maintenance_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Maintenance costs - based on aggregate captial costs",
+            doc="Maintenance costs - based on aggregate capital costs",
         )
         self.laboratory_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Laboratory costs - based on aggregate captial costs",
+            doc="Laboratory costs - based on aggregate capital costs",
         )
         self.insurance_and_taxes_cost = pyo.Var(
             initialize=0,
             units=self.base_currency / self.base_period,
-            doc="Insurance and taxes costs - based on aggregate captial costs",
+            doc="Insurance and taxes costs - based on aggregate capital costs",
         )
         self.total_fixed_operating_cost = pyo.Var(
             initialize=0,
@@ -1963,7 +1963,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.variable_operating_cost = pyo.Var(
             initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
+            units=blk.config.flowsheet_costing_block.base_currency
+            / blk.config.flowsheet_costing_block.base_period,
             bounds=(0, None),
             doc="Fixed operating cost of unit operation",
         )
@@ -1991,7 +1992,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 rep_rate
                 * mem_cost
                 * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m**2),
-                to_units=blk.config.flowsheet_costing_block.base_currency,
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
             )
         )
 

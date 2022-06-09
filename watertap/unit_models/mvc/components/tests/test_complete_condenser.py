@@ -57,26 +57,11 @@ def test_complete_condense():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    report_io = StringIO()
-    m.fs.unit.report(ostream=report_io)
-    output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key       : Value       : Units : Fixed : Bounds
-    Heat duty : -2.4358e+06 :  watt : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                              Units           Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O')  kilogram / second 1.0000e-08     1.0000
-    flow_mass_phase_comp ('Vap', 'H2O')  kilogram / second     1.0000 1.0000e-10
-    temperature                                     kelvin     400.00     340.00
-    pressure                                        pascal     50000.     50000.
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    # Check values
+    distillate_blk = m.fs.unit.control_volume.properties_out[0]
+    assert distillate_blk.flow_mass_phase_comp["Liq", "H2O"].value == pytest.approx(
+        1.0000, rel=1e-3
+    )
+    assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
+    assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
+    assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)
