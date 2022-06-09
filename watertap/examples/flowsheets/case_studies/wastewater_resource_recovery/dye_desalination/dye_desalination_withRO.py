@@ -59,6 +59,7 @@ from watertap.unit_models.zero_order import (
     NanofiltrationZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing import WaterTAPCosting
 
 
 def main():
@@ -323,11 +324,6 @@ def initialize_system(m):
     propagate_state(m.fs.s_feed)
     solve(dye_sep)
 
-    # seq = SequentialDecomposition()
-    # seq.options.tear_set = []
-    # seq.options.iterLim = 1
-    # seq.run(m, lambda u: u.initialize())
-
 
 def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
@@ -336,6 +332,108 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
+
+
+def add_costing(m):
+    dye_sep = m.fs.dye_separation
+    desal = m.fs.desalination
+
+    # Zero order costing
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "dye_desalination_global_costing.yaml",
+    )
+
+    m.fs.zo_costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.ro_costing = WaterTAPCosting()
+
+    # cost nanofiltration module and pump
+    dye_sep.nanofiltration.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.zo_costing}
+    )
+    dye_sep.P1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.zo_costing}
+    )
+
+    # RO Train
+    # RO equipment is costed using more detailed costing package
+    desal.P2.costing = UnitModelCostingBlock(
+        default={
+            "flowsheet_costing_block": m.fs.ro_costing,
+            "costing_method_arguments": {"cost_electricity_flow": False},
+        }
+    )
+    desal.RO.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.ro_costing}
+    )
+    if m.erd_type == "pressure_exchanger":
+        # desal.S1.costing = UnitModelCostingBlock(default={
+        #     "flowsheet_costing_block": m.fs.ro_costing})
+        desal.M1.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": m.fs.ro_costing}
+        )
+        desal.PXR.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": m.fs.ro_costing}
+        )
+        desal.P3.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.ro_costing,
+                "costing_method_arguments": {"cost_electricity_flow": False},
+            }
+        )
+    elif m.erd_type == "pump_as_turbine":
+        pass
+        # desal.ERD.costing = UnitModelCostingBlock(default={
+        #     "flowsheet_costing_block": m.fs.ro_costing})
+    else:
+        raise ConfigurationError(
+            f"erd_type was {m.erd_type}, costing only implemented "
+            "for pressure_exchanger or pump_as_turbine"
+        )
+
+    # Aggregate unit level costs and calculate overall process costs
+    m.fs.zo_costing.cost_process()
+    m.fs.ro_costing.cost_process()
+
+    # Combine results from costing packages and calculate overall metrics
+    @m.Expression()
+    def total_capital_cost(b):
+        return (
+            pyunits.convert(
+                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
+            )
+            + m.fs.ro_costing.total_investment_cost
+        )
+
+    @m.Expression()
+    def total_operating_cost(b):
+        return (
+            pyunits.convert(
+                m.fs.zo_costing.total_fixed_operating_cost,
+                to_units=pyunits.USD_2018 / pyunits.year,
+            )
+            + pyunits.convert(
+                m.fs.zo_costing.total_variable_operating_cost,
+                to_units=pyunits.USD_2018 / pyunits.year,
+            )
+            + m.fs.ro_costing.total_operating_cost
+        )
+
+    @m.Expression()
+    def LCOW(b):
+        return (
+            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            + b.total_operating_cost
+        ) / (
+            pyunits.convert(
+                b.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.year,
+            )
+            * b.fs.zo_costing.utilization_factor
+        )
+        # TODO - verify if the lcow can be defined on basis of feed
+
+    assert_units_consistent(m)
 
 
 if __name__ == "__main__":
