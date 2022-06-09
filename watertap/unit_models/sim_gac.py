@@ -91,14 +91,18 @@ def main():
 
     # gac specifications
     # trial problem from Hand, 1984 for removal of trace DCE
-    m.fs.gac.contam_removal_frac["DCE"].fix(0.95)
+    # --------------------------------------------------------------------
+    # specify two of three of these
+    m.fs.gac.target_removal_frac["DCE"].fix(0.95)
+    # m.fs.gac.replace_removal_frac["DCE"].fix(0.8)
+    m.fs.gac.replace_gac_saturation_frac.fix(0.99)
+    # --------------------------------------------------------------------
     m.fs.gac.dg.fix(
         19775.77393009003
     )  # TODO: correct units problem to fix m.fs.gac.freund_k
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
     m.fs.gac.eps_bed.fix(0.449)
-    m.fs.gac.replace_saturation_frac["DCE"].fix(0.8)
     m.fs.gac.particle_dens_app.fix(722)
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
@@ -135,7 +139,7 @@ def main():
     m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
     results = solver.solve(m, tee=False)
     dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
-    # dh.check_residuals(tol=10)
+    # dh.check_residuals(tol=0.1)
     # dh.check_variable_bounds(tol=1e-3)
     """
     # run simulation
@@ -147,15 +151,7 @@ def main():
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    # m.fs.gac.display()
-    m.fs.gac.equil_conc.display()
-    m.fs.gac.bed_volume.display()
-    m.fs.gac.mass_GAC_bed.display()
-    m.fs.gac.mass_solute_bed.display()
-    m.fs.gac.avg_mass_removal.display()
-    m.fs.gac.avg_mol_removal.display()
-    m.fs.gac.replace_time.display()
-    m.fs.gac.treatwater.mass_transfer_term.display()
+    m.fs.gac.display()
 
 
 if __name__ == "__main__":
