@@ -19,13 +19,15 @@ from pyomo.environ import (
     Suffix,
     NonNegativeReals,
     PositiveReals,
+    PositiveIntegers,
     Reference,
+    TransformationFactory,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.dae import ContinuousSet, DerivativeVar
 
-from enum import Enum, auto
+from numpy import linspace
 
 from idaes.core import (
     ControlVolume0DBlock,
@@ -53,6 +55,9 @@ _log = idaeslog.getLogger(__name__)
 class SurfaceDiffusionCoeffVal(Enum):
     specified = auto()  # surface diffusion coefficient is a user-specified value
     calculated = auto() # pressure drop across membrane channel is calculated
+
+class NumberBeds(Enum):
+    singular bed with additional replacement time or twin alternating beds
 """
 
 # ---------------------------------------------------------------------
@@ -285,7 +290,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.replace_time = Var(
-            initialize=1e8,
+            initialize=1e5,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -297,7 +302,7 @@ class GACData(UnitModelBlockData):
         self.num_active_beds = Var(
             initialize=5,
             bounds=(1, None),
-            domain=NonNegativeReals,
+            domain=PositiveIntegers,
             units=pyunits.dimensionless,
             doc="Number of active beds in parallel, one additional bed offline for replacement",
         )
@@ -306,7 +311,7 @@ class GACData(UnitModelBlockData):
         # GAC particle properties
         self.replace_saturation_frac = Var(
             self.config.property_package.solute_set,
-            initialize=0.9,
+            initialize=0.5,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -557,8 +562,6 @@ class GACData(UnitModelBlockData):
         def eq_tau(b):
             return b.tau == b.eps_bed * b.ebct
 
-        # ---------------------------------------------------------------------
-        # loop for beds in parallel
         @self.Constraint(
             self.config.property_package.solute_set,
             doc="Throughput based on 5-parameter regression",
@@ -576,8 +579,6 @@ class GACData(UnitModelBlockData):
         def eq_replacement_time(b):
             return b.replace_time == b.min_time + (b.tau - b.min_tau) * (b.dg + 1)
 
-        # ---------------------------------------------------------------------
-
         @self.Constraint(doc="Relate void fraction and GAC densities")
         def eq_bed_void_fraction(b):
             return b.eps_bed == 1 - (b.particle_dens_bulk / b.particle_dens_app)
@@ -590,6 +591,103 @@ class GACData(UnitModelBlockData):
                 * b.particle_dens_bulk
                 * b.tau
             )
+
+        # ---------------------------------------------------------------------
+        # steady state calculations
+        self.equil_conc = Var(
+            initialize=1e-4,
+            bounds=(1e-8, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Equilibrium adsorbent (GAC particle) phase concentration of adsorbate (contaminant) [mass adsorbate/mass adsorbent]",
+        )
+
+        self.bed_volume = Var(
+            initialize=100,
+            bounds=(1e-3, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 3,
+            doc="Bed volume",
+        )
+
+        self.mass_GAC_bed = Var(
+            initialize=1e5,
+            bounds=(1e-3, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass"),
+            doc="Mass of GAC particle in the bed",
+        )
+
+        self.mass_solute_bed = Var(
+            initialize=100,
+            bounds=(1e-8, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass"),
+            doc="Mass of solute within the GAC particle in the bed when fully saturated",
+        )
+
+        self.avg_mass_removal = Var(
+            initialize=1e-5,
+            bounds=(1e-12, None),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -1,
+            doc="Mass of solute within the GAC particle in the bed when fully saturated",
+        )
+
+        self.avg_mol_removal = Var(
+            initialize=1e-4,
+            bounds=(1e-12, None),
+            domain=NonNegativeReals,
+            units=units_meta("amount") * units_meta("time") ** -1,
+            doc="Mass of solute within the GAC particle in the bed when fully saturated",
+        )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Solute distribution parameter",
+        )
+        def eq_equil_conc(b, t, j):
+            freund_k_units = (
+                (units_meta("length") ** 3) * units_meta("mass") ** -1
+            ) ** b.freund_ninv
+            return b.equil_conc == b.freund_k * freund_k_units * (
+                b.treatwater.properties_in[t].conc_mass_phase_comp["Liq", j]
+                ** b.freund_ninv
+            )
+
+        @self.Constraint(doc="Solute distribution parameter")
+        def eq_bed_volume(b):
+            return (
+                b.ebct * b.treatwater.properties_in[0].flow_vol_phase["Liq"]
+                == b.bed_volume
+            )
+
+        @self.Constraint(doc="Solute distribution parameter")
+        def eq_mass_GAC_bed(b):
+            return b.particle_dens_app * b.bed_volume == b.mass_GAC_bed
+
+        @self.Constraint(doc="Solute distribution parameter")
+        def eq_mass_solute_bed(b):
+            return b.equil_conc * b.mass_GAC_bed == b.mass_solute_bed
+
+        @self.Constraint(doc="Solute distribution parameter")
+        def eq_avg_mass_removal(b):
+            return b.avg_mass_removal * b.replace_time == b.mass_solute_bed
+
+        @self.Constraint(
+            self.config.property_package.solute_set,
+            doc="Solute distribution parameter",
+        )
+        def eq_avg_mol_removal(b, j):
+            return (
+                b.avg_mol_removal * b.treatwater.properties_in[0].mw_comp[j]
+                == b.avg_mass_removal
+            )
+
+        # TODO: add relations for eps and dens
+
+        # ---------------------------------------------------------------------
 
     # ---------------------------------------------------------------------
     # TODO: Correct initialization procedure from starting at an infeasible point, add robustness for intialization and scaling
@@ -682,6 +780,7 @@ class GACData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # overwrite default scaling
+        # TODO: Make scaling factors a function of the properties_in block
 
         # scaling for gac created variables
         for j in self.contam_removal_frac.keys():
@@ -707,7 +806,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.tau, 1e-2)
 
         if iscale.get_scaling_factor(self.replace_time) is None:
-            iscale.set_scaling_factor(self.replace_time, 1e-6)
+            iscale.set_scaling_factor(self.replace_time, 1e-5)
 
         if iscale.get_scaling_factor(self.num_active_beds) is None:
             iscale.set_scaling_factor(self.num_active_beds, 1)
@@ -760,43 +859,22 @@ class GACData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.particle_mass_req) is None:
             iscale.set_scaling_factor(self.particle_mass_req, 1e2)
 
+        if iscale.get_scaling_factor(self.equil_conc) is None:
+            iscale.set_scaling_factor(self.equil_conc, 1e4)
+
+        if iscale.get_scaling_factor(self.bed_volume) is None:
+            iscale.set_scaling_factor(self.bed_volume, 1e-2)
+
+        if iscale.get_scaling_factor(self.mass_GAC_bed) is None:
+            iscale.set_scaling_factor(self.mass_GAC_bed, 1e-5)
+
+        if iscale.get_scaling_factor(self.mass_solute_bed) is None:
+            iscale.set_scaling_factor(self.mass_solute_bed, 1e-2)
+
+        if iscale.get_scaling_factor(self.avg_mass_removal) is None:
+            iscale.set_scaling_factor(self.avg_mass_removal, 1e5)
+
+        if iscale.get_scaling_factor(self.avg_mol_removal) is None:
+            iscale.set_scaling_factor(self.avg_mol_removal, 1e4)
+
         # (optional) transforming constraints
-        """
-        for (t, j), c in self.eq_mass_transfer_absorbed.items():
-            if j in self.config.property_package.solvent_set:
-                sf = 1e-12
-                iscale.constraint_scaling_transform(c, sf)
-
-
-        for (t, j), c in self.eq_mass_transfer_solute.items():
-            sf = iscale.get_scaling_factor(
-                self.treatwater.properties_in[t].flow_mol_phase_comp["Liq", j]
-            )
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, j), c in self.eq_mass_transfer_solvent.items():
-            sf = 1
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, j), c in self.eq_mass_transfer_absorbed.items():
-            if j in self.config.property_package.solute_set:
-                sf = iscale.get_scaling_factor(
-                    self.treatwater.properties_in[t].flow_mol_phase_comp["Liq", j]
-                )
-                iscale.constraint_scaling_transform(c, sf)
-            if j in self.config.property_package.solvent_set:
-                sf = 1
-                iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.treatwater.eq_isothermal.items():
-            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_isothermal_adsorbate.items():
-            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_isobaric_adsorbate.items():
-            sf = iscale.get_scaling_factor(self.treatwater.properties_in[0].pressure)
-            iscale.constraint_scaling_transform(c, sf)
-        """

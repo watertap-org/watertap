@@ -98,7 +98,7 @@ def main():
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
     m.fs.gac.eps_bed.fix(0.449)
-    m.fs.gac.replace_saturation_frac["DCE"].fix(0.95)
+    m.fs.gac.replace_saturation_frac["DCE"].fix(0.8)
     m.fs.gac.particle_dens_app.fix(722)
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
@@ -129,26 +129,33 @@ def main():
     assert_units_consistent(m)  # check that units are consistent
     print("Degrees of freedom:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    """
+    # """
     # initialization testing
-    solver.options['max_iter'] = 0
-    m.obj = Objective(expr=0)   # dummy for DegeneracyHunter
+    # solver.options['max_iter'] = 0
+    m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
     results = solver.solve(m, tee=False)
-    dh = DegeneracyHunter(m, solver=SolverFactory('cbc'))
+    dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
     # dh.check_residuals(tol=10)
     # dh.check_variable_bounds(tol=1e-3)
     """
     # run simulation
-    solver.options["max_iter"] = 1000
     results = solver.solve(m, tee=False)
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    # '''
+    # assert results.solver.termination_condition == TerminationCondition.optimal
+    # """
     # displays
     st = create_stream_table_dataframe(
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
     # m.fs.gac.display()
+    m.fs.gac.equil_conc.display()
+    m.fs.gac.bed_volume.display()
+    m.fs.gac.mass_GAC_bed.display()
+    m.fs.gac.mass_solute_bed.display()
+    m.fs.gac.avg_mass_removal.display()
+    m.fs.gac.avg_mol_removal.display()
+    m.fs.gac.replace_time.display()
+    m.fs.gac.treatwater.mass_transfer_term.display()
 
 
 if __name__ == "__main__":
