@@ -70,7 +70,19 @@ def main():
     assert_units_consistent(m)
 
     initialize_system(m)
-    # results = solve(m)
+    assert_degrees_of_freedom(m, 0)
+
+    results = solve(m)
+
+    # add_costing(m)
+    # initialize_costing(m)
+
+    # assert_degrees_of_freedom(m, 0)
+
+    # solve(m, tee=True)
+    # display_results(m)
+    # display_costing(m)
+
     return m
 
 
@@ -303,14 +315,12 @@ def initialize_system(m):
     seq.options.iterLim = 1
     seq.run(dye_sep, lambda u: u.initialize())
 
-    # flags = fix_state_vars(dye_sep.P1.properties)
-    # solve(dye_sep)
-    # revert_state_vars(dye_sep.P1.properties, flags)
-
     # initialize ro
     propagate_state(m.fs.s_nf)
     propagate_state(m.fs.s_ro)
     propagate_state(m.fs.s_disposal)
+    propagate_state(m.fs.s_permeate)
+
     m.fs.tb_nf_ro.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = value(
         m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["H2O"]
     )
@@ -328,7 +338,16 @@ def initialize_system(m):
         desal.P2.control_volume.properties_out[0].pressure
     )
     solve(desal)
+    # if m.erd_type == "pressure_exchanger":
+    #     flags = fix_state_vars(desal.S1.mixed_state)
+    #     solve(desal)
+    #     revert_state_vars(desal.S1.mixed_state, flags)
+    # elif m.erd_type == "pump_as_turbine":
+    #     flags = fix_state_vars(desal.P2.control_volume.properties_in)
+    #     solve(desal)
+    #     revert_state_vars(desal.P2.control_volume.properties_in, flags)
     desal.RO.initialize()
+    return
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
