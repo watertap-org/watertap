@@ -17,6 +17,7 @@ from pyomo.environ import (
     Expression,
     Objective,
     Param,
+    Var,
     TransformationFactory,
     units as pyunits,
     assert_optimal_termination,
@@ -65,6 +66,8 @@ def main():
     display_water_states(m.fs.condenser.control_volume.properties_out[0])
     print('\nDistillate exiting HX State:')
     display_water_states(m.fs.distillate.properties[0])
+    #optimize(m)
+    #display_system(m)
 
 
 def build():
@@ -95,6 +98,18 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
+    # make into a function to add pressure drop
+    m.fs.hx_distillate.cold.pressure_balance.deactivate()
+    m.fs.hx_distillate.hot.pressure_balance.deactivate()
+    m.fs.hx_distillate.cold.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
+    m.fs.hx_distillate.hot.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
+    m.fs.hx_distillate.cold.pressure_drop = Constraint(expr=m.fs.hx_distillate.cold.properties_in[0].pressure == m.fs.hx_distillate.cold.properties_out[0].pressure
+                                                       + m.fs.hx_distillate.cold.deltaP[0])
+    m.fs.hx_distillate.hot.pressure_drop = Constraint(expr=m.fs.hx_distillate.hot.properties_in[0].pressure == m.fs.hx_distillate.hot.properties_out[0].pressure
+                                                       + m.fs.hx_distillate.hot.deltaP[0])
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.cold.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.hot.pressure_drop, 1e-5)
+
     # m.fs.mixer_feed = Mixer(
     #     default={
     #         "property_package": m.fs.properties_feed,
@@ -206,15 +221,15 @@ def set_operating_conditions(m):
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
 
-    # Split ratio
-
     # Heat exchangers
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.hx_distillate.area.fix(100)
+    #m.fs.hx_distillate.cold.deltaP[0].fix(7e4)
+    #m.fs.hx_distillate.hot.deltaP[0].fix(7e4)
 
     # evaporator specifications
     m.fs.evaporator.inlet_feed.temperature[0].fix(273.15+50.52)
-    m.fs.evaporator.inlet_feed.pressure[0].fix(101325+10e3)
+    m.fs.evaporator.inlet_feed.pressure[0].fix(101325)
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
     # m.fs.evaporator.area.fix(400)  # m^2
@@ -259,7 +274,7 @@ def initialize_system(m, solver=None):
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0,'Liq','H2O'] = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap','H2O'].value
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0,'Vap','H2O'] = 1e-8
     m.fs.hx_distillate.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[0].value
-    m.fs.hx_distillate.hot_inlet.pressure[0] = 60e3
+    m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
     m.fs.hx_distillate.initialize()
 
     # initialize evaporator
@@ -295,13 +310,10 @@ def display_system(m):
     print('Feed salinity: ', m.fs.feed.properties[0].mass_frac_phase_comp['Liq','TDS'].value*1e3, ' g/kg')
     print('Brine salinity: ', m.fs.brine.properties[0].mass_frac_phase_comp['Liq','TDS'].value*1e3, ' g/kg')
     print("Recovery: ", recovery)
-    #print('\nSplitter')
     print('\nDistillate heat exchanger')
     print('Area: ', m.fs.hx_distillate.area.value, ' m^2')
     print('U: ', m.fs.hx_distillate.overall_heat_transfer_coefficient[0].value, ' W/m^2-K')
     print('Heat transfer: ', m.fs.hx_distillate.heat_duty[0].value, ' W')
-    print('\nBrine heat exchanger')
-    print('\nMixed feed')
     print("\nEvaporator")
     print("Temperature: ", m.fs.evaporator.properties_brine[0].temperature.value, ' K') #, ', Fixed? ',  m.fs.evaporator.outlet_brine.temperature[0].fixed())
     print("Pressure: ", m.fs.evaporator.properties_brine[0].pressure.value, ' Pa')
@@ -337,19 +349,19 @@ def display_water_states(state_blk):
     #     m.fs.evaporator.properties_vapor[0].enth_flow_phase["Vap"].value,
 
 def optimize(m):
+    solver = get_solver()
     m.fs.objective = Objective(
-        expr=-m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"]
+        expr=m.fs.compressor.control_volume.work[0]
     )
-    print("Set objective")
+    print("\nSet objective to minimize work")
+    m.fs.evaporator.area.unfix()
+    m.fs.evaporator.inlet_feed.temperature[0].unfix()
+    m.fs.evaporator.outlet_brine.temperature[0].unfix()
+    m.fs.compressor.control_volume.work[0].unfix()
+    m.fs.hx_distillate.area.unfix()
+
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
-    recovery = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
-        "Vap", "H2O"
-    ].value / (
-        m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "TDS"].value
-        + m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "H2O"].value
-    )
-    print("Recovery after optimization: ", recovery)
 
 if __name__ == "__main__":
     main()

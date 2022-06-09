@@ -79,12 +79,12 @@ def build():
     # Unit models
     m.fs.feed = Feed(default={"property_package": m.fs.properties_feed})
     m.fs.pump_feed = Pump(default={"property_package": m.fs.properties_feed})
-    # m.fs.separator_feed = Separator(
-    #     default={
-    #         "property_package": m.fs.properties_feed,
-    #         "outlet_list": [""]
-    #     }
-    # )
+    m.fs.separator_feed = Separator(
+        default={
+            "property_package": m.fs.properties_feed,
+            "outlet_list": [""]
+        }
+    )
     m.fs.hx_distillate = HeatExchanger(
         default={
             "hot_side_name": "hot",
@@ -95,13 +95,13 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
-    # m.fs.mixer_feed = Mixer(
-    #     default={
-    #         "property_package": m.fs.properties_feed,
-    #         "momentum_mixing_type": MomentumMixingType.equality,
-    #         "inlet_list": []
-    #     }
-    # )
+    m.fs.mixer_feed = Mixer(
+        default={
+            "property_package": m.fs.properties_feed,
+            "momentum_mixing_type": MomentumMixingType.equality,
+            "inlet_list": []
+        }
+    )
 
     m.fs.evaporator = Evaporator(
         default={
