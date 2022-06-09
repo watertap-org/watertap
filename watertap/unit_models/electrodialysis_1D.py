@@ -296,10 +296,20 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
+        self.diluate.power_electrical_x = Var(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            initialize=1,
+            bounds=(0, 12100),
+            domain=NonNegativeReals,
+            units=pyunits.watt,
+            doc="Electrical power consumption of a stack",
+        )
+        self.diluate.Dpower_electrical_Dx =DerivativeVar(self.diluate.power_electrical_x, wrt = self.diluate.length_domain, units=pyunits.watt)
 
         # Apply transformation to the diluate channel
         self.diluate.apply_transformation()
-
+        #print(len(self.diluate.Dpower_electrical_Dx.values))
         '''
         self.difference_elements = Set(
             ordered=True,
@@ -529,18 +539,9 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="The current utilization including water electro-osmosis and ion diffusion",
         )
         # Performance metrics
-        '''
-        self.power_electrical = Var(
-            self.flowsheet().time,
-            self.diluate.length_domain,
-            initialize=1,
-            bounds=(0, 12100),
-            domain=NonNegativeReals,
-            units=pyunits.watt,
-            doc="Electrical power consumption of a stack",
-        )
-        self.Dpower_electrical_Dx =DerivativeVar(self.power_electrical, wrt = self.diluate.length_domain, units=pyunits.watt * pyunits.meter **-1)
         
+        
+        '''
         self.specific_power_electrical = Var(
             self.flowsheet().time,
             initialize=10,
@@ -549,7 +550,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
-         self.current_efficiency = Var(
+        self.current_efficiency = Var(
             self.flowsheet().time,
             initialize=0.9,
             bounds=(0, 1),
@@ -762,25 +763,18 @@ class Electrodialysis1DData(UnitModelBlockData):
                 )
         
         # Performance Metrics
-        '''
+        
         @self.Constraint(
             self.flowsheet().config.time,
             self.diluate.length_domain,
             doc="Electrical power consumption of a stack",
         )
         def eq_power_electrical(self, t, x):
-            return self.power_electrical[t, x] == self.current_applied[t] * self.voltage_x[t, x]
-        '''
-        '''
-        def eq_power_electrical(self, t, x):
-            if self.config.operation_mode == 'Constant_Current':
-                return self.power_electrical[t, x] == self.current_applied[t] * self.voltage_x[t, x]
-            else:
-                if x == self.diluate.length_domain.first():
-                    return Constraint.Skip
-                else: 
-                    return self.Dpower_electrical_Dx[t, x] == self.voltage_applied[t] * self.current_density_x[t, x] * self.cell_width
-        '''
+            if x == self.diluate.length_domain.first():
+                return self.diluate.power_electrical_x[t, x] == 0
+            else: 
+                return self.diluate.Dpower_electrical_Dx[t, x] == self.voltage_x[t,x] * self.current_density_x[t, x] * self.cell_width * self.diluate.length
+        
         '''
         @self.Constraint(
             self.flowsheet().config.time,
