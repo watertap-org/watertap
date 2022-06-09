@@ -25,7 +25,7 @@ To use Conda environments, the ``conda`` package manager is required. Refer to t
 General installation
 --------------------
 
-If you are going to use WaterTAP's functionality, but *do not* plan to contribute to WaterTAP's codebase, choose this option.
+If you are going to use WaterTAP's functionality, but *do not* plan to modify or contribute to WaterTAP's codebase, choose this option.
 
 #. Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
@@ -55,12 +55,7 @@ If you are going to use WaterTAP's functionality, but *do not* plan to contribut
 
 		pip install watertap
 
-#. To verify that the installation was successful, open a Python interpreter and try importing some of WaterTAP's modules, e.g.:
-
-	.. code-block:: shell
-
-		python
-		>>> from watertap.unit_models import *
+#. (Optional) If you want to verify that the installation was successful by running the WaterTAP test suite, see :ref:`Running the WaterTAP test suite`.
 
 .. _install-idaes-ext:
 
@@ -172,8 +167,11 @@ To install the EDB, follow these steps:
        Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
        each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
 
+
+.. _Running the WaterTAP test suite:
+
 Running the WaterTAP test suite
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #. To run the WaterTAP test suite, first install the optional testing dependencies using pip:
 
@@ -196,9 +194,9 @@ Running the WaterTAP test suite
 .. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
 
 For WaterTAP developers
--------------------------
+-----------------------
 
-If you plan to contribute to WaterTAP's codebase, choose this option.
+If you plan to modify or contribute to WaterTAP's codebase, choose this option.
 
 .. note:: Typically, *contributing to WaterTAP* will involve opening a Pull Request (PR) in WaterTAP's repository. For more information, refer to :ref:`developer-guide`.
 
@@ -229,9 +227,9 @@ If you plan to contribute to WaterTAP's codebase, choose this option.
    WaterTAP uses the `pre-commit <https://pre-commit.com/>`_ framework to manage a few hooks that are useful for WaterTAP developers.
    To install the WaterTAP pre-commit hooks, run:
 
-   .. code-block:: shell
+    .. code-block:: shell
 
-       pre-commit install
+        pre-commit install
 
 #. To verify that the installation was successful, try running the WaterTAP test suite using ``pytest``:
 
