@@ -159,6 +159,7 @@ def build(erd_type="pressure_exchanger"):
         }
     )
 
+    # since the dye << tds: Assume RO_TDS = NF_tds + NF_dye
     @m.fs.tb_nf_ro.Constraint(["H2O", "dye"])
     def eq_flow_mass_comp(blk, j):
         if j == "dye":
@@ -223,6 +224,8 @@ def build(erd_type="pressure_exchanger"):
         iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
     elif erd_type == "pump_as_turbine":
         iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
+
+    # touch properties used in specifying and initializing the model
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -295,11 +298,37 @@ def initialize_system(m):
 
     # initialized nf
     propagate_state(m.fs.s_feed)
-    solve(dye_sep)
+    seq = SequentialDecomposition()
+    seq.options.tear_set = []
+    seq.options.iterLim = 1
+    seq.run(dye_sep, lambda u: u.initialize())
+
+    # flags = fix_state_vars(dye_sep.P1.properties)
+    # solve(dye_sep)
+    # revert_state_vars(dye_sep.P1.properties, flags)
 
     # initialize ro
     propagate_state(m.fs.s_nf)
+    propagate_state(m.fs.s_ro)
+    propagate_state(m.fs.s_disposal)
+    m.fs.tb_nf_ro.properties_out[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+        m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["H2O"]
+    )
+    m.fs.tb_nf_ro.properties_out[0].flow_mass_phase_comp["Liq", "TDS"] = value(
+        m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["tds"]
+    ) + value(m.fs.tb_nf_ro.properties_in[0].flow_mass_comp["dye"])
+
+    desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
+        m.fs.tb_nf_ro.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+    )
+    desal.RO.feed_side.properties_in[0].temperature = value(
+        m.fs.tb_nf_ro.properties_out[0].temperature
+    )
+    desal.RO.feed_side.properties_in[0].pressure = value(
+        desal.P2.control_volume.properties_out[0].pressure
+    )
     solve(desal)
+    desal.RO.initialize()
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
