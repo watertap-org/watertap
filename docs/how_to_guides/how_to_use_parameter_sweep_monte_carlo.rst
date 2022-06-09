@@ -110,11 +110,8 @@ which will parallelize the requested parameter sweep between 4 computational uni
     os.remove('monte_carlo_results.csv')
     shutil.rmtree('local_results')
 
-For more information, consult the technical reference for the parameter sweep tool.
 
-Function Documentation
+Additional Information
 ----------------------
 
-.. automodule :: watertap.tools.parameter_sweep
-   :noindex:
-   :members:
+* Code documentation for the :mod:`watertap.tools.parameter_sweep` module
