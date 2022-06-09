@@ -1,7 +1,45 @@
 .. _developer-guide:
 
 How to contribute to WaterTAP's development
----------------------------------------------
+===========================================
+
+Installing WaterTAP in an existing development environment
+----------------------------------------------------------
+
+When either the ``watertap`` package or one of its dependencies are installed, it should be possible to update those packages within an existing developer environment.
+
+.. important:: In case of any issue or unexpected behavior when updating an existing environment,
+    first try to see if the issues are solved if a freshly created environment is used instead.
+
+#. Activate the environment, if not already active:
+
+    .. code-block:: shell
+
+        conda activate watertap-dev
+
+#. Enter the directory where your local clone of the WaterTAP repository is located, and pull the latest changes using ``git pull``:
+
+    .. code-block:: shell
+        
+        cd /path/to/your/clone
+        git pull
+
+#. Uninstall the version of ``watertap`` that's currently installed in the environment:
+
+    .. code-block:: shell
+
+        pip uninstall watertap
+
+#. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
+
+    .. code-block:: shell
+
+        pip --no-cache-dir install -r requirements-dev.txt
+
+    .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
+        which would cause the wrong (outdated) version to be present in the environment after installation.
+
+.. _documentation-mini-guide:
 
 Working with the WaterTAP documentation
 ---------------------------------------
