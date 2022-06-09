@@ -941,7 +941,13 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.01
         if "cp_modulus" not in initialize_guess:
-            initialize_guess["cp_modulus"] = 1.1
+            if (
+                self.config.concentration_polarization_type
+                != ConcentrationPolarizationType.none
+            ):
+                initialize_guess["cp_modulus"] = 1.1
+            else:
+                initialize_guess["cp_modulus"] = 1
 
         if state_args is None:
             state_args = {}
