@@ -885,6 +885,21 @@ class NanofiltrationData(UnitModelBlockData):
                 * b.electric_potential_grad_feed_interface[t, x]
             )
 
+        @self.Constraint(
+            self.flowsheet().config.time,
+            io_list,
+            phase_list,
+            solute_set,
+            doc="Feed-interface mass transfer resistance accounting for concentration polarization",
+        )
+        def eq_no_concentration_polarization(b, t, x, p, j):
+            if x == 0:
+                bulk = b.feed_side.properties_in[t]
+            elif x:
+                bulk = b.feed_side.properties_out[t]
+            interface = b.feed_side.properties_interface[t, x]
+            return interface.conc_mol_phase_comp[p, j] == bulk.conc_mol_phase_comp[p, j]
+
         # 9. Isothermal conditions at permeate inlet/outlet, DOF= 1*2 for inlet/outlet
         @self.Constraint(
             self.flowsheet().config.time,
@@ -1120,75 +1135,25 @@ class NanofiltrationData(UnitModelBlockData):
                 == b.mixed_permeate[t].flow_vol_phase["Liq"]
             )
 
-        # Experimental constraint
-        @self.Constraint(
+        # Experimental Constraint
+        @self.feed_side.Constraint(
             self.flowsheet().config.time,
             io_list,
-            solvent_solute_set,
-            doc="Mass fraction of water in permeate related to water flux",
+            phase_list,
+            doc="Electroneutrality in bulk feed",
         )
-        def eq_mass_frac_permeate(b, t, x, j):
+        def eq_electroneutrality_feed(b, t, x, p):
+            if not x:
+                props = b.properties_in[t]
+            else:
+                props = b.properties_out[t]
             return (
-                b.permeate_side[t, x].mass_frac_phase_comp["Liq", j]
-                * sum(
-                    b.flux_mol_phase_comp[t, x, "Liq", jj]
-                    * b.config.property_package.mw_comp[jj]
-                    for jj in b.config.property_package.component_list
+                sum(
+                    props.conc_mol_phase_comp[p, j] * props.charge_comp[j]
+                    for j in solute_set
                 )
-                == self.flux_mol_phase_comp[t, x, "Liq", j]
-                * b.config.property_package.mw_comp[j]
+                == 0
             )
-
-        # Experimental constraint: Electroneutrality of final permeate
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     phase_list,
-        #     doc="Electroneutrality in mixed permeate",
-        # )
-        # def eq_electroneutrality_mixed_permeate(b, t, p):
-        #     return (
-        #         sum(
-        #             b.mixed_permeate[t].conc_mol_phase_comp[p, j]
-        #             * b.mixed_permeate[t].charge_comp[j]
-        #             for j in solute_set
-        #         )
-        #         == 0
-        #     )
-
-        #
-        # Experimental constraint: feed electroneutrality --- may be degenerate constraint
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     phase_list,
-        #     doc="Electroneutrality at feed outlet",
-        # )
-        # def eq_electroneutrality_feed_outlet(b, t, p):
-        #     prop = b.feed_side.properties_out[t]
-        #     return (
-        #         sum(
-        #             prop.conc_mol_phase_comp[p, j] * prop.charge_comp[j]
-        #             for j in solute_set
-        #         )
-        #         == 0
-        #     )
-
-        # Experimental constraint: electroneutrality inside membrane- identified as degenerate constraint
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     io_list,
-        #     phase_list,
-        #     doc="Electroneutrality inside the membrane",
-        # )
-        # def eq_electroneutrality_in_membrane(b, t, x, p):
-        #     return (
-        #         sum(
-        #             b.conc_mol_phase_comp_pore_avg[t, x, p, j]
-        #             * b.feed_side.properties_in[t].charge_comp[j]
-        #             for j in solute_set
-        #         )
-        #         + b.membrane_charge_density[t]
-        #         == 0
-        #     )
 
     def _make_expressions(self):
         solute_set = (
@@ -1258,6 +1223,11 @@ class NanofiltrationData(UnitModelBlockData):
                 - 0.834 * b.lambda_comp[t, j] ** 3
             ) / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j] ** 2)
 
+        # TODO: some conflict between studies in the literature on whether it should be
+        # 1 / b.feed_side.properties_in[t].dielectric_constant - 1 / b.dielectric_constant_pore[t]
+        # OR
+        # 1 / b.dielectric_constant_pore[t] -1 / b.feed_side.properties_in[t].dielectric_constant
+        # Choosing the more commonly used form for now.
         @self.Expression(
             self.flowsheet().config.time, solute_set, doc="Steric partitioning factor"
         )
@@ -1280,8 +1250,8 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_in[t].radius_stokes_comp[j]
                 )
                 * (
-                    1 / b.feed_side.properties_in[t].dielectric_constant
-                    - 1 / b.dielectric_constant_pore[t]
+                    -1 / b.feed_side.properties_in[t].dielectric_constant
+                    + 1 / b.dielectric_constant_pore[t]
                 )
             )
 
@@ -1291,8 +1261,12 @@ class NanofiltrationData(UnitModelBlockData):
             doc="Born solvation contribution to partitioning",
         )
         def partition_factor_born_solvation_comp(b, t, j):
-            return -b.gibbs_solvation_comp[t, j] / (
-                Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature
+            return exp(
+                -b.gibbs_solvation_comp[t, j]
+                / (
+                    Constants.boltzmann_constant
+                    * b.feed_side.properties_in[t].temperature
+                )
             )
 
     def initialize_build(
@@ -1405,79 +1379,84 @@ class NanofiltrationData(UnitModelBlockData):
         # Provide better guesses for unit model variables
         # N_Pe_comp
         for (t, x, j), _ in self.eq_N_Pe_comp.items():
-            self.N_Pe_comp[t, x, j].set_value(
-                value(
-                    2
-                    * self.channel_height
-                    * self.velocity[t, x]
-                    / self.config.property_package.diffus_phase_comp["Liq", j]
-                )
-            )
-            self.Kf_comp[t, x, j].set_value(
-                value(
-                    0.753
-                    * (
-                        self.spacer_mixing_efficiency
-                        / (2 - self.spacer_mixing_efficiency)
-                    )
-                    ** 0.5
-                    * (
+            if not self.N_Pe_comp[t, x, j].is_fixed():
+                self.N_Pe_comp[t, x, j].set_value(
+                    value(
                         2
-                        * self.config.property_package.diffus_phase_comp["Liq", j]
-                        / self.channel_height
-                    )
-                    * self.N_Sc_comp[t, x, j] ** (-1 / 6)
-                    * (
-                        self.N_Pe_comp[t, x, j]
                         * self.channel_height
-                        / (2 * self.spacer_mixing_length)
+                        * self.velocity[t, x]
+                        / self.config.property_package.diffus_phase_comp["Liq", j]
                     )
-                    ** 0.5
+                )
+            if not self.Kf_comp[t, x, j].is_fixed():
+                self.Kf_comp[t, x, j].set_value(
+                    value(
+                        0.753
+                        * (
+                            self.spacer_mixing_efficiency
+                            / (2 - self.spacer_mixing_efficiency)
+                        )
+                        ** 0.5
+                        * (
+                            2
+                            * self.config.property_package.diffus_phase_comp["Liq", j]
+                            / self.channel_height
+                        )
+                        * self.N_Sc_comp[t, x, j] ** (-1 / 6)
+                        * (
+                            self.N_Pe_comp[t, x, j]
+                            * self.channel_height
+                            / (2 * self.spacer_mixing_length)
+                        )
+                        ** 0.5
+                    )
+                )
+        for (t, x), _ in self.eq_pressure_permeate_io.items():
+            if not self.permeate_side[0, 0].pressure.is_fixed():
+                self.permeate_side[0, 0].pressure.set_value(
+                    value(self.mixed_permeate[0].pressure)
+                )
+            if not self.permeate_side[0, 1].pressure.is_fixed():
+                self.permeate_side[0, 1].pressure.set_value(
+                    value(self.mixed_permeate[0].pressure)
+                )
+        if not self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"].is_fixed():
+            self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"].set_value(
+                value(
+                    self.feed_side.properties_out[0].flow_mol_phase_comp["Liq", "H2O"]
+                    - self.feed_side.properties_in[0].flow_mol_phase_comp["Liq", "H2O"]
                 )
             )
-        for (t, x), _ in self.eq_pressure_permeate_io.items():
-            self.permeate_side[0, 0].pressure.set_value(
-                value(self.mixed_permeate[0].pressure)
+        if not self.flux_mol_phase_comp[0, 0, "Liq", "H2O"].is_fixed():
+            self.flux_mol_phase_comp[0, 0, "Liq", "H2O"].set_value(
+                value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
             )
-            self.permeate_side[0, 1].pressure.set_value(
-                value(self.mixed_permeate[0].pressure)
+        if not self.flux_mol_phase_comp[0, 1, "Liq", "H2O"].is_fixed():
+            self.flux_mol_phase_comp[0, 1, "Liq", "H2O"].set_value(
+                value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
             )
-
-        self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"].set_value(
-            value(
-                self.feed_side.properties_out[0].flow_mol_phase_comp["Liq", "H2O"]
-                - self.feed_side.properties_in[0].flow_mol_phase_comp["Liq", "H2O"]
-            )
-        )
-
-        self.flux_mol_phase_comp[0, 0, "Liq", "H2O"].set_value(
-            value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
-        )
-        self.flux_mol_phase_comp[0, 1, "Liq", "H2O"].set_value(
-            value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
-        )
         # self.report()
-        # # Double-check for poorly scaled variables after state block initialization
-        # # and rescale them so that scaled variable values = 1:
-        # if automate_rescale:
-        #     badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
-        #     if len(badly_scaled_vars) > 0:
-        #         init_log.warn(
-        #             f"{len(badly_scaled_vars)} poorly scaled "
-        #             f"variable(s) will be rescaled so that each scaled variable value = 1"
-        #         )
-        #         self._automate_rescale_variables()
-        # # ---------------------------------------------------------------------
-        # # Solve unit with deactivated constraint
-        # # self.eq_solute_solvent_flux.deactivate()
+        # Double-check for poorly scaled variables after state block initialization
+        # and rescale them so that scaled variable values = 1:
+        if automate_rescale:
+            badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
+            if len(badly_scaled_vars) > 0:
+                init_log.warn(
+                    f"{len(badly_scaled_vars)} poorly scaled "
+                    f"variable(s) will be rescaled so that each scaled variable value = 1"
+                )
+                self._automate_rescale_variables()
+        # ---------------------------------------------------------------------
+        # Solve unit with deactivated constraint
+        # self.eq_solute_solvent_flux.deactivate()
         # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         #     res = opt.solve(self, tee=slc.tee)
         #     if not check_optimal_termination(res):
         #         init_log.warn(
         #             "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
         #         )
-        # # ---------------------------------------------------------------------
-        # # Solve unit
+        # ---------------------------------------------------------------------
+        # Solve unit
         # self.eq_solute_solvent_flux.activate()
         # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         #     res = opt.solve(self, tee=slc.tee)
@@ -1806,7 +1785,7 @@ class NanofiltrationData(UnitModelBlockData):
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.1
         if "cp_modulus" not in initialize_guess:
-            initialize_guess["cp_modulus"] = 1.1
+            initialize_guess["cp_modulus"] = 1
 
         if state_args is None:
             state_args = {}
@@ -2034,27 +2013,31 @@ class NanofiltrationData(UnitModelBlockData):
         #     #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
         #     iscale.constraint_scaling_transform(con, 1e5)
         #
+        for con in self.eq_solute_solvent_flux.values():
+            iscale.constraint_scaling_transform(con, 1e3)
+        for con in self.eq_solute_flux_pore_domain.values():
+            iscale.constraint_scaling_transform(con, 1e3)
+
+        for con in self.eq_solute_flux_concentration_polarization.values():
+            iscale.constraint_scaling_transform(con, 1e3)
+
         for con in self.feed_side.material_balances.values():
             iscale.constraint_scaling_transform(con, 1e-1)
 
         for con in self.eq_interfacial_partitioning_feed.values():
-            iscale.constraint_scaling_transform(con, 1e-1)
+            iscale.constraint_scaling_transform(con, 1e0)
 
         for con in self.eq_interfacial_partitioning_permeate.values():
             iscale.constraint_scaling_transform(con, 1e-1)
 
+        for con in self.feed_side.eq_electroneutrality_feed.values():
+            iscale.constraint_scaling_transform(con, 1e-3)
         for con in self.eq_electroneutrality_interface.values():
-            iscale.constraint_scaling_transform(con, 1e-5)
+            iscale.constraint_scaling_transform(con, 1e-3)
         for con in self.eq_electroneutrality_pore.values():
-            iscale.constraint_scaling_transform(con, 1e-5)
+            iscale.constraint_scaling_transform(con, 1e-4)
         for con in self.eq_electroneutrality_permeate.values():
             iscale.constraint_scaling_transform(con, 1e-5)
-        # for con in self.eq_electroneutrality_feed_outlet.values():
-        #     iscale.constraint_scaling_transform(con, 1e-5)
-        # for con in self.eq_electroneutrality_in_membrane.values(): # degenerate constraint
-        #     iscale.constraint_scaling_transform(con, 1e-5)
-        # for con in self.eq_electroneutrality_mixed_permeate.values():
-        #     iscale.constraint_scaling_transform(con, 1e-5)
 
         # for con in self.eq_area.values():
         #     iscale.constraint_scaling_transform(con, 1)
@@ -2062,16 +2045,16 @@ class NanofiltrationData(UnitModelBlockData):
         #     iscale.constraint_scaling_transform(con, 1)
         # for con in self.eq_mass_transfer_feed.values():
         #     iscale.constraint_scaling_transform(con, 1e6)
-        # for con in self.eq_permeate_production.values():
-        #     iscale.constraint_scaling_transform(con, 1e5)
+        for con in self.eq_permeate_production.values():
+            iscale.constraint_scaling_transform(con, 1e-1)
         # for con in self.eq_recovery_vol_phase.values():
         #     iscale.constraint_scaling_transform(con, 1e2)
         for con in self.eq_rejection_intrinsic_phase_comp.values():
-            iscale.constraint_scaling_transform(con, 1)
+            iscale.constraint_scaling_transform(con, 1e-1)
         # for con in self.eq_N_Sc_comp.values():
         #     iscale.constraint_scaling_transform(con, 1e-1)
         for con in self.eq_N_Pe_comp.values():
-            iscale.constraint_scaling_transform(con, 1e-10)
+            iscale.constraint_scaling_transform(con, 1e-9)
         # for con in self.eq_velocity.values():
         #     iscale.constraint_scaling_transform(con, 1e3)
         # for con in self.eq_pressure_permeate_io.values():

@@ -6,6 +6,8 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
 )
+from idaes.core.util.exceptions import InitializationError
+
 from idaes.core import FlowsheetBlock, MomentumBalanceType
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import (
@@ -139,7 +141,7 @@ if __name__ == "__main__":
     )
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
     print("Check after fixing inlet conc; DOF=", degrees_of_freedom(m))
-
+    m.fs.unit.inlet.flow_mol_phase_comp.display()
     # Use assert electroneutrality method from property model to ensure the ion concentrations provided
     # obey electroneutrality condition
     m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(
@@ -180,13 +182,23 @@ if __name__ == "__main__":
     assert_units_consistent(m)
 
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+        "flow_mol_phase_comp", 1e0, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+        "flow_mol_phase_comp", 1e-2, index=("Liq", "SO4_2-")
     )
-    # m.fs.unit.eq_solute_solvent_flux.deactivate()
-    m.fs.unit.eq_mass_frac_permeate.deactivate()
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "Mg_2+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e-3, index=("Liq", "H2O")
+    )
     iscale.calculate_scaling_factors(m.fs.unit)
 
     print(
@@ -194,13 +206,22 @@ if __name__ == "__main__":
     )
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
 
-    m.fs.unit.initialize(
-        automate_rescale=True,
-        optarg={
-            "halt_on_ampl_error": "yes",
-        },
-        outlvl=idaeslog.DEBUG,
-    )
+    # deactivate concentration polarization and interface electroneutrality
+    m.fs.unit.eq_electroneutrality_interface.deactivate()
+    m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
+
+    # deactivate NO concentration polarization
+    # m.fs.unit.eq_no_concentration_polarization.deactivate()
+    try:
+        m.fs.unit.initialize(
+            automate_rescale=True,
+            optarg={
+                "halt_on_ampl_error": "yes",
+            },
+            outlvl=idaeslog.DEBUG,
+        )
+    except InitializationError:
+        pass
     # deactivating one of the following constraints
     # yields rejection rates in line with what
     # would be expected, which is the main surface-level issue with the model now:
@@ -215,13 +236,13 @@ if __name__ == "__main__":
 
     # Use of Degeneracy Hunter for troubleshooting model.
     m.fs.dummy_objective = Objective(expr=0)
-    # solver.options['max_iter'] = 0
-    # solver.solve(m, tee=True)
+    solver.options["max_iter"] = 0
+    solver.solve(m, tee=True)
     dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # dh.check_residuals(tol=0.1)
-    # assert False
+    dh.check_residuals(tol=0.1)
     # ##############################################################################################################
-    # # dh.check_variable_bounds(tol=1e-3)
+    # dh.check_variable_bounds(tol=1e-3)
+
     #
     # # assert False
     #
@@ -230,63 +251,8 @@ if __name__ == "__main__":
     # # print("DOF with all cons deactivated:", degrees_of_freedom(m.fs.unit))
     # # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     # #     con.activate()
-    # # #
-    #
-    # # m.fs.unit.eq_water_flux.deactivate()
-    # m.fs.unit.eq_electroneutrality_feed_outlet.deactivate()
-    # # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
-    # # m.fs.unit.eq_permeate_isothermal.activate()
-    # # m.fs.unit.eq_permeate_isothermal_mixed.activate()
-    # # m.fs.unit.eq_pressure_permeate_io.activate()
-    # # m.fs.unit.eq_mass_transfer_feed.activate()
-    # # m.fs.unit.eq_permeate_production.deactivate()
-    # # #
-    # # m.fs.unit.eq_recovery_mol_phase_comp.activate()
-    # # m.fs.unit.eq_pore_isothermal.activate()
-    # # m.fs.unit.feed_side.eq_feed_interface_isothermal.activate()
-    # # m.fs.unit.feed_side.eq_feed_isothermal.activate()
-    # #
-    # # m.fs.unit.eq_recovery_vol_phase.activate()
-    # # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
-    # # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
-    # #
-    # # # BRING IN NEW constraints for mass transfer coefficient
-    # # m.fs.unit.eq_Kf_comp.activate()
-    # # m.fs.unit.eq_N_Sc_comp.activate()
-    # # m.fs.unit.eq_N_Pe_comp.activate()
-    # # m.fs.unit.eq_velocity.activate()
-    # # m.fs.unit.eq_area.activate()
-    # #
-    # # m.fs.unit.eq_interfacial_partitioning_feed.activate()
-    # # m.fs.unit.eq_electroneutrality_interface.activate()
-    # # m.fs.unit.eq_electroneutrality_pore.activate()
-    # # m.fs.unit.eq_electroneutrality_permeate.activate()
-    # # m.fs.unit.eq_rejection_intrinsic_phase_comp.activate()
-    # #
-    # # m.fs.unit.eq_equal_flowrate_pore_entrance_io.activate()
-    # # m.fs.unit.eq_pressure_pore_exit_io.activate()
-    #
-    # # Constraints that mess up the solve
-    # # m.fs.unit.eq_density_mixed_permeate.activate()
-    # # m.fs.unit.eq_equal_flowrate_pore_io.activate()
-    # # m.fs.unit.eq_equal_flowrate_feed_interface_in.activate()
-    #
-    #
-    # # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
-    # # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
-    # # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
-    # # m.fs.unit.area.unfix()
-    # # print('---------------- BEFORE AUTOMATE RESCALE---------------------------------------')
-    # # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    # # print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
-    # # m.fs.unit._automate_rescale_variables(rescale_factor=1)
-    # # # print('---------------- AFTER AUTOMATE RESCALE---------------------------------------')
-    # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    # print('\nNUMBER OF badly scaled variables BEFORE SOLVE:', len(list(iscale.badly_scaled_var_generator(m))))
-    # # print('\nRecalculate scaling factors---------------------------------------')
-    #
 
-    # solver.options['max_iter'] = 1000
+    solver.options["max_iter"] = 2000
     # solver.options['max_iter'] = 0
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
@@ -298,49 +264,32 @@ if __name__ == "__main__":
         # b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
     else:
         print("FIRST SOLVE FAILED..............")
-        print("Badly scaled vars after FIRST failed solve:")
-        [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-        print(
-            f"Number of badly scaled vars = {len(list(iscale.badly_scaled_var_generator(m)))}"
-        )
-        m.fs.unit._automate_rescale_variables(rescale_factor=1)
-
-        results = solver.solve(m, tee=True)
-        if check_optimal_termination(results):
-            b.report()
-            print("SUCCESSFUL SECOND SOLVE!!!!!!!!!!!")
-            # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
-            # are deactivated because they lead to failed solve
-            b.feed_side.properties_out[0].assert_electroneutrality(
-                defined_state=False, tee=True, solve=False
-            )
-            b.mixed_permeate[0].assert_electroneutrality(
-                defined_state=False, tee=True, solve=False
-            )
-        else:
-            print("Badly scaled vars after SECOND failed solve:")
-            [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-            print(
-                f"Number of badly scaled vars = {len(list(iscale.badly_scaled_var_generator(m)))}"
-            )
-            print("SECOND SOLVE FAILED...............................")
-
-    print(f"Degrees of freedom ={degrees_of_freedom(m)} ")
-    #
-    # print_infeasible_constraints(m, print_expression=True, print_variables=True, output_file='infeasible_w_kf.log')
-    #
-    # Js_check=[]
-    # Js_model=[]
-    # Js_check_model=[]
-    # Jw_check=[]
-    # Jw_model=[]
-    # Jw_check_model=[]
-    # for j in m.fs.properties.config.solute_list:
-    #     check=value(b.flux_vol_water[0, 0] * b.permeate_side[0, 0].conc_mol_phase_comp["Liq", j])
-    #     model= value(b.flux_mol_phase_comp[0, 0 , "Liq", j])
-    #     Js_check.append(check)
-    #     Js_model.append(model)
-    #     Js_check_model.append(check/model)
+        # print("Badly scaled vars after FIRST failed solve:")
+        # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
+        # print(
+        #     f"Number of badly scaled vars = {len(list(iscale.badly_scaled_var_generator(m)))}"
+        # )
+        # m.fs.unit._automate_rescale_variables(rescale_factor=1)
+        #
+        # results = solver.solve(m, tee=True)
+        # if check_optimal_termination(results):
+        #     b.report()
+        #     print("SUCCESSFUL SECOND SOLVE!!!!!!!!!!!")
+        #     # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
+        #     # are deactivated because they lead to failed solve
+        #     b.feed_side.properties_out[0].assert_electroneutrality(
+        #         defined_state=False, tee=True, solve=False
+        #     )
+        #     b.mixed_permeate[0].assert_electroneutrality(
+        #         defined_state=False, tee=True, solve=False
+        #     )
+        # else:
+        #     print("Badly scaled vars after SECOND failed solve:")
+        #     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
+        #     print(
+        #         f"Number of badly scaled vars = {len(list(iscale.badly_scaled_var_generator(m)))}"
+        #     )
+        #     print("SECOND SOLVE FAILED...............................")
     #
     # More Degeneracy Hunter troubleshooting
     # dh.check_residuals(tol=1e-10)
@@ -350,44 +299,8 @@ if __name__ == "__main__":
     # except:
     #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
     #     ids = dh.find_irreducible_degenerate_sets(verbose=True)
-    # ####################################################################################
-    #     import numpy as np
-    #     # old_vars_list = [print(i) for i in list(variables_in_activated_equalities_set(m.fs.unit))]
-    #     m.fs.del_component(m.fs.dummy_objective)
-    #     for i, var in enumerate(m.fs.unit.component_data_objects(Var)):
-    #         # if var not in old_vars_list:
-    #         #     pass
-    #         # else:
-    #         if not i:
-    #             old_vars = [var.name, value(var)]
-    #         else:
-    #             old_vars.append([var.name, value(var)])
-    #     new_model = deepcopy(m)
-    #     for i, var in enumerate(new_model.component_data_objects(Var)):
-    #         # if var not in old_vars_list:
-    #         #     pass
-    #         # else:
-    #         print(var)
-    #         if i>0:
-    #             new_model.fs.del_component(new_model.fs.dummy_objective)
-    #
-    #         new_model.fs.dummy_objective = Objective(expr=var, sense=-1)
-    #         # try:
-    #         #     results = solver.solve(new_model, tee=False)
-    #         #     assert_optimal_termination(results)
-    #         #     if not i:
-    #         #         new_vars = [var.name, value(var)]
-    #         #     else:
-    #         #         new_vars.append([var.name, value(var)])
-    #         #     del new_model
-    #         #     new_model = deepcopy(m)
-    #         # except:
-    #         #     new_vars = ["NaN", "NaN"]
-    #         #     if not i:
-    #         #         new_vars = ["NaN", "NaN"]
-    #         #     else:
-    #         #         new_vars.append(["NaN", "NaN"])
-    #         #     del new_model
-    #         #     new_model = deepcopy(m)
+
     b.rejection_intrinsic_phase_comp.display()
     b.rejection_observed_phase_comp.display()
+    print(f"Degrees of freedom ={degrees_of_freedom(m)} ")
+    print_infeasible_constraints(m)
