@@ -197,11 +197,17 @@ class TestUltraviolet:
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(74e-9, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "NDMA"]
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                "Liq", "NDMA"
+            ]
         )
         assert pytest.approx(0.999999999, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
         )
         assert pytest.approx(2.4084e-8, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "NDMA"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "NDMA"
+            ]
         )

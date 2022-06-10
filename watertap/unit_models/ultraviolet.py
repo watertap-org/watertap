@@ -43,6 +43,7 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+
 @declare_process_block_class("Ultraviolet0D")
 class Ultraviolet0DData(UnitModelBlockData):
     """
@@ -335,9 +336,9 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Outlet water and NDMA flux",
         )
         def eq_flux_out(b, t, p, j):
-            return b.flux_mass_phase_comp_out[t, p, j] == b.control_volume.properties_out[
-                t
-            ].get_material_flow_terms(p, j)
+            return b.flux_mass_phase_comp_out[
+                t, p, j
+            ] == b.control_volume.properties_out[t].get_material_flow_terms(p, j)
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -357,8 +358,10 @@ class Ultraviolet0DData(UnitModelBlockData):
                 return prop_out.get_material_flow_terms(
                     p, j
                 ) == prop_in.get_material_flow_terms(p, j) * exp(
-                    pyunits.convert(-b.uv_dose * b.inactivation_rate[t, j],
-                                    to_units=pyunits.dimensionless)
+                    pyunits.convert(
+                        -b.uv_dose * b.inactivation_rate[t, j],
+                        to_units=pyunits.dimensionless,
+                    )
                 )
 
     def initialize_build(
@@ -453,7 +456,9 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.uv_intensity, sf)
 
         if iscale.get_scaling_factor(self.exposure_time) is None:
-            sf = iscale.get_scaling_factor(self.exposure_time, default=1e-2, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.exposure_time, default=1e-2, warning=True
+            )
             iscale.set_scaling_factor(self.exposure_time, sf)
 
         # these variables do not typically require user input,
@@ -518,7 +523,9 @@ class Ultraviolet0DData(UnitModelBlockData):
         # transforming constraints
         for c in self.eq_uv_dose.values():
             if iscale.get_scaling_factor(self.uv_dose) is None:
-                sf = iscale.get_scaling_factor(self.uv_intensity) * iscale.get_scaling_factor(self.exposure_time)
+                sf = iscale.get_scaling_factor(
+                    self.uv_intensity
+                ) * iscale.get_scaling_factor(self.exposure_time)
             else:
                 sf = iscale.get_scaling_factor(self.uv_dose)
             iscale.constraint_scaling_transform(c, sf)
