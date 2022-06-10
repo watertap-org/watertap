@@ -98,12 +98,12 @@ class NaClParameterData(PhysicalParameterBlock):
             description="Heat of crystallization construction flag",
             doc="""
            Options to account for heat of crystallization value for NaCl.
-    
+
            **default** - ``HeatOfCrystallizationModel.constant``
-    
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-    
+
            "``HeatOfCrystallizationModel.constant``", "Fixed heat of crystallization for NaCl based on literature"
            "``HeatOfCrystallizationModel.zero``", "Zero heat of crystallization assumption"
            "``HeatOfCrystallizationModel.temp_dependent``", "Temperature-dependent heat of crystallization for NaCl"
@@ -128,7 +128,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.Vap = VaporPhase(default={"component_list": ["H2O"]})
         self.Sol = SolidPhase(default={"component_list": ["NaCl"]})
 
-        """ 
+        """
        References
         This package was developed from the following references:
 
@@ -136,27 +136,27 @@ class NaClParameterData(PhysicalParameterBlock):
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
 
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
 
-        - Laliberté, M. & Cooper, W. E. Model for Calculating the Density of Aqueous Electrolyte Solutions  
+        - Laliberté, M. & Cooper, W. E. Model for Calculating the Density of Aqueous Electrolyte Solutions
         Journal of Chemical & Engineering Data, American Chemical Society (ACS), 2004, 49, 1141-1151.
 
-        - Laliberté, M. A Model for Calculating the Heat Capacity of Aqueous Solutions, with Updated Density and Viscosity Data 
-        Journal of Chemical & Engineering Data, American Chemical Society (ACS), 2009, 54, 1725-1760 
+        - Laliberté, M. A Model for Calculating the Heat Capacity of Aqueous Solutions, with Updated Density and Viscosity Data
+        Journal of Chemical & Engineering Data, American Chemical Society (ACS), 2009, 54, 1725-1760
         Liquid NaCl heat capacity and density parameters available https://pubs.acs.org/doi/10.1021/je8008123
 
-        - Sparrow, B. S. Empirical equations for the thermodynamic properties of aqueous sodium chloride 
+        - Sparrow, B. S. Empirical equations for the thermodynamic properties of aqueous sodium chloride
         Desalination, Elsevier BV, 2003, 159, 161-170
 
-        - Chase, M.W., Jr., NIST-JANAF Themochemical Tables, Fourth Edition, J. Phys. Chem. Ref. Data, Monograph 9, 
+        - Chase, M.W., Jr., NIST-JANAF Themochemical Tables, Fourth Edition, J. Phys. Chem. Ref. Data, Monograph 9,
         1998, 1-1951.
 
-        - El-Dessouky, H. T. & Ettouney, H. M. (Eds.). Appendix A - Thermodynamic Properties. 
+        - El-Dessouky, H. T. & Ettouney, H. M. (Eds.). Appendix A - Thermodynamic Properties.
         Fundamentals of Salt Water Desalination, Elsevier Science B.V., 2002, 525-563
 
-        - Tavare, N. S. Industrial Crystallization, Springer US, 2013.        
+        - Tavare, N. S. Industrial Crystallization, Springer US, 2013.
         """
 
         # Unit definitions
@@ -811,7 +811,7 @@ class NaClParameterData(PhysicalParameterBlock):
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
-        self.set_default_scaling("pressure_sat", 1e-5)
+        self.set_default_scaling("pressure_sat_comp", 1e-5)
         self.set_default_scaling("dens_mass_solvent", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_solvent", 1, index="Vap")
         self.set_default_scaling("dens_mass_solute", 1e-3, index="Sol")
@@ -819,9 +819,9 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("enth_mass_solvent", 1e-2, index="Liq")
         self.set_default_scaling("enth_mass_solvent", 1e-3, index="Vap")
-        self.set_default_scaling("cp_phase", 1e-3, index="Liq")
-        self.set_default_scaling("dh_vap_solvent", 1e-3)
-        self.set_default_scaling("dh_crystallization", 1e-2, index="NaCl")
+        self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
+        self.set_default_scaling("dh_vap_mass_solvent", 1e-3)
+        self.set_default_scaling("dh_crystallization_mass_comp", 1e-2, index="NaCl")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -848,19 +848,21 @@ class NaClParameterData(PhysicalParameterBlock):
                 "dens_mass_solvent": {"method": "_dens_mass_solvent"},
                 "dens_mass_solute": {"method": "_dens_mass_solute"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
-                "dh_vap_solvent": {"method": "_dh_vap_solvent"},
-                "cp_solvent": {"method": "_cp_solvent"},
-                "cp_solute": {"method": "_cp_solute"},
-                "cp_phase": {"method": "_cp_phase"},
+                "dh_vap_mass_solvent": {"method": "_dh_vap_mass_solvent"},
+                "cp_mass_solvent": {"method": "_cp_mass_solvent"},
+                "cp_mass_solute": {"method": "_cp_mass_solute"},
+                "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
-                "pressure_sat": {"method": "_pressure_sat"},
+                "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "enth_mass_solvent": {"method": "_enth_mass_solvent"},
                 "enth_mass_solute": {"method": "_enth_mass_solute"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
-                "dh_crystallization": {"method": "_dh_crystallization"},
+                "dh_crystallization_mass_comp": {
+                    "method": "_dh_crystallization_mass_comp"
+                },
                 "enth_flow": {"method": "_enth_flow"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
@@ -1307,15 +1309,15 @@ class NaClStateBlockData(StateBlockData):
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
     # 7. Latent heat of vapourization of pure water
-    def _dh_vap_solvent(self):
-        self.dh_vap_solvent = Var(
+    def _dh_vap_mass_solvent(self):
+        self.dh_vap_mass_solvent = Var(
             initialize=2.4e3,
             bounds=(1, 1e5),
             units=pyunits.kJ / pyunits.kg,
             doc="Latent heat of vaporization of pure water",
         )
 
-        def rule_dh_vap_solvent(b):
+        def rule_dh_vap_mass_solvent(b):
             t = b.temperature - 273.15 * pyunits.K
             dh_vap_sol = (
                 b.params.dh_vap_w_param_0
@@ -1324,15 +1326,15 @@ class NaClStateBlockData(StateBlockData):
                 + b.params.dh_vap_w_param_3 * t**3
                 + b.params.dh_vap_w_param_4 * t**4
             )
-            return b.dh_vap_solvent == pyunits.convert(
+            return b.dh_vap_mass_solvent == pyunits.convert(
                 dh_vap_sol, to_units=pyunits.kJ / pyunits.kg
             )
 
-        self.eq_dh_vap_solvent = Constraint(rule=rule_dh_vap_solvent)
+        self.eq_dh_vap_mass_solvent = Constraint(rule=rule_dh_vap_mass_solvent)
 
     # 8. Heat capacity of solvent (pure water in liquid and vapour phases)
-    def _cp_solvent(self):
-        self.cp_solvent = Var(
+    def _cp_mass_solvent(self):
+        self.cp_mass_solvent = Var(
             ["Liq", "Vap"],
             initialize=4e3,
             bounds=(1e-5, 1e5),
@@ -1340,7 +1342,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Specific heat capacity of pure solvent",
         )
 
-        def rule_cp_solvent(b, p):
+        def rule_cp_mass_solvent(b, p):
             if p == "Liq":
                 # specific heat, eq. 9 in Sharqawy et al. (2010)
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -1350,12 +1352,13 @@ class NaClStateBlockData(StateBlockData):
                 C = b.params.cp_phase_param_C1
                 D = b.params.cp_phase_param_D1
                 return (
-                    b.cp_solvent["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
+                    b.cp_mass_solvent["Liq"]
+                    == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             elif p == "Vap":
                 t = b.temperature / 1000
                 return (
-                    b.cp_solvent["Vap"]
+                    b.cp_mass_solvent["Vap"]
                     == b.params.cp_vap_param_A
                     + b.params.cp_vap_param_B * t
                     + b.params.cp_vap_param_C * t**2
@@ -1363,11 +1366,11 @@ class NaClStateBlockData(StateBlockData):
                     + b.params.cp_vap_param_E / t**2
                 )
 
-        self.eq_cp_solvent = Constraint(["Liq", "Vap"], rule=rule_cp_solvent)
+        self.eq_cp_mass_solvent = Constraint(["Liq", "Vap"], rule=rule_cp_mass_solvent)
 
     # 9. Heat capacity of solid-phase NaCl crystals
-    def _cp_solute(self):
-        self.cp_solute = Var(
+    def _cp_mass_solute(self):
+        self.cp_mass_solute = Var(
             ["Liq", "Sol"],
             initialize=1e3,
             bounds=(-1e4, 1e5),
@@ -1375,17 +1378,19 @@ class NaClStateBlockData(StateBlockData):
             doc="Specific heat capacity of solid NaCl crystals",
         )
 
-        def rule_cp_solute(b, p):
+        def rule_cp_mass_solute(b, p):
             if p == "Sol":  # Shomate equation for NaCl, NIST
                 t = b.temperature / (1000 * pyunits.dimensionless)
-                cp_solute_mol = (
+                cp_mass_solute_mol = (
                     b.params.cp_param_NaCl_solid_A
                     + (b.params.cp_param_NaCl_solid_B * t)
                     + (b.params.cp_param_NaCl_solid_C * t**2)
                     + (b.params.cp_param_NaCl_solid_D * t**3)
                     + (b.params.cp_param_NaCl_solid_E / (t**2))
                 )
-                return b.cp_solute[p] == cp_solute_mol / b.params.mw_comp["NaCl"]
+                return (
+                    b.cp_mass_solute[p] == cp_mass_solute_mol / b.params.mw_comp["NaCl"]
+                )
             if (
                 p == "Liq"
             ):  # NaCl liq. apparent specific heat capacity, eq. 11-12 of Laliberte (2009)
@@ -1404,15 +1409,15 @@ class NaClStateBlockData(StateBlockData):
                     (1 - b.mass_frac_phase_comp["Liq", "H2O"])
                     ** b.params.cp_param_NaCl_liq_A6
                 )
-                return b.cp_solute[p] == pyunits.convert(
+                return b.cp_mass_solute[p] == pyunits.convert(
                     cp_nacl_liq, to_units=pyunits.J / pyunits.kg / pyunits.K
                 )
 
-        self.eq_cp_solute = Constraint(["Liq", "Sol"], rule=rule_cp_solute)
+        self.eq_cp_mass_solute = Constraint(["Liq", "Sol"], rule=rule_cp_mass_solute)
 
     # 10. cp of liquid solution (Water + NaCl)
-    def _cp_phase(self):
-        self.cp_phase = Var(
+    def _cp_mass_phase(self):
+        self.cp_mass_phase = Var(
             ["Liq"],
             initialize=4e3,
             bounds=(1e-4, 1e5),
@@ -1420,14 +1425,14 @@ class NaClStateBlockData(StateBlockData):
             doc="Specific heat capacity of liquid solution",
         )
 
-        def rule_cp_phase(b):  # heat capacity, eq. 10 of Laliberte (2009) paper
+        def rule_cp_mass_phase(b):  # heat capacity, eq. 10 of Laliberte (2009) paper
             return (
-                b.cp_phase["Liq"]
-                == b.mass_frac_phase_comp["Liq", "NaCl"] * b.cp_solute["Liq"]
-                + b.mass_frac_phase_comp["Liq", "H2O"] * b.cp_solvent["Liq"]
+                b.cp_mass_phase["Liq"]
+                == b.mass_frac_phase_comp["Liq", "NaCl"] * b.cp_mass_solute["Liq"]
+                + b.mass_frac_phase_comp["Liq", "H2O"] * b.cp_mass_solvent["Liq"]
             )
 
-        self.eq_cp_phase = Constraint(rule=rule_cp_phase)
+        self.eq_cp_mass_phase = Constraint(rule=rule_cp_mass_phase)
 
     # 11. Volumetric flow rate for each phase
     def _flow_vol_phase(self):
@@ -1483,15 +1488,15 @@ class NaClStateBlockData(StateBlockData):
         self.flow_vol = Expression(rule=rule_flow_vol)
 
     # 13. Vapour pressure of the NaCl solution based on the boiling temperature
-    def _pressure_sat(self):
-        self.pressure_sat = Var(
+    def _pressure_sat_comp(self):
+        self.pressure_sat_comp = Var(
             initialize=1e3,
             bounds=(0.001, 1e6),
             units=pyunits.Pa,
             doc="Vapor pressure of NaCl solution",
         )
 
-        def rule_pressure_sat(b):  # vapor pressure, eq6 in Sparrow (2003)
+        def rule_pressure_sat_comp(b):  # vapor pressure, eq6 in Sparrow (2003)
             t = b.temperature - 273.15 * pyunits.K
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
 
@@ -1538,9 +1543,9 @@ class NaClStateBlockData(StateBlockData):
             p_sat = (
                 ps_a + (ps_b * t) + (ps_c * t**2) + (ps_d * t**3) + (ps_e * t**4)
             )
-            return b.pressure_sat == pyunits.convert(p_sat, to_units=pyunits.Pa)
+            return b.pressure_sat_comp == pyunits.convert(p_sat, to_units=pyunits.Pa)
 
-        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+        self.eq_pressure_sat_comp = Constraint(rule=rule_pressure_sat_comp)
 
     # 14. Saturation temperature for water vapour at calculated boiling pressure
     def _temperature_sat_solvent(self):
@@ -1552,7 +1557,7 @@ class NaClStateBlockData(StateBlockData):
         )
 
         def rule_temperature_sat_solvent(b):
-            psat = pyunits.convert(b.pressure_sat, to_units=pyunits.kPa)
+            psat = pyunits.convert(b.pressure_sat_comp, to_units=pyunits.kPa)
             return (
                 b.temperature_sat_solvent
                 == b.params.temp_sat_solvent_A1
@@ -1613,7 +1618,7 @@ class NaClStateBlockData(StateBlockData):
                 return (
                     b.enth_mass_solvent[p]
                     == pyunits.convert(h_w, to_units=pyunits.kJ * pyunits.kg**-1)
-                    + +b.dh_vap_solvent
+                    + +b.dh_vap_mass_solvent
                 )
 
         self.eq_enth_mass_solvent = Constraint(
@@ -1685,8 +1690,8 @@ class NaClStateBlockData(StateBlockData):
         self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
 
     # 18. Heat of crystallization
-    def _dh_crystallization(self):
-        self.dh_crystallization = Var(
+    def _dh_crystallization_mass_comp(self):
+        self.dh_crystallization_mass_comp = Var(
             ["NaCl"],
             initialize=1,
             bounds=(-1e3, 1e3),
@@ -1694,17 +1699,23 @@ class NaClStateBlockData(StateBlockData):
             doc="NaCl heat of crystallization",
         )
 
-        def rule_dh_crystallization(b):
+        def rule_dh_crystallization_mass_comp(b):
             if (
                 b.params.config.heat_of_crystallization_model
                 == HeatOfCrystallizationModel.constant
             ):
-                return b.dh_crystallization["NaCl"] == b.params.dh_crystallization_param
+                return (
+                    b.dh_crystallization_mass_comp["NaCl"]
+                    == b.params.dh_crystallization_param
+                )
             elif (
                 b.params.config.heat_of_crystallization_model
                 == HeatOfCrystallizationModel.zero
             ):
-                return b.dh_crystallization["NaCl"] == 0 * pyunits.kJ / pyunits.kg
+                return (
+                    b.dh_crystallization_mass_comp["NaCl"]
+                    == 0 * pyunits.kJ / pyunits.kg
+                )
             elif (
                 b.params.config.heat_of_crystallization_model
                 == HeatOfCrystallizationModel.temp_dependent
@@ -1713,7 +1724,9 @@ class NaClStateBlockData(StateBlockData):
                     f"Temperature-dependent heat of crystallization model has not been implemented yet."
                 )
 
-        self.eq_dh_crystallization = Constraint(rule=rule_dh_crystallization)
+        self.eq_dh_crystallization_mass_comp = Constraint(
+            rule=rule_dh_crystallization_mass_comp
+        )
 
     # 19. Heat capacity of solid-phase NaCl crystals
     def _enth_mass_solute(self):
@@ -1940,19 +1953,19 @@ class NaClStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_vol, sf)
 
         # Scaling material heat capacities
-        if self.is_property_constructed("cp_solute"):
+        if self.is_property_constructed("cp_mass_solute"):
             for p in ["Sol", "Liq"]:
-                if iscale.get_scaling_factor(self.cp_solute[p]) is None:
+                if iscale.get_scaling_factor(self.cp_mass_solute[p]) is None:
                     iscale.set_scaling_factor(
-                        self.cp_solute[p], 1e-3
-                    )  # same as scaling factor of .cp_phase['Liq']
+                        self.cp_mass_solute[p], 1e-3
+                    )  # same as scaling factor of .cp_mass_phase['Liq']
 
-        if self.is_property_constructed("cp_solvent"):
+        if self.is_property_constructed("cp_mass_solvent"):
             for p in ["Liq", "Vap"]:
-                if iscale.get_scaling_factor(self.cp_solvent[p]) is None:
+                if iscale.get_scaling_factor(self.cp_mass_solvent[p]) is None:
                     iscale.set_scaling_factor(
-                        self.cp_solvent[p], 1e-3
-                    )  # same as scaling factor of .cp_phase['Liq']
+                        self.cp_mass_solvent[p], 1e-3
+                    )  # same as scaling factor of .cp_mass_phase['Liq']
 
         # Scaling saturation temperature
         if self.is_property_constructed("temperature_sat_solvent"):
@@ -2064,7 +2077,11 @@ class NaClStateBlockData(StateBlockData):
 
         # Transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ["pressure_sat", "dh_vap_solvent", "temperature_sat_solvent"]
+        v_str_lst_simple = [
+            "pressure_sat_comp",
+            "dh_vap_mass_solvent",
+            "temperature_sat_solvent",
+        ]
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -2073,7 +2090,7 @@ class NaClStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # Property relationships with phase index, but simple constraint
-        v_str_lst_phase = ["dens_mass_phase", "enth_mass_phase", "cp_phase"]
+        v_str_lst_phase = ["dens_mass_phase", "enth_mass_phase", "cp_mass_phase"]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -2098,9 +2115,11 @@ class NaClStateBlockData(StateBlockData):
                     iscale.constraint_scaling_transform(c, sf)
 
         # Property relationship indexed by single component
-        if self.is_property_constructed("dh_crystallization"):
-            sf = iscale.get_scaling_factor(self.dh_crystallization["NaCl"])
-            iscale.constraint_scaling_transform(self.eq_dh_crystallization, sf)
+        if self.is_property_constructed("dh_crystallization_mass_comp"):
+            sf = iscale.get_scaling_factor(self.dh_crystallization_mass_comp["NaCl"])
+            iscale.constraint_scaling_transform(
+                self.eq_dh_crystallization_mass_comp, sf
+            )
 
         # Property relationships with phase index and indexed constraints
         v_str_lst_phase = [
@@ -2109,8 +2128,8 @@ class NaClStateBlockData(StateBlockData):
             "flow_vol_phase",
             "enth_mass_solvent",
             "enth_mass_solute",
-            "cp_solvent",
-            "cp_solute",
+            "cp_mass_solvent",
+            "cp_mass_solute",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
