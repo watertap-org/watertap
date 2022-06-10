@@ -279,12 +279,12 @@ def calculate_operating_pressure(
 
     # calculate osmotic pressure
     # since properties are created on demand, we must touch the property to create it
-    t.brine[0].pressure_osm
+    t.brine[0].pressure_osm_phase
     # solve state block
     results = solve_indexed_blocks(solver, [t.brine])
     assert_optimal_termination(results)
 
-    return value(t.brine[0].pressure_osm) * (1 + over_pressure)
+    return value(t.brine[0].pressure_osm_phase) * (1 + over_pressure)
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):

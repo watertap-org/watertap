@@ -390,9 +390,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
                 "electrical_mobility_comp": {"method": "_electrical_mobility_comp"},
-                "electrical_conductivity_phase": {
-                    "method": "_electrical_conductivity_phase"
-                },
+                "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
@@ -548,8 +546,8 @@ class _DSPMDEStateBlock(StateBlock):
                     * Constants.gas_constant
                     * self[k].temperature
                 )
-            if self[k].is_property_constructed("electrical_conductivity_phase"):
-                self[k].electrical_conductivity_phase["Liq"].set_value(
+            if self[k].is_property_constructed("elec_cond_phase"):
+                self[k].elec_cond_phase["Liq"].set_value(
                     sum(
                         Constants.faraday_constant
                         * abs(self[k].charge_comp[j])
@@ -1101,16 +1099,16 @@ class DSPMDEStateBlockData(StateBlockData):
 
         self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
-    def _electrical_conductivity_phase(self):
-        self.electrical_conductivity_phase = Var(
+    def _elec_cond_phase(self):
+        self.elec_cond_phase = Var(
             self.params.phase_list,
             initialize=0.1,
             units=pyunits.ohm**-1 * pyunits.meter**-1,
             doc="Electrical conductivity",
         )
 
-        def rule_electrical_conductivity_phase(b):
-            return b.electrical_conductivity_phase["Liq"] == sum(
+        def rule_elec_cond_phase(b):
+            return b.elec_cond_phase["Liq"] == sum(
                 Constants.faraday_constant
                 * abs(b.charge_comp[j])
                 * b.electrical_mobility_comp[j]
@@ -1118,9 +1116,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 for j in self.params.ion_set | self.params.solute_set
             )  # maybe revisit for other emprical calculation or non-ideal situation
 
-        self.eq_electrical_conductivity_phase = Constraint(
-            rule=rule_electrical_conductivity_phase
-        )
+        self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1427,8 +1423,8 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
-        if self.is_property_constructed("electrical_conductivity_phase"):
-            if iscale.get_scaling_factor(self.electrical_conductivity_phase) is None:
+        if self.is_property_constructed("elec_cond_phase"):
+            if iscale.get_scaling_factor(self.elec_cond_phase) is None:
                 sf = 1e-4 * min(
                     (
                         0.5
@@ -1437,7 +1433,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
                     for j in self.params.ion_set | self.params.solute_set
                 )
-                iscale.set_scaling_factor(self.electrical_conductivity_phase, sf)
+                iscale.set_scaling_factor(self.elec_cond_phase, sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1499,7 +1495,7 @@ class DSPMDEStateBlockData(StateBlockData):
             "pressure_osm_phase",
             "flow_vol_phase",
             "dens_mass_phase",
-            "electrical_conductivity_phase",
+            "elec_cond_phase",
         ]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)

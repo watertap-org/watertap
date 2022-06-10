@@ -165,7 +165,7 @@ def test_property_ions(model):
 
     m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
-    m.fs.stream[0].electrical_conductivity_phase
+    m.fs.stream[0].elec_cond_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
@@ -191,9 +191,7 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].molality_phase_comp["A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
-    assert value(m.fs.stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        16.7, rel=1e-3
-    )
+    assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(16.7, rel=1e-3)
     assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
         60.546e5, rel=1e-3
     )
@@ -264,7 +262,7 @@ def test_property_ions(model2):
     stream[0].flow_mass_phase_comp
 
     stream[0].molality_phase_comp
-    stream[0].electrical_conductivity_phase
+    stream[0].elec_cond_phase
     stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
     stream[0].conc_mol_phase_comp
@@ -347,7 +345,7 @@ def test_build(model3):
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
         "molality_phase_comp",
-        "electrical_conductivity_phase",
+        "elec_cond_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
@@ -581,9 +579,7 @@ def test_seawater_data():
     assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
         29.132e5, rel=1e-3
     )
-    assert value(stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        8.08, rel=1e-3
-    )
+    assert value(stream[0].elec_cond_phase["Liq"]) == pytest.approx(8.08, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(
