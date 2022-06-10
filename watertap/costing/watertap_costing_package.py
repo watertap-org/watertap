@@ -713,8 +713,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f" {cost_type}. Argument must be a member of the ElectrodialysisCostType Enum."
             )
 
-        _make_capital_cost_var(blk)
-        _make_fixed_operating_cost_var(blk)
+        make_capital_cost_var(blk)
+        make_fixed_operating_cost_var(blk)
         cost_electrodialysis_stack(
             blk,
             membrane_cost,
