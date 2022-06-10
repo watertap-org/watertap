@@ -14,13 +14,9 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Param,
     NonNegativeReals,
     NegativeReals,
-    units as pyunits,
-    exp,
     value,
-    Constraint,
     check_optimal_termination,
     Set,
 )
