@@ -65,7 +65,8 @@ class TestUltraviolet:
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325
         feed_temperature = 273.15 + 25
-        uv_dose = 500
+        uv_intensity = 1
+        exporure_time = 500
         inactivation_rate = 0.002245
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
@@ -77,7 +78,9 @@ class TestUltraviolet:
         )
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.uv_dose.fix(uv_dose)
+        # m.fs.unit.uv_dose.fix(uv_dose)
+        m.fs.unit.uv_intensity.fix(uv_intensity)
+        m.fs.unit.exposure_time.fix(exporure_time)
         m.fs.unit.inactivation_rate.fix(inactivation_rate)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         return m
@@ -124,7 +127,7 @@ class TestUltraviolet:
             assert hasattr(m.fs.unit, obj_str)
 
         # test state block objects
-        cv_name = "feed_side"
+        cv_name = "control_volume"
         cv_stateblock_lst = ["properties_in", "properties_out"]
         stateblock_objs_lst = [
             "flow_mass_phase_comp",
@@ -147,8 +150,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 28
-        assert number_total_constraints(m) == 20
+        assert number_variables(m) == 30
+        assert number_total_constraints(m) == 21
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
     @pytest.mark.unit
@@ -191,14 +194,14 @@ class TestUltraviolet:
     def test_solution(self, UV_frame):
         m = UV_frame
         assert pytest.approx(0.999999999, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(74e-9, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NDMA"]
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "NDMA"]
         )
         assert pytest.approx(0.999999999, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(2.4084e-8, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_out[0].flow_mass_phase_comp["Liq", "NDMA"]
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "NDMA"]
         )

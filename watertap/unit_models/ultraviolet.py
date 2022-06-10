@@ -40,11 +40,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-import math
-
 
 _log = idaeslog.getLogger(__name__)
-
 
 @declare_process_block_class("Ultraviolet0D")
 class Ultraviolet0DData(UnitModelBlockData):
@@ -232,12 +229,25 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # Add unit variables
         self.uv_dose = Var(
-            self.flowsheet().config.time,
             initialize=500,
             bounds=(1e-18, 10000),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -2,
             doc="UV dose.",
+        )
+        self.uv_intensity = Var(
+            initialize=1,
+            bounds=(1e-18, 10000),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -3,
+            doc="Average intensity of UV light.",
+        )
+        self.exposure_time = Var(
+            initialize=500,
+            bounds=(1e-18, 10000),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Exposure time of UV light.",
         )
         self.flux_mass_phase_comp_in = Var(
             self.flowsheet().config.time,
@@ -263,7 +273,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
 
         # Build control volume for feed side
-        self.feed_side = ControlVolume0DBlock(
+        self.control_volume = ControlVolume0DBlock(
             default={
                 "dynamic": False,
                 "has_holdup": False,
@@ -272,24 +282,24 @@ class Ultraviolet0DData(UnitModelBlockData):
             }
         )
 
-        self.feed_side.add_state_blocks(has_phase_equilibrium=False)
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
-        self.feed_side.add_material_balances(
+        self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.feed_side.add_energy_balances(
+        self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
         )
 
-        self.feed_side.add_momentum_balances(
+        self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
         )
 
         # Add Ports
-        self.add_inlet_port(name="inlet", block=self.feed_side)
-        self.add_outlet_port(name="outlet", block=self.feed_side)
+        self.add_inlet_port(name="inlet", block=self.control_volume)
+        self.add_outlet_port(name="outlet", block=self.control_volume)
 
         # References for control volume
         # pressure change
@@ -297,7 +307,14 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.config.has_pressure_change is True
             and self.config.momentum_balance_type != "none"
         ):
-            self.deltaP = Reference(self.feed_side.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP)
+
+        # UV dose
+        @self.Constraint(
+            doc="UV dose",
+        )
+        def eq_uv_dose(b):
+            return b.uv_dose == b.uv_intensity * b.exposure_time
 
         # mass transfer
         @self.Constraint(
@@ -307,7 +324,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Inlet water and NDMA flux",
         )
         def eq_flux_in(b, t, p, j):
-            return b.flux_mass_phase_comp_in[t, p, j] == b.feed_side.properties_in[
+            return b.flux_mass_phase_comp_in[t, p, j] == b.control_volume.properties_in[
                 t
             ].get_material_flow_terms(p, j)
 
@@ -318,7 +335,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Outlet water and NDMA flux",
         )
         def eq_flux_out(b, t, p, j):
-            return b.flux_mass_phase_comp_out[t, p, j] == b.feed_side.properties_out[
+            return b.flux_mass_phase_comp_out[t, p, j] == b.control_volume.properties_out[
                 t
             ].get_material_flow_terms(p, j)
 
@@ -329,8 +346,8 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Constraints for solvent and solute concentration in outlet stream.",
         )
         def eq_outlet_conc(b, t, p, j):
-            prop_in = b.feed_side.properties_in[t]
-            prop_out = b.feed_side.properties_out[t]
+            prop_in = b.control_volume.properties_in[t]
+            prop_out = b.control_volume.properties_out[t]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return prop_out.get_material_flow_terms(
@@ -340,7 +357,8 @@ class Ultraviolet0DData(UnitModelBlockData):
                 return prop_out.get_material_flow_terms(
                     p, j
                 ) == prop_in.get_material_flow_terms(p, j) * exp(
-                    -b.uv_dose[t] * b.inactivation_rate[t, j]
+                    pyunits.convert(-b.uv_dose * b.inactivation_rate[t, j],
+                                    to_units=pyunits.dimensionless)
                 )
 
     def initialize_build(
@@ -368,7 +386,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.feed_side.initialize(
+        flags = blk.control_volume.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -380,7 +398,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.feed_side.properties_in[
+            state_dict = blk.control_volume.properties_in[
                 blk.flowsheet().config.time.first()
             ].define_port_members()
 
@@ -392,12 +410,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # blk.properties_out.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        # )
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
@@ -408,7 +420,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        blk.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def _get_performance_contents(self, time_point=0):
@@ -427,7 +439,7 @@ class Ultraviolet0DData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # TODO: require users to set scaling factor for uv dose
+        # TODO: require users to set scaling factor for uv dose, uv_intensity and exposure time
         iscale.set_scaling_factor(self.uv_dose, 1e-2)
 
         # setting scaling factors for variables
@@ -436,6 +448,14 @@ class Ultraviolet0DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.uv_dose, default=1e-2, warning=True)
             iscale.set_scaling_factor(self.uv_dose, sf)
 
+        if iscale.get_scaling_factor(self.uv_intensity) is None:
+            sf = iscale.get_scaling_factor(self.uv_intensity, default=1, warning=True)
+            iscale.set_scaling_factor(self.uv_intensity, sf)
+
+        if iscale.get_scaling_factor(self.exposure_time) is None:
+            sf = iscale.get_scaling_factor(self.exposure_time, default=1e-2, warning=True)
+            iscale.set_scaling_factor(self.exposure_time, sf)
+
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.inactivation_rate) is None:
@@ -443,31 +463,31 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(
-                self.feed_side.properties_in[0].dens_mass_phase["Liq"]
+                self.control_volume.properties_in[0].dens_mass_phase["Liq"]
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         for (t, p, j), v in self.flux_mass_phase_comp_in.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.feed_side.properties_in[t].get_material_flow_terms(p, j)
+                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
                 )
                 iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.flux_mass_phase_comp_out.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.feed_side.properties_in[t].get_material_flow_terms(p, j)
+                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
                 )
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
-        for (t, p, j), v in self.feed_side.mass_transfer_term.items():
+        for (t, p, j), v in self.control_volume.mass_transfer_term.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.feed_side.properties_in[t].get_material_flow_terms(p, j)
+                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
                 )
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solute:
@@ -475,27 +495,34 @@ class Ultraviolet0DData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
 
         # TODO: update IDAES control volume to scale mass_transfer and enthalpy_transfer
-        for ind, v in self.feed_side.mass_transfer_term.items():
+        for ind, v in self.control_volume.mass_transfer_term.items():
             (t, p, j) = ind
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.feed_side.mass_transfer_term[t, p, j]
+                    self.control_volume.mass_transfer_term[t, p, j]
                 )
                 iscale.constraint_scaling_transform(
-                    self.feed_side.material_balances[t, j], sf
+                    self.control_volume.material_balances[t, j], sf
                 )
 
-        for t, v in self.feed_side.enthalpy_transfer.items():
+        for t, v in self.control_volume.enthalpy_transfer.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(
-                    self.feed_side.properties_in[t].enth_flow
+                    self.control_volume.properties_in[t].enth_flow
                 )
                 iscale.set_scaling_factor(v, sf)
                 iscale.constraint_scaling_transform(
-                    self.feed_side.enthalpy_balances[t], sf
+                    self.control_volume.enthalpy_balances[t], sf
                 )
 
         # transforming constraints
+        for c in self.eq_uv_dose.values():
+            if iscale.get_scaling_factor(self.uv_dose) is None:
+                sf = iscale.get_scaling_factor(self.uv_intensity) * iscale.get_scaling_factor(self.exposure_time)
+            else:
+                sf = iscale.get_scaling_factor(self.uv_dose)
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_flux_in.items():
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_in[ind])
             iscale.constraint_scaling_transform(c, sf)
@@ -507,6 +534,6 @@ class Ultraviolet0DData(UnitModelBlockData):
         for ind, c in self.eq_outlet_conc.items():
             (t, p, j) = ind
             sf = iscale.get_scaling_factor(
-                self.feed_side.properties_in[t].get_material_flow_terms(p, j)
+                self.control_volume.properties_in[t].get_material_flow_terms(p, j)
             )
             iscale.constraint_scaling_transform(c, sf)
