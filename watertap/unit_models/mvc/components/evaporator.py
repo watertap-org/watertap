@@ -303,7 +303,10 @@ class EvaporatorData(UnitModelBlockData):
         # Brine pressure
         @self.feed_side.Constraint(self.flowsheet().time, doc="Brine pressure")
         def eq_brine_pressure(b, t):
-            return b.properties_brine[t].pressure == b.properties_brine[t].pressure_sat
+            return (
+                b.properties_brine[t].pressure
+                == b.properties_brine[t].pressure_sat_comp
+            )
 
         # Vapor pressure
         @self.feed_side.Constraint(self.flowsheet().time, doc="Vapor pressure")
@@ -437,7 +440,7 @@ class EvaporatorData(UnitModelBlockData):
         )
         state_args_condenser["pressure"] = blk.feed_side.properties_brine[
             0
-        ].pressure_sat.value
+        ].pressure_sat_comp.value
         state_args_condenser["temperature"] = state_args["temperature"] + 5
         blk.condenser.initialize(state_args=state_args_condenser)
         # assert False
