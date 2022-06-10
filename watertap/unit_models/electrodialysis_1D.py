@@ -16,16 +16,13 @@ from email.policy import default
 from logging import warning
 from numpy import NAN
 from pyomo.environ import (
-    Block,
     Set,
     Var,
     Param,
-    Expression,
     Suffix,
     Constraint,
     NonNegativeReals,
     NonNegativeIntegers,
-    Reals,
     Reference,
     value,
     units as pyunits,
@@ -33,7 +30,6 @@ from pyomo.environ import (
 from pyomo.dae import(
     ContinuousSet,
     DerivativeVar,
-    Integral,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from sympy import Derivative
@@ -251,20 +247,21 @@ class Electrodialysis1DData(UnitModelBlockData):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
         super().build()
-
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        # Next, get the base units of measurement from the property definition
+        # Get the base units of measurement from the property definition
         units_meta = self.config.property_package.get_metadata().get_derived_units 
-        # Length var for building 1D control vol
+        # Length var for building 1D control volume 
         self.cell_length = Var(
             initialize=0.5,
             bounds=(1e-3, 1e2),
             units=pyunits.meter,
-            doc="The length of the electrodialysis cell, denoted as l in the model description",
+            doc="Length of the electrodialysis cell/stack, in parallel to the convective flow",
         )
-        # Build control volume for the diluate channel
+        # This electrodialysis_1D model is built on a cell-pair constituting a Diluate channel and a Concentrate channel. 
+        # On each channel, a ControlVolume1DBlock is declared. 
+
+        #Control Volume for the Diluate channel:
         self.diluate = ControlVolume1DBlock(
             default={
                 "dynamic": self.config.dynamic,
@@ -278,25 +275,23 @@ class Electrodialysis1DData(UnitModelBlockData):
                 "collocation_points": self.config.collocation_points,
             }
         )
-
-        self.diluate.add_geometry(length_var=self.cell_length)
-        
+        self.diluate.add_geometry(length_var=self.cell_length)   
         self.diluate.add_state_blocks(has_phase_equilibrium=False)
-
         self.diluate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-
         # # TODO: Temporarily disabling energy balances
         if hasattr(self.config, "energy_balance_type"):
             self.diluate.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
-
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
+
+        # Below is declared the electrical power var and its derivative var, which is a performance metric of the entire electrodialysis stack.  
+        # **This var takes the "diluate" as the parent merely to utilize the discretization (as in Pyomo DAE) of this block for solving**.
         self.diluate.power_electrical_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -308,23 +303,10 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         self.diluate.Dpower_electrical_Dx =DerivativeVar(self.diluate.power_electrical_x, wrt = self.diluate.length_domain, units=pyunits.watt)
 
-        # Apply transformation to the diluate channel
+        # Apply the discretization transformation (Pyomo DAE) to the diluate block
         self.diluate.apply_transformation()
-        #print(len(self.diluate.Dpower_electrical_Dx.values))
-        '''
-        self.difference_elements = Set(
-            ordered=True,
-            initialize=(
-                x for x in self.diluate.length_domain if x != self.first_element
-            ),
-        )
-        self.nfe = Param(
-            initialize=(len(self.difference_elements)),
-            units=pyunits.dimensionless,
-            doc="Number of finite elements",
-        )
-        '''
-        # Build control volume for concentrate side
+
+        # Control volume for the Concentrate channel
         self.concentrate = ControlVolume1DBlock(
             default={
                 "dynamic": self.config.dynamic,
@@ -338,41 +320,29 @@ class Electrodialysis1DData(UnitModelBlockData):
                 "collocation_points": self.config.collocation_points,
             }
         )
-
-        self.concentrate.add_geometry(length_var=self.cell_length) #length_domain_set=length_set
+        self.concentrate.add_geometry(length_var=self.cell_length) 
         self.concentrate.add_state_blocks(has_phase_equilibrium=False)
-
         self.concentrate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-
         # # TODO: Temporarily disabling energy balances
         if hasattr(self.config, "energy_balance_type"):
             self.concentrate.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
-
         self.concentrate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
-
-        # Apply transformation to concentrate
         self.concentrate.apply_transformation()
 
-        # Add ports (creates inlets and outlets for each channel)
+        # Add inlet and outlet as ports for Diluate and Concentrate
         self.add_inlet_port(name="inlet_diluate", block=self.diluate)
         self.add_outlet_port(name="outlet_diluate", block=self.diluate)
-
         self.add_inlet_port(name="inlet_concentrate", block=self.concentrate)
         self.add_outlet_port(name="outlet_concentrate", block=self.concentrate)
-
-        """
-            Add references to the shared control volume length.
-            This is the same length for the full electrodialysis cell,
-            and is denoted as 'l' in the model description.
-        """
-        add_object_reference(self, "length", self.diluate.length)
+        # Apply a function, "_make_performace()", to perform the electrodialysis desalination processes.  
+        # This function is to be defined right below. 
         self._make_performance()
     
     def _make_performance(self):
@@ -382,27 +352,12 @@ class Electrodialysis1DData(UnitModelBlockData):
         cation_set = self.config.property_package.cation_set
         anion_set = self.config.property_package.anion_set
         self.membrane_set = Set(initialize=["cem", "aem"]) #   cem = Cation-Exchange Membrane aem = Anion-Exchange Membrane
-        #length_set = ContinuousSet(bounds=(0, 1))
         
         # To require H2O must be in the component
         if "H2O" not in component_set:
             raise ConfigurationError(
                 "Property Package MUST constain 'H2O' as a component"
             )
-
-        # Create an ion_charge parameter for easier reference in model equations
-        self.ion_charge = Param(
-            ion_set,
-            initialize=1,
-            mutable=True,
-            units=pyunits.dimensionless,
-            doc="Ion charge",
-        )
-        for j in component_set:
-            if j in ion_set:
-                self.ion_charge[j] = self.config.property_package.get_component(
-                    j
-                ).config.charge
 
         # Create unit model parameters and vars
         self.water_density = Param(
@@ -426,8 +381,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             bounds=(1e-3, 1e2),
             units=pyunits.meter,
             doc="The width of the electrodialysis cell, denoted as b in the model description",
-        )
-        
+        )    
         self.spacer_thickness = Var(
             initialize=0.0001,
             units=pyunits.meter,
@@ -540,9 +494,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="The current utilization including water electro-osmosis and ion diffusion",
         )
         # Performance metrics
-        
-        
-        
+        # Note that the power_electrical_x was declared under the diluate block 
         self.specific_power_electrical = Var(
             self.flowsheet().time,
             initialize=10,
@@ -551,7 +503,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
-        
         self.current_efficiency = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -560,21 +511,9 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionizaiton",
         )
-        
         # TODO: consider adding more performance as needed.
 
-        #To report an Configuration Error if the two channels havae different lengths. 
-        if self.diluate.length.value != self.concentrate.length.value:
-            raise ConfigurationError("The Concentrate and Diluate channels"
-            "must have the same lengths as the stack cell length")
-
         # -------- Add constraints ---------
-        # # TODO: Add vars and associated constraints for all flux terms
-        #           There will be 1 flux var for water and 1 flux var for all ions
-        #           (vars can be indexed by species, so we only write it once)
-        #
-        #           Those vars will be coupled into the mass_transfer_term below
-        #           and will be of opposite sign for each channel
 
         # Adds isothermal constraint if no energy balance present
         if not hasattr(self.config, "energy_balance_type"):
@@ -606,13 +545,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                     self.concentrate.properties[t, self.diluate.length_domain.first()].temperature
                     == self.concentrate.properties[t, x].temperature
                 )
-
-        # Add constraint for equal length of each channel
-        '''
-        @self.Constraint(doc="Constraint to ensure each channel has same length")
-        def eq_equal_length(self):
-            return self.diluate.length == self.concentrate.length
-        '''
     
         @self.Constraint(
             self.flowsheet().time,
@@ -642,8 +574,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                 return self.current_density_x[t, x] * self.cell_width * self.diluate.length == self.current_applied[t]
             else:
                 return self.current_density_x[t, x] * self.total_areal_resistance_x[t, x] == self.voltage_applied[t]
-    
-        
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -651,10 +581,8 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         def eq_get_voltage_x(self, t, x):
             return self.voltage_x[t, x] == self.current_density_x[t, x] * self.total_areal_resistance_x[t, x]
-        
-        
-        # Mass Transfer construct for the Diluate Channel
-        
+         
+        # Mass Transfer for the Diluate
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
@@ -709,8 +637,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
                     - self.diluate.properties[t, x ].conc_mol_phase_comp[p, j]
                 )
-        
-        # Mass Transfer construct for the Concentrate Channel
+        # Mass Transfer for the Concentrate
         @self.Constraint(
             self.flowsheet().config.time,
             self.concentrate.length_domain,
@@ -765,8 +692,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     - self.diluate.properties[t, x ].conc_mol_phase_comp[p, j]
                 )
         
-        # Performance Metrics
-        
+        # Performance Metrics calculation
         @self.Constraint(
             self.flowsheet().config.time,
             self.diluate.length_domain,
@@ -777,8 +703,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                 return self.diluate.power_electrical_x[t, x] == 0
             else: 
                 return self.diluate.Dpower_electrical_Dx[t, x] == self.voltage_x[t,x] * self.current_density_x[t, x] * self.cell_width * self.diluate.length
-        
-        
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Diluate_volume_flow_rate_specific electrical power consumption of a stack",
@@ -793,7 +717,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                 * self.cell_pair_num
                 == self.diluate.power_electrical_x[t, self.diluate.length_domain.last()]
             )
-        
         @self.Constraint(
             self.flowsheet().config.time,
             self.diluate.length_domain,
@@ -814,9 +737,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     * Constants.faraday_constant
                 )    
-        
-        
-    # initialize method
+           
+    # Intialization routines
     def initialize_build(
         blk,
         state_args=None,
@@ -847,10 +769,9 @@ class Electrodialysis1DData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
-        
+        #Set the intial conditions over the 1D length from the state vars 
         for k in blk.keys():
             for set in blk[k].diluate.properties:
-               # print('SET9', blk[k].diluate.properties.items().
                 if "flow_mol_phase_comp" not in blk[k].diluate.properties[set].define_state_vars():
                     raise ConfigurationError(
                             "Electrodialysis1D unit model requires "
@@ -864,13 +785,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                 if "flow_mol_phase_comp" in blk[k].diluate.properties[set].define_state_vars():
                     for ind in blk[k].diluate.properties[set].flow_mol_phase_comp:
                         blk[k].diluate.properties[set].flow_mol_phase_comp[ind] = value(blk[k].diluate.properties[(0.0, 0.0)].flow_mol_phase_comp[ind])
-                        print('###INITINIT###',set, ind, value(blk[k].diluate.properties[set].flow_mol_phase_comp[ind]))
                 if "flow_mass_phase_comp" in blk[k].diluate.properties[set].define_state_vars():
                     for ind in blk[k].diluate.properties[set].flow_mass_phase_comp:
                         blk[k].diluate.properties[set].flow_mass_phase_comp[ind] = value(blk[k].diluate.properties[(0.0, 0.0)].flow_mass_phase_comp[ind])
 
             for set in blk[k].concentrate.properties:
-               # print('SET9', blk[k].diluate.properties.items().
                 if "flow_mol_phase_comp" not in blk[k].concentrate.properties[set].define_state_vars():
                     raise ConfigurationError(
                             "Electrodialysis1D unit model requires "
@@ -898,8 +817,6 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
-
-        # ---------------------------------------------------------------------
         if not ignore_dof:
             check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
 
@@ -911,11 +828,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             state_args=state_args,
         )
         init_log.info_high("Initialization Step 2 Complete.")
-
-        
-        # ---------------------------------------------------------------------
-        for ind in blk.diluate._flow_terms_index:
-            print(f'flow_term value of {ind} after init STEP2 is {blk.diluate._flow_terms[ind].value}')
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -927,7 +839,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             fail_flag=fail_on_warning,
             checkpoint="Initialization Step 3",
         )
-
         # ---------------------------------------------------------------------
         # Release state
         blk.diluate.release_state(flags_diluate, outlvl)
@@ -944,7 +855,8 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Scaling factors that user may setup
         if iscale.get_scaling_factor(self.cell_width, warning=False) is None:
             iscale.set_scaling_factor(self.cell_width, 1)
-
+        if iscale.get_scaling_factor(self.cell_length, warning=False) is None:
+            iscale.set_scaling_factor(self.cell_length, 1)
         if iscale.get_scaling_factor(self.membrane_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
@@ -969,62 +881,41 @@ class Electrodialysis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(
                 self.current_applied) / iscale.get_scaling_factor(self.cell_width)
             iscale.set_scaling_factor(self.current_density_x, sf)
+
         if iscale.get_scaling_factor(self.voltage_applied, warning=True) is None:
             iscale.set_scaling_factor(self.voltage_applied, 1)
               
         if iscale.get_scaling_factor(self.total_areal_resistance_x, warning=False) is None:
             sf = iscale.get_scaling_factor(
                 self.membrane_areal_resistance
-            ) #/ self.cell_pair_num
+            )
             iscale.set_scaling_factor(self.total_areal_resistance_x, sf)
-        
+
         if iscale.get_scaling_factor(self.voltage_x, warning=False) is None:
             sf = iscale.get_scaling_factor(
                 self.current_density_x) * iscale.get_scaling_factor(self.total_areal_resistance_x)
             iscale.set_scaling_factor(self.voltage_x, sf)
 
-        # Transform length constraint
-        '''
-        if (iscale.get_scaling_factor(self.diluate.length) is None) and (
-            iscale.get_scaling_factor(self.concentrate.length) is None
-        ):
-            sf = iscale.get_scaling_factor(
-                self.diluate.length, default=1, warning=False
-            )
-        elif (iscale.get_scaling_factor(self.diluate.length) is None) and (
-            iscale.get_scaling_factor(self.concentrate.length) is not None
-        ):
-            sf = iscale.get_scaling_factor(
-                self.concentrate.length, default=1, warning=False
-            )
-        else:
-            sf = iscale.get_scaling_factor(
-                self.diluate.length, default=1, warning=False
-            )
-        iscale.constraint_scaling_transform(self.eq_equal_length, sf)
-        '''
-        '''
-        '''
-        # set the flow rate scaling factor constant throughout all finite elements. 
-        for set in self.diluate.properties:
-             if "flow_mol_phase_comp" in self.diluate.properties[set].define_state_vars():
-                for ind in self.diluate.properties[set].flow_mol_phase_comp:
-                    sf_flow = iscale.get_scaling_factor(self.diluate.properties[(0.0,0.0)].flow_mol_phase_comp[ind], default =1, warning = True)
-                    iscale.set_scaling_factor(self.diluate.properties[set].flow_mol_phase_comp[ind], sf_flow)
+        iscale.set_scaling_factor(
+            self.diluate.power_electrical_x,
+            iscale.get_scaling_factor(self.voltage_x)
+            * iscale.get_scaling_factor(self.current_density_x)
+            * iscale.get_scaling_factor(self.cell_width)
+            * iscale.get_scaling_factor(self.cell_length)
+        )
 
-        for set in self.concentrate.properties:
-             if "flow_mol_phase_comp" in self.concentrate.properties[set].define_state_vars():
-                for ind in self.concentrate.properties[set].flow_mol_phase_comp:
-                    sf_flow = iscale.get_scaling_factor(self.concentrate.properties[(0.0,0.0)].flow_mol_phase_comp[ind], default =1, warning = True)
-                    iscale.set_scaling_factor(self.concentrate.properties[set].flow_mol_phase_comp[ind], sf_flow)
-                    
-        #Transform constraint scaling 
-        '''
-       #for ind, c in self.eq_equal_length.items():
-        #        iscale.constraint_scaling_transform(
-         #           c, iscale.get_scaling_factor(self.diluate.length)
-          #      )
-        '''
+        iscale.set_scaling_factor(
+            self.specific_power_electrical,
+            iscale.get_scaling_factor(self.voltage_x)
+            * iscale.get_scaling_factor(self.current_density_x)
+            * iscale.get_scaling_factor(self.cell_width)
+            * iscale.get_scaling_factor(self.cell_length)
+        )
+
+        if iscale.get_scaling_factor(self.specific_power_electrical, warning=False) is None:
+            iscale.set_scaling_factor(self.specific_power_electrical, 1)
+
+        #Set up constraint scaling 
         for ind, c in self.eq_get_total_areal_resistance_x.items():
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.total_areal_resistance_x)
@@ -1134,7 +1025,22 @@ class Electrodialysis1DData(UnitModelBlockData):
                             ].conc_mol_phase_comp[ind[2], ind[3]])) ** 2) ** 0.5)
                         
                 )
-    
+        for ind, c in self.eq_power_electrical.items():
+            iscale.constraint_scaling_transform(
+                c, iscale.get_scaling_factor(self.diluate.power_electrical_x)
+            )
+
+        for ind, c in self.eq_specific_power_electrical.items():
+            iscale.constraint_scaling_transform(
+                c, iscale.get_scaling_factor(self.specific_power_electrical)
+            )
+        
+        for ind, c in self.eq_current_efficiency.items():
+            iscale.constraint_scaling_transform(
+                c, 
+                iscale.get_scaling_factor(self.current_density_x)
+                * iscale.get_scaling_factor(self.cell_width)
+            )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -1146,4 +1052,16 @@ class Electrodialysis1DData(UnitModelBlockData):
             },
             time_point=time_point,
         )
+
+    def _get_performance_contents(self, time_point=0):
+        return {
+            "vars": {
+                "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[time_point, self.diluate.length_domain.last()],
+                "Specific electrical power consumption (kWh/m**3)": self.specific_power_electrical[
+                    time_point
+                ],
+            },
+            "exprs": {},
+            "params": {},
+        }
     
