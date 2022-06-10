@@ -20,9 +20,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.dae import ContinuousSet, DerivativeVar
-
-from numpy import linspace
 
 from idaes.core import (
     ControlVolume0DBlock,
@@ -46,11 +43,6 @@ _log = idaeslog.getLogger(__name__)
 
 # ---------------------------------------------------------------------
 # TODO: Start of adding user options for specific variables to reduce required input
-"""
-class SurfaceDiffusionCoeffVal(Enum):
-    specified = auto()  # surface diffusion coefficient is a user-specified value
-    calculated = auto() # pressure drop across membrane channel is calculated
-"""
 
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
@@ -221,6 +213,11 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # variable declaration
         # mass transfer TODO: Add model capacity for multiple solutes
+        """
+        currently should be used for only for a single solute
+        can adapt for multiple solutes with the removal fraction for the key component
+            propagated through to the others in the solute_set
+        """
         self.target_removal_frac = Var(
             self.config.property_package.solute_set,
             initialize=0.9,
@@ -238,13 +235,12 @@ class GACData(UnitModelBlockData):
             doc="Freundlich 1/n parameter",
         )
 
-        # TODO: Figure out non-fixed exponent
         # TODO: Determine whether unit correction procedure interferes with regressed k values
         self.freund_k = Var(
             initialize=10,
             bounds=(0, 1000),
             domain=NonNegativeReals,
-            # TODO: Correct variable units
+            # TODO: Add warning for unit specification of this variable
             units=pyunits.dimensionless,  # ((units_meta("length") ** 3) * units_meta("mass") ** -1) ** 0.8316,
             doc="Freundlich k parameter",
         )
