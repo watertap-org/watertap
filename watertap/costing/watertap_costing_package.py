@@ -51,7 +51,6 @@ class PumpType(StrEnum):
 
 
 class EnergyRecoveryDeviceType(StrEnum):
-    default = "default"
     pressure_exchanger = "pressure_exchanger"
 
 
@@ -475,7 +474,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_energy_recovery_device(
         blk,
-        energy_recovery_device_type=EnergyRecoveryDeviceType.default,
+        energy_recovery_device_type=EnergyRecoveryDeviceType.pressure_exchanger,
         cost_electricity_flow=True,
     ):
         """
@@ -485,14 +484,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
-                default = EnergyRecoveryDeviceType.default
+                default = EnergyRecoveryDeviceType.pressure_exchanger.
 
             cost_electricity_flow: bool, if True, the ERD's work_mechanical will
                 be converted to kW and costed as an electricity default = True
         """
-        if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
-            WaterTAPCostingData.cost_default_energy_recovery_device(blk)
-        elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
+        if energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
             WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
         else:
             raise ConfigurationError(
@@ -513,7 +510,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                                     default = True
         """
         t0 = blk.flowsheet().time.first()
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.high_pressure_pump_cost
@@ -576,47 +573,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.unit_model.control_volume.properties_in[t0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
             ),
-        )
-        if cost_electricity_flow:
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
-                ),
-                "electricity",
-            )
-
-    @staticmethod
-    def cost_default_energy_recovery_device(blk, cost_electricity_flow=True):
-        """
-        Energy recovery device costing method
-
-        TODO: describe equations
-
-        Args:
-            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
-                                    be converted to kW and costed as an electricity
-                                    default = True
-        """
-        t0 = blk.flowsheet().time.first()
-        _make_capital_cost_var(blk)
-        unit_cv_in = blk.unit_model.control_volume.properties_in[t0]
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == blk.costing_package.energy_recovery_device_linear_coefficient
-            * (
-                pyo.units.convert(
-                    (
-                        sum(
-                            unit_cv_in.flow_mass_phase_comp["Liq", j]
-                            for j in blk.unit_model.config.property_package.component_list
-                        )
-                        / unit_cv_in.dens_mass_phase["Liq"]
-                    ),
-                    pyo.units.m**3 / pyo.units.hour,
-                )
-                / (pyo.units.m**3 / pyo.units.hour)
-            )
-            ** blk.costing_package.energy_recovery_device_exponent
         )
         if cost_electricity_flow:
             blk.costing_package.cost_flow(
@@ -802,7 +758,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         Mass-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
@@ -827,7 +783,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         Volume-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
@@ -868,7 +824,7 @@ WaterTAPCostingData.unit_mapping = {
 }
 
 
-def _make_capital_cost_var(blk):
+def make_capital_cost_var(blk):
     blk.capital_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -877,7 +833,7 @@ def _make_capital_cost_var(blk):
     )
 
 
-def _make_fixed_operating_cost_var(blk):
+def make_fixed_operating_cost_var(blk):
     blk.fixed_operating_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -897,8 +853,8 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
 
     """
-    _make_capital_cost_var(blk)
-    _make_fixed_operating_cost_var(blk)
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
 
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
@@ -975,7 +931,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
     """
-    _make_capital_cost_var(blk)
+    make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
