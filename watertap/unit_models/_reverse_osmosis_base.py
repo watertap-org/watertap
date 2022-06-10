@@ -246,12 +246,12 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             domain=In(PressureChangeType),
             description="Pressure change term construction flag",
             doc="""
-        Indicates what type of pressure change calculation will be made. To use any of the 
-        ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
-        ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
-        change, it should be negative to represent pressure drop. 
-        
-        **default** - ``PressureChangeType.fixed_per_stage`` 
+        Indicates what type of pressure change calculation will be made. To use any of the
+        ``pressure_change_type`` options to account for pressure drop, the configuration keyword
+        ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure
+        change, it should be negative to represent pressure drop.
+
+        **default** - ``PressureChangeType.fixed_per_stage``
 
 
     .. csv-table::
@@ -616,7 +616,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - (interface.pressure_osm - prop_perm.pressure_osm)
+                    - (interface.pressure_osm_phase - prop_perm.pressure_osm_phase)
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
@@ -732,7 +732,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 bulk = b.feed_side.properties[t, x]
                 return (
                     b.Kf[t, x, j] * b.dh
-                    == bulk.diffus_phase[
+                    == bulk.diffus_phase_comp[
                         "Liq"
                     ]  # TODO: add diff coefficient to SW prop and consider multi-components
                     * b.N_Sh[t, x]
@@ -752,7 +752,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 return (
                     b.N_Sc[t, x]
                     * bulk.dens_mass_phase["Liq"]
-                    * bulk.diffus_phase["Liq"]
+                    * bulk.diffus_phase_comp["Liq"]
                     == bulk.visc_d_phase["Liq"]
                 )
 
@@ -1120,29 +1120,29 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     "Liq", j
                 ]
         if (
-            interface_outlet.is_property_constructed("pressure_osm")
+            interface_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
             var_dict[
                 "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm
+            ] = interface_outlet.pressure_osm_phase
         if (
-            feed_outlet.is_property_constructed("pressure_osm")
+            feed_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm
+            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase
         if (
-            interface_inlet.is_property_constructed("pressure_osm")
+            interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
             var_dict[
                 "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm
+            ] = interface_inlet.pressure_osm_phase
         if (
-            feed_inlet.is_property_constructed("pressure_osm")
+            feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm
+            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase
         if (
             feed_inlet.is_property_constructed("flow_vol_phase")
             and self.config.has_full_reporting
@@ -1269,10 +1269,10 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                         )
                     if blk.is_property_constructed("mole_frac_phase_comp"):
                         self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
-                    if blk.is_property_constructed("molality_comp"):
-                        self._rescale_permeate_variable(blk.molality_comp[j])
-                if blk.is_property_constructed("pressure_osm"):
-                    self._rescale_permeate_variable(blk.pressure_osm)
+                    if blk.is_property_constructed("molality_phase_comp"):
+                        self._rescale_permeate_variable(blk.molality_phase_comp[j])
+                if blk.is_property_constructed("pressure_osm_phase"):
+                    self._rescale_permeate_variable(blk.pressure_osm_phase)
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:

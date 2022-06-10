@@ -57,11 +57,11 @@ class TestNaClProperty(PropertyTestHarness):
             ("flow_mol_phase_comp", ("Liq", "NaCl")): 0.5989,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9889,
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 1.106e-2,
-            ("molality_comp", "NaCl"): 0.6206,
-            ("diffus_phase", "Liq"): 1.472e-9,
+            ("molality_phase_comp", "NaCl"): 0.6206,
+            ("diffus_phase_comp", "Liq"): 1.472e-9,
             ("visc_d_phase", "Liq"): 1.055e-3,
             ("osm_coeff", None): 0.9271,
-            ("pressure_osm", None): 2.853e6,
+            ("pressure_osm_phase", None): 2.853e6,
             ("enth_mass_phase", "Liq"): 9.974e4,
         }
 
@@ -96,11 +96,11 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "NaCl")): 0.8556,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9840,
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 1.597e-2,
-            ("molality_comp", "NaCl"): 0.9006,
-            ("diffus_phase", "Liq"): 1.471e-9,
+            ("molality_phase_comp", "NaCl"): 0.9006,
+            ("diffus_phase_comp", "Liq"): 1.471e-9,
             ("visc_d_phase", "Liq"): 1.0875e-3,
             ("osm_coeff", None): 0.9347,
-            ("pressure_osm", None): 4.174e6,
+            ("pressure_osm_phase", None): 4.174e6,
             ("enth_mass_phase", "Liq"): 9.752e4,
         }
 
@@ -135,11 +135,11 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "NaCl")): 4.449,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9022,
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 9.773e-2,
-            ("molality_comp", "NaCl"): 6.012,
-            ("diffus_phase", "Liq"): 1.580e-9,
+            ("molality_phase_comp", "NaCl"): 6.012,
+            ("diffus_phase_comp", "Liq"): 1.580e-9,
             ("visc_d_phase", "Liq"): 1.539e-3,
             ("osm_coeff", None): 1.274,
-            ("pressure_osm", None): 3.796e7,
+            ("pressure_osm_phase", None): 3.796e7,
             ("enth_mass_phase", "Liq"): 6.645e4,
         }
 
@@ -174,11 +174,11 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "NaCl")): 1.711e-2,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9997,
             ("mole_frac_phase_comp", ("Liq", "NaCl")): 3.084e-4,
-            ("molality_comp", "NaCl"): 1.713e-2,
-            ("diffus_phase", "Liq"): 1.508e-9,
+            ("molality_phase_comp", "NaCl"): 1.713e-2,
+            ("diffus_phase_comp", "Liq"): 1.508e-9,
             ("visc_d_phase", "Liq"): 9.822e-4,
             ("osm_coeff", None): 0.918,
-            ("pressure_osm", None): 7.797e4,
+            ("pressure_osm_phase", None): 7.797e4,
             ("enth_mass_phase", "Liq"): 1.048e5,
         }
 
@@ -248,7 +248,7 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
         }
         self.var_args = {
             ("flow_vol_phase", "Liq"): 1e-3,
-            ("pressure_osm", None): 100e5,
+            ("pressure_osm_phase", None): 100e5,
             ("temperature", None): 273.15 + 25,
             ("pressure", None): 5e5,
         }

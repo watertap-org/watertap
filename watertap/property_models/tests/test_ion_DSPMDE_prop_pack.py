@@ -163,7 +163,7 @@ def test_property_ions(model):
 
     m.fs.stream[0].flow_mass_phase_comp
 
-    m.fs.stream[0].molality_comp
+    m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
     m.fs.stream[0].electrical_conductivity_phase
     m.fs.stream[0].dens_mass_phase
@@ -188,7 +188,7 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].conc_mol_phase_comp["Liq", "A"]) == pytest.approx(
         21.288, rel=1e-3
     )
-    assert value(m.fs.stream[0].molality_comp["A"]) == pytest.approx(
+    assert value(m.fs.stream[0].molality_phase_comp["A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
     assert value(m.fs.stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
@@ -263,7 +263,7 @@ def test_property_ions(model2):
 
     stream[0].flow_mass_phase_comp
 
-    stream[0].molality_comp
+    stream[0].molality_phase_comp
     stream[0].electrical_conductivity_phase
     stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
@@ -346,7 +346,7 @@ def test_build(model3):
         "conc_mass_phase_comp",
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
-        "molality_comp",
+        "molality_phase_comp",
         "electrical_conductivity_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
@@ -676,7 +676,7 @@ def test_seawater_data():
     )
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
-    assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
 
 
 @pytest.mark.requires_idaes_solver
