@@ -202,7 +202,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "visc_d": {"method": "_visc_d"},
+                "visc_d_phase": {"method": "_visc_d_phase"},
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
@@ -611,8 +611,8 @@ class CoagulationStateBlockData(StateBlockData):
             self.seawater_mass_frac_dict.keys(), rule=rule_conc_mass_phase_comp
         )
 
-    def _visc_d(self):
-        self.visc_d = Var(
+    def _visc_d_phase(self):
+        self.visc_d_phase = Var(
             self.params.phase_list,
             initialize={"Liq": 0.001},
             bounds=(1e-6, 0.01),
@@ -624,12 +624,14 @@ class CoagulationStateBlockData(StateBlockData):
         #   -------------------------------------------------------------
         #   D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
         #     Liquids. Hemisphere Publishing Corp. (1989)
-        def rule_visc_d(b, p):
-            return b.visc_d[p] == (
+        def rule_visc_d_phase(b, p):
+            return b.visc_d_phase[p] == (
                 b.params.mu_A * exp(b.params.mu_B / (b.temperature - b.params.mu_C))
             )
 
-        self.eq_visc_d = Constraint(self.params.phase_list, rule=rule_visc_d)
+        self.eq_visc_d_phase = Constraint(
+            self.params.phase_list, rule=rule_visc_d_phase
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
@@ -776,13 +778,13 @@ class CoagulationStateBlockData(StateBlockData):
                     self.eq_conc_mass_phase_comp[pair], sf
                 )
 
-        if self.is_property_constructed("visc_d"):
-            if iscale.get_scaling_factor(self.visc_d) is None:
-                iscale.set_scaling_factor(self.visc_d, 1e3)
+        if self.is_property_constructed("visc_d_phase"):
+            if iscale.get_scaling_factor(self.visc_d_phase) is None:
+                iscale.set_scaling_factor(self.visc_d_phase, 1e3)
 
             # transforming constraints
-            sf = iscale.get_scaling_factor(self.visc_d)
-            iscale.constraint_scaling_transform(self.eq_visc_d["Liq"], sf)
+            sf = iscale.get_scaling_factor(self.visc_d_phase)
+            iscale.constraint_scaling_transform(self.eq_visc_d_phase["Liq"], sf)
 
         if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
