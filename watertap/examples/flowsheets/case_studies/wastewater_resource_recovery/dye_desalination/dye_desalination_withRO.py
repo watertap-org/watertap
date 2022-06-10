@@ -37,7 +37,7 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
-
+from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
@@ -283,7 +283,7 @@ def set_operating_conditions(m):
     desal.RO.area.fix(
         flow_vol * 4.5e4 * pyunits.s / pyunits.m
     )  # TODO - verify this value and change as needed based on CP effects
-
+    # desal.RO.recovery_mass_phase_comp[0,"Liq","H2O"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
     m.fs.tb_nf_ro.properties_out[0].pressure.fix(pressure)
 
@@ -298,6 +298,9 @@ def set_operating_conditions(m):
         desal.ERD.control_volume.properties_out[0].pressure.fix(
             pressure
         )  # atmospheric pressure [Pa]
+    # desal.RO.initialize()
+    # desal.RO.area.unfix()
+    # print(degrees_of_freedom(m))
     return
 
 
@@ -318,6 +321,7 @@ def initialize_system(m):
     # initialize ro
     propagate_state(m.fs.s_nf)
     propagate_state(m.fs.s_ro)
+    propagate_state(desal.s01)
     propagate_state(m.fs.s_disposal)
     propagate_state(m.fs.s_permeate)
 
@@ -338,14 +342,6 @@ def initialize_system(m):
         desal.P2.control_volume.properties_out[0].pressure
     )
     solve(desal)
-    # if m.erd_type == "pressure_exchanger":
-    #     flags = fix_state_vars(desal.S1.mixed_state)
-    #     solve(desal)
-    #     revert_state_vars(desal.S1.mixed_state, flags)
-    # elif m.erd_type == "pump_as_turbine":
-    #     flags = fix_state_vars(desal.P2.control_volume.properties_in)
-    #     solve(desal)
-    #     revert_state_vars(desal.P2.control_volume.properties_in, flags)
     desal.RO.initialize()
     return
 
