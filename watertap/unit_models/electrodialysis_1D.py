@@ -14,6 +14,7 @@
 # Import Pyomo libraries
 from email.policy import default
 from logging import warning
+from numpy import NAN
 from pyomo.environ import (
     Block,
     Set,
@@ -541,7 +542,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Performance metrics
         
         
-        '''
+        
         self.specific_power_electrical = Var(
             self.flowsheet().time,
             initialize=10,
@@ -550,14 +551,16 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
+        
         self.current_efficiency = Var(
             self.flowsheet().time,
+            self.diluate.length_domain,
             initialize=0.9,
             bounds=(0, 1),
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionizaiton",
         )
-        '''
+        
         # TODO: consider adding more performance as needed.
 
         #To report an Configuration Error if the two channels havae different lengths. 
@@ -775,13 +778,11 @@ class Electrodialysis1DData(UnitModelBlockData):
             else: 
                 return self.diluate.Dpower_electrical_Dx[t, x] == self.voltage_x[t,x] * self.current_density_x[t, x] * self.cell_width * self.diluate.length
         
-        '''
+        
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Diluate_volume_flow_rate_specific electrical power consumption of a stack",
         )
-
-    
         def eq_specific_power_electrical(self, t):
             return (
                 pyunits.convert(
@@ -789,29 +790,32 @@ class Electrodialysis1DData(UnitModelBlockData):
                     pyunits.watt * pyunits.second * pyunits.meter**-3,
                 )
                 * self.diluate.properties[t, self.diluate.length_domain.last()].flow_vol_phase["Liq"]
-                == self.current[t] * self.voltage[t]
+                * self.cell_pair_num
+                == self.diluate.power_electrical_x[t, self.diluate.length_domain.last()]
             )
-
+        
         @self.Constraint(
             self.flowsheet().config.time,
+            self.diluate.length_domain,
+            self.config.property_package.phase_list,
+            cation_set,
             doc="Overall current efficiency evaluation",
         )
-        def eq_current_efficiency(self, t):
-            return (
-                self.current_efficiency[t] * self.current[t]
-                == sum(
-                    self.diluate.properties[t, self.diluate.length_domain.first()].flow_mol_phase_comp["Liq", j]
-                    * self.config.property_package.charge_comp[j]
-                    - self.diluate.properties[t, self.diluate.length_domain.last()].flow_mol_phase_comp[
-                        "Liq", j
-                    ]
-                    * self.config.property_package.charge_comp[j]
-                    for j in self.config.property_package.cation_set
-                )
-                * Constants.faraday_constant
-            )    
-        '''
-
+        def eq_current_efficiency(self, t, x, p, j):
+            if x == self.diluate.length_domain.first():
+                return  self.current_efficiency[t, x] == 0
+            else: 
+                return (
+                    self.current_efficiency[t, x] * self.current_density_x[t, x] * self.cell_width
+                    == - sum(
+                        self.diluate.mass_transfer_term[t, x, p, j]
+                        * self.config.property_package.charge_comp[j]
+                        for j in cation_set
+                    )
+                    * Constants.faraday_constant
+                )    
+        
+        
     # initialize method
     def initialize_build(
         blk,
