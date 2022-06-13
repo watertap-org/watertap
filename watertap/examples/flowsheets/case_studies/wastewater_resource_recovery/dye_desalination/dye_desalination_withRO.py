@@ -279,11 +279,8 @@ def set_operating_conditions(m):
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(pressure)  # atmospheric pressure [Pa]
-    desal.RO.width.fix(1000)  # stage width [m]
-    desal.RO.area.fix(
-        flow_vol * 4.5e4 * pyunits.s / pyunits.m
-    )  # TODO - verify this value and change as needed based on CP effects
-    # desal.RO.recovery_mass_phase_comp[0,"Liq","H2O"].fix(0.5)
+    desal.RO.velocity[0, 0].fix(0.25)
+    desal.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
     m.fs.tb_nf_ro.properties_out[0].pressure.fix(pressure)
 
