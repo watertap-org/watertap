@@ -713,7 +713,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
             )
 
-        _make_fixed_operating_cost_var(blk)
+        make_fixed_operating_cost_var(blk)
 
         blk.thermal_energy_cost = pyo.Expression(
             expr=pyo.units.convert(
