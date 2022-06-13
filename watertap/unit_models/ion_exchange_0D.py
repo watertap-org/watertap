@@ -219,7 +219,7 @@ class IonExchangeODData(UnitModelBlockData):
         # ====== Resin variables ====== #
 
         self.resin_max_capacity = Var(
-            initialize=2,
+            initialize=5,
             units=pyunits.mol / pyunits.kg,
             bounds=(0.5, 10),  # Perry's
             doc="Resin max capacity [mol/kg]",
@@ -255,7 +255,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.K_eq = Var(
             ion_set,
-            initialize=5,
+            initialize=1.5,
             bounds=(0.5, 10),
             units=pyunits.dimensionless,
             doc="Selectivity coefficient [-]",
@@ -394,7 +394,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.lh = Var(
-            initialize=1,
+            initialize=0,
             bounds=(-20, 20),
             units=pyunits.dimensionless,
             doc="Left hand side of kinetic equation",
@@ -436,7 +436,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.vel_bed = Var(
             initialize=0.0086,
-            bounds=(0, 0.02),  # MWH, Perry's
+            bounds=(0, 0.01),  # MWH, Perry's
             # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Velocity through resin bed [m/s]",
@@ -458,7 +458,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.sfr = Var(
-            initialize=12,
+            initialize=5,
             bounds=(4, 40),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
