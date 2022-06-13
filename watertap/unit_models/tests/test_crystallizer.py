@@ -422,7 +422,7 @@ class TestCrystallization:
         assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
     @pytest.mark.component
-    def test_solution2_masscosting(self, Crystallizer_frame):
+    def test_solution2_capcosting_by_mass(self, Crystallizer_frame):
         m = Crystallizer_frame
         b = m.fs.unit
         b.crystal_growth_rate.fix(5e-8)
@@ -450,7 +450,7 @@ class TestCrystallization:
         assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
 
     @pytest.mark.component
-    def test_solution2_volumecosting(self, Crystallizer_frame):
+    def test_solution2_capcosting_by_volume(self, Crystallizer_frame):
         # Same problem as above, but different costing approach.
         # Other results should remain the same.
         m = Crystallizer_frame
@@ -487,3 +487,59 @@ class TestCrystallization:
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Volume-basis costing
         assert pytest.approx(199000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+
+    @pytest.mark.component
+    def test_solution2_operatingcost(self, Crystallizer_frame):
+        m = Crystallizer_frame
+        b = m.fs.unit
+        b.crystal_growth_rate.fix(5e-8)
+        b.souders_brown_constant.fix(0.0244)
+        b.crystal_median_length.fix(0.4e-3)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Operating cost validation
+        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
+        assert pytest.approx(27599.5131, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
+        assert pytest.approx(28298.1338, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
+
+
+    @pytest.mark.component
+    def test_solution2_operatingcost(self, Crystallizer_frame):
+        m = Crystallizer_frame
+        b = m.fs.unit
+        b.crystal_growth_rate.fix(5e-8)
+        b.souders_brown_constant.fix(0.0244)
+        b.crystal_median_length.fix(0.4e-3)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Operating cost validation
+        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
+        assert pytest.approx(27599.5131, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
+        assert pytest.approx(28298.1338, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
+
+    @pytest.mark.component
+    def test_solution2_operatingcost_steampressure(self, Crystallizer_frame):
+        m = Crystallizer_frame
+        m.fs.costing.crystallizer_steam_pressure.fix(5)
+        b = m.fs.unit
+        b.crystal_growth_rate.fix(5e-8)
+        b.souders_brown_constant.fix(0.0244)
+        b.crystal_median_length.fix(0.4e-3)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Operating cost validation
+        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
+        assert pytest.approx(19306.3751, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
+        assert pytest.approx(20004.9957, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
