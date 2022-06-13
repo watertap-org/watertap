@@ -191,10 +191,10 @@ if __name__ == "__main__":
         "flow_mol_phase_comp", 1e-1, index=("Liq", "Mg_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-1, index=("Liq", "Cl_-")
+        "flow_mol_phase_comp", 1e-2, index=("Liq", "Cl_-")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-1, index=("Liq", "Na_+")
+        "flow_mol_phase_comp", 1e-3, index=("Liq", "Na_+")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e-3, index=("Liq", "H2O")
@@ -240,6 +240,7 @@ if __name__ == "__main__":
     solver.solve(m, tee=True)
     dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
     dh.check_residuals(tol=0.1)
+    # assert False
     # ##############################################################################################################
     # dh.check_variable_bounds(tol=1e-3)
 
@@ -252,8 +253,9 @@ if __name__ == "__main__":
     # # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     # #     con.activate()
 
-    solver.options["max_iter"] = 2000
     # solver.options['max_iter'] = 0
+
+    solver.options["max_iter"] = 2000
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
