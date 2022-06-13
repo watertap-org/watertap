@@ -737,7 +737,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                         * blk.costing_package.crystallizer_pump_head_height
                         / blk.costing_package.crystallizer_efficiency_pump
                     ),
-                    to_units=pyo.units.kWh / pyo.units.h,
+                    to_units=pyo.units.kWh / pyo.units.hour,
                 )
                 * blk.costing_package.crystallizer_electricity_unit_cost
                 * blk.costing_package.load_factor,
