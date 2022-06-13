@@ -486,7 +486,7 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def LCOW(b):
+    def LCOT(b):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
@@ -494,6 +494,23 @@ def add_costing(m):
         ) / (
             pyunits.convert(
                 b.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.year,
+            )
+            * b.fs.zo_costing.utilization_factor
+        )
+
+    @m.Expression()
+    def LCOW(b):
+        return (
+            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            + b.total_operating_cost
+            - pyunits.convert(
+                m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+                to_units=pyunits.USD_2018 / pyunits.year,
+            )
+        ) / (
+            pyunits.convert(
+                b.fs.permeate.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
             * b.fs.zo_costing.utilization_factor
@@ -543,6 +560,8 @@ def display_costing(m):
         )
     )
 
+    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2018 / pyunits.m**3))
+
     lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3))
 
     print(f"Total Capital Cost: {capex:.4f} M$")
@@ -551,7 +570,9 @@ def display_costing(m):
 
     print(f"Total Externalities: {externalities:.4f} M$/year")
 
-    print(f"Levelized cost of water: {lcow:.4f} $/m3 feed")
+    print(f"Levelized cost of treatment: {lcot:.4f} $/m3 feed")
+
+    print(f"Levelized cost of water: {lcow:.4f} $/m3 permeate")
 
 
 if __name__ == "__main__":
