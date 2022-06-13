@@ -360,8 +360,10 @@ class EvaporatorData(UnitModelBlockData):
         optarg=None,
     ):
         """
-        General wrapper for pressure changer initialization routines
+        General wrapper for evaporator initialization routines
         Keyword Arguments:
+            delta_temperature_in: guess for deltaT_in if not fixed
+            delta_temperature_out: guess for deltaT_out if not fixed
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
@@ -428,7 +430,6 @@ class EvaporatorData(UnitModelBlockData):
 
         # check degrees of freedom
         under_constrained_flag = False
-        # if degrees_of_freedom(blk) != 0:
         if (
             not blk.delta_temperature_in.is_fixed()
             and not blk.delta_temperature_out.is_fixed()
@@ -441,7 +442,7 @@ class EvaporatorData(UnitModelBlockData):
                 raise RuntimeError(
                     "The model has {} degrees of freedom rather than 0 for initialization."
                     " This error suggests that temperature differences have not been fixed"
-                    " for initialization.".format(degrees_of_freedom(blk))
+                    " for initialization.\n".format(degrees_of_freedom(blk))
                 )
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
