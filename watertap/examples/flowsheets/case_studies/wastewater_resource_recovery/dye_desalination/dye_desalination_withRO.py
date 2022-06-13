@@ -74,14 +74,13 @@ def main():
 
     results = solve(m)
 
-    # add_costing(m)
-    # initialize_costing(m)
+    add_costing(m)
+    initialize_costing(m)
+    assert_degrees_of_freedom(m, 0)
 
-    # assert_degrees_of_freedom(m, 0)
-
-    # solve(m, tee=True)
-    # display_results(m)
-    # display_costing(m)
+    solve(m)
+    display_results(m)
+    display_costing(m)
 
     return m
 
@@ -279,6 +278,7 @@ def set_operating_conditions(m):
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(pressure)  # atmospheric pressure [Pa]
+    # desal.RO.area.fix(50)
     desal.RO.velocity[0, 0].fix(0.25)
     desal.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
@@ -452,6 +452,50 @@ def add_costing(m):
         # TODO - verify if the lcow can be defined on basis of feed
 
     assert_units_consistent(m)
+    return
+
+
+def initialize_costing(m):
+    m.fs.zo_costing.initialize()
+    m.fs.ro_costing.initialize()
+    return
+
+
+def display_results(m):
+    m.fs.feed.report()
+    m.fs.dye_separation.P1.report()
+    m.fs.dye_separation.nanofiltration.report()
+    if m.erd_type == "pressure_exchanger":
+        m.fs.desalination.S1.report()
+        m.fs.desalination.P2.report()
+        m.fs.desalination.P3.report()
+        m.fs.desalination.M1.report()
+        m.fs.desalination.RO.report()
+        m.fs.desalination.PXR.report()
+    elif m.erd_type == "pump_as_turbine":
+        m.fs.desalination.P2.report()
+        m.fs.desalination.RO.report()
+        m.fs.desalination.ERD.report()
+    return
+
+
+def display_costing(m):
+
+    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
+
+    opex = value(
+        pyunits.convert(
+            m.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
+
+    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3))
+
+    print(f"\n Total Capital Cost: {capex:.4f} M$")
+
+    print(f"\n Total Operating Cost: {opex:.4f} M$/year")
+
+    print(f"\n Levelized cost of water: {lcow:.4f} $/m3 feed")
 
 
 if __name__ == "__main__":
