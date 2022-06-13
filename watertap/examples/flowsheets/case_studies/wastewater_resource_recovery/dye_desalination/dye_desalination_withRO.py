@@ -57,6 +57,7 @@ from watertap.unit_models.zero_order import (
     FeedZO,
     PumpElectricityZO,
     NanofiltrationZO,
+    SecondaryTreatmentWWTPZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
@@ -98,14 +99,25 @@ def build(erd_type="pressure_exchanger"):
     m.fs.prop_ro = prop_SW.SeawaterParameterBlock()
 
     # define blocks
+    prtrt = m.fs.pretreatment = Block()
     dye_sep = m.fs.dye_separation = Block()
     desal = m.fs.desalination = Block()
 
     # define flowsheet inlets and outlets
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop_nf})
+    m.fs.wwt_retentate = Product(default={"property_package": m.fs.prop_nf})
     m.fs.dye_retentate = Product(default={"property_package": m.fs.prop_nf})
     m.fs.permeate = Product(default={"property_package": m.fs.prop_ro})
     m.fs.brine = Product(default={"property_package": m.fs.prop_ro})
+
+    # pretreatment
+    prtrt.wwtp = SecondaryTreatmentWWTPZO(
+        default={
+            "property_package": m.fs.prop_nf,
+            "database": m.db,
+            "process_subtype": "default",
+        }
+    )
 
     # nanofiltration components
     dye_sep.P1 = PumpElectricityZO(
@@ -186,7 +198,9 @@ def build(erd_type="pressure_exchanger"):
             )
 
     # connections
-    m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
+    m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.wwtp.inlet)
+    prtrt.s01 = Arc(source=prtrt.wwtp.treated, destination=dye_sep.P1.inlet)
+    prtrt.s02 = Arc(source=prtrt.wwtp.byproduct, destination=m.fs.wwt_retentate.inlet)
     dye_sep.s01 = Arc(
         source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet
     )
@@ -244,6 +258,7 @@ def build(erd_type="pressure_exchanger"):
 
 
 def set_operating_conditions(m):
+    prtrt = m.fs.pretreatment
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -258,6 +273,9 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
     solve(m.fs.feed)
+
+    # pretreatment
+    prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
 
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
@@ -295,21 +313,26 @@ def set_operating_conditions(m):
         desal.ERD.control_volume.properties_out[0].pressure.fix(
             pressure
         )  # atmospheric pressure [Pa]
-    # desal.RO.initialize()
-    # desal.RO.area.unfix()
-    # print(degrees_of_freedom(m))
     return
 
 
 def initialize_system(m):
+    prtrt = m.fs.pretreatment
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
     # initialize feed
     solve(m.fs.feed)
 
-    # initialized nf
+    # pretreatment
     propagate_state(m.fs.s_feed)
+    s = SequentialDecomposition()
+    s.options.tear_set = []
+    s.options.iterLim = 1
+    s.run(prtrt, lambda u: u.initialize())
+
+    # initialized nf
+    propagate_state(prtrt.s01)
     seq = SequentialDecomposition()
     seq.options.tear_set = []
     seq.options.iterLim = 1
@@ -545,7 +568,7 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("\n Costing metrics:\n")
+    print("\n Costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
 
     opex = value(
