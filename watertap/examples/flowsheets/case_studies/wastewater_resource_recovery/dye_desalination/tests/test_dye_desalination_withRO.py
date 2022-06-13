@@ -32,7 +32,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
 solver = get_solver()
 
 
-class TestDyewROFlowsheet:
+class TestDyewithROFlowsheet:
     @pytest.fixture(scope="class")
     def system_frame(self):
         m = build()
