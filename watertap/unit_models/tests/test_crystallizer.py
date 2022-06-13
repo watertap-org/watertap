@@ -502,10 +502,15 @@ class TestCrystallization:
         assert results.solver.status == SolverStatus.ok
 
         # Operating cost validation
-        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
-        assert pytest.approx(27599.5131, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
-        assert pytest.approx(28298.1338, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
-
+        assert pytest.approx(698.6207, rel=1e-3) == value(
+            m.fs.unit.costing.electrical_energy_cost
+        )
+        assert pytest.approx(27599.5131, rel=1e-3) == value(
+            m.fs.unit.costing.thermal_energy_cost
+        )
+        assert pytest.approx(28298.1338, rel=1e-3) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
 
     @pytest.mark.component
     def test_solution2_operatingcost(self, Crystallizer_frame):
@@ -521,9 +526,15 @@ class TestCrystallization:
         assert results.solver.status == SolverStatus.ok
 
         # Operating cost validation
-        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
-        assert pytest.approx(27599.5131, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
-        assert pytest.approx(28298.1338, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
+        assert pytest.approx(698.6207, rel=1e-3) == value(
+            m.fs.unit.costing.electrical_energy_cost
+        )
+        assert pytest.approx(27599.5131, rel=1e-3) == value(
+            m.fs.unit.costing.thermal_energy_cost
+        )
+        assert pytest.approx(28298.1338, rel=1e-3) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
 
     @pytest.mark.component
     def test_solution2_operatingcost_steampressure(self, Crystallizer_frame):
@@ -540,6 +551,12 @@ class TestCrystallization:
         assert results.solver.status == SolverStatus.ok
 
         # Operating cost validation
-        assert pytest.approx(698.6207, rel=1e-3) == value(m.fs.unit.costing.electrical_energy_cost)
-        assert pytest.approx(19306.3751, rel=1e-3) == value(m.fs.unit.costing.thermal_energy_cost)
-        assert pytest.approx(20004.9957, rel=1e-3) == value(m.fs.unit.costing.fixed_operating_cost)
+        assert pytest.approx(698.6207, rel=1e-3) == value(
+            m.fs.unit.costing.electrical_energy_cost
+        )
+        assert pytest.approx(19306.3751, rel=1e-3) == value(
+            m.fs.unit.costing.thermal_energy_cost
+        )
+        assert pytest.approx(20004.9957, rel=1e-3) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
