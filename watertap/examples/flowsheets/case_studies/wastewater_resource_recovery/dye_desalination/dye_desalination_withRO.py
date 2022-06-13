@@ -413,6 +413,45 @@ def add_costing(m):
     m.fs.zo_costing.cost_process()
     m.fs.ro_costing.cost_process()
 
+    # Annual disposal of brine
+    m.fs.brine_disposal_cost = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * (
+                m.fs.zo_costing.waste_disposal_cost
+                * pyunits.convert(
+                    m.fs.brine.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            )
+        ),
+        doc="Cost of disposing of brine waste",
+    )
+
+    m.fs.dye_recovery_revenue = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * m.fs.zo_costing.dye_mass_cost
+            * pyunits.convert(
+                m.fs.dye_retentate.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.zo_costing.base_period,
+            )
+        ),
+        doc="Savings from dye recovered back to the plant",
+    )
+
+    m.fs.water_recovery_revenue = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * m.fs.zo_costing.recovered_water_cost
+            * pyunits.convert(
+                m.fs.permeate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+            )
+        ),
+        doc="Savings from water recovered back to the plant",
+    )
+
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):
@@ -438,10 +477,20 @@ def add_costing(m):
         )
 
     @m.Expression()
+    def total_externalities(b):
+        return pyunits.convert(
+            m.fs.water_recovery_revenue
+            + m.fs.dye_recovery_revenue
+            - m.fs.brine_disposal_cost,
+            to_units=pyunits.USD_2018 / pyunits.year,
+        )
+
+    @m.Expression()
     def LCOW(b):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
+            - b.total_externalities
         ) / (
             pyunits.convert(
                 b.fs.feed.properties[0].flow_vol,
@@ -449,7 +498,6 @@ def add_costing(m):
             )
             * b.fs.zo_costing.utilization_factor
         )
-        # TODO - verify if the lcow can be defined on basis of feed
 
     assert_units_consistent(m)
     return
@@ -480,7 +528,7 @@ def display_results(m):
 
 
 def display_costing(m):
-
+    print("\n Costing metrics:\n")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
 
     opex = value(
@@ -489,13 +537,21 @@ def display_costing(m):
         )
     )
 
+    externalities = value(
+        pyunits.convert(
+            m.total_externalities, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
+
     lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3))
 
-    print(f"\n Total Capital Cost: {capex:.4f} M$")
+    print(f"Total Capital Cost: {capex:.4f} M$")
 
-    print(f"\n Total Operating Cost: {opex:.4f} M$/year")
+    print(f"Total Operating Cost: {opex:.4f} M$/year")
 
-    print(f"\n Levelized cost of water: {lcow:.4f} $/m3 feed")
+    print(f"Total Externalities: {externalities:.4f} M$/year")
+
+    print(f"Levelized cost of water: {lcow:.4f} $/m3 feed")
 
 
 if __name__ == "__main__":
