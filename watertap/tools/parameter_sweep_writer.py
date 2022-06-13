@@ -11,9 +11,12 @@
 #
 ###############################################################################
 
+import os, sys, pathlib
+import h5py
+import itertools
+import pprint
 import numpy as np
 import pyomo.environ as pyo
-import sys
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -57,18 +60,35 @@ np.set_printoptions(linewidth=200)
 class ParameterSweepWriter:
 
     def __init__(self,
-        results_file_name = None,
+        comm,
+        csv_results_file_name=None,
+        h5_results_file_name=None,
         debugging_data_dir = None,
-        comm = None,
-        write_h5 = False,
-        write_csv = False,
         interpolate_nan_outputs = False):
 
-        pass
+        self.comm = comm
+        self.rank = self.comm.Get_rank()
+        self.num_procs = self.comm.Get_size()
+
+        self.debugging_data_dir = debugging_data_dir
+        self.csv_results_file_name = csv_results_file_name
+        self.h5_results_file_name = h5_results_file_name
+
+        self.interpolate_nan_outputs = interpolate_nan_outputs
+
+        if self.rank == 0:
+            if h5_results_file_name is None and csv_results_file_name is None:
+                warnings.warn(
+                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+                )
+
+
+
 
     # ================================================================
 
-    def _strip_extension(self, file_name, extension):
+    @staticmethod
+    def _strip_extension(file_name, extension):
         if file_name.lower().endswith(extension):
             return file_name[: -len(extension)], extension
         else:
@@ -76,7 +96,8 @@ class ParameterSweepWriter:
 
     # ================================================================
 
-    def _process_results_filename(self, results_file_name):
+    @staticmethod
+    def _process_results_filename(results_file_name):
         # Get the directory path
         dirname = os.path.dirname(results_file_name)
         # Get the file name without the extension
@@ -90,48 +111,72 @@ class ParameterSweepWriter:
 
     # ================================================================
 
-    def _save_results(self, sweep_params, local_values, global_values, local_results_dict,
-        global_results_dict, global_results_arr, csv_results_file_name, h5_results_file_name,
-         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
+    @staticmethod
+    def _interp_nan_values(global_values, global_results):
 
-        if rank == 0:
-            if debugging_data_dir is not None:
-                os.makedirs(debugging_data_dir, exist_ok=True)
-            if h5_results_file_name is not None:
-                pathlib.Path(h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
-            if csv_results_file_name is not None:
-                pathlib.Path(csv_results_file_name).parent.mkdir(
+        global_results_clean = np.copy(global_results)
+
+        n_vals = np.shape(global_values)[1]
+        n_outs = np.shape(global_results)[1]
+
+        # Build a mask of all the non-nan saved outputs
+        # i.e., where the optimzation succeeded
+        mask = np.isfinite(global_results[:, 0])
+
+        # Create a list of points where good data is available
+        x0 = global_values[mask, :]
+
+        if np.sum(mask) >= 4:
+            # Interpolate to get a value for nan points where possible
+            for k in range(n_outs):
+                y0 = global_results[mask, k]
+                yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
+                    -1
+                )
+                global_results_clean[~mask, k] = yi[~mask]
+
+        else:
+            warnings.warn("Too few points to perform interpolation.")
+
+        return global_results_clean
+
+    # ================================================================
+
+    def save_results(self, sweep_params, local_values, global_values, local_results_dict,
+        global_results_dict, global_results_arr):
+
+        if self.rank == 0:
+            if self.debugging_data_dir is not None:
+                os.makedirs(self.debugging_data_dir, exist_ok=True)
+            if self.h5_results_file_name is not None:
+                pathlib.Path(self.h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
+            if self.csv_results_file_name is not None:
+                pathlib.Path(self.csv_results_file_name).parent.mkdir(
                     parents=True, exist_ok=True
                 )
 
-        if num_procs > 1:  # pragma: no cover
-            comm.Barrier()
+        self.comm.Barrier()
 
         # Handle values in the debugging data_directory
-        if debugging_data_dir is not None:
-            _write_debug_data(
+        if self.debugging_data_dir is not None:
+            self._write_debug_data(
                 sweep_params,
                 local_values,
                 local_results_dict,
-                debugging_data_dir,
-                rank,
-                h5_results_file_name is not None,
-                csv_results_file_name is not None,
+                self.h5_results_file_name is not None,
+                self.csv_results_file_name is not None,
             )
 
-        global_save_data = _write_to_csv(
+        global_save_data = self._write_to_csv(
             sweep_params,
             global_values,
             global_results_dict,
             global_results_arr,
-            rank,
-            csv_results_file_name,
-            interpolate_nan_outputs,
         )
 
-        if rank == 0 and h5_results_file_name is not None:
+        if self.rank == 0 and self.h5_results_file_name is not None:
             # Save the data of output dictionary
-            _write_outputs(global_results_dict, h5_results_file_name, txt_options="keys")
+            self._write_outputs(global_results_dict, txt_options="keys")
 
         return global_save_data
 
@@ -142,19 +187,17 @@ class ParameterSweepWriter:
         sweep_params,
         local_values,
         local_results_dict,
-        debugging_data_dir,
-        rank,
         write_h5,
         write_csv,
     ):
 
         if write_h5:
-            fname_h5 = f"local_results_{rank:03}.h5"
+            fname_h5 = f"local_results_{self.rank:03}.h5"
             self._write_output_to_h5(
-                local_results_dict, os.path.join(debugging_data_dir, fname_h5)
+                local_results_dict, os.path.join(self.debugging_data_dir, fname_h5)
             )
         if write_csv:
-            fname_csv = f"local_results_{rank:03}.csv"
+            fname_csv = f"local_results_{self.rank:03}.csv"
 
             data_header = ",".join(itertools.chain(sweep_params))
             local_results = np.zeros(
@@ -169,7 +212,7 @@ class ParameterSweepWriter:
 
             # Save the local data
             np.savetxt(
-                os.path.join(debugging_data_dir, fname_csv),
+                os.path.join(self.debugging_data_dir, fname_csv),
                 local_save_data,
                 header=data_header,
                 delimiter=", ",
@@ -178,13 +221,13 @@ class ParameterSweepWriter:
 
     # ================================================================
 
-    def _write_outputs(self, output_dict, h5_results_file_name, txt_options="metadata"):
+    def _write_outputs(self, output_dict, txt_options="metadata"):
 
-        self._write_output_to_h5(output_dict, h5_results_file_name)
+        self._write_output_to_h5(output_dict, self.h5_results_file_name)
 
         # We will also create a companion txt file by default which contains
         # the metadata of the h5 file in a user readable format.
-        txt_fname = h5_results_file_name + ".txt"
+        txt_fname = self.h5_results_file_name + ".txt"
         if "solve_successful" in output_dict.keys():
             output_dict.pop("solve_successful")
         if txt_options == "metadata":
@@ -231,23 +274,20 @@ class ParameterSweepWriter:
         global_values,
         global_results_dict,
         global_results_arr,
-        rank,
-        csv_results_file_name,
-        interpolate_nan_outputs,
     ):
 
         # Create the dataframe that is going to be written to a CSV
         global_save_data = np.hstack((global_values, global_results_arr))
 
-        if rank == 0:
+        if self.rank == 0:
             data_header = ",".join(itertools.chain(sweep_params))
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 data_header = ",".join([data_header, key])
 
-            if csv_results_file_name is not None:
+            if self.csv_results_file_name is not None:
                 # Write the CSV
                 np.savetxt(
-                    csv_results_file_name,
+                    self.csv_results_file_name,
                     global_save_data,
                     header=data_header,
                     delimiter=",",
@@ -255,15 +295,15 @@ class ParameterSweepWriter:
                 )
 
                 # If we want the interpolated output_list in CSV
-                if interpolate_nan_outputs:
-                    global_results_clean = _interp_nan_values(
+                if self.interpolate_nan_outputs:
+                    global_results_clean = self._interp_nan_values(
                         global_values, global_results_arr
                     )
                     global_save_data_clean = np.hstack(
                         (global_values, global_results_clean)
                     )
 
-                    head, tail = os.path.split(csv_results_file_name)
+                    head, tail = os.path.split(self.csv_results_file_name)
 
                     if head == "":
                         interp_file = "interpolated_%s" % (tail)

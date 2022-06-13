@@ -29,16 +29,20 @@ from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
+from watertap.tools.sampling_types import (SamplingType, LinearSample)
+
 np.set_printoptions(linewidth=200)
 
 
 class _ParameterSweepBase(ABC):
     def __init__(self, *args, **kwargs):
-        pass
+        self.comm = self._init_mpi()
+        self.rank = self.comm.Get_rank()
+        self.num_procs = self.comm.Get_size()
 
     # ================================================================
 
-    def init_mpi(self):
+    def _init_mpi(self):
         try:
             from mpi4py import MPI
             return MPI.COMM_WORLD
@@ -48,10 +52,10 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
-    def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
+    def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)
 
-        if rank == 0:
+        if self.rank == 0:
             param_values = []
 
             for k, v in d.items():
@@ -108,22 +112,22 @@ class _ParameterSweepBase(ABC):
             global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
 
         ### Broadcast the array to all processes
-        if num_procs > 1:
-            comm.Bcast(global_combo_array, root=0)
+        if self.num_procs > 1:
+            self.comm.Bcast(global_combo_array, root=0)
 
         return global_combo_array
 
     # ================================================================
 
-    def _divide_combinations(self, global_combo_array, rank, num_procs):
+    def _divide_combinations(self, global_combo_array):
 
         # Split the total list of combinations into NUM_PROCS chunks,
         # one per each of the MPI ranks
         # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
-        divided_combo_array = np.array_split(global_combo_array, num_procs)
+        divided_combo_array = np.array_split(global_combo_array, self.num_procs)
 
         # Return only this rank's portion of the total workload
-        local_combo_array = divided_combo_array[rank]
+        local_combo_array = divided_combo_array[self.rank]
 
         return local_combo_array
 
@@ -148,18 +152,18 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
-    def _aggregate_results_arr(self, global_results_dict, num_cases, comm, rank, num_procs):
+    def _aggregate_results_arr(self, global_results_dict, num_cases):
 
         global_results = np.zeros(
             (num_cases, len(global_results_dict["outputs"])), dtype=np.float64
         )
 
-        if rank == 0:
+        if self.rank == 0:
             for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
                 global_results[:, i] = item["value"][:num_cases]
 
-        if num_procs > 1:  # pragma: no cover
-            comm.Bcast(global_results, root=0)
+        if self.num_procs > 1:  # pragma: no cover
+            self.comm.Bcast(global_results, root=0)
 
         return global_results
 
@@ -210,33 +214,33 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
-    def _interp_nan_values(self, global_values, global_results):
-
-        global_results_clean = np.copy(global_results)
-
-        n_vals = np.shape(global_values)[1]
-        n_outs = np.shape(global_results)[1]
-
-        # Build a mask of all the non-nan saved outputs
-        # i.e., where the optimzation succeeded
-        mask = np.isfinite(global_results[:, 0])
-
-        # Create a list of points where good data is available
-        x0 = global_values[mask, :]
-
-        if np.sum(mask) >= 4:
-            # Interpolate to get a value for nan points where possible
-            for k in range(n_outs):
-                y0 = global_results[mask, k]
-                yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
-                    -1
-                )
-                global_results_clean[~mask, k] = yi[~mask]
-
-        else:
-            warnings.warn("Too few points to perform interpolation.")
-
-        return global_results_clean
+    # def _interp_nan_values(self, global_values, global_results):
+    #
+    #     global_results_clean = np.copy(global_results)
+    #
+    #     n_vals = np.shape(global_values)[1]
+    #     n_outs = np.shape(global_results)[1]
+    #
+    #     # Build a mask of all the non-nan saved outputs
+    #     # i.e., where the optimzation succeeded
+    #     mask = np.isfinite(global_results[:, 0])
+    #
+    #     # Create a list of points where good data is available
+    #     x0 = global_values[mask, :]
+    #
+    #     if np.sum(mask) >= 4:
+    #         # Interpolate to get a value for nan points where possible
+    #         for k in range(n_outs):
+    #             y0 = global_results[mask, k]
+    #             yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
+    #                 -1
+    #             )
+    #             global_results_clean[~mask, k] = yi[~mask]
+    #
+    #     else:
+    #         warnings.warn("Too few points to perform interpolation.")
+    #
+    #     return global_results_clean
 
     # ================================================================
 
@@ -252,7 +256,7 @@ class _ParameterSweepBase(ABC):
         for sweep_param in sweep_params.values():
             var = sweep_param.pyomo_object
             sweep_param_objs.add(var)
-            output_dict["sweep_params"][var.name] = _create_component_output_skeleton(
+            output_dict["sweep_params"][var.name] = self._create_component_output_skeleton(
                 var, num_samples
             )
 
@@ -265,12 +269,12 @@ class _ParameterSweepBase(ABC):
                 if pyo_obj not in sweep_param_objs:
                     output_dict["outputs"][
                         pyo_obj.name
-                    ] = _create_component_output_skeleton(pyo_obj, num_samples)
+                    ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         else:
             # Save only the outputs specified in the outputs dictionary
             for short_name, pyo_obj in outputs.items():
-                output_dict["outputs"][short_name] = _create_component_output_skeleton(
+                output_dict["outputs"][short_name] = self._create_component_output_skeleton(
                     pyo_obj, num_samples
                 )
 
@@ -326,7 +330,7 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
-    def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
+    def _create_global_output(self, local_output_dict, req_num_samples):
 
         # Before we can create the global dictionary, we need to delete the pyomo
         # object contained within the dictionary
@@ -336,7 +340,7 @@ class _ParameterSweepBase(ABC):
                     if "_pyo_obj" in subval:
                         del subval["_pyo_obj"]
 
-        if num_procs == 1:
+        if self.num_procs == 1:
             global_output_dict = local_output_dict
         else:  # pragma: no cover
             # We make the assumption that the parameter sweep is running the same
@@ -345,11 +349,11 @@ class _ParameterSweepBase(ABC):
             local_num_cases = len(local_output_dict["solve_successful"])
 
             # Gather the size of the value array on each MPI rank
-            sample_split_arr = comm.allgather(local_num_cases)
+            sample_split_arr = self.comm.allgather(local_num_cases)
             num_total_samples = sum(sample_split_arr)
 
             # Create the global value array on rank 0
-            if rank == 0:
+            if self.rank == 0:
                 global_output_dict = copy.deepcopy(local_output_dict)
                 # Create a global value array of inputs in the dictionary
                 for key, item in global_output_dict.items():
@@ -383,18 +387,18 @@ class _ParameterSweepBase(ABC):
                         item, dtype=np.bool, count=len(item)
                     )
 
-                    if rank == 0:
+                    if self.rank == 0:
                         global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
                     else:
                         global_solve_successful = None
 
-                    comm.Gatherv(
+                    self.comm.Gatherv(
                         sendbuf=local_solve_successful,
                         recvbuf=(global_solve_successful, sample_split_arr),
                         root=0,
                     )
 
-                    if rank == 0:
+                    if self.rank == 0:
                         global_output_dict[key] = global_solve_successful[0:req_num_samples]
 
         return global_output_dict
@@ -402,6 +406,7 @@ class _ParameterSweepBase(ABC):
     # ================================================================
 
     def _do_param_sweep(
+        self,
         model,
         sweep_params,
         outputs,
@@ -411,14 +416,13 @@ class _ParameterSweepBase(ABC):
         reinitialize_function,
         reinitialize_kwargs,
         reinitialize_before_sweep,
-        comm,
     ):
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
 
         # Create the output skeleton for storing detailed data
-        local_output_dict = _create_local_output_skeleton(
+        local_output_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, local_num_cases
         )
 
@@ -432,7 +436,7 @@ class _ParameterSweepBase(ABC):
 
         for k in range(local_num_cases):
             # Update the model values with a single combination from the parameter space
-            _update_model_values(model, sweep_params, local_values[k, :])
+            self._update_model_values(model, sweep_params, local_values[k, :])
 
             run_successful = False  # until proven otherwise
 
@@ -472,7 +476,7 @@ class _ParameterSweepBase(ABC):
                 run_successful = True
 
             # Update the loop based on the reinitialization
-            _update_local_output_dict(
+            self._update_local_output_dict(
                 model,
                 sweep_params,
                 k,
@@ -498,40 +502,35 @@ class _ParameterSweepBase(ABC):
 class ParameterSweep(_ParameterSweepBase):
 
     def __init__(self, *args, **kwargs):
-        pass
+        _ParameterSweepBase.__init__(self)
+        print(self.comm)
+
 
     def _aggregate_local_results(
         self,
         global_values,
         local_output_dict,
         num_samples,
-        local_num_cases,
-        comm,
-        rank,
-        num_procs,
+        local_num_cases
     ):
 
         # Create the dictionary
-        global_results_dict = _create_global_output(
-            local_output_dict, num_samples, comm, rank, num_procs
-        )
+        global_results_dict = self._create_global_output(local_output_dict, num_samples)
 
         # Create the array
         num_global_samples = np.shape(global_values)[0]
-        global_results_arr = _aggregate_results_arr(
-            global_results_dict, num_global_samples, comm, rank, num_procs
-        )
+        global_results_arr = self._aggregate_results_arr(global_results_dict, num_global_samples)
 
         return global_results_dict, global_results_arr
 
-    @classmethod
     def parameter_sweep(
+        self,
         model,
         sweep_params,
         outputs=None,
         csv_results_file_name=None,
         h5_results_file_name=None,
-        optimize_function=_default_optimize,
+        optimize_function=None, # self._default_optimize,
         optimize_kwargs=None,
         reinitialize_function=None,
         reinitialize_kwargs=None,
@@ -629,14 +628,14 @@ class ParameterSweep(_ParameterSweepBase):
                         simulation identified by the ``outputs`` argument.
         """
 
-        # Get an MPI communicator
-        comm, rank, num_procs = self._init_mpi(mpi_comm)
+        # # Get an MPI communicator
+        # comm, rank, num_procs = self._init_mpi(mpi_comm)
 
-        if rank == 0:
-            if h5_results_file_name is None and csv_results_file_name is None:
-                warnings.warn(
-                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-                )
+        # if self.rank == 0:
+        #     if h5_results_file_name is None and csv_results_file_name is None:
+        #         warnings.warn(
+        #             "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+        #         )
 
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
@@ -645,12 +644,10 @@ class ParameterSweep(_ParameterSweepBase):
         np.random.seed(seed)
 
         # Enumerate/Sample the parameter space
-        global_values = self._build_combinations(
-            sweep_params, sampling_type, num_samples, comm, rank, num_procs
-        )
+        global_values = self._build_combinations(sweep_params, sampling_type, num_samples)
 
         # divide the workload between processors
-        local_values = self._divide_combinations(global_values, rank, num_procs)
+        local_values = self._divide_combinations(global_values)
         local_num_cases = np.shape(local_values)[0]
 
         # Set up optimize_kwargs
@@ -671,7 +668,6 @@ class ParameterSweep(_ParameterSweepBase):
             reinitialize_function,
             reinitialize_kwargs,
             reinitialize_before_sweep,
-            comm,
         )
 
         # Aggregate results on Master
@@ -679,27 +675,21 @@ class ParameterSweep(_ParameterSweepBase):
             global_values,
             local_results_dict,
             num_samples,
-            local_num_cases,
-            comm,
-            rank,
-            num_procs,
+            local_num_cases
         )
 
-        # Save to file
-        global_save_data = self._save_results(
-            sweep_params,
-            local_values,
-            global_values,
-            local_results_dict,
-            global_results_dict,
-            global_results_arr,
-            csv_results_file_name,
-            h5_results_file_name,
-            debugging_data_dir,
-            comm,
-            rank,
-            num_procs,
-            interpolate_nan_outputs,
-        )
+        # # Save to file
+        # global_save_data = self._save_results(
+        #     sweep_params,
+        #     local_values,
+        #     global_values,
+        #     local_results_dict,
+        #     global_results_dict,
+        #     global_results_arr,
+        #     csv_results_file_name,
+        #     h5_results_file_name,
+        #     debugging_data_dir,
+        #     interpolate_nan_outputs,
+        # )
 
-        return global_save_data
+        return sweep_params, local_values, global_values, local_results_dict, global_results_dict, global_results_arr

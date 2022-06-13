@@ -644,96 +644,96 @@ def _write_to_csv(
 # ================================================================
 
 
-# def _write_debug_data(
-#     sweep_params,
-#     local_values,
-#     local_results_dict,
-#     debugging_data_dir,
-#     rank,
-#     write_h5,
-#     write_csv,
-# ):
-#
-#     if write_h5:
-#         fname_h5 = f"local_results_{rank:03}.h5"
-#         _write_output_to_h5(
-#             local_results_dict, os.path.join(debugging_data_dir, fname_h5)
-#         )
-#     if write_csv:
-#         fname_csv = f"local_results_{rank:03}.csv"
-#
-#         data_header = ",".join(itertools.chain(sweep_params))
-#         local_results = np.zeros(
-#             (np.shape(local_values)[0], len(local_results_dict["outputs"])),
-#             dtype=np.float64,
-#         )
-#         for i, (key, item) in enumerate(local_results_dict["outputs"].items()):
-#             data_header = ",".join([data_header, key])
-#             local_results[:, i] = item["value"][:]
-#
-#         local_save_data = np.hstack((local_values, local_results))
-#
-#         # Save the local data
-#         np.savetxt(
-#             os.path.join(debugging_data_dir, fname_csv),
-#             local_save_data,
-#             header=data_header,
-#             delimiter=", ",
-#             fmt="%.6e",
-#         )
+def _write_debug_data(
+    sweep_params,
+    local_values,
+    local_results_dict,
+    debugging_data_dir,
+    rank,
+    write_h5,
+    write_csv,
+):
+
+    if write_h5:
+        fname_h5 = f"local_results_{rank:03}.h5"
+        _write_output_to_h5(
+            local_results_dict, os.path.join(debugging_data_dir, fname_h5)
+        )
+    if write_csv:
+        fname_csv = f"local_results_{rank:03}.csv"
+
+        data_header = ",".join(itertools.chain(sweep_params))
+        local_results = np.zeros(
+            (np.shape(local_values)[0], len(local_results_dict["outputs"])),
+            dtype=np.float64,
+        )
+        for i, (key, item) in enumerate(local_results_dict["outputs"].items()):
+            data_header = ",".join([data_header, key])
+            local_results[:, i] = item["value"][:]
+
+        local_save_data = np.hstack((local_values, local_results))
+
+        # Save the local data
+        np.savetxt(
+            os.path.join(debugging_data_dir, fname_csv),
+            local_save_data,
+            header=data_header,
+            delimiter=", ",
+            fmt="%.6e",
+        )
 
 
 # ================================================================
 
 
-# def _write_outputs(output_dict, h5_results_file_name, txt_options="metadata"):
-#
-#     _write_output_to_h5(output_dict, h5_results_file_name)
-#
-#     # We will also create a companion txt file by default which contains
-#     # the metadata of the h5 file in a user readable format.
-#     txt_fname = h5_results_file_name + ".txt"
-#     if "solve_successful" in output_dict.keys():
-#         output_dict.pop("solve_successful")
-#     if txt_options == "metadata":
-#         my_dict = copy.deepcopy(output_dict)
-#         for key, value in my_dict.items():
-#             for subkey, subvalue in value.items():
-#                 subvalue.pop("value")
-#     elif txt_options == "keys":
-#         my_dict = {}
-#         for key, value in output_dict.items():
-#             my_dict[key] = list(value.keys())
-#     else:
-#         my_dict = output_dict
-#
-#     with open(txt_fname, "w") as log_file:
-#         pprint.pprint(my_dict, log_file)
+def _write_outputs(output_dict, h5_results_file_name, txt_options="metadata"):
+
+    _write_output_to_h5(output_dict, h5_results_file_name)
+
+    # We will also create a companion txt file by default which contains
+    # the metadata of the h5 file in a user readable format.
+    txt_fname = h5_results_file_name + ".txt"
+    if "solve_successful" in output_dict.keys():
+        output_dict.pop("solve_successful")
+    if txt_options == "metadata":
+        my_dict = copy.deepcopy(output_dict)
+        for key, value in my_dict.items():
+            for subkey, subvalue in value.items():
+                subvalue.pop("value")
+    elif txt_options == "keys":
+        my_dict = {}
+        for key, value in output_dict.items():
+            my_dict[key] = list(value.keys())
+    else:
+        my_dict = output_dict
+
+    with open(txt_fname, "w") as log_file:
+        pprint.pprint(my_dict, log_file)
 
 
 # ================================================================
 
 
-# def _write_output_to_h5(output_dict, h5_results_file_name):
-#
-#     f = h5py.File(h5_results_file_name, "w")
-#     for key, item in output_dict.items():
-#         grp = f.create_group(key)
-#         if key != "solve_successful":
-#             for subkey, subitem in item.items():
-#                 subgrp = grp.create_group(subkey)
-#                 for subsubkey, subsubitem in subitem.items():
-#                     if subsubkey[0] != "_":
-#                         if subsubkey == "lower bound" and subsubitem is None:
-#                             subgrp.create_dataset(subsubkey, data=np.finfo("d").min)
-#                         elif subsubkey == "upper bound" and subsubitem is None:
-#                             subgrp.create_dataset(subsubkey, data=np.finfo("d").max)
-#                         else:
-#                             subgrp.create_dataset(subsubkey, data=subsubitem)
-#         elif key == "solve_successful":
-#             grp.create_dataset(key, data=output_dict[key])
-#
-#     f.close()
+def _write_output_to_h5(output_dict, h5_results_file_name):
+
+    f = h5py.File(h5_results_file_name, "w")
+    for key, item in output_dict.items():
+        grp = f.create_group(key)
+        if key != "solve_successful":
+            for subkey, subitem in item.items():
+                subgrp = grp.create_group(subkey)
+                for subsubkey, subsubitem in subitem.items():
+                    if subsubkey[0] != "_":
+                        if subsubkey == "lower bound" and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo("d").min)
+                        elif subsubkey == "upper bound" and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo("d").max)
+                        else:
+                            subgrp.create_dataset(subsubkey, data=subsubitem)
+        elif key == "solve_successful":
+            grp.create_dataset(key, data=output_dict[key])
+
+    f.close()
 
 
 # ================================================================
@@ -887,62 +887,62 @@ def _aggregate_local_results(
 # ================================================================
 
 
-# def _save_results(
-#     sweep_params,
-#     local_values,
-#     global_values,
-#     local_results_dict,
-#     global_results_dict,
-#     global_results_arr,
-#     csv_results_file_name,
-#     h5_results_file_name,
-#     debugging_data_dir,
-#     comm,
-#     rank,
-#     num_procs,
-#     interpolate_nan_outputs,
-# ):
-#
-#     if rank == 0:
-#         if debugging_data_dir is not None:
-#             os.makedirs(debugging_data_dir, exist_ok=True)
-#         if h5_results_file_name is not None:
-#             pathlib.Path(h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
-#         if csv_results_file_name is not None:
-#             pathlib.Path(csv_results_file_name).parent.mkdir(
-#                 parents=True, exist_ok=True
-#             )
-#
-#     if num_procs > 1:  # pragma: no cover
-#         comm.Barrier()
-#
-#     # Handle values in the debugging data_directory
-#     if debugging_data_dir is not None:
-#         _write_debug_data(
-#             sweep_params,
-#             local_values,
-#             local_results_dict,
-#             debugging_data_dir,
-#             rank,
-#             h5_results_file_name is not None,
-#             csv_results_file_name is not None,
-#         )
-#
-#     global_save_data = _write_to_csv(
-#         sweep_params,
-#         global_values,
-#         global_results_dict,
-#         global_results_arr,
-#         rank,
-#         csv_results_file_name,
-#         interpolate_nan_outputs,
-#     )
-#
-#     if rank == 0 and h5_results_file_name is not None:
-#         # Save the data of output dictionary
-#         _write_outputs(global_results_dict, h5_results_file_name, txt_options="keys")
-#
-#     return global_save_data
+def _save_results(
+    sweep_params,
+    local_values,
+    global_values,
+    local_results_dict,
+    global_results_dict,
+    global_results_arr,
+    csv_results_file_name,
+    h5_results_file_name,
+    debugging_data_dir,
+    comm,
+    rank,
+    num_procs,
+    interpolate_nan_outputs,
+):
+
+    if rank == 0:
+        if debugging_data_dir is not None:
+            os.makedirs(debugging_data_dir, exist_ok=True)
+        if h5_results_file_name is not None:
+            pathlib.Path(h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
+        if csv_results_file_name is not None:
+            pathlib.Path(csv_results_file_name).parent.mkdir(
+                parents=True, exist_ok=True
+            )
+
+    if num_procs > 1:  # pragma: no cover
+        comm.Barrier()
+
+    # Handle values in the debugging data_directory
+    if debugging_data_dir is not None:
+        _write_debug_data(
+            sweep_params,
+            local_values,
+            local_results_dict,
+            debugging_data_dir,
+            rank,
+            h5_results_file_name is not None,
+            csv_results_file_name is not None,
+        )
+
+    global_save_data = _write_to_csv(
+        sweep_params,
+        global_values,
+        global_results_dict,
+        global_results_arr,
+        rank,
+        csv_results_file_name,
+        interpolate_nan_outputs,
+    )
+
+    if rank == 0 and h5_results_file_name is not None:
+        # Save the data of output dictionary
+        _write_outputs(global_results_dict, h5_results_file_name, txt_options="keys")
+
+    return global_save_data
 
 
 # ================================================================

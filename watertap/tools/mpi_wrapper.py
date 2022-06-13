@@ -13,42 +13,33 @@
 import numpy as np
 
 class DummyMPI:
-    @classmethod
-    def Get_rank(self):
+    @staticmethod
+    def Get_rank():
         return 0
 
-    @classmethod
-    def Get_size(self):
+    @staticmethod
+    def Get_size():
         return 1
 
-    @classmethod
-    def Barrier(self):
+    @staticmethod
+    def Barrier():
         pass
 
-    @classmethod
-    def Bcast(self, array, root=0):
+    @staticmethod
+    def Bcast(array, root=0):
         pass
 
-    @classmethod
-    def allgather(self, value):
+    @staticmethod
+    def allgather(value):
         return [value]
 
-    @classmethod
-    def Gatherv(self, sendbuf, recvbuf, root=0):
+    @staticmethod
+    def Gatherv(sendbuf, recvbuf, root=0):
         receive_arr = recvbuf[0]
         receive_sizes = recvbuf[1]
         assert sum(receive_sizes) == len(receive_arr)
         assert sendbuf.size == receive_arr.size
         receive_arr[:] = sendbuf[:]
-
-# class MPIWrapper:
-#     def __init__(self):
-#         try:
-#             from mpi4py import MPI
-#             return MPI.COMM_WORLD
-#         except:
-#             dummy_comm = DummyMPI()
-#             return dummy_comm
 
 if __name__ == '__main__':
 
@@ -62,6 +53,3 @@ if __name__ == '__main__':
     print("rank = ", rank)
     print("size = ", size)
     print("returned_list = ", returned_list)
-
-    # comm = MPIWrapper()
-    # print("comm = ", comm)
