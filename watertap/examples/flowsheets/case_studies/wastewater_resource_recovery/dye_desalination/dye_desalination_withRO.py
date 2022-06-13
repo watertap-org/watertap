@@ -14,7 +14,6 @@ import os
 from pyomo.environ import (
     ConcreteModel,
     Block,
-    Set,
     Expression,
     value,
     TransformationFactory,
@@ -26,23 +25,18 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.core.util.initialization import (
-    propagate_state,
-    fix_state_vars,
-    revert_state_vars,
-)
+from idaes.core.util.initialization import propagate_state
+
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
-from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import check_dof, assert_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom
 
 import watertap.property_models.seawater_prop_pack as prop_SW
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -83,7 +77,7 @@ def main():
     display_results(m)
     display_costing(m)
 
-    return m
+    return m, results
 
 
 def build(erd_type="pressure_exchanger"):
@@ -550,7 +544,8 @@ def initialize_costing(m):
 
 
 def display_results(m):
-    m.fs.feed.report()
+    print("Unit models:")
+    m.fs.pretreatment.wwtp.report()
     m.fs.dye_separation.P1.report()
     m.fs.dye_separation.nanofiltration.report()
     if m.erd_type == "pressure_exchanger":
@@ -564,6 +559,11 @@ def display_results(m):
         m.fs.desalination.P2.report()
         m.fs.desalination.RO.report()
         m.fs.desalination.ERD.report()
+
+    print("Streams:")
+    flow_list = ["feed", "wwt_retentate", "dye_retentate", "permeate", "brine"]
+    for f in flow_list:
+        m.fs.component(f).report()
     return
 
 
@@ -599,4 +599,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    model, results = main()
