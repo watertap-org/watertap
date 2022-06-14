@@ -34,22 +34,12 @@ class DummyMPI:
         return [value]
 
     @staticmethod
-    def Gatherv(sendbuf, recvbuf, root=0):
+    def Gatherv(sendbuf=None, recvbuf=(None, None), root=0):
+        assert len(recvbuf) == 2
+        assert isinstance(recvbuf, tuple)
         receive_arr = recvbuf[0]
         receive_sizes = recvbuf[1]
-        assert sum(receive_sizes) == len(receive_arr)
-        assert sendbuf.size == receive_arr.size
+
+        assert isinstance(receive_arr, (np.ndarray, list))
+        assert len(receive_arr) == sum(receive_sizes)
         receive_arr[:] = sendbuf[:]
-
-if __name__ == '__main__':
-
-    dummy_comm = DummyMPI()
-    rank = dummy_comm.Get_rank()
-    size = dummy_comm.Get_size()
-    dummy_comm.Bcast(np.zeros(2))
-    returned_list = dummy_comm.allgather(np.zeros(2))
-
-    print("dummy_comm = ", dummy_comm)
-    print("rank = ", rank)
-    print("size = ", size)
-    print("returned_list = ", returned_list)
