@@ -772,14 +772,14 @@ class GACData(UnitModelBlockData):
                     units_meta("time") * units_meta("length") ** -2
                 )
                 # embedded viscosity of water at 1.3097 cP
-                conc_mol_phase_comp_inv_units = (
-                    units_meta("length") ** 3 * units_meta("amount") ** -1
+                molal_volume_inv_units = (
+                    units_meta("amount") * units_meta("length") ** -3
                 )
                 return (
                     b.molecular_diffusion_coefficient
                     * molecular_diffusion_coefficient_inv_units
                 ) * (1.3097**1.14) * (
-                    (b.molal_volume * 1e6 / conc_mol_phase_comp_inv_units) ** 0.589
+                    (b.molal_volume * 1e6 * molal_volume_inv_units) ** 0.589
                 ) == 13.26e-9
 
         if self.config.film_transfer_rate_type == FilmTransferRateType.calculated:
@@ -792,7 +792,7 @@ class GACData(UnitModelBlockData):
             )
 
             self.sc = Var(
-                initialize=1000,
+                initialize=5000,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -802,6 +802,7 @@ class GACData(UnitModelBlockData):
             @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 # TODO using b.treatwater.properties_in[0].dens_mass_phase["Liq"] causes initialization failure
+                #  and check Re formulation
                 viscosity_units = units_meta("pressure") * units_meta("time")
                 density_units = units_meta("mass") * units_meta("length") ** -3
                 return (
@@ -818,13 +819,17 @@ class GACData(UnitModelBlockData):
                     == 1.3097e-3 * viscosity_units
                 )
 
-        """
-            @self.Constraint(doc="Liquid phase film transfer rate from the Gnielinshi correlation")
+            @self.Constraint(
+                doc="Liquid phase film transfer rate from the Gnielinshi correlation"
+            )
             def eq_film_transfer_rate(b):
                 kf_units = units_meta("length") * units_meta("time") ** -1
-                return * b.particle_dp == (1+1.5*(1-b.eps_bed))*b.molecular_diffusion_coefficient*(
-                        2+0.677*(b.re**0.5)*(b.sc**(1/3)))
-        """
+                return b.kf * b.particle_dp == (
+                    1 + 1.5 * (1 - b.eps_bed)
+                ) * b.molecular_diffusion_coefficient * (
+                    2 + 0.644 * (b.re**0.5) * (b.sc ** (1 / 3))
+                )
+
         if (
             self.config.surface_diffusion_coefficient_type
             == SurfaceDiffusionCoefficientType.calculated
@@ -1052,5 +1057,9 @@ class GACData(UnitModelBlockData):
         if hasattr(self, "sc"):
             if iscale.get_scaling_factor(self.sc) is None:
                 iscale.set_scaling_factor(self.sc, 1e-3)
+
+        if hasattr(self, "shape_correction_factor"):
+            if iscale.get_scaling_factor(self.shape_correction_factor) is None:
+                iscale.set_scaling_factor(self.shape_correction_factor, 1)
 
         # (optional) transforming constraints

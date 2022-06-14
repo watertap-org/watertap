@@ -56,7 +56,7 @@ def main():
     m.fs.gac = GAC(
         default={
             "property_package": m.fs.properties,
-            "film_transfer_rate_type": "fixed",
+            "film_transfer_rate_type": "calculated",
             "surface_diffusion_coefficient_type": "fixed",
         }
     )
@@ -110,10 +110,11 @@ def main():
     m.fs.gac.eps_bed.fix(0.44)
     m.fs.gac.particle_dens_app.fix(803.4)
     m.fs.gac.particle_dp.fix(0.001026)
-    m.fs.gac.kf.fix(3.73e-5)
+    # m.fs.gac.kf.fix(3.73e-5)
     m.fs.gac.ds.fix(1.24e-14)
-    m.fs.gac.velocity_sup.fix(5 / 3600)
-    # m.fs.gac.molal_volume.fix(9.81e-5)
+    m.fs.gac.velocity_sup.fix(5 / 3600 / 0.44)
+    m.fs.gac.molal_volume.fix(9.81e-5)
+    # m.fs.gac.shape_correction_factor.fix(1.5)
     # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(0.8)
     m.fs.gac.a1.fix(0)
@@ -161,6 +162,9 @@ def main():
     )
     print(stream_table_dataframe_to_string(st))
     m.fs.gac.display()
+    m.fs.gac.molecular_diffusion_coefficient.display()
+    m.fs.gac.re.display()
+    m.fs.gac.sc.display()
     m.fs.gac.kf.display()
     # """
 
