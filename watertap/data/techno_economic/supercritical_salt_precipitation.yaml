@@ -1,7 +1,7 @@
 default:
   energy_electric_flow_mass:
     value: 8.53
-    units: kWh/t
+    units: kWh/metric_ton
   recovery_frac_mass_H2O:
     value: 0.9925
     units: dimensionless
