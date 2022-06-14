@@ -11,7 +11,6 @@
 #
 ###############################################################################
 
-from pyomo.environ import Constraint
 from pyomo.common.config import In
 
 # Import IDAES cores

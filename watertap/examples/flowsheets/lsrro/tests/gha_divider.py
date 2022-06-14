@@ -11,11 +11,28 @@
 #
 ###############################################################################
 
-from .watertap_costing_package import (
-    WaterTAPCosting,
-    ROType,
-    PumpType,
-    MixerType,
-    EnergyRecoveryDeviceType,
-    CrystallizerCostType,
-)
+"""
+helper for splitting up the LSRRO testing jobs between the GHA runners
+"""
+
+import sys
+import platform
+
+_supported_systems = ["Linux", "Windows"]
+_number_of_python_versions = 3
+_python_version_index = sys.version_info.minor % _number_of_python_versions
+
+_this_platform = platform.system()
+try:
+    _platform_index = _supported_systems.index(_this_platform)
+except ValueError:
+    _platform_index = None
+
+
+def get_test_cases_subset(all_test_cases):
+    return [
+        test_case
+        for idx, test_case in enumerate(all_test_cases)
+        if (idx % len(_supported_systems) == _platform_index)
+        and (idx % _number_of_python_versions == _python_version_index)
+    ]

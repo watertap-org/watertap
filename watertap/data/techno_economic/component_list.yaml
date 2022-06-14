@@ -54,6 +54,8 @@ hydroxide_alkalinity_as_caco3:
   constituent_longform: Hydroxide Alkalinity as CaCO3
 iron:
   constituent_longform: Iron
+inorganic_solid:
+  constituent_longform: Inorganic Solid
 lead:
   constituent_longform: Lead
 magnesium:
@@ -88,6 +90,10 @@ oil_and_grease:
   constituent_longform: Oil and Grease
 oily_matter:
   constituent_longform: Oily Matter
+organic_liquid:
+  constituent_longform: Organic Liquid
+organic_solid:
+  constituent_longform: Organic Solid
 perfluorooctane_sulfonate_pfos:
   constituent_longform: Perfluorooctane sulfonate (PFOS)
 perfluorootanoate_pfoa:
