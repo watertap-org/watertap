@@ -1113,7 +1113,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     def cost_hydrothermal_gasification(blk):
         """
         General method for costing hydrothermal gasification unit. Capital cost
-        is based on the CHG reactor and other wastewater treatment equipments.
+        is based on the CHG reactor and other wastewater treatment equipments including
+        a feed pump, a booster pump, a feed/product exchanger, a fired heater,
+        a hydrocyclone, and a product air fin cooler.
         """
         t0 = blk.flowsheet().time.first()
 

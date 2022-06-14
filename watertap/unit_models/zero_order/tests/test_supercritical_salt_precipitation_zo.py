@@ -134,7 +134,7 @@ class TestSaltPrecipitationZO:
         assert pytest.approx(0.4965, rel=1e-5) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(1970.27, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
+        assert pytest.approx(1787.40, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
         assert pytest.approx(14.3001, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["organic_solid"]
         )
@@ -161,7 +161,7 @@ class TestSaltPrecipitationZO:
         assert pytest.approx(3.0212e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["organic_liquid"]
         )
-        assert pytest.approx(16806.41, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(15246.52, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

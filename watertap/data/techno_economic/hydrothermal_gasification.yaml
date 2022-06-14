@@ -1,7 +1,7 @@
 default:
   energy_electric_flow_mass:
     value: 1.90
-    units: kWh/tons
+    units: kWh/t
   recovery_frac_mass_H2O:
     value: 1      # no water wasting
     units: dimensionless
@@ -125,4 +125,4 @@ default:
       units: dimensionless
   catalyst_dosage:
     value: 367.4
-    units: pound/tons
+    units: pound/t

@@ -136,7 +136,7 @@ class TestHTGZO:
         assert pytest.approx(0.4664, rel=1e-5) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(1850.82, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
+        assert pytest.approx(1679.04, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
         assert pytest.approx(129.931, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["organic_liquid"]
         )
@@ -160,7 +160,7 @@ class TestHTGZO:
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["carbon_dioxide"]
         )
-        assert pytest.approx(3516.567, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(3190.176, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

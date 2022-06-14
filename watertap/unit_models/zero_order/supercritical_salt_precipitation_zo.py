@@ -40,7 +40,7 @@ class SaltPrecipitationZOData(ZeroOrderBaseData):
 
         self.flow_mass_in = Var(
             self.flowsheet().time,
-            units=pyunits.tons / pyunits.hour,
+            units=pyunits.t / pyunits.hour,
             bounds=(0, None),
             doc="Inlet mass flowrate",
         )
@@ -55,7 +55,7 @@ class SaltPrecipitationZOData(ZeroOrderBaseData):
                     b.properties_in[t].flow_mass_comp[j]
                     for j in b.properties_in[t].component_list
                 ),
-                to_units=pyunits.tons / pyunits.hour,
+                to_units=pyunits.t / pyunits.hour,
             )
 
         self._perf_var_dict["Inlet Mass Flowrate"] = self.flow_mass_in
@@ -70,7 +70,7 @@ class SaltPrecipitationZOData(ZeroOrderBaseData):
         self._perf_var_dict["Electricity Demand"] = self.electricity
 
         self.energy_electric_flow_mass = Var(
-            units=pyunits.kWh / pyunits.tons,
+            units=pyunits.kWh / pyunits.t,
             doc="Electricity intensity with respect to inlet flowrate",
         )
 

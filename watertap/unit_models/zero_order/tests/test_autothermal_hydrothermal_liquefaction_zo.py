@@ -138,7 +138,7 @@ class TestATHTLZO:
         assert pytest.approx(0.5, rel=1e-5) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(1984.16, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
+        assert pytest.approx(1800, rel=1e-5) == value(model.fs.unit.flow_mass_in[0])
         assert pytest.approx(142.4, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["organic_solid"]
         )
@@ -165,7 +165,7 @@ class TestATHTLZO:
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["carbon_dioxide"]
         )
-        assert pytest.approx(17282.0367, rel=1e-5) == value(
+        assert pytest.approx(15678, rel=1e-5) == value(
             model.fs.unit.electricity[0]
         )
 
