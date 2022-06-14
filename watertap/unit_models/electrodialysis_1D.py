@@ -503,7 +503,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
-        self.current_efficiency = Var(
+        self.current_efficiency_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.9,
@@ -721,15 +721,14 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.diluate.length_domain,
             self.config.property_package.phase_list,
-            cation_set,
             doc="Overall current efficiency evaluation",
         )
-        def eq_current_efficiency(self, t, x, p, j):
+        def eq_current_efficiency_x(self, t, x, p):
             if x == self.diluate.length_domain.first():
-                return  self.current_efficiency[t, x] == 0
+                return  self.current_efficiency_x[t, x] == 0
             else: 
                 return (
-                    self.current_efficiency[t, x] * self.current_density_x[t, x] * self.cell_width
+                    self.current_efficiency_x[t, x] * self.current_density_x[t, x] * self.cell_width
                     == - sum(
                         self.diluate.mass_transfer_term[t, x, p, j]
                         * self.config.property_package.charge_comp[j]
@@ -737,7 +736,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     * Constants.faraday_constant
                 )    
-           
+        
     # Intialization routines
     def initialize_build(
         blk,
@@ -854,9 +853,9 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Scaling factors that user may setup
         if iscale.get_scaling_factor(self.cell_width, warning=False) is None:
-            iscale.set_scaling_factor(self.cell_width, 1)
+            iscale.set_scaling_factor(self.cell_width, self.cell_width.value ** -1)
         if iscale.get_scaling_factor(self.cell_length, warning=False) is None:
-            iscale.set_scaling_factor(self.cell_length, 1)
+            iscale.set_scaling_factor(self.cell_length, self.cell_length.value ** -1)
         if iscale.get_scaling_factor(self.membrane_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
@@ -875,50 +874,63 @@ class Electrodialysis1DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
 
-        if iscale.get_scaling_factor(self.current_applied, warning=True) is None:
-            iscale.set_scaling_factor(self.current_applied, 1)
-        if iscale.get_scaling_factor(self.current_density_x, warning=False) is None:
-            sf = iscale.get_scaling_factor(
-                self.current_applied) / iscale.get_scaling_factor(self.cell_width)
-            iscale.set_scaling_factor(self.current_density_x, sf)
+       
+        for ind in self.total_areal_resistance_x: 
+            if iscale.get_scaling_factor(self.total_areal_resistance_x[ind], warning=False) is None:
+                sf = (iscale.get_scaling_factor(
+                    self.membrane_areal_resistance) **2
+                    + value(self.diluate.properties[ind].electrical_conductivity_phase['Liq']) ** 2)** 0.5 / float(self.cell_pair_num.value) 
+                iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
 
         if iscale.get_scaling_factor(self.voltage_applied, warning=True) is None:
-            iscale.set_scaling_factor(self.voltage_applied, 1)
+                    iscale.set_scaling_factor(self.voltage_applied, 1)
+        if iscale.get_scaling_factor(self.current_applied, warning=True) is None:
+            iscale.set_scaling_factor(self.current_applied, 1)
+
+        for ind in self.current_density_x: 
+            if iscale.get_scaling_factor(self.current_density_x[ind], warning=False) is None:
+                if self.config.operation_mode == 'Constant_Current':
+                    sf = iscale.get_scaling_factor(
+                    self.current_applied) / iscale.get_scaling_factor(self.cell_width)
+                    iscale.set_scaling_factor(self.current_density_x[ind], sf)
+                else:
+                    sf = iscale.get_scaling_factor(
+                        self.voltage_applied) / iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
+                    iscale.set_scaling_factor(self.current_density_x[ind], sf)
+
+        
               
-        if iscale.get_scaling_factor(self.total_areal_resistance_x, warning=False) is None:
-            sf = iscale.get_scaling_factor(
-                self.membrane_areal_resistance
-            )
-            iscale.set_scaling_factor(self.total_areal_resistance_x, sf)
-
-        if iscale.get_scaling_factor(self.voltage_x, warning=False) is None:
-            sf = iscale.get_scaling_factor(
-                self.current_density_x) * iscale.get_scaling_factor(self.total_areal_resistance_x)
-            iscale.set_scaling_factor(self.voltage_x, sf)
-
-        iscale.set_scaling_factor(
-            self.diluate.power_electrical_x,
-            iscale.get_scaling_factor(self.voltage_x)
-            * iscale.get_scaling_factor(self.current_density_x)
-            * iscale.get_scaling_factor(self.cell_width)
-            * iscale.get_scaling_factor(self.cell_length)
-        )
-
+        
+        for ind in self.voltage_x:
+            if iscale.get_scaling_factor(self.voltage_x[ind], warning=False) is None:
+                sf = iscale.get_scaling_factor(
+                    self.current_density_x[ind]) * iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
+                iscale.set_scaling_factor(self.voltage_x[ind], sf)
+        for ind in self.diluate.power_electrical_x:
+            iscale.set_scaling_factor(
+                self.diluate.power_electrical_x[ind],
+                iscale.get_scaling_factor(self.voltage_x[ind])
+                * iscale.get_scaling_factor(self.current_density_x[ind])
+                * iscale.get_scaling_factor(self.cell_width)
+                * iscale.get_scaling_factor(self.cell_length) 
+            ) 
+        
         iscale.set_scaling_factor(
             self.specific_power_electrical,
-            iscale.get_scaling_factor(self.voltage_x)
-            * iscale.get_scaling_factor(self.current_density_x)
-            * iscale.get_scaling_factor(self.cell_width)
-            * iscale.get_scaling_factor(self.cell_length)
+            3.6e6 
+            * iscale.get_scaling_factor(self.diluate.power_electrical_x[0,self.diluate.length_domain.last()])
+            * (iscale.get_scaling_factor(
+                    self.diluate.properties[0, self.diluate.length_domain.last()].flow_vol_phase["Liq"]
+                ) / float(self.cell_pair_num.value))
+                ** -1
         )
 
-        if iscale.get_scaling_factor(self.specific_power_electrical, warning=False) is None:
-            iscale.set_scaling_factor(self.specific_power_electrical, 1)
+        
 
         #Set up constraint scaling 
         for ind, c in self.eq_get_total_areal_resistance_x.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.total_areal_resistance_x)
+                c, iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
             )
 
         for ind, c in self.eq_get_current_density.items():
@@ -932,7 +944,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 )
         for ind, c in self.eq_get_voltage_x.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.voltage_x)
+                c, iscale.get_scaling_factor(self.voltage_x[ind])
             )
 
         for ind, c in self.eq_mass_transfer_term_diluate.items():
@@ -1027,7 +1039,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 )
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.diluate.power_electrical_x)
+                c, iscale.get_scaling_factor(self.diluate.power_electrical_x[ind])
             )
 
         for ind, c in self.eq_specific_power_electrical.items():
@@ -1035,10 +1047,10 @@ class Electrodialysis1DData(UnitModelBlockData):
                 c, iscale.get_scaling_factor(self.specific_power_electrical)
             )
         
-        for ind, c in self.eq_current_efficiency.items():
+        for ind, c in self.eq_current_efficiency_x.items():
             iscale.constraint_scaling_transform(
                 c, 
-                iscale.get_scaling_factor(self.current_density_x)
+                iscale.get_scaling_factor(self.current_density_x[ind[0], ind[1]])
                 * iscale.get_scaling_factor(self.cell_width)
             )
 
@@ -1052,16 +1064,20 @@ class Electrodialysis1DData(UnitModelBlockData):
             },
             time_point=time_point,
         )
+    
+    
 
     def _get_performance_contents(self, time_point=0):
+        
         return {
             "vars": {
                 "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[time_point, self.diluate.length_domain.last()],
-                "Specific electrical power consumption (kWh/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption (W*s/m**3)": self.specific_power_electrical[
                     time_point
-                ],
+                ]
             },
             "exprs": {},
             "params": {},
         }
+        
     
