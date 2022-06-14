@@ -88,8 +88,11 @@ from .CANDOP_zo import CANDOPZO
 # Units explicitly for Wastewater Resource Recovery effort
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
 from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
 from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
+from .hydrothermal_gasification_zo import HTGZO
+from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .vfa_recovery_zo import VFARecoveryZO
