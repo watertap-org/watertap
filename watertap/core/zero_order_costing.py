@@ -417,7 +417,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     def cost_autothermal_hydrothermal_liquefaction(blk):
         """
         General method for costing autothermal-hydrothermal liquefaction unit. Capital cost
-        is based on the HTL reactor, booster pump and other equipments.
+        is based on the HTL reactor, booster pump, solid filter, other equipments, and
+        heat oil system.
         """
         t0 = blk.flowsheet().time.first()
 
