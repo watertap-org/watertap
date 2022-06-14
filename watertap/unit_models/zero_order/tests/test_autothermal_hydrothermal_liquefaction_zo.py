@@ -165,9 +165,7 @@ class TestATHTLZO:
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["carbon_dioxide"]
         )
-        assert pytest.approx(15678, rel=1e-5) == value(
-            model.fs.unit.electricity[0]
-        )
+        assert pytest.approx(15678, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
