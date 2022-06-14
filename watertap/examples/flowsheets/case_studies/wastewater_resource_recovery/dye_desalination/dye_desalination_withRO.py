@@ -80,11 +80,10 @@ def main():
     return m, results
 
 
-def build(erd_type="pressure_exchanger"):
+def build():
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
-    m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -146,27 +145,18 @@ def build(erd_type="pressure_exchanger"):
     desal.RO.width.setub(2000)
     desal.RO.area.setub(20000)
 
-    if erd_type == "pressure_exchanger":
-        desal.S1 = Separator(
-            default={"property_package": m.fs.prop_ro, "outlet_list": ["P2", "PXR"]}
-        )
-        desal.M1 = Mixer(
-            default={
-                "property_package": m.fs.prop_ro,
-                "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-                "inlet_list": ["P2", "P3"],
-            }
-        )
-        desal.PXR = PressureExchanger(default={"property_package": m.fs.prop_ro})
-        desal.P3 = Pump(default={"property_package": m.fs.prop_ro})
-    elif erd_type == "pump_as_turbine":
-        desal.ERD = EnergyRecoveryDevice(default={"property_package": m.fs.prop_ro})
-    else:
-        raise ConfigurationError(
-            "erd_type was {}, but can only "
-            "be pressure_exchanger or pump_as_turbine"
-            "".format(erd_type)
-        )
+    desal.S1 = Separator(
+        default={"property_package": m.fs.prop_ro, "outlet_list": ["P2", "PXR"]}
+    )
+    desal.M1 = Mixer(
+        default={
+            "property_package": m.fs.prop_ro,
+            "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
+            "inlet_list": ["P2", "P3"],
+        }
+    )
+    desal.PXR = PressureExchanger(default={"property_package": m.fs.prop_ro})
+    desal.P3 = Pump(default={"property_package": m.fs.prop_ro})
 
     # translator blocks
     m.fs.tb_nf_ro = Translator(
@@ -205,26 +195,19 @@ def build(erd_type="pressure_exchanger"):
         source=dye_sep.nanofiltration.treated, destination=m.fs.tb_nf_ro.inlet
     )
 
-    if erd_type == "pressure_exchanger":
-        m.fs.s_ro = Arc(source=m.fs.tb_nf_ro.outlet, destination=desal.S1.inlet)
-        desal.s01 = Arc(source=desal.S1.P2, destination=desal.P2.inlet)
-        desal.s02 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
-        desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
-        desal.s04 = Arc(
-            source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet
-        )
-        desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
-        desal.s06 = Arc(
-            source=desal.PXR.low_pressure_outlet, destination=desal.P3.inlet
-        )
-        desal.s07 = Arc(source=desal.P3.outlet, destination=desal.M1.P3)
-        m.fs.s_disposal = Arc(
-            source=desal.PXR.high_pressure_outlet, destination=m.fs.brine.inlet
-        )
-    elif erd_type == "pump_as_turbine":
-        m.fs.s_ro = Arc(source=m.fs.tb_nf_ro.outlet, destination=desal.P2.inlet)
-        m.fs.s01 = Arc(source=desal.P1.outlet, destination=desal.RO.inlet)
-        m.fs.s_disposal = Arc(source=desal.ERD.outlet, destination=m.fs.disposal.inlet)
+    m.fs.s_ro = Arc(source=m.fs.tb_nf_ro.outlet, destination=desal.S1.inlet)
+    desal.s01 = Arc(source=desal.S1.P2, destination=desal.P2.inlet)
+    desal.s02 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
+    desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
+    desal.s04 = Arc(
+        source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet
+    )
+    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
+    desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P3.inlet)
+    desal.s07 = Arc(source=desal.P3.outlet, destination=desal.M1.P3)
+    m.fs.s_disposal = Arc(
+        source=desal.PXR.high_pressure_outlet, destination=m.fs.brine.inlet
+    )
 
     m.fs.s_permeate = Arc(source=desal.RO.permeate, destination=m.fs.permeate.inlet)
 
@@ -237,14 +220,9 @@ def build(erd_type="pressure_exchanger"):
     # set unit model values
     iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
-    if erd_type == "pressure_exchanger":
-        iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
-        iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
-        iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
-    elif erd_type == "pump_as_turbine":
-        iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
-
-    # touch properties used in specifying and initializing the model
+    iscale.set_scaling_factor(desal.P3.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
 
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -296,17 +274,11 @@ def set_operating_conditions(m):
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
     m.fs.tb_nf_ro.properties_out[0].pressure.fix(pressure)
 
-    if m.erd_type == "pressure_exchanger":
-        # pressure exchanger
-        desal.PXR.efficiency_pressure_exchanger.fix(0.95)
-        # booster pump
-        desal.P3.efficiency_pump.fix(0.80)
+    # pressure exchanger
+    desal.PXR.efficiency_pressure_exchanger.fix(0.95)
+    # booster pump
+    desal.P3.efficiency_pump.fix(0.80)
 
-    elif m.erd_type == "pump_as_turbine":
-        desal.ERD.efficiency_pump.fix(0.95)
-        desal.ERD.control_volume.properties_out[0].pressure.fix(
-            pressure
-        )  # atmospheric pressure [Pa]
     return
 
 
@@ -401,30 +373,19 @@ def add_costing(m):
     desal.RO.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.ro_costing}
     )
-    if m.erd_type == "pressure_exchanger":
-        # desal.S1.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
-        desal.M1.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.ro_costing}
-        )
-        desal.PXR.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.ro_costing}
-        )
-        desal.P3.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.ro_costing,
-                "costing_method_arguments": {"cost_electricity_flow": False},
-            }
-        )
-    elif m.erd_type == "pump_as_turbine":
-        pass
-        # desal.ERD.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
-    else:
-        raise ConfigurationError(
-            f"erd_type was {m.erd_type}, costing only implemented "
-            "for pressure_exchanger or pump_as_turbine"
-        )
+
+    desal.M1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.ro_costing}
+    )
+    desal.PXR.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.ro_costing}
+    )
+    desal.P3.costing = UnitModelCostingBlock(
+        default={
+            "flowsheet_costing_block": m.fs.ro_costing,
+            "costing_method_arguments": {"cost_electricity_flow": False},
+        }
+    )
 
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
@@ -548,17 +509,12 @@ def display_results(m):
     m.fs.pretreatment.wwtp.report()
     m.fs.dye_separation.P1.report()
     m.fs.dye_separation.nanofiltration.report()
-    if m.erd_type == "pressure_exchanger":
-        m.fs.desalination.S1.report()
-        m.fs.desalination.P2.report()
-        m.fs.desalination.P3.report()
-        m.fs.desalination.M1.report()
-        m.fs.desalination.RO.report()
-        m.fs.desalination.PXR.report()
-    elif m.erd_type == "pump_as_turbine":
-        m.fs.desalination.P2.report()
-        m.fs.desalination.RO.report()
-        m.fs.desalination.ERD.report()
+    m.fs.desalination.S1.report()
+    m.fs.desalination.P2.report()
+    m.fs.desalination.P3.report()
+    m.fs.desalination.M1.report()
+    m.fs.desalination.RO.report()
+    m.fs.desalination.PXR.report()
 
     print("Streams:")
     flow_list = ["feed", "wwt_retentate", "dye_retentate", "permeate", "brine"]
