@@ -53,7 +53,13 @@ def main():
 
     # unit models
     m.fs.feed = Feed(default={"property_package": m.fs.properties})
-    m.fs.gac = GAC(default={"property_package": m.fs.properties})
+    m.fs.gac = GAC(
+        default={
+            "property_package": m.fs.properties,
+            "film_transfer_rate_type": "fixed",
+            "surface_diffusion_coefficient_type": "fixed",
+        }
+    )
     m.fs.prod = Product(default={"property_package": m.fs.properties})
     m.fs.remo = Product(default={"property_package": m.fs.properties})
 
@@ -97,9 +103,7 @@ def main():
     # m.fs.gac.replace_removal_frac["DCE"].fix(0.8)
     m.fs.gac.replace_gac_saturation_frac.fix(0.99)
     # --------------------------------------------------------------------
-    m.fs.gac.dg.fix(
-        19775.77393009003
-    )  # TODO: correct units problem to fix m.fs.gac.freund_k
+    m.fs.gac.freund_k.fix(37.9e-6 * (1e6**0.8316))
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
     m.fs.gac.eps_bed.fix(0.449)
@@ -107,6 +111,7 @@ def main():
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
     m.fs.gac.ds.fix(1.77e-13)
+    m.fs.gac.velocity_sup.fix(5 / 3600)  # assumed
     # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(3.68421)
     m.fs.gac.a1.fix(13.1579)
@@ -116,10 +121,6 @@ def main():
     m.fs.gac.b3.fix(0.003206)
     m.fs.gac.b4.fix(0.134987)
 
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e-1, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "DCE"))
     calculate_scaling_factors(m)
 
     # initialization
@@ -135,7 +136,7 @@ def main():
     assert degrees_of_freedom(m) == 0
     # """
     # initialization testing
-    # solver.options['max_iter'] = 0
+    solver.options["max_iter"] = 0
     m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
     results = solver.solve(m, tee=False)
     dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
@@ -151,7 +152,7 @@ def main():
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    m.fs.gac.display()
+    # m.fs.gac.display()
 
 
 if __name__ == "__main__":

@@ -13,13 +13,13 @@
 
 from pyomo.environ import (
     Var,
-    Param,
     Suffix,
     NonNegativeReals,
     PositiveReals,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from enum import Enum, auto
 
 from idaes.core import (
     ControlVolume0DBlock,
@@ -41,8 +41,22 @@ __author__ = "Hunter Barber"
 
 _log = idaeslog.getLogger(__name__)
 
-# ---------------------------------------------------------------------
-# TODO: Start of adding user options for specific variables to reduce required input
+
+class FilmTransferRateType(Enum):
+    fixed = (
+        auto()
+    )  # simplified assumption: liquid phase film transfer rate is a user specified value
+    calculated = (
+        auto()
+    )  # calculate liquid phase film transfer rate from the Gnielinshi correlation
+
+
+class SurfaceDiffusionCoefficientType(Enum):
+    fixed = (
+        auto()
+    )  # simplified assumption: surface diffusion coefficient is a user specified value
+    calculated = auto()  # calculate surface diffusion coefficient
+
 
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
@@ -147,6 +161,24 @@ class GACData(UnitModelBlockData):
         **Valid values:** {
         **True** - include pressure change terms,
         **False** - exclude pressure change terms.}""",
+        ),
+    )
+    CONFIG.declare(
+        "film_transfer_rate_type",
+        ConfigValue(
+            default=FilmTransferRateType.calculated,
+            domain=In(FilmTransferRateType),
+            description="Surface diffusion coefficient",
+            doc="""temp""",
+        ),
+    )
+    CONFIG.declare(
+        "surface_diffusion_coefficient_type",
+        ConfigValue(
+            default=SurfaceDiffusionCoefficientType.calculated,
+            domain=In(SurfaceDiffusionCoefficientType),
+            description="Surface diffusion coefficient",
+            doc="""temp""",
         ),
     )
 
@@ -504,6 +536,40 @@ class GACData(UnitModelBlockData):
             doc="Equilibrium adsorbent (GAC particle) phase concentration of adsorbate (contaminant) [mass adsorbate/mass adsorbent]",
         )
         # ---------------------------------------------------------------------
+        # adding robustness
+        self.velocity_sup = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Superficial velocity",
+        )
+
+        self.velocity_int = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="interstitial velocity",
+        )
+
+        self.area_bed = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="interstitial velocity",
+        )
+
+        self.length_bed = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="interstitial velocity",
+        )
+
+        # ---------------------------------------------------------------------
         # TODO: Add support mole or mass based property packs
         # TODO: Ensure other phases in addition to 'Liq' can be handled
 
@@ -635,11 +701,14 @@ class GACData(UnitModelBlockData):
                 ** b.freund_ninv
             )
 
-        @self.Constraint(doc="Solute distribution parameter")
-        def eq_mass_absorbed(b):
+        @self.Constraint(
+            self.config.property_package.solute_set,
+            doc="Solute distribution parameter",
+        )
+        def eq_mass_absorbed(b, j):
             return (
                 b.mass_absorbed
-                == b.removal[0].flow_mass_phase_comp["Liq", "DCE"] * b.replace_time
+                == b.removal[0].flow_mass_phase_comp["Liq", j] * b.replace_time
             )
 
         @self.Constraint(doc="Solute distribution parameter")
@@ -657,12 +726,114 @@ class GACData(UnitModelBlockData):
                 == b.mass_absorbed
             )
 
-        # TODO: add relations for eps and dens
+        @self.Constraint(doc="Relating velocities")
+        def eq_velocity_relation(b):
+            return b.velocity_int * b.eps_bed == b.velocity_sup
 
-        # ---------------------------------------------------------------------
+        @self.Constraint(doc="Calculating bed area")
+        def eq_area_bed(b):
+            return (
+                b.area_bed * b.velocity_sup
+                == b.treatwater.properties_in[0].flow_vol_phase["Liq"]
+            )
+
+        @self.Constraint(doc="Calculating bed length")
+        def eq_length_bed(b):
+            return b.length_bed == b.velocity_sup * b.ebct
+
+        if (
+            self.config.film_transfer_rate_type == FilmTransferRateType.calculated
+            or self.config.surface_diffusion_coefficient_type
+            == SurfaceDiffusionCoefficientType.calculated
+        ):
+            self.molecular_diffusion_coefficient = Var(
+                initialize=1e-10,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=units_meta("length") ** 2 * units_meta("time") ** -1,
+                doc="Molecular diffusion coefficient",
+            )
+
+            # TODO: Determine whether the LeBas method can be implemented
+            self.molal_volume = Var(
+                initialize=1e-5,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=units_meta("length") ** 3 * units_meta("amount") ** -1,
+                doc="Molal volume",
+            )
+
+            @self.Constraint(
+                doc="Molecular diffusion coefficient calculated by "
+                "the Hayduk-Laudie correlation for organic compounds in water",
+            )
+            def eq_molecular_diffusion_coefficient(b):
+                molecular_diffusion_coefficient_inv_units = (
+                    units_meta("time") * units_meta("length") ** -2
+                )
+                # embedded viscosity of water at 1.3097 cP
+                conc_mol_phase_comp_inv_units = (
+                    units_meta("length") ** 3 * units_meta("amount") ** -1
+                )
+                return (
+                    b.molecular_diffusion_coefficient
+                    * molecular_diffusion_coefficient_inv_units
+                ) * (1.3097**1.14) * (
+                    (b.molal_volume * 1e6 / conc_mol_phase_comp_inv_units) ** 0.589
+                ) == 13.26e-9
+
+        if self.config.film_transfer_rate_type == FilmTransferRateType.calculated:
+            self.re = Var(
+                initialize=1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reynolds number",
+            )
+
+            self.sc = Var(
+                initialize=1000,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Schmidt number",
+            )
+
+            @self.Constraint(doc="Reynolds number calculation")
+            def eq_reynolds_number(b):
+                # TODO using b.treatwater.properties_in[0].dens_mass_phase["Liq"] causes initialization failure
+                viscosity_units = units_meta("pressure") * units_meta("time")
+                density_units = units_meta("mass") * units_meta("length") ** -3
+                return (
+                    b.re * 1.3097e-3 * viscosity_units
+                    == 999.7 * density_units * b.particle_dp * b.velocity_int
+                )
+
+            @self.Constraint(doc="Schmidt number calculation")
+            def eq_schmidt_number(b):
+                viscosity_units = units_meta("pressure") * units_meta("time")
+                density_units = units_meta("mass") * units_meta("length") ** -3
+                return (
+                    b.sc * 999.7 * density_units * b.molecular_diffusion_coefficient
+                    == 1.3097e-3 * viscosity_units
+                )
+
+        """
+            @self.Constraint(doc="Liquid phase film transfer rate from the Gnielinshi correlation")
+            def eq_film_transfer_rate(b):
+                kf_units = units_meta("length") * units_meta("time") ** -1
+                return * b.particle_dp == (1+1.5*(1-b.eps_bed))*b.molecular_diffusion_coefficient*(
+                        2+0.677*(b.re**0.5)*(b.sc**(1/3)))
+        """
+        if (
+            self.config.surface_diffusion_coefficient_type
+            == SurfaceDiffusionCoefficientType.calculated
+        ):
+            print("ASDF")
 
     # ---------------------------------------------------------------------
-    # TODO: Correct initialization procedure from starting at an infeasible point, add robustness for intialization and scaling
+    # TODO: Correct initialization procedure from starting at an infeasible point,
+    #  add robustness for initialization and scaling
     # initialize method
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
@@ -703,13 +874,20 @@ class GACData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # TODO: Determine if scale of the flowrate matters for this initialization
         # specify conditions to solve at a feasible point during initialization
+        # necessary to invert user provided scaling factor due to
+        # low values creating infeasible initialization conditions
         for j in blk.config.property_package.solute_set:
-            state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-5
+            temp_scale = iscale.get_scaling_factor(
+                blk.treatwater.properties_in[0].flow_mol_phase_comp["Liq", j]
+            )
+            state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
 
         for j in blk.config.property_package.solvent_set:
-            state_args["flow_mol_phase_comp"][("Liq", j)] = 100
+            temp_scale = iscale.get_scaling_factor(
+                blk.treatwater.properties_in[0].flow_mol_phase_comp["Liq", j]
+            )
+            state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
 
         # Initialize control volume
         flags = blk.treatwater.initialize(
@@ -803,13 +981,13 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.min_st, 1e-1)
 
         if iscale.get_scaling_factor(self.min_ebct) is None:
-            iscale.set_scaling_factor(self.min_ebct, 1e-3)
+            iscale.set_scaling_factor(self.min_ebct, 1e-2)
 
         if iscale.get_scaling_factor(self.min_tau) is None:
             iscale.set_scaling_factor(self.min_tau, 1e-2)
 
         if iscale.get_scaling_factor(self.min_time) is None:
-            iscale.set_scaling_factor(self.min_time, 1e-7)
+            iscale.set_scaling_factor(self.min_time, 1e-5)
 
         iscale.set_scaling_factor(self.a0, 1)
         iscale.set_scaling_factor(self.a1, 1)
@@ -828,22 +1006,51 @@ class GACData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.gac_mass_replacement_rate) is None:
             iscale.set_scaling_factor(self.gac_mass_replacement_rate, 1e2)
 
-        if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, 1e-2)
-
         if iscale.get_scaling_factor(self.equil_conc) is None:
             iscale.set_scaling_factor(self.equil_conc, 1e4)
 
         if iscale.get_scaling_factor(self.mass_absorbed) is None:
-            iscale.set_scaling_factor(self.mass_absorbed, 1e-1)
+            iscale.set_scaling_factor(self.mass_absorbed, 1e-5)
 
         if iscale.get_scaling_factor(self.mass_absorbed_fully_saturated) is None:
-            iscale.set_scaling_factor(self.mass_absorbed_fully_saturated, 1e-1)
+            iscale.set_scaling_factor(self.mass_absorbed_fully_saturated, 1e-5)
+
+        if iscale.get_scaling_factor(self.bed_volume) is None:
+            iscale.set_scaling_factor(self.bed_volume, 1e-3)
 
         if iscale.get_scaling_factor(self.mass_gac_bed) is None:
-            iscale.set_scaling_factor(self.mass_gac_bed, 1e-5)
+            iscale.set_scaling_factor(self.mass_gac_bed, 1e-6)
 
         if iscale.get_scaling_factor(self.replace_gac_saturation_frac) is None:
             iscale.set_scaling_factor(self.replace_gac_saturation_frac, 1)
+
+        if iscale.get_scaling_factor(self.velocity_sup) is None:
+            iscale.set_scaling_factor(self.velocity_sup, 1e3)
+
+        if iscale.get_scaling_factor(self.velocity_int) is None:
+            iscale.set_scaling_factor(self.velocity_int, 1e3)
+
+        if iscale.get_scaling_factor(self.area_bed) is None:
+            iscale.set_scaling_factor(self.area_bed, 1e-3)
+
+        if iscale.get_scaling_factor(self.length_bed) is None:
+            iscale.set_scaling_factor(self.length_bed, 1)
+
+        # TODO: Correct scaling factors below this comment
+        if hasattr(self, "molecular_diffusion_coefficient"):
+            if iscale.get_scaling_factor(self.molecular_diffusion_coefficient) is None:
+                iscale.set_scaling_factor(self.molecular_diffusion_coefficient, 1e10)
+
+        if hasattr(self, "molal_volume"):
+            if iscale.get_scaling_factor(self.molal_volume) is None:
+                iscale.set_scaling_factor(self.molal_volume, 1e5)
+
+        if hasattr(self, "re"):
+            if iscale.get_scaling_factor(self.re) is None:
+                iscale.set_scaling_factor(self.re, 1)
+
+        if hasattr(self, "sc"):
+            if iscale.get_scaling_factor(self.sc) is None:
+                iscale.set_scaling_factor(self.sc, 1e-3)
 
         # (optional) transforming constraints
