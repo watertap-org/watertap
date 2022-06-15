@@ -61,7 +61,6 @@ class TestElectrodialysisVoltageConst:
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties,"operation_mode": "Constant_Voltage", "finite_elements": 20})
-        m.fs.unit.config.operation_mode = "Constant_Voltage"
         return m
 
     @pytest.mark.unit
@@ -267,8 +266,7 @@ class TestElectrodialysisCurrentConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Current"
+        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current", "finite_elements": 20})
         return m
 
     @pytest.mark.unit
@@ -472,8 +470,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Current"
+        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current", "finite_elements": 20})
         return m
 
     @pytest.mark.unit

@@ -164,10 +164,10 @@ Additionally, several other equations are built to describe the electrochemical 
 .. csv-table:: **Table 4** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Ohm's Law", ":math:`V =  I R_{tot}`"
-   "Resistance calculation", ":math:`R_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]\left(bl\right)`"
+   "Ohm's Law", ":math:`V =  \frac{I r_{tot}}{bl}`"
+   "Resistance calculation", ":math:`r_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]`"
    "Electrical power consumption", ":math:`P=UI`"
-   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
+   "Water-production-specific power consumption", ":math:`P_Q=\frac{UI}{3.6\times 10^6 nQ_{out}^D}`"
    "Overall current efficiency", ":math:`I\eta=\sum_{j}{\left[\left(N_{j,in}^D-N_{j,out}^D\right)z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
@@ -196,7 +196,7 @@ Nomenclature
    ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
    ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
-   ":math:`R_{tot}`", "Total resistance", ":math:`\Omega`"
+   ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`s`", "Spacer thickness", ":math:`m`"
