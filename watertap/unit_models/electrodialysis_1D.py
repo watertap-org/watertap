@@ -1120,7 +1120,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
-            elif ind in self.config.property_package.ion_set:
+            elif ind[3] in self.config.property_package.ion_set:
                 sf_diff = (
                     iscale.get_scaling_factor(self.solute_diffusivity_membrane)
                     / iscale.get_scaling_factor(self.membrane_thickness)
@@ -1207,7 +1207,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
-            elif ind in self.config.property_package.ion_set:
+            elif ind[3] in self.config.property_package.ion_set:
                 sf_diff = (
                     iscale.get_scaling_factor(self.solute_diffusivity_membrane)
                     / iscale.get_scaling_factor(self.membrane_thickness)
