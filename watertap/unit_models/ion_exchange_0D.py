@@ -866,6 +866,13 @@ class IonExchangeODData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
         state_args_out = deepcopy(state_args)
+        for p, j in blk.properties_out.phase_component_set:
+            # comp = blk.properties_out.params.get_component()
+            # if comp.is_solute():
+            if j == blk.config.target_ion:
+                state_args_out["flow_mol_phase_comp"][(p, j)] = (
+                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+                )
 
         blk.properties_out.initialize(
             outlvl=outlvl,
@@ -877,6 +884,12 @@ class IonExchangeODData(UnitModelBlockData):
         blk.state_args = state_args
 
         state_args_waste = deepcopy(state_args)
+
+        for p, j in blk.properties_waste.phase_component_set:
+            if j == "H2O":
+                state_args_waste["flow_mol_phase_comp"][(p, j)] = (
+                    state_args["flow_mol_phase_comp"][(p, j)] * blk.t_waste_param.value
+                )
 
         blk.state_args_waste = state_args_waste
 
@@ -901,6 +914,57 @@ class IonExchangeODData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        iscale.set_scaling_factor(self.Re, 1)
+
+        # for ion in ion_set:
+        iscale.set_scaling_factor(self.Sc, 1e-2)
+
+        iscale.set_scaling_factor(self.Sh, 0.1)
+
+        iscale.set_scaling_factor(self.Pe_p, 1e2)
+
+        iscale.set_scaling_factor(self.Pe_bed, 1e-3)
+
+        iscale.set_scaling_factor(self.resin_max_capacity, 1)
+
+        iscale.set_scaling_factor(self.resin_eq_capacity, 1)
+
+        iscale.set_scaling_factor(self.resin_diam, 1e4)
+
+        iscale.set_scaling_factor(self.resin_bulk_dens, 10)
+
+        iscale.set_scaling_factor(self.resin_particle_dens, 1)
+
+        iscale.set_scaling_factor(self.K_eq, 1)
+
+        iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
+
+        iscale.set_scaling_factor(self.bed_area, 1)
+
+        iscale.set_scaling_factor(self.bed_vol, 1)
+
+        iscale.set_scaling_factor(self.bed_diam, 1)
+
+        iscale.set_scaling_factor(self.bed_depth, 1)
+
+        iscale.set_scaling_factor(self.bed_porosity, 10)
+
+        iscale.set_scaling_factor(self.col_height, 1)
+
+        iscale.set_scaling_factor(self.col_vol, 1)
+
+        iscale.set_scaling_factor(self.holdup, 1e-2)
+
+        iscale.set_scaling_factor(self.num_transfer_units, 1e-2)
+
+        iscale.set_scaling_factor(self.partition_ratio, 1e-3)
+
+        iscale.set_scaling_factor(self.HTU, 1e3)
+
+        iscale.set_scaling_factor(self.sfr, 1)
+
+        iscale.set_scaling_factor(self.c_norm, 1)
+
         iscale.set_scaling_factor(self.R_eq, 10)
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
@@ -911,11 +975,19 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.t_waste, 1e-3)
 
+        iscale.set_scaling_factor(self.t_contact, 1e-2)
+
         iscale.set_scaling_factor(self.mass_in, 1e-3)
 
         iscale.set_scaling_factor(self.mass_removed, 1e-3)
 
         iscale.set_scaling_factor(self.mass_out, 1)
+
+        iscale.set_scaling_factor(self.vel_min, 1e3)
+
+        iscale.set_scaling_factor(self.vel_bed, 1e3)
+
+        iscale.set_scaling_factor(self.vel_inter, 1e3)
 
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
