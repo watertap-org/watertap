@@ -32,7 +32,6 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.environ import units as pyunits
 
 from pyomo.common.config import ConfigValue, In
 
@@ -657,7 +656,7 @@ class IXStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-3, 2e3),
+            bounds=(1e-8, None),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
