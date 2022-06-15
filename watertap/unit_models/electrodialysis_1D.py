@@ -954,7 +954,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Scaling factors that user may setup
-        # The users are highly encouraged to provide scaling factors for assessable vars below.  
+        # The users are highly encouraged to provide scaling factors for assessable vars below.
         # Not providing these vars will give a warning.
         if iscale.get_scaling_factor(self.cell_width, warning=True) is None:
             iscale.set_scaling_factor(self.cell_width, 1)
@@ -990,7 +990,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.current_applied, warning=True) is None:
             iscale.set_scaling_factor(self.current_applied, 1)
 
-        # For vars below, the users can choose but not required to provide scaling factors. 
+        # For vars below, the users can choose but not required to provide scaling factors.
         # No warnings if no providing.
         for ind in self.total_areal_resistance_x:
             if (
