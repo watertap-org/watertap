@@ -41,10 +41,11 @@ Model Developers
 Exporting variables with :func:`export_variables`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For each IDAES component (also a Pyomo block) the developer should list the names (and, optionally some additional information) of the variables that should be "exported" to the user interface.
+For each IDAES component and/or Pyomo block the developer should list the names of the variables that should be "exported" to the user interface. 
+Optionally, users may provide additional information as well (see :func:`export_variables` for details).
 This should be done in the component's ``build`` method.
 Each component/block need only worry about its own variables.
-Teh API will take care of gathering all the components for a flowsheet together.
+The API will take care of gathering all the components for a flowsheet together.
 For example, the last line of the zero-order feed's `build` method is::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
@@ -56,12 +57,14 @@ It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 There are other things about variables that can be specified.
 For details see :func:`export_variables`.
 
-For example, if you wanted to mark "flow_vol" as read-only (loading it into the model will not change it), then you could do::
+For example, if you wanted to mark "flow_vol" as read-only, then you could do::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
                          variables={"flow_vol": {"readonly": True},
                                     "conc_mass_comp": {}})
 
+
+**Note:** Marking a variable as read-only does change the IDAES variable.
 
 .. image:: /_static/terminal-icon.png
     :height: 30px
@@ -114,7 +117,7 @@ Note that you only need to add variables that are not already exported by the mo
 Create an "action" function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The action functions should operate on optional keywords for the flowsheet block and the FlowsheetInterface instance.
+The action functions should operate on optional keywords for the flowsheet block and the :class:`FlowsheetInterface` instance.
 It will call the WaterTAP code to perform the appropriate actions.
 The function should have the following signature:
 
@@ -224,7 +227,8 @@ Fetch and update flowsheet values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The values for all variables exported by the flowsheet are available via the ``dict()`` method.
 The format of the returned value is documented in the :mod:`~watertap.ui.api` module header.
-Note: if you want to write these values as JSON to a stream, use :meth:`FlowsheetInterface.save`.
+
+**Note:** if you want to write these values as JSON to a stream, use :meth:`FlowsheetInterface.save`.
 For example::
 
     from watertap.ui.api import find_flowsheet_interfaces
@@ -264,7 +268,7 @@ For example::
     fsi.save("my_flowsheet_saved.json")
 
 
-Note: The method is simply a wrapper that calls ``dict()`` and feeds the result to a JSON serializer.
+**Note:** The method is simply a wrapper that calls ``dict()`` and feeds the result to a JSON serializer.
 
 .. image:: /_static/menu-icon.png
     :height: 22px
