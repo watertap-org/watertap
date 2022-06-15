@@ -217,7 +217,8 @@ Fetch and update flowsheet values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The values for all variables exported by the flowsheet are available via the ``dict()`` method.
 The format of the returned value is documented in the :mod:`~watertap.ui.api` module header.
-Note: if you want to write these values as JSON to a stream, use :meth:`FlowsheetInterface.save`.
+
+**Note:** if you want to write these values as JSON to a stream, use :meth:`FlowsheetInterface.save`.
 For example::
 
     from watertap.ui.api import find_flowsheet_interfaces
