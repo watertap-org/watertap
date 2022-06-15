@@ -646,7 +646,7 @@ def export_variables(
 ) -> BlockInterface:
     """Export variables from the given block, optionally providing metadata
     for the block itself. This method is really a simplified way to
-    create :class:`BlockInterface` s for models (a.k.a., blocks).
+    create :class:`BlockInterface` instances for models (a.k.a., blocks).
 
     Args:
         block: IDAES model block
