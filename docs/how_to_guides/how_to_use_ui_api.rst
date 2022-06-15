@@ -258,7 +258,7 @@ For example::
     fsi.save("my_flowsheet_saved.json")
 
 
-Note: The method is simply a wrapper that calls ``dict()`` and feeds the result to a JSON serializer.
+**Note:** The method is simply a wrapper that calls ``dict()`` and feeds the result to a JSON serializer.
 
 .. image:: /_static/menu-icon.png
     :height: 22px
