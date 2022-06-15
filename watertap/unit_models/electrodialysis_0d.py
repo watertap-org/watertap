@@ -243,7 +243,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             self.config.property_package.ion_set
             | self.config.property_package.solute_set,
             initialize=1e-10,
-            bounds=(1e-16, 1e-6),
+            bounds=(0.0, 1e-6),
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="Solute (ionic and neutral) diffusivity in the membrane phase",
         )

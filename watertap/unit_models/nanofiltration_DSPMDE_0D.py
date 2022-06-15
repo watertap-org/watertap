@@ -419,7 +419,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.io_list,
             solute_set,
             initialize=5e-5,
-            bounds=(1e-8, 1e-3),
+            bounds=(0.0, 1e-3),
             domain=NonNegativeReals,
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Component mass transfer coefficient in feed channel at inlet and outlet",

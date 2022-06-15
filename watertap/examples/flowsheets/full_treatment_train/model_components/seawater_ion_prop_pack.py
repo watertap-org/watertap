@@ -283,7 +283,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=seawater_mass_frac_dict,
-            bounds=(1e-8, 100),
+            bounds=(0.0, 100),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -312,7 +312,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -331,7 +331,7 @@ class PropStateBlockData(StateBlockData):
     def _flow_vol(self):
         self.flow_vol = Var(
             initialize=1e-3,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -352,7 +352,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate",
         )
@@ -372,7 +372,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(1e-6, 1e6),
+            bounds=(0.0, 1e6),
             units=pyunits.mol / pyunits.m**3,
             doc="Molarity",
         )

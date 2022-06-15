@@ -957,7 +957,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize={("Liq", "H2O"): 0.965, ("Liq", "TDS"): 0.035},
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -986,7 +986,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -1049,7 +1049,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -1076,7 +1076,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-6, 1e6),
+            bounds=(0.0, 1e6),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -1096,7 +1096,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate",
         )
@@ -1116,7 +1116,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
@@ -1134,7 +1134,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.molality_comp = Var(
             ["TDS"],
             initialize=1,
-            bounds=(1e-6, 1e6),
+            bounds=(0.0, 1e6),
             units=pyunits.mole / pyunits.kg,
             doc="Molality",
         )
@@ -1153,7 +1153,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.visc_d_phase = Var(
             self.params.phase_list,
             initialize=1e-3,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity",
         )
@@ -1212,7 +1212,7 @@ class SeawaterStateBlockData(StateBlockData):
     def _osm_coeff(self):
         self.osm_coeff = Var(
             initialize=1,
-            bounds=(1e-8, 10),
+            bounds=(0.0, 10),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
@@ -1336,7 +1336,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.cp_phase = Var(
             self.params.phase_list,
             initialize=4e3,
-            bounds=(1e-8, 1e8),
+            bounds=(0.0, 1e8),
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity",
         )
@@ -1373,7 +1373,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.therm_cond_phase = Var(
             self.params.phase_list,
             initialize=0.6,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.W / pyunits.m / pyunits.K,
             doc="Thermal conductivity",
         )
