@@ -852,10 +852,11 @@ class Electrodialysis1DData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Scaling factors that user may setup
-        if iscale.get_scaling_factor(self.cell_width, warning=False) is None:
-            iscale.set_scaling_factor(self.cell_width, self.cell_width.value ** -1)
-        if iscale.get_scaling_factor(self.cell_length, warning=False) is None:
-            iscale.set_scaling_factor(self.cell_length, self.cell_length.value ** -1)
+        # The users are highly encouraged to provide scaling factors for assessable vars below.  Not providing these vars will give a warning. 
+        if iscale.get_scaling_factor(self.cell_width, warning=True) is None:
+            iscale.set_scaling_factor(self.cell_width, 1)
+        if iscale.get_scaling_factor(self.cell_length, warning=True) is None:
+            iscale.set_scaling_factor(self.cell_length, 1)
         if iscale.get_scaling_factor(self.membrane_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
@@ -870,22 +871,20 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.spacer_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.spacer_thickness, 1e4)
-
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
-
+        if iscale.get_scaling_factor(self.voltage_applied, warning=True) is None:
+                        iscale.set_scaling_factor(self.voltage_applied, 1)
+        if iscale.get_scaling_factor(self.current_applied, warning=True) is None:
+            iscale.set_scaling_factor(self.current_applied, 1)
        
+        # For vars below, the users can choose but not required to provide scaling factors. No warnings if no providing.        
         for ind in self.total_areal_resistance_x: 
             if iscale.get_scaling_factor(self.total_areal_resistance_x[ind], warning=False) is None:
                 sf = (iscale.get_scaling_factor(
                     self.membrane_areal_resistance) **2
                     + value(self.diluate.properties[ind].electrical_conductivity_phase['Liq']) ** 2)** 0.5 / float(self.cell_pair_num.value) 
                 iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
-
-        if iscale.get_scaling_factor(self.voltage_applied, warning=True) is None:
-                    iscale.set_scaling_factor(self.voltage_applied, 1)
-        if iscale.get_scaling_factor(self.current_applied, warning=True) is None:
-            iscale.set_scaling_factor(self.current_applied, 1)
 
         for ind in self.current_density_x: 
             if iscale.get_scaling_factor(self.current_density_x[ind], warning=False) is None:
@@ -896,34 +895,33 @@ class Electrodialysis1DData(UnitModelBlockData):
                 else:
                     sf = iscale.get_scaling_factor(
                         self.voltage_applied) / iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
-                    iscale.set_scaling_factor(self.current_density_x[ind], sf)
-
-        
-              
+                    iscale.set_scaling_factor(self.current_density_x[ind], sf)          
         
         for ind in self.voltage_x:
             if iscale.get_scaling_factor(self.voltage_x[ind], warning=False) is None:
                 sf = iscale.get_scaling_factor(
                     self.current_density_x[ind]) * iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
                 iscale.set_scaling_factor(self.voltage_x[ind], sf)
+
         for ind in self.diluate.power_electrical_x:
+            if iscale.get_scaling_factor(self.diluate.power_electrical_x[ind], warning=False) is None:
+                iscale.set_scaling_factor(
+                    self.diluate.power_electrical_x[ind],
+                    iscale.get_scaling_factor(self.voltage_x[ind])
+                    * iscale.get_scaling_factor(self.current_density_x[ind])
+                    * iscale.get_scaling_factor(self.cell_width)
+                    * iscale.get_scaling_factor(self.cell_length) 
+                ) 
+        if iscale.get_scaling_factor(self.specific_power_electrical, warning=False) is None:
             iscale.set_scaling_factor(
-                self.diluate.power_electrical_x[ind],
-                iscale.get_scaling_factor(self.voltage_x[ind])
-                * iscale.get_scaling_factor(self.current_density_x[ind])
-                * iscale.get_scaling_factor(self.cell_width)
-                * iscale.get_scaling_factor(self.cell_length) 
-            ) 
-        
-        iscale.set_scaling_factor(
-            self.specific_power_electrical,
-            3.6e6 
-            * iscale.get_scaling_factor(self.diluate.power_electrical_x[0,self.diluate.length_domain.last()])
-            * (iscale.get_scaling_factor(
-                    self.diluate.properties[0, self.diluate.length_domain.last()].flow_vol_phase["Liq"]
-                ) / float(self.cell_pair_num.value))
-                ** -1
-        )
+                self.specific_power_electrical,
+                3.6e6 
+                * iscale.get_scaling_factor(self.diluate.power_electrical_x[0,self.diluate.length_domain.last()])
+                * (iscale.get_scaling_factor(
+                        self.diluate.properties[0, self.diluate.length_domain.last()].flow_vol_phase["Liq"]
+                    ) / float(self.cell_pair_num.value))
+                    ** -1
+            )
 
         
 

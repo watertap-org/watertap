@@ -195,6 +195,9 @@ class TestElectrodialysisVoltageConst:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
+        #set scaling factors for some vars
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
         initialization_tester(m)
         badly_scaled_var_values = {
@@ -398,6 +401,9 @@ class TestElectrodialysisCurrentConst:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
+        #set scaling factors for some vars
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
         initialization_tester(m)
         badly_scaled_var_values = {
@@ -607,6 +613,10 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e5, index=("Liq", "N")
         )
+        #set scaling factors for some vars
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
+
         iscale.calculate_scaling_factors(m.fs)
         initialization_tester(m)
         badly_scaled_var_values = {
