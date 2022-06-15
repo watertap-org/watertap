@@ -117,7 +117,7 @@ Note that you only need to add variables that are not already exported by the mo
 Create an "action" function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The action functions should operate on optional keywords for the flowsheet block and the FlowsheetInterface instance.
+The action functions should operate on optional keywords for the flowsheet block and the :class:`FlowsheetInterface` instance.
 It will call the WaterTAP code to perform the appropriate actions.
 The function should have the following signature:
 
