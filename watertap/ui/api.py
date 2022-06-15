@@ -159,12 +159,14 @@ class BlockInterface:
         if not info.get("meta", None):
             info["meta"] = model.BlockMeta()
         if info.get("variables", None) is None:
-            info["variables"] = []
+            info["variables"] = {}
 
         _log.debug(f"create block from info. dict={info}")
         block_info = model.Block(**info)
 
         # set optional values from values in self._block
+        if block_info.variables is None:
+            block_info.variables = []
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
@@ -192,6 +194,11 @@ class BlockInterface:
     @property
     def description(self):
         return self._fs_block().description
+
+    # def dict(self):
+    #     if self._block_info is None:
+    #         return {}
+    #     return self._block_info.dict()
 
     def _fs_block(self):
         if self._block_info is None:
@@ -303,6 +310,8 @@ class BlockInterface:
             ValueError: Improper input data
         """
         _log.debug(f"load_from:start")
+        if fs is None:
+            raise ValueError("In load_from: flowsheet cannot be None")
         if isinstance(fs, FlowsheetInterface):
             ui = fs
         else:
@@ -311,7 +320,7 @@ class BlockInterface:
             _log.debug(f"load_from:end. status=error")
             raise ValueError(
                 f"Block must define FlowsheetInterface using "
-                f"``set_block_interface()`` during construction"
+                f"``set_block_interface()`` during construction. obj={fs}"
             )
         ui.load(file_or_stream)
         _log.debug(f"load_from:end. status=ok")
@@ -342,6 +351,9 @@ class BlockInterface:
 
          Args:
              data: Data in the expected schema (see :meth:`get_schema`)
+
+        Raises:
+            ValueError: Problem with structure in the data
         """
         _log.debug(f"update:start")
         try:
@@ -352,8 +364,11 @@ class BlockInterface:
 
         self._var_diff = FlowsheetDiff(missing={}, extra={})
 
-        # There should be one root block at top-level, which we will use.
-        root_block_name = block_info.get_sole_subblock()
+        try:
+            root_block_name = block_info.get_sole_subblock()
+        except ValueError as err:
+            _log.error(f"Update failed: {err}")
+            raise
         root_block_info = block_info.blocks[root_block_name]
 
         _log.debug(f"Update load. root-block={root_block_name}")
