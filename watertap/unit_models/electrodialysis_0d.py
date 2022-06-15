@@ -412,23 +412,33 @@ class Electrodialysis0DData(UnitModelBlockData):
                 + self.membrane_areal_resistance["cem"]
                 + self.spacer_thickness
                 * (
-                    (0.5
-                    * (
-                        self.concentrate_channel.properties_in[
-                            t
-                        ].electrical_conductivity_phase[p]
-                        + self.concentrate_channel.properties_out[
-                            t
-                        ].electrical_conductivity_phase[p])) ** -1
-                        + (0.5 * (self.diluate_channel.properties_in[
-                            t
-                        ].electrical_conductivity_phase[p]
-                        + self.diluate_channel.properties_out[
-                            t
-                        ].electrical_conductivity_phase[p])) ** -1
+                    (
+                        0.5
+                        * (
+                            self.concentrate_channel.properties_in[
+                                t
+                            ].electrical_conductivity_phase[p]
+                            + self.concentrate_channel.properties_out[
+                                t
+                            ].electrical_conductivity_phase[p]
+                        )
                     )
-                ) # the average conductivity of each channel's inlet and outlet is taken to represent that of the entire channel
-            
+                    ** -1
+                    + (
+                        0.5
+                        * (
+                            self.diluate_channel.properties_in[
+                                t
+                            ].electrical_conductivity_phase[p]
+                            + self.diluate_channel.properties_out[
+                                t
+                            ].electrical_conductivity_phase[p]
+                        )
+                    )
+                    ** -1
+                )
+            )  # the average conductivity of each channel's inlet and outlet is taken to represent that of the entire channel
+
             return (
                 self.current[t]
                 * (
@@ -624,7 +634,8 @@ class Electrodialysis0DData(UnitModelBlockData):
                     self.specific_power_electrical[t],
                     pyunits.watt * pyunits.second * pyunits.meter**-3,
                 )
-                * self.diluate_channel.properties_out[t].flow_vol_phase["Liq"] * self.cell_pair_num
+                * self.diluate_channel.properties_out[t].flow_vol_phase["Liq"]
+                * self.cell_pair_num
                 == self.current[t] * self.voltage[t]
             )
 

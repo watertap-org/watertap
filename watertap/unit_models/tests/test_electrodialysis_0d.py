@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
-from watertap.unit_models.electrodialysis_0d import Electrodialysis0D
+from watertap.unit_models.electrodialysis_0D import Electrodialysis0D
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
@@ -60,7 +60,12 @@ class TestElectrodialysisVoltageConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Voltage"})
+        m.fs.unit = Electrodialysis0D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Voltage",
+            }
+        )
         return m
 
     @pytest.mark.unit
@@ -268,7 +273,12 @@ class TestElectrodialysisCurrentConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current"})
+        m.fs.unit = Electrodialysis0D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Current",
+            }
+        )
         return m
 
     @pytest.mark.unit
@@ -474,7 +484,12 @@ class TestElectrodialysis_withNeutralSPecies:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current"})
+        m.fs.unit = Electrodialysis0D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Current",
+            }
+        )
         return m
 
     @pytest.mark.unit
