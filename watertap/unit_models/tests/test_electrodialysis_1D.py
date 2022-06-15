@@ -60,7 +60,13 @@ class TestElectrodialysisVoltageConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties,"operation_mode": "Constant_Voltage", "finite_elements": 20})
+        m.fs.unit = Electrodialysis1D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Voltage",
+                "finite_elements": 20,
+            }
+        )
         return m
 
     @pytest.mark.unit
@@ -194,7 +200,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
-        #set scaling factors for some vars
+        # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
@@ -251,7 +257,6 @@ class TestElectrodialysisVoltageConst:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.20, rel=5e-2)
-       
 
 
 class TestElectrodialysisCurrentConst:
@@ -266,7 +271,13 @@ class TestElectrodialysisCurrentConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current", "finite_elements": 20})
+        m.fs.unit = Electrodialysis1D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Current",
+                "finite_elements": 20,
+            }
+        )
         return m
 
     @pytest.mark.unit
@@ -317,7 +328,6 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
         assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
         assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
-
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell2):
@@ -399,7 +409,7 @@ class TestElectrodialysisCurrentConst:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
-        #set scaling factors for some vars
+        # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
@@ -456,7 +466,7 @@ class TestElectrodialysisCurrentConst:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.39, rel=5e-2)
-        
+
 
 class TestElectrodialysis_withNeutralSPecies:
     @pytest.fixture(scope="class")
@@ -470,7 +480,13 @@ class TestElectrodialysis_withNeutralSPecies:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis1D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current", "finite_elements": 20})
+        m.fs.unit = Electrodialysis1D(
+            default={
+                "property_package": m.fs.properties,
+                "operation_mode": "Constant_Current",
+                "finite_elements": 20,
+            }
+        )
         return m
 
     @pytest.mark.unit
@@ -521,7 +537,6 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
         assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
         assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
-
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
@@ -610,7 +625,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e5, index=("Liq", "N")
         )
-        #set scaling factors for some vars
+        # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
 
@@ -674,4 +689,3 @@ class TestElectrodialysis_withNeutralSPecies:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.38, rel=5e-2)
-
