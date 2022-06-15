@@ -126,20 +126,28 @@ The function should have the following signature:
     :param FlowsheetInterface ui: FlowsheetInterface instance
     :param dict kwargs: Additional key/value pairs specific to this action
 
+The action function will be passed to :meth:`FlowsheetInterface.set_action()` in the ``flowsheet_interface()`` function as :ref:`shown here <howto_api-set-action>`.
+
 For example::
 
+    # import module for the full flowsheet
+    from watertap.examples.flowsheets.case_studies.foo.bar import my_flowsheet
+
     def build_flowsheet(ui=None, **kwargs):
-        model = my_model.build()
-        my_model.set_operating_conditions(model)
-        my_model.assert_degrees_of_freedom(model, 0)
-        my_model.assert_units_consistent(model)
-        my_model.add_costing(model)
+        # Invoke the method (here, 'build') that builds the flowsheet
+        # and call other methods needed to initialize it.
+        model = my_flowsheet.build()
+        my_flowsheet.set_operating_conditions(model)
+        my_flowsheet.assert_degrees_of_freedom(model, 0)
+        my_flowsheet.assert_units_consistent(model)
+        my_flowsheet.add_costing(model)
         model.fs.costing.initialize()
-        # Export some additional costing variables
+
+        # Export some additional [costing] variables
         export_variables(
             model.fs.costing,
-            name="My model costing",
-            desc="Costing block for METAB model",
+            name="My costing",
+            desc="Costing variables for my flowsheet",
             category="costing",
             variables=[
                 "utilization_factor",
@@ -147,11 +155,13 @@ For example::
                 "maintenance_costs_percent_FCI",
             ],
         )
-        my_model.adjust_default_parameters(model)
-        my_model.assert_degrees_of_freedom(model, 0)
+
+        # Finish setting up the flowsheet
+        my_flowsheet.adjust_default_parameters(model)
+        my_flowsheet.assert_degrees_of_freedom(model, 0)
 
         # ** IMPORTANT **
-        # Set this flowsheet as the top-level block for the interface
+        # Set built flowsheet as the top-level block for the interface
         ui.set_block(model.fs)
 
 
@@ -277,12 +287,12 @@ Invoking load is straightforward::
     # Load back
     fsi.load("my_flowsheet_saved.json")
 
-To handle situations where the model changes over time, and the saved data and model do not match exactly, there are two methods you can use after you are done loading:
+To handle situations where the model is changed between the save and subsequent load, so that the loaded and current model variables do not all match, there are two methods you can use after you are done loading:
 
     :meth:`FlowsheetInterface.get_var_missing`
-        Returns variables that were in the loaded data, but not in the underlying model.
+        Returns variables in the loaded data, but not in the current model.
 
     :meth:`FlowsheetInterface.get_var_extra`
-        Returns variables that are exported by the model, but were not in the loaded data.
+        Returns variables in (and exported by) the current model, but not in the loaded data.
 
-In both cases, the method returns a mapping of with the full name of the block (e.g., `flowsheet.component.subcomponent`) as the key and a list of variable names as the value.
+Both methods return a mapping with the full name of the block (e.g., `flowsheet.component.subcomponent`) as the key and a list of variable names as the value.
