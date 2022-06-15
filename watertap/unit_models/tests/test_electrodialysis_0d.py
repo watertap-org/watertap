@@ -60,8 +60,7 @@ class TestElectrodialysisVoltageConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Voltage"
+        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Voltage"})
         return m
 
     @pytest.mark.unit
@@ -91,7 +90,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_surface_resistance, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current, Var)
         assert isinstance(m.fs.unit.voltage, Var)
         assert isinstance(m.fs.unit.current_utilization, Var)
@@ -133,8 +132,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.spacer_thickness.fix(2.7e-4)
-        m.fs.unit.membrane_surface_resistance["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_surface_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -224,22 +223,22 @@ class TestElectrodialysisVoltageConst:
 
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.29e-2, rel=5e-2)
+        ) == pytest.approx(2.33e-2, rel=5e-2)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(5.9e-06, rel=5e-1)
+        ) == pytest.approx(2.85e-05, rel=5e-2)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(5.9e-06, rel=5e-1)
+        ) == pytest.approx(2.85e-05, rel=5e-2)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.51e-2, rel=5e-2)
+        ) == pytest.approx(2.47e-2, rel=5e-2)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.417e-4, rel=5e-3)
+        ) == pytest.approx(1.19e-4, rel=5e-2)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.417e-4, rel=5e-3)
+        ) == pytest.approx(1.19e-4, rel=5e-2)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell1):
@@ -248,10 +247,10 @@ class TestElectrodialysisVoltageConst:
         assert "vars" in perform_dict
         assert value(
             perform_dict["vars"]["Electrical power consumption(Watt)"]
-        ) == pytest.approx(4.6, rel=5e-1)
+        ) == pytest.approx(3.1, rel=5e-1)
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
-        ) == pytest.approx(3.09, rel=5e-2)
+        ) == pytest.approx(0.20, rel=5e-2)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
         ) == pytest.approx(0.71, rel=5e-2)
@@ -269,8 +268,7 @@ class TestElectrodialysisCurrentConst:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Current"
+        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current"})
         return m
 
     @pytest.mark.unit
@@ -301,7 +299,7 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_surface_resistance, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current, Var)
         assert isinstance(m.fs.unit.voltage, Var)
         assert isinstance(m.fs.unit.current_utilization, Var)
@@ -341,8 +339,8 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.spacer_thickness.fix(2.7e-4)
-        m.fs.unit.membrane_surface_resistance["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_surface_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -455,10 +453,10 @@ class TestElectrodialysisCurrentConst:
         assert "vars" in perform_dict
         assert value(
             perform_dict["vars"]["Electrical power consumption(Watt)"]
-        ) == pytest.approx(3.5, rel=5e-1)
+        ) == pytest.approx(5.4, rel=5e-1)
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
-        ) == pytest.approx(2.33, rel=5e-2)
+        ) == pytest.approx(0.36, rel=5e-2)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
         ) == pytest.approx(0.71, rel=5e-2)
@@ -476,8 +474,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Current"
+        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties, "operation_mode": "Constant_Current"})
         return m
 
     @pytest.mark.unit
@@ -508,7 +505,7 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.ion_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
-        assert isinstance(m.fs.unit.membrane_surface_resistance, Var)
+        assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current, Var)
         assert isinstance(m.fs.unit.voltage, Var)
         assert isinstance(m.fs.unit.current_utilization, Var)
@@ -548,8 +545,8 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.cell_pair_num.fix(10)
         m.fs.unit.current_utilization.fix(1)
         m.fs.unit.spacer_thickness.fix(2.7e-4)
-        m.fs.unit.membrane_surface_resistance["cem"].fix(1.89e-4)
-        m.fs.unit.membrane_surface_resistance["aem"].fix(1.77e-4)
+        m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+        m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
         m.fs.unit.cell_width.fix(0.1)
         m.fs.unit.cell_length.fix(0.79)
         m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
@@ -648,13 +645,13 @@ class TestElectrodialysis_withNeutralSPecies:
         ) == pytest.approx(2.31e-2, rel=5e-2)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.50e-05, rel=5e-2)
+        ) == pytest.approx(1.46e-05, rel=5e-2)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
         ) == pytest.approx(1.46e-05, rel=5e-2)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.67e-06, rel=5e-2)
+        ) == pytest.approx(7.66e-06, rel=5e-2)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(2.49e-2, rel=5e-2)
@@ -666,7 +663,7 @@ class TestElectrodialysis_withNeutralSPecies:
         ) == pytest.approx(1.330e-4, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.09e-06, rel=5e-2)
+        ) == pytest.approx(7.10e-06, rel=5e-2)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell3):
@@ -675,10 +672,10 @@ class TestElectrodialysis_withNeutralSPecies:
         assert "vars" in perform_dict
         assert value(
             perform_dict["vars"]["Electrical power consumption(Watt)"]
-        ) == pytest.approx(3.5, rel=5e-1)
+        ) == pytest.approx(5.3, rel=5e-1)
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
-        ) == pytest.approx(2.31, rel=5e-2)
+        ) == pytest.approx(0.35, rel=5e-2)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
         ) == pytest.approx(0.71, rel=5e-2)

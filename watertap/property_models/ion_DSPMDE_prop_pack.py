@@ -1083,7 +1083,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(5e2, 5e7),
+            bounds=(5e2, 5e9),
             units=pyunits.Pa,
             doc="van't Hoff Osmotic pressure",
         )

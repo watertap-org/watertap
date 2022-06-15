@@ -267,7 +267,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.meter * pyunits.second**-1 * pyunits.pascal**-1,
             doc="Water permeability coefficient",
         )
-        self.membrane_surface_resistance = Var(
+        self.membrane_areal_resistance = Var(
             self.membrane_set,
             initialize=2e-4,
             bounds=(1e-6, 1),
@@ -408,27 +408,27 @@ class Electrodialysis0DData(UnitModelBlockData):
         )
         def eq_current_voltage_relation(self, t, p):
             surface_resistance_cp = (
-                self.membrane_surface_resistance["aem"]
-                + self.membrane_surface_resistance["cem"]
+                self.membrane_areal_resistance["aem"]
+                + self.membrane_areal_resistance["cem"]
                 + self.spacer_thickness
-                / (
-                    0.5
+                * (
+                    (0.5
                     * (
                         self.concentrate_channel.properties_in[
                             t
                         ].electrical_conductivity_phase[p]
                         + self.concentrate_channel.properties_out[
                             t
-                        ].electrical_conductivity_phase[p]
-                        + self.diluate_channel.properties_in[
+                        ].electrical_conductivity_phase[p])) ** -1
+                        + (0.5 * (self.diluate_channel.properties_in[
                             t
                         ].electrical_conductivity_phase[p]
                         + self.diluate_channel.properties_out[
                             t
-                        ].electrical_conductivity_phase[p]
+                        ].electrical_conductivity_phase[p])) ** -1
                     )
-                )
-            )
+                ) # the average conductivity of each channel's inlet and outlet is taken to represent that of the entire channel
+            
             return (
                 self.current[t]
                 * (
@@ -624,7 +624,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     self.specific_power_electrical[t],
                     pyunits.watt * pyunits.second * pyunits.meter**-3,
                 )
-                * self.diluate_channel.properties_out[t].flow_vol_phase["Liq"]
+                * self.diluate_channel.properties_out[t].flow_vol_phase["Liq"] * self.cell_pair_num
                 == self.current[t] * self.voltage[t]
             )
 
@@ -744,10 +744,10 @@ class Electrodialysis0DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.spacer_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.spacer_thickness, 1e4)
         if (
-            iscale.get_scaling_factor(self.membrane_surface_resistance, warning=True)
+            iscale.get_scaling_factor(self.membrane_areal_resistance, warning=True)
             is None
         ):
-            iscale.set_scaling_factor(self.membrane_surface_resistance, 1e4)
+            iscale.set_scaling_factor(self.membrane_areal_resistance, 1e4)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
         if iscale.get_scaling_factor(self.current, warning=True) is None:
@@ -789,7 +789,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         # Constraint scaling
         for ind, c in self.eq_current_voltage_relation.items():
             iscale.constraint_scaling_transform(
-                c, iscale.get_scaling_factor(self.membrane_surface_resistance)
+                c, iscale.get_scaling_factor(self.membrane_areal_resistance)
             )
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
