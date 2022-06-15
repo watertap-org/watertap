@@ -41,7 +41,8 @@ Model Developers
 Exporting variables with :func:`export_variables`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For each IDAES component (also a Pyomo block) the developer should list the names (and, optionally some additional information) of the variables that should be "exported" to the user interface.
+For each IDAES component and/or Pyomo block the developer should list the names of the variables that should be "exported" to the user interface. 
+Optionally, users may provide additional information as well (see :func:`export_variables` for details).
 This should be done in the component's ``build`` method.
 Each component/block need only worry about its own variables.
 Teh API will take care of gathering all the components for a flowsheet together.
