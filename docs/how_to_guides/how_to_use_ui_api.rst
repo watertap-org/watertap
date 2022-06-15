@@ -45,7 +45,7 @@ For each IDAES component and/or Pyomo block the developer should list the names 
 Optionally, users may provide additional information as well (see :func:`export_variables` for details).
 This should be done in the component's ``build`` method.
 Each component/block need only worry about its own variables.
-Teh API will take care of gathering all the components for a flowsheet together.
+The API will take care of gathering all the components for a flowsheet together.
 For example, the last line of the zero-order feed's `build` method is::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
