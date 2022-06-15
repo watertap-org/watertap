@@ -656,13 +656,13 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_bed_depth_to_diam_ratio(b):
             return b.bed_depth / b.bed_diam >= b.bed_depth_to_diam_ratio
 
-        # @self.Constraint(doc="Column height")
-        # def eq_col_height(b):
-        #     return b.col_height == b.bed_depth + b.distributor_h + b.underdrain_h
+        @self.Constraint(doc="Column height")
+        def eq_col_height(b):
+            return b.col_height == b.bed_depth + b.distributor_h + b.underdrain_h
 
-        # @self.Constraint(doc="Column vol")
-        # def eq_col_vol(b):
-        #     return b.col_vol == b.col_height * b.bed_area
+        @self.Constraint(doc="Column vol")
+        def eq_col_vol(b):
+            return b.col_vol == b.col_height * b.bed_area
 
         # =========== KINETICS ===========
         @self.Constraint(ion_set, doc="Fluid mass transfer coeff")
