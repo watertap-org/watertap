@@ -64,6 +64,8 @@ For example, if you wanted to mark "flow_vol" as read-only, then you could do::
                                     "conc_mass_comp": {}})
 
 
+**Note:** Marking a variable as read-only does change the IDAES variable.
+
 .. image:: /_static/terminal-icon.png
     :height: 30px
     :align: left
