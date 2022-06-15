@@ -820,7 +820,7 @@ class IonExchangeODData(UnitModelBlockData):
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
-        General wrapper for pressure changer initialization routines
+        General wrapper for initialization routines
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
