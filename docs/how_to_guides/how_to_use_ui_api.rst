@@ -57,7 +57,7 @@ It is saying to export two variables called "flow_vol" and "conc_mass_comp".
 There are other things about variables that can be specified.
 For details see :func:`export_variables`.
 
-For example, if you wanted to mark "flow_vol" as read-only (loading it into the model will not change it), then you could do::
+For example, if you wanted to mark "flow_vol" as read-only, then you could do::
 
     export_variables(self, name="Feed Z0", desc="Zero-Order feed block",
                          variables={"flow_vol": {"readonly": True},
