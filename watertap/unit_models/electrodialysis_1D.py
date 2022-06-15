@@ -521,7 +521,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().time,
                 self.diluate.length_domain,
-                doc="Isothermal condition for diluate side",
+                doc="Isothermal condition for Diluate",
             )
             def eq_isothermal_diluate(self, t, x):
                 if x == self.diluate.length_domain.first():
@@ -536,7 +536,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             @self.Constraint(
                 self.flowsheet().time,
                 self.diluate.length_domain,
-                doc="Isothermal condition for concentrate side",
+                doc="Isothermal condition for Concentrate",
             )
             def eq_isothermal_concentrate(self, t, x):
                 if x == self.diluate.length_domain.first():
@@ -1072,7 +1072,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         return {
             "vars": {
                 "Total electrical power consumption(Watt)": self.diluate.power_electrical_x[time_point, self.diluate.length_domain.last()],
-                "Specific electrical power consumption (W*s/m**3)": self.specific_power_electrical[
+                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ]
             },
