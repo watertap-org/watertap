@@ -720,7 +720,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.costing_package.crystallizer_steam_unit_cost
                 * (
                     blk.unit_model.work_mechanical[0]
-                    / WaterTAPCostingData.compute_steam_properties(blk)
+                    / WaterTAPCostingData._compute_steam_properties(blk)
                 )
                 * blk.costing_package.load_factor,
                 to_units=pyo.units.USD_2018 / blk.costing_package.base_period,
@@ -805,8 +805,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
-    @staticmethod
-    def compute_steam_properties(blk):
+    def _compute_steam_properties(blk):
         """
         Function for computing saturated steam properties for thermal heating estimation.
 
