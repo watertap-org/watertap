@@ -407,7 +407,7 @@ Recall, we had named our configuration dictionaries as ``thermo_config`` and
 ``reaction_config``. We will reference those dictionary names in the example
 code below.
 
-.. testcode::
+.. doctest::
 
     # Import specific pyomo objects
     from pyomo.environ import ConcreteModel
