@@ -167,11 +167,6 @@ class IXParameterData(PhysicalParameterBlock):
             else:
                 self.add_component(str(j), Solute())
 
-        # reference
-        # Todo: enter any relevant references
-
-        # TODO: consider turning parameters into variables for future param estimation
-        # molecular weight
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
@@ -877,21 +872,59 @@ class IXStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        t0 = self.flowsheet().time.first()
+        target_ion = self.parent_block().config.target_ion
+        prop_in = self.parent_block().properties_in[t0]
+
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
-            sf = iscale.get_scaling_factor(
-                self.flow_mol_phase_comp["Liq", "H2O"], default=0.1, warning=True
-            )
+            if "properties_in" in self.name or "properties_out" in self.name:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-3, warning=False
+                )
+            elif "properties_waste" in self.name:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+                )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
+
+        if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"]) is None:
+            if "properties_in" in self.name or "properties_out" in self.name:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-3, warning=False
+                )
+            elif "properties_waste" in self.name:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+                )
             iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"], sf)
 
-        for j in self.params.component_list:
-            if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", j], default=1, warning=True
-                )
-                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
-
         for j in self.params.ion_set:
+            if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
+                if "properties_in" in self.name:
+                    sf = 1 / self.flow_mol_phase_comp["Liq", j].value
+                elif "properties_out" in self.name:
+                    if j == target_ion:
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j],
+                            default=1e4,
+                            warning=False,
+                        )
+                    else:
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j], default=1, warning=False
+                        )
+                elif "properties_waste" in self.name:
+                    if j == target_ion:
+                        sf = 1 / prop_in.flow_mol_phase_comp["Liq", j].value
+                    else:
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp["Liq", j],
+                            default=1e5,
+                            warning=False,
+                        )
+                else:
+                    sf = 1
+                iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
             if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", j]) is None:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", j], default=1e3, warning=True
