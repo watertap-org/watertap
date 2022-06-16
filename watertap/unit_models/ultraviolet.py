@@ -40,6 +40,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.math import smooth_min, smooth_max
 
 _log = idaeslog.getLogger(__name__)
 
@@ -214,7 +215,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         # Add unit parameters
         self.inactivation_rate = Var(
             self.flowsheet().config.time,
-            self.solute_list,
+            self.config.property_package.solute_set,
             initialize=0.002245,
             bounds=(1e-18, 100),
             domain=NonNegativeReals,
@@ -250,30 +251,49 @@ class Ultraviolet0DData(UnitModelBlockData):
             units=units_meta("time"),
             doc="Exposure time of UV light.",
         )
-        self.flux_mass_phase_comp_in = Var(
+
+        # Add electricity parameters
+        self.electricity_demand_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=1e-3,
-            bounds=(1e-18, 1e6),
+            self.config.property_package.solute_set,
+            initialize=1,
+            bounds=(0, None),
             units=units_meta("mass")
-            * units_meta("length") ** -2
-            * units_meta("time") ** -1,
-            doc="Flux at feed inlet",
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Electricity demand per component",
         )
-        self.flux_mass_phase_comp_out = Var(
-            self.flowsheet().config.time,
+        # self.electricity_demand_minimum = Var(
+        #     self.flowsheet().config.time,
+        #     initialize=1,
+        #     bounds=(0, None),
+        #     units=units_meta("mass")
+        #     * units_meta("length") ** 2
+        #     * units_meta("time") ** -3,
+        #     doc="Minimum electricity demand of unit",
+        # )
+        self.electrical_efficiency = Var(
+            self.flowsheet().time,
             self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=1e-3,
-            bounds=(1e-18, 1e6),
+            self.config.property_package.solute_set,
+            initialize=1,
+            bounds=(0, None),
             units=units_meta("mass")
-            * units_meta("length") ** -2
-            * units_meta("time") ** -1,
-            doc="Flux at feed outlet",
+            * units_meta("length") ** -1
+            * units_meta("time") ** -2,
+            doc="Electricity efficiency per log order reduction (EE/O)",
         )
 
-        # Build control volume for feed side
+        self.lamp_efficiency = Var(
+            initialize=0.3,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Lamp efficiency",
+        )
+
+        # Build control volume for UV unit
         self.control_volume = ControlVolume0DBlock(
             default={
                 "dynamic": False,
@@ -322,28 +342,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc="Inlet water and NDMA flux",
-        )
-        def eq_flux_in(b, t, p, j):
-            return b.flux_mass_phase_comp_in[t, p, j] == b.control_volume.properties_in[
-                t
-            ].get_material_flow_terms(p, j)
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Outlet water and NDMA flux",
-        )
-        def eq_flux_out(b, t, p, j):
-            return b.flux_mass_phase_comp_out[
-                t, p, j
-            ] == b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
             doc="Constraints for solvent and solute concentration in outlet stream.",
         )
         def eq_outlet_conc(b, t, p, j):
@@ -363,6 +361,37 @@ class Ultraviolet0DData(UnitModelBlockData):
                         to_units=pyunits.dimensionless,
                     )
                 )
+
+        # electricity
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            doc="Constraints for electricity demand of the UV reactor.",
+        )
+        def eq_electricity_demand_phase_comp(b, t, p, j):
+            prop_in = b.control_volume.properties_in[t]
+            prop_out = b.control_volume.properties_out[t]
+            return b.electricity_demand_phase_comp[t, p, j] == (
+                b.electrical_efficiency[t, p, j]
+                * prop_in.flow_vol
+                * log10(
+                    pyunits.convert(
+                        prop_in.get_material_flow_terms(p, j)
+                        / prop_out.get_material_flow_terms(p, j),
+                        to_units=pyunits.dimensionless,
+                    )
+                )
+                / b.lamp_efficiency
+            )
+
+        # TODO: add minimum electricity demand for multiple solutes
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     doc="Constraints for minimum electricity demand of the UV reactor.",
+        # )
+        # def eq_minimum_electricity_demand(b, t):
+        #     return b.electricity_demand_minimum[t] == smooth_max(b.electricity_demand_phase_comp[t, p, j])
 
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
@@ -472,21 +501,23 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
-        for (t, p, j), v in self.flux_mass_phase_comp_in.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(
-                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
-                )
-                iscale.set_scaling_factor(v, sf)
+        if iscale.get_scaling_factor(self.lamp_efficiency) is None:
+            iscale.set_scaling_factor(self.lamp_efficiency, 10)
 
-        for (t, p, j), v in self.flux_mass_phase_comp_out.items():
+        for (t, p, j), v in self.electrical_efficiency.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(
-                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
+                iscale.set_scaling_factor(self.electrical_efficiency[t, p, j], 10)
+
+        for (t, p, j), v in self.electricity_demand_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf = (
+                    iscale.get_scaling_factor(self.electrical_efficiency[t, p, j])
+                    * (1 / log10(10))
+                    * iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].flow_vol
+                    )
+                    / iscale.get_scaling_factor(self.lamp_efficiency)
                 )
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.control_volume.mass_transfer_term.items():
@@ -530,17 +561,14 @@ class Ultraviolet0DData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.uv_dose)
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_flux_in.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_in[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_flux_out.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_out[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_outlet_conc.items():
             (t, p, j) = ind
             sf = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].get_material_flow_terms(p, j)
             )
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_electricity_demand_phase_comp.items():
+            (t, p, j) = ind
+            sf = iscale.get_scaling_factor(self.electricity_demand_phase_comp[t, p, j])
             iscale.constraint_scaling_transform(c, sf)

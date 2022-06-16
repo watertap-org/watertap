@@ -44,6 +44,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -68,6 +69,8 @@ class TestUltraviolet:
         uv_intensity = 1
         exporure_time = 500
         inactivation_rate = 0.002245
+        EEO = 0.25
+        lamp_efficiency = 0.3
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
@@ -83,6 +86,8 @@ class TestUltraviolet:
         m.fs.unit.exposure_time.fix(exporure_time)
         m.fs.unit.inactivation_rate.fix(inactivation_rate)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.electrical_efficiency[0, "Liq", "NDMA"].fix(EEO)
+        m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         return m
 
     @pytest.mark.unit
@@ -151,8 +156,11 @@ class TestUltraviolet:
 
         # test statistics
         assert number_variables(m) == 30
-        assert number_total_constraints(m) == 21
+        assert number_total_constraints(m) == 19
         assert number_unused_variables(m) == 0  # vars from property package parameters
+
+        # test unit consistency
+        assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
     def test_dof(self, UV_frame):
@@ -179,6 +187,7 @@ class TestUltraviolet:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i[0]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -196,6 +205,9 @@ class TestUltraviolet:
         assert pytest.approx(0.999999999, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
+        assert pytest.approx(0.001003, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_in[0].flow_vol
+        )
         assert pytest.approx(74e-9, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
@@ -210,4 +222,7 @@ class TestUltraviolet:
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
+        )
+        assert pytest.approx(4.07469e-4, rel=1e-3) == value(
+            m.fs.unit.electricity_demand_phase_comp[0, "Liq", "NDMA"]
         )
