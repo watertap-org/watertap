@@ -366,7 +366,6 @@ def add_costing(m):
     )
 
     # RO Train
-    # RO equipment is costed using more detailed costing package
     desal.P2.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
@@ -407,6 +406,20 @@ def add_costing(m):
             )
         ),
         doc="Cost of disposing of brine waste",
+    )
+
+    m.fs.sludge_disposal_cost = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * (
+                m.fs.zo_costing.waste_disposal_cost
+                * pyunits.convert(
+                    m.fs.wwt_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            )
+        ),
+        doc="Cost of disposing of waste water treatment plant sludge",
     )
 
     m.fs.dye_recovery_revenue = Expression(
@@ -462,7 +475,8 @@ def add_costing(m):
         return pyunits.convert(
             m.fs.water_recovery_revenue
             + m.fs.dye_recovery_revenue
-            - m.fs.brine_disposal_cost,
+            - m.fs.brine_disposal_cost
+            - m.fs.sludge_disposal_cost,
             to_units=pyunits.USD_2018 / pyunits.year,
         )
 
@@ -486,7 +500,9 @@ def add_costing(m):
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - pyunits.convert(
-                m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+                m.fs.dye_recovery_revenue
+                - m.fs.brine_disposal_cost
+                - m.fs.sludge_disposal_cost,
                 to_units=pyunits.USD_2018 / pyunits.year,
             )
         ) / (
