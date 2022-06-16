@@ -449,11 +449,10 @@ def add_costing(m):
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
-            )
-            + m.fs.ro_costing.total_investment_cost
+        return pyunits.convert(
+            m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
+        ) + pyunits.convert(
+            m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
         )
 
     @m.Expression()
@@ -461,13 +460,16 @@ def add_costing(m):
         return (
             pyunits.convert(
                 m.fs.zo_costing.total_fixed_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
+                to_units=pyunits.USD_2020 / pyunits.year,
             )
             + pyunits.convert(
                 m.fs.zo_costing.total_variable_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
+                to_units=pyunits.USD_2020 / pyunits.year,
             )
-            + m.fs.ro_costing.total_operating_cost
+            + pyunits.convert(
+                m.fs.ro_costing.total_operating_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
         )
 
     @m.Expression()
@@ -477,7 +479,7 @@ def add_costing(m):
             + m.fs.dye_recovery_revenue
             - m.fs.brine_disposal_cost
             - m.fs.sludge_disposal_cost,
-            to_units=pyunits.USD_2018 / pyunits.year,
+            to_units=pyunits.USD_2020 / pyunits.year,
         )
 
     @m.Expression()
@@ -503,7 +505,7 @@ def add_costing(m):
                 m.fs.dye_recovery_revenue
                 - m.fs.brine_disposal_cost
                 - m.fs.sludge_disposal_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
+                to_units=pyunits.USD_2020 / pyunits.year,
             )
         ) / (
             pyunits.convert(
@@ -545,23 +547,23 @@ def display_results(m):
 def display_costing(m):
 
     print("\n System costing metrics:")
-    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
+    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
 
     opex = value(
         pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 
     externalities = value(
         pyunits.convert(
-            m.total_externalities, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 
-    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2018 / pyunits.m**3))
+    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
 
-    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3))
+    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
 
     print(f"Total Capital Cost: {capex:.4f} M$")
 
