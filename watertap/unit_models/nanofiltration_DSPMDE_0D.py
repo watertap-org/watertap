@@ -1127,6 +1127,18 @@ class NanofiltrationData(UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time,
             io_list,
+            doc="Volumetric flow at pore exit inlet and outlet equal to mixed permeate",
+        )
+        def eq_equal_flow_vol_pore_exit_perm(b, t, x):
+            return (
+                b.pore_exit[t, x].flow_vol_phase["Liq"]
+                == b.mixed_permeate[t].flow_vol_phase["Liq"]
+            )
+
+        # Experimental constraint
+        @self.Constraint(
+            self.flowsheet().config.time,
+            io_list,
             doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate",
         )
         def eq_equal_flow_vol_permeate(b, t, x):
@@ -1447,28 +1459,27 @@ class NanofiltrationData(UnitModelBlockData):
                 )
                 self._automate_rescale_variables()
         # ---------------------------------------------------------------------
-        # Solve unit with deactivated constraint
+        # Solve unit attempt 1
         # self.eq_solute_solvent_flux.deactivate()
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(self, tee=slc.tee)
-        #     if not check_optimal_termination(res):
-        #         init_log.warn(
-        #             "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
-        #         )
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warn(
+                    "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
+                )
         # ---------------------------------------------------------------------
-        # Solve unit
-        # self.eq_solute_solvent_flux.activate()
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(self, tee=slc.tee)
-        #     if not check_optimal_termination(res):
-        #         init_log.warn(
-        #             "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
-        #         )
-        #         res = opt.solve(self, tee=slc.tee)
-        #         if not check_optimal_termination(res):
-        #             raise InitializationError(
-        #                 "The property package failed to solve during initialization."
-        #             )
+        # Solve unit attempt 2
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warn(
+                    "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
+                )
+                res = opt.solve(self, tee=slc.tee)
+                if not check_optimal_termination(res):
+                    raise InitializationError(
+                        "The property package failed to solve during initialization."
+                    )
         # check_solve(
         #     res,
         #     checkpoint="Solve in Initialization Step 3",
@@ -1486,7 +1497,7 @@ class NanofiltrationData(UnitModelBlockData):
         #             f"variable(s) will be rescaled so that each scaled variable value = 1"
         #         )
         #     self._automate_rescale_variables()
-        # init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
         # TODO: replace 0 with time_point
@@ -2025,7 +2036,7 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(con, 1e-1)
 
         for con in self.eq_interfacial_partitioning_feed.values():
-            iscale.constraint_scaling_transform(con, 1e-1)
+            iscale.constraint_scaling_transform(con, 1e-2)
         for key in self.eq_interfacial_partitioning_feed.keys():
             if key[-1] == "Cl_-":
                 iscale.constraint_scaling_transform(

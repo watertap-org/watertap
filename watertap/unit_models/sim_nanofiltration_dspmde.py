@@ -48,21 +48,21 @@ if __name__ == "__main__":
     m.fs.properties = DSPMDEParameterBlock(
         default={
             "solute_list": [
-                "Ca_2+",
-                "SO4_2-",
-                "Mg_2+",
+                # "Ca_2+",
+                # "SO4_2-",
+                # "Mg_2+",
                 "Na_+",
                 "Cl_-",
                 # 'X',
                 # 'Y',
             ],
             "diffusivity_data": {
-                (
-                    "Liq",
-                    "Ca_2+",
-                ): 9.2e-10,  # this value is smaller than in MIT's paper (0.792e-9) according to NanoFiltran (9.20E-10)
-                ("Liq", "SO4_2-"): 1.06e-9,
-                ("Liq", "Mg_2+"): 0.707e-9,
+                # (
+                #     "Liq",
+                #     "Ca_2+",
+                # ): 9.2e-10,  # this value is smaller than in MIT's paper (0.792e-9) according to NanoFiltran (9.20E-10)
+                # ("Liq", "SO4_2-"): 1.06e-9,
+                # ("Liq", "Mg_2+"): 0.707e-9,
                 ("Liq", "Na_+"): 1.33e-9,
                 ("Liq", "Cl_-"): 2.03e-9,
                 # ("Liq", "X"): 2.03e-9,
@@ -70,27 +70,27 @@ if __name__ == "__main__":
             },
             "mw_data": {
                 "H2O": 18e-3,
-                "Ca_2+": 40e-3,
-                "Mg_2+": 24e-3,
-                "SO4_2-": 96e-3,
+                # "Ca_2+": 40e-3,
+                # "Mg_2+": 24e-3,
+                # "SO4_2-": 96e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35e-3,
                 # "X": 20e-3,
                 # "Y": 20e-3,
             },
             "stokes_radius_data": {
-                "Ca_2+": 0.309e-9,
-                "Mg_2+": 0.347e-9,
-                "SO4_2-": 0.231e-9,
+                # "Ca_2+": 0.309e-9,
+                # "Mg_2+": 0.347e-9,
+                # "SO4_2-": 0.231e-9,
                 "Cl_-": 0.121e-9,
                 "Na_+": 0.184e-9,
                 # "X": 0.184e-9,
                 # "Y": 0.184e-9,
             },
             "charge": {
-                "Ca_2+": 2,
-                "Mg_2+": 2,
-                "SO4_2-": -2,
+                # "Ca_2+": 2,
+                # "Mg_2+": 2,
+                # "SO4_2-": -2,
                 "Na_+": 1,
                 "Cl_-": -1,
                 # "X": -1,
@@ -110,9 +110,9 @@ if __name__ == "__main__":
     b = m.fs.unit
     mass_flow_in = 1 * pyunits.kg / pyunits.s
     feed_mass_frac = {
-        "Ca_2+": 382e-6,
-        "Mg_2+": 1394e-6,
-        "SO4_2-": 2136e-6,
+        # "Ca_2+": 382e-6,
+        # "Mg_2+": 1394e-6,
+        # "SO4_2-": 2136e-6,
         "Cl_-": 20101.6e-6,
         "Na_+": 11122e-6,
         # 'Cl_-': 0.016924782608695656,
@@ -141,7 +141,8 @@ if __name__ == "__main__":
     )
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
     print("Check after fixing inlet conc; DOF=", degrees_of_freedom(m))
-    m.fs.unit.inlet.flow_mol_phase_comp.display()
+    # m.fs.unit.inlet.flow_mol_phase_comp.display()
+
     # Use assert electroneutrality method from property model to ensure the ion concentrations provided
     # obey electroneutrality condition
     m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     assert_units_consistent(m)
 
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e0, index=("Liq", "Ca_2+")
+        "flow_mol_phase_comp", 1e-1, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e-2, index=("Liq", "SO4_2-")
@@ -191,7 +192,7 @@ if __name__ == "__main__":
         "flow_mol_phase_comp", 1e-1, index=("Liq", "Mg_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-2, index=("Liq", "Cl_-")
+        "flow_mol_phase_comp", 1e-3, index=("Liq", "Cl_-")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e-3, index=("Liq", "Na_+")
@@ -210,6 +211,8 @@ if __name__ == "__main__":
     m.fs.unit.eq_electroneutrality_interface.deactivate()
     m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
 
+    # deactivate feed electroneutrality constraint
+    m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
     # m.fs.unit.eq_no_concentration_polarization.deactivate()
     try:
@@ -222,17 +225,6 @@ if __name__ == "__main__":
         )
     except InitializationError:
         pass
-    # deactivating one of the following constraints
-    # yields rejection rates in line with what
-    # would be expected, which is the main surface-level issue with the model now:
-    # predicted rejection rates are erroneously close to 0 for ALL ions when all of the following constraints are active.
-    # (1) Js = Jw*permeate concentration constraint
-    # m.fs.unit.eq_solute_solvent_flux.deactivate()
-    # (2) Interfacial partitioning equation at the permeate, relating pore exit concentration to bulk permeate concentration
-    # m.fs.unit.eq_interfacial_partitioning_permeate.deactivate() # deactivating yields higher, more practical rejection rates
-    # (3) Js = diffusion term + convection term + electromigration term
-    # i.e., Extended Nernst Planck equation representing solute flux in the membrane pore domain
-    # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
 
     # Use of Degeneracy Hunter for troubleshooting model.
     m.fs.dummy_objective = Objective(expr=0)
@@ -296,11 +288,11 @@ if __name__ == "__main__":
     # More Degeneracy Hunter troubleshooting
     # dh.check_residuals(tol=1e-10)
     # dh.check_variable_bounds(tol=1e-2, relative=True)
-    # try:
-    #     dh.check_rank_equality_constraints()
-    # except:
-    #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
-    #     ids = dh.find_irreducible_degenerate_sets(verbose=True)
+    try:
+        dh.check_rank_equality_constraints()
+    except:
+        ds2 = dh.find_candidate_equations(verbose=True, tee=True)
+        ids = dh.find_irreducible_degenerate_sets(verbose=True, tee=False)
 
     b.rejection_intrinsic_phase_comp.display()
     b.rejection_observed_phase_comp.display()
