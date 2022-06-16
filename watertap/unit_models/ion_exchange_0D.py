@@ -120,6 +120,11 @@ class IonExchangeODData(UnitModelBlockData):
         ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
     )
 
+    CONFIG.declare(
+        "regenerant",
+        ConfigValue(default="HCl", domain=str, description="Target Ion"),
+    )
+
     def build(self):
         super().build()
 
@@ -358,7 +363,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.t_contact = Var(
             initialize=520,
-            # bounds=(300, 1500),
+            bounds=(120, None),
             units=pyunits.s,
             doc="Contact time [s]",
         )
@@ -505,12 +510,94 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Dimensionless concentration",
         )
 
+        # # ====== Regeneration ====== #
+
+        self.regen_dose = Var(
+            initialize=300,
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(35, 700),  # Perry's
+            doc="Regenerant dose required for regeneration [kg/m3]",
+        )
+
+        self.regen_sg = Var(
+            initialize=1.2,
+            units=pyunits.dimensionless,
+            bounds=(0.8, 2),  # default is for HCl, Sigma-Aldrich
+            doc="Specific gravity of regen solution relative to water",
+        )
+
+        self.regen_density = Var(
+            initialize=1000,
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(990, 2000),
+            doc="Density of regen solution",
+        )
+
+        self.regen_ww = Var(
+            initialize=0.37,  # default is for HCl, Sigma-Aldrich TODO: add way to have different regenerant
+            doc="Strength of regen solution w/w [kg regen/kg soln]",
+        )
+
+        self.regen_conc = Var(
+            initialize=110,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Concentration of regen solution",
+        )
+
+        self.regen_bv = Var(
+            initialize=2,
+            units=pyunits.m**3,
+            doc="m3 of regen solution per regen cycle",
+        )
+
+        self.t_regen = Var(
+            initialize=30, units=pyunits.s, doc="Regeneration cycle time"
+        )
+
+        self.bw_rate = Var(
+            initialize=5,
+            units=pyunits.m / pyunits.hour,
+            bounds=(4.5, 6.5),
+            doc="Backwash rate [m/hr]",
+        )
+
+        self.t_bw = Var(
+            initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Backwash time"
+        )
+
+        self.bed_expansion = Var(
+            initialize=0.5, units=pyunits.m, doc="Resin bed expansion during backwash"
+        )
+
+        self.rinse_bv = Var(
+            initialize=5,
+            bounds=(2, 10),
+            doc="Number of bed volumes for rinse step [BV]",
+        )
+
+        self.t_rinse = Var(
+            initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Backwash time"
+        )
+
+        self.pressure_drop = Var(
+            initialize=14,
+            units=pyunits.psi,
+            bounds=(0, 25),
+            doc="Pressure drop across column [psi]",
+        )
+
         # Fix variables that should be fixed
         self.resin_diam.fix()
         self.resin_bulk_dens.fix()
         self.bed_porosity.fix()
         self.dimensionless_time.fix()
         self.lh.fix()
+        self.regen_dose.fix()
+        self.regen_ww.fix()
+        self.regen_sg.fix()
+        self.t_bw.fix()
+        self.bw_rate.fix()
+        self.rinse_bv.fix()
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -650,7 +737,10 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
-            return b.col_height == b.bed_depth + b.distributor_h + b.underdrain_h
+            return (
+                b.col_height
+                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion
+            )
 
         @self.Constraint(doc="Column vol")
         def eq_col_vol(b):
@@ -727,8 +817,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Waste time")
         def eq_waste_time(b):
-            # TODO be better here
-            return b.t_waste == b.t_waste_param * b.t_breakthru
+            return b.t_waste == b.t_regen + b.t_bw + b.t_rinse
 
         @self.Constraint(ion_set, doc="Flow conservation")
         def eq_flow_conservation(b, j):
@@ -799,6 +888,45 @@ class IonExchangeODData(UnitModelBlockData):
                 * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
                 ** b.holdup_exp
             )
+
+        # =========== REGENERATION, RINSE, BACKWASHING ===========
+
+        @self.Constraint(doc="Regenerant density")
+        def eq_regen_density(b):
+            prop_in = b.properties_in[0]
+            return b.regen_density == b.regen_sg * prop_in.dens_mass_phase["Liq"]
+
+        @self.Constraint(doc="Regenerant concentration")
+        def eq_regen_conc(b):
+            return b.regen_conc == b.regen_ww * b.regen_density
+
+        @self.Constraint(doc="Regenerant volume")
+        def eq_regen_vol(b):
+            return b.regen_bv == (b.regen_dose / b.regen_conc) * b.bed_vol
+
+        @self.Constraint(doc="Regenerant time")
+        def eq_regen_time(b):
+            return b.t_regen == b.t_contact * b.regen_bv
+
+        @self.Constraint(doc="Bed expansion from backwashing")
+        def eq_bw_bed_expansion(b):
+            return (
+                b.bed_expansion
+                == (-1.35e-3 * b.bw_rate**2 + 1.02e-1 * b.bw_rate - 1.23e-2)
+                * b.bed_depth
+            )  # for 25C ; TODO: add these coeffs as Params
+
+        @self.Constraint(doc="Rinse time")
+        def eq_rinse_time(b):
+            return b.t_rinse == b.t_contact * b.rinse_bv
+
+        @self.Constraint(doc="Pressure drop")
+        def eq_pressure_drop(b):
+            vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
+            return (
+                b.pressure_drop
+                == (8.28e-04 * vel_bed**2 + 0.173 * vel_bed + 0.609) * b.bed_depth
+            )  # for 25C; TODO: add these coeffs as Params
 
         @self.Constraint()
         def eq_press_conservation(b):
