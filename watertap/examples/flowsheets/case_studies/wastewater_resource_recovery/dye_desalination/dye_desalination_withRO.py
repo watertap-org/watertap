@@ -527,12 +527,6 @@ def display_results(m):
 
 
 def display_costing(m):
-    # print("\n Unit costing metrics:")
-    # prtrt_capex = m.fs.zo_costing.
-    #
-    #     m.fs.zo_costing.total_variable_operating_cost,
-    #             to_units=pyunits.USD_2018 / pyunits.year,
-    #         )
 
     print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
