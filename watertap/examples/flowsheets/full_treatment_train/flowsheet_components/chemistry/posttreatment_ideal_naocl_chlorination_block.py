@@ -974,7 +974,6 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     # test the naocl_chlorination_costing
     model.fs.treated_flow_vol = Expression(expr=0.85 * pyunits.m**3 / pyunits.s)
-    costing.build_costing(model)
 
     # set some values (using defaults for testing)
     set_ideal_naocl_mixer_inlets(
@@ -1012,6 +1011,8 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     if fix_free_chlorine:
         setup_block_to_solve_naocl_dosing_rate(model)
 
+    results = solver.solve(model)
+    costing.build_costing(model)
     model.fs.costing.initialize()
 
     results = solver.solve(model, tee=True)
