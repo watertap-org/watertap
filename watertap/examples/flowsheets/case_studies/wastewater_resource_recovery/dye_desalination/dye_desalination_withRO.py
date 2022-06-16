@@ -467,7 +467,7 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def LCOT(b):
+    def LCOT(b, doc="Levelized cost of treatment with respect to volumetric feed flow"):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
