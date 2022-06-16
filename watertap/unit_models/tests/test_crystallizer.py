@@ -44,7 +44,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
-from idaes.core.costing import UnitModelCostingBlock
+from idaes.models.costing import UnitModelCostingBlock
 
 from watertap.costing import WaterTAPCosting
 from watertap.costing.watertap_costing_package import CrystallizerCostType

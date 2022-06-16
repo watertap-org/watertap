@@ -24,7 +24,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.costing import UnitModelCostingBlock
+from idaes.models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import ChemicalAdditionZO
 from watertap.core.wt_database import Database

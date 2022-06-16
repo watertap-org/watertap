@@ -24,7 +24,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.core.costing import UnitModelCostingBlock
+from idaes.models.costing import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
