@@ -49,5 +49,4 @@ The ZeroOrderBase class makes a number of assumptions about the structure of the
 Class Documentation
 -------------------
 
-.. autoclass:: ZeroOrderBaseData
-   :members:
+* :class:`ZeroOrderBaseData`

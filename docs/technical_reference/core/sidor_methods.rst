@@ -112,4 +112,4 @@ A mass balance constraint is then written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_sido_reactive.build_sido_reactive
+* :mod:`watertap.core.zero_order_sido_reactive`

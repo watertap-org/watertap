@@ -3,9 +3,6 @@
 Zero Order Costing Package
 ==========================
 
-.. index::
-   pair: watertap.core.zero_order_costing;ZeroOrderCostingData
-
 .. currentmodule:: watertap.core.zero_order_costing
 
 The zero order costing module contains the costing package used for zero order models. Technoeconomic data used for zero order models is contained in the
@@ -230,5 +227,4 @@ The Levelized Cost Of Water (LCOW) [$/m3] is a metric used to assess the technoe
 Class Documentation
 -------------------
 
-.. autoclass:: ZeroOrderCostingData
-    :members:
+* :class:`ZeroOrderCostingData`

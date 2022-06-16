@@ -79,7 +79,4 @@ Equations
 Class Documentation
 -------------------
 
-.. automodule:: watertap.unit_models.nanofiltration_ZO
-    :members:
-    :noindex:
-
+* :mod:`watertap.unit_models.nanofiltration_ZO`

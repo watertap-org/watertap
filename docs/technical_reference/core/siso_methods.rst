@@ -71,6 +71,4 @@ Thus, a mass balance constraint is only written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_siso.build_siso
-    :members:
-    :noindex:
+* :mod:`watertap.core.zero_order_siso`

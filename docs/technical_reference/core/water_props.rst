@@ -46,14 +46,7 @@ The ideal water property package requires users to define the list of dissolved 
 Class Documentation
 -------------------
 
-.. autoclass:: WaterParameterBlock
-   :members:
-
-.. autoclass:: WaterParameterBlockData
-   :members:
-
-.. autoclass:: WaterStateBlock
-   :members:
-
-.. autoclass:: WaterStateBlockData
-   :members:
+* :class:`WaterParameterBlock`
+* :class:`WaterParameterBlockData`
+* :class:`WaterStateBlock`
+* :class:`WaterStateBlockData`

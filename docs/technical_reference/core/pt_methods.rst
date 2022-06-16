@@ -48,4 +48,4 @@ The build_pt method writes no additional constraints beyond those created by the
 Module Documentation
 --------------------
 
-.. automethod:: watertap.core.zero_order_pt.build_pt
+* :mod:`watertap.core.zero_order_pt`

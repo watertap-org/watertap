@@ -80,4 +80,4 @@ A mass balance constraint is then written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_sido.build_sido
+* :mod:`watertap.core.zero_order_sido`
