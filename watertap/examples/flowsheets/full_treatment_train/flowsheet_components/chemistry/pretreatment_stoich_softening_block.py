@@ -47,7 +47,7 @@ from idaes.core.util.math import smooth_min
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 from idaes.models.properties.modular_properties.reactions.rate_forms import (
     power_law_rate,

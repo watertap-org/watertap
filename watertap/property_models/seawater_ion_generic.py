@@ -34,8 +34,8 @@ from idaes.core import (
     Cation,
     MaterialFlowBasis,
 )
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
+from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
+from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
     Symmetric,
     Unsymmetric,
 )

@@ -36,7 +36,7 @@ from idaes.core.util import get_solver
 # Imports from idaes generic models
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.models.properties.modular_properties.base.generic_reaction import (

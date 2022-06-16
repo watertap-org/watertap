@@ -91,7 +91,7 @@ from pyomo.environ import units as pyunits
 from idaes.core import AqueousPhase, LiquidPhase, SolidPhase, VaporPhase
 from idaes.core.base.phases import PhaseType
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )

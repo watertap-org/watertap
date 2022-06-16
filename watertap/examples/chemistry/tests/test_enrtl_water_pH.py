@@ -36,8 +36,10 @@ from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
+from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
+from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
+    Unsymmetric,
+)
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.models.properties.modular_properties.base.generic_reaction import (

@@ -25,8 +25,8 @@ Author: Andrew Lee
 from pyomo.environ import Param, units as pyunits
 
 from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
+from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
+from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
     Symmetric,
     Unsymmetric,
 )
