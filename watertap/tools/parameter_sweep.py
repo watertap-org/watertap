@@ -23,7 +23,7 @@ import pathlib
 from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet

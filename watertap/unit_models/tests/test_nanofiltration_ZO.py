@@ -35,7 +35,7 @@ import watertap.examples.flowsheets.full_treatment_train.model_components.seawat
 from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,

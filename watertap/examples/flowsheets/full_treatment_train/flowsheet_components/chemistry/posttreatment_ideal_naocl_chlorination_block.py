@@ -31,7 +31,7 @@ from pyomo.environ import units as pyunits, assert_optimal_termination, NonNegat
 from idaes.core import AqueousPhase
 from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.base.phases import PhaseType as PT
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Imports from idaes generic models
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
@@ -85,7 +85,7 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (

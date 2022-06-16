@@ -21,7 +21,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 )
 from watertap.property_models.seawater_ion_generic import configuration
 from watertap.core.util.initialization import check_dof
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 solver = get_solver()
 # -----------------------------------------------------------------------------

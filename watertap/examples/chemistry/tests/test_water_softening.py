@@ -45,7 +45,7 @@ from idaes.models.unit_models.stoichiometric_reactor import (
 
 from idaes.core.util import scaling as iscale
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     fixed_variables_set,

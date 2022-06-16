@@ -33,7 +33,7 @@ from pyomo.environ import units as pyunits
 
 from idaes.core.util import scaling as iscale
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Import idaes methods to check the model during construction
 from idaes.core.util.model_statistics import (

@@ -30,7 +30,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,

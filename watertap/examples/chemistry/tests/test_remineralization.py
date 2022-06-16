@@ -106,7 +106,7 @@ from pyomo.environ import (
 from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.scaling import badly_scaled_var_generator
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 import idaes.logger as idaeslog

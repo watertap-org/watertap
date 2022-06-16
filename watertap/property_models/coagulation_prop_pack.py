@@ -58,7 +58,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 

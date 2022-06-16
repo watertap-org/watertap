@@ -21,7 +21,7 @@ from idaes.core.util.scaling import (
     get_scaling_factor,
     constraint_scaling_transform,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import (
     entrl_config_FTPx,
     entrl_config_FpcTP,

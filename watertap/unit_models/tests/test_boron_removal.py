@@ -72,7 +72,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import re
 

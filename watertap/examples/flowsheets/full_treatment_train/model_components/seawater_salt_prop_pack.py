@@ -51,7 +51,7 @@ from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.util.misc import extract_data
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

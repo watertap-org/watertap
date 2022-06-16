@@ -94,7 +94,7 @@ import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     fixed_variables_set,

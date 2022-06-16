@@ -26,7 +26,7 @@ from pyomo.environ import (
 from idaes.models.unit_models.feed import FeedData
 from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
 # Some more inforation about this module
