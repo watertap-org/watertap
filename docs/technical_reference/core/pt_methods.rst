@@ -8,7 +8,7 @@ Pass Through Unit Helper Methods
 
 .. currentmodule:: watertap.core.zero_order_pt
 
-The `build_pt` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models in which there is no change in flow rate or concentration of the solutes. This is most commonly seen in pressure and temperature change equipment.
+The :func:`build_pt` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models in which there is no change in flow rate or concentration of the solutes. This is most commonly seen in pressure and temperature change equipment.
 
 Usage
 -----
