@@ -18,7 +18,7 @@ from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 

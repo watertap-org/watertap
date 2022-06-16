@@ -74,8 +74,8 @@ from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 

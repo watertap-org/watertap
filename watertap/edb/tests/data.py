@@ -15,7 +15,7 @@ Shared input data for tests
 """
 from pyomo.environ import units as pyunits
 from idaes.core.base.phases import PhaseType as PT
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
@@ -200,8 +200,8 @@ bicarbonate_reaction_data = {
 
 # ==========================================================
 
-from idaes.generic_models.properties.core.pure.Perrys import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.models.properties.modular_properties.pure.Perrys import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
 
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase

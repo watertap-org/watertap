@@ -96,11 +96,11 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.pure import Perrys
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.models.properties.modular_properties.pure import Perrys
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.pure.NIST import NIST
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.pure.electrolyte import (
+from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (

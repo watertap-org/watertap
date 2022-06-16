@@ -57,10 +57,10 @@ from idaes.core.base.components import Solvent, Solute, Cation, Anion, Apparent
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure import Perrys, NIST
+from idaes.models.properties.modular_properties.pure import Perrys, NIST
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.generic.generic_property import StateIndex
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew

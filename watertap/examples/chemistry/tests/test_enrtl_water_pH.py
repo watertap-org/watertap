@@ -31,8 +31,8 @@ from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.pure.electrolyte import (
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx

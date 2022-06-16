@@ -99,8 +99,8 @@ for a chemical system that contains only water.
     from idaes.core.base.components import Solvent, Cation, Anion
 
     # Imports from idaes generic models
-    import idaes.generic_models.properties.core.pure.Perrys as Perrys
-    from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+    import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+    from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
     from idaes.generic_models.properties.core.state_definitions import FTPx
     from idaes.generic_models.properties.core.eos.ideal import Ideal
 

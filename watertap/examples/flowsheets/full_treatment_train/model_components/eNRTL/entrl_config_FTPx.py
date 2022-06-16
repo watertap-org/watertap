@@ -32,7 +32,7 @@ from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
 )
 from idaes.generic_models.properties.core.generic.generic_property import StateIndex
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.pure.electrolyte import (
+from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
 

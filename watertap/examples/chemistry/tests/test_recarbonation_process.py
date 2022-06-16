@@ -63,8 +63,8 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.properties.core.pure.Perrys import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.models.properties.modular_properties.pure.Perrys import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
