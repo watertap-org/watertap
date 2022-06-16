@@ -31,7 +31,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num, nx, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 
     m = biomembrane_filtration.main()[0]
 
@@ -81,19 +81,5 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
     return global_results, sweep_params, m
 
 
-def main(case_num=4, nx=11, interpolate_nan_outputs=True):
-    # when from the command line
-    case_num = int(case_num)
-    nx = int(nx)
-    interpolate_nan_outputs = bool(interpolate_nan_outputs)
-
-    global_results, sweep_params, m = run_analysis(
-        case_num, nx, interpolate_nan_outputs
-    )
-    print(global_results)
-
-    return global_results, m
-
-
 if __name__ == "__main__":
-    results, model = main(*sys.argv[1:])
+    results, sweep_params, m = run_analysis(*sys.argv[1:])
