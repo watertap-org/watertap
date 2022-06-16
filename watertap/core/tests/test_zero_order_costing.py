@@ -31,7 +31,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core.costing import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
