@@ -71,8 +71,10 @@ import idaes.generic_models.properties.core.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
-from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
+from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import (
@@ -80,10 +82,10 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 # Import the object/function for heat of reaction
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 

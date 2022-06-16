@@ -39,15 +39,15 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 # Import the object/function for heat of reaction
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 
 # Import k-value functions
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff,
 )

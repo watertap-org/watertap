@@ -50,14 +50,14 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff,
 )
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 

@@ -70,16 +70,18 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
-from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
+from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )

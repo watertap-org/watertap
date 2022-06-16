@@ -60,13 +60,13 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
     from pyomo.environ import units as pyunits
 
     # Import the object/function for heat of reaction
-    from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+    from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
     # Import built-in Gibb's Energy function
-    from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+    from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
 
     # Import safe log power law equation
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+    from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
     from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -221,7 +221,7 @@ Example of a dummy **reaction_config**
     from pyomo.environ import units as pyunits
 
     # Import safe log power law equation
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+    from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
     reaction_config = {

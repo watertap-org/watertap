@@ -99,14 +99,14 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.pure.electrolyte import (
     relative_permittivity_constant,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     power_law_equil,
     log_power_law_equil,
     solubility_product,
