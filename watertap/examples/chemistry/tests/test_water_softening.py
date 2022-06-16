@@ -39,7 +39,7 @@ from idaes.core import AqueousPhase, FlowsheetBlock, EnergyBalanceType
 
 import idaes.logger as idaeslog
 
-from idaes.generic_models.unit_models.stoichiometric_reactor import (
+from idaes.models.unit_models.stoichiometric_reactor import (
     StoichiometricReactor,
 )
 

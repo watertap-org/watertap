@@ -109,12 +109,12 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 # Import the idaes object for the StoichiometricReactor unit model
-from idaes.generic_models.unit_models.stoichiometric_reactor import (
+from idaes.models.unit_models.stoichiometric_reactor import (
     StoichiometricReactor,
 )
 
 # Import the Mixer and Separator unit model
-from idaes.generic_models.unit_models import (
+from idaes.models.unit_models import (
     Separator,
     Mixer,
 )
@@ -122,12 +122,12 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
     costing,
 )
 
-from idaes.generic_models.unit_models.separator import (
+from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
 
-from idaes.generic_models.unit_models.translator import Translator
+from idaes.models.unit_models.translator import Translator
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock

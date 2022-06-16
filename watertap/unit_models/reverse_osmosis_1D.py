@@ -29,7 +29,7 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
 )
-from idaes.core.control_volume1d import DistributedVars
+from idaes.core.base.control_volume1d import DistributedVars
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks

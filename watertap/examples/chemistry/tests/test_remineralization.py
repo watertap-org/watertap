@@ -86,8 +86,8 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.unit_models.cstr import CSTR
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.cstr import CSTR
 
 # Import specific pyomo objects
 from pyomo.environ import (

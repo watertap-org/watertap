@@ -96,15 +96,15 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the Mixer unit model
-from idaes.generic_models.unit_models import Mixer
+from idaes.models.unit_models import Mixer
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     costing,
 )
 
-from idaes.generic_models.unit_models.translator import Translator
+from idaes.models.unit_models.translator import Translator
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock

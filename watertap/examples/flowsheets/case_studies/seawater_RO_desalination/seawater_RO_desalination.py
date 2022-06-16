@@ -29,9 +29,9 @@ from idaes.core.util.initialization import (
     revert_state_vars,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models.translator import Translator
-from idaes.generic_models.unit_models import Mixer, Separator, Product
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.translator import Translator
+from idaes.models.unit_models import Mixer, Separator, Product
+from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.generic_models.costing import UnitModelCostingBlock

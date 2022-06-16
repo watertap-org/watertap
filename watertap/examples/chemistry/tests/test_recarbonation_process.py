@@ -62,7 +62,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
 )
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.generic_models.properties.core.pure.Perrys import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 

@@ -420,7 +420,7 @@ code below.
     from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model
-    from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+    from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
     # Create an instance of a pyomo model
     model = ConcreteModel()

@@ -113,7 +113,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import log10 function from pyomo
 from pyomo.environ import log10

@@ -22,7 +22,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.costing import UnitModelCostingBlock
 
