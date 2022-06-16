@@ -298,7 +298,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_area = Var(
             initialize=0.63,
-            # bounds=(1.1, 10),
             units=pyunits.m**2,
             doc="Bed area [m2]",
         )
@@ -506,15 +505,20 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Dimensionless concentration",
         )
 
-        # Add state blocks for inlet, outlet, and waste
-        # These include the state variables and any other properties on demand
-        # Add inlet block
+        # Fix variables that should be fixed
+        self.resin_diam.fix()
+        self.resin_bulk_dens.fix()
+        self.bed_porosity.fix()
+        self.dimensionless_time.fix()
+        self.lh.fix()
+
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True  # inlet block is an inlet
+
         self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,  # time domain for the state block, just 0 in this case
+            self.flowsheet().config.time,
             doc="Material properties of inlet",
             default=tmp_dict,
         )
