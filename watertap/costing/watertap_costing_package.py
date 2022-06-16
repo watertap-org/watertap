@@ -242,12 +242,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Steam cost, Panagopoulos (2019)",
         )
 
-        self.crystallizer_electricity_unit_cost = pyo.Var(
-            initialize=0.065,
-            units=pyo.units.USD_2018 / pyo.units.kWh,
-            doc="Electricity cost, Panagopoulos (2019)",
-        )
-
         self.crystallizer_steam_pressure = pyo.Var(
             initialize=3,
             units=pyo.units.bar,
@@ -274,6 +268,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["electricity"] = self.electricity_base_cost
         self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
         self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
+        self.defined_flows["steam"] = self.crystallizer_steam_unit_cost
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
@@ -713,41 +708,29 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
             )
 
-        make_fixed_operating_cost_var(blk)
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
+                    blk.unit_model.magma_circulation_flow_vol
+                    * blk.unit_model.dens_mass_slurry
+                    * Constants.acceleration_gravity
+                    * blk.costing_package.crystallizer_pump_head_height
+                    / blk.costing_package.crystallizer_efficiency_pump
+                ),
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
+        )
 
-        blk.thermal_energy_cost = pyo.Expression(
-            expr=pyo.units.convert(
-                blk.costing_package.crystallizer_steam_unit_cost
-                * (
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
                     blk.unit_model.work_mechanical[0]
                     / WaterTAPCostingData._compute_steam_properties(blk)
-                )
-                * blk.costing_package.load_factor,
-                to_units=pyo.units.USD_2018 / blk.costing_package.base_period,
-            )
-        )
-
-        blk.electrical_energy_cost = pyo.Expression(
-            expr=pyo.units.convert(
-                pyo.units.convert(
-                    (
-                        blk.unit_model.magma_circulation_flow_vol
-                        * blk.unit_model.dens_mass_slurry
-                        * Constants.acceleration_gravity
-                        * blk.costing_package.crystallizer_pump_head_height
-                        / blk.costing_package.crystallizer_efficiency_pump
-                    ),
-                    to_units=pyo.units.kWh / pyo.units.hour,
-                )
-                * blk.costing_package.crystallizer_electricity_unit_cost
-                * blk.costing_package.load_factor,
-                to_units=pyo.units.USD_2018 / blk.costing_package.base_period,
-            )
-        )
-
-        blk.fixed_operating_cost_constraint = pyo.Constraint(
-            expr=blk.fixed_operating_cost
-            == blk.electrical_energy_cost + blk.thermal_energy_cost
+                ),
+                to_units=pyo.units.m**3 / pyo.units.s,
+            ),
+            "steam",
         )
 
     @staticmethod
