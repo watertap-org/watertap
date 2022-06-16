@@ -1,4 +1,7 @@
-default:  # holding tank
+default: 
+  energy_electric_flow_vol_inlet:
+    value: 0
+    units: kWh/m^3# holding tank
   storage_time:
     value: 24
     units: hours
