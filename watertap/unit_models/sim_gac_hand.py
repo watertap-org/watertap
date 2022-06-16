@@ -71,7 +71,7 @@ def main():
 
     # scaling
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
+        "flow_mol_phase_comp", 1e-5, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
@@ -99,14 +99,15 @@ def main():
     # trial problem from Hand, 1984 for removal of trace DCE
     # --------------------------------------------------------------------
     # specify two of three of these
-    m.fs.gac.target_removal_frac["DCE"].fix(0.95)
-    # m.fs.gac.replace_removal_frac["DCE"].fix(0.8)
+    # m.fs.gac.target_removal_frac["DCE"].fix(0.95)
+    m.fs.gac.replace_removal_frac["DCE"].fix(0.5)
     m.fs.gac.replace_gac_saturation_frac.fix(0.99)
     # --------------------------------------------------------------------
     m.fs.gac.freund_k.fix(37.9e-6 * (1e6**0.8316))
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
-    m.fs.gac.eps_bed.fix(0.449)
+    m.fs.gac.void_bed.fix(0.449)
+    m.fs.gac.void_particle.fix(0.5)
     m.fs.gac.particle_dens_app.fix(722)
     m.fs.gac.particle_dp.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
@@ -121,8 +122,6 @@ def main():
     m.fs.gac.b3.fix(0.003206)
     m.fs.gac.b4.fix(0.134987)
 
-    calculate_scaling_factors(m)
-
     # initialization
     optarg = solver.options
     m.fs.feed.initialize(optarg=optarg)
@@ -134,7 +133,7 @@ def main():
     assert_units_consistent(m)  # check that units are consistent
     print("Degrees of freedom:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    # """
+    """
     # initialization testing
     solver.options["max_iter"] = 0
     m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
@@ -152,7 +151,7 @@ def main():
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    # m.fs.gac.display()
+    m.fs.gac.display()
 
 
 if __name__ == "__main__":

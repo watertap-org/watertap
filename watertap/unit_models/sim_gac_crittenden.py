@@ -26,6 +26,7 @@ from idaes.generic_models.unit_models import Feed, Product
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import calculate_scaling_factors
 import idaes.core.util.scaling as iscale
+from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.tables import (
     create_stream_table_dataframe,
     stream_table_dataframe_to_string,
@@ -57,7 +58,7 @@ def main():
         default={
             "property_package": m.fs.properties,
             "film_transfer_rate_type": "calculated",
-            "surface_diffusion_coefficient_type": "fixed",
+            "surface_diffusion_coefficient_type": "calculated",
         }
     )
     m.fs.prod = Product(default={"property_package": m.fs.properties})
@@ -99,22 +100,25 @@ def main():
     # gac specifications
     # trial problem from Crittenden
     # --------------------------------------------------------------------
-    # specify two of three of these
-    m.fs.gac.target_removal_frac["TCE"].fix(0.5)
-    # m.fs.gac.replace_removal_frac["TCE"].fix(0.8)
+    # specify two of these three
+    # m.fs.gac.target_removal_frac["TCE"].fix(0.5)
+    m.fs.gac.replace_removal_frac["TCE"].fix(0.99)
     m.fs.gac.replace_gac_saturation_frac.fix(0.99)
     # --------------------------------------------------------------------
     m.fs.gac.freund_k.fix(1062e-6 * (1e6**0.48))
     m.fs.gac.freund_ninv.fix(0.48)
     m.fs.gac.ebct.fix(10 * 60)
-    m.fs.gac.eps_bed.fix(0.44)
+    m.fs.gac.void_bed.fix(0.44)
+    m.fs.gac.void_particle.fix(0.641)
     m.fs.gac.particle_dens_app.fix(803.4)
     m.fs.gac.particle_dp.fix(0.001026)
     # m.fs.gac.kf.fix(3.73e-5)
-    m.fs.gac.ds.fix(1.24e-14)
+    # m.fs.gac.ds.fix(1.24e-14)
     m.fs.gac.velocity_sup.fix(5 / 3600 / 0.44)
     m.fs.gac.molal_volume.fix(9.81e-5)
-    # m.fs.gac.shape_correction_factor.fix(1.5)
+    m.fs.gac.tort.fix(1)
+    m.fs.gac.spdfr.fix(1)
+    m.fs.gac.shape_correction_factor.fix(1.5)
     # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(0.8)
     m.fs.gac.a1.fix(0)
@@ -124,12 +128,6 @@ def main():
     m.fs.gac.b3.fix(0.009326)
     m.fs.gac.b4.fix(0.08275)
 
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e-6, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1e1, index=("Liq", "TCE")
-    )
     calculate_scaling_factors(m)
 
     # initialization
@@ -138,6 +136,7 @@ def main():
     m.fs.gac.initialize(optarg=optarg)
     m.fs.prod.initialize(optarg=optarg)
     m.fs.remo.initialize(optarg=optarg)
+    print(list(badly_scaled_var_generator(m.fs.gac)))
 
     # solving
     assert_units_consistent(m)  # check that units are consistent
@@ -145,7 +144,7 @@ def main():
     assert degrees_of_freedom(m) == 0
     """
     # initialization testing
-    # solver.options['max_iter'] = 0
+    solver.options['max_iter'] = 0
     m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
     results = solver.solve(m, tee=False)
     dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
@@ -162,10 +161,6 @@ def main():
     )
     print(stream_table_dataframe_to_string(st))
     m.fs.gac.display()
-    m.fs.gac.molecular_diffusion_coefficient.display()
-    m.fs.gac.re.display()
-    m.fs.gac.sc.display()
-    m.fs.gac.kf.display()
     # """
 
 

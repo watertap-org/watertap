@@ -27,6 +27,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Feed, Product
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
@@ -45,6 +46,40 @@ from watertap.property_models.ion_DSPMDE_prop_pack import (
 )
 from watertap.unit_models.gac import GAC
 
+import pytest
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    TerminationCondition,
+    SolverStatus,
+    value,
+    Var,
+)
+from pyomo.network import Port
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
+from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
+import watertap.property_models.NaCl_prop_pack as props
+
+from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
+    badly_scaled_var_generator,
+)
+
 __author__ = "Hunter Barber"
 
 solver = get_solver()
@@ -55,101 +90,98 @@ solver = get_solver()
 class TestGACSimplified:
     @pytest.fixture(scope="class")
     def gac_frame_simplified(self):
-
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        # TODO: Determine whether new property pack is needed to handle lower than 1e-8 ---> 1e-12
+
         m.fs.properties = DSPMDEParameterBlock(
             default={"solute_list": ["DCE"], "mw_data": {"H2O": 18e-3, "DCE": 98.96e-3}}
         )
-        # unit models
-        m.fs.feed = Feed(default={"property_package": m.fs.properties})
-        m.fs.gac = GAC(default={"property_package": m.fs.properties})
-        m.fs.prod = Product(default={"property_package": m.fs.properties})
-        m.fs.remo = Product(default={"property_package": m.fs.properties})
 
-        # connections
-        m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.gac.inlet)
-        m.fs.s02 = Arc(source=m.fs.gac.outlet, destination=m.fs.prod.inlet)
-        m.fs.s03 = Arc(source=m.fs.gac.spent_gac, destination=m.fs.remo.inlet)
-        TransformationFactory("network.expand_arcs").apply_to(m)
+        m.fs.unit = GAC(
+            default={
+                "property_package": m.fs.properties,
+                "film_transfer_rate_type": "fixed",
+                "surface_diffusion_coefficient_type": "fixed",
+            }
+        )
 
-        # scaling
+        # feed specifications
+        m.fs.unit.treatwater.properties_in[0].pressure.fix(101325)  # feed pressure [Pa]
+        m.fs.unit.treatwater.properties_in[0].temperature.fix(
+            273.15 + 25
+        )  # feed temperature [K]
+        m.fs.unit.treatwater.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
+            55555.55426666667
+        )
+        m.fs.unit.treatwater.properties_in[0].flow_mol_phase_comp["Liq", "DCE"].fix(
+            0.0002344381568310428
+        )
+
+        # m.fs.unit.target_removal_frac["DCE"].fix(0.95)
+        m.fs.unit.replace_removal_frac["DCE"].fix(0.5)
+        m.fs.unit.replace_gac_saturation_frac.fix(0.99)
+        m.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
+        m.fs.unit.freund_ninv.fix(0.8316)
+        m.fs.unit.ebct.fix(300)  # seconds
+        m.fs.unit.void_bed.fix(0.449)
+        m.fs.unit.void_particle.fix(0.5)
+        m.fs.unit.particle_dens_app.fix(722)
+        m.fs.unit.particle_dp.fix(0.00106)
+        m.fs.unit.kf.fix(3.29e-5)
+        m.fs.unit.ds.fix(1.77e-13)
+        m.fs.unit.velocity_sup.fix(5 / 3600)  # assumed
+        # TODO: Determine whether to embed tabulated data for coefficients
+        m.fs.unit.a0.fix(3.68421)
+        m.fs.unit.a1.fix(13.1579)
+        m.fs.unit.b0.fix(0.784576)
+        m.fs.unit.b1.fix(0.239663)
+        m.fs.unit.b2.fix(0.484422)
+        m.fs.unit.b3.fix(0.003206)
+        m.fs.unit.b4.fix(0.134987)
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, gac_frame_simplified):
+        m = gac_frame_simplified
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, gac_frame_simplified):
+        m = gac_frame_simplified
+
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
+            "flow_mol_phase_comp", 1e-5, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
         )
-        # touch properties
-        m.fs.feed.properties[0].conc_mass_phase_comp
-        m.fs.feed.properties[0].flow_vol_phase["Liq"]
-        m.fs.feed.properties[0].mw_comp
-        # propagate scaling factors
-        iscale.calculate_scaling_factors(m)
-
-        # feed specifications
-        m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-        m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-        # properties (cannot be fixed for initialization routines, must calculate the state variables)
-        m.fs.feed.properties.calculate_state(
-            var_args={
-                ("flow_vol_phase", "Liq"): 1,  # assumed basis in m**3/s
-                ("conc_mass_phase_comp", ("Liq", "DCE")): 2.32e-5,
-            },
-            hold_state=True,  # fixes the calculated component mass flow rates
-        )
-
-        # gac specifications
-        # trial problem from Hand, 1984 for removal of trace DCE
-        # --------------------------------------------------------------------
-        # specify two of three of these
-        m.fs.gac.target_removal_frac["DCE"].fix(0.95)
-        # m.fs.gac.replace_removal_frac["DCE"].fix(0.8)
-        m.fs.gac.replace_gac_saturation_frac.fix(0.99)
-        # --------------------------------------------------------------------
-        m.fs.gac.dg.fix(
-            19775.77393009003
-        )  # TODO: correct units problem to fix m.fs.gac.freund_k
-        m.fs.gac.freund_ninv.fix(0.8316)
-        m.fs.gac.ebct.fix(300)  # seconds
-        m.fs.gac.eps_bed.fix(0.449)
-        m.fs.gac.particle_dens_app.fix(722)
-        m.fs.gac.particle_dp.fix(0.00106)
-        m.fs.gac.kf.fix(3.29e-5)
-        m.fs.gac.ds.fix(1.77e-13)
-        # TODO: Determine whether to embed tabulated data for coefficients
-        m.fs.gac.a0.fix(3.68421)
-        m.fs.gac.a1.fix(13.1579)
-        m.fs.gac.b0.fix(0.784576)
-        m.fs.gac.b1.fix(0.239663)
-        m.fs.gac.b2.fix(0.484422)
-        m.fs.gac.b3.fix(0.003206)
-        m.fs.gac.b4.fix(0.134987)
-
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e-1, index=("Liq", "H2O")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "DCE")
-        )
         calculate_scaling_factors(m)
 
-        # initialization
-        optarg = solver.options
-        m.fs.feed.initialize(optarg=optarg)
-        m.fs.gac.initialize(optarg=optarg)
-        m.fs.prod.initialize(optarg=optarg)
-        m.fs.remo.initialize(optarg=optarg)
-
-        # solving
-        assert_units_consistent(m)  # check that units are consistent
-        print("Degrees of freedom:", degrees_of_freedom(m))
-        assert degrees_of_freedom(m) == 0
-
-        return m
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_solution_simplified(self, gac_frame_simplified):
+    def test_initialize(self, gac_frame_simplified):
+        initialization_tester(gac_frame_simplified)
+
+    @pytest.mark.component
+    def test_var_scaling(self, gac_frame_simplified):
         m = gac_frame_simplified
-        assert pytest.approx(2494368, rel=1e3) == value(m.fs.gac.replace_time)
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, gac_frame_simplified):
+        m = gac_frame_simplified
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution(self, gac_frame_simplified):
+        m = gac_frame_simplified
+        assert pytest.approx(2536757, rel=1e2) == value(m.fs.unit.replace_time)
