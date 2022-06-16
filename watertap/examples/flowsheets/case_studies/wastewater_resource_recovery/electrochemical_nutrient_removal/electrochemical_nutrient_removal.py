@@ -28,7 +28,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.models.unit_models import Product
-from idaes.models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO

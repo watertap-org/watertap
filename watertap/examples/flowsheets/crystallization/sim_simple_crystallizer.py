@@ -31,7 +31,7 @@ from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
-from idaes.models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
