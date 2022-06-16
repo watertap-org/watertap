@@ -59,7 +59,7 @@ from idaes.core.base.components import Solvent, Solute
 from idaes.core.base.phases import PhaseType as PT
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models.properties.modular_properties.base.generic_reaction import (

@@ -258,7 +258,7 @@ code below.
     from idaes.core import FlowsheetBlock
 
     # Import the idaes objects for Generic Properties and Reactions
-    from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
     from idaes.models.properties.modular_properties.base.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model

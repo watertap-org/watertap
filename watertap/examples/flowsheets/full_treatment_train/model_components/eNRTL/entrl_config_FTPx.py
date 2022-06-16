@@ -30,7 +30,7 @@ from idaes.models.properties.modular_properties.eos.enrtl_reference_states impor
     Symmetric,
     Unsymmetric,
 )
-from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,

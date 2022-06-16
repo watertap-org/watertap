@@ -27,7 +27,7 @@ from idaes.core import (
     MomentumBalanceType,
 )
 from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from watertap.property_models.seawater_ion_generic import configuration

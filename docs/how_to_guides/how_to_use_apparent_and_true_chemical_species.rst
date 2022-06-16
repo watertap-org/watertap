@@ -52,7 +52,7 @@ an ``"Apparent"`` species.
   from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
   # Add the import for StateIndex
-  from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+  from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 
   # Configuration dictionary
   thermo_config = {

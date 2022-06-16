@@ -41,7 +41,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 )
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 

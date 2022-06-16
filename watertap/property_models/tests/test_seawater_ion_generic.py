@@ -16,7 +16,7 @@ from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from watertap.property_models.seawater_ion_generic import configuration

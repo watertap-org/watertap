@@ -61,7 +61,7 @@ from idaes.models.properties.modular_properties.pure import Perrys, NIST
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
@@ -84,7 +84,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
     van_t_hoff,
 )
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models.properties.modular_properties.base.generic_reaction import (
