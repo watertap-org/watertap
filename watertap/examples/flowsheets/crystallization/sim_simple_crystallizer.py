@@ -130,7 +130,6 @@ if __name__ == "__main__":
 
     m.fs.crystallizer.report()
     m.fs.crystallizer.costing.capital_cost.pprint()
-    m.fs.crystallizer.costing.fixed_operating_cost.pprint()
 
     #  assert False
     ##########################################
