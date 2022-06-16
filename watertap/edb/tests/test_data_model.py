@@ -23,7 +23,7 @@ from pyomo.environ import units as pyunits
 # Used to test IDAES config -> DataWrapper
 from idaes.models.properties.modular_properties.pure import Perrys
 from idaes.models.properties.modular_properties.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
