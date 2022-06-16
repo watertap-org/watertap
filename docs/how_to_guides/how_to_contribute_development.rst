@@ -104,10 +104,22 @@ To refer to the documentation for a particular function, class, or module, use t
 .. note::
     More information on referencing Python objects in Sphinx, see the `Sphinx documentation section on the Python domain <https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects>`_
 
-For example, the following can be used to add a small paragraph to a document with links to the relevant parts of the codebase::
+The following examples show how to add a small paragraph to the end of a document to provide links to the relevant parts of the codebase::
 
-    Additional information
-    ----------------------
+    Module Documentation
+    --------------------
+
+    - :mod:`watertap.unit_models.reverse_osmosis_0D`
+
+    Class Documentation
+    -------------------
+
+    - :class:`watertap.unit_models.reverse_osmosis_0D.ReverseOsmosis0D`
+
+Or, for multiple code reference types in the same paragraph::
+
+    Code Documentation
+    ------------------
 
     - :mod:`watertap.unit_models.reverse_osmosis_0D`
     - :class:`watertap.unit_models.reverse_osmosis_0D.ReverseOsmosis0D`
