@@ -89,7 +89,7 @@ from pyomo.environ import units as pyunits
 
 # IDAES methods and constants
 from idaes.core import AqueousPhase, LiquidPhase, SolidPhase, VaporPhase
-from idaes.core.phases import PhaseType
+from idaes.core.base.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_reaction import (

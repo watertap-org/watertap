@@ -47,7 +47,7 @@ from idaes.core import (
     EnergyBalanceType,
 )
 from idaes.core.base.components import Component, Solute, Solvent
-from idaes.core.phases import (
+from idaes.core.base.phases import (
     LiquidPhase,
     VaporPhase,
     SolidPhase,

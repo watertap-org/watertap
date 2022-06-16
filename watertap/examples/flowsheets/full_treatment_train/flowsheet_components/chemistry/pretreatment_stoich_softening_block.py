@@ -40,7 +40,7 @@ from pyomo.environ import units as pyunits, Expression, NonNegativeReals
 # Imports from idaes core
 from idaes.core import AqueousPhase
 from idaes.core.base.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.phases import PhaseType as PT
 from idaes.core.util.math import smooth_min
 
 # Imports from idaes generic models

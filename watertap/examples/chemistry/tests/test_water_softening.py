@@ -56,7 +56,7 @@ from idaes.core.util.model_statistics import (
 )
 
 from idaes.core.base.components import Solvent, Solute
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.phases import PhaseType as PT
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
