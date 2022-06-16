@@ -608,7 +608,7 @@ class IXStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-8, None),
+            bounds=(1e-9, None),
             units=pyunits.kg / pyunits.s,
             doc="Component Mass flowrate",
         )
@@ -628,7 +628,7 @@ class IXStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-6, None),
+            bounds=(1e-8, None),
             units=pyunits.mol / pyunits.s,
             doc="Equivalent flowrate",
         )
@@ -651,7 +651,7 @@ class IXStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-8, None),
+            bounds=(1e-89, None),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass concentration",
         )
@@ -715,7 +715,7 @@ class IXStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-8, 1.001),
+            bounds=(1e-9, 1.001),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
