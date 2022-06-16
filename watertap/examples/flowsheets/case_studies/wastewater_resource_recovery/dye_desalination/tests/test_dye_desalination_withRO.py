@@ -125,8 +125,8 @@ class TestDyewithROFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.8702, rel=1e-3) == value(m.LCOW)
-        assert pytest.approx(0.2953, rel=1e-3) == value(m.LCOT)
+        assert pytest.approx(1.0751, rel=1e-3) == value(m.LCOW)
+        assert pytest.approx(0.3873, rel=1e-3) == value(m.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
