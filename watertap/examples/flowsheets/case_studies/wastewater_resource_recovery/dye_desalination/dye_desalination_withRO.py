@@ -448,7 +448,7 @@ def add_costing(m):
 
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
-    def total_capital_cost(b):
+    def total_capital_cost(b, doc="Total capital cost of the treatment train"):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         ) + pyunits.convert(
@@ -456,7 +456,7 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def total_operating_cost(b):
+    def total_operating_cost(b, doc="Total operating cost of the treatment train"):
         return (
             pyunits.convert(
                 m.fs.zo_costing.total_fixed_operating_cost,
@@ -473,7 +473,9 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def total_externalities(b):
+    def total_externalities(
+        b, doc="Total cost of water/dye recovered and brine/sludge disposed"
+    ):
         return pyunits.convert(
             m.fs.water_recovery_revenue
             + m.fs.dye_recovery_revenue
@@ -497,7 +499,7 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def LCOW(b):
+    def LCOW(b, doc="Levelized cost of water with respect to volumetric permeate flow"):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
