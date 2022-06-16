@@ -429,7 +429,6 @@ class IonExchangeODData(UnitModelBlockData):
         self.vel_min = Var(
             initialize=0.0048,
             bounds=(0, 0.009),
-            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Minimum bed velocity [m/s]",
         )
@@ -437,7 +436,6 @@ class IonExchangeODData(UnitModelBlockData):
         self.vel_bed = Var(
             initialize=0.0086,
             bounds=(0, 0.01),  # MWH, Perry's
-            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Velocity through resin bed [m/s]",
         )
@@ -445,7 +443,6 @@ class IonExchangeODData(UnitModelBlockData):
         self.vel_inter = Var(
             initialize=0.0173,
             bounds=(0, 0.07),
-            # bounds=(0, None),
             units=pyunits.m / pyunits.s,
             doc="Interstitial velocity [m/s]",
         )
@@ -476,7 +473,6 @@ class IonExchangeODData(UnitModelBlockData):
         self.Sc = Var(
             ion_set,
             initialize=700,
-            # bounds=(0, 60),
             units=pyunits.dimensionless,
             doc="Schmidt number",
         )
@@ -484,21 +480,20 @@ class IonExchangeODData(UnitModelBlockData):
         self.Sh = Var(
             ion_set,
             initialize=30,
-            # bounds=(0, 60),
             units=pyunits.dimensionless,
             doc="Sherwood number",
         )
 
         self.Pe_p = Var(
             initialize=0.1,
-            # bounds=(0, 60),
+            bounds=(0.01, 0.8),
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
 
         self.Pe_bed = Var(
             initialize=1000,
-            # bounds=(0, 60),
+            bounds=(90, None),  # IX1 - Pe_bed > ~100 considered to be plug flow
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -509,13 +504,6 @@ class IonExchangeODData(UnitModelBlockData):
             bounds=(0, 1),
             units=pyunits.dimensionless,
             doc="Dimensionless concentration",
-        )
-
-        self.bv_to_waste = Param(
-            initialize=25,
-            # bounds=(1, None),
-            units=pyunits.dimensionless,
-            doc="BV to rinse/backwash/regen",
         )
 
         # Add state blocks for inlet, outlet, and waste
