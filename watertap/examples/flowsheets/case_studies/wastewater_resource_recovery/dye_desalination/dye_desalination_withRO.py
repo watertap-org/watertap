@@ -370,7 +370,7 @@ def add_costing(m):
     desal.P2.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
-            "costing_method_arguments": {"cost_electricity_flow": False},
+            "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
     desal.RO.costing = UnitModelCostingBlock(
@@ -386,7 +386,7 @@ def add_costing(m):
     desal.P3.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
-            "costing_method_arguments": {"cost_electricity_flow": False},
+            "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
 
