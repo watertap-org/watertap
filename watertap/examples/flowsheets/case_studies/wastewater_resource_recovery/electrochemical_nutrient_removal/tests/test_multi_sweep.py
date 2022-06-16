@@ -11,11 +11,24 @@
 #
 ###############################################################################
 
-from .watertap_costing_package import (
-    WaterTAPCosting,
-    ROType,
-    PumpType,
-    MixerType,
-    EnergyRecoveryDeviceType,
-    CrystallizerCostType,
+import os
+import pytest
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
+    multi_sweep,
 )
+
+sweep_list = []
+for case_num in [1]:
+    sweep_list.append(case_num)
+
+
+@pytest.mark.parametrize("case_num", sweep_list)
+@pytest.mark.integration
+def test_multi_sweep(case_num, tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    nx = 1
+    global_results, sweep_params, m = multi_sweep.run_analysis(
+        case_num, nx, interpolate_nan_outputs=False
+    )
+    os.chdir(cwd)
