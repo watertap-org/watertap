@@ -96,7 +96,7 @@ for a chemical system that contains only water.
 
     # Imports from idaes core
     from idaes.core import AqueousPhase
-    from idaes.core.components import Solvent, Cation, Anion
+    from idaes.core.base.components import Solvent, Cation, Anion
 
     # Imports from idaes generic models
     import idaes.generic_models.properties.core.pure.Perrys as Perrys

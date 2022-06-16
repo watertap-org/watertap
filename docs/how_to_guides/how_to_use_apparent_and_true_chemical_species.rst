@@ -44,7 +44,7 @@ an ``"Apparent"`` species.
   from idaes.core import AqueousPhase
 
   # Add Apparent in this import statement
-  from idaes.core.components import Solvent, Cation, Anion, Apparent
+  from idaes.core.base.components import Solvent, Cation, Anion, Apparent
 
   import idaes.generic_models.properties.core.pure.Perrys as Perrys
   from idaes.generic_models.properties.core.pure.ConstantProperties import Constant

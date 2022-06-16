@@ -35,7 +35,7 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 
 
 from ..data_model import (

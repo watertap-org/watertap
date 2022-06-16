@@ -55,7 +55,7 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 
-from idaes.core.components import Solvent, Solute
+from idaes.core.base.components import Solvent, Solute
 from idaes.core.phases import PhaseType as PT
 
 # Import the idaes objects for Generic Properties and Reactions

@@ -53,7 +53,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, VaporPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.components import Solvent, Solute, Cation, Anion, Apparent
+from idaes.core.base.components import Solvent, Solute, Cation, Anion, Apparent
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models

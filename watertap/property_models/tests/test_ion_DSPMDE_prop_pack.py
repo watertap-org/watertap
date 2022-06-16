@@ -47,7 +47,7 @@ from watertap.property_models.tests.property_test_harness import PropertyAttribu
 from idaes.core.util import get_solver
 
 # Imports from idaes core
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models

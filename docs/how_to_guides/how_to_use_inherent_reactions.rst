@@ -48,7 +48,7 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
 
     # Imports from idaes core
     from idaes.core import AqueousPhase
-    from idaes.core.components import Solvent, Cation, Anion
+    from idaes.core.base.components import Solvent, Cation, Anion
 
     # Imports from idaes generic models
     import idaes.generic_models.properties.core.pure.Perrys as Perrys

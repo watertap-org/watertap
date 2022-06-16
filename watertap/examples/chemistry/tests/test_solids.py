@@ -39,7 +39,7 @@ from pyomo.environ import Var
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, SolidPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.components import Solvent, Solute, Cation, Anion, Component
+from idaes.core.base.components import Solvent, Solute, Cation, Anion, Component
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models

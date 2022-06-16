@@ -205,7 +205,7 @@ from idaes.generic_models.properties.core.pure.NIST import NIST
 
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.state_definitions import FTPx

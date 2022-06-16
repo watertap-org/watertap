@@ -52,7 +52,7 @@ from pyomo.environ import units as pyunits
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models

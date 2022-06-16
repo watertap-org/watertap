@@ -113,7 +113,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     log_solubility_product,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 
