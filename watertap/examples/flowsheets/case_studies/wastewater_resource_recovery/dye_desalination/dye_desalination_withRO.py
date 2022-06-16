@@ -268,7 +268,6 @@ def set_operating_conditions(m):
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(pressure)  # atmospheric pressure [Pa]
-    # desal.RO.area.fix(50)
     desal.RO.velocity[0, 0].fix(0.25)
     desal.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
@@ -342,6 +341,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def add_costing(m):
+    prtrt = m.fs.pretreatment
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -355,6 +355,9 @@ def add_costing(m):
     m.fs.ro_costing = WaterTAPCosting()
 
     # cost nanofiltration module and pump
+    prtrt.wwtp.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.zo_costing}
+    )
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.zo_costing}
     )
@@ -364,10 +367,11 @@ def add_costing(m):
 
     # RO Train
     # RO equipment is costed using more detailed costing package
+
     desal.P2.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
-            "costing_method_arguments": {"cost_electricity_flow": False},
+            "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
     desal.RO.costing = UnitModelCostingBlock(
@@ -383,7 +387,7 @@ def add_costing(m):
     desal.P3.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
-            "costing_method_arguments": {"cost_electricity_flow": False},
+            "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
 
@@ -404,6 +408,20 @@ def add_costing(m):
             )
         ),
         doc="Cost of disposing of brine waste",
+    )
+
+    m.fs.sludge_disposal_cost = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * (
+                m.fs.zo_costing.waste_disposal_cost
+                * pyunits.convert(
+                    m.fs.wwt_retentate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            )
+        ),
+        doc="Cost of disposing of waste water treatment plant sludge",
     )
 
     m.fs.dye_recovery_revenue = Expression(
@@ -464,7 +482,44 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def LCOT(b):
+    def total_capital_cost(b, doc="Total capital cost of the treatment train"):
+        return pyunits.convert(
+            m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
+        ) + pyunits.convert(
+            m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
+        )
+
+    @m.Expression()
+    def total_operating_cost(b, doc="Total operating cost of the treatment train"):
+        return (
+            pyunits.convert(
+                m.fs.zo_costing.total_fixed_operating_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
+            + pyunits.convert(
+                m.fs.zo_costing.total_variable_operating_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
+            + pyunits.convert(
+                m.fs.ro_costing.total_operating_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
+            )
+        )
+
+    @m.Expression()
+    def total_externalities(
+        b, doc="Total cost of water/dye recovered and brine/sludge disposed"
+    ):
+        return pyunits.convert(
+            m.fs.water_recovery_revenue
+            + m.fs.dye_recovery_revenue
+            - m.fs.brine_disposal_cost
+            - m.fs.sludge_disposal_cost,
+            to_units=pyunits.USD_2020 / pyunits.year,
+        )
+
+    @m.Expression()
+    def LCOT(b, doc="Levelized cost of treatment with respect to volumetric feed flow"):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
@@ -478,13 +533,15 @@ def add_costing(m):
         )
 
     @m.Expression()
-    def LCOW(b):
+    def LCOW(b, doc="Levelized cost of water with respect to volumetric permeate flow"):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - pyunits.convert(
-                m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
+                m.fs.dye_recovery_revenue
+                - m.fs.brine_disposal_cost
+                - m.fs.sludge_disposal_cost,
+                to_units=pyunits.USD_2020 / pyunits.year,
             )
         ) / (
             pyunits.convert(
@@ -533,15 +590,24 @@ def display_costing(m):
         )
     )
 
+    print("\n System costing metrics:")
+    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
+
+    opex = value(
+        pyunits.convert(
+            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+        )
+    )
+
     externalities = value(
         pyunits.convert(
             m.total_externalities, to_units=pyunits.MUSD_2018 / pyunits.year
         )
     )
 
-    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2018 / pyunits.m**3))
+    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
 
-    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3))
+    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
 
     print(f"Total Capital Cost: {capex:.4f} M$")
 

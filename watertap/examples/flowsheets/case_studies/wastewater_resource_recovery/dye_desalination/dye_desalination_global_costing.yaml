@@ -15,7 +15,7 @@ defined_flows:
     value: 0.1
     units: USD_2020/kg
   recovered_water:
-    value: 0.05
+    value: 0.0000001
     units: USD_2020/m**3
 global_parameters:
   plant_lifetime:
