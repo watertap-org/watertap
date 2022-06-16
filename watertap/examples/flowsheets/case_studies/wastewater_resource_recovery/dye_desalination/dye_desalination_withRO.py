@@ -74,7 +74,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
 
     solve(m)
-    display_results(m)
+    # display_results(m)
     display_costing(m)
 
     return m, results
@@ -342,6 +342,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def add_costing(m):
+    prtrt = m.fs.pretreatment
     dye_sep = m.fs.dye_separation
     desal = m.fs.desalination
 
@@ -355,6 +356,9 @@ def add_costing(m):
     m.fs.ro_costing = WaterTAPCosting()
 
     # cost nanofiltration module and pump
+    prtrt.wwtp.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.zo_costing}
+    )
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.zo_costing}
     )
@@ -524,7 +528,14 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("\n Costing metrics:")
+    # print("\n Unit costing metrics:")
+    # prtrt_capex = m.fs.zo_costing.
+    #
+    #     m.fs.zo_costing.total_variable_operating_cost,
+    #             to_units=pyunits.USD_2018 / pyunits.year,
+    #         )
+
+    print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
 
     opex = value(
