@@ -268,7 +268,6 @@ def set_operating_conditions(m):
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(pressure)  # atmospheric pressure [Pa]
-    # desal.RO.area.fix(50)
     desal.RO.velocity[0, 0].fix(0.25)
     desal.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
