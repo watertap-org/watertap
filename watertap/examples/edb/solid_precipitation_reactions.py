@@ -86,7 +86,7 @@ from pyomo.environ import (
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 

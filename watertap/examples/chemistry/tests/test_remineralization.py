@@ -67,7 +67,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBub
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 # Importing the generic model information and objects
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
@@ -85,7 +85,7 @@ from idaes.models.properties.modular_properties.reactions.rate_constant import a
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor

@@ -295,7 +295,7 @@ reaction, we will model it as an equilibrium reaction.
     from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
-    from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+    from idaes.models.properties.modular_properties.base.generic_reaction import ConcentrationForm
 
     reaction_config = {
         "base_units": {"time": pyunits.s,
@@ -417,7 +417,7 @@ code below.
 
     # Import the idaes objects for Generic Properties and Reactions
     from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
-    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model
     from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
