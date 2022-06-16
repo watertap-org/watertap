@@ -208,7 +208,7 @@ from idaes.core import VaporPhase, AqueousPhase
 from idaes.core.base.components import Solvent, Solute, Cation, Anion
 from idaes.core.base.phases import PhaseType as PT
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (

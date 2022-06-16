@@ -35,7 +35,7 @@ import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.pure.electrolyte import (
     relative_permittivity_constant,
 )
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
 from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
     Unsymmetric,

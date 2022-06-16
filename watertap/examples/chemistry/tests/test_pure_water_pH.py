@@ -30,7 +30,7 @@ from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes.models.properties.modular_properties.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
