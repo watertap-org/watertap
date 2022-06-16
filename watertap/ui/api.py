@@ -112,10 +112,11 @@ def set_block_interface(block, data: Union["BlockInterface", Dict]):
     Returns:
         None
     """
-    if isinstance(data, BlockInterface):
-        obj = data
-    else:
+    if isinstance(data, dict):
         obj = BlockInterface(block, data)
+    else:
+        obj = data
+
     block.ui = obj
 
 
@@ -166,12 +167,7 @@ class BlockInterface:
         info = info.copy()
 
         # fill required values
-        if not info.get("name", None):
-            info["name"] = block.name
-        if not info.get("meta", None):
-            info["meta"] = model.BlockMeta()
-        if info.get("variables", None) is None:
-            info["variables"] = {}
+        self._fill_info_from_block(info, block)
 
         _log.debug(f"create block from info. dict={info}")
         block_info = model.Block(**info)
@@ -517,21 +513,27 @@ class BlockInterface:
     def _get_block_variable_value(block, var_name):
         block_var = getattr(block, var_name)
         if block_var.is_indexed():
-            index_list, value_list = [], []
+            index_list, value_list, bounds_list = [], [], []
             for var_idx in block_var.index_set():
                 try:
                     index_list.append(tuple(var_idx))
                 except TypeError:
                     index_list.append((var_idx,))
-                value_list.append(value(block_var[var_idx]))
+                bvar = block_var[var_idx]
+                value_list.append(value(bvar))
+                bounds_list.append((bvar.lb, bvar.ub))
             _log.debug(
                 f"add indexed variable. block={block.name},"
                 f"name={var_name},index={index_list},"
                 f"value={value_list}"
             )
-            var_val = model.IndexedValue(index=index_list, value=value_list)
+            var_val = model.IndexedValue(
+                index=index_list, value=value_list, bounds=bounds_list
+            )
         else:
-            var_val = model.ScalarValue(value=value(block_var))
+            var_val = model.ScalarValue(
+                value=value(block_var), bounds=(block_var.lb, block_var.ub)
+            )
             _log.debug(
                 f"add scalar value. block={block.name},"
                 f"name={var_name},value={var_val}"
@@ -619,7 +621,7 @@ class BlockInterface:
             # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
                 for sb_name, sb_val in block.component_map(ctype=Block).items():
-                    stack.append((path + [sb_name], sb_val))
+                    stack.insert(0, (path + [sb_name], sb_val))
 
         return tree
 
@@ -634,12 +636,10 @@ class BlockInterface:
             sb = node.blocks.get(name, None)
             # create if not found
             if not sb:
-                new_sb = model.Block(name=name)
-                node.blocks[name] = sb
+                new_sb = model.Block(name=name, display_name=name)
+                node.blocks[name] = new_sb
             else:
-                # avoid modifying existing Block model when we set variable values
-                new_sb = sb.copy()
-                new_sb.blocks = {}
+                new_sb = sb
             # descend
             node = new_sb
 
@@ -649,11 +649,22 @@ class BlockInterface:
 
         # create leaf and set its variable values from the block
         leaf = ui._block_info.copy()
+        leaf.blocks = {}  # forget sub-blocks
         for name, variable in leaf.variables.items():
             variable.value = self._get_block_variable_value(ui.block, name)
+            if not variable.display_name:
+                variable.display_name = name
 
         # add leaf to blocks
-        node.blocks[leaf_name] = ui._block_info
+        node.blocks[leaf_name] = leaf
+
+    def _fill_info_from_block(self, info, block):
+        if not info.get("name", None):
+            info["name"] = block.name
+        if not info.get("meta", None):
+            info["meta"] = model.BlockMeta()
+        if info.get("variables", None) is None:
+            info["variables"] = {}
 
 
 def export_variables(
@@ -733,6 +744,15 @@ def export_variables(
             error = var_check(block, name)
             if error:
                 raise ValueError(error)
+            # Fill in gaps in variable
+            bvar = getattr(block, name)
+            ivar = var_info_dict[name]
+            ivar.display_name = bvar.local_name
+            units = bvar.get_units()
+            if units is not None:
+                ivar.units = str(units)
+            ivar.description = bvar.doc or ""
+
     block_info = model.Block(
         display_name=name,
         description=desc,

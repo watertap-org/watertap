@@ -23,10 +23,12 @@ _log = logging.getLogger(__name__)
 class IndexedValue(BaseModel):
     index: List[List[Union[float, str]]]  # do not change order!
     value: List[Union[float, str]]  # do not change order!
+    bounds: List[Tuple[Optional[float], Optional[float]]]
 
 
 class ScalarValue(BaseModel):
     value: Union[float, str]  # do not change order!
+    bounds: Tuple[Optional[float], Optional[float]]
 
 
 class Variable(BaseModel):
