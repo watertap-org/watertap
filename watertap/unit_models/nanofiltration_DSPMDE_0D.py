@@ -188,7 +188,7 @@ class NanofiltrationData(UnitModelBlockData):
     CONFIG.declare(
         "mass_transfer_coefficient",
         ConfigValue(
-            default=MassTransferCoefficient.fixed,
+            default=MassTransferCoefficient.spiral_wound,
             domain=In(MassTransferCoefficient),
             description="Mass transfer coefficient in feed channel",
             doc="""

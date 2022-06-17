@@ -72,7 +72,10 @@ def test_config():
     # NOTE: Not giving actual charges in order to test construction of
     #   both the ion_set and solute_set
     m.fs.properties = DSPMDEParameterBlock(
-        default={"solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"]}
+        default={
+            "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+            "charge": {"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        }
     )
     m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
 
@@ -93,7 +96,10 @@ def test_config():
         m.fs.unit.config.property_package.config.density_calculation
         == DensityCalculation.constant
     )
-    assert m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.fixed
+    assert (
+        m.fs.unit.config.mass_transfer_coefficient
+        == MassTransferCoefficient.spiral_wound
+    )
 
 
 class TestNanoFiltration:

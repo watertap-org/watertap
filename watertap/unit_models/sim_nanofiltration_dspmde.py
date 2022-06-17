@@ -216,23 +216,23 @@ if __name__ == "__main__":
     m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
     m.fs.unit.eq_no_concentration_polarization.deactivate()
-    try:
-        m.fs.unit.initialize(
-            automate_rescale=True,
-            optarg={
-                "halt_on_ampl_error": "yes",
-            },
-            outlvl=idaeslog.DEBUG,
-        )
-    except InitializationError:
-        pass
+    # try:
+    m.fs.unit.initialize(
+        automate_rescale=True,
+        optarg={
+            "halt_on_ampl_error": "yes",
+        },
+        outlvl=idaeslog.DEBUG,
+    )
+    # except InitializationError:
+    #     pass
 
     # Use of Degeneracy Hunter for troubleshooting model.
-    # m.fs.dummy_objective = Objective(expr=0)
-    # solver.options["max_iter"] = 0
-    # solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    # dh.check_residuals(tol=0.1)
+    m.fs.dummy_objective = Objective(expr=0)
+    solver.options["max_iter"] = 0
+    solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    dh.check_residuals(tol=0.1)
     # assert False
     # ##############################################################################################################
     # dh.check_variable_bounds(tol=1e-3)
