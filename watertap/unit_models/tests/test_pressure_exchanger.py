@@ -40,7 +40,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
     number_unused_variables,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
