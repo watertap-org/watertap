@@ -216,9 +216,45 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.bed_depth_to_diam_ratio = Param(
-            initialize=2.5,
+            initialize=3,
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
+        )
+
+        self.bed_expansion_A = Param(
+            initialize=-1.23e-2,
+            units=pyunits.dimensionless,
+            doc="Bed expansion eq intercept",
+        )
+
+        self.bed_expansion_B = Param(
+            initialize=1.02e-1,
+            units=pyunits.hr / pyunits.m,
+            doc="Bed expansion eq B",
+        )
+
+        self.bed_expansion_C = Param(
+            initialize=-1.35e-3,
+            units=pyunits.hr**2 / pyunits.m**2,
+            doc="Bed expansion eq C",
+        )
+
+        self.p_drop_A = Param(
+            initialize=0.609,
+            units=pyunits.psi / pyunits.m,
+            doc="Pressure drop eq intercept",
+        )
+
+        self.p_drop_B = Param(
+            initialize=0.173,
+            units=(pyunits.psi * pyunits.hr) / pyunits.m**2,
+            doc="Pressure drop eq B",
+        )
+
+        self.p_drop_C = Param(
+            initialize=8.28e-4,
+            units=(pyunits.psi * pyunits.hr**2) / pyunits.m**3,
+            doc="Pressure drop eq C",
         )
 
         # ====== Resin variables ====== #
@@ -323,7 +359,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.col_vol = Var(
             initialize=10,
-            # bounds=(0, 75),
             units=pyunits.m**3,
             doc="Column volume of one unit [m3]",
         )
@@ -912,9 +947,13 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_bw_bed_expansion(b):
             return (
                 b.bed_expansion
-                == (-1.35e-3 * b.bw_rate**2 + 1.02e-1 * b.bw_rate - 1.23e-2)
+                == (
+                    b.bed_expansion_A
+                    + b.bed_expansion_B * b.bw_rate
+                    + b.bed_expansion_C * b.bw_rate**2
+                )
                 * b.bed_depth
-            )  # for 25C ; TODO: add these coeffs as Params
+            )  # for 25C ;
 
         @self.Constraint(doc="Rinse time")
         def eq_rinse_time(b):
@@ -925,8 +964,9 @@ class IonExchangeODData(UnitModelBlockData):
             vel_bed = pyunits.convert(b.vel_bed, to_units=pyunits.m / pyunits.hr)
             return (
                 b.pressure_drop
-                == (8.28e-04 * vel_bed**2 + 0.173 * vel_bed + 0.609) * b.bed_depth
-            )  # for 25C; TODO: add these coeffs as Params
+                == (b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2)
+                * b.bed_depth
+            )  # for 25C;
 
         @self.Constraint()
         def eq_press_conservation(b):
