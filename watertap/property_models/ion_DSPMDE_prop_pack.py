@@ -1177,7 +1177,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 f"Set defined_state to true if get_property = {get_property}"
             )
         if adjust_by_ion is not None:
-            if adjust_by_ion in self.params.ion_set | self.params.solute_set:
+            if adjust_by_ion in self.params.ion_set:
                 self.charge_balance = Constraint(
                     expr=sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
@@ -1213,7 +1213,8 @@ class DSPMDEStateBlockData(StateBlockData):
         self.conc_mol_phase_comp
 
         if solve:
-            ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
+            if adjust_by_ion is not None:
+                ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
             solve = get_solver()
             results = solve.solve(self)
             if check_optimal_termination(results):
