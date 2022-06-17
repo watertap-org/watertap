@@ -13,7 +13,7 @@ The :func:`build_pt` method is intended to be used to rapidly construct a standa
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_pt, ZeroOrderBaseData
