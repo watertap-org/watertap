@@ -3,6 +3,7 @@ Tests for api module.
 """
 # standard library
 from io import StringIO
+import json
 import os
 from pathlib import Path
 
@@ -10,90 +11,65 @@ from pathlib import Path
 import pytest
 
 # from pyomo.environ import units as pyunits
-from pyomo.environ import Var, Set, Reals
-from watertap.ui.api import *
+from pyomo.environ import *
+from pyomo.core.base.set import Reals  # only to reduce PyCharm warnings
+from watertap.ui import api
 from watertap.ui.api_util import flatten_tree
 
-# Mocking and fixtures
+
+SIMPLE_FS_NAME = "flowsheet"
 
 
-class MockSubBlock1:
-    name = "subblock1"
-    doc = "sub-block 1"
+def create_simple_flowsheet():
+    """Simple model for testing.
 
-
-class MockSubBlock2:
-    name = "subblock2"
-    doc = "sub-block 2"
-    # sub-blocks
-    subblock2_1 = MockSubBlock1()
-    set_block_interface(subblock2_1, {})
-
-    def component_map(self, **kwargs):
-        return {"subblock2-1": getattr(self, "subblock2_1")}
-
-
-class MockSubBlock3:
-    name = "subblock3"
-    doc = "sub-block 3"
-    # sub-blocks
-    subblock1 = MockSubBlock1()
-    set_block_interface(subblock1, {})
-
-    def component_map(self, **kwargs):
-        return {"subblock1": getattr(self, "subblock1")}
-
-
-class MockBlock:
-    # name = "watertap.ui.tests.test_api.MockBlock"
-    name = "Flowsheet"
-    doc = "flowsheet description"
-    foo_var = Var(name="foo_var", initialize=0.0, within=Reals)
-    foo_var.construct()
-    bar_idx = Set(initialize=[0, 1, 2])
-    bar_idx.construct()
-    bar_var = Var(bar_idx, name="bar_var", initialize=[0.0, 0.0, 0.0], within=Reals)
-    bar_var.construct()
-    # sub-blocks
-    subblock1 = MockSubBlock1()
-    set_block_interface(subblock1, {})
-    subblock2 = MockSubBlock2()
-    set_block_interface(subblock2, {})
-    subblock3 = MockSubBlock3()  # note: no interface
-
-    def component_map(self, **kwargs):
-        return {
-            "subblock1": getattr(self, "subblock1"),
-            "subblock2": getattr(self, "subblock2"),
-            "subblock3": getattr(self, "subblock3"),
-        }
+    Flowsheet
+    |
+    +-- A: vars=x:real, y[0, 1, 2]
+    |
+    +-- B
+        |
+        +-- B1: vars=x:real
+        |
+        +-- B2: vars=x:real
+             |
+             +-- B21: vars=x:real
+             |
+             +-- B22: vars=x:real
+    """
+    model = ConcreteModel(name=SIMPLE_FS_NAME)
+    model.A = Block(name="A")
+    model.A.x = Var(initialize=0.0, within=Reals)
+    model.A.yi = Set(initialize=[0, 1, 2], within=Reals)
+    model.A.y = Var(model.A.yi, domain=Reals)
+    model.B = Block()
+    model.B.B1 = Block()
+    model.B.B1.x = Var(initialize=0.0, within=Reals)
+    model.B.B2 = Block()
+    model.B.B2.x = Var(initialize=0.0, within=Reals)
+    model.B.B2.B21, model.B.B2.B22 = Block(), Block()
+    model.B.B2.B21.x = Var(initialize=0.0, within=Reals)
+    model.B.B2.B22.x = Var(initialize=0.0, within=Reals)
+    return model
 
 
 @pytest.fixture
-def mock_block():
-    return MockBlock()
+def simple_flowsheet():
+    return create_simple_flowsheet()
 
 
-def build_options(
-    display_name=False, description=False, variables=0, readonly_variables=[]
-):
-    opts = {}
-    if display_name:
-        opts["display_name"] = "foo"
-    if description:
-        opts["description"] = "This is a foo"
-    if variables is None:
-        opts["variables"] = None
-    elif variables >= 0:
-        v = {}
-        for i in range(min(variables, 2)):
-            name = "foo" if i == 0 else "bar"
-            entry = {"display_name": f"{name} variable"}
-            if i in readonly_variables:
-                entry["readonly"] = True
-            v[f"{name}_var"] = entry
-        opts["variables"] = v
-    return opts
+def create_interface(fs, set_block=True):
+    api.export_variables(fs.A, variables=["x"])
+    api.export_variables(fs.B.B1, variables=["x"])
+    api.export_variables(fs.B.B2, variables=["x"])
+    api.export_variables(fs.B.B2.B21, variables=["x"])
+    api.export_variables(fs.B.B2.B22, variables=["x"])
+
+    fsi = api.FlowsheetInterface({"display_name": "flowsheet"})
+    if set_block:
+        fsi.set_block(fs)
+
+    return fsi
 
 
 # Tests
@@ -102,7 +78,7 @@ def build_options(
 
 @pytest.mark.unit
 def test_no_block():
-    b = BlockInterface(None)
+    b = api.BlockInterface(None)
     with pytest.raises(ValueError):
         _ = b.description
     with pytest.raises(ValueError):
@@ -119,8 +95,8 @@ class HasDict:
 
 @pytest.mark.unit
 def test_eq():
-    b1 = BlockInterface(None)
-    b2 = BlockInterface(None)
+    b1 = api.BlockInterface(None)
+    b2 = api.BlockInterface(None)
     with pytest.raises(ValueError):
         _ = b1 == b2
 
@@ -140,88 +116,88 @@ def test_eq():
 
 
 @pytest.mark.unit
-def test_export_variables_simple(mock_block):
-    export_variables(
-        mock_block,
-        name="Feed Z0",
-        desc="Zero-Order feed block",
-        variables=["foo_var", "bar_var"],
+def test_export_variables_simple(simple_flowsheet):
+    api.export_variables(
+        simple_flowsheet.A,
+        name="Simple flowsheet A",
+        desc="Simple flowsheet A, x and y",
+        variables=["x", "y"],
     )
+    api.export_variables(simple_flowsheet.B.B2.B21, name="SF B/B2/B21", variables=["x"])
+    # bad
+    with pytest.raises(ValueError):
+        api.export_variables(simple_flowsheet.A, variables=["z"])
 
 
 @pytest.mark.unit
-def test_export_variables_complex(mock_block):
-    kw = dict(name="Feed Z0", desc="Zero-Order feed block")
-    # bad 'variables'
-    for bad_vars in [[{"name": "foo_var"}, "bar_var"], 12, "foo"]:
-        with pytest.raises(ValueError):
-            export_variables(mock_block, variables=bad_vars, **kw)
+def test_export_variables_complex(simple_flowsheet):
+    fs = simple_flowsheet
+    # bad
+    with pytest.raises(ValueError):
+        api.export_variables(fs.A, variables={"z": {"display_name": "zebra"}})
     # ok
-    for ok_vars in [
-        ["foo_var", "bar_var"],
-        {"foo_var": {"readonly": True, "display_name": "The Foo"}},
-    ]:
-        export_variables(mock_block, variables=ok_vars, **kw)
+    api.export_variables(fs.A, variables={"x": {"display_name": "excellent"}})
 
 
 @pytest.mark.unit
-def test_set_block_interface(mock_block):
+def test_set_block_interface(simple_flowsheet):
+    fs = simple_flowsheet
     # no keys
-    set_block_interface(mock_block, {})
+    api.set_block_interface(fs, {})
     # invalid key
     data = {"meta": {"test": "data"}}
-    set_block_interface(mock_block, data)
-    assert get_block_interface(mock_block).meta["test"] == data["meta"]["test"]
+    api.set_block_interface(fs, data)
+    assert api.get_block_interface(fs).meta["test"] == data["meta"]["test"]
     # ok key
     data = {"display_name": "foo"}
-    set_block_interface(mock_block, data)
+    api.set_block_interface(fs, data)
     # existing object
-    obj = BlockInterface(mock_block, data)
-    set_block_interface(mock_block, obj)
+    obj = api.BlockInterface(fs, data)
+    api.set_block_interface(fs, obj)
 
 
 @pytest.mark.unit
-def test_get_block_interface(mock_block):
+def test_get_block_interface(simple_flowsheet):
+    fs = simple_flowsheet
     # data
     data = {"display_name": "foo"}
-    set_block_interface(mock_block, data)
-    assert get_block_interface(mock_block) is not None
+    api.set_block_interface(fs, data)
+    assert api.get_block_interface(fs) is not None
     # existing object
-    obj = BlockInterface(mock_block, data)
-    set_block_interface(mock_block, obj)
-    obj2 = get_block_interface(mock_block)
+    obj = api.BlockInterface(fs, data)
+    api.set_block_interface(fs, obj)
+    obj2 = api.get_block_interface(fs)
     assert obj2 is obj
 
 
 @pytest.mark.unit
-def test_block_interface_constructor(mock_block):
+def test_block_interface_constructor(simple_flowsheet):
+    fs = simple_flowsheet
     for i in range(4):  # combinations of display_name and description
         disp, desc = (i % 2) == 0, ((i // 2) % 2) == 0
-        obj = BlockInterface(
-            mock_block, build_options(display_name=disp, description=desc)
-        )
+        obj = api.BlockInterface(fs, {"display_name": disp, "description": desc})
         obj.dict()  # force looking at contents
-    obj = BlockInterface(mock_block, build_options(variables=None))
+    obj = api.BlockInterface(fs, {})
     obj.dict()
 
 
 @pytest.mark.unit
 def test_workflow_actions():
-    wfa = WorkflowActions
+    wfa = api.WorkflowActions
     assert wfa.build is not None
     assert wfa.solve is not None
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_constructor(mock_block):
-    fsi = FlowsheetInterface(build_options(variables=2))
-    fsi.set_block(mock_block)
+def test_flowsheet_interface_constructor(simple_flowsheet):
+    fsi = api.FlowsheetInterface({})
+    fsi.set_block(simple_flowsheet)
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_as_dict(mock_block):
-    obj = FlowsheetInterface(build_options(variables=2))
-    obj.set_block(mock_block)
+def test_flowsheet_interface_as_dict(simple_flowsheet):
+    obj = api.FlowsheetInterface({})
+    obj.set_block(simple_flowsheet)
     d = obj.dict()
 
     # only blocks/meta at top-level
@@ -237,9 +213,8 @@ def test_flowsheet_interface_as_dict(mock_block):
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_save(mock_block, tmpdir):
-    obj = FlowsheetInterface(build_options(variables=2))
-    obj.set_block(mock_block)
+def test_flowsheet_interface_save(simple_flowsheet, tmpdir):
+    obj = create_interface(simple_flowsheet)
     # string
     filename = "test-str.json"
     str_path = os.path.join(tmpdir, filename)
@@ -257,38 +232,40 @@ def test_flowsheet_interface_save(mock_block, tmpdir):
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_load(mock_block, tmpdir):
-    obj = FlowsheetInterface(build_options(variables=2))
-    obj.set_block(mock_block)
+def test_flowsheet_interface_load(simple_flowsheet, tmpdir):
+    obj = create_interface(simple_flowsheet)
     filename = "saved.json"
     obj.save(Path(tmpdir) / filename)
 
-    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
+    obj2 = api.FlowsheetInterface.load_from(Path(tmpdir) / filename, simple_flowsheet)
     assert obj2 == obj
 
-    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, obj)
+    obj2 = api.FlowsheetInterface.load_from(Path(tmpdir) / filename, obj)
     assert obj2 == obj
 
     with pytest.raises(ValueError):
-        _ = FlowsheetInterface.load_from(Path(tmpdir) / filename, None)
+        _ = api.FlowsheetInterface.load_from(Path(tmpdir) / filename, None)
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_load_missing(mock_block, tmpdir):
-    obj = FlowsheetInterface(build_options(variables=2))
-    obj.set_block(mock_block)
+def test_flowsheet_interface_load_missing(simple_flowsheet, tmpdir):
+    obj = create_interface(simple_flowsheet)
     filename = "saved.json"
     # manual save, and remove some variables
     d = obj.dict()
-    block = d["blocks"]["Flowsheet"]
+
+    # remove variables on the flowsheet.A block
+    block = d["blocks"][SIMPLE_FS_NAME]["blocks"]["A"]
     block["variables"] = {}
+
     fpath = Path(tmpdir) / filename
     fp = open(fpath, "w", encoding="utf-8")
     json.dump(d, fp)
     fp.close()
+
     # reload
-    obj2 = FlowsheetInterface.load_from(Path(tmpdir) / filename, mock_block)
-    assert obj2.get_var_extra() != {}
+    obj2 = api.FlowsheetInterface.load_from(Path(tmpdir) / filename, simple_flowsheet)
+    assert obj2.get_var_extra() == {f"{SIMPLE_FS_NAME}.A": ["x"]}
     assert obj2.get_var_missing() == {}
 
 
@@ -302,52 +279,51 @@ class ScalarValueBlock:
 
 
 @pytest.mark.unit
-def test_flowsheet_interface_load_readonly(tmpdir):
-    block = ScalarValueBlock()
-    export_variables(block, variables={"foo_var": {}, "bar_var": {"readonly": True}})
-    obj = FlowsheetInterface({"display_name": "Flowsheet"})
-    obj.set_block(block)
-    readonly_index = 1
+def test_flowsheet_interface_load_readonly(simple_flowsheet, tmpdir):
+    fs = simple_flowsheet
+    fsi = create_interface(fs)
+
+    # change flowsheet.A.x to be readonly
+    api.export_variables(fs.A, variables={"x": {"readonly": True}})
+
+    # serialize the flowsheet
+    fs_data = fsi.dict()
+    # modify the readonly variable
+    orig_x = value(fsi.block.A.x)
+    fs_data["blocks"][SIMPLE_FS_NAME]["blocks"]["A"]["variables"]["x"]["value"][
+        "value"
+    ] = 1000
+    # also modify a writeable variable
+    fs_data["blocks"][SIMPLE_FS_NAME]["blocks"]["B"]["blocks"]["B1"]["variables"]["x"][
+        "value"
+    ]["value"] = 1000
+
+    # write out modified serialized flowsheet
     filename = "saved.json"
-    # manual save, and change the variables
-    dblock = obj.dict()
-    root = list(dblock["blocks"].keys())[0]
-    root_block = dblock["blocks"][root]
-    # Save old values, modify all the variables (add 1)
-    old_values = []
-    for var_entry in root_block["variables"]:
-        value = var_entry["value"]
-        old_values.append(value)
-        var_entry["value"] = value + 1
-    # Write out
     fp = open(Path(tmpdir) / filename, "w", encoding="utf-8")
-    json.dump(dblock, fp)
+    json.dump(fs_data, fp)
     fp.close()
-    # Reload
-    obj.load(Path(tmpdir) / filename)
-    # See that variables have changed, except readonly one
-    block = obj.dict()
-    root = list(block["blocks"].keys())[0]
-    root_block = block["blocks"][root]
-    for i, var_entry in root_block["variables"]:
-        if i == readonly_index:
-            assert var_entry["value"] == old_values[i]
-        else:
-            assert var_entry["value"] == old_values[i] + 1
+
+    # load it back in (changing values in the block, of course)
+    fsi.load(Path(tmpdir) / filename)
+
+    # check that the writeable variable has the new value
+    assert value(fsi.block.B.B1.x) == 1000
+
+    # check that the readonly variable has not changed
+    assert value(fsi.block.A.x) == orig_x
 
 
-def test_flowsheet_interface_get_var(mock_block):
-    fsi = FlowsheetInterface(build_options(variables=1))
-    fsi.set_block(mock_block)
+def test_flowsheet_interface_get_var(simple_flowsheet):
+    fsi = create_interface(simple_flowsheet)
     with pytest.raises(KeyError):
         fsi.get_var_missing()
     with pytest.raises(KeyError):
         fsi.get_var_extra()
 
 
-def test_add_action_type(mock_block):
-    fsi = FlowsheetInterface(build_options(variables=1))
-    fsi.set_block(mock_block)
+def test_add_action_type(simple_flowsheet):
+    fsi = create_interface(simple_flowsheet)
 
     # Add 2 actions:
     #   cook <- eat
@@ -388,12 +364,12 @@ def add_action_eat(**kwargs):
     print("eat")
 
 
-def test_flowsheet_interface_parameters(mock_block):
-    fsi = FlowsheetInterface({"display_name": "Add parameter test"})
+def test_flowsheet_interface_parameters(simple_flowsheet):
+    fsi = create_interface(simple_flowsheet, set_block=False)
     # must set block first
     with pytest.raises(ValueError):
         fsi.add_parameter("p1")
-    fsi.set_block(mock_block)
+    fsi.set_block(simple_flowsheet)
     # add some params
     fsi.add_parameter("p1", choices=["1", "2", "3"])
     fsi.add_parameter("p2", vrange=(0.1, 99))
@@ -444,9 +420,8 @@ def test_flowsheet_interface_parameters(mock_block):
             fsi.set_parameter(name, val)
 
 
-def test_flowsheet_interface_parameters_meta(mock_block):
-    fsi = FlowsheetInterface({"display_name": "Parameter test"})
-    fsi.set_block(mock_block)
+def test_flowsheet_interface_parameters_meta(simple_flowsheet):
+    fsi = create_interface(simple_flowsheet)
     fsi.add_parameter("p1", choices=["1", "2", "3"])
     fsi.add_parameter("p2", vrange=(0.1, 99))
     fsi.add_parameter("p3", vtype=str)
@@ -456,7 +431,7 @@ def test_flowsheet_interface_parameters_meta(mock_block):
     fsi.set_parameter("p2", 0.5)
     d = fsi.dict()
     print(f"dict()={d}")
-    d_param = d["blocks"][MockBlock.name]["meta"]["parameters"]
+    d_param = d["blocks"][SIMPLE_FS_NAME]["meta"]["parameters"]
     param = {
         "p1": {"choices": ["1", "2", "3"], "range": None, "type": "str", "val": "1"},
         "p2": {"choices": None, "range": (0.1, 99.0), "type": "float", "val": 0.5},
@@ -469,9 +444,8 @@ def test_flowsheet_interface_parameters_meta(mock_block):
         assert val == d_param[key]
 
 
-def test_load_save_parameters(mock_block, tmpdir):
-    fsi = FlowsheetInterface({"display_name": "Parameter test"})
-    fsi.set_block(mock_block)
+def test_load_save_parameters(simple_flowsheet, tmpdir):
+    fsi = create_interface(simple_flowsheet)
     fsi.add_parameter("p1", choices=["1", "2", "3"])
     fsi.add_parameter("p2", vrange=(0.1, 99))
     fname = "parameter-test.json"
@@ -488,9 +462,9 @@ def test_load_save_parameters(mock_block, tmpdir):
 
 
 def test_find_flowsheet_interfaces_simpleconfig():
-    interfaces1 = list(find_flowsheet_interfaces())
+    interfaces1 = list(api.find_flowsheet_interfaces())
     assert len(interfaces1) > 0
-    interfaces2 = list(find_flowsheet_interfaces(config={"packages": ["watertap"]}))
+    interfaces2 = list(api.find_flowsheet_interfaces(config={"packages": ["watertap"]}))
     assert interfaces2 == interfaces1
 
 
@@ -500,24 +474,24 @@ def test_find_flowsheet_interfaces_fileconfig(tmpdir):
     with conf_path.open(mode="w", encoding="utf-8") as f:
         f.write("packages:\n")
         f.write("  - watertap\n")
-    interfaces1 = list(find_flowsheet_interfaces(conf_path))
-    interfaces2 = list(find_flowsheet_interfaces())
+    interfaces1 = list(api.find_flowsheet_interfaces(conf_path))
+    interfaces2 = list(api.find_flowsheet_interfaces())
     assert interfaces2 == interfaces1
 
 
 @pytest.mark.unit
-def test_flowsheet_display_name(mock_block):
+def test_flowsheet_display_name(simple_flowsheet):
     dname = "display"
     desc = "description"
-    fsi = FlowsheetInterface({"display_name": dname, "description": desc})
-    fsi.set_block(mock_block)
+    fsi = api.FlowsheetInterface({"display_name": dname, "description": desc})
+    fsi.set_block(simple_flowsheet)
     assert fsi.display_name == dname
     assert fsi.description == desc
 
 
 @pytest.mark.unit
-def test_block_update(mock_block):
-    b = BlockInterface(mock_block)
+def test_block_update(simple_flowsheet):
+    b = api.BlockInterface(simple_flowsheet)
     # too few blocks
     with pytest.raises(ValueError):
         b.update({"garbage": "yes"})
@@ -531,7 +505,7 @@ def test_block_update(mock_block):
 
 @pytest.mark.unit
 def test_get_schema():
-    _ = BlockInterface.get_schema()
+    _ = api.BlockInterface.get_schema()
 
 
 def generate_tree(depth):
