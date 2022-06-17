@@ -42,7 +42,7 @@ from watertap.unit_models.nanofiltration_DSPMDE_0D import (
 )
 from watertap.core.util.initialization import check_dof
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
