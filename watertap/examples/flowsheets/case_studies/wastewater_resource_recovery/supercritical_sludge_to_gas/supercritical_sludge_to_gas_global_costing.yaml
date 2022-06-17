@@ -2,21 +2,14 @@ base_currency: USD_2020
 base_period: year
 defined_flows:
   electricity:
-    value: 0.08
+    value: 0.0701
     units: USD_2020/kWh
-  dye_retentate:
-    # cost of dye in salt water
+  catalyst_ATHTL:
+    value: 0.36
+    units: USD_2020/pound
+  catalyst_HTG:
     value: 1
-    units: USD_2020/m**3
-  waste_disposal:
-    value: 1
-    units: USD_2020/m**3
-  dye_mass:
-    value: 0.1
-    units: USD_2020/kg
-  recovered_water:
-    value: 0.0000001
-    units: USD_2020/m**3
+    units: USD_2020/pound
 global_parameters:
   plant_lifetime:
     value: 30
