@@ -41,6 +41,8 @@ from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 _log = idaeslog.getLogger(__name__)
 
 
@@ -152,6 +154,17 @@ class PressureExchangerData(UnitModelBlockData):
         ),
     )
 
+    CONFIG.declare(
+        "has_mass_transfer",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Defines if there is mass transport between high- and low-pressure sides",
+            doc="""Indicates whether pressure exchanger solution mass transfer terms should be constructed or not.
+    **default** - False.""",
+        ),
+    )
+
     def build(self):
         super().build()
 
@@ -177,6 +190,17 @@ class PressureExchangerData(UnitModelBlockData):
             doc="Pressure exchanger efficiency",
         )
 
+        if self.config.has_mass_transfer:
+            self.mass_transfer_fraction_comp = Var(
+                self.flowsheet().config.time,
+                self.config.property_package.component_list,
+                initialize=0.05,
+                bounds=(1e-6, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="The fraction of solution transfering from high to low pressure side",
+            )
+
         # Build control volume for high pressure side
         self.high_pressure_side = ControlVolume0DBlock(
             default={
@@ -190,14 +214,13 @@ class PressureExchangerData(UnitModelBlockData):
         self.high_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.high_pressure_side.add_material_balances(
-            balance_type=self.config.material_balance_type
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=self.config.has_mass_transfer,
         )
 
         self.high_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=True
         )
-
-        self.high_pressure_side.deltaP.setub(0)
 
         @self.high_pressure_side.Expression(
             self.flowsheet().config.time,
@@ -219,14 +242,13 @@ class PressureExchangerData(UnitModelBlockData):
         self.low_pressure_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.low_pressure_side.add_material_balances(
-            balance_type=self.config.material_balance_type
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=self.config.has_mass_transfer,
         )
 
         self.low_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=True
         )
-
-        self.low_pressure_side.deltaP.setlb(0)
 
         @self.low_pressure_side.Expression(
             self.flowsheet().config.time,
@@ -251,8 +273,9 @@ class PressureExchangerData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().config.time, doc="Equal volumetric flow rate")
         def eq_equal_flow_vol(b, t):
+
             return (
-                b.high_pressure_side.properties_in[t].flow_vol
+                b.high_pressure_side.properties_out[t].flow_vol
                 == b.low_pressure_side.properties_in[t].flow_vol
             )
 
@@ -276,6 +299,38 @@ class PressureExchangerData(UnitModelBlockData):
         )
         def eq_isothermal_temperature(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        if self.config.has_mass_transfer:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                doc="Mass transfer from high pressure side",
+            )
+            def eq_mass_transfer_from_high_pressure_side(b, t, p, j):
+                comp = self.config.property_package.get_component(j)
+                return b.high_pressure_side.mass_transfer_term[
+                    t, p, j
+                ] == -b.mass_transfer_fraction_comp[
+                    t, j
+                ] * b.high_pressure_side.properties_in[
+                    t
+                ].get_material_flow_terms(
+                    p, j
+                )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                doc="Mass transfer term",
+            )
+            def eq_mass_transfer_term(b, t, p, j):
+                return (
+                    b.high_pressure_side.mass_transfer_term[t, p, j]
+                    == -b.low_pressure_side.mass_transfer_term[t, p, j]
+                )
 
     def initialize_build(
         self,
@@ -309,7 +364,6 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Set solver and options
         opt = get_solver(solver, optarg)
-
         # initialize inlets
         flags_low_in = self.low_pressure_side.properties_in.initialize(
             outlvl=outlvl,
@@ -325,6 +379,7 @@ class PressureExchangerData(UnitModelBlockData):
             state_args=state_args,
             hold_state=True,
         )
+
         init_log.info_high("Initialize inlets complete")
 
         # check that inlets are feasible
@@ -336,6 +391,8 @@ class PressureExchangerData(UnitModelBlockData):
                 "the low pressure side inlet has a higher pressure "
                 "than the high pressure side inlet"
             )
+        # only needed when there is no mass trnasfer
+
         if (
             abs(
                 value(self.low_pressure_side.properties_in[0].flow_vol)
@@ -343,10 +400,14 @@ class PressureExchangerData(UnitModelBlockData):
             )
             / value(self.high_pressure_side.properties_in[0].flow_vol)
             > 1e-4
+            and not self.config.has_mass_transfer
         ):  # flow_vol values are not within 0.1%
             raise ConfigurationError(
                 "Initializing pressure exchanger failed because "
-                "the volumetric flow rates are not equal for both inlets"
+                "the volumetric flow rates are not equal for both inlets "
+                + str(value(self.high_pressure_side.properties_out[0].flow_vol))
+                + ","
+                + str(value(self.low_pressure_side.properties_in[0].flow_vol))
             )
         else:  # volumetric flow is equal, deactivate flow constraint for the solve
             self.eq_equal_flow_vol.deactivate()
@@ -410,6 +471,9 @@ class PressureExchangerData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
             # efficiency should always be between 0.1-1
             iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
+        if hasattr(self, "mass_transfer_fraction_comp"):
+            if iscale.get_scaling_factor(self.mass_transfer_fraction_comp) is None:
+                iscale.set_scaling_factor(self.mass_transfer_fraction_comp, 1)
 
         # scale expressions
         if iscale.get_scaling_factor(self.low_pressure_side.work) is None:
@@ -454,6 +518,26 @@ class PressureExchangerData(UnitModelBlockData):
                 self.low_pressure_side.properties_in[t].pressure
             )
             iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_mass_transfer_from_high_pressure_side"):
+            for (t, p, j), c in self.eq_mass_transfer_from_high_pressure_side.items():
+                sf = iscale.get_scaling_factor(
+                    self.high_pressure_side.properties_in[t].get_material_flow_terms(
+                        p, j
+                    )
+                )
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_mass_transfer_term"):
+            for (t, p, j), c in self.eq_mass_transfer_term.items():
+                sf = iscale.get_scaling_factor(
+                    self.high_pressure_side.mass_transfer_term[t, p, j]
+                )
+                iscale.constraint_scaling_transform(c, sf)
+                sf = iscale.get_scaling_factor(
+                    self.low_pressure_side.mass_transfer_term[t, p, j]
+                )
+                iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
