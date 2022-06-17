@@ -11,14 +11,14 @@ users to model the chemical and physical properties of simple systems without th
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. testcode::
+.. doctest::
 
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import solver from IDAES core
-    from idaes.core.util.misc import get_solver
+    from idaes.core.solvers import get_solver
     # Import NaCl property model
     import watertap.property_models.NaCl_prop_pack as props
     # Import utility tool for calculating scaling factors

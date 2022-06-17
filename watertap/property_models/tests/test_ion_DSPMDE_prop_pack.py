@@ -44,19 +44,19 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Imports from idaes core
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.state_definitions import FpcTP
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Import the idaes objects for Generic Properties
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 

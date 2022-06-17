@@ -38,7 +38,7 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import fix_state_vars
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

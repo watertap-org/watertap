@@ -39,7 +39,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
 )
 import watertap.property_models.NaCl_prop_pack as props
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     number_variables,
     number_unused_variables,
