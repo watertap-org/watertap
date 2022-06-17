@@ -99,16 +99,15 @@ def build():
         }
     )
     # make into a function to add pressure drop
-    m.fs.hx_distillate.cold.pressure_balance.deactivate()
-    m.fs.hx_distillate.hot.pressure_balance.deactivate()
-    m.fs.hx_distillate.cold.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
-    m.fs.hx_distillate.hot.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
-    m.fs.hx_distillate.cold.pressure_drop = Constraint(expr=m.fs.hx_distillate.cold.properties_in[0].pressure == m.fs.hx_distillate.cold.properties_out[0].pressure
-                                                       + m.fs.hx_distillate.cold.deltaP[0])
-    m.fs.hx_distillate.hot.pressure_drop = Constraint(expr=m.fs.hx_distillate.hot.properties_in[0].pressure == m.fs.hx_distillate.hot.properties_out[0].pressure
-                                                       + m.fs.hx_distillate.hot.deltaP[0])
-    iscale.constraint_scaling_transform(m.fs.hx_distillate.cold.pressure_drop, 1e-5)
-    iscale.constraint_scaling_transform(m.fs.hx_distillate.hot.pressure_drop, 1e-5)
+    add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
+    # m.fs.hx_distillate.cold.pressure_balance.deactivate()
+    # m.fs.hx_distillate.hot.pressure_balance.deactivate()
+    # m.fs.hx_distillate.cold.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
+    # m.fs.hx_distillate.hot.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
+    # m.fs.hx_distillate.cold.pressure_drop = Constraint(expr=m.fs.hx_distillate.cold.properties_in[0].pressure == m.fs.hx_distillate.cold.properties_out[0].pressure
+    #                                                    + m.fs.hx_distillate.cold.deltaP[0])
+    # m.fs.hx_distillate.hot.pressure_drop = Constraint(expr=m.fs.hx_distillate.hot.properties_in[0].pressure == m.fs.hx_distillate.hot.properties_out[0].pressure
+    #                                                    + m.fs.hx_distillate.hot.deltaP[0])
 
     # m.fs.mixer_feed = Mixer(
     #     default={
@@ -191,6 +190,8 @@ def build():
         m.fs.hx_distillate.overall_heat_transfer_coefficient, 1e-3
     )
     iscale.set_scaling_factor(m.fs.hx_distillate.area, 1)
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.cold.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.hot.pressure_drop, 1e-5)
     # evaporator
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
@@ -210,6 +211,17 @@ def build():
 
     return m
 
+def add_pressure_drop_to_hx(hx_blk, time_point):
+    # input: hx_blk - heat exchanger block
+    # output: deactivates control volume pressure balance and adds pressure drop to pressure balance equation
+    hx_blk.cold.pressure_balance.deactivate()
+    hx_blk.hot.pressure_balance.deactivate()
+    hx_blk.cold.deltaP = Var(time_point,initialize=7e4,units=pyunits.Pa)
+    hx_blk.hot.deltaP = Var(time_point,initialize=7e4,units=pyunits.Pa)
+    hx_blk.cold.pressure_drop = Constraint(expr=hx_blk.cold.properties_in[0].pressure == hx_blk.cold.properties_out[0].pressure
+                                                       + hx_blk.cold.deltaP[0])
+    hx_blk.hot.pressure_drop = Constraint(expr=hx_blk.hot.properties_in[0].pressure == hx_blk.hot.properties_out[0].pressure
+                                                       + hx_blk.hot.deltaP[0])
 
 def set_operating_conditions(m):
     # Feed inlet
@@ -224,8 +236,8 @@ def set_operating_conditions(m):
     # Heat exchangers
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.hx_distillate.area.fix(100)
-    #m.fs.hx_distillate.cold.deltaP[0].fix(7e4)
-    #m.fs.hx_distillate.hot.deltaP[0].fix(7e4)
+    m.fs.hx_distillate.cold.deltaP[0].fix(7e4)
+    m.fs.hx_distillate.hot.deltaP[0].fix(7e4)
 
     # evaporator specifications
     m.fs.evaporator.inlet_feed.temperature[0].fix(273.15+50.52)
@@ -265,6 +277,7 @@ def initialize_system(m, solver=None):
 
     # initialize feed pump
     propagate_state(m.fs.s01)
+    m.fs.pump_feed.control_volume.properties_out[0].pressure = m.fs.hx_distillate.cold.deltaP[0].value + m.fs.pump_feed.control_volume.properties_in[0].pressure.value
     m.fs.pump_feed.initialize(optarg=optarg)
 
     # initialize distillate heat exchanger
@@ -274,7 +287,7 @@ def initialize_system(m, solver=None):
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0,'Liq','H2O'] = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap','H2O'].value
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0,'Vap','H2O'] = 1e-8
     m.fs.hx_distillate.hot_inlet.temperature[0] = m.fs.evaporator.outlet_brine.temperature[0].value
-    m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
+    m.fs.hx_distillate.hot_inlet.pressure[0] = m.fs.distillate.properties[0].pressure.value + m.fs.hx_distillate.hot.deltaP[0].value
     m.fs.hx_distillate.initialize()
 
     # initialize evaporator
@@ -284,7 +297,7 @@ def initialize_system(m, solver=None):
     )  # fixes and unfixes those values
 
     # initialize compressor
-    propagate_state(m.fs.s04)
+    propagate_state(m.fs.s04)git
     m.fs.compressor.initialize_build()
 
     # initialize condenser
