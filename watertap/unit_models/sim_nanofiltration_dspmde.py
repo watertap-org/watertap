@@ -209,13 +209,13 @@ if __name__ == "__main__":
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
 
     # deactivate concentration polarization and interface electroneutrality
-    m.fs.unit.eq_electroneutrality_interface.deactivate()
-    m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
+    # m.fs.unit.eq_electroneutrality_interface.deactivate()
+    # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
 
     # deactivate feed electroneutrality constraint
     m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
-    # m.fs.unit.eq_no_concentration_polarization.deactivate()
+    m.fs.unit.eq_no_concentration_polarization.deactivate()
     try:
         m.fs.unit.initialize(
             automate_rescale=True,
@@ -228,11 +228,11 @@ if __name__ == "__main__":
         pass
 
     # Use of Degeneracy Hunter for troubleshooting model.
-    m.fs.dummy_objective = Objective(expr=0)
-    solver.options["max_iter"] = 0
-    solver.solve(m, tee=True)
-    dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
-    dh.check_residuals(tol=0.1)
+    # m.fs.dummy_objective = Objective(expr=0)
+    # solver.options["max_iter"] = 0
+    # solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=pyo.SolverFactory("cbc"))
+    # dh.check_residuals(tol=0.1)
     # assert False
     # ##############################################################################################################
     # dh.check_variable_bounds(tol=1e-3)
