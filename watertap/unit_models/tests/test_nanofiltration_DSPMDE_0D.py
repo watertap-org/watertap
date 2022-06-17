@@ -79,7 +79,7 @@ def test_config():
     m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -161,7 +161,6 @@ class TestNanoFiltration:
         m.fs.unit = NanofiltrationDSPMDE0D(
             default={
                 "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound,
             }
         )
         b = m.fs.unit
@@ -215,14 +214,13 @@ class TestNanoFiltration:
         # Fix final permeate pressure to be ~atmospheric
         m.fs.unit.mixed_permeate[0].pressure.fix(101325)
 
-        # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
         m.fs.unit.spacer_porosity.fix(0.85)
-        m.fs.unit.spacer_mixing_efficiency.fix()
-        m.fs.unit.spacer_mixing_length.fix()
         m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.velocity[0, 0].fix(0.25)
         m.fs.unit.area.fix(50)
-
+        # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
+        m.fs.unit.spacer_mixing_efficiency.fix()
+        m.fs.unit.spacer_mixing_length.fix()
         return m
 
     @pytest.mark.unit
@@ -272,7 +270,7 @@ class TestNanoFiltration:
 
         # test statistics
         assert number_variables(m) == 561
-        assert number_total_constraints(m) == 524
+        assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
     @pytest.mark.unit
@@ -290,11 +288,24 @@ class TestNanoFiltration:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
+        )
 
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
+        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
@@ -305,20 +316,14 @@ class TestNanoFiltration:
         [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
-    @pytest.mark.skip(
-        reason="Scaling and/or formulation of unit model needs to be revisited"
-    )
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
         # Using the 'initialize' function so that I can view the logs on failure
-        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        # initialization_tester(m)
+        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
-    @pytest.mark.skip(
-        reason="Scaling and/or formulation of unit model needs to be revisited"
-    )
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
@@ -328,9 +333,6 @@ class TestNanoFiltration:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.skip(
-        reason="Scaling and/or formulation of unit model needs to be revisited"
-    )
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
@@ -355,21 +357,18 @@ class TestNanoFiltration:
             <= 1e-6
         )
 
-    @pytest.mark.skip(
-        reason="Scaling and/or formulation of unit model needs to be revisited"
-    )
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
 
         mole_flux_dict = {
-            "Na_+": 0.0036645,
-            "Cl_-": 0.004354,
-            "Ca_2+": 7.3313e-5,
-            "SO4_2-": 1.6845e-4,
-            "Mg_2+": 0.000440,
-            "H2O": 0.41437,
+            "Na_+": 0.00029831,
+            "Cl_-": 0.00031137,
+            "Ca_2+": 1.9289e-06,
+            "SO4_2-": 1.9731e-06,
+            "Mg_2+": 6.5754e-06,
+            "H2O": 0.032671,
         }
         for j, val in mole_flux_dict.items():
             assert pytest.approx(val, rel=5e-2) == value(
@@ -378,14 +377,14 @@ class TestNanoFiltration:
 
         # TODO: subsequently focus on the segment below during the validation and refinement phase
         intrinsic_rejection_dict = {
-            "Na_+": 0.017432,
-            "Cl_-": 0.014704,
-            "Ca_2+": -0.034499,
-            "SO4_2-": 0.01435907,
-            "Mg_2+": 0.013672,
+            "Na_+": -0.0265173,
+            "Cl_-": 0.11538899,
+            "Ca_2+": 0.6905496,
+            "SO4_2-": 0.8687813,
+            "Mg_2+": 0.83309579,
         }
         for j, val in intrinsic_rejection_dict.items():
-            assert pytest.approx(val, rel=5e-2) == value(
+            assert pytest.approx(val, rel=1e-3) == value(
                 m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
             )
 
