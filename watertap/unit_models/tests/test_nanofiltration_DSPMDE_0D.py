@@ -39,6 +39,7 @@ from watertap.property_models.ion_DSPMDE_prop_pack import (
 from watertap.unit_models.nanofiltration_DSPMDE_0D import (
     NanofiltrationDSPMDE0D,
     MassTransferCoefficient,
+    ConcentrationPolarizationType,
 )
 from watertap.core.util.initialization import check_dof
 
@@ -98,6 +99,10 @@ def test_config():
     assert (
         m.fs.unit.config.mass_transfer_coefficient
         == MassTransferCoefficient.spiral_wound
+    )
+    assert (
+        m.fs.unit.config.concentration_polarization_type
+        == ConcentrationPolarizationType.calculated
     )
     assert hasattr(m.fs.unit.config.property_package, "solute_set")
     assert hasattr(m.fs.unit.config.property_package, "ion_set")

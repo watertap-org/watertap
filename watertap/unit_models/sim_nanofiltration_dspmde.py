@@ -106,8 +106,8 @@ if __name__ == "__main__":
     m.fs.unit = NanofiltrationDSPMDE0D(
         default={
             "property_package": m.fs.properties,
-            "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound,
-            "concentration_polarization_type": ConcentrationPolarizationType.none,
+            # "mass_transfer_coefficient": MassTransferCoefficient.none,
+            # "concentration_polarization_type": ConcentrationPolarizationType.none,
         }
     )
     b = m.fs.unit
@@ -170,18 +170,17 @@ if __name__ == "__main__":
 
     # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
     m.fs.unit.spacer_porosity.fix(0.85)
-    m.fs.unit.spacer_mixing_efficiency.fix()
-    m.fs.unit.spacer_mixing_length.fix()
     m.fs.unit.channel_height.fix(1e-3)
 
     m.fs.unit.velocity[0, 0].fix(0.25)
-
-    # m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.50)
-    # m.fs.unit.width.fix(1.249)
     m.fs.unit.area.fix(50)
 
-    # m.fs.unit.flux_vol_water_avg.fix(1.67e-06)
-    # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
+    if (
+        m.fs.unit.config.mass_transfer_coefficient
+        == MassTransferCoefficient.spiral_wound
+    ):
+        m.fs.unit.spacer_mixing_efficiency.fix()
+        m.fs.unit.spacer_mixing_length.fix()
 
     assert_units_consistent(m)
 
