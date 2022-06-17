@@ -705,8 +705,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         spacer_cost = blk.costing_package.electrodialysis_total_flowspacer_cost
         electrode_cost = blk.costing_package.electrodialysis_total_electrode_cost
 
-        make_capital_cost_var(blk)
-        make_fixed_operating_cost_var(blk)
         cost_electrodialysis_stack(
             blk,
             membrane_cost,
@@ -881,6 +879,8 @@ def cost_electrodialysis_stack(
                                         [fraction of electrodes replaced/year]
 
     """
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
 
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.membrane_replacement_factor = pyo.Expression(expr=membrane_replacement_factor)
