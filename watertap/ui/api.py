@@ -73,7 +73,7 @@ import importlib
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable
+from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
 
 # third-party
 import pyomo.core
@@ -203,11 +203,6 @@ class BlockInterface:
     def description(self):
         return self._fs_block().description
 
-    # def dict(self):
-    #     if self._block_info is None:
-    #         return {}
-    #     return self._block_info.dict()
-
     def _fs_block(self):
         if self._block_info is None:
             raise ValueError("Must set block first")
@@ -303,7 +298,7 @@ class BlockInterface:
     def load_from(
         cls,
         file_or_stream: Union[str, Path, TextIO],
-        fs: Union[Block, "FlowsheetInterface"],
+        fs: Optional[Union[Block, "FlowsheetInterface"]],
     ) -> "FlowsheetInterface":
         """Load from saved state in a file to modify a :class:`FlowsheetInterface`.
 
@@ -592,7 +587,7 @@ class BlockInterface:
 
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
-            sub_block = getattr(cur_block, sb_name)
+            sub_block = cur_block.find_component(sb_name)
             self._load(sb_info, sub_block, path=cur_block_path)
 
     def _get_block_interface_tree(self):
