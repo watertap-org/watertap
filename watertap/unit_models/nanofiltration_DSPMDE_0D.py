@@ -1938,11 +1938,21 @@ class NanofiltrationData(UnitModelBlockData):
 
                 if comp.is_solute():
                     # Todo: revisit later
-                    # sf = (iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, 'Liq', 'H2O'])
-                    #       / iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase['Liq'])
-                    #       * iscale.get_scaling_factor(self.feed_side.properties_in[t].mw_comp[j])
-                    #       * iscale.get_scaling_factor(self.permeate_side[t, x].conc_mol_phase_comp['Liq', j]))
-                    sf = 1e5
+                    sf = (
+                        iscale.get_scaling_factor(
+                            self.flux_mol_phase_comp[t, x, "Liq", "H2O"]
+                        )
+                        / iscale.get_scaling_factor(
+                            self.feed_side.properties_in[t].dens_mass_phase["Liq"]
+                        )
+                        * iscale.get_scaling_factor(
+                            self.feed_side.properties_in[t].mw_comp[j]
+                        )
+                        * iscale.get_scaling_factor(
+                            self.permeate_side[t, x].conc_mol_phase_comp["Liq", j]
+                        )
+                    )
+                    # sf = 1e5
                     iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_intrinsic_phase_comp.values():
