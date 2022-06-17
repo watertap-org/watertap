@@ -2037,7 +2037,7 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(con, 1e-1)
 
         for con in self.eq_interfacial_partitioning_feed.values():
-            iscale.constraint_scaling_transform(con, 1e-2)
+            iscale.constraint_scaling_transform(con, 1e0)
         for key in self.eq_interfacial_partitioning_feed.keys():
             if key[-1] == "Cl_-":
                 iscale.constraint_scaling_transform(

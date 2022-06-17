@@ -49,7 +49,7 @@ if __name__ == "__main__":
         default={
             "solute_list": [
                 # "Ca_2+",
-                # "SO4_2-",
+                "SO4_2-",
                 "Mg_2+",
                 "Na_+",
                 "Cl_-",
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 #     "Liq",
                 #     "Ca_2+",
                 # ): 9.2e-10,  # this value is smaller than in MIT's paper (0.792e-9) according to NanoFiltran (9.20E-10)
-                # ("Liq", "SO4_2-"): 1.06e-9,
+                ("Liq", "SO4_2-"): 1.06e-9,
                 ("Liq", "Mg_2+"): 0.707e-9,
                 ("Liq", "Na_+"): 1.33e-9,
                 ("Liq", "Cl_-"): 2.03e-9,
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                 "H2O": 18e-3,
                 # "Ca_2+": 40e-3,
                 "Mg_2+": 24e-3,
-                # "SO4_2-": 96e-3,
+                "SO4_2-": 96e-3,
                 "Na_+": 23e-3,
                 "Cl_-": 35e-3,
                 # "X": 20e-3,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             "stokes_radius_data": {
                 # "Ca_2+": 0.309e-9,
                 "Mg_2+": 0.347e-9,
-                # "SO4_2-": 0.231e-9,
+                "SO4_2-": 0.231e-9,
                 "Cl_-": 0.121e-9,
                 "Na_+": 0.184e-9,
                 # "X": 0.184e-9,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             "charge": {
                 # "Ca_2+": 2,
                 "Mg_2+": 2,
-                # "SO4_2-": -2,
+                "SO4_2-": -2,
                 "Na_+": 1,
                 "Cl_-": -1,
                 # "X": -1,
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     feed_mass_frac = {
         # "Ca_2+": 382e-6,
         "Mg_2+": 1394e-6,
-        # "SO4_2-": 2136e-6,
+        "SO4_2-": 2136e-6,
         "Cl_-": 20101.6e-6,
         "Na_+": 11122e-6,
         # 'Cl_-': 0.016924782608695656,
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         "flow_mol_phase_comp", 1e-1, index=("Liq", "Ca_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-2, index=("Liq", "SO4_2-")
+        "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-3, index=("Liq", "H2O")
+        "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
     )
     iscale.calculate_scaling_factors(m.fs.unit)
 
@@ -208,13 +208,13 @@ if __name__ == "__main__":
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
 
     # deactivate concentration polarization and interface electroneutrality
-    m.fs.unit.eq_electroneutrality_interface.deactivate()
-    m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
+    # m.fs.unit.eq_electroneutrality_interface.deactivate()
+    # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
 
     # deactivate feed electroneutrality constraint
     m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
-    # m.fs.unit.eq_no_concentration_polarization.deactivate()
+    m.fs.unit.eq_no_concentration_polarization.deactivate()
     try:
         m.fs.unit.initialize(
             automate_rescale=True,
