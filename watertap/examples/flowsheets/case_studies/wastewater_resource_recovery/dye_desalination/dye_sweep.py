@@ -150,10 +150,11 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
             0.2,
             1,
+            nx,
         )
         m.fs.desalination.RO.A_comp.unfix()
         sweep_params["RO_permeability"] = LinearSample(
-            m.fs.desalination.RO.A_comp, 1e-12, 1e-11
+            m.fs.desalination.RO.A_comp, 1e-12, 1e-11, nx
         )
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
