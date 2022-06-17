@@ -377,7 +377,7 @@ class NanofiltrationData(UnitModelBlockData):
         # pressure change
         if (
             self.config.has_pressure_change is True
-            and self.config.momentum_balance_type != "none"
+            and self.config.momentum_balance_type != MomentumBalanceType.none
         ):
             self.deltaP = Reference(self.feed_side.deltaP)
 
