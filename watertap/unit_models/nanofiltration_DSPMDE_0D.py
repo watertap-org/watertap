@@ -438,7 +438,6 @@ class NanofiltrationData(UnitModelBlockData):
             ["pore_entrance", "pore_exit", "permeate"],
             initialize=-1e-3,  # TODO:revisit
             domain=Reals,
-            bounds=(-1.001, 1.001),
             units=pyunits.V,
             doc="Electric potential of pore entrance/exit, and permeate",
         )
@@ -463,7 +462,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.5,
-            bounds=(0, 1 - 1e-6),
+            bounds=(0, 1),
             units=pyunits.dimensionless,
             doc="Volumetric-based recovery",
         )
