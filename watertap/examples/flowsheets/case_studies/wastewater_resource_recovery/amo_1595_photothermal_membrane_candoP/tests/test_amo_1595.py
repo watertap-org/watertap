@@ -123,6 +123,7 @@ class TestAmo1595Flowsheet:
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(0.211298, rel=1e-3)
         assert value(m.fs.costing.LCOW_bcp) == pytest.approx(0.208796, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.18791, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

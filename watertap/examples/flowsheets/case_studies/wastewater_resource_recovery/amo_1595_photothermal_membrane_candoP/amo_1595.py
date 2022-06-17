@@ -246,7 +246,23 @@ def add_costing(m):
             )
             * m.fs.costing.utilization_factor
         ),
-        doc="Levelized Cost of Water when including price of salable BCP",
+        doc="Levelized Cost of Water when accounting for salable BCP",
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+            - m.fs.costing.value_bcp_recovery
+        )
+        / (
+            pyunits.convert(
+                m.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
+            * m.fs.costing.utilization_factor
+        ),
+        doc="Levelized Cost of Treatment (accounts for salable BCP)",
     )
 
 
@@ -301,6 +317,11 @@ def display_costing(m):
     print(
         f"Levelized Cost of Water (accounting for BCP sale): {LCOW_with_bcp:.3f} $/m^3"
     )
+
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Treatment: {LCOW:.3f} $/m^3")
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
