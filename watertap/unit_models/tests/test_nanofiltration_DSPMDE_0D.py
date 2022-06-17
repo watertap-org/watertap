@@ -366,12 +366,12 @@ class TestNanoFiltration:
             "Na_+": 0.00029831,
             "Cl_-": 0.00031137,
             "Ca_2+": 1.9289e-06,
-            "SO4_2-": 1.9731e-06,
-            "Mg_2+": 6.5754e-06,
+            "SO4_2-": 1.95859e-06,
+            "Mg_2+": 6.56667e-06,
             "H2O": 0.032671,
         }
         for j, val in mole_flux_dict.items():
-            assert pytest.approx(val, rel=5e-2) == value(
+            assert pytest.approx(val, rel=1e-3) == value(
                 m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
             )
 
