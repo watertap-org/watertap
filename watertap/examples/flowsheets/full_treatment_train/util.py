@@ -13,7 +13,7 @@
 
 from pyomo.environ import check_optimal_termination, TransformationFactory
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import (
     unscaled_variables_generator,

@@ -17,7 +17,7 @@ The ZeroOrderBaseData class contains no variables or constraints of its own - ra
 
 The code below shows an outline of how the ZeroOrderBaseData class is intended to be used to develop custom zero-order type models.
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import ZeroOrderBaseData

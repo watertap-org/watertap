@@ -18,7 +18,7 @@ outlet where flow and composition do not change, such as pumps).
 from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import number_activated_constraints
 from idaes.core.util.exceptions import InitializationError
 
