@@ -24,6 +24,7 @@ from watertap.property_models.ion_DSPMDE_prop_pack import (
 from watertap.unit_models.nanofiltration_DSPMDE_0D import (
     NanofiltrationDSPMDE0D,
     MassTransferCoefficient,
+    ConcentrationPolarizationType,
 )
 from watertap.core.util.initialization import check_dof, check_solve
 from watertap.core.util.infeasible import *
@@ -106,6 +107,7 @@ if __name__ == "__main__":
         default={
             "property_package": m.fs.properties,
             "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound,
+            "concentration_polarization_type": ConcentrationPolarizationType.none,
         }
     )
     b = m.fs.unit
@@ -212,10 +214,8 @@ if __name__ == "__main__":
     # m.fs.unit.eq_electroneutrality_interface.deactivate()
     # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
 
-    # deactivate feed electroneutrality constraint
-    m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
-    m.fs.unit.eq_no_concentration_polarization.deactivate()
+    # m.fs.unit.eq_no_concentration_polarization.deactivate()
     # try:
     m.fs.unit.initialize(
         automate_rescale=True,

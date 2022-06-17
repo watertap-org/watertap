@@ -69,8 +69,6 @@ solver = get_solver()
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    # NOTE: Not giving actual charges in order to test construction of
-    #   both the ion_set and solute_set
     m.fs.properties = DSPMDEParameterBlock(
         default={
             "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
@@ -87,6 +85,7 @@ def test_config():
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_pressure_change
+    assert not hasattr(m.fs.unit.config, "energy_balance_type")
     assert m.fs.unit.config.property_package is m.fs.properties
     assert (
         m.fs.unit.config.property_package.config.activity_coefficient_model
@@ -100,6 +99,10 @@ def test_config():
         m.fs.unit.config.mass_transfer_coefficient
         == MassTransferCoefficient.spiral_wound
     )
+    assert hasattr(m.fs.unit.config.property_package, "solute_set")
+    assert hasattr(m.fs.unit.config.property_package, "ion_set")
+    assert hasattr(m.fs.unit.config.property_package, "cation_set")
+    assert hasattr(m.fs.unit.config.property_package, "anion_set")
 
 
 class TestNanoFiltration:
@@ -212,7 +215,8 @@ class TestNanoFiltration:
         m.fs.unit.spacer_mixing_efficiency.fix()
         m.fs.unit.spacer_mixing_length.fix()
         m.fs.unit.channel_height.fix(5e-4)
-        m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.5)
+        m.fs.unit.velocity[0, 0].fix(0.25)
+        m.fs.unit.area.fix(50)
 
         return m
 
@@ -262,7 +266,7 @@ class TestNanoFiltration:
         assert isinstance(m.fs.unit.pore_exit, DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 558
+        assert number_variables(m) == 561
         assert number_total_constraints(m) == 524
         assert number_unused_variables(m) == 11
 

@@ -68,10 +68,15 @@ _log = idaeslog.getLogger(__name__)
 
 
 class MassTransferCoefficient(Enum):
-    fixed = auto()  # mass transfer coefficient is a user specified value
-    spiral_wound = (
-        auto()
-    )  # mass transfer coefficient is calculated using spiral wound correlation
+    # mass transfer coefficient is a user specified value
+    fixed = auto()
+    # mass transfer coefficient is calculated using spiral wound correlation
+    spiral_wound = auto()
+
+
+class ConcentrationPolarizationType(Enum):
+    none = auto()
+    calculated = auto()
 
 
 @declare_process_block_class("NanofiltrationDSPMDE0D")
@@ -202,6 +207,25 @@ class NanofiltrationData(UnitModelBlockData):
             "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
             "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on
             spiral wound module correlation"
+        """,
+        ),
+    )
+    CONFIG.declare(
+        "concentration_polarization_type",
+        ConfigValue(
+            default=ConcentrationPolarizationType.calculated,
+            domain=In(ConcentrationPolarizationType),
+            description="External concentration polarization effect in RO",
+            doc="""
+            Options to account for concentration polarization.
+
+            **default** - ``ConcentrationPolarizationType.calculated``
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
+            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
         """,
         ),
     )
@@ -691,23 +715,26 @@ class NanofiltrationData(UnitModelBlockData):
                 * b.partition_factor_donnan_comp_permeate[t, x, j]
             )
 
-        # 3. Feed-solution/membrane electroneutrality, DOF=1 *2 for inlet/outlet: DOF= 2
-        @self.Constraint(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            doc="Electroneutrality at feed-side membrane interface",
-        )
-        def eq_electroneutrality_interface(b, t, x, p):
-            return (
-                sum(
-                    b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
-                    * b.feed_side.properties_interface[t, x].charge_comp[j]
-                    for j in solute_set
-                )
-                == 0
+        if (
+            self.config.concentration_polarization_type
+            == ConcentrationPolarizationType.calculated
+        ):
+            # 3. Feed-solution/membrane electroneutrality, DOF=1 *2 for inlet/outlet: DOF= 2
+            @self.Constraint(
+                self.flowsheet().config.time,
+                io_list,
+                phase_list,
+                doc="Electroneutrality at feed-side membrane interface",
             )
-            #
+            def eq_electroneutrality_interface(b, t, x, p):
+                return (
+                    sum(
+                        b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
+                        * b.feed_side.properties_interface[t, x].charge_comp[j]
+                        for j in solute_set
+                    )
+                    == 0
+                )
 
         # 4. Charge balance inside the membrane, DOF=N nodes across membrane thickness *2 for inlet/outlet: N=2, DOF=4
         @self.Constraint(
@@ -871,34 +898,38 @@ class NanofiltrationData(UnitModelBlockData):
             elif x:
                 bulk = b.feed_side.properties_out[t]
             interface = b.feed_side.properties_interface[t, x]
-            return (
-                b.flux_mol_phase_comp[t, x, p, j]
-                == -b.Kf_comp[t, x, j]
-                * (interface.conc_mol_phase_comp[p, j] - bulk.conc_mol_phase_comp[p, j])
-                + b.flux_vol_water[t, x] * interface.conc_mol_phase_comp[p, j]
-                - interface.charge_comp[j]
-                * interface.conc_mol_phase_comp[p, j]
-                * interface.diffus_phase_comp[p, j]
-                * Constants.faraday_constant
-                / Constants.gas_constant
-                / interface.temperature
-                * b.electric_potential_grad_feed_interface[t, x]
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            solute_set,
-            doc="Feed-interface mass transfer resistance accounting for concentration polarization",
-        )
-        def eq_no_concentration_polarization(b, t, x, p, j):
-            if x == 0:
-                bulk = b.feed_side.properties_in[t]
-            elif x:
-                bulk = b.feed_side.properties_out[t]
-            interface = b.feed_side.properties_interface[t, x]
-            return interface.conc_mol_phase_comp[p, j] == bulk.conc_mol_phase_comp[p, j]
+            if (
+                self.config.concentration_polarization_type
+                == ConcentrationPolarizationType.calculated
+            ):
+                return (
+                    b.flux_mol_phase_comp[t, x, p, j]
+                    == -b.Kf_comp[t, x, j]
+                    * (
+                        interface.conc_mol_phase_comp[p, j]
+                        - bulk.conc_mol_phase_comp[p, j]
+                    )
+                    + b.flux_vol_water[t, x] * interface.conc_mol_phase_comp[p, j]
+                    - interface.charge_comp[j]
+                    * interface.conc_mol_phase_comp[p, j]
+                    * interface.diffus_phase_comp[p, j]
+                    * Constants.faraday_constant
+                    / Constants.gas_constant
+                    / interface.temperature
+                    * b.electric_potential_grad_feed_interface[t, x]
+                )
+            elif (
+                self.config.concentration_polarization_type
+                == ConcentrationPolarizationType.none
+            ):
+                return (
+                    interface.conc_mol_phase_comp[p, j]
+                    == bulk.conc_mol_phase_comp[p, j]
+                )
+            else:
+                raise ConfigurationError(
+                    "Provide a valid value for concentration_polarization_type"
+                )
 
         # 9. Isothermal conditions at permeate inlet/outlet, DOF= 1*2 for inlet/outlet
         @self.Constraint(
@@ -1145,26 +1176,6 @@ class NanofiltrationData(UnitModelBlockData):
             return (
                 b.permeate_side[t, x].flow_vol_phase["Liq"]
                 == b.mixed_permeate[t].flow_vol_phase["Liq"]
-            )
-
-        # Experimental Constraint
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            doc="Electroneutrality in bulk feed",
-        )
-        def eq_electroneutrality_feed(b, t, x, p):
-            if not x:
-                props = b.properties_in[t]
-            else:
-                props = b.properties_out[t]
-            return (
-                sum(
-                    props.conc_mol_phase_comp[p, j] * props.charge_comp[j]
-                    for j in solute_set
-                )
-                == 0
             )
 
     def _make_expressions(self):
@@ -2055,16 +2066,13 @@ class NanofiltrationData(UnitModelBlockData):
                 )
         for con in self.eq_interfacial_partitioning_permeate.values():
             iscale.constraint_scaling_transform(con, 1e-1)
-
-        for con in self.feed_side.eq_electroneutrality_feed.values():
-            iscale.constraint_scaling_transform(con, 1e-3)
-        for con in self.eq_electroneutrality_interface.values():
-            iscale.constraint_scaling_transform(con, 1e-3)
         for con in self.eq_electroneutrality_pore.values():
             iscale.constraint_scaling_transform(con, 1e-4)
         for con in self.eq_electroneutrality_permeate.values():
             iscale.constraint_scaling_transform(con, 1e-5)
-
+        if hasattr(self, "eq_electroneutrality_interface"):
+            for con in self.eq_electroneutrality_interface.values():
+                iscale.constraint_scaling_transform(con, 1e-3)
         # for con in self.eq_area.values():
         #     iscale.constraint_scaling_transform(con, 1)
         # for con in self.eq_permeate_isothermal.values():
