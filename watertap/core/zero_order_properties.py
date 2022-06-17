@@ -24,8 +24,8 @@ from idaes.core import (
     StateBlockData,
     declare_process_block_class,
 )
-from idaes.core.components import Solvent, Solute
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Solvent, Solute
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
