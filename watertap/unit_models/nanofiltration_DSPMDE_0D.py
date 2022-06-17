@@ -1457,6 +1457,7 @@ class NanofiltrationData(UnitModelBlockData):
                     f"{len(badly_scaled_vars)} poorly scaled "
                     f"variable(s) will be rescaled so that each scaled variable value = 1"
                 )
+                [print(i[0], i[1]) for i in badly_scaled_vars]
                 self._automate_rescale_variables()
         # ---------------------------------------------------------------------
         # Solve unit attempt 1
@@ -1896,7 +1897,7 @@ class NanofiltrationData(UnitModelBlockData):
 
         # setting scaling factors for variables
         if iscale.get_scaling_factor(self.radius_pore) is None:
-            iscale.set_scaling_factor(self.radius_pore, 1e10)
+            iscale.set_scaling_factor(self.radius_pore, 1e11)
         if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
             iscale.set_scaling_factor(self.membrane_thickness_effective, 1e7)
 

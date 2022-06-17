@@ -192,10 +192,10 @@ if __name__ == "__main__":
         "flow_mol_phase_comp", 1e-1, index=("Liq", "Mg_2+")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-3, index=("Liq", "Cl_-")
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e-3, index=("Liq", "Na_+")
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
     )
     m.fs.properties.set_default_scaling(
         "flow_mol_phase_comp", 1e-3, index=("Liq", "H2O")
@@ -208,13 +208,13 @@ if __name__ == "__main__":
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
 
     # deactivate concentration polarization and interface electroneutrality
-    m.fs.unit.eq_electroneutrality_interface.deactivate()
-    m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
+    # m.fs.unit.eq_electroneutrality_interface.deactivate()
+    # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
 
     # deactivate feed electroneutrality constraint
     m.fs.unit.feed_side.eq_electroneutrality_feed.deactivate()
     # deactivate NO concentration polarization
-    # m.fs.unit.eq_no_concentration_polarization.deactivate()
+    m.fs.unit.eq_no_concentration_polarization.deactivate()
     try:
         m.fs.unit.initialize(
             automate_rescale=True,
@@ -288,11 +288,11 @@ if __name__ == "__main__":
     # More Degeneracy Hunter troubleshooting
     # dh.check_residuals(tol=1e-10)
     # dh.check_variable_bounds(tol=1e-2, relative=True)
-    try:
-        dh.check_rank_equality_constraints()
-    except:
-        ds2 = dh.find_candidate_equations(verbose=True, tee=True)
-        ids = dh.find_irreducible_degenerate_sets(verbose=True, tee=False)
+    # try:
+    #     dh.check_rank_equality_constraints()
+    # except:
+    #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
+    #     ids = dh.find_irreducible_degenerate_sets(verbose=True, tee=False)
 
     b.rejection_intrinsic_phase_comp.display()
     b.rejection_observed_phase_comp.display()
