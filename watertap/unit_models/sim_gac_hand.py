@@ -56,7 +56,7 @@ def main():
     m.fs.gac = GAC(
         default={
             "property_package": m.fs.properties,
-            "film_transfer_rate_type": "fixed",
+            "film_transfer_coefficient_type": "fixed",
             "surface_diffusion_coefficient_type": "fixed",
         }
     )
@@ -66,7 +66,7 @@ def main():
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.gac.inlet)
     m.fs.s02 = Arc(source=m.fs.gac.outlet, destination=m.fs.prod.inlet)
-    m.fs.s03 = Arc(source=m.fs.gac.spent_gac, destination=m.fs.remo.inlet)
+    m.fs.s03 = Arc(source=m.fs.gac.adsorbed, destination=m.fs.remo.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -97,23 +97,17 @@ def main():
 
     # gac specifications
     # trial problem from Hand, 1984 for removal of trace DCE
-    # --------------------------------------------------------------------
-    # specify two of three of these
-    # m.fs.gac.target_removal_frac["DCE"].fix(0.95)
-    m.fs.gac.replace_removal_frac["DCE"].fix(0.5)
-    m.fs.gac.replace_gac_saturation_frac.fix(0.99)
-    # --------------------------------------------------------------------
+    m.fs.gac.conc_ratio_replace.fix(0.50)
     m.fs.gac.freund_k.fix(37.9e-6 * (1e6**0.8316))
     m.fs.gac.freund_ninv.fix(0.8316)
     m.fs.gac.ebct.fix(300)  # seconds
-    m.fs.gac.void_bed.fix(0.449)
-    m.fs.gac.void_particle.fix(0.5)
+    m.fs.gac.bed_voidage.fix(0.449)
+    m.fs.gac.bed_length.fix(6)  # assumed
+    m.fs.gac.particle_porosity.fix(0.5)
     m.fs.gac.particle_dens_app.fix(722)
-    m.fs.gac.particle_dp.fix(0.00106)
+    m.fs.gac.particle_dia.fix(0.00106)
     m.fs.gac.kf.fix(3.29e-5)
     m.fs.gac.ds.fix(1.77e-13)
-    m.fs.gac.velocity_sup.fix(5 / 3600)  # assumed
-    # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(3.68421)
     m.fs.gac.a1.fix(13.1579)
     m.fs.gac.b0.fix(0.784576)
@@ -128,6 +122,8 @@ def main():
     m.fs.gac.initialize(optarg=optarg)
     m.fs.prod.initialize(optarg=optarg)
     m.fs.remo.initialize(optarg=optarg)
+
+    [print(i[0], i[1], i[0].value) for i in iscale.badly_scaled_var_generator(m)]
 
     # solving
     assert_units_consistent(m)  # check that units are consistent
@@ -144,7 +140,7 @@ def main():
     """
     # run simulation
     results = solver.solve(m, tee=False)
-    # assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.termination_condition == TerminationCondition.optimal
     # """
     # displays
     st = create_stream_table_dataframe(
