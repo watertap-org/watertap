@@ -60,11 +60,6 @@ class MixerType(StrEnum):
     CaOH2 = "CaOH2"
 
 
-# # TODO: Revisit types of costs for different options
-class ElectrodialysisCostType(StrEnum):
-    default = "default"
-
-
 class CrystallizerCostType(StrEnum):
     default = "default"
     mass_basis = "mass_basis"
@@ -415,6 +410,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
+        make_capital_cost_var(blk)
+        make_fixed_operating_cost_var(blk)
+
         cost_membrane(
             blk,
             blk.costing_package.nanofiltration_membrane_cost,
@@ -443,6 +441,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f"{blk.unit_model.name} received invalid argument for ro_type:"
                 f" {ro_type}. Argument must be a member of the ROType Enum."
             )
+        make_capital_cost_var(blk)
+        make_fixed_operating_cost_var(blk)
+
         cost_membrane(
             blk, membrane_cost, blk.costing_package.factor_membrane_replacement
         )
@@ -691,9 +692,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_electrodialysis(
-        blk, cost_type=ElectrodialysisCostType.default, cost_electricity_flow=True
-    ):
+    def cost_electrodialysis(blk, cost_electricity_flow=True):
         """
         Function for costing the Electrodialysis unit
 
@@ -702,16 +701,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         t0 = blk.flowsheet().time.first()
 
-        # # TODO: Clean up cost type options
-        if cost_type == ElectrodialysisCostType.default:
-            membrane_cost = blk.costing_package.electrodialysis_total_membrane_cost
-            spacer_cost = blk.costing_package.electrodialysis_total_flowspacer_cost
-            electrode_cost = blk.costing_package.electrodialysis_total_electrode_cost
-        else:
-            raise ConfigurationError(
-                f"{blk.unit_model.name} received invalid argument for cost_type:"
-                f" {cost_type}. Argument must be a member of the ElectrodialysisCostType Enum."
-            )
+        membrane_cost = blk.costing_package.electrodialysis_total_membrane_cost
+        spacer_cost = blk.costing_package.electrodialysis_total_flowspacer_cost
+        electrode_cost = blk.costing_package.electrodialysis_total_electrode_cost
 
         make_capital_cost_var(blk)
         make_fixed_operating_cost_var(blk)
@@ -853,8 +845,6 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
 
     """
-    make_capital_cost_var(blk)
-    make_fixed_operating_cost_var(blk)
 
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)

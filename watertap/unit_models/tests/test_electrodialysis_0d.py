@@ -14,7 +14,6 @@ import pytest
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 from watertap.unit_models.electrodialysis_0d import Electrodialysis0D
 from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import ElectrodialysisCostType
 from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
@@ -275,9 +274,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": ElectrodialysisCostType.default
-                },
+                "costing_method_arguments": {},
             },
         )
         m.fs.costing.cost_process()
@@ -320,9 +317,7 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": ElectrodialysisCostType.default
-                },
+                "costing_method_arguments": {},
             },
         )
         # This function constructs all the costing vars and constraints
