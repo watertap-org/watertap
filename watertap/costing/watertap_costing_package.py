@@ -889,6 +889,8 @@ def cost_electrodialysis_stack(
                                         [fraction of electrodes replaced/year]
 
     """
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
 
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.membrane_replacement_factor = pyo.Expression(expr=membrane_replacement_factor)
