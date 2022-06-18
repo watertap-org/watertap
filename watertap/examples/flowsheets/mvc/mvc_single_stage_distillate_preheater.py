@@ -98,16 +98,7 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
-    # make into a function to add pressure drop
     add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
-    # m.fs.hx_distillate.cold.pressure_balance.deactivate()
-    # m.fs.hx_distillate.hot.pressure_balance.deactivate()
-    # m.fs.hx_distillate.cold.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
-    # m.fs.hx_distillate.hot.deltaP = Var(m.fs.config.time,initialize=7e4,units=pyunits.Pa)
-    # m.fs.hx_distillate.cold.pressure_drop = Constraint(expr=m.fs.hx_distillate.cold.properties_in[0].pressure == m.fs.hx_distillate.cold.properties_out[0].pressure
-    #                                                    + m.fs.hx_distillate.cold.deltaP[0])
-    # m.fs.hx_distillate.hot.pressure_drop = Constraint(expr=m.fs.hx_distillate.hot.properties_in[0].pressure == m.fs.hx_distillate.hot.properties_out[0].pressure
-    #                                                    + m.fs.hx_distillate.hot.deltaP[0])
 
     # m.fs.mixer_feed = Mixer(
     #     default={

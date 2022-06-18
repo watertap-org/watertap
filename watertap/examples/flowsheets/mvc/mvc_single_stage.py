@@ -17,6 +17,7 @@ from pyomo.environ import (
     Expression,
     Objective,
     Param,
+    Var,
     TransformationFactory,
     units as pyunits,
     assert_optimal_termination,
@@ -82,7 +83,7 @@ def build():
     m.fs.separator_feed = Separator(
         default={
             "property_package": m.fs.properties_feed,
-            "outlet_list": [""]
+            "outlet_list": ["hx_distillate_cold", "hx_brine_cold"]
         }
     )
     m.fs.hx_distillate = HeatExchanger(
@@ -95,11 +96,23 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
+    add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
+    m.fs.hx_brine = HeatExchanger(
+        default={
+            "hot_side_name": "hot",
+            "cold_side_name": "cold",
+            "hot": {"property_package": m.fs.properties_feed},
+            "cold": {"property_package": m.fs.properties_feed},
+            "delta_temperature_callback": delta_temperature_chen_callback,
+            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
+        }
+    )
+    add_pressure_drop_to_hx(m.fs.hx_brine, m.fs.config.time)
     m.fs.mixer_feed = Mixer(
         default={
             "property_package": m.fs.properties_feed,
             "momentum_mixing_type": MomentumMixingType.equality,
-            "inlet_list": []
+            "inlet_list": ["hx_distillate_cold", "hx_brine_cold"]
         }
     )
 
@@ -124,25 +137,26 @@ def build():
 
     # Connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_feed.inlet)
-    m.fs.s02 = Arc(
-        source=m.fs.pump_feed.outlet, destination=m.fs.hx_distillate.cold_inlet
-    )
-    m.fs.s03 = Arc(
-        source=m.fs.hx_distillate.cold_outlet, destination=m.fs.evaporator.inlet_feed
-    )
-    m.fs.s04 = Arc(
+    m.fs.s02 = Arc(source=m.fs.pump_feed.outlet, destination=m.fs.separator_feed.inlet)
+    m.fs.s03 = Arc(source=m.fs.separator_feed.hx_distillate_cold, destination=m.fs.hx_distillate.cold_inlet)
+    m.fs.s04 = Arc(source=m.fs.separator_feed.hx_brine_cold, destination=m.fs.hx_brine.cold_inlet)
+    m.fs.s05 = Arc(source=m.fs.hx_distillate.cold_outlet, destination=m.fs.mixer_feed.hx_distillate_cold)
+    m.fs.s06 = Arc(source=m.fs.hx_brine.cold_outlet, destination=m.fs.mixer_feed.hx_brine_cold)
+    m.fs.s07 = Arc(source=m.fs.mixer_feed.outlet, destination=m.fs.evaporator.inlet_feed)
+    m.fs.s08 = Arc(
         source=m.fs.evaporator.outlet_vapor, destination=m.fs.compressor.inlet
     )
-    m.fs.s05 = Arc(source=m.fs.compressor.outlet, destination=m.fs.condenser.inlet)
-    m.fs.s06 = Arc(
+    m.fs.s09 = Arc(source=m.fs.compressor.outlet, destination=m.fs.condenser.inlet)
+    m.fs.s10 = Arc(
         source=m.fs.evaporator.outlet_brine, destination=m.fs.pump_brine.inlet
     )
-    m.fs.s07 = Arc(source=m.fs.pump_brine.outlet, destination=m.fs.brine.inlet)
-    m.fs.s08 = Arc(source=m.fs.condenser.outlet, destination=m.fs.pump_distillate.inlet)
-    m.fs.s09 = Arc(
+    m.fs.s11 = Arc(source=m.fs.pump_brine.outlet, destination=m.fs.hx_brine.hot_inlet)
+    m.fs.s12 = Arc(source=m.fs.hx_brine.hot_outlet, destination=m.fs.brine.inlet)
+    m.fs.s13 = Arc(source=m.fs.condenser.outlet, destination=m.fs.pump_distillate.inlet)
+    m.fs.s14 = Arc(
         source=m.fs.pump_distillate.outlet, destination=m.fs.hx_distillate.hot_inlet
     )
-    m.fs.s10 = Arc(
+    m.fs.s15 = Arc(
         source=m.fs.hx_distillate.hot_outlet, destination=m.fs.distillate.inlet
     )
 
@@ -169,6 +183,9 @@ def build():
     iscale.set_scaling_factor(m.fs.pump_feed.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.pump_brine.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.pump_distillate.control_volume.work, 1e-3)
+
+    # separator
+
     # heat exchangers
     iscale.set_scaling_factor(m.fs.hx_distillate.hot.heat, 1e-3)
     iscale.set_scaling_factor(m.fs.hx_distillate.cold.heat, 1e-3)
@@ -176,6 +193,13 @@ def build():
         m.fs.hx_distillate.overall_heat_transfer_coefficient, 1e-3
     )
     iscale.set_scaling_factor(m.fs.hx_distillate.area, 1)
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.cold.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(m.fs.hx_distillate.hot.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(m.fs.hx_brine.cold.pressure_drop, 1e-5)
+    iscale.constraint_scaling_transform(m.fs.hx_brine.hot.pressure_drop, 1e-5)
+
+    # mixer
+
     # evaporator
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
@@ -195,6 +219,17 @@ def build():
 
     return m
 
+def add_pressure_drop_to_hx(hx_blk, time_point):
+    # input: hx_blk - heat exchanger block
+    # output: deactivates control volume pressure balance and adds pressure drop to pressure balance equation
+    hx_blk.cold.pressure_balance.deactivate()
+    hx_blk.hot.pressure_balance.deactivate()
+    hx_blk.cold.deltaP = Var(time_point,initialize=7e4,units=pyunits.Pa)
+    hx_blk.hot.deltaP = Var(time_point,initialize=7e4,units=pyunits.Pa)
+    hx_blk.cold.pressure_drop = Constraint(expr=hx_blk.cold.properties_in[0].pressure == hx_blk.cold.properties_out[0].pressure
+                                                       + hx_blk.cold.deltaP[0])
+    hx_blk.hot.pressure_drop = Constraint(expr=hx_blk.hot.properties_in[0].pressure == hx_blk.hot.properties_out[0].pressure
+                                                       + hx_blk.hot.deltaP[0])
 
 def set_operating_conditions(m):
     # Feed inlet
@@ -206,8 +241,11 @@ def set_operating_conditions(m):
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
 
-    # Split ratio
+    # Separator
+    alpha = 0.5
+    m.fs.hx_distillate.cold.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].fix(alpha*m.fs.feed.properties[0].flow_mass_phase_comp["Liq",'H2O'].value)
 
+    assert False
     # Heat exchangers
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
     m.fs.hx_distillate.area.fix(100)
