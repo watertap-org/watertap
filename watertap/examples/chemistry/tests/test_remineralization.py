@@ -53,41 +53,45 @@ from pyomo.util.check_units import assert_units_consistent
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, VaporPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.components import Solvent, Solute, Cation, Anion, Apparent
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Solute, Cation, Anion, Apparent
+from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure import Perrys, NIST
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.generic.generic_property import StateIndex
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.pure import Perrys, NIST
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.base.generic_property import StateIndex
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 
 # Importing the generic model information and objects
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
-from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.unit_models.cstr import CSTR
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.cstr import CSTR
 
 # Import specific pyomo objects
 from pyomo.environ import (
@@ -102,7 +106,7 @@ from pyomo.environ import (
 from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.scaling import badly_scaled_var_generator
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 import idaes.logger as idaeslog

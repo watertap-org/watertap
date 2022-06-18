@@ -38,21 +38,21 @@ an ``"Apparent"`` species.
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. testcode::
+.. doctest::
 
   from pyomo.environ import units as pyunits
   from idaes.core import AqueousPhase
 
   # Add Apparent in this import statement
-  from idaes.core.components import Solvent, Cation, Anion, Apparent
+  from idaes.core.base.components import Solvent, Cation, Anion, Apparent
 
-  import idaes.generic_models.properties.core.pure.Perrys as Perrys
-  from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-  from idaes.generic_models.properties.core.state_definitions import FTPx
-  from idaes.generic_models.properties.core.eos.ideal import Ideal
+  import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+  from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+  from idaes.models.properties.modular_properties.state_definitions import FTPx
+  from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
   # Add the import for StateIndex
-  from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+  from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 
   # Configuration dictionary
   thermo_config = {

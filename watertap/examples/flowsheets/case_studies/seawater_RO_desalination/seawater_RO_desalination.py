@@ -22,19 +22,19 @@ from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
     revert_state_vars,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models.translator import Translator
-from idaes.generic_models.unit_models import Mixer, Separator, Product
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.translator import Translator
+from idaes.models.unit_models import Mixer, Separator, Product
+from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 import watertap.property_models.seawater_prop_pack as prop_SW
 from watertap.unit_models.reverse_osmosis_0D import (
