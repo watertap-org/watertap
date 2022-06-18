@@ -112,9 +112,9 @@ def main(erd_type="pressure_exchanger"):
     #
     # set_operating_conditions(m)
     # assert_degrees_of_freedom(m, 0)
-    #
-    # initialize_system(m)
-    # assert_degrees_of_freedom(m, 0)
+
+    initialize_system(m)
+    assert_degrees_of_freedom(m, 0)
 
     solve(m)
     display_results(m)
