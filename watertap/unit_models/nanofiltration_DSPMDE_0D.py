@@ -1486,7 +1486,7 @@ class NanofiltrationData(UnitModelBlockData):
         if automate_rescale:
             badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
             if len(badly_scaled_vars) > 0:
-                init_log.warn(
+                init_log.warning(
                     f"{len(badly_scaled_vars)} poorly scaled "
                     f"variable(s) will be rescaled so that each scaled variable value = 1"
                 )
@@ -1498,7 +1498,7 @@ class NanofiltrationData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
-                init_log.warn(
+                init_log.warning(
                     "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
                 )
         # ---------------------------------------------------------------------
@@ -1506,7 +1506,7 @@ class NanofiltrationData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
-                init_log.warn(
+                init_log.warning(
                     "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
                 )
                 res = opt.solve(self, tee=slc.tee)
