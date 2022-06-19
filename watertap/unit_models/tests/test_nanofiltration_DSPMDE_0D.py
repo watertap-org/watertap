@@ -52,6 +52,7 @@ from idaes.core.util.model_statistics import (
     unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
@@ -1667,3 +1668,237 @@ def test_inverse_solve():
         )
 
     m.fs.unit.report()
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
+def test_mass_transfer_coeff_fixed():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = DSPMDEParameterBlock(
+        default={
+            "solute_list": [
+                "Na_+",
+                "Cl_-",
+            ],
+            "diffusivity_data": {
+                ("Liq", "Na_+"): 1.33e-9,
+                ("Liq", "Cl_-"): 2.03e-9,
+            },
+            "mw_data": {
+                "H2O": 18e-3,
+                "Na_+": 23e-3,
+                "Cl_-": 35e-3,
+            },
+            "stokes_radius_data": {
+                "Cl_-": 0.121e-9,
+                "Na_+": 0.184e-9,
+            },
+            "charge": {
+                "Na_+": 1,
+                "Cl_-": -1,
+            },
+            "activity_coefficient_model": ActivityCoefficientModel.davies,
+            "density_calculation": DensityCalculation.constant,
+        }
+    )
+
+    m.fs.unit = NanofiltrationDSPMDE0D(
+        default={
+            "property_package": m.fs.properties,
+            "mass_transfer_coefficient": MassTransferCoefficient.fixed,
+        }
+    )
+
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(47.356)
+
+    # Fix other inlet state variables
+    m.fs.unit.inlet.temperature[0].fix(298.15)
+    m.fs.unit.inlet.pressure[0].fix(4e5)
+
+    # Fix the membrane variables that are usually fixed for the DSPM-DE model
+    m.fs.unit.radius_pore.fix(0.5e-9)
+    m.fs.unit.membrane_thickness_effective.fix(1.33e-6)
+    m.fs.unit.membrane_charge_density.fix(-27)
+    m.fs.unit.dielectric_constant_pore.fix(41.3)
+
+    # Fix final permeate pressure to be ~atmospheric
+    m.fs.unit.mixed_permeate[0].pressure.fix(101325)
+
+    m.fs.unit.spacer_porosity.fix(0.85)
+    m.fs.unit.channel_height.fix(5e-4)
+    m.fs.unit.velocity[0, 0].fix(0.25)
+    m.fs.unit.area.fix(50)
+
+    # Fix mass transfer coefficient for each ion
+    m.fs.unit.Kf_comp.fix(1e-5)
+
+    check_dof(m, fail_flag=True)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
+    )
+
+    calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
+    [print(i) for i in unscaled_var_list]
+    assert len(unscaled_var_list) == 0
+
+    badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
+    assert len(unscaled_var_list) == 0
+
+    # not all constraints have scaling factor so skipping the check for unscaled constraints
+    unscaled_con_lst = list(unscaled_constraints_generator(m))
+    [print(i) for i in unscaled_con_lst]
+    assert len(unscaled_con_lst) == 0
+
+    initialization_tester(m)
+
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].unfix()
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].unfix()
+    m.fs.unit.inlet.temperature[0].unfix()
+    m.fs.unit.inlet.pressure[0].unfix()
+
+    m.fs.unit.retentate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
+    m.fs.unit.retentate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.429868)
+    m.fs.unit.retentate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(47.356)
+    m.fs.unit.retentate.temperature[0].fix(298.15)
+    m.fs.unit.retentate.pressure[0].fix(4e5)
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)
+
+    b = m.fs.unit
+    comp_lst = m.fs.properties.solute_set
+
+    flow_mass_inlet = sum(
+        b.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+    )
+    flow_mass_retentate = sum(
+        b.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+    )
+    flow_mass_permeate = sum(
+        b.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+    )
+
+    assert (
+        abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate)) <= 1e-6
+    )
+
+    mole_flux_dict = {
+        "Na_+": 0.00107097,
+        "Cl_-": 0.00107097,
+        "H2O": 0.12989686,
+    }
+    for j, val in mole_flux_dict.items():
+        assert pytest.approx(val, rel=1e-3) == value(
+            m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
+        )
+
+    intrinsic_rejection_dict = {
+        "Na_+": 0.09700,
+        "Cl_-": 0.09700,
+    }
+    for j, val in intrinsic_rejection_dict.items():
+        assert pytest.approx(val, rel=1e-3) == value(
+            m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
+        )
+    flow_mol_in_dict = {"Na_+": 0.483564, "Cl_-": 0.483564, "H2O": 53.821}
+    for j, val in flow_mol_in_dict.items():
+        assert pytest.approx(val, rel=1e-3) == value(
+            m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", j]
+        )
+
+
+@pytest.mark.unit
+def test_mass_transfer_CP_config_errors():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = DSPMDEParameterBlock(
+        default={
+            "solute_list": [
+                "Na_+",
+                "Cl_-",
+            ],
+            "diffusivity_data": {
+                ("Liq", "Na_+"): 1.33e-9,
+                ("Liq", "Cl_-"): 2.03e-9,
+            },
+            "mw_data": {
+                "H2O": 18e-3,
+                "Na_+": 23e-3,
+                "Cl_-": 35e-3,
+            },
+            "stokes_radius_data": {
+                "Cl_-": 0.121e-9,
+                "Na_+": 0.184e-9,
+            },
+            "charge": {
+                "Na_+": 1,
+                "Cl_-": -1,
+            },
+            "activity_coefficient_model": ActivityCoefficientModel.davies,
+            "density_calculation": DensityCalculation.constant,
+        }
+    )
+
+    with pytest.raises(
+        ConfigurationError,
+        match="\nConflict between configuration options:\n"
+        "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.fixed "
+        "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.none.\n\n"
+        "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+        "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
+    ):
+        m.fs.unit = NanofiltrationDSPMDE0D(
+            default={
+                "property_package": m.fs.properties,
+                "mass_transfer_coefficient": MassTransferCoefficient.fixed,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+            }
+        )
+
+    with pytest.raises(
+        ConfigurationError,
+        match="\nConflict between configuration options:\n"
+        "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
+        "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n\n"
+        "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+        "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
+    ):
+        m.fs.unit = NanofiltrationDSPMDE0D(
+            default={
+                "property_package": m.fs.properties,
+                "mass_transfer_coefficient": MassTransferCoefficient.none,
+                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            }
+        )
+
+    with pytest.raises(
+        ConfigurationError,
+        match="\nConflict between configuration options:\n"
+        "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.spiral_wound "
+        "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.none.\n\n"
+        "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+        "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
+    ):
+        m.fs.unit = NanofiltrationDSPMDE0D(
+            default={
+                "property_package": m.fs.properties,
+                "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound,
+                "concentration_polarization_type": ConcentrationPolarizationType.none,
+            }
+        )

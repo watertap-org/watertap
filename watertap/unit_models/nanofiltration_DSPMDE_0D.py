@@ -259,6 +259,10 @@ class NanofiltrationData(UnitModelBlockData):
             self.config.concentration_polarization_type
             != ConcentrationPolarizationType.calculated
             and self.config.mass_transfer_coefficient != MassTransferCoefficient.none
+        ) or (
+            self.config.concentration_polarization_type
+            == ConcentrationPolarizationType.calculated
+            and self.config.mass_transfer_coefficient == MassTransferCoefficient.none
         ):
             raise ConfigurationError(
                 "\nConflict between configuration options:\n"
