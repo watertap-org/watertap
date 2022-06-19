@@ -97,6 +97,20 @@ class Electrodialysis1DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
+    constructed,
+    **default** - False.
+    **Valid values:** {
+    **True** - include pressure change terms,
+    **False** - exclude pressure change terms.}""",
+        ),
+    )
+    CONFIG.declare(
         "operation_mode",
         ConfigValue(
             default="Constant_Current",
@@ -287,7 +301,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                 has_enthalpy_transfer=False,
             )
         self.diluate.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type, has_pressure_change=False
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=self.config.has_pressure_change,
         )
 
         # Below is declared the electrical power var and its derivative var, which is a performance metric of the entire electrodialysis stack.
@@ -336,7 +351,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                 has_enthalpy_transfer=False,
             )
         self.concentrate.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type, has_pressure_change=False
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=self.config.has_pressure_change,
         )
         self.concentrate.apply_transformation()
 
@@ -366,13 +382,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             )
 
         # Create unit model parameters and vars
-        self.water_density = Param(
-            initialize=1000,
-            mutable=False,
-            units=pyunits.kg * pyunits.m**-3,
-            doc="density of water",
-        )
-
         self.cell_pair_num = Var(
             initialize=1,
             domain=NonNegativeIntegers,
@@ -391,7 +400,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.spacer_thickness = Var(
             initialize=0.0001,
             units=pyunits.meter,
-            doc="The distance between the concecutive aem and cem",
+            doc="The distance between the consecutive aem and cem",
         )
 
         # Material and Operational properties
@@ -461,21 +470,14 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.amp,
             doc="Current across a cell-pair or stack",
         )
-        self.current_x = Var(
-            self.flowsheet().time,
-            self.diluate.length_domain,
-            initialize=1,
-            bounds=(0, 1000),
-            units=pyunits.amp,
-            doc="Current across a cell-pair or stack",
-        )
+
         self.current_density_x = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=1,
             bounds=(0, 1000),
             units=pyunits.amp * pyunits.meter**-2,
-            doc="Current across a cell-pair or stack",
+            doc="Current density accross the membrane as a function of the normalized length",
         )
 
         self.voltage_applied = Var(
@@ -619,9 +621,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="Mass transfer term diluate channel",
         )
         def eq_mass_transfer_term_diluate(self, t, x, p, j):
-            if x == self.diluate.length_domain.first():
-                return Constraint.Skip
-            elif j == "H2O":
+
+            if j == "H2O":
                 return self.diluate.mass_transfer_term[
                     t, x, p, j
                 ] == -self.cell_width * (
@@ -629,7 +630,9 @@ class Electrodialysis1DData(UnitModelBlockData):
                     + self.water_trans_number_membrane["aem"]
                 ) * (
                     self.current_density_x[t, x] / Constants.faraday_constant
-                ) - self.cell_width * self.water_density / self.config.property_package.mw_comp[
+                ) - self.cell_width * self.diluate.properties[
+                    0, self.diluate.length_domain.first()
+                ].dens_mass_solvent / self.config.property_package.mw_comp[
                     j
                 ] * (
                     self.water_permeability_membrane["cem"]
@@ -675,63 +678,17 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Mass Transfer for the Concentrate
         @self.Constraint(
             self.flowsheet().config.time,
-            self.concentrate.length_domain,
+            self.diluate.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer term concentrate channel",
         )
         def eq_mass_transfer_term_concentrate(self, t, x, p, j):
-            if x == self.concentrate.length_domain.first:
-                return Constraint.Skip
-            elif j == "H2O":
-                return self.concentrate.mass_transfer_term[
-                    t, x, p, j
-                ] == self.cell_width * (
-                    self.water_trans_number_membrane["cem"]
-                    + self.water_trans_number_membrane["aem"]
-                ) * (
-                    self.current_density_x[t, x] / Constants.faraday_constant
-                ) + self.cell_width * self.water_density / self.config.property_package.mw_comp[
-                    j
-                ] * (
-                    self.water_permeability_membrane["cem"]
-                    + self.water_permeability_membrane["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].pressure_osm_phase[p]
-                    - self.diluate.properties[t, x].pressure_osm_phase[p]
-                )
-            elif j in self.config.property_package.ion_set:
-                return self.concentrate.mass_transfer_term[
-                    t, x, p, j
-                ] == self.cell_width * (
-                    self.ion_trans_number_membrane["cem", j]
-                    - self.ion_trans_number_membrane["aem", j]
-                ) * (
-                    self.current_utilization * self.current_density_x[t, x]
-                ) / (
-                    self.config.property_package.charge_comp[j]
-                    * Constants.faraday_constant
-                ) - self.cell_width * (
-                    self.solute_diffusivity_membrane["cem", j]
-                    / self.membrane_thickness["cem"]
-                    + self.solute_diffusivity_membrane["aem", j]
-                    / self.membrane_thickness["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
-                    - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
-                )
-            else:
-                return self.concentrate.mass_transfer_term[
-                    t, x, p, j
-                ] == -self.cell_width * (
-                    self.solute_diffusivity_membrane["cem", j]
-                    / self.membrane_thickness["cem"]
-                    + self.solute_diffusivity_membrane["aem", j]
-                    / self.membrane_thickness["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
-                    - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
-                )
+
+            return (
+                self.concentrate.mass_transfer_term[t, x, p, j]
+                == -self.diluate.mass_transfer_term[t, x, p, j]
+            )
 
         # Performance Metrics calculation
         @self.Constraint(
@@ -775,20 +732,18 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="Overall current efficiency evaluation",
         )
         def eq_current_efficiency_x(self, t, x, p):
-            if x == self.diluate.length_domain.first():
-                return self.current_efficiency_x[t, x] == 0
-            else:
-                return (
-                    self.current_efficiency_x[t, x]
-                    * self.current_density_x[t, x]
-                    * self.cell_width
-                    == -sum(
-                        self.diluate.mass_transfer_term[t, x, p, j]
-                        * self.config.property_package.charge_comp[j]
-                        for j in cation_set
-                    )
-                    * Constants.faraday_constant
+
+            return (
+                self.current_efficiency_x[t, x]
+                * self.current_density_x[t, x]
+                * self.cell_width
+                == -sum(
+                    self.diluate.mass_transfer_term[t, x, p, j]
+                    * self.config.property_package.charge_comp[j]
+                    for j in cation_set
                 )
+                * Constants.faraday_constant
+            )
 
     # Intialization routines
     def initialize_build(
@@ -801,7 +756,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         ignore_dof=False,
     ):
         """
-        General wrapper for pressure changer initialization routines
+        General wrapper for electrodialysis_1D initialization routines
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -833,7 +788,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
                         "state variable basis to apply the 'propogate_initial_state' method"
                     )
-                if "teperature" in blk[k].diluate.properties[set].define_state_vars():
+                if "temperature" in blk[k].diluate.properties[set].define_state_vars():
                     blk[k].diluate.properties[set].temperature = value(
                         blk[k].diluate.properties[(0.0, 0.0)].temperature
                     )
@@ -875,7 +830,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         "state variable basis to apply the 'propogate_initial_state' method"
                     )
                 if (
-                    "teperature"
+                    "temperature"
                     in blk[k].concentrate.properties[set].define_state_vars()
                 ):
                     blk[k].concentrate.properties[set].temperature = value(
