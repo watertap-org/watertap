@@ -38,7 +38,7 @@ def set_up_sensitivity(m, withRO):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
+def run_analysis(case_num=7, nx=11, interpolate_nan_outputs=True, withRO=False):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
@@ -113,9 +113,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.waste_disposal_cost, 0, 10, nx
         )
     elif case_num == 7:
-        m.fs.feed.flow_vol.unfix()
-        sweep_params["feed_flow"] = LinearSample(
-            m.fs.feed.flow_vol, 0.01 / 3600, 120 / 3600, nx
+        m.fs.zo_costing.electricity_cost.unfix()
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
         )
     elif case_num == 8:
         m.fs.zo_costing.recovered_water_cost.unfix()
