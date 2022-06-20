@@ -71,7 +71,9 @@ def main():
 
     add_costing(m)
     initialize_costing(m)
-    assert_degrees_of_freedom(m, 0)
+    assert_degrees_of_freedom(m, 0)  # ensures problem is square
+
+    setup_optimize(m)  # unfixes specific variables for cost optimization
 
     solve(m)
     display_results(m)
@@ -328,6 +330,17 @@ def initialize_system(m):
     )
     solve(desal)
     desal.RO.initialize()
+    return
+
+
+def setup_optimize(m):
+    """
+    Unfixes RO operating pressure and membrane area variables to find optimal values
+    """
+    desal = m.fs.desalination
+
+    desal.P2.control_volume.properties_out[0].pressure.unfix()
+    desal.RO.area.unfix()
     return
 
 
