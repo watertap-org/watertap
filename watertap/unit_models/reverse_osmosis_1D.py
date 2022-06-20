@@ -29,9 +29,10 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
 )
-from idaes.core.control_volume1d import DistributedVars
+from idaes.core.base.control_volume1d import DistributedVars
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from watertap.core.util.initialization import check_solve, check_dof
 from watertap.unit_models._reverse_osmosis_base import (

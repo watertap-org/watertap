@@ -10,7 +10,7 @@ A number of methods are available for implementing common forms for calculating 
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData

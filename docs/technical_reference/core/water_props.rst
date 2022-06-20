@@ -8,7 +8,7 @@ Ideal Water Properties
 
 The ideal water properties module contains a simple property package for saline waters which is intended for use with the WaterTap zero-order unit model library. The ideal water property package can be used in a flowsheet as shown below:
 
-.. testcode::
+.. doctest::
 
   import pyomo.environ as pyo # Pyomo environment
 
