@@ -36,8 +36,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -51,7 +51,7 @@ from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.util.misc import extract_data
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

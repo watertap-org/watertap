@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Feed, Translator
+from idaes.models.unit_models import Feed, Translator
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     constraint_scaling_transform,

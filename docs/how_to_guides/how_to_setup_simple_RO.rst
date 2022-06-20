@@ -10,7 +10,7 @@ The example below shows how to setup and initialize a simple RO unit model.
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. testcode::
+.. doctest::
 
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel

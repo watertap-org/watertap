@@ -44,15 +44,15 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import (
     ConfigurationError,

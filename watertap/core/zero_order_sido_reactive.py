@@ -17,7 +17,7 @@ reactions.
 """
 
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 

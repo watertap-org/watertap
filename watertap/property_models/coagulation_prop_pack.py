@@ -40,8 +40,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component
-from idaes.core.phases import LiquidPhase, SolidPhase, PhaseType
+from idaes.core.base.components import Component
+from idaes.core.base.phases import LiquidPhase, SolidPhase, PhaseType
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -58,7 +58,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 

@@ -24,7 +24,7 @@ from idaes.core import FlowsheetBlock
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 import watertap.property_models.seawater_prop_pack as props
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
