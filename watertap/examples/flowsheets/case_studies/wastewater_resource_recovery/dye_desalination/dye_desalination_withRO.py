@@ -15,6 +15,7 @@ from pyomo.environ import (
     ConcreteModel,
     Block,
     Expression,
+    Objective,
     value,
     TransformationFactory,
     units as pyunits,
@@ -335,12 +336,31 @@ def initialize_system(m):
 
 def setup_optimize(m):
     """
-    Unfixes RO operating pressure and membrane area variables to find optimal values
+    Unfixes RO operating conditions and sets solver objective
+        - Operating pressure: 1 - 83 bar
+        - Crossflow velocity: 10 - 30 cm/s
+        - Membrane area: 50 - 5000 m2
+        - Volumetric recovery: 10 - 75 %
     """
     desal = m.fs.desalination
 
     desal.P2.control_volume.properties_out[0].pressure.unfix()
+    desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
+    desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
+
+    desal.RO.velocity.unfix()
+    desal.RO.velocity.setub(0.3)
+    desal.RO.velocity.setlb(0.1)
+
     desal.RO.area.unfix()
+    desal.RO.area.setub(5000)
+    desal.RO.area.setlb(50)
+
+    desal.RO.recovery_vol_phase[0, "Liq"].unfix()
+    desal.RO.recovery_vol_phase[0, "Liq"].setub(0.99)
+    desal.RO.recovery_vol_phase[0, "Liq"].setlb(0.1)
+
+    m.fs.objective = Objective(expr=m.LCOT)
     return
 
 
