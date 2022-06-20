@@ -17,17 +17,16 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
-from idaes.generic_models.costing.costing_base import (
+from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
-
 from idaes.core.util.constants import Constants
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import StrEnum
 
-from idaes.generic_models.unit_models import Mixer
+from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
     ReverseOsmosis0D,
