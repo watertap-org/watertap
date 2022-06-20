@@ -257,7 +257,7 @@ def display_costing(m):
         print(
             u.name,
             " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)),
         )
 
     print("\nUtility Costs\n")
@@ -268,19 +268,19 @@ def display_costing(m):
             value(
                 pyunits.convert(
                     m.fs.costing.aggregate_flow_costs[f],
-                    to_units=pyunits.USD_2018 / pyunits.year,
+                    to_units=pyunits.USD_2020 / pyunits.year,
                 )
             ),
         )
 
     print("")
     total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2020)
     )
     print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
     total_operating_cost = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
@@ -291,19 +291,19 @@ def display_costing(m):
     )
     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
     LCOW = value(
-        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
     LCOG = value(
-        pyunits.convert(m.fs.costing.LCOG, to_units=pyunits.USD_2018 / pyunits.kg)
+        pyunits.convert(m.fs.costing.LCOG, to_units=pyunits.USD_2020 / pyunits.kg)
     )
     print(f"Levelized Cost of Natural Gas Based on Carbon Dioxide: {LCOG:.3f} $/kg")
     LCOC = value(
-        pyunits.convert(m.fs.costing.LCOC, to_units=pyunits.USD_2018 / pyunits.kg)
+        pyunits.convert(m.fs.costing.LCOC, to_units=pyunits.USD_2020 / pyunits.kg)
     )
     print(f"Levelized Cost of Carbon Dioxide from AT-HTL: {LCOC:.3f} $/kg")
     LCOS = value(
-        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
+        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2020 / pyunits.kg)
     )
     print(f"Levelized Cost of Sulfates, Nitrates and Phosphates: {LCOS:.3f} $/kg")
 
