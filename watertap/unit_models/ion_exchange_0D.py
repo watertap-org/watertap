@@ -143,15 +143,11 @@ class IonExchangeODData(UnitModelBlockData):
         # Inamuddin, & Luqman, M. (2012).
         # Ion Exchange Technology I: Theory and Materials.
 
-        solvent_set = self.config.property_package.solvent_set
-        solute_set = self.config.property_package.solute_set
         ion_set = self.config.property_package.ion_set
         target_ion = self.config.target_ion
 
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.gravity = Param(
             initialize=9.81, units=pyunits.m / pyunits.s**2, doc="Gravity [m/s2]"
@@ -216,7 +212,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.bed_depth_to_diam_ratio = Param(
-            initialize=3,
+            initialize=2.5,
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -488,7 +484,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.holdup = Var(
             initialize=100,
-            bounds=(90, 250),
+            bounds=(90, 250),  # IX1
             units=pyunits.dimensionless,
             doc="Holdup percent [-]",
         )
@@ -498,6 +494,13 @@ class IonExchangeODData(UnitModelBlockData):
             bounds=(4, 40),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
+        )
+
+        self.pressure_drop = Var(
+            initialize=14,
+            units=pyunits.psi,
+            bounds=(0, 25),
+            doc="Pressure drop across column",  # max pressure drop is 25 psi, MWH
         )
 
         # # ====== Dimensionless variables ====== #
@@ -548,10 +551,10 @@ class IonExchangeODData(UnitModelBlockData):
         # # ====== Regeneration ====== #
 
         self.regen_dose = Var(
-            initialize=300,
+            initialize=600,
             units=pyunits.kg / pyunits.m**3,
             bounds=(35, 700),  # Perry's
-            doc="Regenerant dose required for regeneration [kg/m3]",
+            doc="Regenerant dose required for regeneration per volume of resin [kg regen/m3 resin]",
         )
 
         self.regen_sg = Var(
@@ -576,18 +579,26 @@ class IonExchangeODData(UnitModelBlockData):
         self.regen_conc = Var(
             initialize=110,
             units=pyunits.kg / pyunits.m**3,
-            doc="Concentration of regen solution",
+            doc="Concentration of regen solution [kg regen/m3 soln]",
         )
 
         self.regen_bv = Var(
             initialize=2,
-            units=pyunits.m**3,
-            doc="m3 of regen solution per regen cycle",
+            units=pyunits.dimensionless,
+            doc="Regeneration volume required per BV",
+        )
+
+        self.regen_flow = Var(
+            initialize=2,
+            units=pyunits.m**3 / pyunits.s,
+            doc="Regeneration flow rate",
         )
 
         self.t_regen = Var(
             initialize=30, units=pyunits.s, doc="Regeneration cycle time"
         )
+
+        # # ====== Backwashing ====== #
 
         self.bw_rate = Var(
             initialize=5,
@@ -596,29 +607,66 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Backwash rate [m/hr]",
         )
 
+        self.bw_flow = Var(
+            initialize=0.001,
+            units=pyunits.m**3 / pyunits.s,
+            doc="Backwashing flow rate",
+        )
+
         self.t_bw = Var(
             initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Backwash time"
         )
 
-        self.bed_expansion = Var(
-            initialize=0.5, units=pyunits.m, doc="Resin bed expansion during backwash"
+        self.bed_expansion_frac = Var(
+            initialize=0.5,
+            bounds=(0.4, 1.2),
+            units=pyunits.dimensionless,
+            doc="Fraction of bed depth increase during backwashing",
         )
+
+        self.bed_expansion_h = Var(
+            initialize=0.5, units=pyunits.m, doc="Bed depth increase during backwashing"
+        )
+
+        # # ====== Rinse ====== #
 
         self.rinse_bv = Var(
             initialize=5,
             bounds=(2, 10),
-            doc="Number of bed volumes for rinse step [BV]",
+            doc="Number of bed volumes for rinse step",
+        )
+
+        self.rinse_flow = Var(
+            initialize=0.001,
+            units=pyunits.m**3 / pyunits.s,
+            doc="Rinse step rate",
         )
 
         self.t_rinse = Var(
             initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Backwash time"
         )
 
-        self.pressure_drop = Var(
-            initialize=14,
-            units=pyunits.psi,
-            bounds=(0, 25),
-            doc="Pressure drop across column [psi]",
+        self.main_pump_power = Var(
+            initialize=4e-6, units=pyunits.kW, doc="Main pump power [kW]"
+        )
+
+        self.regen_pump_power = Var(
+            initialize=4e-6, units=pyunits.kW, doc="Regen pump power [kW]"
+        )
+
+        self.bw_pump_power = Var(
+            initialize=4e-6, units=pyunits.kW, doc="Backwash pump power [kW]"
+        )
+
+        self.rinse_pump_power = Var(
+            initialize=4e-6, units=pyunits.kW, doc="Rinse pump power [kW]"
+        )
+
+        self.pump_efficiency = Var(
+            initialize=0.8,
+            units=pyunits.dimensionless,
+            bounds=(0, 1),
+            doc="Pump efficiency",
         )
 
         # Fix variables that should be fixed
@@ -633,6 +681,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.t_bw.fix()
         self.bw_rate.fix()
         self.rinse_bv.fix()
+        self.pump_efficiency.fix()
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -710,8 +759,8 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_t_contact(b):
             return b.t_contact == b.bed_depth / b.vel_inter
 
-        @self.Constraint(doc="Contact time")
-        def eq_t_contact2(b):
+        @self.Constraint(doc="Flow through bed constraint")
+        def eq_bed_flow(b):
             prop_in = b.properties_in[0]
             return (b.bed_depth * b.bed_porosity) / b.vel_bed == (
                 b.bed_porosity * b.bed_vol
@@ -774,7 +823,7 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_col_height(b):
             return (
                 b.col_height
-                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion
+                == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
             )
 
         @self.Constraint(doc="Column vol")
@@ -799,7 +848,7 @@ class IonExchangeODData(UnitModelBlockData):
                 * b.resin_diam
             )
 
-        @self.Constraint(ion_set, doc="HTU")
+        @self.Constraint(ion_set, doc="Height of transfer unit - HTU")
         def eq_HTU(b, j):
             return b.HTU[j] == b.vel_bed / (
                 pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
@@ -816,11 +865,11 @@ class IonExchangeODData(UnitModelBlockData):
                 to_units=pyunits.mol / pyunits.L,
             )
 
-        @self.Constraint(doc="Left hand side of rate eq")
-        def eq_lh1(b):
+        @self.Constraint(doc="Left hand side of constant pattern sol'n")
+        def eq_lh(b):
             return b.lh == b.num_transfer_units * (b.dimensionless_time - 1)
 
-        @self.Constraint(ion_set, doc="Fixed pattern soln")
+        @self.Constraint(ion_set, doc="Right hand side of fixed pattern soln")
         def eq_fixed_pattern_soln(b, j):
             return (
                 b.lh
@@ -849,10 +898,6 @@ class IonExchangeODData(UnitModelBlockData):
             )
 
         # =========== MASS BALANCE ===========
-
-        @self.Constraint(doc="Waste time")
-        def eq_waste_time(b):
-            return b.t_waste == b.t_regen + b.t_bw + b.t_rinse
 
         @self.Constraint(ion_set, doc="Flow conservation")
         def eq_flow_conservation(b, j):
@@ -926,6 +971,10 @@ class IonExchangeODData(UnitModelBlockData):
 
         # =========== REGENERATION, RINSE, BACKWASHING ===========
 
+        @self.Constraint(doc="Waste time")
+        def eq_waste_time(b):
+            return b.t_waste == b.t_regen + b.t_bw + b.t_rinse
+
         @self.Constraint(doc="Regenerant density")
         def eq_regen_density(b):
             prop_in = b.properties_in[0]
@@ -937,27 +986,85 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Regenerant volume")
         def eq_regen_vol(b):
-            return b.regen_bv == (b.regen_dose / b.regen_conc) * b.bed_vol
+            return b.regen_bv == (b.regen_dose / b.regen_conc)
 
         @self.Constraint(doc="Regenerant time")
         def eq_regen_time(b):
             return b.t_regen == b.t_contact * b.regen_bv
 
+        @self.Constraint(doc="Regen flow rate")
+        def eq_regen_flow(b):
+            return b.regen_flow == (b.regen_bv * b.bed_vol) / b.t_rinse
+
+        @self.Constraint(doc="Regen pump power")
+        def eq_regen_pump_power(b):
+            p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
+            return b.regen_pump_power == pyunits.convert(
+                (b.regen_density * b.gravity * p_drop_m * b.regen_flow)
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Constraint(doc="Bed expansion from backwashing")
+        def eq_bed_expansion_frac(b):
+            return (
+                b.bed_expansion_frac
+                == b.bed_expansion_A
+                + b.bed_expansion_B * b.bw_rate
+                + b.bed_expansion_C * b.bw_rate**2
+            )  # for 25C
+
         @self.Constraint(doc="Bed expansion from backwashing")
         def eq_bw_bed_expansion(b):
-            return (
-                b.bed_expansion
-                == (
-                    b.bed_expansion_A
-                    + b.bed_expansion_B * b.bw_rate
-                    + b.bed_expansion_C * b.bw_rate**2
-                )
-                * b.bed_depth
-            )  # for 25C ;
+            return b.bed_expansion_h == b.bed_expansion_frac * b.bed_depth
+
+        @self.Constraint(doc="Backwashing flow rate")
+        def eq_bw_flow(b):
+            bw_rate = pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
+            return b.bw_flow == bw_rate * b.bed_area
+
+        @self.Constraint(doc="Backwash pump power")
+        def eq_bw_pump_power(b):
+            prop_in = b.properties_in[0]
+            p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
+            return b.bw_pump_power == pyunits.convert(
+                (prop_in.dens_mass_phase["Liq"] * b.gravity * p_drop_m * b.bw_flow)
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
 
         @self.Constraint(doc="Rinse time")
         def eq_rinse_time(b):
             return b.t_rinse == b.t_contact * b.rinse_bv
+
+        @self.Constraint(doc="Rinse flow rate")
+        def eq_rinse_flow(b):
+            return b.rinse_flow == (b.rinse_bv * b.bed_vol) / b.t_rinse
+
+        @self.Constraint(doc="Rinse pump power")
+        def eq_rinse_pump_power(b):
+            prop_in = b.properties_in[0]
+            p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
+            return b.rinse_pump_power == pyunits.convert(
+                (prop_in.dens_mass_phase["Liq"] * b.gravity * p_drop_m * b.rinse_flow)
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
+
+        @self.Constraint(doc="Main pump power")
+        def eq_main_pump_power(b):
+            prop_in = b.properties_in[0]
+            p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
+            return b.main_pump_power == pyunits.convert(
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * b.gravity
+                    * p_drop_m
+                    * prop_in.flow_vol_phase["Liq"]
+                )
+                / b.pump_efficiency,
+                to_units=pyunits.kilowatts,
+            )
 
         @self.Constraint(doc="Pressure drop")
         def eq_pressure_drop(b):
@@ -1076,7 +1183,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.Re, 1)
 
-        # for ion in ion_set:
         iscale.set_scaling_factor(self.Sc, 1e-2)
 
         iscale.set_scaling_factor(self.Sh, 0.1)
@@ -1148,6 +1254,12 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.vel_bed, 1e3)
 
         iscale.set_scaling_factor(self.vel_inter, 1e3)
+
+        iscale.set_scaling_factor(self.regen_flow, 1e3)
+
+        iscale.set_scaling_factor(self.rinse_flow, 1e3)
+
+        iscale.set_scaling_factor(self.bw_flow, 1e3)
 
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
