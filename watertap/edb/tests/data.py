@@ -14,23 +14,23 @@
 Shared input data for tests
 """
 from pyomo.environ import units as pyunits
-from idaes.core.phases import PhaseType as PT
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.core.base.phases import PhaseType as PT
+import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 
@@ -200,18 +200,20 @@ bicarbonate_reaction_data = {
 
 # ==========================================================
 
-from idaes.generic_models.properties.core.pure.Perrys import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.models.properties.modular_properties.pure.Perrys import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
 
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 
 recarbonation_thermo_config = {
     "components": {

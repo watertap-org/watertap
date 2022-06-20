@@ -21,7 +21,7 @@ from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
-from idaes.generic_models.costing.costing_base import (
+from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
