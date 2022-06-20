@@ -13,7 +13,7 @@ The `build_sido` method is intended to be used to rapidly construct a standard s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_sido, ZeroOrderBaseData

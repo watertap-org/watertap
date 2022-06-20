@@ -16,11 +16,11 @@
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import (
+from idaes.models.unit_models import (
     Separator,
     Mixer,
 )
-from idaes.generic_models.unit_models.separator import (
+from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
