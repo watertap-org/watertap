@@ -112,9 +112,7 @@ Note that if `outputs = None` and an H5 results file is specified, all of the py
 
 Note that there are additional keyword arguments that can be passed to this function if you desire more control or debugging outputs, especially with regard to the restart logic used after a previous optimization attempt has failed or with managing local outputs computed on parallel hardware.  For more information, consult the technical reference for the parameter sweep tool.
 
-Function Documentation
-----------------------
+Module Documentation
+--------------------
 
-.. automodule :: watertap.tools.parameter_sweep
-   :noindex:
-   :members:
+* :mod:`watertap.tools.parameter_sweep`
