@@ -25,7 +25,7 @@ To use Conda environments, the ``conda`` package manager is required. Refer to t
 General installation
 --------------------
 
-If you are going to use WaterTAP's functionality, but *do not* plan to contribute to WaterTAP's codebase, choose this option.
+If you are going to use WaterTAP's functionality, but *do not* plan to modify or contribute to WaterTAP's codebase, choose this option.
 
 #. Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
@@ -55,12 +55,7 @@ If you are going to use WaterTAP's functionality, but *do not* plan to contribut
 
 		pip install watertap
 
-#. To verify that the installation was successful, open a Python interpreter and try importing some of WaterTAP's modules, e.g.:
-
-	.. code-block:: shell
-
-		python
-		>>> from watertap.unit_models import *
+#. (Optional) If you want to verify that the installation was successful by running the WaterTAP test suite, see :ref:`Running the WaterTAP test suite`.
 
 .. _install-idaes-ext:
 
@@ -172,8 +167,11 @@ To install the EDB, follow these steps:
        Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
        each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
 
+
+.. _Running the WaterTAP test suite:
+
 Running the WaterTAP test suite
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #. To run the WaterTAP test suite, first install the optional testing dependencies using pip:
 
@@ -196,9 +194,9 @@ Running the WaterTAP test suite
 .. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
 
 For WaterTAP developers
--------------------------
+-----------------------
 
-If you plan to contribute to WaterTAP's codebase, choose this option.
+If you plan to modify or contribute to WaterTAP's codebase, choose this option.
 
 .. note:: Typically, *contributing to WaterTAP* will involve opening a Pull Request (PR) in WaterTAP's repository. For more information, refer to :ref:`developer-guide`.
 
@@ -229,9 +227,9 @@ If you plan to contribute to WaterTAP's codebase, choose this option.
    WaterTAP uses the `pre-commit <https://pre-commit.com/>`_ framework to manage a few hooks that are useful for WaterTAP developers.
    To install the WaterTAP pre-commit hooks, run:
 
-   .. code-block:: shell
+    .. code-block:: shell
 
-       pre-commit install
+        pre-commit install
 
 #. To verify that the installation was successful, try running the WaterTAP test suite using ``pytest``:
 
@@ -240,42 +238,6 @@ If you plan to contribute to WaterTAP's codebase, choose this option.
 		pytest
 
 #. To view/change the generated documentation, see the :ref:`documentation-mini-guide` section
-
-Installing in existing development environments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When either the ``watertap`` package or one of its dependencies are installed, it should be possible to update those packages within an existing developer environment.
-
-.. important:: In case of any issue or unexpected behavior when updating an existing environment,
-    first try to see if the issues are solved if a freshly created environment is used instead.
-
-#. Activate the environment, if not already active:
-
-    .. code-block:: shell
-
-        conda activate watertap-dev
-
-#. Enter the directory where your local clone of the WaterTAP repository is located, and pull the latest changes using ``git pull``:
-
-    .. code-block:: shell
-        
-        cd /path/to/your/clone
-        git pull
-
-#. Uninstall the version of ``watertap`` that's currently installed in the environment:
-
-    .. code-block:: shell
-
-        pip uninstall watertap
-
-#. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
-
-    .. code-block:: shell
-
-        pip --no-cache-dir install -r requirements-dev.txt
-
-    .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
-        which would cause the wrong (outdated) version to be present in the environment after installation.
 
 ----
 
@@ -300,79 +262,3 @@ When either the ``watertap`` package or one of its dependencies are installed, i
 .. figure:: ../_static/mongodb-compass-electrolytedb.*
 
     MongoDB Compass electrolytedb Collections (9/2021)
-
-.. _documentation-mini-guide:
-
-Documentation for developers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The project documentation is created and updated using the `Sphinx documentation tool <https://www.sphinx-doc.org>`_.
-This tool generates nice, indexed, HTML webpages --- like this one --- from text files in the "docs" directory.
-The documentation will include the docstrings you put on your modules, classes, methods, and functions as well
-as additional documentation in text files in the "docs" directory. The project is set up so that Sphinx documentation
-is generated automatically online for new releases. This section describes how to do this same documentation
-generation locally in your development environment so you can preview what will be shown to the users.
-
-.. _documentation-mini-guide-gen:
-
-Generating the documentation
-++++++++++++++++++++++++++++
-
-To generate a local copy of the documentation for the first time, follow these steps:
-
-#. Install the ``pandoc`` executable. As ``pandoc`` is a standalone tool rather than a Python package, it cannot be installed using ``pip``. Instead, use one of the following options:
-
-   * If using a Conda environment, run ``conda install -c conda-forge pandoc``
-   * Alternatively, refer to the installation steps appropriate for your system on pandoc's `website <https://pandoc.org/installing.html>`_
-
-#. Change directory to the "docs" subdirectory
-
-#. Generate the HTML with Sphinx.
-
-   * On Windows, run ``.\make html``
-
-   * On Linux/OSX run ``make html``
-
-After these steps are complete, you should be able to preview the HTML documentation by opening the file
-located at ``_build/html/index.html`` in a web browser.
-
-API docs (autogenerated)
-++++++++++++++++++++++++
-
-The `sphinx-apidoc <https://www.sphinx-doc.org/en/master/man/sphinx-apidoc.html>`_ tool is used to automatically generate documentation pages for the WaterTAP API 
-from the `docstrings <https://peps.python.org/pep-0257/#what-is-a-docstring>`_ defined in the source code of the ``watertap`` Python package.
-
-``sphinx-apidoc`` is invoked automatically by the Sphinx build process, so no extra manual steps should be necessary.
-After building the HTML docs using the steps described above in :ref:`documentation-mini-guide-gen`, the generated API docs pages can be accessed
-by browsing to the "Technical Reference" page and clicking on the "Module Reference" link.
-
-.. _documentation-mini-guide-update:
-
-Updating the documentation
-++++++++++++++++++++++++++
-
-If you edited some documentation directly, i.e. created or modified a text file with extension ``.rst``, then you will need to update the documentation with the
-build command given in step 3 of :ref:`documentation-mini-guide-gen`.
-
-Documenting your modules
-++++++++++++++++++++++++
-Full documentation for modules should be placed in the appropriate subfolder --- e.g., ``property_models`` or
-``unit_models`` --- of the ``docs/technical_reference`` section (and folder). See ``docs/technical_reference/unit_modles/reverse_osmosis_0D.rst``
-for an example.
-
-Note that at the bottom of the file you should add the ``.. automodule::`` directive that will insert the
-documentation for your module as generated from the source code (and docstrings). This generally looks like this::
-
-    .. automodule:: watertap.<package_name>.<module_name>
-        :members:
-        :noindex:
-
-The meaning of the options is the following:
-
-* ``:noindex:`` (**required**): prevents the creation of an index entry.
-* ``:members:``: include all the classes, functions, etc. in the module
-
-.. warning:: The ``:noindex:`` option **must be specified** when ``sphinx-apidoc`` is enabled (which is the default).
-    Otherwise, Sphinx will try to generate two conflicting index entries for the same module.
-    Forgetting to add ``:noindex:`` will result in warnings being emitted during the Sphinx build process.
-    This in turn causes the ReadTheDocs build, which is part of the set of automatic checks enforced as part of the WaterTAP Continuous Integration (CI) suite, to fail.
