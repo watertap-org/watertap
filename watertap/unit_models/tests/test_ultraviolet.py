@@ -84,7 +84,7 @@ class TestUltraviolet:
         # m.fs.unit.uv_dose.fix(uv_dose)
         m.fs.unit.uv_intensity.fix(uv_intensity)
         m.fs.unit.exposure_time.fix(exporure_time)
-        m.fs.unit.inactivation_rate.fix(inactivation_rate)
+        m.fs.unit.inactivation_rate[0, "Liq", "NDMA"].fix(inactivation_rate)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
@@ -155,8 +155,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 30
-        assert number_total_constraints(m) == 19
+        assert number_variables(m) == 31
+        assert number_total_constraints(m) == 20
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test unit consistency
