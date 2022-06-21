@@ -28,7 +28,7 @@ For how-to guides on specific tasks, see the :ref:`howto_ui-api`.
 Class and function reference
 ----------------------------
 
-.. automodule:: watertap.ui.api
+* :mod:`watertap.ui.api`
 
 High-level API
 ^^^^^^^^^^^^^^
