@@ -33,4 +33,4 @@ Usage
 Module Documentation
 --------------------
 
-.. automethod:: watertap.core.zero_order_electricity.constant_intensity
+* :mod:`watertap.core.zero_order_electricity`
