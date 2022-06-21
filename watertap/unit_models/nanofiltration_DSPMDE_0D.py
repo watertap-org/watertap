@@ -19,7 +19,6 @@ from pyomo.environ import (
     Block,
     Set,
     Var,
-    Param,
     Suffix,
     NonNegativeReals,
     Reals,
@@ -28,7 +27,6 @@ from pyomo.environ import (
     log,
     value,
     Expr_if,
-    Constraint,
     exp,
     check_optimal_termination,
 )
@@ -59,12 +57,11 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
-# TODO: for refinement and validation phase:
-# - Refine initialization routine
-# - Refine initial variable values
-# - Refine scaling
-# - Add/refine tests
-# -Add constraints for computing pressure drop in spiral wound membrane
+# TODO:
+# - Further refinement of initialization routine to make more robust
+# - Further refinement of scaling to make more robust
+# - Add more tests to test robustness
+# - Add constraints for computing pressure drop in spiral wound membrane
 
 
 class MassTransferCoefficient(Enum):
@@ -1469,21 +1466,22 @@ class NanofiltrationData(UnitModelBlockData):
                 self.permeate_side[0, 1].pressure.set_value(
                     value(self.mixed_permeate[0].pressure)
                 )
-        if not self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"].is_fixed():
-            self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"].set_value(
-                value(
-                    self.feed_side.properties_out[0].flow_mol_phase_comp["Liq", "H2O"]
-                    - self.feed_side.properties_in[0].flow_mol_phase_comp["Liq", "H2O"]
+        for j in self.config.property_package.component_list:
+            if not self.feed_side.mass_transfer_term[0.0, "Liq", j].is_fixed():
+                self.feed_side.mass_transfer_term[0.0, "Liq", j].set_value(
+                    value(
+                        self.feed_side.properties_out[0].flow_mol_phase_comp["Liq", j]
+                        - self.feed_side.properties_in[0].flow_mol_phase_comp["Liq", j]
+                    )
                 )
-            )
-        if not self.flux_mol_phase_comp[0, 0, "Liq", "H2O"].is_fixed():
-            self.flux_mol_phase_comp[0, 0, "Liq", "H2O"].set_value(
-                value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
-            )
-        if not self.flux_mol_phase_comp[0, 1, "Liq", "H2O"].is_fixed():
-            self.flux_mol_phase_comp[0, 1, "Liq", "H2O"].set_value(
-                value(-self.feed_side.mass_transfer_term[0.0, "Liq", "H2O"] / self.area)
-            )
+            if not self.flux_mol_phase_comp[0, 0, "Liq", j].is_fixed():
+                self.flux_mol_phase_comp[0, 0, "Liq", j].set_value(
+                    value(-self.feed_side.mass_transfer_term[0.0, "Liq", j] / self.area)
+                )
+            if not self.flux_mol_phase_comp[0, 1, "Liq", j].is_fixed():
+                self.flux_mol_phase_comp[0, 1, "Liq", j].set_value(
+                    value(-self.feed_side.mass_transfer_term[0.0, "Liq", j] / self.area)
+                )
         # self.report()
         # Double-check for poorly scaled variables after state block initialization
         # and rescale them so that scaled variable values = 1:
@@ -1505,25 +1503,49 @@ class NanofiltrationData(UnitModelBlockData):
                 init_log.warning(
                     "Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint."
                 )
-        # ---------------------------------------------------------------------
-        # Solve unit attempt 2
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
-                )
+                if automate_rescale:
+                    badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
+                    if len(badly_scaled_vars) > 0:
+                        init_log.warning(
+                            f"{len(badly_scaled_vars)} poorly scaled "
+                            f"variable(s) will be rescaled so that each scaled variable value = 1"
+                        )
+                        [print(i[0], i[1]) for i in badly_scaled_vars]
+                        self._automate_rescale_variables()
+                # Solve unit attempt 2
                 res = opt.solve(self, tee=slc.tee)
                 if not check_optimal_termination(res):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization."
+                    init_log.warning(
+                        "Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time."
                     )
-        # check_solve(
-        #     res,
-        #     checkpoint="Solve in Initialization Step 3",
-        #     logger=init_log,
-        #     fail_flag=fail_on_warning,
-        # )
+                    if automate_rescale:
+                        badly_scaled_vars = list(
+                            iscale.badly_scaled_var_generator(self)
+                        )
+                        if len(badly_scaled_vars) > 0:
+                            init_log.warning(
+                                f"{len(badly_scaled_vars)} poorly scaled "
+                                f"variable(s) will be rescaled so that each scaled variable value = 1"
+                            )
+                            [print(i[0], i[1]) for i in badly_scaled_vars]
+                            self._automate_rescale_variables()
+                    # Solve unit attempt 3
+                    res = opt.solve(self, tee=slc.tee)
+                    if not check_optimal_termination(res):
+                        raise InitializationError(
+                            "The property package failed to solve during initialization."
+                        )
+                    else:
+                        init_log.info_high(
+                            "Initialization Solve successful on 3rd attempt."
+                        )
+                else:
+                    init_log.info_high(
+                        "Initialization Solve successful on 2nd attempt."
+                    )
+            else:
+                init_log.info_high("Initialization Solve successful on 1st attempt.")
+
         # Release Inlet state
         self.feed_side.release_state(flags_feed_side, outlvl)
         # # Rescale any badly scaled vars
@@ -1912,7 +1934,7 @@ class NanofiltrationData(UnitModelBlockData):
             self._sb_scaled_properties.add(var)
 
     # automatically rescale poorly scaled variables by setting a new scaling factor
-    # which multiples a variable value by the old scaling factor divided by the poorly scaled (resulting) value,
+    # which multiplies a variable value by the old scaling factor divided by the poorly scaled (resulting) value,
     # bringing the new scaled value to 1. Providing a rescale_factor would just multiply that factor by 1.
     def _automate_rescale_variables(self, rescale_factor=None):
         if rescale_factor is None:
@@ -1937,7 +1959,7 @@ class NanofiltrationData(UnitModelBlockData):
         for v in self.recovery_vol_phase.values():
             iscale.set_scaling_factor(v, 1)
         if iscale.get_scaling_factor(self.radius_pore) is None:
-            iscale.set_scaling_factor(self.radius_pore, 1e11)
+            iscale.set_scaling_factor(self.radius_pore, 10 / value(self.radius_pore))
         if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
             iscale.set_scaling_factor(self.membrane_thickness_effective, 1e7)
 
@@ -1953,7 +1975,7 @@ class NanofiltrationData(UnitModelBlockData):
         if hasattr(self, "electric_potential_grad_feed_interface"):
             for v in self.electric_potential_grad_feed_interface.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e-2)
+                    iscale.set_scaling_factor(v, 1e8)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
