@@ -77,9 +77,7 @@ using two threads.
 For advanced users, the parameter sweep tool can optionally take a MPI communicator
 as an argument.
 
-Function Documentation
-----------------------
+Module Documentation
+--------------------
 
-.. automodule:: watertap.tools.parameter_sweep
-   :members:
-   :noindex:
+* :mod:`watertap.tools.parameter_sweep`
