@@ -14,7 +14,7 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 Costing Method
 --------------
 Costing is calculated using the cost_ozonation_aop method in the zero-order costing package.
-See documentation for the zero-order costing package.
+See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::
    pair: watertap.unit_models.zero_order.ozone_aop_zo;ozone_aop_zo

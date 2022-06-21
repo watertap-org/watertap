@@ -49,6 +49,8 @@ extensions = [
     "nbsphinx",  # Jupyter notebooks as docs
 ]
 
+mathjax3_config = {"chtml": {"displayAlign": "left", "displayIndent": "2em"}}
+
 autosectionlabel_prefix_document = True
 autodoc_warningiserror = False  # suppress warnings during autodoc
 
@@ -107,7 +109,7 @@ panels_add_bootstrap_css = False
 
 def run_apidoc(*args):
     # NOTE the env var must be set before importing apidoc, or the options will have no effect
-    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance,noindex"
+    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
     from sphinx.ext import apidoc
 
     args = [
