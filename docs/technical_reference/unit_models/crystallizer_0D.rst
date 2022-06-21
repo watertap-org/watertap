@@ -56,7 +56,7 @@ In addition to those four variables, the user may specify any of the following v
 
 
 Variables
-----------
+---------
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -78,7 +78,7 @@ Variables
    "Crystallizer minmum active volume", ":math:`V_{susp}`", "volume_suspension", "None", ":math:`\text{m}^3`"
 
 Model Equations
------------------------
+---------------
 
 The crystallization unit model is based on predominantly on the works by Kramer et al. [1], Lewis et al. [2], and Tavares [3]. The following equations govern the performance of the crystallizer unit:
 
@@ -97,17 +97,14 @@ The crystallization unit model is based on predominantly on the works by Kramer 
    "Crystallizer height",":math:`H = \max(1.5D, h_{slurry} + 0.75D)`"
    "Magma circulation vol. flow rate",":math:`\frac{Q}{\Delta T_{approach}\left[(1-\varepsilon)\rho_{crystal}C_{p,crystal}+\rho_{liq,out}C_{p,liq}\right]}`", "Lewis et al [2], Tavare [3]"
 
+Code Documentation
+------------------
 
-Class Documentation
--------------------
+* :mod:`watertap.unit_models.crystallizer`
 
-.. automodule:: watertap.unit_models.crystallizer
-    :members:
-    :noindex:
+References
+----------
 
-
-References:
-----------------
 [1] Kramer, H. & van Rosmalen, G. Crystallization. Encyclopedia of Separation Science, Elsevier, 2000, 64-84.
 https://www.sciencedirect.com/science/article/pii/B0122267702000314
 

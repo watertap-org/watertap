@@ -3,7 +3,7 @@ WaterTAP User Interface
 
 API for WaterTAP User Interface
 --------------------------------
-This is the Python API that will be called byt the UI backend to process
+This is the Python API that will be called by the UI backend to process
 changes from the UI front-end.
 
 Main API module
