@@ -30,7 +30,7 @@ larger-scale systems.  The presented electrodialysis 1D model establishes mathem
 ion and water transport in a cell pair and expands to simulate a stack with a specified cell-pair number.
 Modeled mass transfer mechanisms include electrical migration and diffusion of ions and osmosis and electroosmosis
 of water. By its name, "1D" suggests the variation of mass transfer and solution properties over length (l in Figure 1)
-is mathematically described.  The The following key assumptions are based on.
+is mathematically described.  The following key assumptions are based on.
 
 * The concentrate and diluate channels have identical geometry.
 * For each channel, component fluxes in the bulk solution are uniform in b and s directions in Figure 1
@@ -208,7 +208,7 @@ Nomenclature
    ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
    ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
-   ":math:`R_{tot}`", "Total resistance", ":math:`\Omega`"
+   ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`s`", "Spacer thickness", ":math:`m`"
