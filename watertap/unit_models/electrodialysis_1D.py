@@ -900,7 +900,6 @@ class Electrodialysis1DData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release state
         blk.diluate.release_state(flags_diluate, outlvl)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         blk.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
