@@ -29,7 +29,7 @@ One cell pair in an electrodialysis stack can thus be treated as a modeling unit
 larger-scale systems.  The presented electrodialysis 1D model establishes mathematical descriptions of
 ion and water transport in a cell pair and expands to simulate a stack with a specified cell-pair number.
 Modeled mass transfer mechanisms include electrical migration and diffusion of ions and osmosis and electroosmosis
-of water. By its name, "1D" suggests the dependence of mass transfer and solution properties over length (l in Figure 1)
+of water. By its name, "1D" suggests the variation of mass transfer and solution properties over length (l in Figure 1)
 is mathematically described.  The The following key assumptions are based on.
 
 * The concentrate and diluate channels have identical geometry.
@@ -74,7 +74,7 @@ nevertheless expand the component set as needed to represent other feed water co
 
 
    "Time", ":math:`t`", "[t] ([0])\ :sup:`1`"
-   "Length_domain", ":math:`x`", "(0, 1)\ :sup:`2`"
+   "Length_domain", ":math:`x`", ":math:`l \times(0, 1)` \ :sup:`2`"
    "Phase", ":math:`p`", "['Liq']"
    "Component", ":math:`j`", "['H2O', 'Na_+', '\Cl_-']"
    "Ion", ":math:`j`", "['Na_+', '\Cl_-'] \  :sup:`3`"
@@ -84,8 +84,9 @@ nevertheless expand the component set as needed to represent other feed water co
  :sup:`1` The time set index is set as [0] in this steady-state model and is reserved majorly for the future extension
  to a dynamic model.
 
- :sup:`2` The index of length_domain is a continuous set of (0, 1), which is discretized when differential equations in
- the model is solved by numerical methods such as finite-element.
+ :sup:`2` By the IDAES convention, the index of length_domain is normalized to a continuous set of (0, 1), which is discretized 
+ when differential equations in the model is solved by numerical methods such as "finite difference" discretization. In this 
+ documentation, :math:`x` refers to the length dimension before normalization and carries a unit of [m].
 
  :sup:`3` "Ion" is a subset of "Component" and uses the same symbol j.
 
@@ -104,10 +105,10 @@ are parameters that should be provided in order to fully solve the model.
    "Pressure, inlet_diluate",":math:`p^D`", "temperature", "None", ":math:`Pa`", 1
    "Pressure, inlet_concentrate",":math:`p^C`", "temperature", "None", ":math:`Pa`", 1
    "Component molar flow rate, inlet_diluate", ":math:`N_{j, in}^D`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
-   "Component molar flow rate, inlet_concentrate", ":math:`N_{j, out}^C`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N_{j, in}^C`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 2
-   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage_applied or current_applied", "[t]", ":math:`\text{V}` or :math:`A`", 1
+   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage_applied or current_applied", "[t]", ":math:`\text{V}` or :math:`A`", 1
    "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega m^2`", 1
    "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
@@ -122,8 +123,8 @@ are parameters that should be provided in order to fully solve the model.
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
 
- :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant Current"
- or "Constant Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
+ :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant_Current"
+ or "Constant_Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
  that ensures a operational current *below the limiting current* of the feed solution.
 
 
@@ -150,15 +151,18 @@ Equations
 ---------
 
 This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-` for a NaCl
-solution) on two control volumes (concentrate and diluate channels). Mass balance equations are summarized in **Table
-3**. Mass transfer mechanisms take account of solute electrical migration and diffusion and water osmosis and
-electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law, to simulate these
-processes are well developed and some good summaries for the electrodialysis scenario can be found in the *References*.
+solution) on two control volumes (concentrate and diluate channels). Under the 1D treatment, balance equations are expressed 
+as differential algebraic equations (DAE) when concerned variables are functions of length (x). The DAEs are solved in a 
+discretization manner using the "finite difference" or "collocation" method implemented in **Pyomo.DAE**. 
+
+Mass balance equations are summarized in **Table 3**. Mass transfer mechanisms take account of solute electrical migration 
+and diffusion and water osmosis and electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law, 
+to simulate these processes are well developed and some good summaries for the electrodialysis scenario can be found in the *References*.
 
 .. csv-table:: **Table 3** Mass Balance Equations
    :header: "Description", "Equation", "Index set"
 
-   "Component mass balance", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{C\: or\:  D}+J_j(x)^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
+   "Component mass balance", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{C\: or\:  D}+J_j(x)^{C\: or\:  D} b=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
@@ -169,11 +173,12 @@ Additionally, several other equations are built to describe the electrochemical 
 .. csv-table:: **Table 4** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Ohm's Law", ":math:`V =  I R_{tot}`"
-   "Resistance calculation", ":math:`R_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]\left(bl\right)`"
-   "Electrical power consumption", ":math:`P=UI`"
-   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
-   "Overall current efficiency", ":math:`I\eta=\sum_{j}{\left[\left(N_{j,in}^D-N_{j,out}^D\right)z_j F\right]}`"
+   "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
+   "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
+   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{s}{\kappa(x)^C}+\frac{s}{\kappa(x)^D}\right)+r_{el}`"
+   "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
+   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}\right)`"
+   "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j (x)}{\partial x}\right)^D z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
@@ -189,8 +194,10 @@ Nomenclature
    ":math:`b`", "Cell/membrane width", ":math:`m`"
    ":math:`l`", "Cell/membrane length", ":math:`m`"
    ":math:`t`", "Ion transport number", "dimensionless"
-   ":math:`I`", "Current", ":math:`A`"
-   ":math:`U`", "Voltage over a stack", ":math:`V`"
+   ":math:`I`", "Current input", ":math:`A`"
+   ":math:`i`", "Current density", ":math:`A m^{-2}`"
+   ":math:`U`", "Voltage input over a stack", ":math:`V`"
+   ":math:`u`", "x-dependent voltage over a stack", ":math:`V`"
    ":math:`n`", "Cell pair number", "dimensionless"
    ":math:`\xi`", "Current utilization coefficient (including ion diffusion and water electroosmosis)", "dimensionless"
    ":math:`z`", "Ion charge", "dimensionless"
