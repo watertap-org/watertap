@@ -82,6 +82,7 @@ from .injection_well_disposal_zo import InjectionWellDisposalZO
 from .surface_discharge_zo import SurfaceDischargeZO
 from .photothermal_membrane_zo import PhotothermalMembraneZO
 from .CANDOP_zo import CANDOPZO
+from .microbial_battery_zo import MicrobialBatteryZO
 
 
 # =========================================================================================
