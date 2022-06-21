@@ -125,7 +125,7 @@ class TestGACSimplified:
         )
 
         # trial problem from Hand, 1984 for removal of trace DCE
-        m.fs.unit.conc_ratio_replace.fix(0.50)
+        m.fs.unit.conc_ratio_avg.fix(0.01)
         m.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
         m.fs.unit.freund_ninv.fix(0.8316)
         m.fs.unit.ebct.fix(300)  # seconds
@@ -271,7 +271,7 @@ class TestGACSimplified:
         m.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
 
         # trial problem from Crittenden, 2012 for removal of TCE
-        m.fs.unit.conc_ratio_replace.fix(0.50)
+        m.fs.unit.conc_ratio_replace.fix(0.80)
         m.fs.unit.freund_k.fix(1062e-6 * (1e6**0.48))
         m.fs.unit.freund_ninv.fix(0.48)
         m.fs.unit.ebct.fix(10 * 60)
@@ -370,7 +370,6 @@ class TestGACSimplified:
     def test_var_scaling_robust(self, gac_frame_robust):
         m = gac_frame_robust
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0], i[1], i[0].value) for i in iscale.badly_scaled_var_generator(m)]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -386,6 +385,6 @@ class TestGACSimplified:
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
 
-        assert pytest.approx(0.94, rel=1e-1) == value(m.fs.unit.mass_throughput)
-        assert pytest.approx(10281600, rel=1e-1) == value(m.fs.unit.elap_time)
+        assert pytest.approx(1.14, rel=1e-1) == value(m.fs.unit.mass_throughput)
+        assert pytest.approx(158 * 3600 * 24, rel=1e-1) == value(m.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-1) == value(m.fs.unit.bed_area)

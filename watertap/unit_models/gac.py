@@ -18,6 +18,7 @@ from pyomo.environ import (
     NonNegativeReals,
     PositiveReals,
     units as pyunits,
+    check_optimal_termination,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from enum import Enum, auto
@@ -420,7 +421,7 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # performance variables
         self.conc_ratio_avg = Var(
-            initialize=0.01,
+            initialize=0.005,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -452,7 +453,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.mass_throughput = Var(
-            initialize=10,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -554,7 +555,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.mass_throughput_mtz_upstream = Var(
-            initialize=10,
+            initialize=1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -800,7 +801,7 @@ class GACData(UnitModelBlockData):
         )
         def eq_approx_saturation(b):
             return (1 * b.mass_throughput_mtz_upstream) + (
-                ((0.95 + (1 - b.conc_ratio_replace)) / 2)
+                ((0.95 + b.conc_ratio_replace) / 2)
                 * (b.mass_throughput - b.mass_throughput_mtz_upstream)
             ) == b.mass_throughput * b.gac_saturation_replace
 
@@ -811,7 +812,7 @@ class GACData(UnitModelBlockData):
             or self.config.surface_diffusion_coefficient_type
             == SurfaceDiffusionCoefficientType.calculated
         ):
-            self.molec_diff_coeff = Var(
+            self.diffus_liq = Var(
                 initialize=1e-10,
                 bounds=(0, None),
                 domain=NonNegativeReals,
@@ -842,9 +843,9 @@ class GACData(UnitModelBlockData):
                 molal_volume_inv_units = (
                     units_meta("amount") * units_meta("length") ** -3
                 )
-                return (
-                    b.molec_diff_coeff * molecular_diffusion_coefficient_inv_units
-                ) * ((b.visc_water * 1e3 * visc_water_inv_units) ** 1.14) * (
+                return (b.diffus_liq * molecular_diffusion_coefficient_inv_units) * (
+                    (b.visc_water * 1e3 * visc_water_inv_units) ** 1.14
+                ) * (
                     (b.molal_volume * 1e6 * molal_volume_inv_units) ** 0.589
                 ) == 13.26e-9
 
@@ -877,7 +878,7 @@ class GACData(UnitModelBlockData):
                 doc="Sphericity of the particle",
             )
 
-            @self.Constraint(doc="Reynolds number calculatio ")
+            @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 return (
                     b.N_Re * b.visc_water * b.bed_voidage
@@ -886,7 +887,7 @@ class GACData(UnitModelBlockData):
 
             @self.Constraint(doc="Schmidt number calculation")
             def eq_schmidt_number(b):
-                return b.N_Sc * b.dens_water * b.molec_diff_coeff == b.visc_water
+                return b.N_Sc * b.dens_water * b.diffus_liq == b.visc_water
 
             @self.Constraint(
                 doc="Liquid phase film transfer rate from the Gnielinshi correlation"
@@ -894,9 +895,7 @@ class GACData(UnitModelBlockData):
             def eq_film_transfer_rate(b):
                 return b.kf * b.particle_dia == b.sphericity * (
                     1 + 1.5 * (1 - b.bed_voidage)
-                ) * b.molec_diff_coeff * (
-                    2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3))
-                )
+                ) * b.diffus_liq * (2 + 0.644 * (b.N_Re**0.5) * (b.N_Sc ** (1 / 3)))
 
         # ---------------------------------------------------------------------
         if (
@@ -927,7 +926,7 @@ class GACData(UnitModelBlockData):
                 return (
                     b.ds * b.tort * b.equil_conc * b.particle_dens_app
                     == b.spdfr
-                    * b.molec_diff_coeff
+                    * b.diffus_liq
                     * b.process_flow.properties_in[0].conc_mass_phase_comp["Liq", j]
                 )
 
@@ -1000,9 +999,6 @@ class GACData(UnitModelBlockData):
         # Initialize adsorbate port
 
         for j in blk.config.property_package.solvent_set:
-            temp_scale = iscale.get_scaling_factor(
-                blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
-            )
             state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-8
 
         blk.adsorbed_contam.initialize(
@@ -1017,10 +1013,16 @@ class GACData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning("Trouble solving GAC unit model, trying one more time")
+                res = opt.solve(blk, tee=slc.tee)
+
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.process_flow.release_state(flags, outlvl + 1)
+
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     # ---------------------------------------------------------------------
@@ -1059,16 +1061,16 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.mass_adsorbed_saturated, 1e-3)
 
         if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, 1e-3)
+            iscale.set_scaling_factor(self.bed_volume, 1e-2)
 
         if iscale.get_scaling_factor(self.bed_voidage) is None:
-            iscale.set_scaling_factor(self.bed_voidage, 1)
+            iscale.set_scaling_factor(self.bed_voidage, 1e1)
 
         if iscale.get_scaling_factor(self.bed_area) is None:
-            iscale.set_scaling_factor(self.bed_area, 1e-3)
+            iscale.set_scaling_factor(self.bed_area, 1e-1)
 
         if iscale.get_scaling_factor(self.bed_length) is None:
-            iscale.set_scaling_factor(self.bed_length, 1)
+            iscale.set_scaling_factor(self.bed_length, 1e-1)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, 1e-2)
@@ -1080,7 +1082,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.velocity_int, 1e3)
 
         if iscale.get_scaling_factor(self.particle_porosity) is None:
-            iscale.set_scaling_factor(self.particle_porosity, 1)
+            iscale.set_scaling_factor(self.particle_porosity, 1e1)
 
         if iscale.get_scaling_factor(self.particle_dens_app) is None:
             iscale.set_scaling_factor(self.particle_dens_app, 1e-2)
@@ -1095,7 +1097,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.particle_dia, 1e3)
 
         if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
-            iscale.set_scaling_factor(self.conc_ratio_avg, 1e4)
+            iscale.set_scaling_factor(self.conc_ratio_avg, 1e3)
 
         if iscale.get_scaling_factor(self.conc_ratio_replace) is None:
             iscale.set_scaling_factor(self.conc_ratio_replace, 1e1)
@@ -1119,7 +1121,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.gac_mass_replace_rate, 1e2)
 
         if iscale.get_scaling_factor(self.kf) is None:
-            iscale.set_scaling_factor(self.kf, 1e6)
+            iscale.set_scaling_factor(self.kf, 1e5)
 
         if iscale.get_scaling_factor(self.ds) is None:
             iscale.set_scaling_factor(self.ds, 1e14)
@@ -1153,9 +1155,9 @@ class GACData(UnitModelBlockData):
         iscale.set_scaling_factor(self.b3, 10)
         iscale.set_scaling_factor(self.b4, 1)
 
-        if hasattr(self, "molec_diff_coeff"):
-            if iscale.get_scaling_factor(self.molec_diff_coeff) is None:
-                iscale.set_scaling_factor(self.molec_diff_coeff, 1e10)
+        if hasattr(self, "diffus_liq"):
+            if iscale.get_scaling_factor(self.diffus_liq) is None:
+                iscale.set_scaling_factor(self.diffus_liq, 1e10)
 
         if hasattr(self, "molal_volume"):
             if iscale.get_scaling_factor(self.molal_volume) is None:

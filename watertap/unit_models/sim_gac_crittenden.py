@@ -100,10 +100,7 @@ def main():
 
     # gac specifications
     # trial problem from Crittenden, 2012
-    # --------------------------------------------------------------------
-    # specify two of these three
-    m.fs.gac.conc_ratio_replace.fix(0.50)
-    # --------------------------------------------------------------------
+    m.fs.gac.conc_ratio_avg.fix(0.01)
     m.fs.gac.freund_k.fix(1062e-6 * (1e6**0.48))
     m.fs.gac.freund_ninv.fix(0.48)
     m.fs.gac.ebct.fix(10 * 60)
@@ -111,14 +108,11 @@ def main():
     m.fs.gac.particle_porosity.fix(0.641)
     m.fs.gac.particle_dens_app.fix(803.4)
     m.fs.gac.particle_dia.fix(0.001026)
-    # m.fs.gac.kf.fix(3.73e-5)
-    # m.fs.gac.ds.fix(1.24e-14)
-    m.fs.gac.velocity_sup.fix(5 / 3600)
+    m.fs.gac.N_Re.fix(5.63)
     m.fs.gac.molal_volume.fix(9.81e-5)
     m.fs.gac.tort.fix(1)
     m.fs.gac.spdfr.fix(1)
     m.fs.gac.sphericity.fix(1.5)
-    # TODO: Determine whether to embed tabulated data for coefficients
     m.fs.gac.a0.fix(0.8)
     m.fs.gac.a1.fix(0)
     m.fs.gac.b0.fix(0.023)
@@ -142,9 +136,9 @@ def main():
     assert_units_consistent(m)  # check that units are consistent
     print("Degrees of freedom:", degrees_of_freedom(m))
     assert degrees_of_freedom(m) == 0
-    # """
+    """
     # initialization testing
-    solver.options["max_iter"] = 0
+    # solver.options["max_iter"] = 0
     m.obj = Objective(expr=0)  # dummy for DegeneracyHunter
     results = solver.solve(m, tee=False)
     dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
@@ -154,12 +148,12 @@ def main():
     # run simulation
     results = solver.solve(m, tee=False)
     assert results.solver.termination_condition == TerminationCondition.optimal
+    # """
     # displays
     st = create_stream_table_dataframe(
         {"In": m.fs.s01, "Out": m.fs.s02, "Removed": m.fs.s03}
     )
     print(stream_table_dataframe_to_string(st))
-    # """
     m.fs.gac.display()
 
     [print(i[0], i[1], i[0].value) for i in iscale.badly_scaled_var_generator(m)]
