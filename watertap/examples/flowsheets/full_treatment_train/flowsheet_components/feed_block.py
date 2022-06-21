@@ -14,7 +14,7 @@
 """Feed blocks for supported property packages"""
 
 from pyomo.environ import Constraint
-from idaes.generic_models.unit_models import Feed
+from idaes.models.unit_models import Feed
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
