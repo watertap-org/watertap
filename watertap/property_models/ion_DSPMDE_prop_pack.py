@@ -50,8 +50,8 @@ from idaes.core import (
     StateBlock,
     MaterialBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent, Cation, Anion
-from idaes.core.phases import LiquidPhase, AqueousPhase
+from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
+from idaes.core.base.phases import LiquidPhase, AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
@@ -59,7 +59,7 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.util.misc import add_object_reference, extract_data
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,

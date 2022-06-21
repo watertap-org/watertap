@@ -8,12 +8,12 @@ Pass Through Unit Helper Methods
 
 .. currentmodule:: watertap.core.zero_order_pt
 
-The `build_pt` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models in which there is no change in flow rate or concentration of the solutes. This is most commonly seen in pressure and temperature change equipment.
+The :func:`build_pt` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models in which there is no change in flow rate or concentration of the solutes. This is most commonly seen in pressure and temperature change equipment.
 
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_pt, ZeroOrderBaseData
@@ -48,4 +48,4 @@ The build_pt method writes no additional constraints beyond those created by the
 Module Documentation
 --------------------
 
-.. automethod:: watertap.core.zero_order_pt.build_pt
+* :mod:`watertap.core.zero_order_pt`
