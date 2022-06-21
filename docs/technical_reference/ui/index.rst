@@ -2,6 +2,8 @@
 
 WaterTAP User Interface API
 ===========================
+This is the Python API that will be called by the UI backend to process
+changes from the UI front-end.
 
 .. include:: <isonum.txt>
 
