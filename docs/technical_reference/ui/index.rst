@@ -33,28 +33,22 @@ Class and function reference
 High-level API
 ^^^^^^^^^^^^^^
 
-.. autofunction:: export_variables
+* :func:`export_variables`
 
-.. autofunction:: find_flowsheet_interfaces
+* :func:`find_flowsheet_interfaces`
 
-.. autoclass:: FlowsheetInterface
-    :members:
-    :special-members: __init__, __eq__
+* :class:`FlowsheetInterface`
 
-.. autoclass:: WorkflowActions
-    :members:
-    :undoc-members:
+* :class:`WorkflowActions`
 
 Lower-level API
 ^^^^^^^^^^^^^^^
 
-.. autofunction:: get_block_interface
+* :func:`get_block_interface`
 
-.. autofunction:: set_block_interface
+* :func:`set_block_interface`
 
-.. autoclass:: BlockInterface
-    :members:
-    :special-members: __init__
+* :class:`BlockInterface`
 
 Flowsheet information format
 ----------------------------
