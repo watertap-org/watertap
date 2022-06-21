@@ -23,7 +23,7 @@ from idaes.core.util.scaling import (
     constraints_with_scale_factor_generator,
     unscaled_constraints_generator,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP
 
 

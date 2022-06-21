@@ -30,8 +30,8 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core.solvers import get_solver
+from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables,
@@ -373,7 +373,10 @@ class TestWorkflow:
         assert degrees_of_freedom(model.fs.unit2) == 0
 
         model.fs.unit2.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            default={
+                "flowsheet_costing_block": model.fs.costing,
+                "costing_method_arguments": {"number_of_parallel_units": 2},
+            }
         )
 
         assert isinstance(model.fs.costing.chemical_addition, Block)
@@ -491,7 +494,7 @@ class TestWorkflow:
     @pytest.mark.component
     def test_solution(self, model):
         # Note all dollar values are in millions of dollars
-        assert pytest.approx(630.031, rel=1e-5) == value(
+        assert pytest.approx(630.596, rel=1e-5) == value(
             model.fs.costing.total_capital_cost
         )
 
@@ -503,7 +506,7 @@ class TestWorkflow:
         )
 
         # Note units (M$)
-        assert pytest.approx(1.73136e-7, rel=1e-5) == value(model.fs.costing.LCOW)
+        assert pytest.approx(1.73278e-7, rel=1e-5) == value(model.fs.costing.LCOW)
 
         assert pytest.approx(0.231345, rel=1e-5) == value(
             model.fs.costing.electricity_intensity

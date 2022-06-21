@@ -22,20 +22,20 @@ from pyomo.environ import units as pyunits
 
 # Used to test IDAES config -> DataWrapper
 from idaes.models.properties.modular_properties.pure import Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+from idaes.models.properties.modular_properties.pure.NIST import NIST
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
 )
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
 
 
 from ..data_model import (
