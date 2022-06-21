@@ -30,7 +30,7 @@ from idaes.core import (
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -44,7 +44,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.costing import WaterTAPCosting
 from watertap.costing.watertap_costing_package import CrystallizerCostType

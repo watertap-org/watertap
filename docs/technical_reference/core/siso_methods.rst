@@ -13,7 +13,7 @@ The `build_siso` method is intended to be used to rapidly construct a standard s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_siso, ZeroOrderBaseData
@@ -71,6 +71,4 @@ Thus, a mass balance constraint is only written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_siso.build_siso
-    :members:
-    :noindex:
+* :mod:`watertap.core.zero_order_siso`
