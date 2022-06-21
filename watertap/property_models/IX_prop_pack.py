@@ -873,8 +873,11 @@ class IXStateBlockData(StateBlockData):
         super().calculate_scaling_factors()
 
         t0 = self.flowsheet().time.first()
-        target_ion = self.parent_block().config.target_ion
-        prop_in = self.parent_block().properties_in[t0]
+        try:
+            target_ion = self.parent_block().config.target_ion
+            prop_in = self.parent_block().properties_in[t0]
+        except:
+            pass
 
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
             if "properties_in" in self.name or "properties_out" in self.name:
@@ -884,6 +887,10 @@ class IXStateBlockData(StateBlockData):
             elif "properties_waste" in self.name:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+                )
+            else:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-2, warning=False
                 )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
@@ -895,6 +902,10 @@ class IXStateBlockData(StateBlockData):
             elif "properties_waste" in self.name:
                 sf = iscale.get_scaling_factor(
                     self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+                )
+            else:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-2, warning=False
                 )
             iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"], sf)
 

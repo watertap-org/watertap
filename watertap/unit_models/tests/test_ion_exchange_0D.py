@@ -75,25 +75,23 @@ ix_in = {
     "charge": {"Na_+": 1},
 }
 
-ion = "Na_+"
+target_ion = "Na_+"
 
 
-# @pytest.mark.unit
-# def test_config():
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(default={"dynamic": False})
+@pytest.mark.unit
+def test_config():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
 
-#     m.fs.properties = IXParameterBlock(
-#         default=ix_in
-#     )
-#     m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
-#     # check unit config arguments
-#     assert len(m.fs.unit.config) == 5
+    m.fs.properties = IXParameterBlock(default=ix_in)
+    m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
+    # check unit config arguments
+    assert len(m.fs.unit.config) == 6
 
-#     assert not m.fs.unit.config.dynamic
-#     assert not m.fs.unit.config.has_holdup
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
 
-#     assert m.fs.unit.config.property_package is m.fs.properties
+    assert m.fs.unit.config.property_package is m.fs.properties
 
 
 class TestIonExchange:
@@ -103,12 +101,13 @@ class TestIonExchange:
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = IXParameterBlock(default=ix_in)
 
-        m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
+        ix = m.fs.unit = IonExchange0D(
+            default={"property_package": m.fs.properties, "target_ion": target_ion}
+        )
         mass_flow_in = 1 * pyunits.kg / pyunits.s
         feed_mass_frac = {
             "Na_+": 5e-4,
         }
-        ix = m.fs.unit
         # Fix mole flow rates of each ion and water
         for ion, x in feed_mass_frac.items():
             mol_comp_flow = (
@@ -127,14 +126,12 @@ class TestIonExchange:
             * mass_flow_in
             / m.fs.unit.config.property_package.mw_comp["H2O"]
         )
+
+        ix.inlet.pressure[0].fix(101325)
+        ix.inlet.temperature[0].fix(298.15)
         ix.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
-        ix.resin_diam.fix()
         ix.K_eq[ion].fix(1.5)
         ix.resin_max_capacity.fix(5)
-        ix.bed_porosity.fix()
-        ix.resin_bulk_dens.fix()
-        ix.dimensionless_time.fix(1)
-        ix.lh.fix(0)
         ix.bed_depth.fix(3)
 
         return m
@@ -143,7 +140,7 @@ class TestIonExchange:
     def test_config(self, IX_frame):
         m = IX_frame
 
-        assert len(m.fs.unit.config) == 5
+        assert len(m.fs.unit.config) == 6
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -182,6 +179,12 @@ class TestIonExchange:
             "t_waste_param",
             "vel_bed_ratio",
             "bed_depth_to_diam_ratio",
+            "bed_expansion_A",
+            "bed_expansion_B",
+            "bed_expansion_C",
+            "p_drop_A",
+            "p_drop_B",
+            "p_drop_C",
         ]
         for p in ix_params:
             assert hasattr(ix, p)
@@ -221,157 +224,135 @@ class TestIonExchange:
             "vel_bed",
             "vel_inter",
             "sfr",
-            "Re",
-            "Sc",
-            "Sh",
-            "Pe_p",
-            "Pe_bed",
-            "c_norm",
+            "regen_dose",
+            "regen_sg",
+            "regen_density",
+            "regen_ww",
+            "regen_conc",
+            "regen_bv",
+            "regen_flow",
+            "t_regen",
+            "bw_rate",
+            "bw_flow",
+            "t_bw",
+            "bed_expansion_frac",
+            "bed_expansion_h",
+            "rinse_bv",
+            "rinse_flow",
+            "t_rinse",
+            "main_pump_power",
+            "regen_pump_power",
+            "bw_pump_power",
+            "rinse_pump_power",
+            "pump_efficiency",
         ]
 
         for v in ix_vars:
             assert hasattr(ix, v)
-            param = getattr(ix, v)
-            assert isinstance(param, Var)
+            var = getattr(ix, v)
+            assert isinstance(var, Var)
 
         # # test state block objects
-        cv_stateblock_lst = [
+        stateblock_lst = [
             "properties_in",
             "properties_out",
             "properties_waste",
         ]
         # feed side
-        for sb_str in cv_stateblock_lst:
+        for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
             assert isinstance(sb, IXStateBlock)
-        # # test objects added to control volume
-        # cv_objs_type_dict = {"eq_feed_interface_isothermal": Constraint}
-        # for (obj_str, obj_type) in cv_objs_type_dict.items():
-        #     obj = getattr(m.fs.unit.feed_side, obj_str)
-        #     assert isinstance(obj, obj_type)
-        # # permeate side
-        # assert isinstance(m.fs.unit.permeate_side, IXStateBlock)
-        # assert isinstance(m.fs.unit.mixed_permeate, IXStateBlock)
-        # # membrane
-        # assert isinstance(m.fs.unit.pore_entrance, IXStateBlock)
-        # assert isinstance(m.fs.unit.pore_exit, IXStateBlock)
 
-        # # test statistics
-        # assert number_variables(m) == 558
-        # assert number_total_constraints(m) == 524
-        # assert number_unused_variables(m) == 11
+        # test statistics
+        assert number_variables(m) == 110
+        assert number_total_constraints(m) == 91
+        assert number_unused_variables(m) == 3
 
-    # @pytest.mark.unit
-    # def test_dof(self, NF_frame):
-    #     m = NF_frame
-    #     check_dof(m, fail_flag=True)
+    @pytest.mark.unit
+    def test_dof(self, IX_frame):
+        m = IX_frame
+        check_dof(m, fail_flag=True)
 
-    # @pytest.mark.unit
-    # def test_calculate_scaling(self, NF_frame):
-    #     m = NF_frame
+    @pytest.mark.unit
+    def test_calculate_scaling(self, IX_frame):
+        m = IX_frame
 
-    #     m.fs.properties.set_default_scaling(
-    #         "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
-    #     )
-    #     m.fs.properties.set_default_scaling(
-    #         "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
-    #     )
+        calculate_scaling_factors(m)
 
-    #     calculate_scaling_factors(m)
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
+        assert len(unscaled_var_list) == 0
 
-    #     # check that all variables have scaling factors
-    #     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-    #     assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
+        assert len(unscaled_var_list) == 0
 
-    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-    #     assert len(unscaled_var_list) == 0
+        # not all constraints have scaling factor so skipping the check for unscaled constraints
 
-    #     # not all constraints have scaling factor so skipping the check for unscaled constraints
-
-    # @pytest.mark.skip(
-    #     reason="Scaling and/or formulation of unit model needs to be revisited"
-    # )
     # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_initialize(self, NF_frame):
-    #     m = NF_frame
-    #     # Using the 'initialize' function so that I can view the logs on failure
-    #     m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-    #     # initialization_tester(m)
+    @pytest.mark.component
+    def test_initialize(self, IX_frame):
+        m = IX_frame
+        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        initialization_tester(m)
 
-    # @pytest.mark.skip(
-    #     reason="Scaling and/or formulation of unit model needs to be revisited"
-    # )
-    # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_solve(self, NF_frame):
-    #     m = NF_frame
-    #     results = solver.solve(m)
+    @pytest.mark.component
+    def test_solve(self, IX_frame):
+        m = IX_frame
+        results = solver.solve(m)
 
-    #     # Check for optimal solution
-    #     assert_optimal_termination(results)
+        # Check for optimal solution
+        assert_optimal_termination(results)
 
-    # @pytest.mark.skip(
-    #     reason="Scaling and/or formulation of unit model needs to be revisited"
-    # )
-    # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_conservation(self, NF_frame):
-    #     m = NF_frame
-    #     b = m.fs.unit
-    #     comp_lst = m.fs.properties.solute_set
+    @pytest.mark.component
+    def test_conservation(self, IX_frame):
+        m = IX_frame
+        ix = m.fs.unit
+        comp_lst = m.fs.properties.solute_set
 
-    #     flow_mass_inlet = sum(
-    #         b.feed_side.properties_in[0].flow_mass_phase_comp["Liq", j]
-    #         for j in comp_lst
-    #     )
-    #     flow_mass_retentate = sum(
-    #         b.feed_side.properties_out[0].flow_mass_phase_comp["Liq", j]
-    #         for j in comp_lst
-    #     )
-    #     flow_mass_permeate = sum(
-    #         b.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
-    #     )
+        flow_mass_inlet = sum(
+            ix.inlet.properties_in[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+        flow_mass_out = sum(
+            ix.outlet.properties_out[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+        flow_mass_waste = sum(ix.waste.flow_mass_phase_comp["Liq", j] for j in comp_lst)
 
-    #     assert (
-    #         abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
-    #         <= 1e-6
-    #     )
+        assert abs(value(flow_mass_inlet - flow_mass_out - flow_mass_waste)) <= 1e-6
 
-    # @pytest.mark.skip(
-    #     reason="Scaling and/or formulation of unit model needs to be revisited"
-    # )
-    # @pytest.mark.requires_idaes_solver
-    # @pytest.mark.component
-    # def test_solution(self, NF_frame):
-    #     m = NF_frame
+    @pytest.mark.component
+    def test_solution(self, IX_frame):
+        m = IX_frame
+        ix = m.fs.unit
 
-    #     mole_flux_dict = {
-    #         "Na_+": 0.0036645,
-    #         "Cl_-": 0.004354,
-    #         "Ca_2+": 7.3313e-5,
-    #         "SO4_2-": 1.6845e-4,
-    #         "Mg_2+": 0.000440,
-    #         "H2O": 0.41437,
-    #     }
-    #     for j, val in mole_flux_dict.items():
-    #         assert pytest.approx(val, rel=5e-2) == value(
-    #             m.fs.unit.flux_mol_phase_comp_avg[0, "Liq", j]
-    #         )
+        results_dict = {
+            "resin_eq_capacity": 2.85198,
+            "R_eq": 0.6667,
+            "bed_vol": 0.4057530,
+            "partition_ratio": 91.8337,
+            "fluid_mass_transfer_coeff": 5.3557e-5,
+            "mass_in": 814.4503,
+            "mass_out": 4.41035,
+            "mass_removed": 810.03994,
+            "vel_bed": 0.007393,
+            "sfr": 8.87239,
+            "Re": 6.6542,
+            "Sc": 751.8796,
+            "Sh": 36.24174,
+            "t_breakthru": 37464.714,
+            "t_contact": 202.8765,
+            "t_waste": 1648.5400,
+            "t_regen": 274.1574,
+            "t_rinse": 1014.382,
+        }
 
-    #     # TODO: subsequently focus on the segment below during the validation and refinement phase
-    #     intrinsic_rejection_dict = {
-    #         "Na_+": 0.017432,
-    #         "Cl_-": 0.014704,
-    #         "Ca_2+": -0.034499,
-    #         "SO4_2-": 0.01435907,
-    #         "Mg_2+": 0.013672,
-    #     }
-    #     for j, val in intrinsic_rejection_dict.items():
-    #         assert pytest.approx(val, rel=5e-2) == value(
-    #             m.fs.unit.rejection_intrinsic_phase_comp[0, "Liq", j]
-    #         )
+        for v, val in results_dict.items():
+            var = getattr(ix, v)
+            if var.is_indexed():
 
-    # @pytest.mark.unit
-    # def test_report(self, NF_frame):
-    #     NF_frame.fs.unit.report()
+                assert pytest.approx(val, rel=5e-2) == value(var[target_ion])
+            else:
+                assert pytest.approx(val, rel=5e-2) == value(var)
+
+    @pytest.mark.unit
+    def test_report(self, IX_frame):
+        IX_frame.fs.unit.report()

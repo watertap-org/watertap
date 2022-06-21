@@ -30,7 +30,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
-
+from idaes.core.components import Component, Solute, Solvent, Cation, Anion
 from pyomo.util.check_units import assert_units_consistent
 from watertap.property_models.IX_prop_pack import (
     IXParameterBlock,
@@ -94,7 +94,14 @@ def test_parameter_block(model):
     assert isinstance(model.fs.properties.ion_set, Set)
     for j in model.fs.properties.ion_set:
         assert j in ["A", "B", "C", "D"]
-
+    assert isinstance(model.fs.properties.cation_set, Set)
+    assert len(model.fs.properties.cation_set) == 2
+    for j in model.fs.properties.cation_set:
+        assert j in ["A", "C"]
+    assert isinstance(model.fs.properties.anion_set, Set)
+    assert len(model.fs.properties.anion_set) == 2
+    for j in model.fs.properties.anion_set:
+        assert j in ["B", "D"]
     assert isinstance(model.fs.properties.phase_list, Set)
     for j in model.fs.properties.phase_list:
         assert j in ["Liq"]

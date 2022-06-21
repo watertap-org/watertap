@@ -122,7 +122,7 @@ class IonExchangeODData(UnitModelBlockData):
 
     CONFIG.declare(
         "regenerant",
-        ConfigValue(default="HCl", domain=str, description="Target Ion"),
+        ConfigValue(default="HCl", domain=str, description="Regenerant"),
     )
 
     def build(self):
@@ -594,9 +594,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Regeneration flow rate",
         )
 
-        self.t_regen = Var(
-            initialize=30, units=pyunits.s, doc="Regeneration cycle time"
-        )
+        self.t_regen = Var(initialize=30, units=pyunits.s, doc="Regeneration time")
 
         # # ====== Backwashing ====== #
 
@@ -643,7 +641,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.t_rinse = Var(
-            initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Backwash time"
+            initialize=360, units=pyunits.s, bounds=(120, 1200), doc="Rinse time"
         )
 
         self.main_pump_power = Var(
@@ -1260,6 +1258,30 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.rinse_flow, 1e3)
 
         iscale.set_scaling_factor(self.bw_flow, 1e3)
+
+        iscale.set_scaling_factor(self.pressure_drop, 1)
+
+        iscale.set_scaling_factor(self.regen_density, 1e-3)
+
+        iscale.set_scaling_factor(self.regen_conc, 1e-2)
+
+        iscale.set_scaling_factor(self.regen_bv, 1)
+
+        iscale.set_scaling_factor(self.t_regen, 1e-2)
+
+        iscale.set_scaling_factor(self.bed_expansion_frac, 1)
+
+        iscale.set_scaling_factor(self.bed_expansion_h, 1)
+
+        iscale.set_scaling_factor(self.t_rinse, 1e-2)
+
+        iscale.set_scaling_factor(self.main_pump_power, 1e2)
+
+        iscale.set_scaling_factor(self.regen_pump_power, 1e2)
+
+        iscale.set_scaling_factor(self.bw_pump_power, 1e2)
+
+        iscale.set_scaling_factor(self.rinse_pump_power, 1e2)
 
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
