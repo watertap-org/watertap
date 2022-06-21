@@ -22,7 +22,7 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 from watertap.costing import (
     WaterTAPCosting,
     PumpType,

@@ -96,13 +96,13 @@ for a chemical system that contains only water.
 
     # Imports from idaes core
     from idaes.core import AqueousPhase
-    from idaes.core.components import Solvent, Cation, Anion
+    from idaes.core.base.components import Solvent, Cation, Anion
 
     # Imports from idaes generic models
-    import idaes.generic_models.properties.core.pure.Perrys as Perrys
-    from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-    from idaes.generic_models.properties.core.state_definitions import FTPx
-    from idaes.generic_models.properties.core.eos.ideal import Ideal
+    import idaes.models.properties.modular_properties.pure.Perrys as Perrys
+    from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+    from idaes.models.properties.modular_properties.state_definitions import FTPx
+    from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
     # Configuration dictionary
     thermo_config = {
@@ -286,16 +286,16 @@ reaction, we will model it as an equilibrium reaction.
     from pyomo.environ import units as pyunits
 
     # Import the object/function for heat of reaction
-    from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+    from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 
     # Import built-in Gibb's Energy function
-    from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+    from idaes.models.properties.modular_properties.reactions.equilibrium_constant import van_t_hoff
 
     # Import safe log power law equation
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+    from idaes.models.properties.modular_properties.reactions.equilibrium_forms import log_power_law_equil
 
     # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
-    from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+    from idaes.models.properties.modular_properties.base.generic_reaction import ConcentrationForm
 
     reaction_config = {
         "base_units": {"time": pyunits.s,
@@ -407,7 +407,7 @@ Recall, we had named our configuration dictionaries as ``thermo_config`` and
 ``reaction_config``. We will reference those dictionary names in the example
 code below.
 
-.. testcode::
+.. doctest::
 
     # Import specific pyomo objects
     from pyomo.environ import ConcreteModel
@@ -416,11 +416,11 @@ code below.
     from idaes.core import FlowsheetBlock
 
     # Import the idaes objects for Generic Properties and Reactions
-    from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
-    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
+    from idaes.models.properties.modular_properties.base.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model
-    from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+    from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
     # Create an instance of a pyomo model
     model = ConcreteModel()
