@@ -19,6 +19,7 @@ from pyomo.environ import (
     SolverStatus,
     value,
     Var,
+    units as pyunits,
 )
 from pyomo.network import Port
 from idaes.core import (
@@ -62,14 +63,14 @@ class TestUltraviolet:
         m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
 
         # fully specify system
-        feed_flow_mass = 1
+        feed_flow_mass = 1 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
-        feed_pressure = 101325
-        feed_temperature = 273.15 + 25
-        uv_intensity = 1
-        exporure_time = 500
-        inactivation_rate = 0.002245
-        EEO = 0.25
+        feed_pressure = 101325 * pyunits.Pa
+        feed_temperature = (273.15 + 25) * pyunits.K
+        uv_intensity = 1 * pyunits.mW / pyunits.cm**2
+        exporure_time = 500 * pyunits.s
+        inactivation_rate = 0.002245 * pyunits.cm**2 / pyunits.mJ
+        EEO = 0.25 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.3
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
@@ -84,7 +85,7 @@ class TestUltraviolet:
         # m.fs.unit.uv_dose.fix(uv_dose)
         m.fs.unit.uv_intensity.fix(uv_intensity)
         m.fs.unit.exposure_time.fix(exporure_time)
-        m.fs.unit.inactivation_rate[0, "Liq", "NDMA"].fix(inactivation_rate)
+        m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
@@ -223,6 +224,6 @@ class TestUltraviolet:
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(4.07469e-4, rel=1e-3) == value(
+        assert pytest.approx(1466.887, rel=1e-3) == value(
             m.fs.unit.electricity_demand_phase_comp[0, "Liq", "NDMA"]
         )

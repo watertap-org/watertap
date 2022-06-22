@@ -214,7 +214,6 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # Add unit parameters
         self.inactivation_rate = Var(
-            self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=0.002245,
@@ -225,7 +224,6 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
 
         self.rate_constant = Var(
-            self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=0.002245,
@@ -276,6 +274,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             * units_meta("time") ** -3,
             doc="Electricity demand per component",
         )
+
         # self.electricity_demand_minimum = Var(
         #     self.flowsheet().config.time,
         #     initialize=1,
@@ -285,6 +284,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         #     * units_meta("time") ** -3,
         #     doc="Minimum electricity demand of unit",
         # )
+
         self.electrical_efficiency = Var(
             self.flowsheet().time,
             self.config.property_package.phase_list,
@@ -351,16 +351,12 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # rate constant
         @self.Constraint(
-            self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             doc="Constraint for pseudo-first order rate constant",
         )
-        def eq_rate_constant(b, t, p, j):
-            return (
-                b.rate_constant[t, p, j]
-                == b.uv_intensity * b.inactivation_rate[t, p, j]
-            )
+        def eq_rate_constant(b, p, j):
+            return b.rate_constant[p, j] == b.uv_intensity * b.inactivation_rate[p, j]
 
         # mass transfer
         @self.Constraint(
@@ -382,7 +378,7 @@ class Ultraviolet0DData(UnitModelBlockData):
                     p, j
                 ) == prop_in.get_material_flow_terms(p, j) * exp(
                     pyunits.convert(
-                        -b.uv_dose * b.inactivation_rate[t, p, j],
+                        -b.uv_dose * b.inactivation_rate[p, j],
                         to_units=pyunits.dimensionless,
                     )
                 )
@@ -500,18 +496,8 @@ class Ultraviolet0DData(UnitModelBlockData):
         # setting scaling factors for variables
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
-            if (
-                iscale.get_scaling_factor(self.uv_dose)
-                or iscale.get_scaling_factor(self.exposure_time) is None
-            ):
-                sf = iscale.get_scaling_factor(
-                    self.uv_intensity, default=1, warning=True
-                )
-            else:
-                sf = iscale.get_scaling_factor(
-                    self.uv_dose
-                ) / iscale.get_scaling_factor(self.exposure_time)
-            iscale.set_scaling_factor(self.uv_intensity, sf)
+            sf = iscale.get_scaling_factor(self.uv_intensity, default=1, warning=True)
+        iscale.set_scaling_factor(self.uv_intensity, sf)
 
         if iscale.get_scaling_factor(self.exposure_time) is None:
             sf = iscale.get_scaling_factor(
@@ -520,37 +506,29 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.exposure_time, sf)
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
-            if (
-                iscale.get_scaling_factor(self.uv_intensity)
-                or iscale.get_scaling_factor(self.exposure_time) is None
-            ):
-                sf = iscale.get_scaling_factor(self.uv_dose, default=1e-2, warning=True)
-            else:
-                sf = iscale.get_scaling_factor(
-                    self.uv_intensity
-                ) * iscale.get_scaling_factor(self.exposure_time)
-            iscale.set_scaling_factor(self.uv_dose, sf)
+            sf = iscale.get_scaling_factor(self.uv_dose, default=1e-2, warning=True)
+        iscale.set_scaling_factor(self.uv_dose, sf)
 
-        for (t, p, j), v in self.rate_constant.items():
-            if iscale.get_scaling_factor(v) is None:
-                if (
-                    iscale.get_scaling_factor(self.uv_intensity)
-                    or iscale.get_scaling_factor(self.inactivation_rate[t, p, j])
-                    is None
-                ):
-                    sf = iscale.get_scaling_factor(v, default=1e3, warning=True)
-                else:
-                    sf = iscale.get_scaling_factor(
-                        self.uv_intensity
-                    ) * iscale.get_scaling_factor(self.inactivation_rate[t, p, j])
-            iscale.set_scaling_factor(v, sf)
+        if iscale.get_scaling_factor(self.inactivation_rate) is None:
+            sf = iscale.get_scaling_factor(
+                self.inactivation_rate, default=1e3, warning=True
+            )
+        iscale.set_scaling_factor(self.inactivation_rate, sf)
+
+        if iscale.get_scaling_factor(self.rate_constant) is None:
+            sf = iscale.get_scaling_factor(
+                self.rate_constant, default=1e3, warning=True
+            )
+        iscale.set_scaling_factor(self.rate_constant, sf)
+
+        if iscale.get_scaling_factor(self.electrical_efficiency) is None:
+            sf = iscale.get_scaling_factor(
+                self.electrical_efficiency, default=1e-6, warning=True
+            )
+        iscale.set_scaling_factor(self.electrical_efficiency, sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        for (t, p, j), v in self.inactivation_rate.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.inactivation_rate[t, p, j], 1e3)
-
         if iscale.get_scaling_factor(self.lamp_efficiency) is None:
             iscale.set_scaling_factor(self.lamp_efficiency, 10)
 
@@ -559,10 +537,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                 self.control_volume.properties_in[0].dens_mass_phase["Liq"]
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
-
-        for (t, p, j), v in self.electrical_efficiency.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.electrical_efficiency[t, p, j], 10)
 
         for (t, p, j), v in self.electricity_demand_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
