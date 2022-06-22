@@ -316,6 +316,15 @@ class ZeroOrderUnitChecker:
         ),
     ).declare_as_argument()
 
+    CONFIG.declare(
+        "max_flow_in",
+        ConfigValue(
+            domain=float,
+            default=None,
+            description="Maximum flow volume in, in m^3/s",
+        ),
+    ).declare_as_argument()
+
     def __init__(self, **options):
         self.config = self.CONFIG()
         self.config.set_value(options)
@@ -356,6 +365,9 @@ class ZeroOrderUnitChecker:
             raise RuntimeError(
                 f"Unexpected number of degrees of freedom {degrees_of_freedom(self.model)}"
             )
+
+        if self.config.max_flow_in is not None:
+            df = df[df["flow_in"] <= self.config.max_flow_in]
 
         self._columns = [k for k in _column_to_component_map if k in df.columns]
         if not self.config.run_all_samples:
