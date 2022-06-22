@@ -147,6 +147,10 @@ dictionary in the following format (instanced by a NaCl solution).
 
 This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution.
 
+Information regarding the property package this unit model relies on can be found here: 
+
+:py:mod:`watertap.property_models.ion_DSPMDE_prop_pack`
+
 Equations
 ---------
 
