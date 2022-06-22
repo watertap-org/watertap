@@ -6,6 +6,8 @@ import pandas as pd
 
 from matplotlib.pyplot import subplots
 
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.param import _ParamData
 from pyomo.common.config import ConfigDict, ConfigValue, In, Path, NonNegativeFloat
 from pyomo.environ import (
     ConcreteModel,
@@ -125,7 +127,7 @@ def _build_flowsheet(unit_model_class, process_subtype, water_source):
 
 
 _column_to_component_map = {
-    "recovery": ("fs.unit.recovery_frac_mass_H2O", pyunits.dimensionless),
+    "recovery": ("fs.unit.recovery_frac_mass_H2O[0]", pyunits.dimensionless),
     "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
     "toc": ("fs.feed.conc_mass_comp[0.0, toc]", pyunits.mg / pyunits.L),
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
@@ -149,7 +151,10 @@ _column_to_component_map = {
         "fs.unit.settling_velocity",
         pyunits.m / pyunits.s,
     ),  # sedimentation
-    "piping_distance": ("fs.unit.pipe_distance", pyunits.mile),  # deep_well_injection
+    "piping_distance": (
+        "fs.unit.pipe_distance[0]",
+        pyunits.mile,
+    ),  # deep_well_injection
     "lift_height": ("fs.unit.lift_height", pyunits.ft),  # deep_well_injection
     # NOTE: flow_in needs to be always last
     "flow_in": ("fs.feed.flow_vol[0]", pyunits.m**3 / pyunits.s),
@@ -190,16 +195,18 @@ def _run_analysis(m, df, columns):
             var = m.find_component(var)
             if str(var) == "fs.unit.oxidant_dose" and isinstance(m.fs.unit, OzoneAOPZO):
                 continue
-            var.fix(pyunits.convert(val * units, var.get_units()))
+            var.value = pyunits.convert(val * units, var.get_units())
+            if isinstance(var, _VarData):
+                var.fix()
+            elif isinstance(var, _ParamData):
+                pass
+            else:
+                raise RuntimeError(
+                    f"Unrecognized Pyomo component {var} of type {type(var)}"
+                )
         _initialize_flowsheet(m)
-        result = s.solve(m)
-        if check_optimal_termination(result):
-            for att, vals in watertap_costing_attributes.items():
-                if att == "LCOW":
-                    vals.append(value(m.fs.costing.component(att)) * 1e06)
-                else:
-                    vals.append(value(m.fs.costing.component(att)))
-        else:
+
+        def _infeasible_pnt():
             msg = "WARNING: point "
             inf_point = {}
             for name, val in zip(columns, index):
@@ -211,6 +218,18 @@ def _run_analysis(m, df, columns):
                 vals.append(float("nan"))
             infeasible_points.append(inf_point)
 
+        try:
+            result = s.solve(m)
+        except:
+            infeasible_pnt()
+        if check_optimal_termination(result):
+            for att, vals in watertap_costing_attributes.items():
+                if att == "LCOW":
+                    vals.append(value(m.fs.costing.component(att)) * 1e06)
+                else:
+                    vals.append(value(m.fs.costing.component(att)))
+        else:
+            _infeasible_pnt()
     for att, vals in watertap_costing_attributes.items():
         df["WT_" + att] = vals
 
