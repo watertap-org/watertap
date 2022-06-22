@@ -78,6 +78,7 @@ from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Option
 # third-party
 import pyomo.core
 from pyomo.environ import Block, Var, value
+from pyomo.network.port import Port
 import idaes.logger as idaeslog
 from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
 import yaml
@@ -505,8 +506,23 @@ class BlockInterface:
         return p["val"]
 
     @staticmethod
-    def _get_block_variable_value(block, var_name):
-        block_var = getattr(block, var_name)
+    def _get_var(block, var_name):
+        """Get the variable from the block.
+
+        Level of indirection around getattr().
+        """
+        try:
+            block_var = getattr(block, var_name)
+        except AttributeError:
+            raise AttributeError(
+                f"Cannot get variable from block. block={block.name}, "
+                f"variable={var_name}"
+            )
+        return block_var
+
+    @classmethod
+    def _get_block_variable_value(cls, block, var_name):
+        block_var = cls._get_var(block, var_name)  # getattr(block, var_name)
         if block_var.is_indexed():
             index_list, value_list, bounds_list = [], [], []
             for var_idx in block_var.index_set():
@@ -566,7 +582,9 @@ class BlockInterface:
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
                 else:
-                    var_obj = getattr(ui.block, load_var_name)
+                    var_obj = self._get_var(
+                        ui.block, load_var_name
+                    )  # getattr(ui.block, load_var_name)
                     if var_obj is None:
                         raise ValueError(
                             "Exported variable not found in block. " + details
@@ -615,7 +633,7 @@ class BlockInterface:
 
             # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
-                for sb_name, sb_val in block.component_map(ctype=Block).items():
+                for sb_name, sb_val in block.component_map(ctype=[Block, Port]).items():
                     stack.insert(0, (path + [sb_name], sb_val))
 
         return tree
@@ -708,13 +726,13 @@ def export_variables(
     """
 
     def var_check(b, n):
-        info = f"block={b.name},attr={n}"
+        info = f"block={b.name}, attr={n}"
         try:
-            obj = getattr(b, n)
+            obj = BlockInterface._get_var(b, n)  # getattr(b, n)
             if not isinstance(obj, Var):
                 return "not a variable. " + info + f",type={type(obj)}"
-        except AttributeError:
-            return "not found. " + info
+        except AttributeError as err:
+            return f"{err}: not found. {info}"
 
     var_info_dict = {}
     if variables is not None:
@@ -740,13 +758,15 @@ def export_variables(
             if error:
                 raise ValueError(error)
             # Fill in gaps in variable
-            bvar = getattr(block, name)
+            bvar = BlockInterface._get_var(block, name)  # getattr(block, name)
             ivar = var_info_dict[name]
-            ivar.display_name = bvar.local_name
+            if not ivar.display_name:
+                ivar.display_name = bvar.local_name
             units = bvar.get_units()
             if units is not None:
                 ivar.units = str(units)
-            ivar.description = bvar.doc or ""
+            if not ivar.description:
+                ivar.description = bvar.doc or ""
 
     block_info = model.Block(
         display_name=name,
@@ -796,9 +816,9 @@ class FlowsheetInterface(BlockInterface):
 
     def update(self, data: Dict):
         super().update(data)
-        # clear the 'solve' action
-        if self._action_was_run(WorkflowActions.solve):
-            self._action_clear_was_run(WorkflowActions.solve)
+        # clear actions
+        for act in self._actions_run.copy():
+            self._action_clear_was_run(act)
         _log.debug(f"update:end. status=ok")
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
