@@ -18,4 +18,5 @@ How To Guides
    how_to_use_parameter_sweep
    how_to_use_parameter_sweep_monte_carlo
    how_to_use_EDB
+   how_to_use_ui_api
    how_to_contribute_development
