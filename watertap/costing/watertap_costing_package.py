@@ -407,6 +407,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_nanofiltration(blk):
         """
         Nanofiltration costing method
+
         TODO: describe equations
         """
         make_capital_cost_var(blk)
@@ -422,7 +423,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_reverse_osmosis(blk, ro_type=ROType.standard):
         """
         Reverse osmosis costing method
+
         TODO: describe equations
+
         Args:
             ro_type: ROType Enum indicating reverse osmosis type,
                 default = ROType.standard
@@ -449,10 +452,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_pump(blk, pump_type=PumpType.high_pressure, cost_electricity_flow=True):
         """
         Pump costing method
+
         TODO: describe equations
+
         Args:
             pump_type: PumpType Enum indicating pump type,
                 default = PumpType.high_pressure
+
             cost_electricity_flow: bool, if True, the Pump's work_mechanical will be
                 converted to kW and costed as an electricity, default = True
         """
@@ -474,10 +480,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     ):
         """
         Energy recovery device costing method
+
         TODO: describe equations
+
         Args:
             energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
                 default = EnergyRecoveryDeviceType.pressure_exchanger.
+
             cost_electricity_flow: bool, if True, the ERD's work_mechanical will
                 be converted to kW and costed as an electricity default = True
         """
@@ -493,7 +502,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_high_pressure_pump(blk, cost_electricity_flow=True):
         """
         High pressure pump costing method
+
         `TODO: describe equations`
+
         Args:
             cost_electricity_flow - bool, if True, the Pump's work_mechanical will
                                     be converted to kW and costed as an electricity
@@ -518,7 +529,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_low_pressure_pump(blk, cost_electricity_flow=True):
         """
         Low pressure pump costing method
+
         TODO: describe equations
+
         Args:
             cost_electricity_flow - bool, if True, the Pump's work_mechanical will
                                     be converted to kW and costed as an electricity
@@ -545,7 +558,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_pressure_exchanger_erd(blk, cost_electricity_flow=True):
         """
         ERD pressure exchanger costing method
+
         TODO: describe equations
+
         Args:
             cost_electricity_flow - bool, if True, the ERD's work_mechanical will
                                     be converted to kW and costed as an electricity
@@ -572,6 +587,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_pressure_exchanger(blk):
         """
         Pressure exchanger costing method
+
         TODO: describe equations
         """
         cost_by_flow_volume(
@@ -587,10 +603,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_mixer(blk, mixer_type=MixerType.default, **kwargs):
         """
         Mixer costing method
+
         TODO: describe equations
+
         Args:
             mixer_type: MixerType Enum indicating mixer type,
                 default = MixerType.default
+
             `**kwargs`: Additional keywords for the MixerType, e.g., NaOCl
                 and CaOH2 mixers expect the `dosing_rate` keyword
                 argument.
@@ -611,6 +630,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_default_mixer(blk):
         """
         Default mixer costing method
+
         TODO: describe equations
         """
         cost_by_flow_volume(
@@ -626,7 +646,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_naocl_mixer(blk, dosing_rate):
         """
         NaOCl mixer costing method
+
         TODO: describe equations
+
         Args:
             dosing_rate: An expression in [mass/time] for NaOCl dosage
         """
@@ -646,7 +668,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_caoh2_mixer(blk, dosing_rate):
         """
         CaOH2 mixer costing method
+
         TODO: describe equations
+
         Args:
             dosing_rate: An expression in [mass/time] for CaOH2 dosage
         """
@@ -671,6 +695,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_electrodialysis(blk, cost_electricity_flow=True):
         """
         Function for costing the Electrodialysis unit
+
         Args:
             cost_type - Option for electrodialysis cost function type - (UNKNOWN)
         """
@@ -701,6 +726,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
         Function for costing the FC crystallizer by the mass flow of produced crystals.
+
         Args:
             cost_type - Option for crystallizer cost function type - volume or mass basis
         """
@@ -810,6 +836,7 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     """
     Generic function for costing a membrane. Assumes the unit_model
     has an `area` variable or parameter.
+
     Args:
         membrane_cost - The cost of the membrane in currency per area
         factor_membrane_replacement - Membrane replacement factor
@@ -840,12 +867,17 @@ def cost_electrodialysis_stack(
     Generic function for costing the stack in an electrodialysis unit.
     Assumes the unit_model has a `cell_pair_num`, `cell_width`, and `cell_length`
     set of variables used to size the total membrane area.
+
     Args:
         membrane_cost - The total cost of the CEM and AEM per cell pair in currency per area
+
         spacer_cost - The total cost of the spacers per cell pair in currency per area
+
         membrane_replacement_factor - Replacement factor for membranes and spacers
                                       [fraction of membranes/spacers replaced/year]
+
         electrode_cost - The total cost of electrodes in a given stack in currency per area
+
         electrode_replacement_factor - Replacement factor for electrodes
                                         [fraction of electrodes replaced/year]
     """
@@ -886,6 +918,7 @@ def cost_electrodialysis_stack(
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
     Generic function for costing by flow volume.
+    
     Args:
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
