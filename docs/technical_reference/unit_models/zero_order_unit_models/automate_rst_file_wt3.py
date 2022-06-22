@@ -142,3 +142,13 @@ for i, u in enumerate(unit_name_list):
         f.write(f"\n\n{list[count]}\n")
         f.write("    :members:\n")
         f.write("    :noindex:\n")
+
+
+def grab_unit_variables(unit):
+    from pyomo.environ import ConcreteModel
+    from idaes.core import FlowsheetBlock
+    from watertap.core.zero_order_properties import WaterParameterBlock
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock()
+    m.fs.props = WaterParameterBlock({"solute_list": ["tss", "cod", "tds"]})
