@@ -293,7 +293,7 @@ class TestElectrodialysisVoltageConst:
         assert pytest.approx(388.6800, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(46.70975, rel=1e-3) == value(
+        assert pytest.approx(45.86804, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(777.3600, rel=1e-3) == value(
@@ -506,7 +506,7 @@ class TestElectrodialysisCurrentConst:
         assert pytest.approx(388.6800, rel=1e-3) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(46.10169, rel=1e-3) == value(
+        assert pytest.approx(47.16423, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(777.3600, rel=1e-3) == value(
