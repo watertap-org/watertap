@@ -74,7 +74,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
 
     solve(m)
-    # display_results(m)
+    display_results(m)
     display_costing(m)
 
     return m, results
@@ -366,6 +366,8 @@ def add_costing(m):
     )
 
     # RO Train
+    # RO equipment is costed using more detailed costing package
+
     desal.P2.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.ro_costing,
@@ -547,6 +549,14 @@ def display_results(m):
 
 
 def display_costing(m):
+    print("\n Costing metrics:")
+    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
+
+    opex = value(
+        pyunits.convert(
+            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+        )
+    )
 
     print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
