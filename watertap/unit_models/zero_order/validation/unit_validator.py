@@ -176,11 +176,8 @@ def _run_analysis(m, df, columns):
     total_number = len(df.index)
     print(f"Starting analysis, found {total_number} points")
     infeasible_points = []
-    idx = []
+
     for _, index in enumerate(df.index):
-        # if index % 1.5 != 0:
-        #     continue
-        idx.append(index)
         if len(columns) == 1:
             index = [index]
         msg = f"At {_+1}/{total_number} "
@@ -212,12 +209,10 @@ def _run_analysis(m, df, columns):
             for att, vals in watertap_costing_attributes.items():
                 vals.append(float("nan"))
             infeasible_points.append(inf_point)
-    # print(idx)
-    # df = df.loc[idx].copy()
+
     for att, vals in watertap_costing_attributes.items():
         df["WT_" + att] = vals
 
-    # new_df = df.index.isin(idx).copy()
     return infeasible_points
 
 
@@ -363,8 +358,6 @@ class ZeroOrderUnitChecker:
         print(msg)
 
         self.infeasible_points = _run_analysis(self.model, df, self._columns)
-        # df = new_df.copy()
-        # print(new_df)
         max_diff = -1.0
         max_name = None
         arg_max = None
@@ -393,7 +386,6 @@ class ZeroOrderUnitChecker:
         print("\nAll relative differences:")
         cols = [col for col in df.columns if "relative_diff" in col]
         print(df[cols])
-        # print(df)
         print("")
         if self.infeasible_points:
             print("Infeasible points:")
