@@ -74,7 +74,7 @@ def main():
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)  # ensures problem is square
 
-    setup_optimize(m)  # unfixes specific variables for cost optimization
+    optimize_operation(m)  # unfixes specific variables for cost optimization
 
     solve(m)
     display_results(m)
@@ -334,7 +334,7 @@ def initialize_system(m):
     return
 
 
-def setup_optimize(m):
+def optimize_operation(m):
     """
     Unfixes RO operating conditions and sets solver objective
         - Operating pressure: 1 - 83 bar
@@ -348,9 +348,9 @@ def setup_optimize(m):
     desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
     desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
 
-    desal.RO.velocity.unfix()
-    desal.RO.velocity.setub(0.3)
-    desal.RO.velocity.setlb(0.1)
+    desal.RO.velocity[0, 0].unfix()
+    desal.RO.velocity[0, 0].setub(0.3)
+    desal.RO.velocity[0, 0].setlb(0.1)
 
     desal.RO.area.unfix()
     desal.RO.area.setub(5000)
