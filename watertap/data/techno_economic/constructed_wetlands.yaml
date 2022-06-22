@@ -10,5 +10,9 @@ default:
       value: 0.40
       units: dimensionless
       reference: https://doi.org/10.1016/j.wre.2013.09.001   #TODO: temporary ref for nitrate removal until alternatives provided
+    ammonium_as_nitrogen: # assume to be proxy for nitrate in the context of AMO 1503 flowsheet
+      value: 0.40
+      units: dimensionless
+      reference: https://doi.org/10.1016/j.wre.2013.09.001
   capital cost:  # TODO: placeholder until costs available
     cost_factor: None
