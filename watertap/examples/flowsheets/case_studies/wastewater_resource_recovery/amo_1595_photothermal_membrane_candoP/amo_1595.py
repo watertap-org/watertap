@@ -323,7 +323,9 @@ def display_costing(m):
     LCOT = value(
         pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
-    print(f"Levelized Cost of Treatment: {LCOW:.3f} $/m^3")
+    print(
+        f"Levelized Cost of Treatment with respect to influent flowrate: {LCOW:.3f} $/m^3"
+    )
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
