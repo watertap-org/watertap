@@ -361,7 +361,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
-        self.set_default_scaling("pressure", 1e-6)
+        self.set_default_scaling("pressure", 1e-4)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
@@ -754,7 +754,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(1e5, None),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc="State pressure",
@@ -993,7 +993,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.ion_set | self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
-            bounds=(1e-3, 1.001),
+            bounds=(0, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component",
         )
@@ -1081,7 +1081,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(5e2, 5e7),
+            bounds=(0, None),
             units=pyunits.Pa,
             doc="van't Hoff Osmotic pressure",
         )
@@ -1173,7 +1173,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 f"Set defined_state to true if get_property = {get_property}"
             )
         if adjust_by_ion is not None:
-            if adjust_by_ion in self.params.ion_set | self.params.solute_set:
+            if adjust_by_ion in self.params.ion_set:
                 self.charge_balance = Constraint(
                     expr=sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
@@ -1209,6 +1209,8 @@ class DSPMDEStateBlockData(StateBlockData):
         self.conc_mol_phase_comp
 
         if solve:
+            if adjust_by_ion is not None:
+                ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
             solve = get_solver()
             results = solve.solve(self)
             if check_optimal_termination(results):
@@ -1255,7 +1257,8 @@ class DSPMDEStateBlockData(StateBlockData):
                                 f" {get_property}."
                             )
                     msg = (
-                        f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed "
+                        f"{adjust_by_ion} adjusted: flow_mol_phase_comp['Liq',{adjust_by_ion}] was adjusted from "
+                        f"{ion_before_adjust} and fixed "
                         f"to {ion_adjusted}."
                     )
                 else:
