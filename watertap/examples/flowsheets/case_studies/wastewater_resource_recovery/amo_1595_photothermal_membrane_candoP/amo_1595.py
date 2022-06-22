@@ -233,11 +233,46 @@ def add_costing(m):
         doc="Dollar value of BCP generated per year",
     )
 
+    m.fs.costing.water_byproduct_volume = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.photothermal_water.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        ),
+        doc="Volume of byproduct water generated per year",
+    )
+
+    m.fs.costing.value_water_byproduct = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.water_byproduct_volume * m.fs.costing.water_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Dollar value of byproduct water generated per year",
+    )
+
+    m.fs.costing.N2O_byproduct_mass = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.candop_byproduct.flow_mass_comp[0, "nitrous_oxide"],
+            to_units=pyunits.kg / m.fs.costing.base_period,
+        ),
+        doc="Mass of byproduct nitrous oxide generated per year",
+    )
+
+    m.fs.costing.value_N2O_byproduct = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.N2O_byproduct_mass * m.fs.costing.nitrous_oxide_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Dollar value of byproduct nitrous oxide generated per year",
+    )
+
     m.fs.costing.LCOW_bcp = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_bcp_recovery
+            - m.fs.costing.value_N2O_byproduct
         )
         / (
             pyunits.convert(
@@ -254,6 +289,8 @@ def add_costing(m):
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_bcp_recovery
+            - m.fs.costing.value_N2O_byproduct
+            - m.fs.costing.value_water_byproduct
         )
         / (
             pyunits.convert(

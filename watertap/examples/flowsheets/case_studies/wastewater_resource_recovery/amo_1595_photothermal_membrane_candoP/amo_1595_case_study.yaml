@@ -7,6 +7,12 @@ defined_flows:
   bcp:
     value: 0.5
     units: USD_2020/kg
+  water:
+    value: 1.0
+    units: USD_2020/m^3
+  nitrous_oxide:
+    value: 3.0
+    units: USD_2020/kg
 global_parameters:
   plant_lifetime:
     value: 30

@@ -18,7 +18,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_
 )
 
 sweep_list = []
-for case_num in [1]:
+for case_num in [1, 2, 3]:
     sweep_list.append(case_num)
 
 
@@ -32,3 +32,4 @@ def test_sweep(case_num, tmp_path):
         case_num, nx, interpolate_nan_outputs=False
     )
     os.chdir(cwd)
+    return
