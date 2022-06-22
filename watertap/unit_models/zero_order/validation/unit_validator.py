@@ -137,10 +137,10 @@ _column_to_component_map = {
     "surge_cap": ("fs.unit.surge_capacity", pyunits.dimensionless),  # storage_tank
     "h2o2_dose": ("fs.unit.oxidant_dose", pyunits.mg / pyunits.L),  # uv_aop
     "uv_dose": (
-        "fs.unit.uv_reduced_equivalent_dose",
+        "fs.unit.uv_reduced_equivalent_dose[0]",
         pyunits.mJ / pyunits.cm**2,
     ),  # uv + uv_aop
-    "uvt": ("fs.unit.uv_transmittance_in", pyunits.dimensionless),  # uv + uv_aop
+    "uvt": ("fs.unit.uv_transmittance_in[0]", pyunits.dimensionless),  # uv + uv_aop
     "ebct": ("fs.unit.empty_bed_contact_time", pyunits.minute),  # gac
     "hours_per_day_operation": (
         "fs.unit.hours_per_day_operation",
