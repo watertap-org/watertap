@@ -285,6 +285,13 @@ def add_costing(m):
     m.fs.cofermentation.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.constructed_wetlands.costing = UnitModelCostingBlock(**costing_kwargs)
     # TODO: consider mixer cost and rewrite rest of costing
+    m.fs.mixer.costing = UnitModelCostingBlock(
+        {
+            "default": {"flowsheet_costing_block": m.fs.costing},
+            "costing_method": m.fs.costing._get_costing_method_for("ZeroOrderBase"),
+        }
+        # also try "costing_method": cost_power_law_flow
+    )
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
 
