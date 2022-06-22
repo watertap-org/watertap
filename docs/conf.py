@@ -112,15 +112,12 @@ def run_apidoc(*args):
     os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
     from sphinx.ext import apidoc
 
-    args = [
-        "../watertap",
-        "../watertap/*tests",
-        "-o",
-        "apidoc",
-        "--force",
-    ]
+    args = ["../watertap", "../watertap/*tests", "-o", "apidoc", "--force"]
     apidoc.main(args)
 
 
 def setup(app):
-    app.connect("builder-inited", run_apidoc)
+    if os.environ.get("SKIP_APIDOC", False):
+        print("Skipping apidoc")
+    else:
+        app.connect("builder-inited", run_apidoc)

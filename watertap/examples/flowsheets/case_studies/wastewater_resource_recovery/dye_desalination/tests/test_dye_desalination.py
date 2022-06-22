@@ -64,18 +64,22 @@ class TestDyeFlowsheet:
         )
 
         # test nanofiltration block
-        assert pytest.approx(130.075, rel=1e-3) == value(m.fs.nanofiltration.area)
+        assert pytest.approx(130.075, rel=1e-3) == value(
+            m.fs.dye_separation.nanofiltration.area
+        )
 
         # test pump block
-        assert pytest.approx(6.895, rel=1e-6) == value(m.fs.P1.applied_pressure[0])
+        assert pytest.approx(6.895, rel=1e-6) == value(
+            m.fs.dye_separation.P1.applied_pressure[0]
+        )
 
         # check each product
         assert pytest.approx(23.6875, rel=1e-6) == value(
-            m.fs.permeate1.flow_mass_comp[0, "H2O"]
+            m.fs.permeate.flow_mass_comp[0, "H2O"]
         )
 
         assert pytest.approx(0.08199, rel=1e-3) == value(
-            m.fs.retentate1.flow_mass_comp[0, "dye"]
+            m.fs.dye_retentate.flow_mass_comp[0, "dye"]
         )
 
     @pytest.mark.component
@@ -85,11 +89,11 @@ class TestDyeFlowsheet:
 
         # check each product
         assert pytest.approx(23.6875, rel=1e-6) == value(
-            m.fs.permeate1.flow_mass_comp[0, "H2O"]
+            m.fs.permeate.flow_mass_comp[0, "H2O"]
         )
 
         assert pytest.approx(0.08199, rel=1e-3) == value(
-            m.fs.retentate1.flow_mass_comp[0, "dye"]
+            m.fs.dye_retentate.flow_mass_comp[0, "dye"]
         )
 
     @pytest.mark.component
@@ -97,14 +101,11 @@ class TestDyeFlowsheet:
         m = system_frame
 
         add_costing(m)
-        m.fs.costing.initialize()
-
         results = solve(m)
         assert_optimal_termination(results)
 
         # check values
-        assert pytest.approx(0.5183, rel=1e-3) == value(m.fs.costing.LCOW_dye_recovered)
-        assert pytest.approx(0.2134, rel=1e-3) == value(m.fs.costing.LCOT_dye_mass)
+        assert pytest.approx(0.52495, rel=1e-3) == value(m.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
