@@ -1,4 +1,7 @@
 default:
+  energy_electric_flow_vol_inlet:
+    value: 0
+    units: kWh/m^3
   air_temperature:
     value: 298
     units: kelvin

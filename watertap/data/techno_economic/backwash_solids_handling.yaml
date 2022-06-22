@@ -21,7 +21,7 @@ default:
       constituent_longform: Total Suspended Solids (TSS))
   capital_cost:
     basis: flow_mass
-    cost_factor: TPEC
+    cost_factor: None
     reference_state:
       value: 1577255
       units: kg/hr

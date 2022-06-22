@@ -131,7 +131,6 @@ _column_to_component_map = {
     "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
     "chem_dose": ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
-
     "avg_storage_time": ("fs.unit.storage_time", pyunits.hr),  # storage_tank
     "surge_cap": ("fs.unit.surge_capacity", pyunits.dimensionless),  # storage_tank
     "h2o2_dose": ("fs.unit.oxidant_dose", pyunits.mg / pyunits.L),  # uv_aop
@@ -151,10 +150,9 @@ _column_to_component_map = {
         pyunits.m / pyunits.s,
     ),  # sedimentation
     "piping_distance": ("fs.unit.pipe_distance", pyunits.mile),  # deep_well_injection
-
+    "lift_height": ("fs.unit.lift_height", pyunits.ft),  # deep_well_injection
     # NOTE: flow_in needs to be always last
     "flow_in": ("fs.feed.flow_vol[0]", pyunits.m**3 / pyunits.s),
-
 }
 
 
@@ -174,6 +172,7 @@ def _run_analysis(m, df, columns):
         "total_fixed_operating_cost": [],
         "total_operating_cost": [],
         "LCOW": [],
+        "electricity_intensity": [],
     }
     total_number = len(df.index)
     print(f"Starting analysis, found {total_number} points")
@@ -360,7 +359,6 @@ class ZeroOrderUnitChecker:
         print(msg)
 
         self.infeasible_points = _run_analysis(self.model, df, self._columns)
-
         max_diff = -1.0
         max_name = None
         arg_max = None
