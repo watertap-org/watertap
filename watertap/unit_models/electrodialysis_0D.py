@@ -415,9 +415,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     (
                         0.5
                         * (
-                            self.concentrate_channel.properties_in[
-                                t
-                            ].elec_cond_phase[p]
+                            self.concentrate_channel.properties_in[t].elec_cond_phase[p]
                             + self.concentrate_channel.properties_out[
                                 t
                             ].elec_cond_phase[p]
@@ -427,12 +425,8 @@ class Electrodialysis0DData(UnitModelBlockData):
                     + (
                         0.5
                         * (
-                            self.diluate_channel.properties_in[
-                                t
-                            ].elec_cond_phase[p]
-                            + self.diluate_channel.properties_out[
-                                t
-                            ].elec_cond_phase[p]
+                            self.diluate_channel.properties_in[t].elec_cond_phase[p]
+                            + self.diluate_channel.properties_out[t].elec_cond_phase[p]
                         )
                     )
                     ** -1

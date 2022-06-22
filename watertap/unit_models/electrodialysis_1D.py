@@ -570,14 +570,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                     + self.membrane_areal_resistance["cem"]
                     + self.spacer_thickness
                     * (
-                        self.concentrate.properties[t, x].elec_cond_phase[
-                            "Liq"
-                        ]
-                        ** -1
-                        + self.diluate.properties[t, x].elec_cond_phase[
-                            "Liq"
-                        ]
-                        ** -1
+                        self.concentrate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                        + self.diluate.properties[t, x].elec_cond_phase["Liq"] ** -1
                     )
                 )
                 * self.cell_pair_num
@@ -955,12 +949,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             ):
                 sf = (
                     iscale.get_scaling_factor(self.membrane_areal_resistance) ** 2
-                    + value(
-                        self.diluate.properties[ind].elec_cond_phase[
-                            "Liq"
-                        ]
-                    )
-                    ** 2
+                    + value(self.diluate.properties[ind].elec_cond_phase["Liq"]) ** 2
                 ) ** 0.5 / float(self.cell_pair_num.value)
                 iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
 
