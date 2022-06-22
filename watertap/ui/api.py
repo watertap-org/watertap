@@ -72,6 +72,7 @@ import builtins
 import importlib
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
 
@@ -806,11 +807,17 @@ class FlowsheetInterface(BlockInterface):
 
         Args:
             info: Options for the :class:`BlockInterface` constructor
+                  If present, the `display_name` is assigned to the
+                  object attribute `name`.
         """
         super().__init__(None, info)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self._actions_deps = WorkflowActions.deps.copy()
         self._actions_run = set()
+        if info and info.get("display_name", None):
+            self.name = info["display_name"]
+        else:
+            self.name = "Flowsheet"
 
     # Public methods
 
@@ -961,9 +968,15 @@ def _load_config(c) -> Dict:
 
 def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]:
     # import package
+    _log.info(f"Import package: begin. name={package_name}")
     pkg = importlib.import_module(package_name)
+    if pkg is None:
+        raise IOError(f"Import package: failed. name={package_name}")
+    # this formula works for 'real' packages and namespace packages
+    pkg_path = Path(pkg.__path__[0])
+    _log.info(f"Import package: end. name={package_name} file={pkg_path}")
     # use special _ROOT variable if it exists, else package path
-    pkg_path = getattr(pkg, "_ROOT", Path(pkg.__file__).parent)
+    pkg_path = getattr(pkg, "_ROOT", pkg_path)
     # if package is not a directory (e.g. a zip file), give up
     if not pkg_path.is_dir():
         raise IOError(f"Cannot load from package: not a directory. name={package_name}")

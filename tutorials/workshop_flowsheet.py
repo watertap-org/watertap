@@ -56,6 +56,8 @@ def flowsheet_interface() -> FlowsheetInterface:
         import json
 
         fsi = workshop_flowsheet.flowsheet_interface()
+        print(f"Using flowsheet: {fsi.name}")
+
         build, solve = api.WorkflowActions.build, api.WorkflowActions.solve
 
         fsi.run_action(build) # build the flowsheet
