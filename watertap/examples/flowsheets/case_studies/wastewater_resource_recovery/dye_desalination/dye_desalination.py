@@ -13,7 +13,7 @@
 import os
 from pyomo.environ import (
     ConcreteModel,
-    Set,
+    Block,
     Expression,
     value,
     TransformationFactory,
@@ -24,10 +24,10 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -56,11 +56,11 @@ def main():
     display_results(m)
 
     add_costing(m)
-    m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     assert_optimal_termination(results)
+
     display_costing(m)
     return m, results
 
@@ -76,7 +76,10 @@ def build():
     # unit model
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
 
-    m.fs.P1 = PumpElectricityZO(
+    # define block to integrate with dye_desalination_withRO
+    dye_sep = m.fs.dye_separation = Block()
+
+    dye_sep.P1 = PumpElectricityZO(
         default={
             "property_package": m.fs.prop,
             "database": m.db,
@@ -84,7 +87,7 @@ def build():
         }
     )
 
-    m.fs.nanofiltration = NanofiltrationZO(
+    dye_sep.nanofiltration = NanofiltrationZO(
         default={
             "property_package": m.fs.prop,
             "database": m.db,
@@ -92,15 +95,17 @@ def build():
         }
     )
 
-    m.fs.permeate1 = Product(default={"property_package": m.fs.prop})
-    m.fs.retentate1 = Product(default={"property_package": m.fs.prop})
+    m.fs.permeate = Product(default={"property_package": m.fs.prop})
+    m.fs.dye_retentate = Product(default={"property_package": m.fs.prop})
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-    m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.nanofiltration.inlet)
-    m.fs.s03 = Arc(source=m.fs.nanofiltration.treated, destination=m.fs.permeate1.inlet)
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
+    m.fs.s02 = Arc(source=dye_sep.P1.outlet, destination=dye_sep.nanofiltration.inlet)
+    m.fs.s03 = Arc(
+        source=dye_sep.nanofiltration.treated, destination=m.fs.permeate.inlet
+    )
     m.fs.s04 = Arc(
-        source=m.fs.nanofiltration.byproduct, destination=m.fs.retentate1.inlet
+        source=dye_sep.nanofiltration.byproduct, destination=m.fs.dye_retentate.inlet
     )
 
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -112,6 +117,7 @@ def build():
 
 
 def set_operating_conditions(m):
+    dye_sep = m.fs.dye_separation
     # feed
     flow_vol = 120 / 3600 * pyunits.m**3 / pyunits.s
     conc_mass_dye = 2.5 * pyunits.kg / pyunits.m**3
@@ -123,12 +129,16 @@ def set_operating_conditions(m):
     solve(m.fs.feed)
 
     # nanofiltration
-    m.fs.nanofiltration.load_parameters_from_database(use_default_removal=True)
+    dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)
 
     # pump
-    m.fs.P1.load_parameters_from_database(use_default_removal=True)
-    m.fs.P1.applied_pressure.fix(m.fs.nanofiltration.applied_pressure.get_values()[0])
-    m.fs.P1.lift_height.unfix()
+    dye_sep.P1.load_parameters_from_database(use_default_removal=True)
+    dye_sep.P1.applied_pressure.fix(
+        dye_sep.nanofiltration.applied_pressure.get_values()[0]
+    )
+    dye_sep.P1.lift_height.unfix()
+
+    return
 
 
 def initialize_system(m):
@@ -148,183 +158,139 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def add_costing(m):
+    # initialize block
+    dye_sep = m.fs.dye_separation
+
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "dye_desalination_global_costing.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    # zero order costing
+    m.fs.zo_costing = ZeroOrderCosting(default={"case_study_definition": source_file})
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    m.fs.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.costing.cost_process()
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.zo_costing}}
 
-    m.fs.costing.dye_recovery_mass = Expression(
-        expr=m.fs.costing.utilization_factor
-        * pyunits.convert(
-            m.fs.retentate1.flow_mass_comp[0, "dye"],
-            to_units=pyunits.kg / m.fs.costing.base_period,
+    # create costing blocks
+    dye_sep.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
+    dye_sep.P1.costing = UnitModelCostingBlock(**costing_kwargs)
+
+    # aggregate unit level costs
+    m.fs.zo_costing.cost_process()
+
+    # create system level cost metrics
+    m.fs.brine_disposal_cost = Expression(
+        expr=(
+            m.fs.zo_costing.utilization_factor
+            * (
+                m.fs.zo_costing.waste_disposal_cost
+                * pyunits.convert(
+                    m.fs.permeate.properties[0].flow_vol,
+                    to_units=pyunits.m**3 / m.fs.zo_costing.base_period,
+                )
+            )
         ),
-        doc="Mass of dye in retentate per year",
+        doc="Cost of disposing of saline brine/ NF permeate",
     )
 
-    m.fs.costing.value_dye_recovery_mass = Expression(
+    m.fs.dye_recovery_revenue = Expression(
         expr=(
-            m.fs.costing.utilization_factor
-            * m.fs.costing.dye_mass_cost
+            m.fs.zo_costing.utilization_factor
+            * m.fs.zo_costing.dye_mass_cost
             * pyunits.convert(
-                m.fs.retentate1.flow_mass_comp[0, "dye"],
-                to_units=pyunits.kg / m.fs.costing.base_period,
+                m.fs.dye_retentate.flow_mass_comp[0, "dye"],
+                to_units=pyunits.kg / m.fs.zo_costing.base_period,
             )
         ),
-        doc="Dollar value of dye in the retentate priced by mass",
+        doc="Savings from dye-retentate recovered back to the plant",
     )
 
-    m.fs.costing.annual_disposal_cost = Expression(
-        expr=(
-            m.fs.costing.utilization_factor
-            * (
-                m.fs.costing.waste_disposal_cost
-                * pyunits.convert(
-                    m.fs.permeate1.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.costing.base_period,
-                )
-            )
-        ),
-        doc="Annual cost of waste disposal",
-    )
-
-    m.fs.costing.value_dye_recovery_flow = Expression(
-        expr=(
-            m.fs.costing.utilization_factor
-            * (
-                m.fs.costing.dye_retentate_cost
-                * pyunits.convert(
-                    m.fs.retentate1.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.costing.base_period,
-                )
-            )
-        ),
-        doc="Annual value of dye-retentate recovery",
-    )
-    m.fs.costing.LCOW_dye_recovered = Expression(
-        expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
-            + m.fs.costing.total_operating_cost
-            + m.fs.costing.utilization_factor
-            * (
-                m.fs.costing.waste_disposal_cost
-                * pyunits.convert(
-                    m.fs.permeate1.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.costing.base_period,
-                )
-                - m.fs.costing.dye_retentate_cost
-                * pyunits.convert(
-                    m.fs.retentate1.properties[0].flow_vol,
-                    to_units=pyunits.m**3 / m.fs.costing.base_period,
-                )
-            )
+    # combine results for system level costs - to be the same syntax as dye_desalination_withRO
+    @m.Expression()
+    def total_capital_cost(b, doc="Total capital cost"):
+        return pyunits.convert(
+            m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         )
-        / (
-            m.fs.costing.utilization_factor
-            * pyunits.convert(
-                m.fs.feed.flow_vol[0],
-                to_units=pyunits.m**3 / m.fs.costing.base_period,
-            )
-        ),
-        doc="Levelized cost of water treated with dye recovery through NF",
-    )
 
-    m.fs.costing.LCOT_dye_mass = Expression(
-        expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
-            + m.fs.costing.total_operating_cost
-            + m.fs.costing.utilization_factor
-            * m.fs.costing.waste_disposal_cost
-            * pyunits.convert(
-                m.fs.permeate1.properties[0].flow_vol,
-                to_units=pyunits.m**3 / m.fs.costing.base_period,
-            )
-            - m.fs.costing.value_dye_recovery_mass
+    @m.Expression()
+    def total_operating_cost(b, doc="Total operating cost"):
+        return pyunits.convert(
+            m.fs.zo_costing.total_fixed_operating_cost,
+            to_units=pyunits.USD_2020 / pyunits.year,
+        ) + pyunits.convert(
+            m.fs.zo_costing.total_variable_operating_cost,
+            to_units=pyunits.USD_2020 / pyunits.year,
         )
-        / m.fs.costing.dye_recovery_mass,
-        doc="Levelized cost of treatment on a basis of dye recovered",
-    )
+
+    @m.Expression()
+    def total_externalities(b, doc="Total cost of dye recovered and brine disposed"):
+        return pyunits.convert(
+            m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+            to_units=pyunits.USD_2020 / pyunits.year,
+        )
+
+    @m.Expression()
+    def LCOT(
+        b, doc="Levelized cost of treatment with respect to volumetric feed flowrate"
+    ):
+        return (
+            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            + b.total_operating_cost
+            - b.total_externalities
+        ) / (
+            pyunits.convert(
+                b.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.year,
+            )
+            * b.fs.zo_costing.utilization_factor
+        )
+
+    assert_units_consistent(m)
+    m.fs.zo_costing.initialize()
+    return
 
 
 def display_results(m):
     unit_list = ["P1", "nanofiltration"]
     for u in unit_list:
-        m.fs.component(u).report()
+        m.fs.dye_separation.component(u).report()
 
 
 def display_costing(m):
     print("\nUnit Capital Costs")
-    for u in m.fs.costing._registered_unit_costing:
+    for u in m.fs.zo_costing._registered_unit_costing:
         print(
             u.name,
             " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)),
             "$",
         )
 
-    print("")
+    print("\nSystem Costs")
     total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+        pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020)
     )
-    print(f"Total Capital Costs: {total_capital_cost:.4f} M$\n")
+    print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
 
     total_operating_cost = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
-    print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year\n")
+    print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
-    waste_disposal_cost = value(
+    total_externalities = value(
         pyunits.convert(
-            m.fs.costing.annual_disposal_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
-    print(f"Total Waste Disposal Costs: {waste_disposal_cost:.4f} M$/year\n")
-
-    dye_recovery_cost_flow = value(
-        -1
-        * pyunits.convert(
-            m.fs.costing.value_dye_recovery_flow,
-            to_units=pyunits.MUSD_2018 / pyunits.year,
-        )
-    )
-    print(
-        f"Total Dye Recovery Costs (flow basis): {dye_recovery_cost_flow:.4f} M$/year"
-    )
-
-    dye_recovery_cost_mass = value(
-        -1
-        * pyunits.convert(
-            m.fs.costing.value_dye_recovery_mass,
-            to_units=pyunits.MUSD_2018 / pyunits.year,
-        )
-    )
-    print(
-        f"Total Dye Recovery Costs (mass basis): {dye_recovery_cost_mass:.4f} M$/year\n"
-    )
-
-    levelized_cost_water = value(
-        pyunits.convert(
-            m.fs.costing.LCOW_dye_recovered, to_units=pyunits.USD_2018 / pyunits.m**3
-        )
-    )
-    print(f"Levelized Cost of Water (LCOW): {levelized_cost_water:.2f} $/m3")
+    print(f"Total Externalities: {total_externalities:.4f} M$/year")
 
     levelized_cost_treatment = value(
-        pyunits.convert(
-            m.fs.costing.LCOT_dye_mass, to_units=pyunits.USD_2018 / pyunits.kg
-        )
+        pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(
-        f"Levelized Cost of Treatment - Dye (LCOT): {levelized_cost_treatment:.2f} $/kg Dye"
+        f"Levelized Cost of Treatment (LCOT): {levelized_cost_treatment:.2f} $/m3 feed"
     )
 
 
