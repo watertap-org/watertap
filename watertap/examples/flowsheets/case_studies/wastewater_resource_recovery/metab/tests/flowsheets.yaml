@@ -1,0 +1,3 @@
+# Test file for a flowsheet directory
+packages:
+  - watertap
