@@ -150,6 +150,7 @@ _column_to_component_map = {
         pyunits.m / pyunits.s,
     ),  # sedimentation
     "piping_distance": ("fs.unit.pipe_distance", pyunits.mile),  # deep_well_injection
+    "lift_height": ("fs.unit.lift_height", pyunits.ft),  # deep_well_injection
     # NOTE: flow_in needs to be always last
     "flow_in": ("fs.feed.flow_vol[0]", pyunits.m**3 / pyunits.s),
 }
