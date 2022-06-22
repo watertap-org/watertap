@@ -35,6 +35,7 @@ from idaes.models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
+from idaes.generic_models.costing import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -45,6 +46,7 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
+from watertap.costing import WaterTAPCosting, PumpType
 
 
 def main():
@@ -82,12 +84,7 @@ def build():
     # Unit models
     m.fs.feed = Feed(default={"property_package": m.fs.properties_feed})
     m.fs.pump_feed = Pump(default={"property_package": m.fs.properties_feed})
-    # m.fs.separator_feed = Separator(
-    #     default={
-    #         "property_package": m.fs.properties_feed,
-    #         "outlet_list": [""]
-    #     }
-    # )
+
     m.fs.hx_distillate = HeatExchanger(
         default={
             "hot_side_name": "hot",
@@ -99,14 +96,6 @@ def build():
         }
     )
     add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
-
-    # m.fs.mixer_feed = Mixer(
-    #     default={
-    #         "property_package": m.fs.properties_feed,
-    #         "momentum_mixing_type": MomentumMixingType.equality,
-    #         "inlet_list": []
-    #     }
-    # )
 
     m.fs.evaporator = Evaporator(
         default={
@@ -153,6 +142,26 @@ def build():
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.evaporator.connect_to_condenser(m.fs.condenser)
+
+    # Costing
+    m.fs.costing = WaterTAPCosting()
+    m.fs.pump_feed.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+    m.fs.pump_distillate.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+    m.fs.pump_brine.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+
+    m.fs.costing.cost_process()
+    # m.fs.costing.cost_pump(m.fs.pump_feed,pump_type=PumpType.low_pressure, cost_electricity_flow=True)
+    # m.fs.costing.cost_pump(m.fs.pump_distillate,pump_type=PumpType.low_pressure, cost_electricity_flow=True)
+    # m.fs.costing.cost_pump(m.fs.pump_brine,pump_type=PumpType.low_pressure, cost_electricity_flow=True)
+    m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
 
     # Scaling
     # properties
@@ -323,6 +332,8 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s08)
     m.fs.pump_distillate.initialize(optarg=optarg)
 
+    m.fs.costing.initialize()
+
 
 def display_system(m):
     recovery = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
@@ -366,6 +377,9 @@ def display_system(m):
     print("Efficiency: ", m.fs.compressor.efficiency.value)
     print("\nCondenser")
     print("Heat transfer: ", m.fs.condenser.control_volume.heat[0].value, " W")
+    print("\n Outcome Metrics")
+    print("Energy consumption: ", value(m.fs.costing.specific_energy_consumption), " kWh/m3")
+    print("LCOW: ", value(m.fs.costing.LCOW), " $/m3")
 
 
 def display_seawater_states(state_blk):
@@ -392,7 +406,7 @@ def display_water_states(state_blk):
 
 def optimize(m):
     solver = get_solver()
-    m.fs.objective = Objective(expr=m.fs.compressor.control_volume.work[0])
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
     print("\nSet objective to minimize work")
     m.fs.evaporator.area.unfix()
     m.fs.evaporator.inlet_feed.temperature[0].unfix()

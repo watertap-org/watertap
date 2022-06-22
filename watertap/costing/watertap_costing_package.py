@@ -778,6 +778,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
+    @staticmethod
+    def cost_evaporator(blk):
+        """
+        Capital cost for MVC horizontal falling tube evaporator by area and material factor
+        """
+        _make_capital_cost_var(blk)
+        # blk.capital_cost_constraint = pyo.Constraint(
+        # expr= blk.capital_cost ==
+        # 1000*0.36*F_evap*(10.7649*A_evap)**0.85)
+
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {

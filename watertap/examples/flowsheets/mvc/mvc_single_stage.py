@@ -119,6 +119,11 @@ def build():
             "inlet_list": ["hx_distillate_cold", "hx_brine_cold"],
         }
     )
+    #m.fs.mixer_feed.display()
+    #m.fs.mixer_feed.pressure_equality_constraints[0,1].pprint()
+    #m.fs.mixer_feed.pressure_equality_constraints[0,2].pprint()
+
+    #assert False
 
     m.fs.evaporator = Evaporator(
         default={
@@ -268,10 +273,11 @@ def set_operating_conditions(m):
 
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
+    m.fs.pump_feed.control_volume.deltaP[0].fix(7e4)
 
     # Separator
-    #m.fs.separator_feed.split_fraction.fix(0.5)
-    m.fs.separator_feed.hx_distillate_cold_state[0].flow_mass_phase_comp['Liq','H2O'].fix(5)
+    m.fs.separator_feed.split_fraction[0,"hx_distillate_cold"].fix(0.5)
+    #m.fs.separator_feed.hx_distillate_cold_state[0].flow_mass_phase_comp['Liq','H2O'].fix(5)
 
     # distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(2e3)
@@ -288,7 +294,7 @@ def set_operating_conditions(m):
     # evaporator specifications
     # m.fs.evaporator.inlet_feed.temperature[0].fix(273.15 + 50.52)
     m.fs.evaporator.inlet_feed.temperature[0] = 273.15 + 50.52
-    m.fs.evaporator.inlet_feed.pressure[0].fix(101325)
+    #m.fs.evaporator.inlet_feed.pressure[0].fix(101325)
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
     # m.fs.evaporator.area.fix(400)  # m^2
@@ -324,6 +330,7 @@ def initialize_system(m, solver=None):
 
     # initialize feed pump
     propagate_state(m.fs.s01)
+    # m.fs.pump_feed.control_volume.deltaP[0].fix(7e4)
     m.fs.pump_feed.initialize(optarg=optarg)
 
     # initialize separator
