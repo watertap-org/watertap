@@ -42,6 +42,68 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
+# for UI:
+from watertap.ui.api import export_variables, FlowsheetInterface, WorkflowActions
+
+
+def flowsheet_interface() -> FlowsheetInterface:
+    """Define the interface to the flowsheet for the UI layer.
+
+    Example usage::
+
+        from tutorials import workshop_flowsheet
+        from watertap.ui import api
+        import json
+
+        fsi = workshop_flowsheet.flowsheet_interface()
+        build, solve = api.WorkflowActions.build, api.WorkflowActions.solve
+
+        fsi.run_action(build) # build the flowsheet
+
+        print(json.dumps(fsi.dict(), indent=2))  # show exported variables
+
+        results = fsi.run_action(solve)  # solve the flowsheet
+        print(results) # print results obj
+    """
+    fsi = FlowsheetInterface(
+        {
+            "display_name": "Example RO Flowsheet",
+            "description": "Example RO flowsheet for " "workshop tutorial",
+        }
+    )
+    fsi.set_action(WorkflowActions.build, ui_build)
+    fsi.set_action(WorkflowActions.solve, ui_solve)
+    return fsi
+
+
+def ui_build(ui=None, **kwargs):
+    model = build()
+    set_operating_conditions(model, water_recovery=0.5, over_pressure=0.3)
+    initialize_system(model)
+    ui.set_block(model.fs)
+
+
+def ui_solve(block=None, **kwargs):
+    fs, m = block, block.parent_block()
+    results = {}
+
+    solve(m)
+
+    print("\nSimulation results:")
+    results["simulation"] = display_system(m)
+    display_design(m)
+    display_state(m)
+
+    # optimize and display
+    optimize_set_up(m)
+    optimize(m)
+    print("\nOptimization results:")
+    results["optimization"] = display_system(m)
+    display_design(m)
+    display_state(m)
+
+    return results
+
 
 def main():
     # build, set, and initialize
@@ -92,9 +154,11 @@ def build():
             "concentration_polarization_type": ConcentrationPolarizationType.calculated,
         }
     )
-    m.fs.erd = EnergyRecoveryDevice(default={
-        "property_package": m.fs.properties,
-    }, )
+    m.fs.erd = EnergyRecoveryDevice(
+        default={
+            "property_package": m.fs.properties,
+        },
+    )
     m.fs.product = Product(default={"property_package": m.fs.properties})
     m.fs.disposal = Product(default={"property_package": m.fs.properties})
     # costing
@@ -105,13 +169,13 @@ def build():
         default={"flowsheet_costing_block": m.fs.costing}
     )
     m.fs.erd.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "energy_recovery_device_type": "pressure_exchanger"
-                },
-            }
-        )
+        default={
+            "flowsheet_costing_block": m.fs.costing,
+            "costing_method_arguments": {
+                "energy_recovery_device_type": "pressure_exchanger"
+            },
+        }
+    )
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
@@ -128,7 +192,9 @@ def build():
     # scaling
     # set default property values
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "TDS"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
     # set unit model values
     iscale.set_scaling_factor(m.fs.pump.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.erd.control_volume.work, 1e-3)
@@ -162,7 +228,9 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.pump.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.pump.control_volume.properties_out[0].pressure.fix(75e5)  # pump outlet pressure [Pa]
+    m.fs.pump.control_volume.properties_out[0].pressure.fix(
+        75e5
+    )  # pump outlet pressure [Pa]
 
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -171,6 +239,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
+
     # initialize RO
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
@@ -189,7 +258,9 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # energy recovery device, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.erd.efficiency_pump.fix(0.80)  # erd efficiency [-]
-    m.fs.erd.control_volume.properties_out[0].pressure.fix(101325)  # atmospheric outlet pressure [Pa]
+    m.fs.erd.control_volume.properties_out[0].pressure.fix(
+        101325
+    )  # atmospheric outlet pressure [Pa]
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
@@ -199,6 +270,44 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
+
+    # for UI:
+    export_variables(
+        m.fs.pump, variables={"efficiency_pump": {"display_name": "pump efficiency"}}
+    )
+    export_variables(
+        m.fs.RO,
+        variables={
+            "area": {"display_name": "membrane area"},
+            "A_comp": {
+                "display_name": "water perm coeff",
+                "description": "membrane water permeability coefficient",
+            },
+            "B_comp": {
+                "display_name": "salt perm coeff",
+                "description": "membrane salt permeability coefficient",
+            },
+            "channel_height": {
+                "display_name": "membrane channel height",
+                "description": "channel height in membrane stage",
+            },
+            "spacer_porosity": {
+                "display_name": "membrane spacer porosity",
+                "description": "spacer porosity in membrane stage",
+            },
+            "width": {"display_name": "stage width", "description": "RO stage width"},
+        },
+    )
+    export_variables(
+        m.fs.RO.permeate,
+        variables={
+            "pressure": {
+                "display_name": "atm pressure",
+                "description": "atmospheric pressure",
+            },
+        },
+    )
+    export_variables(m.fs.RO.inlet, variables=["pressure"])
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -300,6 +409,17 @@ def display_system(m):
         % value(m.fs.costing.specific_energy_consumption)
     )
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    # for UI, return a result dict
+    return {
+        "Product": "%.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_TDS * 1e6),
+        "Volumetric recovery": "%.1f%%"
+        % (value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100),
+        "Water recovery": "%.1f%%"
+        % (value(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"]) * 100),
+        "Energy Consumption": "%.1f kWh/m3"
+        % value(m.fs.costing.specific_energy_consumption),
+        "Levelized cost of water": "%.2f $/m3" % value(m.fs.costing.LCOW),
+    }
 
 
 def display_design(m):
