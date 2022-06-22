@@ -101,12 +101,16 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        # for watertap.ui.api_model (though may be generally useful)
+        "pydantic",
+        "numpy",
     ],
     extras_require={
         "testing": [
             "pytest",
             "json-schema-for-humans",
             "mongomock",
+            "pandas",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
@@ -129,6 +133,7 @@ setup(
             "*.json",
             "*.yaml",
             "*.yml",
+            "*.csv",
         ],
     },
     entry_points={

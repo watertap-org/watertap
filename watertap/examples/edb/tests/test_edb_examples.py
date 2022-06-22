@@ -29,7 +29,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
 from idaes.core import AqueousPhase, VaporPhase, SolidPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion, Component
+from idaes.core.base.components import Solvent, Solute, Cation, Anion, Component
 
 __author__ = "Austin Ladshaw"
 

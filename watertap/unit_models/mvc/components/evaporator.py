@@ -23,7 +23,7 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom

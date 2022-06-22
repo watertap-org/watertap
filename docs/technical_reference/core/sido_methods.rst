@@ -13,7 +13,7 @@ The `build_sido` method is intended to be used to rapidly construct a standard s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_sido, ZeroOrderBaseData
@@ -80,4 +80,4 @@ A mass balance constraint is then written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_sido.build_sido
+* :mod:`watertap.core.zero_order_sido`
