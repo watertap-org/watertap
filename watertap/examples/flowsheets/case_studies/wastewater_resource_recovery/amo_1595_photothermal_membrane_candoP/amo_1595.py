@@ -262,7 +262,7 @@ def add_costing(m):
             )
             * m.fs.costing.utilization_factor
         ),
-        doc="Levelized Cost of Treatment (accounts for salable BCP)",
+        doc="Levelized Cost of Treatment with respect to influent flowrate (accounts for salable BCP)",
     )
 
 
@@ -302,7 +302,9 @@ def display_costing(m):
             m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
         )
     )
-    print(f"Electricity Intensity: {electricity_intensity:.3f} kWh/m^3")
+    print(
+        f"Electricity Intensity with respect to influent flowrate: {electricity_intensity:.3f} kWh/m^3"
+    )
 
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
