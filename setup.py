@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.12.0",  # from PyPI
+    "idaes-pse>=2.0.0a2",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/2.0.0.dev0.watertap.2022.05.18.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a2.zip"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -101,12 +101,16 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        # for watertap.ui.api_model (though may be generally useful)
+        "pydantic",
+        "numpy",
     ],
     extras_require={
         "testing": [
             "pytest",
             "json-schema-for-humans",
             "mongomock",
+            "pandas",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
@@ -129,6 +133,7 @@ setup(
             "*.json",
             "*.yaml",
             "*.yml",
+            "*.csv",
         ],
     },
     entry_points={

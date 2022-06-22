@@ -112,7 +112,7 @@ rHGO_dye_rejection:
       units: USD_2018/m^2
     membrane_replacement_rate:
       value: 0.15
-      units: dimensionless
+      units: 1/year
   recovery_frac_mass_H2O:
     value: 0.75
     units: dimensionless

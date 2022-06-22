@@ -19,6 +19,7 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+
 .. index::
    pair: watertap.unit_models.zero_order.nanofiltration_zo;nanofiltration_zo
 
