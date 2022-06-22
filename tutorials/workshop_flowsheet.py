@@ -110,7 +110,7 @@ def ui_solve(block=None, **kwargs):
 def main():
     # build, set, and initialize
     m = build()
-    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3)
+    set_operating_conditions(m)
     initialize_system(m)
 
     # simulate and display
@@ -210,9 +210,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=None):
-    if solver is None:
-        solver = get_solver()
+def set_operating_conditions(m):
 
     # ---specifications---
     # feed
@@ -240,23 +238,10 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     m.fs.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(5)  # stage width [m]
-
-    # initialize RO
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    )
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
-    )
-    m.fs.RO.feed_side.properties_in[0].temperature = value(
-        m.fs.feed.properties[0].temperature
-    )
-    m.fs.RO.feed_side.properties_in[0].pressure = value(
-        m.fs.pump.control_volume.properties_out[0].pressure
-    )
-    # m.fs.RO.area.fix(50)  # guess area for RO initialization
-    m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
+    # m.fs.RO.width.fix(5)  # stage width [m]
+    # m.fs.RO.N_Re[0, 0].fix(500)
+    m.fs.RO.velocity[0, 0].fix(0.15)
+    m.fs.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
 
     # energy recovery device, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.erd.efficiency_pump.fix(0.80)  # erd efficiency [-]
@@ -348,6 +333,12 @@ def optimize_set_up(m):
     m.fs.pump.deltaP.setlb(0)
 
     # RO
+    # m.fs.RO.N_Re[0, 0].unfix()
+    # m.fs.RO.N_Re.setlb(1)
+    # m.fs.RO.N_Re.setub(1000)
+    m.fs.RO.velocity[0, 0].unfix()
+    m.fs.RO.velocity.setlb(0.01)
+    m.fs.RO.velocity.setub(1)
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(150)
 
@@ -372,7 +363,7 @@ def optimize_set_up(m):
     )
 
     # ---checking model---
-    assert_degrees_of_freedom(m, 1)
+    assert_degrees_of_freedom(m, 2)
 
 
 def optimize(m, check_termination=True):
@@ -427,9 +418,10 @@ def display_system(m):
 def display_design(m):
     print("---decision variables---")
     print("Operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5))
-    print("Membrane area %.1f m2" % (m.fs.RO.area.value))
+    print("Membrane\narea %.1f m2\ninlet Reynolds %.1f, inlet velocity %.1f cm/s"
+          % (m.fs.RO.area.value, m.fs.RO.N_Re[0, 0].value, m.fs.RO.velocity[0, 0].value * 100))
 
-    print("---design variables---")
+    print("---system variables---")
     print(
         "Pump\noutlet pressure: %.1f bar\npower %.2f kW"
         % (
@@ -437,6 +429,13 @@ def display_design(m):
             m.fs.pump.work_mechanical[0].value / 1e3,
         )
     )
+    print("Membrane"
+          "\naverage flux: %.1f LMH"
+          "\npressure drop: %.1f bar"
+          "\nmax interfacial conc %.1f ppm"
+          % (value(m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]) * 3600,
+             m.fs.RO.deltaP[0].value / 1e5,
+             m.fs.RO.feed_side.properties_interface[0, 1].mass_frac_phase_comp["Liq", "TDS"].value * 1e6))
 
 
 def display_state(m):
