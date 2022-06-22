@@ -38,7 +38,7 @@ def set_up_sensitivity(m, withRO):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=7, nx=11, interpolate_nan_outputs=True, withRO=False):
+def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
@@ -155,6 +155,22 @@ def run_analysis(case_num=7, nx=11, interpolate_nan_outputs=True, withRO=False):
         m.fs.desalination.RO.A_comp.unfix()
         sweep_params["RO_permeability"] = LinearSample(
             m.fs.desalination.RO.A_comp, 1e-12, 1e-11, nx
+        )
+    elif case_num == 12:
+        desal = m.fs.desalination
+        desal.RO.recovery_vol_phase[0, "Liq"].unfix()
+        desal.RO.velocity[0, 0].unfix()
+
+        desal.P2.control_volume.properties_out[0].pressure.unfix()
+        desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
+        desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
+
+        desal.RO.area.unfix()
+        desal.RO.area.setub(5000)
+        desal.RO.area.setlb(50)
+
+        sweep_params["RO_recovery"] = LinearSample(
+            m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
         )
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
