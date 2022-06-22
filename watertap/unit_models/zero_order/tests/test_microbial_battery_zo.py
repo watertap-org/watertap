@@ -173,7 +173,7 @@ class TestMicrobialBattery:
             model.fs.unit.properties_treated[0].flow_mass_comp["filtration_media"]
         )
 
-        assert pytest.approx(9.24e-11, rel=1e-3) == value(
+        assert pytest.approx(9.39e-11, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
         assert pytest.approx(1.16e-9, rel=1e-3) == value(
@@ -191,7 +191,7 @@ class TestMicrobialBattery:
         assert pytest.approx(8e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["iron"]
         )
-        assert pytest.approx(1.08e-8, rel=1e-3) == value(
+        assert pytest.approx(1.23e-8, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["filtration_media"]
         )
 
