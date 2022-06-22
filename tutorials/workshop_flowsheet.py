@@ -31,7 +31,7 @@ from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-import watertap.property_models.NaCl_prop_pack as props
+import watertap.property_models.seawater_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -64,12 +64,20 @@ def main():
     display_design(m)
     display_state(m)
 
+    # change one parameter and see effect
+    m.fs.costing.reverse_osmosis_membrane_cost.fix(60)
+    optimize(m)
+    print("\n***---Parameter change results---***")
+    display_system(m)
+    display_design(m)
+    display_state(m)
+
 
 def build():
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.properties = props.SeawaterParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     # unit models
@@ -120,14 +128,14 @@ def build():
     # scaling
     # set default property values
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "NaCl"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1e2, index=("Liq", "TDS"))
     # set unit model values
     iscale.set_scaling_factor(m.fs.pump.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.erd.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
     # touch properties used in specifying the model
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
-    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+    m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -147,8 +155,8 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     m.fs.feed.properties.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.035,
-        },  # feed NaCl mass fraction [-]
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.035,
+        },  # feed TDS mass fraction [-]
         hold_state=True,  # fixes the calculated component mass flow rates
     )
 
@@ -167,8 +175,8 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
         m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
     )
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "TDS"] = value(
+        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]
     )
     m.fs.RO.feed_side.properties_in[0].temperature = value(
         m.fs.feed.properties[0].temperature
@@ -235,14 +243,14 @@ def optimize_set_up(m):
     # additional specifications
     m.fs.product_salinity = Param(
         initialize=500e-6, mutable=True
-    )  # product NaCl mass fraction [-]
+    )  # product TDS mass fraction [-]
     m.fs.minimum_water_flux = Param(
         initialize=1.0 / 3600.0, mutable=True
     )  # minimum water flux [kg/m2-s]
 
     # additional constraints
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+        expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "TDS"]
         <= m.fs.product_salinity
     )
     iscale.constraint_scaling_transform(
@@ -264,20 +272,20 @@ def optimize(m, check_termination=True):
 def display_system(m):
     print("---system metrics---")
     feed_flow_mass = sum(
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
+        m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
     )
-    feed_mass_frac_NaCl = (
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].value / feed_flow_mass
+    feed_mass_frac_TDS = (
+        m.fs.feed.flow_mass_phase_comp[0, "Liq", "TDS"].value / feed_flow_mass
     )
-    print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_TDS * 1e6))
 
     prod_flow_mass = sum(
-        m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
+        m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
     )
-    prod_mass_frac_NaCl = (
-        m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"].value / prod_flow_mass
+    prod_mass_frac_TDS = (
+        m.fs.product.flow_mass_phase_comp[0, "Liq", "TDS"].value / prod_flow_mass
     )
-    print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
+    print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_TDS * 1e6))
 
     print(
         "Volumetric recovery: %.1f%%"
@@ -314,9 +322,9 @@ def display_state(m):
 
     def print_state(s, b):
         flow_mass = sum(
-            b.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
+            b.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
         )
-        mass_frac_ppm = b.flow_mass_phase_comp[0, "Liq", "NaCl"].value / flow_mass * 1e6
+        mass_frac_ppm = b.flow_mass_phase_comp[0, "Liq", "TDS"].value / flow_mass * 1e6
         pressure_bar = b.pressure[0].value / 1e5
         print(
             s
