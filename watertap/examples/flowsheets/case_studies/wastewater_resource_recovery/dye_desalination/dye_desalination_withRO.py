@@ -582,11 +582,11 @@ def display_results(m):
 
 def display_costing(m):
     print("\n Costing metrics:")
-    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018))
+    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
 
     opex = value(
         pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 
