@@ -47,7 +47,7 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
 
     if not withRO and case_num > 7:
         raise ValueError(
-            "Case numbers 8 are only for dye_desalination_withRO. Please set 'withRO=True'"
+            "Case numbers 8 and above are only for dye_desalination_withRO. Please set 'withRO=True'"
         )
 
     # select flowsheet

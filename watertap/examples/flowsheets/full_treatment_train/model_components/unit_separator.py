@@ -16,8 +16,8 @@
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
 
-# from idaes.generic_models.unit_models import Separator  # replaced separator
-from idaes.generic_models.unit_models.separator import (
+# from idaes.models.unit_models import Separator  # replaced separator
+from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
@@ -33,7 +33,7 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from idaes.generic_models.unit_models import Separator
+from idaes.models.unit_models import Separator
 
 
 def build_SepRO(m, base="TDS"):
