@@ -325,6 +325,15 @@ class ZeroOrderUnitChecker:
         ),
     ).declare_as_argument()
 
+    CONFIG.declare(
+        "max_recovery",
+        ConfigValue(
+            domain=float,
+            default=None,
+            description="Maximum water recovery, in mass fraction",
+        ),
+    ).declare_as_argument()
+
     def __init__(self, **options):
         self.config = self.CONFIG()
         self.config.set_value(options)
@@ -368,6 +377,8 @@ class ZeroOrderUnitChecker:
 
         if self.config.max_flow_in is not None:
             df = df[df["flow_in"] <= self.config.max_flow_in]
+        if self.config.max_recovery is not None:
+            df = df[df["recovery"] <= self.config.max_recovery]
 
         self._columns = [k for k in _column_to_component_map if k in df.columns]
         if not self.config.run_all_samples:
