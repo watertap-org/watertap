@@ -2220,6 +2220,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_filter_press(blk):
         """
         General method for costing belt filter press. Capital cost is a function
