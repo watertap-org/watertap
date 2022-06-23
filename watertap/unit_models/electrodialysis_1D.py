@@ -696,8 +696,6 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.diluate.length_domain,
             doc="Electrical power consumption of a stack",
         )
-        # # TODO: Check this constraint formulation. Is this correct?
-        #           it states: dP/dx = b*L*u(x)*i(x)
         def eq_power_electrical(self, t, x):
             if x == self.diluate.length_domain.first():
                 return self.diluate.power_electrical_x[t, x] == 0
@@ -1072,7 +1070,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant * pyunits.mol / pyunits.coulomb
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1102,7 +1100,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant * pyunits.mol / pyunits.coulomb
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
@@ -1159,7 +1157,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant * pyunits.mol / pyunits.coulomb
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1189,7 +1187,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant * pyunits.mol / pyunits.coulomb
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
