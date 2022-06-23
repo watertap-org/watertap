@@ -345,25 +345,31 @@ def optimize_operation(m):
     """
     desal = m.fs.desalination
 
+    # RO operating pressure
     desal.P2.control_volume.properties_out[0].pressure.unfix()
-    desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
+    desal.P2.control_volume.properties_out[0].pressure.setub(
+        8300000
+    )  # pressure vessel burst pressure
     desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
 
+    # RO inlet velocity
     desal.RO.velocity[0, 0].unfix()
     desal.RO.velocity[0, 0].setub(0.3)
     desal.RO.velocity[0, 0].setlb(0.1)
 
+    # RO membrane area
     desal.RO.area.unfix()
     desal.RO.area.setub(5000)
     desal.RO.area.setlb(50)
 
+    # RO recovery - likely limited by operating pressure
     desal.RO.recovery_vol_phase[0, "Liq"].unfix()
     desal.RO.recovery_vol_phase[0, "Liq"].setub(0.99)
     desal.RO.recovery_vol_phase[0, "Liq"].setlb(0.1)
 
     m.fs.RO_permeate_quality = Constraint(
         expr=m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"] <= 0.5,
-        doc="Permeate quality must be lower than 500ppm",
+        doc="Permeate quality must be lower than 0.5 kg/m3 or 500ppm",
     )
 
     m.fs.objective = Objective(expr=m.LCOT)
@@ -588,15 +594,6 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("\n Costing metrics:")
-    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
-
-    opex = value(
-        pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
-        )
-    )
-
     print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
 
