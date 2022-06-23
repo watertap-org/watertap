@@ -8,8 +8,7 @@ See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the f(x) helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -47,6 +46,19 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "None", "rapid_mix_basin_vol_constraint"
+   "None", "floc_basin_vol_constraint"
+   "None", "chemical_flow_constraint"
+   "None", "chemical_flow_constraint"
+   "None", "anionic_polymer_dose_constraint"
+   "None", "cationic_polymer_dose_constraint"
+   "Constraint for rapid mix power consumption", "rule_power_rapid_mix"
+   "Constraint for floc power consumption", "rule_power_floc"
+   "Total power consumption", "electricity_constraint"
 
 .. index::
    pair: watertap.unit_models.zero_order.coag_and_floc_zo;coag_and_floc_zo

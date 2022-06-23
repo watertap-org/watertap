@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, single-output Helper Methods<siso_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -43,6 +42,17 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Acetic acid demand constraint", "acetic_acid_demand_equation"
+   "Phosphoric acid demand constraint", "phosphoric_acid_demand_equation"
+   "Acetic acid demand constraint", "ferric_chloride_demand_equation"
+   "Activated carbon demand constraint", "activated_carbon_demand_equation"
+   "Sand demand constraint", "sand_demand_equation"
+   "Anthracite demand constraint", "anthracite_demand_equation"
+   "Cationic Polymer demand constraint", "cationic_polymer_demand_equation"
 
 .. index::
    pair: watertap.unit_models.zero_order.fixed_bed_zo;fixed_bed_zo

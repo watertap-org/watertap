@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, double-output Helper Methods<sido_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the f(x) helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -31,6 +30,12 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Filter press capacity constraint", "fp_capacity"
+   "Filter press electricity constraint", "fp_electricity"
 
 .. index::
    pair: watertap.unit_models.zero_order.filter_press_zo;filter_press_zo

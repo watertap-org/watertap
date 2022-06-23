@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, single-output Helper Methods<siso_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the f(x) helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -36,6 +35,16 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Ozone consumption constraint", "ozone_consumption_constraint"
+   "Ozone mass flow constraint", "ozone_flow_mass_constraint"
+   "Ozone power constraint", "electricity_constraint"
+   "Ozone/TOC ratio constraint", "ozone_toc_ratio_constraint"
+   "Oxidant dose constraint", "oxidant_dose_constraint"
+   "Oxidant mass flow constraint", "chemical_flow_mass_constraint"
 
 .. index::
    pair: watertap.unit_models.zero_order.ozone_aop_zo;ozone_aop_zo

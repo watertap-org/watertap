@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, double-output Helper Methods<sido_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -38,6 +37,14 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Evaporation rate of pure water constraint", "evap_rate_pure_constraint"
+   "Adjusted evaporation rate for salinity constraint", "evap_rate_salt_constraint"
+   "Base area constraint", "area_constraint"
+   "Adjusted area constraint", "area_adj_constraint"
 
 .. index::
    pair: watertap.unit_models.zero_order.evaporation_pond_zo;evaporation_pond_zo

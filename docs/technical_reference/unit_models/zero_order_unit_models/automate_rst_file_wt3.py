@@ -30,7 +30,7 @@ import os
 from glob import glob
 
 
-# sidor_db_path = os.path.dirname(os.path.abspath(__file__))
+sidor_db_path = os.path.dirname(os.path.abspath(__file__))
 # test_path = os.path.relpath(os.path.join('watertap','data','techno_economic'), os.getcwd())
 #
 # # os.chdir(test_path)
@@ -42,7 +42,7 @@ from glob import glob
 #     fnames.append(fname)
 
 
-def grab_unit_variables(unit_class):
+def grab_unit_components(unit_class):
 
     m = ConcreteModel()
     m.zero_db = Database(dbpath=sidor_db_path)
@@ -111,10 +111,15 @@ def grab_unit_variables(unit_class):
     for var in m.fs.zo_base.component_data_objects(Var, descend_into=False):
         zovarname = var.name
         zo_base_vars.append(zovarname.replace("fs.zo_base.", "").split("[", 1)[0])
-
+    zo_base_cons = []
+    for con in m.fs.zo_base.component_data_objects(Constraint, descend_into=False):
+        zoconame = con.name
+        zo_base_cons.append(zoconame.replace("fs.zo_base.", "").split("[", 1)[0])
     added_vars = []
     added_var_docs = []
     added_var_units = []
+    added_cons = []
+    added_con_docs = []
     for var in m.fs.unit.component_data_objects(Var, descend_into=False):
         addedvarname = var.name
         newname = addedvarname.replace("fs.unit.", "").split("[", 1)[0]
@@ -123,7 +128,22 @@ def grab_unit_variables(unit_class):
             added_vars.append(newname)
             added_var_docs.append(model_var.doc)
             added_var_units.append(str(model_var._units).replace("'", ""))
-    return m, zo_base_vars, added_vars, added_var_docs, added_var_units
+    for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
+        addedconame = con.name
+        connewname = addedconame.replace("fs.unit.", "").split("[", 1)[0]
+        if connewname not in zo_base_cons:
+            model_con = getattr(m.fs.unit, connewname)
+            added_cons.append(connewname)
+            added_con_docs.append(model_con.doc)
+    return (
+        m,
+        zo_base_vars,
+        added_vars,
+        added_var_docs,
+        added_var_units,
+        added_cons,
+        added_con_docs,
+    )
 
 
 df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
@@ -224,11 +244,17 @@ for i, u in enumerate(unit_name_list):
         # write Electricity Consumption section
         f.write("\nElectricity Consumption\n")
         f.write("-" * len("Electricity Consumption"))
-        f.write(f"\n{list[count]}")
-        count += 1
-        f.write(
-            f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
-        )
+        if class_list[i] == "non-basic":
+            f.write(
+                "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
+            )
+            count += 1
+        else:
+            f.write(f"\n{list[count]}")
+            count += 1
+            f.write(
+                f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
+            )
 
         # write Costing Method section
         f.write("\nCosting Method\n")
@@ -246,7 +272,15 @@ for i, u in enumerate(unit_name_list):
             f.write("-" * len("Additional Variables"))
             f.write("\n\n")
             print(class_name_list[i])
-            _, _, addedvars, vardocs, varunits = grab_unit_variables(class_name_list[i])
+            (
+                _,
+                _,
+                addedvars,
+                vardocs,
+                varunits,
+                addedcons,
+                condocs,
+            ) = grab_unit_components(class_name_list[i])
             f.write(".. csv-table::\n")
             f.write('   :header: "Description", "Variable Name", "Units"\n\n')
 
@@ -256,7 +290,11 @@ for i, u in enumerate(unit_name_list):
             # write Additional Constraints section if unit is non-basic
             f.write("\nAdditional Constraints\n")
             f.write("-" * len("Additional Constraints"))
-            f.write("\n")
+            f.write("\n\n")
+            f.write(".. csv-table::\n")
+            f.write('   :header: "Description", "Constraint Name"\n\n')
+            for k, c in enumerate(addedcons):
+                f.write(f'   "{condocs[k]}", "{c}"\n')
 
         f.write("\n.. index::")
         f.write(f"\n{list[count]}\n")

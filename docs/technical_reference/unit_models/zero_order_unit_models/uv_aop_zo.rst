@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, single-output Helper Methods<siso_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -29,6 +28,11 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Chemical mass flow constraint", "chemical_flow_mass_constraint"
 
 .. index::
    pair: watertap.unit_models.zero_order.uv_aop_zo;uv_aop_zo

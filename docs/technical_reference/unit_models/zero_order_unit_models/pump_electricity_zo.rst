@@ -8,8 +8,7 @@ See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the f(x) helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
@@ -30,6 +29,12 @@ Additional Variables
 
 Additional Constraints
 ----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Constraint for electricity consumption based on pump flowrate.", "electricity_consumption"
+   "Constraint for pump applied pressure", "applied_pressure_constraint"
 
 .. index::
    pair: watertap.unit_models.zero_order.pump_electricity_zo;pump_electricity_zo
