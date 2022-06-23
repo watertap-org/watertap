@@ -38,8 +38,6 @@ jobs:
         chmod -R o-w "$linkchecker_pkg_dir"
         linkchecker --version
     - name: Run linkchecker
-      # run through TTY to enable colored output
-      shell: 'script --return --quiet --command "bash {0}"'
       env:
         _url_to_check: ${{ inputs.base_url || 'https://watertap.readthedocs.io/en/latest/' }}
         _ignore_url_regex: ${{ inputs.ignore_url_regex || '.*(?:en/(?!latest|stable)).*' }}
