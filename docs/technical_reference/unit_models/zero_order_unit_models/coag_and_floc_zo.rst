@@ -20,30 +20,33 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Dosing rate of alum", "alum_dose"
-   "Dosing rate of polymer", "polymer_dose"
-   "Ratio of anionic to cationic polymer in dosage", "anion_to_cation_polymer_ratio"
-   "Dosing rate of anionic polymer", "anionic_polymer_dose"
-   "Dosing rate of cationic polymer", "cationic_polymer_dose"
-   "Mass flow rate of chemical solution", "chemical_flow_mass"
-   "Mass flow rate of chemical solution", "chemical_flow_mass"
-   "Rapid Mix Retention Time", "rapid_mix_retention_time"
-   "Floc Retention Time", "floc_retention_time"
-   "Rapid Mix Basin Volume", "rapid_mix_basin_vol"
-   "Floc Basin Volume", "floc_basin_vol"
-   "Number of Rapid Mixers", "num_rapid_mixers"
-   "Number of Floc Mixers", "num_floc_mixers"
-   "Number of Rapid Mix Processes", "num_rapid_mix_processes"
-   "Number of Floc Processes", "num_floc_processes"
-   "Number of Coagulation Processes", "num_coag_processes"
-   "Number of Floc Injection Processes", "num_floc_injection_processes"
-   "Rapid Mix Velocity Gradient", "velocity_gradient_rapid_mix"
-   "Floc Velocity Gradient", "velocity_gradient_floc"
-   "Rapid Mix Power Consumption", "power_rapid_mix"
-   "Floc Power Consumption", "power_floc"
-   "Total Power Consumption", "electricity"
+   "Dosing rate of alum", "alum_dose", "mg/l"
+   "Dosing rate of polymer", "polymer_dose", "mg/l"
+   "Ratio of anionic to cationic polymer in dosage", "anion_to_cation_polymer_ratio", "None"
+   "Dosing rate of anionic polymer", "anionic_polymer_dose", "mg/l"
+   "Dosing rate of cationic polymer", "cationic_polymer_dose", "mg/l"
+   "Mass flow rate of chemical solution", "chemical_flow_mass", "kg/s"
+   "Mass flow rate of chemical solution", "chemical_flow_mass", "kg/s"
+   "Rapid Mix Retention Time", "rapid_mix_retention_time", "s"
+   "Floc Retention Time", "floc_retention_time", "min"
+   "Rapid Mix Basin Volume", "rapid_mix_basin_vol", "m**3"
+   "Floc Basin Volume", "floc_basin_vol", "m**3"
+   "Number of Rapid Mixers", "num_rapid_mixers", "None"
+   "Number of Floc Mixers", "num_floc_mixers", "None"
+   "Number of Rapid Mix Processes", "num_rapid_mix_processes", "None"
+   "Number of Floc Processes", "num_floc_processes", "None"
+   "Number of Coagulation Processes", "num_coag_processes", "None"
+   "Number of Floc Injection Processes", "num_floc_injection_processes", "None"
+   "Rapid Mix Velocity Gradient", "velocity_gradient_rapid_mix", "1/s"
+   "Floc Velocity Gradient", "velocity_gradient_floc", "1/s"
+   "Rapid Mix Power Consumption", "power_rapid_mix", "kW"
+   "Floc Power Consumption", "power_floc", "kW"
+   "Total Power Consumption", "electricity", "kW"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.coag_and_floc_zo;coag_and_floc_zo

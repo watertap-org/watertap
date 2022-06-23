@@ -20,10 +20,13 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Surface area of sedimentation tank", "basin_surface_area"
-   "Particle settling velocity", "settling_velocity"
+   "Surface area of sedimentation tank", "basin_surface_area", "ft**2"
+   "Particle settling velocity", "settling_velocity", "m/s"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.sedimentation_zo;sedimentation_zo

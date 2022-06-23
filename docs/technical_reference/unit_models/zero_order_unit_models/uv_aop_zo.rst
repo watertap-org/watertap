@@ -20,12 +20,15 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Reduced equivalent dosage", "uv_reduced_equivalent_dose"
-   "UV transmittance of solution at UV reactor inlet", "uv_transmittance_in"
-   "Oxidant dosage", "oxidant_dose"
-   "Mass flow rate of oxidant solution", "chemical_flow_mass"
+   "Reduced equivalent dosage", "uv_reduced_equivalent_dose", "mJ/cm**2"
+   "UV transmittance of solution at UV reactor inlet", "uv_transmittance_in", "None"
+   "Oxidant dosage", "oxidant_dose", "mg/l"
+   "Mass flow rate of oxidant solution", "chemical_flow_mass", "kg/s"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.uv_aop_zo;uv_aop_zo

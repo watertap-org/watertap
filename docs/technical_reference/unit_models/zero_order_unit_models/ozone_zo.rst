@@ -20,15 +20,18 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Ozone contact time", "contact_time"
-   "CT value for ozone contactor", "concentration_time"
-   "Ozone mass transfer efficiency", "mass_transfer_efficiency"
-   "Specific energy consumption for ozone generation", "specific_energy_coeff"
-   "Mass flow rate of ozone", "ozone_flow_mass"
-   "Ozone consumption", "ozone_consumption"
-   "Ozone generation power demand", "electricity"
+   "Ozone contact time", "contact_time", "min"
+   "CT value for ozone contactor", "concentration_time", "mg*min/l"
+   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "None"
+   "Specific energy consumption for ozone generation", "specific_energy_coeff", "kWh/lb"
+   "Mass flow rate of ozone", "ozone_flow_mass", "lb/hr"
+   "Ozone consumption", "ozone_consumption", "mg/l"
+   "Ozone generation power demand", "electricity", "kW"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.ozone_zo;ozone_zo

@@ -20,12 +20,15 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Constant 1 in electricity intensity equation", "elec_coeff_1"
-   "Constant 2 in electricity intensity equation", "elec_coeff_2"
-   "Power consumption of brine concentrator", "electricity"
-   "Specific energy consumption with respect to feed flowrate", "electricity_intensity"
+   "Constant 1 in electricity intensity equation", "elec_coeff_1", "kWh/m**3"
+   "Constant 2 in electricity intensity equation", "elec_coeff_2", "kWh*l/m**3/mg"
+   "Power consumption of brine concentrator", "electricity", "kW"
+   "Specific energy consumption with respect to feed flowrate", "electricity_intensity", "kWh/m**3"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.electrodialysis_reversal_zo;electrodialysis_reversal_zo

@@ -103,6 +103,7 @@ def grab_unit_variables(unit_class):
 
     added_vars = []
     added_var_docs = []
+    added_var_units = []
     for var in m.fs.unit.component_data_objects(Var, descend_into=False):
         addedvarname = var.name
         newname = addedvarname.replace("fs.unit.", "").split("[", 1)[0]
@@ -110,8 +111,8 @@ def grab_unit_variables(unit_class):
             model_var = getattr(m.fs.unit, newname)
             added_vars.append(newname)
             added_var_docs.append(model_var.doc)
-
-    return m, zo_base_vars, added_vars, added_var_docs
+            added_var_units.append(str(model_var._units).replace("'", ""))
+    return m, zo_base_vars, added_vars, added_var_docs, added_var_units
 
 
 df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
@@ -228,29 +229,25 @@ for i, u in enumerate(unit_name_list):
         )
 
         # write Additional Variables section if unit is non-basic
+        # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
         if class_list[i] == "non-basic":
             f.write("\nAdditional Variables\n")
             f.write("-" * len("Additional Variables"))
             f.write("\n\n")
             print(class_name_list[i])
-            _, _, addedvars, vardocs = grab_unit_variables(class_name_list[i])
+            _, _, addedvars, vardocs, varunits = grab_unit_variables(class_name_list[i])
             f.write(".. csv-table::\n")
             f.write(
-                '   :header: "Description", "Variable Name"\n\n'
+                '   :header: "Description", "Variable Name", "Units"\n\n'
             )  # , "Index", "Units"\n')
 
-            # "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
-            # "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
-            # "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
-            # "Mass flux across membrane", ":math:`J`", "flux_mass_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
-            # "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
-            # "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-            # "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
-            # "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-            # "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
-            # "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
             for k, v in enumerate(addedvars):
-                f.write(f'   "{vardocs[k]}", "{v}"\n')
+                f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
+
+            # write Additional Constraints section if unit is non-basic
+            f.write("\nAdditional Constraints\n")
+            f.write("-" * len("Additional Constraints"))
+            f.write("\n")
 
         f.write("\n.. index::")
         f.write(f"\n{list[count]}\n")

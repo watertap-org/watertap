@@ -20,13 +20,16 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Initial chlorine demand", "initial_chlorine_demand"
-   "Chlorine contact time", "contact_time"
-   "CT value for chlorination", "concentration_time"
-   "Chlorine decay rate", "chlorine_decay_rate"
-   "Chlorine dose", "chlorine_dose"
+   "Initial chlorine demand", "initial_chlorine_demand", "mg/l"
+   "Chlorine contact time", "contact_time", "hr"
+   "CT value for chlorination", "concentration_time", "mg*min/l"
+   "Chlorine decay rate", "chlorine_decay_rate", "mg/hr/l"
+   "Chlorine dose", "chlorine_dose", "mg/l"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.chlorination_zo;chlorination_zo

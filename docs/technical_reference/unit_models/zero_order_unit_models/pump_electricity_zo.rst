@@ -20,13 +20,16 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Lift height for pump", "lift_height"
-   "Efficiency of pump", "eta_pump"
-   "Efficiency of motor", "eta_motor"
-   "Electricity for low pressure pump", "electricity"
-   "Applied pressure", "applied_pressure"
+   "Lift height for pump", "lift_height", "m"
+   "Efficiency of pump", "eta_pump", "None"
+   "Efficiency of motor", "eta_motor", "None"
+   "Electricity for low pressure pump", "electricity", "kW"
+   "Applied pressure", "applied_pressure", "bar"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.pump_electricity_zo;pump_electricity_zo

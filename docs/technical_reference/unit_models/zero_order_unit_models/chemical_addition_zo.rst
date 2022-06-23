@@ -20,13 +20,16 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Dosing rate of chemical", "chemical_dosage"
-   "Mass density of chemical solution", "solution_density"
-   "Mass fraction of chemical in solution", "ratio_in_solution"
-   "Volumetric flow rate of chemical solution", "chemical_flow_vol"
-   "Electricity consumption of unit", "electricity"
+   "Dosing rate of chemical", "chemical_dosage", "mg/l"
+   "Mass density of chemical solution", "solution_density", "kg/m**3"
+   "Mass fraction of chemical in solution", "ratio_in_solution", "None"
+   "Volumetric flow rate of chemical solution", "chemical_flow_vol", "m**3/s"
+   "Electricity consumption of unit", "electricity", "kW"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.chemical_addition_zo;chemical_addition_zo

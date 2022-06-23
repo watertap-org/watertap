@@ -20,14 +20,17 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Hours per day of filter press operation", "hours_per_day_operation"
-   "Filter press cycle time", "cycle_time"
-   "Parameter A for electricity calculation", "electricity_a_parameter"
-   "Parameter B for electricity calculation", "electricity_b_parameter"
-   "Filter press capacity", "filter_press_capacity"
-   "Filter press power", "electricity"
+   "Hours per day of filter press operation", "hours_per_day_operation", "hr/d"
+   "Filter press cycle time", "cycle_time", "hr"
+   "Parameter A for electricity calculation", "electricity_a_parameter", "kWh/a/ft**3"
+   "Parameter B for electricity calculation", "electricity_b_parameter", "None"
+   "Filter press capacity", "filter_press_capacity", "ft**3"
+   "Filter press power", "electricity", "kW"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.filter_press_zo;filter_press_zo

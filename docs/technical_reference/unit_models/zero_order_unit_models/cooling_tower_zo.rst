@@ -20,10 +20,13 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Cycles of concentration", "cycles"
-   "Flowrate of blowdown", "blowdown"
+   "Cycles of concentration", "cycles", "None"
+   "Flowrate of blowdown", "blowdown", "m**3/hr"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.cooling_tower_zo;cooling_tower_zo

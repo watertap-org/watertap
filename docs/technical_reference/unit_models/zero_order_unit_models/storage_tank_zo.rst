@@ -20,11 +20,14 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Storage time needed", "storage_time"
-   "Additional capacity needed for surge flow", "surge_capacity"
-   "Storage tank volume", "tank_volume"
+   "Storage time needed", "storage_time", "hr"
+   "Additional capacity needed for surge flow", "surge_capacity", "None"
+   "Storage tank volume", "tank_volume", "m**3"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.storage_tank_zo;storage_tank_zo

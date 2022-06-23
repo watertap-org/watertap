@@ -20,12 +20,15 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Electricity consumption of unit", "electricity"
-   "Electricity demand per kg N reacted", "electricity_intensity_N"
-   "Oxygen demand", "O2_demand"
-   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio"
+   "Electricity consumption of unit", "electricity", "kW"
+   "Electricity demand per kg N reacted", "electricity_intensity_N", "kWh/kg"
+   "Oxygen demand", "O2_demand", "kg/s"
+   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", "None"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.CANDOP_zo;CANDOP_zo

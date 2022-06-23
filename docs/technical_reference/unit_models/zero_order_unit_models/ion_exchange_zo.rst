@@ -20,12 +20,15 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Flowrate of NaCl addition", "NaCl_flowrate"
-   "Dosage of NaCl addition", "NaCl_dose"
-   "Replacement rate of ion exchange resin", "resin_demand"
-   "Resin replacement as a function of flow", "resin_replacement"
+   "Flowrate of NaCl addition", "NaCl_flowrate", "kg/s"
+   "Dosage of NaCl addition", "NaCl_dose", "kg/m**3"
+   "Replacement rate of ion exchange resin", "resin_demand", "kg/s"
+   "Resin replacement as a function of flow", "resin_replacement", "kg/m**3"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.ion_exchange_zo;ion_exchange_zo

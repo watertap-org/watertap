@@ -20,16 +20,19 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Ratio of air to water", "air_water_ratio"
-   "Flow basis", "flow_basis"
-   "Air flow rate", "air_flow_rate"
-   "Constant in electricity intensity equation", "electricity_intensity_parameter"
-   "Dual media filter surface area", "filter_surf_area"
-   "Number of dual media filter units", "num_filter_units"
-   "Power consumption of iron and manganese removal", "electricity"
-   "Specific energy consumption with respect to feed flowrate", "electricity_intensity"
+   "Ratio of air to water", "air_water_ratio", "None"
+   "Flow basis", "flow_basis", "m**3/hr"
+   "Air flow rate", "air_flow_rate", "m**3/hr"
+   "Constant in electricity intensity equation", "electricity_intensity_parameter", "hp*hr/m**3"
+   "Dual media filter surface area", "filter_surf_area", "m**2"
+   "Number of dual media filter units", "num_filter_units", "None"
+   "Power consumption of iron and manganese removal", "electricity", "kW"
+   "Specific energy consumption with respect to feed flowrate", "electricity_intensity", "kWh/m**3"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.iron_and_manganese_removal_zo;iron_and_manganese_removal_zo

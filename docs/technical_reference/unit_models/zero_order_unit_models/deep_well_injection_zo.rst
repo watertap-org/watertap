@@ -20,11 +20,14 @@ Additional Variables
 --------------------
 
 .. csv-table::
-   :header: "Description", "Variable Name"
+   :header: "Description", "Variable Name", "Units"
 
-   "Piping distance", "pipe_distance"
-   "Pipe diameter", "pipe_diameter"
-   "flow basis", "flow_basis"
+   "Piping distance", "pipe_distance", "mi"
+   "Pipe diameter", "pipe_diameter", "in"
+   "flow basis", "flow_basis", "m**3/hr"
+
+Additional Constraints
+----------------------
 
 .. index::
    pair: watertap.unit_models.zero_order.deep_well_injection_zo;deep_well_injection_zo
