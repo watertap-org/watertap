@@ -237,9 +237,7 @@ for i, u in enumerate(unit_name_list):
             print(class_name_list[i])
             _, _, addedvars, vardocs, varunits = grab_unit_variables(class_name_list[i])
             f.write(".. csv-table::\n")
-            f.write(
-                '   :header: "Description", "Variable Name", "Units"\n\n'
-            )  # , "Index", "Units"\n')
+            f.write('   :header: "Description", "Variable Name", "Units"\n\n')
 
             for k, v in enumerate(addedvars):
                 f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
