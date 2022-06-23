@@ -29,6 +29,7 @@ from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
+from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.sampling_types import (SamplingType, LinearSample)
 
 np.set_printoptions(linewidth=200)
@@ -211,36 +212,6 @@ class _ParameterSweepBase(ABC):
                 raise ValueError("Cannot mix sampling types")
 
         return sweep_params, sampling_type
-
-    # ================================================================
-
-    # def _interp_nan_values(self, global_values, global_results):
-    #
-    #     global_results_clean = np.copy(global_results)
-    #
-    #     n_vals = np.shape(global_values)[1]
-    #     n_outs = np.shape(global_results)[1]
-    #
-    #     # Build a mask of all the non-nan saved outputs
-    #     # i.e., where the optimzation succeeded
-    #     mask = np.isfinite(global_results[:, 0])
-    #
-    #     # Create a list of points where good data is available
-    #     x0 = global_values[mask, :]
-    #
-    #     if np.sum(mask) >= 4:
-    #         # Interpolate to get a value for nan points where possible
-    #         for k in range(n_outs):
-    #             y0 = global_results[mask, k]
-    #             yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
-    #                 -1
-    #             )
-    #             global_results_clean[~mask, k] = yi[~mask]
-    #
-    #     else:
-    #         warnings.warn("Too few points to perform interpolation.")
-    #
-    #     return global_results_clean
 
     # ================================================================
 
@@ -501,9 +472,35 @@ class _ParameterSweepBase(ABC):
 
 class ParameterSweep(_ParameterSweepBase):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+        csv_results_file_name=None,
+        h5_results_file_name=None,
+        debugging_data_dir = None,
+        interpolate_nan_outputs = False,
+        *args,
+        **kwargs
+    ):
+
+        # Initialize the base Class
         _ParameterSweepBase.__init__(self)
-        print(self.comm)
+
+        # Initialize the writer
+        if self.rank == 0:
+            if h5_results_file_name is None and csv_results_file_name is None:
+                warnings.warn(
+                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+                )
+                self.write_outputs = False
+            else:
+                self.write_outputs = True
+                self.writer = ParameterSweepWriter(
+                    self.comm,
+                    csv_results_file_name=csv_results_file_name,
+                    h5_results_file_name=h5_results_file_name,
+                    debugging_data_dir=debugging_data_dir,
+                    interpolate_nan_outputs=interpolate_nan_outputs
+                )
+
 
 
     def _aggregate_local_results(
@@ -678,7 +675,9 @@ class ParameterSweep(_ParameterSweepBase):
             local_num_cases
         )
 
-        # # Save to file
+        # Save to file
+        global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
+            global_results_dict, global_results_arr)
         # global_save_data = self._save_results(
         #     sweep_params,
         #     local_values,

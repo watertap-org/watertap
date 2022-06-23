@@ -82,9 +82,6 @@ class ParameterSweepWriter:
                     "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
                 )
 
-
-
-
     # ================================================================
 
     @staticmethod
