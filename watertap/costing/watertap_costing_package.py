@@ -416,9 +416,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        make_capital_cost_var(blk)
-        make_fixed_operating_cost_var(blk)
-
         cost_membrane(
             blk,
             blk.costing_package.nanofiltration_membrane_cost,
@@ -447,9 +444,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f"{blk.unit_model.name} received invalid argument for ro_type:"
                 f" {ro_type}. Argument must be a member of the ROType Enum."
             )
-        make_capital_cost_var(blk)
-        make_fixed_operating_cost_var(blk)
-
         cost_membrane(
             blk, membrane_cost, blk.costing_package.factor_membrane_replacement
         )
@@ -858,6 +852,8 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
     """
 
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
