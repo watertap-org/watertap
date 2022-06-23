@@ -83,6 +83,9 @@ class TestStorageTankZO:
         assert model.fs.unit.surge_capacity[0].fixed
         assert model.fs.unit.surge_capacity[0].value == 0
 
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == 0
+
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
         assert degrees_of_freedom(model.fs.unit) == 0
