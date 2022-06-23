@@ -15,11 +15,13 @@ import pytest
 import os
 import numpy as np
 import pyomo.environ as pyo
-import warnings
+import warnings, copy
 
 from pyomo.environ import value
 from watertap.tools.parameter_sweep_class import *
 from watertap.tools.parameter_sweep_writer import *
+from watertap.tools.tests.test_ps_class import (_get_rank0_path,
+    _read_output_h5, _assert_dictionary_correctness)
 
 # ------------------------------------------------------------------------------
 
@@ -92,8 +94,19 @@ class TestParallelWriterManager:
 
     @pytest.mark.unit
     def test_h5_read_write(self, tmp_path):
-        comm, rank, num_procs = _init_mpi()
-        tmp_path = _get_rank0_path(comm, tmp_path)
+        ps = ParameterSweep()
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+        h5_fname = "h5_test_{0}.h5".format(ps.rank)
+
+        ps_writer = ParameterSweepWriter(
+            ps.comm,
+            csv_results_file_name=None,
+            h5_results_file_name=h5_fname,
+            debugging_data_dir=None,
+            interpolate_nan_outputs=True
+            )
+
 
         input_dict = {
             "outputs": {
@@ -151,15 +164,11 @@ class TestParallelWriterManager:
             },
         }
 
-        import copy
-
         reference_dict = copy.deepcopy(input_dict)
         reference_dict["sweep_params"]["fs.input[a]"]["lower bound"] = np.finfo("d").min
         reference_dict["sweep_params"]["fs.input[a]"]["upper bound"] = np.finfo("d").max
 
-        h5_fname = "h5_test_{0}.h5".format(rank)
-        _write_output_to_h5(
-            input_dict, h5_results_file_name=os.path.join(tmp_path, h5_fname)
-        )
+        ps_writer._write_output_to_h5(input_dict, os.path.join(tmp_path, h5_fname))
+        
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
