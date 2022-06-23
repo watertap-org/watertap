@@ -8,7 +8,8 @@ See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
 -----------------------
-The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
+Electricity consumption is calculated using the pump_electricity helper function.
+See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
@@ -24,13 +25,6 @@ Additional Variables
    "Piping distance", "pipe_distance", "mi"
    "Pipe diameter", "pipe_diameter", "in"
    "flow basis", "flow_basis", "m**3/hr"
-
-Additional Constraints
-----------------------
-
-.. csv-table::
-   :header: "Description", "Constraint Name"
-
 
 .. index::
    pair: watertap.unit_models.zero_order.deep_well_injection_zo;deep_well_injection_zo

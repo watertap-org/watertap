@@ -244,10 +244,27 @@ for i, u in enumerate(unit_name_list):
         # write Electricity Consumption section
         f.write("\nElectricity Consumption\n")
         f.write("-" * len("Electricity Consumption"))
-        if class_list[i] == "non-basic":
-            f.write(
-                "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
-            )
+        if (
+            (class_list[i] == "non-basic")
+            and (elect_func_list[i] != "pump_electricity")
+            and (elect_func_list[i] != "constant_intensity")
+        ):
+            (
+                _,
+                _,
+                _,
+                _,
+                _,
+                addedconscheck,
+                _,
+            ) = grab_unit_components(class_name_list[i])
+            if len(addedconscheck) > 0:
+                f.write(
+                    "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
+                )
+            else:
+                print("NO ENERGY CONSUMPTION:", unit_name_list[i])
+                f.write("\nThis unit does not include energy consumption.\n")
             count += 1
         else:
             f.write(f"\n{list[count]}")
@@ -288,13 +305,14 @@ for i, u in enumerate(unit_name_list):
                 f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
 
             # write Additional Constraints section if unit is non-basic
-            f.write("\nAdditional Constraints\n")
-            f.write("-" * len("Additional Constraints"))
-            f.write("\n\n")
-            f.write(".. csv-table::\n")
-            f.write('   :header: "Description", "Constraint Name"\n\n')
-            for k, c in enumerate(addedcons):
-                f.write(f'   "{condocs[k]}", "{c}"\n')
+            if len(addedcons) > 0:
+                f.write("\nAdditional Constraints\n")
+                f.write("-" * len("Additional Constraints"))
+                f.write("\n\n")
+                f.write(".. csv-table::\n")
+                f.write('   :header: "Description", "Constraint Name"\n\n')
+                for k, c in enumerate(addedcons):
+                    f.write(f'   "{condocs[k]}", "{c}"\n')
 
         f.write("\n.. index::")
         f.write(f"\n{list[count]}\n")

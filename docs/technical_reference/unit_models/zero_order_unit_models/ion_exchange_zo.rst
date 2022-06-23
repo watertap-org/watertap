@@ -8,7 +8,8 @@ See documentation for :ref:`single-input, double-output Helper Methods<sido_meth
 
 Electricity Consumption
 -----------------------
-The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
+Electricity consumption is calculated using the pump_electricity helper function.
+See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
