@@ -1,0 +1,43 @@
+name: Linkcheck
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        type: string
+        default: https://watertap.readthedocs.io/en/latest/
+        required: false
+        description: Base url to check
+      exclude_url_regex:
+        description: URLs matching this regex will not be checked
+        type: choice
+        required: false
+        default: ".*(?:en/(?!latest|stable)).*"
+        options:
+        - ".*(?:en/(?!latest|stable)).*"
+        - ""
+  schedule:
+    # run daily at 12:00 pm UTC (8 am ET/5 am PT)
+    - cron: '0 12 * * *'
+  # FIXME remove once we're reasonably sure it works
+  # (workflow_dispatch and schedule triggers only work from the default branch)
+  push:
+
+jobs:
+  linkchecker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install linkchecker
+      run: |
+        pip install "linkchecker==10.1.*"
+        linkchecker --version
+    - name: Run linkchecker
+      env:
+        _url_to_check: ${{ inputs.base_url }}
+        _exclude_url_regex: ${{ inputs.exclude_url_regex }}
+      run: |
+        linkchecker --exclude-url="$_exclude_url_regex" $_url_to_check
+
