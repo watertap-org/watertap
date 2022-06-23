@@ -12,6 +12,7 @@
 ###############################################################################
 import os
 from pyomo.environ import (
+    Constraint,
     ConcreteModel,
     Block,
     Expression,
@@ -359,6 +360,11 @@ def optimize_operation(m):
     desal.RO.recovery_vol_phase[0, "Liq"].unfix()
     desal.RO.recovery_vol_phase[0, "Liq"].setub(0.99)
     desal.RO.recovery_vol_phase[0, "Liq"].setlb(0.1)
+
+    m.fs.RO_permeate_quality = Constraint(
+        expr=m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"] <= 0.5,
+        doc="Permeate quality must be lower than 500ppm",
+    )
 
     m.fs.objective = Objective(expr=m.LCOT)
     return
