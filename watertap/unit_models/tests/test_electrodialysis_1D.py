@@ -205,6 +205,10 @@ class TestElectrodialysisVoltageConst:
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
+
+        # Added this unit check scaling
+        assert_units_consistent(m)
+
         initialization_tester(m)
         badly_scaled_var_values = {
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
@@ -212,10 +216,6 @@ class TestElectrodialysisVoltageConst:
         assert not badly_scaled_var_values
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
-
-        # Added this unit check
-        # # TODO: reactivate
-        # assert_units_consistent(m)
 
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell1):
@@ -278,8 +278,7 @@ class TestElectrodialysisVoltageConst:
         )
         m.fs.costing.cost_process()
 
-        # # TODO: Reactivate
-        # assert_units_consistent(m)
+        assert_units_consistent(m)
 
         assert degrees_of_freedom(m) == 0
 
