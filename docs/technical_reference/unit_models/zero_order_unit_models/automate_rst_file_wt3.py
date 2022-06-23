@@ -27,8 +27,19 @@ from watertap.core import build_pt, build_sido, build_siso, build_sido_reactive
 from watertap.core import pump_electricity, constant_intensity
 from pyomo.environ import Reference
 import os
+from glob import glob
 
-sidor_db_path = os.path.dirname(os.path.abspath(__file__))
+
+# sidor_db_path = os.path.dirname(os.path.abspath(__file__))
+# test_path = os.path.relpath(os.path.join('watertap','data','techno_economic'), os.getcwd())
+#
+# # os.chdir(test_path)
+# test_path = os.path.join(test_path,'*.yaml')
+# # file_types = [".yaml"]
+# fnames = []
+# # for ext in file_types:
+# for fname in glob(test_path):
+#     fnames.append(fname)
 
 
 def grab_unit_variables(unit_class):
