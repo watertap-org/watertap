@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Dosing rate of acetic acid", "acetic_acid_dose"
    "Dosing rate of phosphoric acid", "phosphoric_acid_dose"
    "Dosing rate of ferric chloride", "ferric_chloride_dose"

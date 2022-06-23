@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Dosing rate of alum", "alum_dose"
    "Dosing rate of polymer", "polymer_dose"
    "Ratio of anionic to cationic polymer in dosage", "anion_to_cation_polymer_ratio"

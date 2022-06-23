@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Electricity consumption of unit", "electricity"
    "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet"
 

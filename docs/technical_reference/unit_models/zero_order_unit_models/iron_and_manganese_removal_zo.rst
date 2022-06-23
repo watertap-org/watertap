@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Ratio of air to water", "air_water_ratio"
    "Flow basis", "flow_basis"
    "Air flow rate", "air_flow_rate"

@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Storage time needed", "storage_time"
    "Additional capacity needed for surge flow", "surge_capacity"
    "Storage tank volume", "tank_volume"

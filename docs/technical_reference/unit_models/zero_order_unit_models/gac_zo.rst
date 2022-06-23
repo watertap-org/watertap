@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Empty bed contact time of unit", "empty_bed_contact_time"
    "Electricity consumption of unit", "electricity"
    "Parameter for calculating electricity based on empty bed contact time", "electricity_intensity_parameter"

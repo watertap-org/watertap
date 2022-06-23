@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Ozone contact time", "contact_time"
    "CT value for ozone contactor", "concentration_time"
    "Ozone mass transfer efficiency", "mass_transfer_efficiency"

@@ -236,7 +236,7 @@ for i, u in enumerate(unit_name_list):
             _, _, addedvars, vardocs = grab_unit_variables(class_name_list[i])
             f.write(".. csv-table::\n")
             f.write(
-                '   :header: "Description", "Variable Name"\n'
+                '   :header: "Description", "Variable Name"\n\n'
             )  # , "Index", "Units"\n')
 
             # "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"

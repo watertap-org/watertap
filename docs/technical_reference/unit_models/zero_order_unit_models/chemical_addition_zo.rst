@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Dosing rate of chemical", "chemical_dosage"
    "Mass density of chemical solution", "solution_density"
    "Mass fraction of chemical in solution", "ratio_in_solution"

@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Reduced equivalent dosage", "uv_reduced_equivalent_dose"
    "UV transmittance of solution at UV reactor inlet", "uv_transmittance_in"
 

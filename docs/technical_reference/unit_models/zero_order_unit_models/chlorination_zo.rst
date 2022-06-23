@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Initial chlorine demand", "initial_chlorine_demand"
    "Chlorine contact time", "contact_time"
    "CT value for chlorination", "concentration_time"

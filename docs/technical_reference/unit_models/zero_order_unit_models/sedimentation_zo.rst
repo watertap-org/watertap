@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Surface area of sedimentation tank", "basin_surface_area"
    "Particle settling velocity", "settling_velocity"
 

@@ -19,8 +19,9 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
-..csv-table::
+.. csv-table::
    :header: "Description", "Variable Name"
+
    "Hours per day of filter press operation", "hours_per_day_operation"
    "Filter press cycle time", "cycle_time"
    "Parameter A for electricity calculation", "electricity_a_parameter"

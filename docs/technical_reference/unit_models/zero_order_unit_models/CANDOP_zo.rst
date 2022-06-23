@@ -21,6 +21,7 @@ Additional Variables
 
 .. csv-table::
    :header: "Description", "Variable Name"
+
    "Electricity consumption of unit", "electricity"
    "Electricity demand per kg N reacted", "electricity_intensity_N"
    "Oxygen demand", "O2_demand"
