@@ -19,6 +19,10 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Piping distance", "pipe_distance"
+   "Pipe diameter", "pipe_diameter"
 
 .. index::
    pair: watertap.unit_models.zero_order.surface_discharge_zo;surface_discharge_zo

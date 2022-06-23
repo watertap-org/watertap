@@ -19,6 +19,21 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Air temperature", "air_temperature"
+   "Daily solar radiation incident", "solar_radiation"
+   "Pond dike height", "dike_height"
+   "Factor to adjust evaporation rate of pure water", "evaporation_rate_adj_factor"
+   "Evaporation rate calculation parameter A", "evap_rate_calc_a_parameter"
+   "Evaporation rate calculation parameter B", "evap_rate_calc_b_parameter"
+   "Evaporation rate calculation parameter C", "evap_rate_calc_c_parameter"
+   "Adjusted area calculation parameter A", "adj_area_calc_a_parameter"
+   "Adjusted area calculation parameter B", "adj_area_calc_b_parameter"
+   "Pond area needed based on evaporation rate", "area"
+   "Adjusted pond area needed", "adj_area"
+   "Calculated evaporation rate of pure water", "evaporation_rate_pure"
+   "Pure water evaporation rate adjusted for salinity", "evaporation_rate_salt"
 
 .. index::
    pair: watertap.unit_models.zero_order.evaporation_pond_zo;evaporation_pond_zo

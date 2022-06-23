@@ -19,6 +19,19 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Ozone contact time", "contact_time"
+   "CT value for ozone contactor", "concentration_time"
+   "Ozone mass transfer efficiency", "mass_transfer_efficiency"
+   "Specific energy consumption for ozone generation", "specific_energy_coeff"
+   "Mass flow rate of ozone", "ozone_flow_mass"
+   "Ozone consumption", "ozone_consumption"
+   "Ozone generation power demand", "electricity"
+   "Oxidant dosage", "oxidant_dose"
+   "Mass flow rate of oxidant solution", "chemical_flow_mass"
+   "Ratio of ozone to total organic carbon", "ozone_toc_ratio"
+   "Ratio of oxidant to ozone", "oxidant_ozone_ratio"
 
 .. index::
    pair: watertap.unit_models.zero_order.ozone_aop_zo;ozone_aop_zo

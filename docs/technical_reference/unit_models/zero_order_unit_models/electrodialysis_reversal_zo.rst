@@ -19,6 +19,12 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Constant 1 in electricity intensity equation", "elec_coeff_1"
+   "Constant 2 in electricity intensity equation", "elec_coeff_2"
+   "Power consumption of brine concentrator", "electricity"
+   "Specific energy consumption with respect to feed flowrate", "electricity_intensity"
 
 .. index::
    pair: watertap.unit_models.zero_order.electrodialysis_reversal_zo;electrodialysis_reversal_zo

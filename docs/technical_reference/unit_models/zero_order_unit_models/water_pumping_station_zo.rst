@@ -19,6 +19,12 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Electricity consumption of unit", "electricity"
+   "Lift height for pump", "lift_height"
+   "Efficiency of pump", "eta_pump"
+   "Efficiency of motor", "eta_motor"
 
 .. index::
    pair: watertap.unit_models.zero_order.water_pumping_station_zo;water_pumping_station_zo

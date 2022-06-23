@@ -14,16 +14,117 @@
 __author__ = "Adam Atia"
 
 import pandas as pd
-from watertap.unit_models.zero_order import *
+from idaes.core import declare_process_block_class
+from watertap.core import ZeroOrderBaseData
+from pyomo.environ import ConcreteModel, Var, Constraint
+from watertap.core.wt_database import Database
+from idaes.core import FlowsheetBlock
+from watertap.core.zero_order_properties import WaterParameterBlock
+import watertap.unit_models.zero_order as zo
+from watertap.core import ZeroOrderBaseData
+from watertap.core.tests.test_zero_order_base import DerivedZOBase
+from watertap.core import build_pt, build_sido, build_siso, build_sido_reactive
+from watertap.core import pump_electricity, constant_intensity
+from pyomo.environ import Reference
+import os
+
+sidor_db_path = os.path.dirname(os.path.abspath(__file__))
+
+
+def grab_unit_variables(unit_class):
+
+    m = ConcreteModel()
+    m.zero_db = Database(dbpath=sidor_db_path)
+    m.db = Database()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.props = WaterParameterBlock(
+        default={
+            "solute_list": [
+                "toc",
+                "tss",
+                "cod",
+                "tds",
+                "nitrogen",
+                "phosphates",
+                "nonbiodegradable_cod",
+            ]
+        }
+    )
+    unit = getattr(zo, unit_class)
+    m.fs.unit = unit(
+        default={
+            "property_package": m.fs.props,
+            "database": m.db,
+            "process_subtype": "default",
+        }
+    )
+
+    if model_type_short_list[i] == "SIDO reactive":
+        zdb = m.zero_db
+    else:
+        zdb = m.db
+    m.fs.zo_base = DerivedZOBase(
+        default={
+            "property_package": m.fs.props,
+            "database": zdb,
+            # "process_subtype": process_subtype,
+        }
+    )
+
+    if model_type_short_list[i] == "PT":
+        build_pt(m.fs.zo_base)
+    elif model_type_short_list[i] == "SIDO":
+        build_sido(m.fs.zo_base)
+    elif model_type_short_list[i] == "SISO":
+        build_siso(m.fs.zo_base)
+    elif model_type_short_list[i] == "SIDO reactive":
+        m.fs.zo_base._tech_type = "dummy_sidor_data"
+        build_sido_reactive(m.fs.zo_base)
+    else:
+        pass
+
+    if elect_func_list[i] == "pump_electricity":
+        if model_type_short_list[i] != "PT":
+            m.fs.zo_base._Q = Reference(m.fs.zo_base.properties_in[:].flow_vol)
+        else:
+            m.fs.zo_base._Q = Reference(m.fs.zo_base.properties[:].flow_vol)
+
+        pump_electricity(m.fs.zo_base, m.fs.zo_base._Q)
+    elif elect_func_list[i] == "constant_intensity":
+        constant_intensity(m.fs.zo_base)
+    else:
+        pass
+
+    zo_base_vars = []
+    for var in m.fs.zo_base.component_data_objects(Var, descend_into=False):
+        zovarname = var.name
+        zo_base_vars.append(zovarname.replace("fs.zo_base.", "").split("[", 1)[0])
+
+    added_vars = []
+    added_var_docs = []
+    for var in m.fs.unit.component_data_objects(Var, descend_into=False):
+        addedvarname = var.name
+        newname = addedvarname.replace("fs.unit.", "").split("[", 1)[0]
+        if newname not in zo_base_vars:
+            model_var = getattr(m.fs.unit, newname)
+            added_vars.append(newname)
+            added_var_docs.append(model_var.doc)
+
+    return m, zo_base_vars, added_vars, added_var_docs
+
 
 df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
 
 unit_name_list = [i.title() for i in df["Name"]]
 model_type_list = df["model type long"]
+model_type_short_list = df["type"]
+
 model_type_ref_list = df["model type doc ref"]
 elect_func_list = df["energy"]
 cost_func_list = df["Cost function"]
 zo_name_list = df["zo_unit"]
+class_name_list = df["class_name"]
 energy_helper_list = df["energy_helper_func"]
 class_list = df["class"]
 
@@ -130,7 +231,26 @@ for i, u in enumerate(unit_name_list):
         if class_list[i] == "non-basic":
             f.write("\nAdditional Variables\n")
             f.write("-" * len("Additional Variables"))
-            f.write("\n")
+            f.write("\n\n")
+            print(class_name_list[i])
+            _, _, addedvars, vardocs = grab_unit_variables(class_name_list[i])
+            f.write(".. csv-table::\n")
+            f.write(
+                '   :header: "Description", "Variable Name"\n'
+            )  # , "Index", "Units"\n')
+
+            # "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
+            # "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
+            # "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
+            # "Mass flux across membrane", ":math:`J`", "flux_mass_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
+            # "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
+            # "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+            # "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
+            # "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+            # "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+            # "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
+            for k, v in enumerate(addedvars):
+                f.write(f'   "{vardocs[k]}", "{v}"\n')
 
         f.write("\n.. index::")
         f.write(f"\n{list[count]}\n")
@@ -142,13 +262,3 @@ for i, u in enumerate(unit_name_list):
         f.write(f"\n\n{list[count]}\n")
         f.write("    :members:\n")
         f.write("    :noindex:\n")
-
-
-def grab_unit_variables(unit):
-    from pyomo.environ import ConcreteModel
-    from idaes.core import FlowsheetBlock
-    from watertap.core.zero_order_properties import WaterParameterBlock
-
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock()
-    m.fs.props = WaterParameterBlock({"solute_list": ["tss", "cod", "tds"]})

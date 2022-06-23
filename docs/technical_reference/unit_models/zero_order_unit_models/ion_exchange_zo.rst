@@ -19,6 +19,12 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Flowrate of NaCl addition", "NaCl_flowrate"
+   "Dosage of NaCl addition", "NaCl_dose"
+   "Replacement rate of ion exchange resin", "resin_demand"
+   "Resin replacement as a function of flow", "resin_replacement"
 
 .. index::
    pair: watertap.unit_models.zero_order.ion_exchange_zo;ion_exchange_zo

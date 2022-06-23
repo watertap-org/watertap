@@ -19,6 +19,12 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+.. csv-table::
+   :header: "Description", "Variable Name"
+   "Electricity consumption of unit", "electricity"
+   "Electricity demand per kg N reacted", "electricity_intensity_N"
+   "Oxygen demand", "O2_demand"
+   "Oxygen consumed / nitrogen reacted ratio", "oxygen_nitrogen_ratio"
 
 .. index::
    pair: watertap.unit_models.zero_order.CANDOP_zo;CANDOP_zo

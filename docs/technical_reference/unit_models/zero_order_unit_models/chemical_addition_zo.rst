@@ -19,6 +19,13 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Dosing rate of chemical", "chemical_dosage"
+   "Mass density of chemical solution", "solution_density"
+   "Mass fraction of chemical in solution", "ratio_in_solution"
+   "Volumetric flow rate of chemical solution", "chemical_flow_vol"
+   "Electricity consumption of unit", "electricity"
 
 .. index::
    pair: watertap.unit_models.zero_order.chemical_addition_zo;chemical_addition_zo

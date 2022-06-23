@@ -19,6 +19,8 @@ See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
 
 .. index::
    pair: watertap.unit_models.zero_order.municipal_drinking_zo;municipal_drinking_zo

@@ -16,10 +16,13 @@ Costing Method
 Costing is calculated using the cost_power_law_flow method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
-
 Additional Variables
 --------------------
 
+..csv-table::
+   :header: "Description", "Variable Name"
+   "Cycles of concentration", "cycles"
+   "Flowrate of blowdown", "blowdown"
 
 .. index::
    pair: watertap.unit_models.zero_order.cooling_tower_zo;cooling_tower_zo
