@@ -18,10 +18,11 @@ from pyomo.environ import (
     Objective,
     Param,
     TransformationFactory,
-    units as pyunits,
+    units,
     assert_optimal_termination,
 )
 from pyomo.network import Arc
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -80,7 +81,7 @@ def flowsheet_interface() -> FlowsheetInterface:
 
 def ui_build(ui=None, **kwargs):
     model = build()
-    set_operating_conditions(model, water_recovery=0.5, over_pressure=0.3)
+    set_operating_conditions(model)
     initialize_system(model)
     ui.set_block(model.fs)
 
@@ -119,9 +120,11 @@ def main():
     display_system(m)
     display_design(m)
     display_state(m)
+    print(display_ui_output(m))
 
     # optimize and display
     optimize_set_up(m)
+    assert_units_consistent(m)
     optimize(m)
     print("\n***---Optimization results---***")
     display_system(m)
@@ -135,6 +138,8 @@ def main():
     display_system(m)
     display_design(m)
     display_state(m)
+    print(display_ui_input(m))
+    print(display_ui_output(m))
 
 
 def build():
@@ -204,6 +209,8 @@ def build():
     # touch properties used in specifying the model
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+    m.fs.disposal.properties[0].flow_vol_phase["Liq"]
+    m.fs.disposal.properties[0].mass_frac_phase_comp["Liq", "TDS"]
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -343,20 +350,29 @@ def optimize_set_up(m):
     m.fs.RO.area.setub(150)
 
     # additional specifications
-    m.fs.product_salinity = Param(
-        initialize=500e-6, mutable=True
+    m.fs.max_product_salinity = Param(
+        initialize=500e-6, mutable=True, units=units.dimensionless
+    )  # product TDS mass fraction [-]
+    m.fs.max_pressure = Param(
+        initialize=85e5, mutable=True, units=units.Pa
     )  # product TDS mass fraction [-]
     m.fs.minimum_water_flux = Param(
-        initialize=1.0 / 3600.0, mutable=True
+        initialize=1.0 / 3600.0, mutable=True, units=units.kg / units.m**2 / units.s
     )  # minimum water flux [kg/m2-s]
 
     # additional constraints
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "TDS"]
-        <= m.fs.product_salinity
+        <= m.fs.max_product_salinity
     )
     iscale.constraint_scaling_transform(
         m.fs.eq_product_quality, 1e3
+    )  # scaling constraint
+    m.fs.eq_max_pressure = Constraint(
+        expr=m.fs.RO.feed_side.properties[0, 0].pressure <= m.fs.max_pressure
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.eq_max_pressure, 1e-6
     )  # scaling constraint
     m.fs.eq_minimum_water_flux = Constraint(
         expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
@@ -418,8 +434,14 @@ def display_system(m):
 def display_design(m):
     print("---decision variables---")
     print("Operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5))
-    print("Membrane\narea %.1f m2\ninlet Reynolds %.1f, inlet velocity %.1f cm/s"
-          % (m.fs.RO.area.value, m.fs.RO.N_Re[0, 0].value, m.fs.RO.velocity[0, 0].value * 100))
+    print(
+        "Membrane\narea %.1f m2\ninlet Reynolds %.1f, inlet velocity %.1f cm/s"
+        % (
+            m.fs.RO.area.value,
+            m.fs.RO.N_Re[0, 0].value,
+            m.fs.RO.velocity[0, 0].value * 100,
+        )
+    )
 
     print("---system variables---")
     print(
@@ -429,13 +451,20 @@ def display_design(m):
             m.fs.pump.work_mechanical[0].value / 1e3,
         )
     )
-    print("Membrane"
-          "\naverage flux: %.1f LMH"
-          "\npressure drop: %.1f bar"
-          "\nmax interfacial conc %.1f ppm"
-          % (value(m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]) * 3600,
-             m.fs.RO.deltaP[0].value / 1e5,
-             m.fs.RO.feed_side.properties_interface[0, 1].mass_frac_phase_comp["Liq", "TDS"].value * 1e6))
+    print(
+        "Membrane"
+        "\naverage flux: %.1f LMH"
+        "\npressure drop: %.1f bar"
+        "\nmax interfacial conc %.1f ppm"
+        % (
+            value(m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]) * 3600,
+            m.fs.RO.deltaP[0].value / 1e5,
+            m.fs.RO.feed_side.properties_interface[0, 1]
+            .mass_frac_phase_comp["Liq", "TDS"]
+            .value
+            * 1e6,
+        )
+    )
 
 
 def display_state(m):
@@ -457,6 +486,439 @@ def display_state(m):
     print_state("Pump out  ", m.fs.pump.outlet)
     print_state("RO perm   ", m.fs.RO.permeate)
     print_state("RO reten  ", m.fs.RO.retentate)
+
+
+def display_ui_input(m):
+    return {
+        "Feed": {
+            "Volumetric flowrate": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                            to_units=units.m**3 / units.hr,
+                        )
+                    ),
+                    2,
+                ),
+                "m3/h",
+            ),
+            "Salinity": (
+                round(
+                    value(
+                        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
+                    ),
+                    0,
+                ),
+                "ppm",
+            ),
+            "Temperature": (
+                round(
+                    value(m.fs.feed.properties[0].temperature),
+                    0,
+                ),
+                "K",
+            ),
+            "Pressure": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.feed.properties[0].pressure, to_units=units.bar
+                        )
+                    ),
+                    1,
+                ),
+                "bar",
+            ),
+        },
+        "Treatment specification": {
+            "Recovery": (
+                round(
+                    value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
+                    1,
+                ),
+                "%",
+            ),
+            "Maximum product salinity": (
+                round(
+                    value(m.fs.max_product_salinity) * 1e6,
+                    0,
+                ),
+                "ppm",
+            ),
+            "Maximum allowable pressure": (
+                round(
+                    value(units.convert(m.fs.max_pressure, to_units=units.bar)),
+                    1,
+                ),
+                "bar",
+            ),
+        },
+        "Performance parameters": {
+            "Pump efficiency": (
+                round(
+                    value(m.fs.pump.efficiency_pump[0]) * 100,
+                    1,
+                ),
+                "%",
+            ),
+            "ERD efficiency": (
+                round(
+                    value(m.fs.erd.efficiency_pump[0]) * 100,
+                    1,
+                ),
+                "%",
+            ),
+            "Water permeability coeff": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.RO.A_comp[0, "H2O"],
+                            to_units=units.mm / units.hr / units.bar,
+                        )
+                    ),
+                    2,
+                ),
+                "L/(m2-h-bar)",
+            ),
+            "Salt permeability coeff": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.RO.B_comp[0, "TDS"], to_units=units.mm / units.hr
+                        )
+                    ),
+                    2,
+                ),
+                "L/(m2-h)",
+            ),
+            "RO channel height": (
+                round(
+                    value(units.convert(m.fs.RO.channel_height, to_units=units.mm)),
+                    1,
+                ),
+                "mm",
+            ),
+            "RO spacer porosity": (
+                round(
+                    value(m.fs.RO.spacer_porosity) * 100,
+                    1,
+                ),
+                "%",
+            ),
+        },
+        "Cost parameters": {
+            "Electricity cost": (
+                round(
+                    value(m.fs.costing.electricity_base_cost),
+                    3,
+                ),
+                "$/kWh",
+            ),
+            "Membrane cost": (
+                round(
+                    value(m.fs.costing.reverse_osmosis_membrane_cost),
+                    1,
+                ),
+                "$/m2",
+            ),
+            "Pump cost": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.costing.high_pressure_pump_cost,
+                            to_units=units.USD_2018 / units.kW,
+                        )
+                    ),
+                    0,
+                ),
+                "$/kW",
+            ),
+            "ERD cost": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.costing.erd_pressure_exchanger_cost,
+                            to_units=units.USD_2018 / (units.m**3 / units.hr),
+                        )
+                    ),
+                    0,
+                ),
+                "$/(m3/h)",
+            ),
+            "Load factor": (
+                round(
+                    value(m.fs.costing.load_factor) * 100,
+                    1,
+                ),
+                "%",
+            ),
+            "Capital annualization factor": (
+                round(
+                    value(m.fs.costing.factor_capital_annualization) * 100,
+                    1,
+                ),
+                "%/year",
+            ),
+            "Membrane replacement factor": (
+                round(
+                    value(m.fs.costing.factor_membrane_replacement) * 100,
+                    1,
+                ),
+                "%/year",
+            ),
+        },
+    }
+
+
+def display_ui_output(m):
+    return {
+        "System metrics": {
+            "Recovery": (
+                round(
+                    value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
+                    1,
+                ),
+                "%",
+            ),
+            "Specific energy consumption": (
+                round(
+                    value(m.fs.costing.specific_energy_consumption),
+                    2,
+                ),
+                "kWh/m3",
+            ),
+            "Levelized cost of water": (
+                round(
+                    value(m.fs.costing.LCOW),
+                    2,
+                ),
+                "$/m3",
+            ),
+        },
+        "Feed": {
+            "Volumetric flowrate": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                            to_units=units.m**3 / units.hr,
+                        )
+                    ),
+                    2,
+                ),
+                "m3/h",
+            ),
+            "Salinity": (
+                round(
+                    value(
+                        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
+                    ),
+                    0,
+                ),
+                "ppm",
+            ),
+            "Temperature": (
+                round(
+                    value(m.fs.feed.properties[0].temperature),
+                    0,
+                ),
+                "K",
+            ),
+            "Pressure": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.feed.properties[0].pressure, to_units=units.bar
+                        )
+                    ),
+                    1,
+                ),
+                "bar",
+            ),
+        },
+        "Product": {
+            "Volumetric flowrate": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.product.properties[0].flow_vol_phase["Liq"],
+                            to_units=units.m**3 / units.hr,
+                        )
+                    ),
+                    2,
+                ),
+                "m3/h",
+            ),
+            "Salinity": (
+                round(
+                    value(
+                        m.fs.product.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+                        * 1e6
+                    ),
+                    0,
+                ),
+                "ppm",
+            ),
+            "Temperature": (
+                round(
+                    value(m.fs.product.properties[0].temperature),
+                    0,
+                ),
+                "K",
+            ),
+            "Pressure": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.product.properties[0].pressure, to_units=units.bar
+                        )
+                    ),
+                    1,
+                ),
+                "bar",
+            ),
+        },
+        "Disposal": {
+            "Volumetric flowrate": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.disposal.properties[0].flow_vol_phase["Liq"],
+                            to_units=units.m**3 / units.hr,
+                        )
+                    ),
+                    2,
+                ),
+                "m3/h",
+            ),
+            "Salinity": (
+                round(
+                    value(
+                        m.fs.disposal.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+                        * 1e6
+                    ),
+                    0,
+                ),
+                "ppm",
+            ),
+            "Temperature": (
+                round(
+                    value(m.fs.disposal.properties[0].temperature),
+                    0,
+                ),
+                "K",
+            ),
+            "Pressure": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.disposal.properties[0].pressure, to_units=units.bar
+                        )
+                    ),
+                    1,
+                ),
+                "bar",
+            ),
+        },
+        "Decision variables": {
+            "Operating pressure": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.pump.control_volume.properties_out[0].pressure,
+                            to_units=units.bar,
+                        )
+                    ),
+                    1,
+                ),
+                "bar",
+            ),
+            "Membrane area": (
+                round(
+                    value(m.fs.RO.area),
+                    1,
+                ),
+                "m2",
+            ),
+            "Inlet crossflow velocity": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.RO.velocity[0, 0], to_units=units.cm / units.s
+                        )
+                    ),
+                    1,
+                ),
+                "cm/s",
+            ),
+        },
+        "System variables": {
+            "Pump power": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.pump.work_mechanical[0],
+                            to_units=units.kW,
+                        )
+                    ),
+                    1,
+                ),
+                "kW",
+            ),
+            "ERD power": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.erd.work_mechanical[0],
+                            to_units=units.kW,
+                        )
+                        * -1
+                    ),
+                    1,
+                ),
+                "kW",
+            ),
+            "Average water flux": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+                            / (1000 * units.kg / units.m**3),
+                            to_units=units.mm / units.hr,
+                        )
+                    ),
+                    1,
+                ),
+                "L/(m2-h)",
+            ),
+            "Pressure drop": (
+                round(
+                    value(
+                        units.convert(
+                            m.fs.RO.deltaP[0],
+                            to_units=units.bar,
+                        )
+                        * -1
+                    ),
+                    2,
+                ),
+                "bar",
+            ),
+            "Max interfacial salinity": (
+                round(
+                    value(
+                        m.fs.RO.feed_side.properties_interface[
+                            0, 1
+                        ].mass_frac_phase_comp["Liq", "TDS"]
+                    )
+                    * 1e6,
+                    0,
+                ),
+                "ppm",
+            ),
+        },
+    }
 
 
 if __name__ == "__main__":
