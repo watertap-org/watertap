@@ -317,6 +317,15 @@ class ZeroOrderUnitChecker:
     ).declare_as_argument()
 
     CONFIG.declare(
+        "min_flow_in",
+        ConfigValue(
+            domain=float,
+            default=None,
+            description="Minimum flow volume in, in m^3/s",
+        ),
+    ).declare_as_argument()
+
+    CONFIG.declare(
         "max_flow_in",
         ConfigValue(
             domain=float,
@@ -377,6 +386,8 @@ class ZeroOrderUnitChecker:
 
         if self.config.max_flow_in is not None:
             df = df[df["flow_in"] <= self.config.max_flow_in]
+        if self.config.min_flow_in is not None:
+            df = df[df["flow_in"] >= self.config.min_flow_in]
         if self.config.max_recovery is not None:
             df = df[df["recovery"] <= self.config.max_recovery]
 
