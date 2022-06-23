@@ -31,8 +31,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -307,7 +306,7 @@ class GACData(UnitModelBlockData):
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
-            doc="Mass of contaminant absorbed at the calculated throughput ratio",
+            doc="Mass of contaminant absorbed at the time of replacement",
         )
 
         self.mass_adsorbed_saturated = Var(
@@ -315,7 +314,7 @@ class GACData(UnitModelBlockData):
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
-            doc="Mass of contaminant adsorbed if ad",
+            doc="Mass of contaminant adsorbed if fully saturated",
         )
 
         # ---------------------------------------------------------------------
@@ -377,6 +376,7 @@ class GACData(UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
+        # TODO: Potentially switch these to parameters or create a default option
         # gac particle properties
         self.particle_porosity = Var(
             initialize=0.5,
@@ -421,7 +421,7 @@ class GACData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # performance variables
         self.conc_ratio_avg = Var(
-            initialize=0.005,
+            initialize=0.1,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -437,7 +437,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.gac_saturation_replace = Var(
-            initialize=0.95,
+            initialize=0.9,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -555,11 +555,28 @@ class GACData(UnitModelBlockData):
         )
 
         self.mass_throughput_mtz_upstream = Var(
-            initialize=1,
+            initialize=1.1,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Mass throughput at the upstream mass transfer zone condition",
+        )
+
+        self.ebct_mtz_replace = Var(
+            initialize=0.9 * 500,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time"),
+            doc="Empty bed contact time of the mass transfer zone"
+            "at the time of replacement",
+        )
+
+        self.length_mtz_replace = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Length of the mass transfer zone at the time of replacement",
         )
 
         # ---------------------------------------------------------------------
@@ -793,17 +810,31 @@ class GACData(UnitModelBlockData):
         )
         def eq_mass_throughput_mtz(b):
             return b.mass_throughput_mtz_upstream == b.b0 + b.b1 * (
-                (1 - b.saturation_mtz_upstream) ** b.b2
-            ) + b.b3 / (1.01 - (1 - b.saturation_mtz_upstream) ** b.b4)
+                b.saturation_mtz_upstream**b.b2
+            ) + b.b3 / (1.01 - b.saturation_mtz_upstream**b.b4)
 
         @self.Constraint(
-            doc="GAC saturation approximated using trapezoid rule within the mass transfer zone",
+            doc="Empty bed contact time of the mass transfer zone"
+            "at the time of replacement",
+        )
+        def eq_ebct_mtz(b):
+            return (
+                b.ebct_mtz_replace
+                == (b.mass_throughput_mtz_upstream - b.mass_throughput) * b.min_ebct
+            )
+
+        @self.Constraint(doc="Adsorber bed length")
+        def eq_length_mtz(b):
+            return b.length_mtz_replace == b.velocity_sup * b.ebct_mtz_replace
+
+        @self.Constraint(
+            doc="Length of the mass transfer zone at the time of replacement"
         )
         def eq_approx_saturation(b):
-            return (1 * b.mass_throughput_mtz_upstream) + (
-                ((0.95 + b.conc_ratio_replace) / 2)
-                * (b.mass_throughput - b.mass_throughput_mtz_upstream)
-            ) == b.mass_throughput * b.gac_saturation_replace
+            return (1 * (b.bed_length - b.length_mtz_replace)) + (
+                ((b.saturation_mtz_upstream + b.conc_ratio_replace) / 2)
+                * b.length_mtz_replace
+            ) == b.bed_length * b.gac_saturation_replace
 
         # ---------------------------------------------------------------------
         if (
@@ -1097,7 +1128,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.particle_dia, 1e3)
 
         if iscale.get_scaling_factor(self.conc_ratio_avg) is None:
-            iscale.set_scaling_factor(self.conc_ratio_avg, 1e3)
+            iscale.set_scaling_factor(self.conc_ratio_avg, 1e2)
 
         if iscale.get_scaling_factor(self.conc_ratio_replace) is None:
             iscale.set_scaling_factor(self.conc_ratio_replace, 1e1)
@@ -1146,6 +1177,12 @@ class GACData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.mass_throughput_mtz_upstream) is None:
             iscale.set_scaling_factor(self.mass_throughput_mtz_upstream, 1)
+
+        if iscale.get_scaling_factor(self.ebct_mtz_replace) is None:
+            iscale.set_scaling_factor(self.ebct_mtz_replace, 1e-2)
+
+        if iscale.get_scaling_factor(self.length_mtz_replace) is None:
+            iscale.set_scaling_factor(self.length_mtz_replace, 1e-1)
 
         iscale.set_scaling_factor(self.a0, 1)
         iscale.set_scaling_factor(self.a1, 1)

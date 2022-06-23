@@ -11,39 +11,10 @@
 #
 ###############################################################################
 
-import pytest
-from pyomo.environ import (
-    value,
-    ConcreteModel,
-    SolverFactory,
-    TerminationCondition,
-    TransformationFactory,
-    Objective,
-)
-from pyomo.network import Arc
-from pyomo.util.check_units import assert_units_consistent
-
-from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Feed, Product
-from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (
-    calculate_scaling_factors,
-    unscaled_variables_generator,
-    unscaled_constraints_generator,
-    badly_scaled_var_generator,
-)
-import idaes.core.util.scaling as iscale
-from idaes.core.util.tables import (
-    create_stream_table_dataframe,
-    stream_table_dataframe_to_string,
-)
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-
 from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
 )
+
 from watertap.unit_models.gac import (
     GAC,
     FilmTransferCoefficientType,
@@ -66,8 +37,6 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
-import watertap.property_models.NaCl_prop_pack as props
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
@@ -125,7 +94,7 @@ class TestGACSimplified:
         )
 
         # trial problem from Hand, 1984 for removal of trace DCE
-        m.fs.unit.conc_ratio_avg.fix(0.01)
+        m.fs.unit.conc_ratio_replace.fix(0.50)
         m.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
         m.fs.unit.freund_ninv.fix(0.8316)
         m.fs.unit.ebct.fix(300)  # seconds
@@ -187,8 +156,8 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(m) == 75
-        assert number_total_constraints(m) == 43
+        assert number_variables(m) == 77
+        assert number_total_constraints(m) == 45
         assert number_unused_variables(m) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -337,8 +306,8 @@ class TestGACSimplified:
         print(unused_variables_set(m))
 
         # test statistics
-        assert number_variables(m) == 82
-        assert number_total_constraints(m) == 48
+        assert number_variables(m) == 84
+        assert number_total_constraints(m) == 50
         assert number_unused_variables(m) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -385,6 +354,7 @@ class TestGACSimplified:
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
 
+        # low tolerance due to inconsistent reporting in reference
         assert pytest.approx(1.14, rel=1e-1) == value(m.fs.unit.mass_throughput)
         assert pytest.approx(158 * 3600 * 24, rel=1e-1) == value(m.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-1) == value(m.fs.unit.bed_area)
