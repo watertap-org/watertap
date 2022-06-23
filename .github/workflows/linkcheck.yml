@@ -8,7 +8,7 @@ on:
         default: https://watertap.readthedocs.io/en/latest/
         required: false
         description: Base url to check
-      exclude_url_regex:
+      ignore_url_regex:
         description: URLs matching this regex will not be checked
         type: choice
         required: false
@@ -36,8 +36,8 @@ jobs:
         linkchecker --version
     - name: Run linkchecker
       env:
-        _url_to_check: ${{ inputs.base_url }}
-        _exclude_url_regex: ${{ inputs.exclude_url_regex }}
+        _url_to_check: ${{ inputs.base_url || 'https://watertap.readthedocs.io/en/latest/' }}
+        _ignore_url_regex: ${{ inputs.ignore_url_regex || '.*(?:en/(?!latest|stable)).*' }}
       run: |
-        linkchecker --exclude-url="$_exclude_url_regex" $_url_to_check
+        linkchecker --ignore-url="$_ignore_url_regex" $_url_to_check
 
