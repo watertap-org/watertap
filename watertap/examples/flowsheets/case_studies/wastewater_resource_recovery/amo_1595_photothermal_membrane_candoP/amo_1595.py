@@ -149,8 +149,8 @@ def set_operating_conditions(m):
     flow_vol = 800 * pyunits.m**3 / pyunits.hr
     conc_mass_nitrogen = 35 * pyunits.mg / pyunits.liter
     conc_mass_phosphates = 6 * pyunits.mg / pyunits.liter
-    conc_mass_bcp = 1e-6
-    conc_mass_no2 = 1e-6
+    conc_mass_bcp = 1e-6 * pyunits.mg / pyunits.liter
+    conc_mass_no2 = 1e-6 * pyunits.mg / pyunits.liter
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_mass_nitrogen)

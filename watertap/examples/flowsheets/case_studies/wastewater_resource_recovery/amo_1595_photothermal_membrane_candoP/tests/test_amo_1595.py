@@ -62,11 +62,11 @@ class TestAmo1595Flowsheet:
             m.fs.feed.flow_mass_comp[0, "phosphates"]
         )
 
-        assert pytest.approx(2.22222222e-7, rel=1e-3) == value(
+        assert pytest.approx(2.22222222e-10, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "bioconcentrated_phosphorous"]
         )
 
-        assert pytest.approx(2.22222222e-7, rel=1e-3) == value(
+        assert pytest.approx(2.22222222e-10, rel=1e-3) == value(
             m.fs.feed.flow_mass_comp[0, "nitrous_oxide"]
         )
 
