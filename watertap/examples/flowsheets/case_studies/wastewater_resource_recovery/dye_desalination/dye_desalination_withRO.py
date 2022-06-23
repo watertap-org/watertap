@@ -369,7 +369,7 @@ def optimize_operation(m):
 
     m.fs.RO_permeate_quality = Constraint(
         expr=m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"] <= 0.5,
-        doc="Permeate quality must be lower than 0.5 kg/m3 or 500ppm",
+        doc="Permeate quality constraint",
     )
 
     m.fs.objective = Objective(expr=m.LCOT)
