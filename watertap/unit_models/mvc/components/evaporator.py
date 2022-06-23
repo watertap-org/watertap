@@ -361,8 +361,10 @@ class EvaporatorData(UnitModelBlockData):
     ):
         """
         General wrapper for pressure changer initialization routines
-        Keyword Arguments:
 
+        Keyword Arguments:
+            delta_temperature_in : value to fix delta_temperature_in
+            delta_temperature_out : value to fix delta_temperature_out
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
