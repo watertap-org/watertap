@@ -198,14 +198,19 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
-        self.electrodialysis_total_membrane_cost = pyo.Var(
-            initialize=86,
-            doc="Electrodialysis membrane cost per cell pair is sum of costs for CEM and AEM",
+        self.electrodialysis_cem_membrane_cost = pyo.Var(
+            initialize=43,
+            doc="Cost of CEM membrane used in Electrodialysis ($/CEM/area)",
             units=self.base_currency / (pyo.units.meter**2),
         )
-        self.electrodialysis_total_flowspacer_cost = pyo.Var(
-            initialize=6,
-            doc="Electrodialysis spacer cost per cell pair is sum of costs for 2 flow spacers",
+        self.electrodialysis_aem_membrane_cost = pyo.Var(
+            initialize=43,
+            doc="Cost of AEM membrane used in Electrodialysis ($/AEM/area)",
+            units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.electrodialysis_flowspacer_cost = pyo.Var(
+            initialize=3,
+            doc="Cost of the spacers used in Electrodialysis ($/spacer/area)",
             units=self.base_currency / (pyo.units.meter**2),
         )
         self.factor_electrodialysis_membrane_housing_replacement = pyo.Var(
@@ -213,9 +218,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane housing replacement factor for CEM, AEM, and spacer replacements [fraction of membrane replaced/year]",
             units=pyo.units.year**-1,
         )
-        self.electrodialysis_total_electrode_cost = pyo.Var(
-            initialize=4000,
-            doc="Electrodialysis electrode cost per stack is sum of costs for 2 electrodes",
+        self.electrodialysis_electrode_cost = pyo.Var(
+            initialize=2000,
+            doc="Cost of the electrodes used in Electrodialysis ($/electrode/area)",
             units=self.base_currency / (pyo.units.meter**2),
         )
         self.factor_electrodialysis_electrode_replacement = pyo.Var(
@@ -697,13 +702,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         Function for costing the Electrodialysis unit
 
         Args:
-            cost_type - Option for electrodialysis cost function type - (UNKNOWN)
+            cost_electricity_flow - Option for including the costing of electricity
         """
         t0 = blk.flowsheet().time.first()
 
-        membrane_cost = blk.costing_package.electrodialysis_total_membrane_cost
-        spacer_cost = blk.costing_package.electrodialysis_total_flowspacer_cost
-        electrode_cost = blk.costing_package.electrodialysis_total_electrode_cost
+        membrane_cost = (
+            blk.costing_package.electrodialysis_cem_membrane_cost
+            + blk.costing_package.electrodialysis_aem_membrane_cost
+        )
+        spacer_cost = 2.0 * blk.costing_package.electrodialysis_flowspacer_cost
+        electrode_cost = 2.0 * blk.costing_package.electrodialysis_electrode_cost
 
         cost_electrodialysis_stack(
             blk,

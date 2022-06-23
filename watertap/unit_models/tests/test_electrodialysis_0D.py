@@ -272,7 +272,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.costing = WaterTAPCosting()
 
         # Set costing var
-        m.fs.costing.electrodialysis_total_membrane_cost.set_value(86)
+        m.fs.costing.electrodialysis_aem_membrane_cost.set_value(45)
+        m.fs.costing.electrodialysis_cem_membrane_cost.set_value(41)
         m.fs.costing.factor_electrodialysis_membrane_housing_replacement.set_value(0.2)
 
         m.fs.unit.costing = UnitModelCostingBlock(
