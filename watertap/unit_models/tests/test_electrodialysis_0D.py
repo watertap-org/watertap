@@ -253,10 +253,10 @@ class TestElectrodialysisVoltageConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(3.06, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.202, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -520,10 +520,10 @@ class TestElectrodialysisCurrentConst:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.4, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.361, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]
@@ -744,10 +744,10 @@ class TestElectrodialysis_withNeutralSPecies:
         perform_dict = m.fs.unit._get_performance_contents()
         assert "vars" in perform_dict
         assert value(
-            perform_dict["vars"]["Electrical power consumption(Watt)"]
+            perform_dict["vars"]["Total electrical power consumption(Watt)"]
         ) == pytest.approx(5.3, rel=5e-3)
         assert value(
-            perform_dict["vars"]["Specific electrical power consumption (kWh/m**3)"]
+            perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.353, rel=5e-3)
         assert value(
             perform_dict["vars"]["Current efficiency for deionzation"]

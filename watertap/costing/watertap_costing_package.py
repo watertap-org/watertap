@@ -37,6 +37,7 @@ from watertap.unit_models import (
     Pump,
     EnergyRecoveryDevice,
     Electrodialysis0D,
+    Electrodialysis1D,
 )
 
 
@@ -722,10 +723,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             blk.costing_package.factor_electrodialysis_electrode_replacement,
         )
 
+        # Changed this to grab power from performance table which is identified
+        #   by same key regardless of whether the Electrodialysis unit is 0D or 1D
         if cost_electricity_flow:
             blk.costing_package.cost_flow(
                 pyo.units.convert(
-                    blk.unit_model.power_electrical[t0], to_units=pyo.units.kW
+                    blk.unit_model._get_performance_contents(t0)["vars"][
+                        "Total electrical power consumption(Watt)"
+                    ],
+                    to_units=pyo.units.kW,
                 ),
                 "electricity",
             )
@@ -819,6 +825,7 @@ WaterTAPCostingData.unit_mapping = {
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
+    Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
 }
 
 

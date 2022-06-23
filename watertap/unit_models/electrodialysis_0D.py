@@ -932,8 +932,10 @@ class Electrodialysis0DData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         return {
             "vars": {
-                "Electrical power consumption(Watt)": self.power_electrical[time_point],
-                "Specific electrical power consumption (kWh/m**3)": self.specific_power_electrical[
+                "Total electrical power consumption(Watt)": self.power_electrical[
+                    time_point
+                ],
+                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
                 "Current efficiency for deionzation": self.current_efficiency[

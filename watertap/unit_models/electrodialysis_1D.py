@@ -696,6 +696,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.diluate.length_domain,
             doc="Electrical power consumption of a stack",
         )
+        # # TODO: Check this constraint formulation. Is this correct?
+        #           it states: dP/dx = b*L*u(x)*i(x)
         def eq_power_electrical(self, t, x):
             if x == self.diluate.length_domain.first():
                 return self.diluate.power_electrical_x[t, x] == 0
