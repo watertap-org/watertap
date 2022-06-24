@@ -16,6 +16,12 @@ This is a granular activated carbon (GAC) model that works under the following c
 
 .. currentmodule:: watertap.unit_models.gac
 
+Model Description
+-----------
+The available model for GAC operation is adapted from a simplified model originally presented in Hand, 1984 and elaborated
+on in Crittenden, 2012. The model is denoted as the constant pattern homogeneous surface diffusion model (CPHSDM).
+As a GAC system is operated as a batch process, a mass transfer zone (MTZ) of
+
 Degrees of Freedom
 ------------------
 In the default configuration of the GAC unit model there are 18 degrees of freedom in addition to the inlet state variables
@@ -127,11 +133,33 @@ Variables
    "Throughput equation parameter 2", ":math:`b_2`", "b2", "None", ":math:`\text{dimensionless}`"
    "Throughput equation parameter 3", ":math:`b_3`", "b3", "None", ":math:`\text{dimensionless}`"
    "Throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
+
+The following variables are only built when specific configuration options are selected.
+
+if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` is set to ``calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
    "Molecular diffusion coefficient", ":math:`D_l`", "diffus_liq", "None", ":math:`\text{m}^2\text{\s}`"
    "Molal Volume", ":math:`V_b`", "molal_volume", "None", ":math:`\text{m}^3\text{/mol}`"
+
+if ``film_transfer_coefficient_type`` is set to ``calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
    "Reynolds number", ":math:`Re`", "N_Re", "None", ":math:`\text{dimensionless}`"
    "Schmidt number", ":math:`Sc`", "N_Sc", "None", ":math:`\text{dimensionless}`"
    "GAC particle sphericity", ":math:`\phi`", "sphericity", "None", ":math:`\text{dimensionless}`"
+
+if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
+   "Surface-to-pore diffusion flux ratio", ":math:`SPDFR`", "spdfr", "None", ":math:`\text{dimensionless}`"
 
 .. _GAC_equations:
 
@@ -143,3 +171,8 @@ Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
+
+References
+-----------
+    * Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems. Journal of Environmental Engineering, 110(2), 440-456.
+    * Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design. Editorial John Wiley & Sons.
