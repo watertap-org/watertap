@@ -12,10 +12,10 @@ tolerance for adverse non-ionic components (e.g., silica and biological substanc
 Between the electrodes of an electrodialysis stack (a reactor module), multiple anion- and
 cation-exchange membranes are alternately positioned and separated by spacers to form individual
 cells. When operated, electrodialysis converts electrical current to ion flux and, assisted by
-the opposite ion selectivity of cation- and anion-exchange membranes (cem and aem), moves ion from
+the opposite ion selectivity of cation- and anion-exchange membranes (cem and aem), moves ions from
 one cell to its adjacent cell in a cell-pair treatment unit (Figure 1). The ion-departing cell is called a **diluate
 channel** and the ion-entering cell a **concentrate channel**. Recovered (desalinated) water is
-collected from diluate channles of all cell pairs while the concentrate product can be disposed of as brine
+collected from diluate channels of all cell pairs while the concentrate product can be disposed of as brine
 or retreated. More overview of the electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/EDdiagram.png
@@ -30,15 +30,15 @@ larger-scale systems.  The presented electrodialysis 1D model establishes mathem
 ion and water transport in a cell pair and expands to simulate a stack with a specified cell-pair number.
 Modeled mass transfer mechanisms include electrical migration and diffusion of ions and osmosis and electroosmosis
 of water. By its name, "1D" suggests the variation of mass transfer and solution properties over length (l in Figure 1)
-is mathematically described.  The following key assumptions are based on.
+is mathematically described.  The model relies on the following key assumptions:
 
 * The concentrate and diluate channels have identical geometry.
 * For each channel, component fluxes in the bulk solution are uniform in b and s directions in Figure 1
   but dependent on the l directions (the 1-dimensional assumption).
-* Steady state: all variables are independent on time.
+* Steady state: all variables are independent of time.
 * Co-current flow operation. 
 * Electrical current is operated below the limiting current. 
-* Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one. 
+* Ideality assumptions: activity, osmotic, and van't Hoff coefficients are set at one.
 * All ion-exchange membrane properties (ion and water transport number, resistance, permeability) are
   constant.
 * Detailed concentration gradient effect at membrane-water interfaces is neglected. 
@@ -64,9 +64,9 @@ On the two control volumes, this model provides four ports (Pyomo notation in pa
 
 Sets
 ----
-This model can simulate the electrodialysis desalination of a water solution containing multiple species
+This model can simulate electrodialysis for desalination of a water solution containing multiple species
 (neutral or ionic). All solution components ( H\ :sub:`2`\ O, neutral solutes, and ions) form a Pyomo set in the model.
-For a clear model demonstration, **this document uses a NaCl water solution as an instance hereafter.**  The user can
+For a clear model demonstration, **this document uses an NaCl water solution as an instance hereafter.**  The user can
 nevertheless expand the component set as needed to represent other feed water conditions.
 
 .. csv-table:: **Table 1.** List of Set
@@ -81,11 +81,11 @@ nevertheless expand the component set as needed to represent other feed water co
    "Membrane", "n/a", "['cem', 'aem']"
 
 **Notes**
- :sup:`1` The time set index is set as [0] in this steady-state model and is reserved majorly for the future extension
+ :sup:`1` The time set index is set as [0] in this steady-state model and is reserved for the future extension
  to a dynamic model.
 
  :sup:`2` By the IDAES convention, the index of length_domain is normalized to a continuous set of (0, 1), which is discretized 
- when differential equations in the model is solved by numerical methods such as "finite difference" discretization. In this 
+ when differential equations in the model are solved by numerical methods such as "finite difference" discretization. In this
  documentation, :math:`x` refers to the length dimension before normalization and carries a unit of [m].
 
  :sup:`3` "Ion" is a subset of "Component" and uses the same symbol j.
@@ -93,7 +93,7 @@ nevertheless expand the component set as needed to represent other feed water co
 
 Degrees of Freedom
 ------------------
-Applying this model to a NaCl solution yields 33 degrees of freedom (**Table 2**), among which
+Applying this model to an NaCl solution yields 33 degrees of freedom (**Table 2**), among which
 temperature, pressure, and component molar flow rate are state variables that are fixed as initial conditions. The rest
 are parameters that should be provided in order to fully solve the model.
 
@@ -121,11 +121,11 @@ are parameters that should be provided in order to fully solve the model.
    "transport number of ions in the membrane phase", ":math:`t_j`", "ion_trans_number_membrane", "['cem', 'aem'], ['Na_+', '\Cl_-']", "dimensionless", 4
 
 **Note**
- :sup:`1` DOF number takes account of the indices of the corresponding parameter.
+ :sup:`1` DOF number accounts for indices of corresponding variables.
 
  :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant_Current"
  or "Constant_Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
- that ensures a operational current *below the limiting current* of the feed solution.
+ that ensures an operational current *below the limiting current* of the feed solution.
 
 
 Solution component information
@@ -134,7 +134,7 @@ To fully construct solution properties, users need to provide basic component in
 this model, including identity of all solute species (i.e., Na :sup:`+`, and \Cl :sup:`-` for a
 NaCl solution), molecular weight of all component species (i.e., H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-`), and charge
 and electrical mobility of all ionic species (i.e., Na :sup:`+`, and \Cl :sup:`-`). This can be provided as a solution
-dictionary in the following format (instanced by a NaCl solution).
+dictionary in the following format (instantiated by a NaCl solution).
 
 .. code-block::
 
@@ -154,13 +154,13 @@ Information regarding the property package this unit model relies on can be foun
 Equations
 ---------
 
-This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-` for a NaCl
+This model solves mass balances of all solution components (H\ :sub:`2`\ O, Na :sup:`+`, and \Cl :sup:`-` for an NaCl
 solution) on two control volumes (concentrate and diluate channels). Under the 1D treatment, balance equations are expressed 
 as differential algebraic equations (DAE) when concerned variables are functions of length (x). The DAEs are solved in a 
 discretization manner using the "finite difference" or "collocation" method implemented in **Pyomo.DAE**. 
 
-Mass balance equations are summarized in **Table 3**. Mass transfer mechanisms take account of solute electrical migration 
-and diffusion and water osmosis and electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law, 
+Mass balance equations are summarized in **Table 3**. Mass transfer mechanisms account for solute electrical migration, diffusion,
+water osmosis, and electroosmosis. Theoretical principles, e.g., continuity equation, Fick's law, and Ohm's law,
 to simulate these processes are well developed and some good summaries for the electrodialysis scenario can be found in the *References*.
 
 .. csv-table:: **Table 3** Mass Balance Equations
