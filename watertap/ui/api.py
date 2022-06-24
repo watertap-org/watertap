@@ -524,16 +524,51 @@ class BlockInterface:
         return block_var
 
     @classmethod
-    def _get_block_variable_value(cls, block, var_name, indices=None):
+    def _get_block_variable_value(
+        cls, block, var_name, indices=None, to_units=None, scale_factor=0
+    ):
+        def uvalue(bv, u=to_units):
+            """Get value of variable 'bvar', converted to units 'u'"""
+            if u:
+                # create new variable with target units, use Pyomo conversion
+                # on set_value() to calculate the correct value
+                new_var = cls.units_val(1, u)
+                new_var.set_value(bv)
+                bval = value(new_var)
+            else:
+                # simply get existing value
+                bval = value(bv)
+            # if scaling is requested add it
+            if scale_factor != 0:
+                bval *= scale_factor
+            return bval
+
+        def ubounds(bv, u=to_units, sfac=scale_factor):
+            """If a Parameter, no bounds, so be defensive.
+            If units, scale bounds to units
+            """
+            lb, ub = getattr(bv, "lb", None), getattr(bv, "ub", None)
+            if u:
+                if lb is not None:
+                    lb = value(cls.units_val(lb, u))
+                if ub is not None:
+                    ub = value(cls.units_val(ub, u))
+            if sfac != 0:
+                if lb is not None:
+                    lb *= sfac
+                if ub is not None:
+                    ub *= sfac
+            return lb, ub
+
         block_var = cls.get_block_var(block, var_name)
         if block_var.is_indexed():
             if indices:
                 # Get just a single scalar value for the selected index
                 idx = tuple(indices)
-                block_var_idx = block_var[idx]
+                bvar = block_var[idx]
                 var_val = model.ScalarValue(
-                    value=value(block_var_idx),
-                    bounds=(block_var_idx.lb, block_var_idx.ub),
+                    value=uvalue(bvar),
+                    bounds=ubounds(bvar),
                 )
             else:
                 # extract values for all indexes
@@ -544,8 +579,8 @@ class BlockInterface:
                     except TypeError:
                         index_list.append((var_idx,))
                     bvar = block_var[var_idx]
-                    value_list.append(value(bvar))
-                    bounds_list.append((bvar.lb, bvar.ub))
+                    value_list.append(uvalue(bvar))
+                    bounds_list.append(ubounds(bvar))
                 _log.debug(
                     f"add indexed variable. block={block.name},"
                     f"name={var_name},index={index_list},"
@@ -555,9 +590,10 @@ class BlockInterface:
                     index=index_list, value=value_list, bounds=bounds_list
                 )
         else:
-            # if a Parameter, no bounds, so be defensive
-            lb, ub = getattr(block_var, "lb", None), getattr(block_var, "ub", None)
-            var_val = model.ScalarValue(value=value(block_var), bounds=(lb, ub))
+            var_val = model.ScalarValue(
+                value=uvalue(block_var),
+                bounds=ubounds(block_var),
+            )
             _log.debug(
                 f"add scalar value. block={block.name},"
                 f"name={var_name},value={var_val}"
@@ -596,6 +632,8 @@ class BlockInterface:
                     _log.debug("No value for variable. " + details)
                 else:
                     var_obj = self.get_block_var(ui.block, load_var_name)
+                    to_units = load_var_info.to_units
+                    sfac = load_var_info.scale_factor
                     if var_obj is None:
                         raise ValueError(
                             "Exported variable not found in block. " + details
@@ -604,15 +642,28 @@ class BlockInterface:
                         # set values for all indexes
                         for i, idx in enumerate(load_var_info.value.index):
                             idx, val = tuple(idx), load_var_info.value.value[i]
+                            if sfac != 0:
+                                val /= sfac
+                            if to_units:
+                                val = self.units_val(val, to_units)
                             var_obj[idx] = val
                     elif load_var_info.indices:
                         # set (scalar) value for selected index
-                        idx = tuple(load_var_info.indices)
                         val = load_var_info.value.value
+                        idx = tuple(load_var_info.indices)
+                        if sfac != 0:
+                            val /= sfac
+                        if to_units:
+                            val = self.units_val(val, to_units)
                         var_obj[idx] = val
                     else:
                         # set scalar value
-                        var_obj.set_value(load_var_info.value.value)
+                        val = load_var_info.value.value
+                        if sfac != 0:
+                            val /= sfac
+                        if to_units:
+                            val = self.units_val(val, to_units)
+                        var_obj.set_value(val)
                     _log.debug("Exported variable loaded. " + details)
 
             # save non-empty missing/extra
@@ -625,6 +676,14 @@ class BlockInterface:
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
             sub_block = cur_block.find_component(sb_name)
             self._load(sb_info, sub_block, path=cur_block_path)
+
+    @staticmethod
+    def units_val(v, units):
+        """Create a Var with the appropriate value and units."""
+        iv = Var(name="tmp", units=build_units(units))
+        iv.construct()
+        iv.set_value(v)
+        return iv
 
     def _get_block_interface_tree(self):
         """Get all block interfaces in this block and sub-blocks,
@@ -682,9 +741,14 @@ class BlockInterface:
         leaf = ui._block_info.copy()
         leaf.blocks = {}  # forget sub-blocks
         for name, variable in leaf.variables.items():
-            variable.value = self._get_block_variable_value(
-                ui.block, name, indices=variable.indices
+            val = self._get_block_variable_value(
+                ui.block,
+                name,
+                indices=variable.indices,
+                to_units=variable.to_units,
+                scale_factor=variable.scale_factor,
             )
+            variable.value = val
             if not variable.display_name:
                 variable.display_name = name
 

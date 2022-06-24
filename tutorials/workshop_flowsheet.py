@@ -91,8 +91,8 @@ def ui_build(ui=None, **kwargs):
     optimize_set_up(model)
     optimize(model)
 
+    export_ui_variables(model.fs)
     ui.set_block(model.fs)
-    # export_ui_variables(model.fs)
 
 
 def ui_solve(block=None, **kwargs):
@@ -261,44 +261,6 @@ def set_operating_conditions(m):
             "simulation.".format(degrees_of_freedom(m))
         )
 
-    # for UI:
-    export_variables(
-        m.fs.pump, variables={"efficiency_pump": {"display_name": "pump efficiency"}}
-    )
-    export_variables(
-        m.fs.RO,
-        variables={
-            "area": {"display_name": "membrane area"},
-            "A_comp": {
-                "display_name": "water perm coeff",
-                "description": "membrane water permeability coefficient",
-            },
-            "B_comp": {
-                "display_name": "salt perm coeff",
-                "description": "membrane salt permeability coefficient",
-            },
-            "channel_height": {
-                "display_name": "membrane channel height",
-                "description": "channel height in membrane stage",
-            },
-            "spacer_porosity": {
-                "display_name": "membrane spacer porosity",
-                "description": "spacer porosity in membrane stage",
-            },
-            "width": {"display_name": "stage width", "description": "RO stage width"},
-        },
-    )
-    export_variables(
-        m.fs.RO.permeate,
-        variables={
-            "pressure": {
-                "display_name": "atm pressure",
-                "description": "atmospheric pressure",
-            },
-        },
-    )
-    export_variables(m.fs.RO.inlet, variables=["pressure"])
-
 
 def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
@@ -414,17 +376,6 @@ def display_system(m):
         % value(m.fs.costing.specific_energy_consumption)
     )
     print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
-    # for UI, return a result dict
-    return {
-        "Product": "%.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_TDS * 1e6),
-        "Volumetric recovery": "%.1f%%"
-        % (value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100),
-        "Water recovery": "%.1f%%"
-        % (value(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"]) * 100),
-        "Energy Consumption": "%.1f kWh/m3"
-        % value(m.fs.costing.specific_energy_consumption),
-        "Levelized cost of water": "%.2f $/m3" % value(m.fs.costing.LCOW),
-    }
 
 
 def display_design(m):
@@ -506,7 +457,7 @@ def export_ui_variables(fs):
                 "indices": ["Liq", "TDS"],
                 "display_name": "Salinity",
                 "display_units": "ppm",
-                "scale_units": 1e6,
+                "scale_factor": 1e6,
                 "category": Category.feed,
             },
             "temperature": {
@@ -528,7 +479,7 @@ def export_ui_variables(fs):
                 "indices": [0, "Liq"],
                 "display_name": "Recovery",
                 "display_units": "%",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "category": Category.ts,
             },
             "A_comp": {
@@ -551,7 +502,7 @@ def export_ui_variables(fs):
             "spacer_porosity": {
                 "display_name": "RO spacer porosity",
                 "display_units": "%",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "category": Category.perf,
             },
         },
@@ -562,7 +513,7 @@ def export_ui_variables(fs):
             "efficiency_pump": {
                 "indices": [0],
                 "display_name": "ERD efficiency",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "display_units": "%",
             },
         },
@@ -573,7 +524,7 @@ def export_ui_variables(fs):
             "efficiency_pump": {
                 "indices": [0],
                 "display_name": "Pump efficiency",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "display_units": "%",
             },
         },
@@ -583,7 +534,7 @@ def export_ui_variables(fs):
         variables={
             "max_product_salinity": {
                 "display_name": "Maximum product salinity",
-                "scale_units": 1e6,
+                "scale_factor": 1e6,
                 "display_units": "ppm",
                 "category": Category.ts,
             },
@@ -620,19 +571,19 @@ def export_ui_variables(fs):
             },
             "load_factor": {
                 "display_name": "Load factor",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "display_units": "%",
                 "category": Category.cost,
             },
             "factor_capital_annualization": {
                 "display_name": "Capital annualization factor",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "display_units": "%/year",
                 "category": Category.cost,
             },
             "factor_membrane_replacement": {
                 "display_name": "Membrane replacement factor",
-                "scale_units": 100,
+                "scale_factor": 100,
                 "display_units": "%/year",
                 "category": Category.cost,
             },
