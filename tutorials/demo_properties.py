@@ -33,6 +33,7 @@ import idaes.logger as idaeslog
 
 import watertap.property_models.seawater_prop_pack as properties
 
+
 def main():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -43,8 +44,8 @@ def main():
     m.fs.state_block[0].display()
 
     # set the state variables
-    m.fs.state_block[0].flow_mass_phase_comp['Liq', 'H2O'].fix(0.965)
-    m.fs.state_block[0].flow_mass_phase_comp['Liq', 'TDS'].fix(0.035)
+    m.fs.state_block[0].flow_mass_phase_comp["Liq", "H2O"].fix(0.965)
+    m.fs.state_block[0].flow_mass_phase_comp["Liq", "TDS"].fix(0.035)
     m.fs.state_block[0].temperature.fix(273 + 25)
     m.fs.state_block[0].pressure.fix(101325)
     m.fs.state_block[0].display()
@@ -67,8 +68,10 @@ def main():
     m.fs.state_block[0].display()
 
     # *** this could be hidden *** it's also might not be necessary
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
     iscale.calculate_scaling_factors(m)
 
     # determine the osmotic pressure
@@ -77,43 +80,64 @@ def main():
     m.fs.state_block[0].display()
 
     # print value and change units
-    print("Osmotic pressure: %.1f bar"
-          % value(
-        units.convert(m.fs.state_block[0].pressure_osm,
-                      to_units=units.bar)))
+    print(
+        "Osmotic pressure: %.1f bar"
+        % value(units.convert(m.fs.state_block[0].pressure_osm, to_units=units.bar))
+    )
 
     # equation oriented modeling can solve using different variables
-    m.fs.state_block[0].flow_vol_phase['Liq'].fix(1 * (units.m ** 3 / units.hr))
-    m.fs.state_block[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.05)
+    m.fs.state_block[0].flow_vol_phase["Liq"].fix(1 * (units.m**3 / units.hr))
+    m.fs.state_block[0].mass_frac_phase_comp["Liq", "TDS"].fix(0.05)
 
-    m.fs.state_block[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
-    m.fs.state_block[0].flow_mass_phase_comp['Liq', 'TDS'].unfix()
+    m.fs.state_block[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    m.fs.state_block[0].flow_mass_phase_comp["Liq", "TDS"].unfix()
 
     solver.solve(m.fs.state_block[0])
     m.fs.state_block[0].display()
-    print("Osmotic pressure: %.1f bar"
-          % value(
-        units.convert(m.fs.state_block[0].pressure_osm,
-                      to_units=units.bar)))
+    print(
+        "Osmotic pressure: %.1f bar"
+        % value(units.convert(m.fs.state_block[0].pressure_osm, to_units=units.bar))
+    )
 
     # another example
-    m.fs.state_block[0].conc_mass_phase_comp['Liq', 'TDS'].fix(100 * units.g / units.L)
-    m.fs.state_block[0].mass_frac_phase_comp['Liq', 'TDS'].unfix()
+    m.fs.state_block[0].conc_mass_phase_comp["Liq", "TDS"].fix(100 * units.g / units.L)
+    m.fs.state_block[0].mass_frac_phase_comp["Liq", "TDS"].unfix()
     solver.solve(m.fs.state_block[0])
-    print("Osmotic pressure: %.1f bar"
-          % value(
-        units.convert(m.fs.state_block[0].pressure_osm,
-                      to_units=units.bar)))
+    print(
+        "Osmotic pressure: %.1f bar"
+        % value(units.convert(m.fs.state_block[0].pressure_osm, to_units=units.bar))
+    )
 
     # even can specify the property and solve for the state
     m.fs.state_block[0].pressure_osm.fix(65 * units.bar)
-    m.fs.state_block[0].conc_mass_phase_comp['Liq', 'TDS'].unfix()
+    m.fs.state_block[0].conc_mass_phase_comp["Liq", "TDS"].unfix()
 
     solver.solve(m.fs.state_block[0])
     m.fs.state_block[0].display()
 
     # make graphs through simulating multiple points
+    m.fs.state_block[0].pressure_osm.unfix()
+    conc_mass = []
+    pressure_osm = []
+    for i in range(0, 251):
+        m.fs.state_block[0].conc_mass_phase_comp["Liq", "TDS"].fix(i)
+        solver.solve(m.fs.state_block[0])
+        conc_mass.append(value(m.fs.state_block[0].conc_mass_phase_comp["Liq", "TDS"]))
+        pressure_osm.append(
+            value(units.convert(m.fs.state_block[0].pressure_osm, to_units=units.bar))
+        )
+
+    return conc_mass, pressure_osm
 
 
 if __name__ == "__main__":
-    main()
+    c, p = main()
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(10, 8))
+    plt.rc("font", size=18)
+    plt.plot(c, p, "red", lw=2.0)
+    plt.xlabel("Concentration (g/L)")
+    plt.ylabel("Osmotic Pressure (bar)")
+    plt.xlim(0, 250)
+    plt.ylim(0, 250)
