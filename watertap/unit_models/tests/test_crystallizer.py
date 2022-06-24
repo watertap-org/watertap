@@ -27,9 +27,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from pyomo.util.check_units import (
-    assert_units_consistent
-)
+from pyomo.util.check_units import assert_units_consistent
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
 
