@@ -14,4 +14,30 @@ Advanced oxidation processes (AOPs) are technologies involving the generation of
 
 3) UV light, hydrogen peroxide and ozone
 
-UV AOPs can be  modeled at several different levels, depending on the known kinetic pathways and the modeling objectives.
+UV AOPs can be  modeled at several different levels, depending on the known kinetic pathways and the modeling objectives. In this work, a basic level kinetic model is presented with an assumption on pseudo-steady state approximation for the kinetic description of free radical species. A pseudo-first order rate constant is utilized to represent the overall degradation rate of contaminants. The users need to provide either UV dose and disinfection rate, or rate constant and exposure time that are can be acquired during UV validation tests. These measurements are then used to simulate the removal of contaminants during the UV AOP process.
+
+This model also accounts for the energy demand for the disinfection process. The users need to provide Electrical Efficiency per Log Order Reduction (EE/O) to evaluate energy costs.
+
+Ports
+-----
+
+The model provides two ports (Pyomo notation in parenthesis):
+
+* Inlet port (inlet)
+* Outlet port (outlet)
+
+Sets
+----
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', 'NDMA' ...]"
+
+Degrees of Freedom and Variables
+--------------------------------
+Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
+
+the UV AOP model has at least an additional 13 degrees of freedom that
+the user must specify. The table below gives an outline of these.
