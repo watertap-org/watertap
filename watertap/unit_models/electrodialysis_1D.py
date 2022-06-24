@@ -1070,7 +1070,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1100,7 +1100,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
@@ -1157,7 +1157,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1187,7 +1187,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
