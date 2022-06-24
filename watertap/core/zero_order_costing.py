@@ -1831,6 +1831,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_surface_discharge(blk):
         """
         General method for costing surface discharge. Capital cost is based on
