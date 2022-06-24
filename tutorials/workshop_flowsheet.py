@@ -87,6 +87,10 @@ def ui_build(ui=None, **kwargs):
     # initial solution of square problem
     solve(model)
 
+    # optimize
+    optimize_set_up(model)
+    optimize(model)
+
     ui.set_block(model.fs)
     # export_ui_variables(model.fs)
 
@@ -95,7 +99,6 @@ def ui_solve(block=None, **kwargs):
     fs, m = block, block.parent_block()
 
     # optimize
-    optimize_set_up(m)
     optimize(m)
 
     return display_ui_output(m)
@@ -493,12 +496,14 @@ def export_ui_variables(fs):
     export_variables(
         fs.feed.properties[0],
         variables={
-            "flow_vol_phase['Liq']": {
+            "flow_vol_phase": {
                 "display_name": "Volumetric flowrate",
-                "to_units": units.m**3 / units.hr,
+                "indices": ["Liq"],
+                "to_units": "m**3 / hr",
                 "category": Category.feed,
             },
-            "mass_frac_phase_comp['Liq', 'TDS']": {
+            "mass_frac_phase_comp": {
+                "indices": ["Liq", "TDS"],
                 "display_name": "Salinity",
                 "display_units": "ppm",
                 "scale_units": 1e6,
@@ -506,12 +511,12 @@ def export_ui_variables(fs):
             },
             "temperature": {
                 "display_name": "Temperature",
-                "to_units": units.K,
+                "to_units": "K",
                 "category": Category.feed,
             },
             "pressure": {
                 "display_name": "Pressure",
-                "to_units": units.bar,
+                "to_units": "bar",
                 "category": Category.feed,
             },
         },
@@ -519,11 +524,58 @@ def export_ui_variables(fs):
     export_variables(
         fs.RO,
         variables={
-            "recovery_vol_phase[0, 'Liq']": {
+            "recovery_vol_phase": {
+                "indices": [0, "Liq"],
+                "display_name": "Recovery",
                 "display_units": "%",
                 "scale_units": 100,
                 "category": Category.ts,
-            }
+            },
+            "A_comp": {
+                "indices": [0, "H2O"],
+                "display_name": "Water permeability coeff",
+                "to_units": "mm / hr / bar",
+                "category": Category.perf,
+            },
+            "B_comp": {
+                "indices": [0, "TDS"],
+                "display_name": "Salt permeability coeff",
+                "to_units": "mm / hr",
+                "category": Category.perf,
+            },
+            "channel_height": {
+                "display_name": "RO channel height",
+                "to_units": "mm",
+                "category": Category.perf,
+            },
+            "spacer_porosity": {
+                "display_name": "RO spacer porosity",
+                "display_units": "%",
+                "scale_units": 100,
+                "category": Category.perf,
+            },
+        },
+    )
+    export_variables(
+        fs.erd,
+        variables={
+            "efficiency_pump": {
+                "indices": [0],
+                "display_name": "ERD efficiency",
+                "scale_units": 100,
+                "display_units": "%",
+            },
+        },
+    )
+    export_variables(
+        fs.pump,
+        variables={
+            "efficiency_pump": {
+                "indices": [0],
+                "display_name": "Pump efficiency",
+                "scale_units": 100,
+                "display_units": "%",
+            },
         },
     )
     export_variables(
@@ -537,8 +589,52 @@ def export_ui_variables(fs):
             },
             "max_pressure": {
                 "display_name": "Maximum allowable pressure",
-                "to_units": units.bar,
+                "to_units": "bar",
                 "category": Category.ts,
+            },
+        },
+    )
+    export_variables(
+        fs.costing,
+        variables={
+            "electricity_base_cost": {
+                "display_name": "Electricity cost",
+                "display_units": "$/kWh",
+                "category": Category.cost,
+            },
+            "reverse_osmosis_membrane_cost": {
+                "display_name": "Membrane cost",
+                "display_units": "$/m**2",
+                "category": Category.cost,
+            },
+            "high_pressure_pump_cost": {
+                "display_name": "Pump cost",
+                "to_units": "{USD_2018} / kW",
+                "category": Category.cost,
+            },
+            "erd_pressure_exchanger_cost": {
+                "display_name": "ERD cost",
+                "to_units": "{USD_2018} / (m**3 / hr)",
+                "display_units": "$/(m3/h)",
+                "category": Category.cost,
+            },
+            "load_factor": {
+                "display_name": "Load factor",
+                "scale_units": 100,
+                "display_units": "%",
+                "category": Category.cost,
+            },
+            "factor_capital_annualization": {
+                "display_name": "Capital annualization factor",
+                "scale_units": 100,
+                "display_units": "%/year",
+                "category": Category.cost,
+            },
+            "factor_membrane_replacement": {
+                "display_name": "Membrane replacement factor",
+                "scale_units": 100,
+                "display_units": "%/year",
+                "category": Category.cost,
             },
         },
     )

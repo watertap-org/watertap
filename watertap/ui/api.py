@@ -71,21 +71,22 @@ Exchange format for flowsheet data::
 import builtins
 import importlib
 import json
-import logging
-import os
 from pathlib import Path
+import re
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
 
 # third-party
-import pyomo.core
-from pyomo.environ import Block, Var, value
+# from idaes.core.util.units_of_measurement import report_quantity
+# import pyomo.core
+from pyomo.environ import Block, Param, Var, value
+from pyomo.environ import units as pyunits
+from pyomo.environ import as_quantity
 from pyomo.network.port import Port
 import idaes.logger as idaeslog
 from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
 import yaml
 
 # local
-from watertap.ui import api_util
 from watertap.ui.api_util import open_file_or_stream
 from watertap.ui import api_model as model
 
@@ -180,7 +181,8 @@ class BlockInterface:
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
-            block_info.description = self._block.doc if self._block.doc else "none"
+            doc = getattr(self._block, "doc", None)
+            block_info.description = doc if doc else "none"
         _log.debug(f"Parsed block info. value={block_info}")
 
         # finish
@@ -259,7 +261,7 @@ class BlockInterface:
         d = self._get_block_interface_tree().dict()
 
         # clean up top-level (don't need block descriptors)
-        for top_level_key in "variables", "display_name", "description", "category":
+        for top_level_key in "variables", "display_name", "description":
             del d[top_level_key]
 
         _log.debug("dict:end. status=ok")
@@ -507,7 +509,7 @@ class BlockInterface:
         return p["val"]
 
     @staticmethod
-    def _get_var(block, var_name):
+    def get_block_var(block, var_name):
         """Get the variable from the block.
 
         Level of indirection around getattr().
@@ -522,30 +524,40 @@ class BlockInterface:
         return block_var
 
     @classmethod
-    def _get_block_variable_value(cls, block, var_name):
-        block_var = cls._get_var(block, var_name)  # getattr(block, var_name)
+    def _get_block_variable_value(cls, block, var_name, indices=None):
+        block_var = cls.get_block_var(block, var_name)
         if block_var.is_indexed():
-            index_list, value_list, bounds_list = [], [], []
-            for var_idx in block_var.index_set():
-                try:
-                    index_list.append(tuple(var_idx))
-                except TypeError:
-                    index_list.append((var_idx,))
-                bvar = block_var[var_idx]
-                value_list.append(value(bvar))
-                bounds_list.append((bvar.lb, bvar.ub))
-            _log.debug(
-                f"add indexed variable. block={block.name},"
-                f"name={var_name},index={index_list},"
-                f"value={value_list}"
-            )
-            var_val = model.IndexedValue(
-                index=index_list, value=value_list, bounds=bounds_list
-            )
+            if indices:
+                # Get just a single scalar value for the selected index
+                idx = tuple(indices)
+                block_var_idx = block_var[idx]
+                var_val = model.ScalarValue(
+                    value=value(block_var_idx),
+                    bounds=(block_var_idx.lb, block_var_idx.ub),
+                )
+            else:
+                # extract values for all indexes
+                index_list, value_list, bounds_list = [], [], []
+                for var_idx in block_var.index_set():
+                    try:
+                        index_list.append(tuple(var_idx))
+                    except TypeError:
+                        index_list.append((var_idx,))
+                    bvar = block_var[var_idx]
+                    value_list.append(value(bvar))
+                    bounds_list.append((bvar.lb, bvar.ub))
+                _log.debug(
+                    f"add indexed variable. block={block.name},"
+                    f"name={var_name},index={index_list},"
+                    f"value={value_list}"
+                )
+                var_val = model.IndexedValue(
+                    index=index_list, value=value_list, bounds=bounds_list
+                )
         else:
-            var_val = model.ScalarValue(
-                value=value(block_var), bounds=(block_var.lb, block_var.ub)
-            )
+            # if a Parameter, no bounds, so be defensive
+            lb, ub = getattr(block_var, "lb", None), getattr(block_var, "ub", None)
+            var_val = model.ScalarValue(value=value(block_var), bounds=(lb, ub))
             _log.debug(
                 f"add scalar value. block={block.name},"
                 f"name={var_name},value={var_val}"
@@ -583,18 +595,23 @@ class BlockInterface:
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
                 else:
-                    var_obj = self._get_var(
-                        ui.block, load_var_name
-                    )  # getattr(ui.block, load_var_name)
+                    var_obj = self.get_block_var(ui.block, load_var_name)
                     if var_obj is None:
                         raise ValueError(
                             "Exported variable not found in block. " + details
                         )
                     if isinstance(load_var_info.value, model.IndexedValue):
+                        # set values for all indexes
                         for i, idx in enumerate(load_var_info.value.index):
                             idx, val = tuple(idx), load_var_info.value.value[i]
                             var_obj[idx] = val
+                    elif load_var_info.indices:
+                        # set (scalar) value for selected index
+                        idx = tuple(load_var_info.indices)
+                        val = load_var_info.value.value
+                        var_obj[idx] = val
                     else:
+                        # set scalar value
                         var_obj.set_value(load_var_info.value.value)
                     _log.debug("Exported variable loaded. " + details)
 
@@ -665,7 +682,9 @@ class BlockInterface:
         leaf = ui._block_info.copy()
         leaf.blocks = {}  # forget sub-blocks
         for name, variable in leaf.variables.items():
-            variable.value = self._get_block_variable_value(ui.block, name)
+            variable.value = self._get_block_variable_value(
+                ui.block, name, indices=variable.indices
+            )
             if not variable.display_name:
                 variable.display_name = name
 
@@ -706,8 +725,14 @@ def export_variables(
             description
                 Description of the variable (default is ``.doc`` of the variable, or nothing)
 
-            units
+            to_units
                 Units for the variable, in a standard string generated by Pyomo units.
+
+            display_units
+                How the units should be displayed (regardless of any conversions)
+
+            scale_units
+                Scaling factor for units (before display)
 
             readonly
                 If False (the default), the variable can be modified in the UI.
@@ -729,9 +754,9 @@ def export_variables(
     def var_check(b, n):
         info = f"block={b.name}, attr={n}"
         try:
-            obj = BlockInterface._get_var(b, n)  # getattr(b, n)
-            if not isinstance(obj, Var):
-                return "not a variable. " + info + f",type={type(obj)}"
+            obj = BlockInterface.get_block_var(b, n)  # getattr(b, n)
+            if not isinstance(obj, Var) and not isinstance(obj, Param):
+                return "not a variable or parameter. " + info + f",type={type(obj)}"
         except AttributeError as err:
             return f"{err}: not found. {info}"
 
@@ -754,18 +779,17 @@ def export_variables(
                 raise ValueError(
                     f"Expected list of variable names for 'variables': " f"{err}"
                 )
+        # Pre-process each variable
         for name in var_info_dict:
             error = var_check(block, name)
             if error:
                 raise ValueError(error)
             # Fill in gaps in variable
-            bvar = BlockInterface._get_var(block, name)  # getattr(block, name)
+            bvar = BlockInterface.get_block_var(block, name)  # variable in block
             ivar = var_info_dict[name]
             if not ivar.display_name:
                 ivar.display_name = bvar.local_name
-            units = bvar.get_units()
-            if units is not None:
-                ivar.units = str(units)
+            set_display_units(ivar, bvar)
             if not ivar.description:
                 ivar.description = bvar.doc or ""
 
@@ -775,6 +799,30 @@ def export_variables(
         variables=var_info_dict,
     )
     return BlockInterface(block, block_info.dict())
+
+
+def set_display_units(ivar, bvar):
+    """Set the units to display, if not specified explicitly"""
+
+    def html_units(u):
+        if isinstance(u, str):
+            u = build_units(u)
+        return f"{as_quantity(u).u:~H}"
+
+    if ivar.display_units:
+        try:
+            # try converting to pretty HTML
+            ivar.display_units = html_units(ivar.display_units)
+        except:
+            # leave as-is if this fails
+            pass
+    else:
+        if ivar.to_units:
+            ivar.display_units = html_units(ivar.to_units)
+        else:
+            units = bvar.get_units()
+            if units is not None:
+                ivar.display_units = html_units(units)
 
 
 class WorkflowActions:
@@ -1008,6 +1056,22 @@ def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]
         # if found, yield this module and function as a result
         if func is not None:
             yield mod_name, func
+
+
+def build_units(x: str = None):
+    if not x:
+        _log.info("setting dimensionless unit")
+        x = "dimensionless"
+    s = re.sub(r"([A-Za-z_]+)", r"U.\1", x)  # alphanumeric
+    s = re.sub(r"{U.(.*)}|{([^U].*)}", r"U.\1", s)  # special quoted unit names
+    s = s.replace("U.None", "U.dimensionless")
+    try:
+        u = eval(s, {"U": pyunits})
+    # Syntax/NameError are just general badness, AttributeError is an unknown unit
+    except (SyntaxError, NameError, AttributeError) as err:
+        _log.error(f"while evaluating unit {s}: {err}")
+        raise
+    return u
 
 
 # -----------------------------------------

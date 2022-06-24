@@ -35,7 +35,9 @@ class Variable(BaseModel):
     display_name = ""
     description = ""
     display_units = ""
-    to_units = None
+    indices = []
+    scale_units = 0
+    to_units = ""
     readonly = False
     category = ""
     value: Optional[Union[IndexedValue, ScalarValue]]
