@@ -24,17 +24,14 @@ from watertap.unit_models.gac import (
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
     TerminationCondition,
     SolverStatus,
     value,
-    Var,
 )
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
 )
 
@@ -50,7 +47,6 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 
@@ -191,6 +187,7 @@ class TestGACSimplified:
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -341,6 +338,7 @@ class TestGACSimplified:
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -354,7 +352,7 @@ class TestGACSimplified:
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
 
-        # low tolerance due to inconsistent reporting in reference
-        assert pytest.approx(1.14, rel=1e-1) == value(m.fs.unit.mass_throughput)
-        assert pytest.approx(158 * 3600 * 24, rel=1e-1) == value(m.fs.unit.elap_time)
-        assert pytest.approx(10.68, rel=1e-1) == value(m.fs.unit.bed_area)
+        # values calculated independently and near to those reported in Crittenden, 2012
+        assert pytest.approx(1.139, rel=1e-3) == value(m.fs.unit.mass_throughput)
+        assert pytest.approx(12830000, rel=1e-3) == value(m.fs.unit.elap_time)
+        assert pytest.approx(10.68, rel=1e-3) == value(m.fs.unit.bed_area)
