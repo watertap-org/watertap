@@ -177,6 +177,7 @@ class TestGACSimplified:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize_simplified(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
@@ -200,7 +201,7 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
-        # test within 3 days of data pulled from graph
+        # test within 3 days of data pulled from graph in Hand, 1984
         assert pytest.approx(30, rel=1e-1) == value(m.fs.unit.elap_time) / 24 / 3600
 
     @pytest.fixture(scope="class")
@@ -328,6 +329,7 @@ class TestGACSimplified:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize_robust(self, gac_frame_robust):
         initialization_tester(gac_frame_robust)
