@@ -20,7 +20,21 @@ Model Description
 -----------
 The available model for GAC operation is adapted from a simplified model originally presented in Hand, 1984 and elaborated
 on in Crittenden, 2012. The model is denoted as the constant pattern homogeneous surface diffusion model (CPHSDM).
-As a GAC system is operated as a batch process, a mass transfer zone (MTZ) of
+As a GAC system is operated as a batch process, a mass transfer zone (MTZ) is formed in the bed where a concentration profile, or
+breakthrough curve, is developed as a result of the adsorption properties. This MTZ is bounded by saturated GAC upstream and
+fresh GAC downstream. The CPHSDM is valid under the assumption that the shape of the MTZ is constant as it travels through the
+bed and a constant pattern solution (CPS) may be determined. The CPS is calculated through a multistep procedure utilizing four
+dimensionless groups and a polynomial fit. Therefore, coefficients used in the polynomial must be derived from experimental data
+for the system to produce valid results.
+
+The batch operation results of the CPS are translated to approximate steady state results for intuitive use of the model for
+flowsheet purposes.
+
+.. figure:: ../../_static/unit_models/gac.png
+    :width: 1200
+    :align: center
+
+    Figure 1.
 
 Degrees of Freedom
 ------------------
@@ -54,16 +68,6 @@ Newly utilized variables that must be fixed include:
    * GAC particle sphericity
    * tortuosity of the path that the adsorbate must take as compared to the radius
    * surface-to-pore diffusion flux ratio
-
-.. note::
-
-    Pending explanation of figure
-
-.. figure:: ../../_static/unit_models/gac.png
-    :width: 1200
-    :align: center
-    
-    Figure 1.
 
 Model Structure
 ------------------
