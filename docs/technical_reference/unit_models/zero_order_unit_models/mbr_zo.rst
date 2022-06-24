@@ -1,5 +1,5 @@
-Mbr  (ZO)
-=========
+Membrane Bioreactor (ZO)
+========================
 
 Model Type
 ----------

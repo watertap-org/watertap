@@ -12,9 +12,11 @@
 ###############################################################################
 import os
 from pyomo.environ import (
+    Constraint,
     ConcreteModel,
     Block,
     Expression,
+    Objective,
     value,
     TransformationFactory,
     units as pyunits,
@@ -71,7 +73,9 @@ def main():
 
     add_costing(m)
     initialize_costing(m)
-    assert_degrees_of_freedom(m, 0)
+    assert_degrees_of_freedom(m, 0)  # ensures problem is square
+
+    optimize_operation(m)  # unfixes specific variables for cost optimization
 
     solve(m)
     display_results(m)
@@ -331,6 +335,45 @@ def initialize_system(m):
     return
 
 
+def optimize_operation(m):
+    """
+    Unfixes RO operating conditions and sets solver objective
+        - Operating pressure: 1 - 83 bar
+        - Crossflow velocity: 10 - 30 cm/s
+        - Membrane area: 50 - 5000 m2
+        - Volumetric recovery: 10 - 75 %
+    """
+    desal = m.fs.desalination
+
+    # RO operating pressure
+    desal.P2.control_volume.properties_out[0].pressure.unfix()
+    desal.P2.control_volume.properties_out[0].pressure.setub(
+        8300000
+    )  # pressure vessel burst pressure
+    desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
+
+    # RO inlet velocity
+    desal.RO.velocity[0, 0].unfix()
+    desal.RO.velocity[0, 0].setub(0.3)
+    desal.RO.velocity[0, 0].setlb(0.1)
+
+    # RO membrane area
+    desal.RO.area.unfix()
+    desal.RO.area.setub(5000)
+    desal.RO.area.setlb(50)
+
+    # RO recovery - likely limited by operating pressure
+    desal.RO.recovery_vol_phase[0, "Liq"].unfix()
+    desal.RO.recovery_vol_phase[0, "Liq"].setub(0.99)
+    desal.RO.recovery_vol_phase[0, "Liq"].setlb(0.1)
+
+    # Permeate salt concentration constraint
+    m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"].setub(0.5)
+
+    m.fs.objective = Objective(expr=m.LCOT)
+    return
+
+
 def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
@@ -581,16 +624,6 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("\n Costing metrics:")
-
-    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
-
-    opex = value(
-        pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
-        )
-    )
-
     print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
 

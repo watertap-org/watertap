@@ -25,6 +25,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
     initialize_costing,
     solve,
     add_costing,
+    optimize_operation,
     display_results,
     display_costing,
 )
@@ -97,6 +98,7 @@ class TestDyewithROFlowsheet:
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
+
         results = solve(m)
 
         # check products
@@ -120,13 +122,14 @@ class TestDyewithROFlowsheet:
 
         add_costing(m)
         initialize_costing(m)
+        optimize_operation(m)
 
         results = solve(m)
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(1.0751, rel=1e-3) == value(m.LCOW)
-        assert pytest.approx(0.3873, rel=1e-3) == value(m.LCOT)
+        assert pytest.approx(0.6632, rel=1e-3) == value(m.LCOW)
+        assert pytest.approx(0.2749, rel=1e-3) == value(m.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
