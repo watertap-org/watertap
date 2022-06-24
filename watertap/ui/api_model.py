@@ -36,7 +36,7 @@ class Variable(BaseModel):
     description = ""
     display_units = ""
     indices = []
-    scale_units = 0
+    scale_factor = 0  # special value! don't use '1' for no scaling
     to_units = ""
     readonly = False
     category = ""
