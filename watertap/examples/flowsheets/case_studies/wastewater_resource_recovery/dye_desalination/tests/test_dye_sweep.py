@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
 # test the first 7 case studies that can be run with or without RO
 pytest_parameterize_NF = list(range(1, 8))
 # then test case studies 9-11 that can only run with RO
-pytest_parameterize_RO = list(range(8, 12))
+pytest_parameterize_RO = list(range(8, 13))
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)
