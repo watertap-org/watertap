@@ -1,5 +1,5 @@
-Vfa Recovery (ZO)
-=================
+Volatile Fatty Acid (VFA) Recovery Unit (ZO)
+============================================
 
 Model Type
 ----------

@@ -1,5 +1,5 @@
-Mabr  (ZO)
-==========
+Membrane Aerated Biofilm Reactor (ZO)
+=====================================
 
 Model Type
 ----------
