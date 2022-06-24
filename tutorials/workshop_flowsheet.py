@@ -88,7 +88,7 @@ def ui_build(ui=None, **kwargs):
     solve(model)
 
     ui.set_block(model.fs)
-    export_ui_variables(model.fs)
+    # export_ui_variables(model.fs)
 
 
 def ui_solve(block=None, **kwargs):
