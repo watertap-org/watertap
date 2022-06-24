@@ -182,6 +182,7 @@ class TestGACSimplified:
     def test_initialize_simplified(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_var_scaling_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -198,6 +199,7 @@ class TestGACSimplified:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -334,6 +336,7 @@ class TestGACSimplified:
     def test_initialize_robust(self, gac_frame_robust):
         initialization_tester(gac_frame_robust)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_var_scaling_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -350,6 +353,7 @@ class TestGACSimplified:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
