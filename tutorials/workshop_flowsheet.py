@@ -83,29 +83,22 @@ def ui_build(ui=None, **kwargs):
     model = build()
     set_operating_conditions(model)
     initialize_system(model)
+
+    # initial solution of square problem
+    solve(model)
+
     ui.set_block(model.fs)
+    export_ui_variables(model.fs)
 
 
 def ui_solve(block=None, **kwargs):
     fs, m = block, block.parent_block()
-    results = {}
 
-    solve(m)
-
-    print("\nSimulation results:")
-    results["simulation"] = display_system(m)
-    display_design(m)
-    display_state(m)
-
-    # optimize and display
+    # optimize
     optimize_set_up(m)
     optimize(m)
-    print("\nOptimization results:")
-    results["optimization"] = display_system(m)
-    display_design(m)
-    display_state(m)
 
-    return results
+    return display_ui_output(m)
 
 
 def main():
@@ -486,6 +479,69 @@ def display_state(m):
     print_state("Pump out  ", m.fs.pump.outlet)
     print_state("RO perm   ", m.fs.RO.permeate)
     print_state("RO reten  ", m.fs.RO.retentate)
+
+
+def export_ui_variables(fs):
+    class Category:
+        """Names for categories"""
+
+        feed = "Feed"
+        ts = "Treatment specification"
+        perf = "Performance parameters"
+        cost = "Cost parameters"
+
+    export_variables(
+        fs.feed.properties[0],
+        variables={
+            "flow_vol_phase['Liq']": {
+                "display_name": "Volumetric flowrate",
+                "to_units": units.m**3 / units.hr,
+                "category": Category.feed,
+            },
+            "mass_frac_phase_comp['Liq', 'TDS']": {
+                "display_name": "Salinity",
+                "display_units": "ppm",
+                "scale_units": 1e6,
+                "category": Category.feed,
+            },
+            "temperature": {
+                "display_name": "Temperature",
+                "to_units": units.K,
+                "category": Category.feed,
+            },
+            "pressure": {
+                "display_name": "Pressure",
+                "to_units": units.bar,
+                "category": Category.feed,
+            },
+        },
+    )
+    export_variables(
+        fs.RO,
+        variables={
+            "recovery_vol_phase[0, 'Liq']": {
+                "display_units": "%",
+                "scale_units": 100,
+                "category": Category.ts,
+            }
+        },
+    )
+    export_variables(
+        fs,
+        variables={
+            "max_product_salinity": {
+                "display_name": "Maximum product salinity",
+                "scale_units": 1e6,
+                "display_units": "ppm",
+                "category": Category.ts,
+            },
+            "max_pressure": {
+                "display_name": "Maximum allowable pressure",
+                "to_units": units.bar,
+                "category": Category.ts,
+            },
+        },
+    )
 
 
 def display_ui_input(m):

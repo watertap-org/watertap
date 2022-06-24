@@ -34,8 +34,10 @@ class ScalarValue(BaseModel):
 class Variable(BaseModel):
     display_name = ""
     description = ""
-    units = ""
+    display_units = ""
+    to_units = None
     readonly = False
+    category = ""
     value: Optional[Union[IndexedValue, ScalarValue]]
 
 
@@ -50,7 +52,6 @@ class BlockMeta(BaseModel):
 class Block(BaseModel):
     display_name = ""
     description = ""
-    category = "default"
     variables: Dict[str, Variable] = {}
     blocks: Dict[str, "Block"] = {}
     meta: BlockMeta = BlockMeta()

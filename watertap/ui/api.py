@@ -96,7 +96,7 @@ from watertap.ui import api_model as model
 # -------
 
 _log = idaeslog.getLogger(__name__)
-_log.setLevel(logging.DEBUG)
+# _log.setLevel(logging.DEBUG)
 
 
 # Functions and classes
@@ -772,7 +772,6 @@ def export_variables(
     block_info = model.Block(
         display_name=name,
         description=desc,
-        category=category,
         variables=var_info_dict,
     )
     return BlockInterface(block, block_info.dict())
