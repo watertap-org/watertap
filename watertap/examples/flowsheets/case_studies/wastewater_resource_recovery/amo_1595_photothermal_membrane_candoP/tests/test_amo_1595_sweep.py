@@ -11,13 +11,25 @@
 #
 ###############################################################################
 
-from .reverse_osmosis_0D import ReverseOsmosis0D
-from .reverse_osmosis_1D import ReverseOsmosis1D
-from .nanofiltration_0D import NanoFiltration0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .pressure_exchanger import PressureExchanger
-from .pressure_changer import Pump, EnergyRecoveryDevice
-from .crystallizer import Crystallization
-from .ultraviolet import Ultraviolet0D
-from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import Electrodialysis1D
+import os
+import pytest
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP import (
+    amo_1595_sweep,
+)
+
+sweep_list = []
+for case_num in [1, 2, 3]:
+    sweep_list.append(case_num)
+
+
+@pytest.mark.parametrize("case_num", sweep_list)
+@pytest.mark.integration
+def test_sweep(case_num, tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    nx = 11
+    global_results, sweep_params, m = amo_1595_sweep.run_analysis(
+        case_num, nx, interpolate_nan_outputs=False
+    )
+    os.chdir(cwd)
+    return
