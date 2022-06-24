@@ -17,7 +17,7 @@ This module contains a zero-order representation of a storage tank unit.
 from pyomo.environ import units as pyunits, Var
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
-from watertap.core import build_pt, ZeroOrderBaseData
+from watertap.core import build_pt, ZeroOrderBaseData, constant_intensity
 
 # Some more information about this module
 __author__ = "Kurban Sitterley"
@@ -35,6 +35,7 @@ class StorageTankZOData(ZeroOrderBaseData):
         super().build()
 
         build_pt(self)
+        constant_intensity(self)
 
         # self._has_recovery_removal = False
 
