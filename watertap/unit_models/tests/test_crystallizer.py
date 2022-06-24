@@ -27,6 +27,9 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
+from pyomo.util.check_units import (
+    assert_units_consistent
+)
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
 
@@ -99,6 +102,8 @@ class TestCrystallization:
         m.fs.unit.souders_brown_constant.fix()
         m.fs.unit.crystal_median_length.fix()
 
+        assert_units_consistent(m)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -144,6 +149,8 @@ class TestCrystallization:
         m.fs.unit.crystal_growth_rate.fix()
         m.fs.unit.souders_brown_constant.fix()
         m.fs.unit.crystal_median_length.fix()
+
+        assert_units_consistent(m)
 
         return m
 
@@ -350,6 +357,7 @@ class TestCrystallization:
         m.fs.costing.cost_process()
 
         initialization_tester(Crystallizer_frame)
+        assert_units_consistent(m)
 
     # @pytest.mark.component
     # def test_var_scaling(self, Crystallizer_frame):
@@ -533,6 +541,7 @@ class TestCrystallization:
             },
         )
         m.fs.costing.cost_process()
+        assert_units_consistent(m)
         results = solver.solve(m)
 
         # Test that report function works

@@ -268,7 +268,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         # Crystallizer operating cost information from literature
-        self.crystallizer_steam_unit_cost = pyo.Var(
+        self.steam_unit_cost = pyo.Var(
             initialize=0.004,
             units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
@@ -300,7 +300,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["electricity"] = self.electricity_base_cost
         self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
         self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
-        self.defined_flows["steam"] = self.crystallizer_steam_unit_cost
+        self.defined_flows["steam"] = self.steam_unit_cost
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
