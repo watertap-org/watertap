@@ -310,9 +310,8 @@ class _NDMAStateBlock(StateBlock):
         opt = get_solver(solver, optarg)
 
         # Fix variables and check degrees of freedom
-        flags = (
-            {}
-        )  # dictionary noting which variables were fixed and their previous state
+         # dictionary noting which variables were fixed and their previous state
+        flags = {}
         for k in self.keys():
             sb = self[k]
             for (v_name, ind), val in var_args.items():
