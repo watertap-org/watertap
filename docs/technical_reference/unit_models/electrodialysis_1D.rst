@@ -169,8 +169,8 @@ to simulate these processes are well developed and some good summaries for the e
    "Component mass balance", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{C\: or\:  D}+J_j(x)^{C\: or\:  D} b=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}-\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}-\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
 
 Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
 
@@ -181,7 +181,7 @@ Additionally, several other equations are built to describe the electrochemical 
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
    "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{s}{\kappa(x)^C}+\frac{s}{\kappa(x)^D}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
-   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}\right)`"
+   "Water-production-specific power consumption", ":math:`P_Q=\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}`"
    "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j (x)}{\partial x}\right)^D z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
@@ -192,7 +192,10 @@ Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
-   "**Variables and Parameters**"
+   "**Parameters**"
+   ":math:`\rho_w`", "Mass density of water", ":math:`kg\  m^{-3}`"
+   ":math:`M_w`", "Molecular weight of water", ":math:`kg\  mol^{-1}`"
+   "**Variables**"
    ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
    ":math:`J`", "Molar flux of a component", ":math:`mol\  m^{-2}s^{-1}`"
    ":math:`b`", "Cell/membrane width", ":math:`m`"

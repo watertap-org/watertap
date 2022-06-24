@@ -160,8 +160,8 @@ processes are well developed and some good summaries for the electrodialysis sce
    "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)+\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)-\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)+\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)-\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)\left(\frac{\rho_w}{M_w}\right)``", ":math:`j \in \left['H_2 O'\right]`"
 
 Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
 
@@ -182,6 +182,9 @@ Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
+   "**Parameters**"
+   ":math:`\rho_w`", "Mass density of water", ":math:`kg\  m^{-3}`"
+   ":math:`M_w`", "Molecular weight of water", ":math:`kg\  mol^{-1}`"
    "**Variables and Parameters**"
    ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
    ":math:`J`", "Molar flux of a component", ":math:`mol\  m^{-2}s^{-1}`"
