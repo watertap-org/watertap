@@ -41,7 +41,7 @@ class OzoneZOData(ZeroOrderBaseData):
 
         if "toc" not in self.config.property_package.config.solute_list:
             raise ConfigurationError(
-                "TOC must be in solute list for Ozonation or Ozone/AOP"
+                "toc must be in solute list for Ozonation or Ozone/AOP"
             )
 
         self.contact_time = Var(
