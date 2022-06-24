@@ -1,5 +1,5 @@
-Secondary Treatment Wwtp (ZO)
-=============================
+Secondary Wastewater Treatment Plant (ZO)
+=========================================
 
 Model Type
 ----------

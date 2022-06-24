@@ -1,5 +1,5 @@
-Anaerobic Mbr Mec (ZO)
-======================
+Integrated Anaerobic Membrane Bioreactor/Microbial Electrolysis Cell (ZO)
+=========================================================================
 
 Model Type
 ----------
