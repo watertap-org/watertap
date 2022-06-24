@@ -10,7 +10,7 @@ default: # TODO: confirm any differentiation in removal across subtypes
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
-      constituent_longform: "Biological Oxygen Demand"
+      constituent_longform: Biological Oxygen Demand
   capital_cost:
     basis: flow_vol
     cost_factor: None
@@ -67,7 +67,7 @@ gravity_basin:
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
-      constituent_longform: "Biological Oxygen Demand"
+      constituent_longform: Biological Oxygen Demand
   capital_cost:
     basis: flow_vol
     cost_factor: None
@@ -124,7 +124,7 @@ fixed bed:
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
-      constituent_longform: "Biological Oxygen Demand"
+      constituent_longform: Biological Oxygen Demand
   capital_cost:
     basis: flow_vol
     cost_factor: None
