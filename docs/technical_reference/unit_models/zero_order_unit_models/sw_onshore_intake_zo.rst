@@ -1,5 +1,5 @@
-Sw Onshore Intake (ZO)
-======================
+Seawater Onshore Intake (ZO)
+============================
 
 Model Type
 ----------

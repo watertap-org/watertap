@@ -1,5 +1,5 @@
-Waiv  (ZO)
-==========
+Wind-Aided Intensified Evaporation Unit (ZO)
+============================================
 
 Model Type
 ----------

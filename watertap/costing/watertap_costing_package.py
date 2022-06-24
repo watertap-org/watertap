@@ -17,13 +17,14 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
 from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
+from idaes.core.util.constants import Constants
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import StrEnum
 
 from idaes.models.unit_models import Mixer
 
@@ -266,6 +267,31 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
+        # Crystallizer operating cost information from literature
+        self.steam_unit_cost = pyo.Var(
+            initialize=0.004,
+            units=pyo.units.USD_2018 / (pyo.units.meter**3),
+            doc="Steam cost, Panagopoulos (2019)",
+        )
+
+        self.crystallizer_steam_pressure = pyo.Var(
+            initialize=3,
+            units=pyo.units.bar,
+            doc="Steam pressure (gauge) for crystallizer heating: 3 bar default based on Dutta example",
+        )
+
+        self.crystallizer_efficiency_pump = pyo.Var(
+            initialize=0.7,
+            units=pyo.units.dimensionless,
+            doc="Crystallizer pump efficiency - assumed",
+        )
+
+        self.crystallizer_pump_head_height = pyo.Var(
+            initialize=1,
+            units=pyo.units.m,
+            doc="Crystallizer pump head height -  assumed, unvalidated",
+        )
+
         # fix the parameters
         for var in self.component_objects(pyo.Var):
             var.fix()
@@ -274,6 +300,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["electricity"] = self.electricity_base_cost
         self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
         self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
+        self.defined_flows["steam"] = self.steam_unit_cost
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
@@ -734,6 +761,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
         Function for costing the FC crystallizer by the mass flow of produced crystals.
+        The operating cost model assumes that heat is supplied via condensation of saturated steam (see Dutta et al.)
 
         Args:
             cost_type - Option for crystallizer cost function type - volume or mass basis
@@ -750,6 +778,31 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f"{blk.unit_model.name} received invalid argument for cost_type:"
                 f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
             )
+
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
+                    blk.unit_model.magma_circulation_flow_vol
+                    * blk.unit_model.dens_mass_slurry
+                    * Constants.acceleration_gravity
+                    * blk.costing_package.crystallizer_pump_head_height
+                    / blk.costing_package.crystallizer_efficiency_pump
+                ),
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
+        )
+
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
+                    blk.unit_model.work_mechanical[0]
+                    / WaterTAPCostingData._compute_steam_properties(blk)
+                ),
+                to_units=pyo.units.m**3 / pyo.units.s,
+            ),
+            "steam",
+        )
 
     @staticmethod
     def cost_crystallizer_by_crystal_mass(blk):
@@ -805,6 +858,74 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 to_units=blk.costing_package.base_currency,
             )
         )
+
+    def _compute_steam_properties(blk):
+        """
+        Function for computing saturated steam properties for thermal heating estimation.
+
+        Args:
+            pressure_sat:   Steam gauge pressure in bar
+
+        Out:
+            Steam thermal capacity (latent heat of condensation * density) in kJ/m3
+        """
+        pressure_sat = blk.costing_package.crystallizer_steam_pressure
+        # 1. Compute saturation temperature of steam: computed from El-Dessouky expression
+        tsat_constants = [
+            42.6776 * pyo.units.K,
+            -3892.7 * pyo.units.K,
+            1000 * pyo.units.kPa,
+            -9.48654 * pyo.units.dimensionless,
+        ]
+        psat = (
+            pyo.units.convert(pressure_sat, to_units=pyo.units.kPa)
+            + 101.325 * pyo.units.kPa
+        )
+        temperature_sat = tsat_constants[0] + tsat_constants[1] / (
+            pyo.log(psat / tsat_constants[2]) + tsat_constants[3]
+        )
+
+        # 2. Compute latent heat of condensation/vaporization: computed from Sharqawy expression
+        t = temperature_sat - 273.15 * pyo.units.K
+        enth_mass_units = pyo.units.J / pyo.units.kg
+        t_inv_units = pyo.units.K**-1
+        dh_constants = [
+            2.501e6 * enth_mass_units,
+            -2.369e3 * enth_mass_units * t_inv_units**1,
+            2.678e-1 * enth_mass_units * t_inv_units**2,
+            -8.103e-3 * enth_mass_units * t_inv_units**3,
+            -2.079e-5 * enth_mass_units * t_inv_units**4,
+        ]
+        dh_vap = (
+            dh_constants[0]
+            + dh_constants[1] * t
+            + dh_constants[2] * t**2
+            + dh_constants[3] * t**3
+            + dh_constants[4] * t**4
+        )
+        dh_vap = pyo.units.convert(dh_vap, to_units=pyo.units.kJ / pyo.units.kg)
+
+        # 3. Compute specific volume: computed from Affandi expression (Eq 5)
+        t_critical = 647.096 * pyo.units.K
+        t_red = temperature_sat / t_critical  # Reduced temperature
+        sp_vol_constants = [
+            -7.75883 * pyo.units.dimensionless,
+            3.23753 * pyo.units.dimensionless,
+            2.05755 * pyo.units.dimensionless,
+            -0.06052 * pyo.units.dimensionless,
+            0.00529 * pyo.units.dimensionless,
+        ]
+        log_sp_vol = (
+            sp_vol_constants[0]
+            + sp_vol_constants[1] * (pyo.log(1 / t_red)) ** 0.4
+            + sp_vol_constants[2] / (t_red**2)
+            + sp_vol_constants[3] / (t_red**4)
+            + sp_vol_constants[4] / (t_red**5)
+        )
+        sp_vol = pyo.exp(log_sp_vol) * pyo.units.m**3 / pyo.units.kg
+
+        # 4. Return specific energy: density * latent heat
+        return dh_vap / sp_vol
 
 
 # Define default mapping of costing methods to unit models
