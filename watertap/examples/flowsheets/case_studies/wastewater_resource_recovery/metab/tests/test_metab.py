@@ -147,5 +147,5 @@ class TestMetabFlowsheet:
     def test_display(self, system_frame):
         m = system_frame
 
-        display_results(m)
-        display_costing(m)
+        display_results(m.fs)
+        display_costing(m.fs)
