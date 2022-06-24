@@ -205,7 +205,7 @@ class Electrodialysis0DData(UnitModelBlockData):
 
         self.cell_pair_num = Var(
             initialize=1,
-            domain=NonNegativeIntegers,
+            domain=NonNegativeReals,
             bounds=(1, 10000),
             units=pyunits.dimensionless,
             doc="cell pair number in a stack",
@@ -227,7 +227,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.spacer_thickness = Var(
             initialize=0.0001,
             units=pyunits.meter,
-            doc="The distance between the concecutive aem and cem",
+            doc="The distance between the consecutive aem and cem",
         )
 
         # Material and Operational properties
@@ -932,8 +932,10 @@ class Electrodialysis0DData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         return {
             "vars": {
-                "Electrical power consumption(Watt)": self.power_electrical[time_point],
-                "Specific electrical power consumption (kWh/m**3)": self.specific_power_electrical[
+                "Total electrical power consumption(Watt)": self.power_electrical[
+                    time_point
+                ],
+                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
                 "Current efficiency for deionzation": self.current_efficiency[
