@@ -451,9 +451,8 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(
-            b,
-        ):  # constant density, NDMA concentration is always minimal
+        def rule_dens_mass_phase(b):
+            # constant density, NDMA concentration is always minimal
             return b.dens_mass_phase["Liq"] == b.params.dens_mass
 
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
