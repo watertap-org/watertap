@@ -176,9 +176,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        if len(self.config.property_package.phase_list) > 1 or "Liq" not in [
-            p for p in self.config.property_package.phase_list
-        ]:
+        if list(self.config.property_package.phase_list) != ["Liq"]:
             raise ConfigurationError(
                 "UV model only supports one liquid phase ['Liq'],"
                 "the property package has specified the following phases {}".format(
