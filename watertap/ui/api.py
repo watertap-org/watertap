@@ -71,6 +71,7 @@ Exchange format for flowsheet data::
 import builtins
 import importlib
 import json
+import logging
 from pathlib import Path
 import re
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
@@ -97,7 +98,7 @@ from watertap.ui import api_model as model
 # -------
 
 _log = idaeslog.getLogger(__name__)
-# _log.setLevel(logging.DEBUG)
+_log.setLevel(logging.DEBUG)
 
 
 # Functions and classes
@@ -680,7 +681,14 @@ class BlockInterface:
     @staticmethod
     def units_val(v, units):
         """Create a Var with the appropriate value and units."""
-        iv = Var(name="tmp", units=build_units(units))
+        try:
+            iv = Var(name="tmp", units=build_units(units))
+        except Exception as err:
+            _log.error(
+                f"units_val() could not evaluate variable because "
+                f"building units failed. units={units}, message={err}"
+            )
+            raise
         iv.construct()
         iv.set_value(v)
         return iv
@@ -869,17 +877,19 @@ def set_display_units(ivar, bvar):
     """Set the units to display, if not specified explicitly"""
 
     def html_units(u):
+        h_u = None
         if isinstance(u, str):
-            u = build_units(u)
-        return f"{as_quantity(u).u:~H}"
+            try:
+                u = build_units(u)
+            except Exception as err:
+                _log.warning(f"Could not build units: {err}")
+                h_u = u  # do not build it
+        if h_u is None:
+            h_u = f"{as_quantity(u).u:~H}"
+        return h_u
 
     if ivar.display_units:
-        try:
-            # try converting to pretty HTML
-            ivar.display_units = html_units(ivar.display_units)
-        except:
-            # leave as-is if this fails
-            pass
+        ivar.display_units = html_units(ivar.display_units)
     else:
         if ivar.to_units:
             ivar.display_units = html_units(ivar.to_units)
@@ -900,8 +910,7 @@ class WorkflowActions:
     results = "get-results"
 
     #: Dependencies:
-    #: results `--[depends on]-->` solve `--[depends on]-->` build
-    deps = {build: [], solve: [build], results: [solve]}
+    deps = {build: [], solve: [], results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):
@@ -936,7 +945,7 @@ class FlowsheetInterface(BlockInterface):
         super().update(data)
         # clear actions
         for act in self._actions_run.copy():
-            self._action_clear_was_run(act)
+            self.clear_action(act)
         _log.debug(f"update:end. status=ok")
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
@@ -1042,13 +1051,21 @@ class FlowsheetInterface(BlockInterface):
             aff = affected.pop()
             # if it was run, clear it
             if self._action_was_run(aff):
-                self._action_clear_was_run(aff)
+                self.clear_action(aff)
             # add all actions that depend on it to the list
             aff2 = [a for a in all_actions if aff in self._actions_deps[a]]
             affected.extend(aff2)
 
     def _action_clear_was_run(self, name):
+        _log.warning(
+            "Calling `_action_clear_was_run()` is deprecated, please change "
+            "your code to use the public method `clear_action()`"
+        )
         self._actions_run.remove(name)
+
+    def clear_action(self, name):
+        if name in self._actions_run:
+            self._actions_run.remove(name)
 
 
 def find_flowsheet_interfaces(

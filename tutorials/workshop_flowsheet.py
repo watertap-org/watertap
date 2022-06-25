@@ -46,6 +46,13 @@ from watertap.costing import WaterTAPCosting
 # for UI:
 from watertap.ui.api import export_variables, FlowsheetInterface, WorkflowActions
 
+# Logging
+import logging
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+_log.setLevel(logging.DEBUG)
+
 
 def flowsheet_interface() -> FlowsheetInterface:
     """Define the interface to the flowsheet for the UI layer.
@@ -80,6 +87,7 @@ def flowsheet_interface() -> FlowsheetInterface:
 
 
 def ui_build(ui=None, **kwargs):
+    _log.info("ui_build: begin")
     model = build()
     set_operating_conditions(model)
     initialize_system(model)
@@ -93,14 +101,17 @@ def ui_build(ui=None, **kwargs):
 
     export_ui_variables(model.fs)
     ui.set_block(model.fs)
+    _log.info("ui_build: end")
 
 
 def ui_solve(block=None, **kwargs):
+    _log.info("ui_solve: begin")
     fs, m = block, block.parent_block()
 
     # optimize
     optimize(m)
 
+    _log.info("ui_solve: end")
     return display_ui_output(m)
 
 
