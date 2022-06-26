@@ -124,14 +124,14 @@ def set_block_interface(block, data: Union["BlockInterface", Dict]):
     block.ui = obj
 
 
-def get_block_interface(block: Block) -> Union["BlockInterface", None]:
+def get_block_interface(block: Block):
     """Retrieve attached block interface, if any. Use with :func:`set_block_interface`.
 
     Args:
         block: The block to access.
 
     Return:
-        The interface, or None.
+        Interface
     """
     return getattr(block, "ui", None)
 
@@ -602,7 +602,7 @@ class BlockInterface:
         return var_val
 
     def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
-        """Load the variables in ``block_data`` into ``cur_block``, then
+        """Load the variables in ``load_block_info`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
 
         Called from :meth:`load`.
@@ -610,11 +610,7 @@ class BlockInterface:
         cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
         bdiff = BlockDiff()
         ui = get_block_interface(cur_block)
-
-        if not ui:
-            bdiff.missing = list(load_block_info.variables.keys())
-            bdiff.extra = []
-        else:
+        if ui is not None:
             info_vars = ui._block_info.variables
             bdiff.extra = set(info_vars.keys())
             for load_var_name, load_var_info in load_block_info.variables.items():
@@ -666,6 +662,9 @@ class BlockInterface:
                             val = self.units_val(val, to_units)
                         var_obj.set_value(val)
                     _log.debug("Exported variable loaded. " + details)
+            else:
+                bdiff.missing = list(load_block_info.variables.keys())
+                bdiff.extra = []
 
             # save non-empty missing/extra
             if bdiff.missing:
@@ -718,8 +717,13 @@ class BlockInterface:
 
             # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
-                for sb_name, sb_val in block.component_map(ctype=[Block, Port]).items():
+                sub_blocks = block.component_map(ctype=[Block, Port])
+                for sb_name, sb_val in sub_blocks.items():
                     stack.insert(0, (path + [sb_name], sb_val))
+            elif block.is_indexed():
+                print(f"@@ Indexed block: {block.name}")
+                for ix in block.index_set():
+                    stack.insert(0, (path + [ix], block[ix]))
 
         return tree
 
@@ -773,7 +777,7 @@ class BlockInterface:
 
 
 def export_variables(
-    block, variables=None, name="", desc="", category=""
+    block, variables=None, name="", desc="", **kwargs
 ) -> BlockInterface:
     """Export variables from the given block, optionally providing metadata
     for the block itself. This method is really a simplified way to
@@ -813,8 +817,6 @@ def export_variables(
 
         name: Name to give this block (default=``block.name``)
         desc: Description of the block (default=``block.doc``)
-        category: User-defined category for this block, such as "costing", that
-           can be used by the UI to group things visually. (default="default")
 
     Returns:
         An initialized :class:`BlockInterface` object.
@@ -866,9 +868,7 @@ def export_variables(
                 ivar.description = bvar.doc or ""
 
     block_info = model.Block(
-        display_name=name,
-        description=desc,
-        variables=var_info_dict,
+        display_name=name, description=desc, variables=var_info_dict
     )
     return BlockInterface(block, block_info.dict())
 

@@ -526,6 +526,7 @@ def export_ui_variables(fs):
                 "display_name": "ERD efficiency",
                 "scale_factor": 100,
                 "display_units": "%",
+                "category": Category.perf,
             },
         },
     )
@@ -537,6 +538,7 @@ def export_ui_variables(fs):
                 "display_name": "Pump efficiency",
                 "scale_factor": 100,
                 "display_units": "%",
+                "category": Category.perf,
             },
         },
     )
@@ -561,23 +563,24 @@ def export_ui_variables(fs):
         variables={
             "electricity_base_cost": {
                 "display_name": "Electricity cost",
-                "display_units": "$/kWh",
+                "display_units": "{USD_2018}/kWh",
                 "category": Category.cost,
             },
             "reverse_osmosis_membrane_cost": {
                 "display_name": "Membrane cost",
-                "display_units": "$/m**2",
+                "display_units": "{USD_2018} / m**2",
                 "category": Category.cost,
             },
             "high_pressure_pump_cost": {
                 "display_name": "Pump cost",
                 "to_units": "{USD_2018} / kW",
+                "display_units": "{USD_2018} / kW",
                 "category": Category.cost,
             },
             "erd_pressure_exchanger_cost": {
                 "display_name": "ERD cost",
                 "to_units": "{USD_2018} / (m**3 / hr)",
-                "display_units": "$/(m3/h)",
+                "display_units": "{USD_2018}/(m**3/hr)",
                 "category": Category.cost,
             },
             "load_factor": {
