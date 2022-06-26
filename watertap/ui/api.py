@@ -674,7 +674,13 @@ class BlockInterface:
 
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
-            sub_block = cur_block.find_component(sb_name)
+            try:
+                # if the name is a number, it is an index not a component
+                sb_idx = float(sb_name)
+                sub_block = cur_block[sb_idx]
+            except ValueError:
+                # otherwise it is a component (we hope)
+                sub_block = cur_block.find_component(sb_name)
             self._load(sb_info, sub_block, path=cur_block_path)
 
     @staticmethod

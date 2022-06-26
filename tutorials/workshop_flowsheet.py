@@ -108,11 +108,13 @@ def ui_solve(block=None, **kwargs):
     _log.info("ui_solve: begin")
     fs, m = block, block.parent_block()
 
+    print(f"@@ ui solve fs={type(fs)}, model(m) = {type(m)}")
+
     # optimize
-    optimize(m)
+    optimize_fs(fs)
 
     _log.info("ui_solve: end")
-    return display_ui_output(m)
+    return display_ui_output(fs)
 
 
 def main():
@@ -282,6 +284,15 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
+def solve_fs(fs, solver=None, tee=False, check_termination=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(fs, tee=tee)
+    if check_termination:
+        assert_optimal_termination(results)
+    return results
+
+
 def initialize_system(m):
 
     m.fs.feed.initialize()
@@ -352,8 +363,12 @@ def optimize_set_up(m):
 
 
 def optimize(m, check_termination=True):
-    # --solve---
+    # --solve---d
     return solve(m, check_termination=check_termination)
+
+
+def optimize_fs(fs, **kw):
+    return solve_fs(fs, **kw)
 
 
 def display_system(m):
@@ -605,14 +620,14 @@ def export_ui_variables(fs):
     )
 
 
-def display_ui_input(m):
+def display_ui_input(fs):
     return {
         "Feed": {
             "Volumetric flowrate": (
                 round(
                     value(
                         units.convert(
-                            m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                            fs.feed.properties[0].flow_vol_phase["Liq"],
                             to_units=units.m**3 / units.hr,
                         )
                     ),
@@ -623,7 +638,7 @@ def display_ui_input(m):
             "Salinity": (
                 round(
                     value(
-                        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
+                        fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
                     ),
                     0,
                 ),
@@ -631,7 +646,7 @@ def display_ui_input(m):
             ),
             "Temperature": (
                 round(
-                    value(m.fs.feed.properties[0].temperature),
+                    value(fs.feed.properties[0].temperature),
                     0,
                 ),
                 "K",
@@ -640,7 +655,7 @@ def display_ui_input(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.feed.properties[0].pressure, to_units=units.bar
+                            fs.feed.properties[0].pressure, to_units=units.bar
                         )
                     ),
                     1,
@@ -651,21 +666,21 @@ def display_ui_input(m):
         "Treatment specification": {
             "Recovery": (
                 round(
-                    value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
+                    value(fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
                     1,
                 ),
                 "%",
             ),
             "Maximum product salinity": (
                 round(
-                    value(m.fs.max_product_salinity) * 1e6,
+                    value(fs.max_product_salinity) * 1e6,
                     0,
                 ),
                 "ppm",
             ),
             "Maximum allowable pressure": (
                 round(
-                    value(units.convert(m.fs.max_pressure, to_units=units.bar)),
+                    value(units.convert(fs.max_pressure, to_units=units.bar)),
                     1,
                 ),
                 "bar",
@@ -674,14 +689,14 @@ def display_ui_input(m):
         "Performance parameters": {
             "Pump efficiency": (
                 round(
-                    value(m.fs.pump.efficiency_pump[0]) * 100,
+                    value(fs.pump.efficiency_pump[0]) * 100,
                     1,
                 ),
                 "%",
             ),
             "ERD efficiency": (
                 round(
-                    value(m.fs.erd.efficiency_pump[0]) * 100,
+                    value(fs.erd.efficiency_pump[0]) * 100,
                     1,
                 ),
                 "%",
@@ -690,7 +705,7 @@ def display_ui_input(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.RO.A_comp[0, "H2O"],
+                            fs.RO.A_comp[0, "H2O"],
                             to_units=units.mm / units.hr / units.bar,
                         )
                     ),
@@ -702,7 +717,7 @@ def display_ui_input(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.RO.B_comp[0, "TDS"], to_units=units.mm / units.hr
+                            fs.RO.B_comp[0, "TDS"], to_units=units.mm / units.hr
                         )
                     ),
                     2,
@@ -711,14 +726,14 @@ def display_ui_input(m):
             ),
             "RO channel height": (
                 round(
-                    value(units.convert(m.fs.RO.channel_height, to_units=units.mm)),
+                    value(units.convert(fs.RO.channel_height, to_units=units.mm)),
                     1,
                 ),
                 "mm",
             ),
             "RO spacer porosity": (
                 round(
-                    value(m.fs.RO.spacer_porosity) * 100,
+                    value(fs.RO.spacer_porosity) * 100,
                     1,
                 ),
                 "%",
@@ -727,14 +742,14 @@ def display_ui_input(m):
         "Cost parameters": {
             "Electricity cost": (
                 round(
-                    value(m.fs.costing.electricity_base_cost),
+                    value(fs.costing.electricity_base_cost),
                     3,
                 ),
                 "$/kWh",
             ),
             "Membrane cost": (
                 round(
-                    value(m.fs.costing.reverse_osmosis_membrane_cost),
+                    value(fs.costing.reverse_osmosis_membrane_cost),
                     1,
                 ),
                 "$/m2",
@@ -743,7 +758,7 @@ def display_ui_input(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.costing.high_pressure_pump_cost,
+                            fs.costing.high_pressure_pump_cost,
                             to_units=units.USD_2018 / units.kW,
                         )
                     ),
@@ -755,7 +770,7 @@ def display_ui_input(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.costing.erd_pressure_exchanger_cost,
+                            fs.costing.erd_pressure_exchanger_cost,
                             to_units=units.USD_2018 / (units.m**3 / units.hr),
                         )
                     ),
@@ -765,21 +780,21 @@ def display_ui_input(m):
             ),
             "Load factor": (
                 round(
-                    value(m.fs.costing.load_factor) * 100,
+                    value(fs.costing.load_factor) * 100,
                     1,
                 ),
                 "%",
             ),
             "Capital annualization factor": (
                 round(
-                    value(m.fs.costing.factor_capital_annualization) * 100,
+                    value(fs.costing.factor_capital_annualization) * 100,
                     1,
                 ),
                 "%/year",
             ),
             "Membrane replacement factor": (
                 round(
-                    value(m.fs.costing.factor_membrane_replacement) * 100,
+                    value(fs.costing.factor_membrane_replacement) * 100,
                     1,
                 ),
                 "%/year",
@@ -788,26 +803,26 @@ def display_ui_input(m):
     }
 
 
-def display_ui_output(m):
+def display_ui_output(fs):
     return {
         "System metrics": {
             "Recovery": (
                 round(
-                    value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
+                    value(fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
                     1,
                 ),
                 "%",
             ),
             "Specific energy consumption": (
                 round(
-                    value(m.fs.costing.specific_energy_consumption),
+                    value(fs.costing.specific_energy_consumption),
                     2,
                 ),
                 "kWh/m3",
             ),
             "Levelized cost of water": (
                 round(
-                    value(m.fs.costing.LCOW),
+                    value(fs.costing.LCOW),
                     2,
                 ),
                 "$/m3",
@@ -818,7 +833,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.feed.properties[0].flow_vol_phase["Liq"],
+                            fs.feed.properties[0].flow_vol_phase["Liq"],
                             to_units=units.m**3 / units.hr,
                         )
                     ),
@@ -829,7 +844,7 @@ def display_ui_output(m):
             "Salinity": (
                 round(
                     value(
-                        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
+                        fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
                     ),
                     0,
                 ),
@@ -837,7 +852,7 @@ def display_ui_output(m):
             ),
             "Temperature": (
                 round(
-                    value(m.fs.feed.properties[0].temperature),
+                    value(fs.feed.properties[0].temperature),
                     0,
                 ),
                 "K",
@@ -846,7 +861,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.feed.properties[0].pressure, to_units=units.bar
+                            fs.feed.properties[0].pressure, to_units=units.bar
                         )
                     ),
                     1,
@@ -859,7 +874,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.product.properties[0].flow_vol_phase["Liq"],
+                            fs.product.properties[0].flow_vol_phase["Liq"],
                             to_units=units.m**3 / units.hr,
                         )
                     ),
@@ -870,7 +885,7 @@ def display_ui_output(m):
             "Salinity": (
                 round(
                     value(
-                        m.fs.product.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+                        fs.product.properties[0].mass_frac_phase_comp["Liq", "TDS"]
                         * 1e6
                     ),
                     0,
@@ -879,7 +894,7 @@ def display_ui_output(m):
             ),
             "Temperature": (
                 round(
-                    value(m.fs.product.properties[0].temperature),
+                    value(fs.product.properties[0].temperature),
                     0,
                 ),
                 "K",
@@ -888,7 +903,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.product.properties[0].pressure, to_units=units.bar
+                            fs.product.properties[0].pressure, to_units=units.bar
                         )
                     ),
                     1,
@@ -901,7 +916,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.disposal.properties[0].flow_vol_phase["Liq"],
+                            fs.disposal.properties[0].flow_vol_phase["Liq"],
                             to_units=units.m**3 / units.hr,
                         )
                     ),
@@ -912,7 +927,7 @@ def display_ui_output(m):
             "Salinity": (
                 round(
                     value(
-                        m.fs.disposal.properties[0].mass_frac_phase_comp["Liq", "TDS"]
+                        fs.disposal.properties[0].mass_frac_phase_comp["Liq", "TDS"]
                         * 1e6
                     ),
                     0,
@@ -921,7 +936,7 @@ def display_ui_output(m):
             ),
             "Temperature": (
                 round(
-                    value(m.fs.disposal.properties[0].temperature),
+                    value(fs.disposal.properties[0].temperature),
                     0,
                 ),
                 "K",
@@ -930,7 +945,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.disposal.properties[0].pressure, to_units=units.bar
+                            fs.disposal.properties[0].pressure, to_units=units.bar
                         )
                     ),
                     1,
@@ -943,7 +958,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.pump.control_volume.properties_out[0].pressure,
+                            fs.pump.control_volume.properties_out[0].pressure,
                             to_units=units.bar,
                         )
                     ),
@@ -953,7 +968,7 @@ def display_ui_output(m):
             ),
             "Membrane area": (
                 round(
-                    value(m.fs.RO.area),
+                    value(fs.RO.area),
                     1,
                 ),
                 "m2",
@@ -961,9 +976,7 @@ def display_ui_output(m):
             "Inlet crossflow velocity": (
                 round(
                     value(
-                        units.convert(
-                            m.fs.RO.velocity[0, 0], to_units=units.cm / units.s
-                        )
+                        units.convert(fs.RO.velocity[0, 0], to_units=units.cm / units.s)
                     ),
                     1,
                 ),
@@ -975,7 +988,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.pump.work_mechanical[0],
+                            fs.pump.work_mechanical[0],
                             to_units=units.kW,
                         )
                     ),
@@ -987,7 +1000,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.erd.work_mechanical[0],
+                            fs.erd.work_mechanical[0],
                             to_units=units.kW,
                         )
                         * -1
@@ -1000,7 +1013,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+                            fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
                             / (1000 * units.kg / units.m**3),
                             to_units=units.mm / units.hr,
                         )
@@ -1013,7 +1026,7 @@ def display_ui_output(m):
                 round(
                     value(
                         units.convert(
-                            m.fs.RO.deltaP[0],
+                            fs.RO.deltaP[0],
                             to_units=units.bar,
                         )
                         * -1
@@ -1025,9 +1038,9 @@ def display_ui_output(m):
             "Max interfacial salinity": (
                 round(
                     value(
-                        m.fs.RO.feed_side.properties_interface[
-                            0, 1
-                        ].mass_frac_phase_comp["Liq", "TDS"]
+                        fs.RO.feed_side.properties_interface[0, 1].mass_frac_phase_comp[
+                            "Liq", "TDS"
+                        ]
                     )
                     * 1e6,
                     0,
