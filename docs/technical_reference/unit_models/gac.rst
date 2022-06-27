@@ -17,7 +17,7 @@ This is a empirical-performance-based granular activated carbon (GAC) model that
 .. currentmodule:: watertap.unit_models.gac
 
 Introduction
------------
+------------
 The implemented model for estimating GAC performance is adapted from a simplified model originally presented in Hand, 1984 and
 further elaborated in Crittenden, 2012. This formulation is denoted as the constant pattern homogeneous surface diffusion model (CPHSDM).
 As a GAC system is operated as a batch process, a mass transfer zone (MTZ) is formed in the bed where a concentration profile, or
