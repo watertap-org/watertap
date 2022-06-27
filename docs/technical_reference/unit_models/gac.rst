@@ -1,5 +1,5 @@
 Granular Activated Carbon (GAC)
-====================
+===============================
 .. note::
 
     The GAC model is an ongoing project and subject to change, as is this documentation.
