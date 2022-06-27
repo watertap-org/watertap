@@ -51,7 +51,7 @@ the user must specify. The table below gives an outline of these.
    "Mass flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
    "Inlet volumetric flowrate", ":math:`F_{in}`", "flow_vol", "[t]", ":math:`\text{m}^3\text{/s}`"
    "Inactivation rate coefficient", ":math:`k`", "inactivation_rate", "['Liq', j]", ":math:`\text{m}^2\text{/J}`"
-   "Pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "['Liq', j]", ":math:`\text{s^{-1}}`"
+   "Pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
    "UV dose", ":math:`D`", "uv_dose", None, ":math:`\text{J/}\text{m}^2`"
    "Average intensity of UV light", ":math:`I`", "uv_intensity", None, ":math:`\text{J/}\text{m}^2\text{/s}`"
    "Exposure time of UV light", ":math:`t`", "exposure_time", None, ":math:`\text{s}`"
