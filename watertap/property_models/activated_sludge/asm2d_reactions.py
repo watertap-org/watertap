@@ -86,7 +86,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         # R18: Aerobic growth of X_AUT
         # R19: Lysis of X_AUT
         # R20: Precipitation
-        # R21: Re-disolution
+        # R21: Re-dissolution
         self.rate_reaction_idx = pyo.Set(
             initialize=[
                 "R1",
