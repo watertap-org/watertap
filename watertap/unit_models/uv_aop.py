@@ -390,15 +390,16 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
         def eq_electricity_demand_phase_comp(b, t, p, j):
             prop_in = b.control_volume.properties_in[t]
-            prop_out = b.control_volume.properties_out[t]
             return b.electricity_demand_phase_comp[t, p, j] == (
                 b.electrical_efficiency[t, p, j]
                 * prop_in.flow_vol
                 * log10(
-                    pyunits.convert(
-                        prop_in.get_material_flow_terms(p, j)
-                        / prop_out.get_material_flow_terms(p, j),
-                        to_units=pyunits.dimensionless,
+                    1
+                    / exp(
+                        pyunits.convert(
+                            -b.uv_dose * b.inactivation_rate[p, j],
+                            to_units=pyunits.dimensionless,
+                        )
                     )
                 )
                 / b.lamp_efficiency
@@ -538,9 +539,12 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         for (t, p, j), v in self.electricity_demand_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
+                removal = -iscale.get_scaling_factor(
+                    self.uv_dose
+                ) * iscale.get_scaling_factor(self.inactivation_rate[p, j])
                 sf = (
                     iscale.get_scaling_factor(self.electrical_efficiency[t, p, j])
-                    * (1 / log10(10))
+                    * (1 / log10(1 / exp(removal)))
                     * iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].flow_vol
                     )

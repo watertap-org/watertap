@@ -28,7 +28,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.ultraviolet import Ultraviolet0D
+from watertap.unit_models.uv_aop import Ultraviolet0D
 import watertap.property_models.NDMA_prop_pack as props
 
 from idaes.core.util import get_solver
@@ -69,7 +69,7 @@ class TestUltraviolet:
         feed_temperature = (273.15 + 25) * pyunits.K
         uv_intensity = 1 * pyunits.mW / pyunits.cm**2
         exporure_time = 500 * pyunits.s
-        inactivation_rate = 0.002245 * pyunits.cm**2 / pyunits.mJ
+        inactivation_rate = 2.8 * pyunits.cm**2 / pyunits.J
         EEO = 0.25 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.3
 
@@ -219,11 +219,11 @@ class TestUltraviolet:
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(2.4084e-8, rel=1e-3) == value(
+        assert pytest.approx(1.8248e-8, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(1466.887, rel=1e-3) == value(
+        assert pytest.approx(1829.525, rel=1e-3) == value(
             m.fs.unit.electricity_demand_phase_comp[0, "Liq", "NDMA"]
         )
