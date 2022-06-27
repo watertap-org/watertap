@@ -36,5 +36,7 @@ plt.axline((-1, 1), (1, 0), color="r", linewidth=4.0)
 plt.contourf(x1, x2, z, 25)
 plt.plot(0.2, 0.4, "ro", markersize=12, markeredgecolor="black", markeredgewidth=3)
 ticks = np.linspace(0, 2, 5, endpoint=True)
-cbar = plt.colorbar(ticks=ticks, label=r"$x_1^2 + x_2^2$")
+cbar_label = r"$x_1^2 + x_2^2$"
+cbar = plt.colorbar(ticks=ticks)
+cbar.set_label(cbar_label, rotation=0, labelpad=40)
 plt.show()
