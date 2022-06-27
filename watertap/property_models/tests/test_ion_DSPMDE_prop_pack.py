@@ -387,7 +387,7 @@ def test_default_scaling(model3):
     assert hasattr(m.fs.properties, "default_scaling_factor")
     default_scaling_var_dict = {
         ("temperature", None): 1e-2,
-        ("pressure", None): 1e-6,
+        ("pressure", None): 1e-4,
         ("dens_mass_phase", "Liq"): 1e-3,
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
@@ -880,7 +880,7 @@ def test_assert_electroneutrality_get_property():
             defined_state=True, adjust_by_ion="Cl_-", get_property=1
         )
 
-    # check error when electroneutralit condition violated for stringent tolerance
+    # check error when electroneutrality condition violated for stringent tolerance
     #   Changed the error message to look for the correct pattern instead of
     #   exact match of the numeric value in the string
     stream[0].flow_mol_phase_comp.unfix()
@@ -888,9 +888,7 @@ def test_assert_electroneutrality_get_property():
         AssertionError,
         match=re.escape("Electroneutrality condition violated in fs.stream[0]. "),
     ):
-        stream[0].assert_electroneutrality(
-            defined_state=False, adjust_by_ion="Cl_-", tol=1e-18
-        )
+        stream[0].assert_electroneutrality(defined_state=False, tol=1e-25)
 
 
 @pytest.fixture(scope="module")

@@ -13,19 +13,49 @@
 import pytest
 import os
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_sweep import (
-    main,
+    run_analysis,
 )
 
-pytest_parameterize_list = []
-for case_num in [1, 2, 3, 4, 5, 6, 7]:
-    pytest_parameterize_list.append(case_num)
+# test the first 7 case studies that can be run with or without RO
+pytest_parameterize_NF = list(range(1, 8))
+# then test case studies 9-11 that can only run with RO
+pytest_parameterize_RO = list(range(8, 13))
 
 
-@pytest.mark.parametrize("case_num", pytest_parameterize_list)
+@pytest.mark.parametrize("case_num", pytest_parameterize_NF)
 @pytest.mark.integration
 def test_dye_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
-    nx = 1
-    global_results, sweep_params = main(case_num, nx, interpolate_nan_outputs=False)
+    # test every other sweep with RO
+    withRO = bool(case_num % 2)
+    run_analysis(case_num, nx=1, interpolate_nan_outputs=False, withRO=withRO)
     os.chdir(cwd)
+    return
+
+
+@pytest.mark.parametrize("case_num", pytest_parameterize_RO)
+@pytest.mark.integration
+def test_dye_sweep2(case_num, tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    # test only with RO
+    run_analysis(case_num, nx=1, interpolate_nan_outputs=False, withRO=True)
+    os.chdir(cwd)
+    return
+
+
+@pytest.mark.integration
+def test_withRO_condition():
+    # test a case without RO for a sweep that requires RO
+    with pytest.raises(Exception):
+        run_analysis(9, 1, interpolate_nan_outputs=False, withRO=False)
+    return
+
+
+@pytest.mark.integration
+def test_out_of_range_cases():
+    # test a case number that is not included in the dye sweep file
+    with pytest.raises(Exception):
+        run_analysis(30, 1, interpolate_nan_outputs=False, withRO=False)
+    return

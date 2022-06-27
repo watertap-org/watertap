@@ -14,5 +14,6 @@ Unit Models
    crystallizer_0D
    boron_removal
    electrodialysis_0D
+   electrodialysis_1D
    gac
    zero_order_unit_models/index
