@@ -71,6 +71,7 @@ Exchange format for flowsheet data::
 import builtins
 import importlib
 import json
+import logging
 from pathlib import Path
 import re
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
@@ -97,7 +98,7 @@ from watertap.ui import api_model as model
 # -------
 
 _log = idaeslog.getLogger(__name__)
-# _log.setLevel(logging.DEBUG)
+_log.setLevel(logging.DEBUG)
 
 
 # Functions and classes
@@ -123,14 +124,14 @@ def set_block_interface(block, data: Union["BlockInterface", Dict]):
     block.ui = obj
 
 
-def get_block_interface(block: Block) -> Union["BlockInterface", None]:
+def get_block_interface(block: Block):
     """Retrieve attached block interface, if any. Use with :func:`set_block_interface`.
 
     Args:
         block: The block to access.
 
     Return:
-        The interface, or None.
+        Interface
     """
     return getattr(block, "ui", None)
 
@@ -601,7 +602,7 @@ class BlockInterface:
         return var_val
 
     def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
-        """Load the variables in ``block_data`` into ``cur_block``, then
+        """Load the variables in ``load_block_info`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
 
         Called from :meth:`load`.
@@ -609,11 +610,7 @@ class BlockInterface:
         cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
         bdiff = BlockDiff()
         ui = get_block_interface(cur_block)
-
-        if not ui:
-            bdiff.missing = list(load_block_info.variables.keys())
-            bdiff.extra = []
-        else:
+        if ui is not None:
             info_vars = ui._block_info.variables
             bdiff.extra = set(info_vars.keys())
             for load_var_name, load_var_info in load_block_info.variables.items():
@@ -665,6 +662,9 @@ class BlockInterface:
                             val = self.units_val(val, to_units)
                         var_obj.set_value(val)
                     _log.debug("Exported variable loaded. " + details)
+            else:
+                bdiff.missing = list(load_block_info.variables.keys())
+                bdiff.extra = []
 
             # save non-empty missing/extra
             if bdiff.missing:
@@ -674,13 +674,26 @@ class BlockInterface:
 
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
-            sub_block = cur_block.find_component(sb_name)
+            try:
+                # if the name is a number, it is an index not a component
+                sb_idx = float(sb_name)
+                sub_block = cur_block[sb_idx]
+            except ValueError:
+                # otherwise it is a component (we hope)
+                sub_block = cur_block.find_component(sb_name)
             self._load(sb_info, sub_block, path=cur_block_path)
 
     @staticmethod
     def units_val(v, units):
         """Create a Var with the appropriate value and units."""
-        iv = Var(name="tmp", units=build_units(units))
+        try:
+            iv = Var(name="tmp", units=build_units(units))
+        except Exception as err:
+            _log.error(
+                f"units_val() could not evaluate variable because "
+                f"building units failed. units={units}, message={err}"
+            )
+            raise
         iv.construct()
         iv.set_value(v)
         return iv
@@ -710,8 +723,13 @@ class BlockInterface:
 
             # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
-                for sb_name, sb_val in block.component_map(ctype=[Block, Port]).items():
+                sub_blocks = block.component_map(ctype=[Block, Port])
+                for sb_name, sb_val in sub_blocks.items():
                     stack.insert(0, (path + [sb_name], sb_val))
+            elif block.is_indexed():
+                print(f"@@ Indexed block: {block.name}")
+                for ix in block.index_set():
+                    stack.insert(0, (path + [ix], block[ix]))
 
         return tree
 
@@ -765,7 +783,7 @@ class BlockInterface:
 
 
 def export_variables(
-    block, variables=None, name="", desc="", category=""
+    block, variables=None, name="", desc="", **kwargs
 ) -> BlockInterface:
     """Export variables from the given block, optionally providing metadata
     for the block itself. This method is really a simplified way to
@@ -805,8 +823,6 @@ def export_variables(
 
         name: Name to give this block (default=``block.name``)
         desc: Description of the block (default=``block.doc``)
-        category: User-defined category for this block, such as "costing", that
-           can be used by the UI to group things visually. (default="default")
 
     Returns:
         An initialized :class:`BlockInterface` object.
@@ -858,9 +874,7 @@ def export_variables(
                 ivar.description = bvar.doc or ""
 
     block_info = model.Block(
-        display_name=name,
-        description=desc,
-        variables=var_info_dict,
+        display_name=name, description=desc, variables=var_info_dict
     )
     return BlockInterface(block, block_info.dict())
 
@@ -869,17 +883,19 @@ def set_display_units(ivar, bvar):
     """Set the units to display, if not specified explicitly"""
 
     def html_units(u):
+        h_u = None
         if isinstance(u, str):
-            u = build_units(u)
-        return f"{as_quantity(u).u:~H}"
+            try:
+                u = build_units(u)
+            except Exception as err:
+                _log.warning(f"Could not build units: {err}")
+                h_u = u  # do not build it
+        if h_u is None:
+            h_u = f"{as_quantity(u).u:~H}"
+        return h_u
 
     if ivar.display_units:
-        try:
-            # try converting to pretty HTML
-            ivar.display_units = html_units(ivar.display_units)
-        except:
-            # leave as-is if this fails
-            pass
+        ivar.display_units = html_units(ivar.display_units)
     else:
         if ivar.to_units:
             ivar.display_units = html_units(ivar.to_units)
@@ -900,8 +916,7 @@ class WorkflowActions:
     results = "get-results"
 
     #: Dependencies:
-    #: results `--[depends on]-->` solve `--[depends on]-->` build
-    deps = {build: [], solve: [build], results: [solve]}
+    deps = {build: [], solve: [], results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):
@@ -936,7 +951,7 @@ class FlowsheetInterface(BlockInterface):
         super().update(data)
         # clear actions
         for act in self._actions_run.copy():
-            self._action_clear_was_run(act)
+            self.clear_action(act)
         _log.debug(f"update:end. status=ok")
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
@@ -1042,13 +1057,21 @@ class FlowsheetInterface(BlockInterface):
             aff = affected.pop()
             # if it was run, clear it
             if self._action_was_run(aff):
-                self._action_clear_was_run(aff)
+                self.clear_action(aff)
             # add all actions that depend on it to the list
             aff2 = [a for a in all_actions if aff in self._actions_deps[a]]
             affected.extend(aff2)
 
     def _action_clear_was_run(self, name):
+        _log.warning(
+            "Calling `_action_clear_was_run()` is deprecated, please change "
+            "your code to use the public method `clear_action()`"
+        )
         self._actions_run.remove(name)
+
+    def clear_action(self, name):
+        if name in self._actions_run:
+            self._actions_run.remove(name)
 
 
 def find_flowsheet_interfaces(

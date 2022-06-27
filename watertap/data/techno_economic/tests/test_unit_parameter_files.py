@@ -101,6 +101,7 @@ def test_unit_parameter_files(tech):
         "sw_onshore_intake",
         "water_pumping_station",
         "well_field",
+        "mbr",
     ]
 
     expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
