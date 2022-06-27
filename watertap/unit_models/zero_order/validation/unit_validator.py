@@ -155,7 +155,7 @@ _column_to_component_map = {
         "fs.unit.pipe_distance[0]",
         pyunits.mile,
     ),  # deep_well_injection
-    "lift_height": ("fs.unit.lift_height", pyunits.ft),  # deep_well_injection
+    "lift_height": ("fs.unit.lift_height[0]", pyunits.ft),  # deep_well_injection
     # NOTE: flow_in needs to be always last
     "flow_in": ("fs.feed.flow_vol[0]", pyunits.m**3 / pyunits.s),
 }
