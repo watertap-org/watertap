@@ -634,13 +634,9 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_flow_equiv_phase_comp(b, j):
-            if j == "H2O":
-                return (
-                    b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp["Liq", j]
-                )
             return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
                 "Liq", j
-            ] / abs(b.params.charge_comp[j])
+            ] * abs(b.params.charge_comp[j])
 
         self.eq_flow_equiv_phase_comp = Constraint(
             self.params.ion_set, rule=rule_flow_equiv_phase_comp
