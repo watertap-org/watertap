@@ -532,7 +532,6 @@ class ParameterSweep(_ParameterSweepBase):
         reinitialize_function=None,
         reinitialize_kwargs=None,
         reinitialize_before_sweep=False,
-        mpi_comm=None,
         debugging_data_dir=None,
         interpolate_nan_outputs=False,
         num_samples=None,
@@ -678,17 +677,5 @@ class ParameterSweep(_ParameterSweepBase):
         # Save to file
         global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
             global_results_dict, global_results_arr)
-        # global_save_data = self._save_results(
-        #     sweep_params,
-        #     local_values,
-        #     global_values,
-        #     local_results_dict,
-        #     global_results_dict,
-        #     global_results_arr,
-        #     csv_results_file_name,
-        #     h5_results_file_name,
-        #     debugging_data_dir,
-        #     interpolate_nan_outputs,
-        # )
 
-        return sweep_params, local_values, global_values, local_results_dict, global_results_dict, global_results_arr
+        return global_save_data
