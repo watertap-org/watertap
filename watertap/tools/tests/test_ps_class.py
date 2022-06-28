@@ -673,9 +673,6 @@ class TestParallelManager:
     @pytest.mark.requires_idaes_solver
     def test_parameter_sweep_optimize(self, model, tmp_path):
 
-        # comm, rank, num_procs = _init_mpi()
-        # tmp_path = _get_rank0_path(comm, tmp_path)
-
         results_fname = os.path.join(tmp_path, "global_results")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
@@ -815,8 +812,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
-        # comm, rank, num_procs = _init_mpi()
-        # tmp_path = _get_rank0_path(comm, tmp_path)
 
         results_fname = os.path.join(tmp_path, "global_results_recover")
         csv_results_file_name = str(results_fname) + ".csv"
@@ -864,8 +859,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if ps.rank == 0:
-
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -958,8 +952,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
-        # comm, rank, num_procs = _init_mpi()
-        # tmp_path = _get_rank0_path(comm, tmp_path)
 
         results_fname = os.path.join(tmp_path, "global_results_bad_recover")
         csv_results_file_name = str(results_fname) + ".csv"
@@ -1007,7 +999,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if ps.rank == 0:
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -1120,8 +1112,7 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
-        # comm, rank, num_procs = _init_mpi()
-        # tmp_path = _get_rank0_path(comm, tmp_path)
+
         results_fname = os.path.join(tmp_path, "global_results_force_initialize")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
@@ -1168,8 +1159,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if ps.rank == 0:
-
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -1262,8 +1252,7 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
-        # comm, rank, num_procs = _init_mpi()
-        # tmp_path = _get_rank0_path(comm, tmp_path)
+
         ps = ParameterSweep()
 
         m = model
