@@ -208,7 +208,7 @@ Equations
    "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
    "EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ} = \left( T_{MTZ}-T \right)EBCT_{min}`"
    "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{v_s}`"
-   "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{\left( 1\left( L-L_{MTZ} \right) \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
+   "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{1\left( L-L_{MTZ} \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
 
 if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
