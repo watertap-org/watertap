@@ -217,7 +217,7 @@ if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` 
 
    "Hayduk-Laudie correlation*", ":math:`D_l\left[ \frac{m^2}{s} \right] = \frac{13.26\times 10^{-9}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
 
-\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
+\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations.
 
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
@@ -228,7 +228,7 @@ if ``film_transfer_coefficient_type`` is set to ``calculated``:
    "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_w}{\rho_wD_l}`"
    "Gnielinski correlation", ":math:`k_f=\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
-\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
+\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations.
 
 if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
