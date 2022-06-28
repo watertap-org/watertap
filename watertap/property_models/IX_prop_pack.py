@@ -693,17 +693,12 @@ class IXStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, j):
-            if j == "H2O":
-                return (
-                    b.conc_mol_phase_comp["Liq", j] == b.conc_equiv_phase_comp["Liq", j]
-                )
-            else:
-                return b.conc_mol_phase_comp["Liq", j] == b.conc_equiv_phase_comp[
-                    "Liq", j
-                ] * abs(b.params.charge_comp[j])
+            return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
+                "Liq", j
+            ] * abs(b.params.charge_comp[j])
 
         self.eq_conc_equiv_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_equiv_phase_comp
+            self.params.ion_set, rule=rule_conc_equiv_phase_comp
         )
 
     def _mass_frac_phase_comp(self):
