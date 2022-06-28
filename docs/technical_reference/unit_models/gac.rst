@@ -25,7 +25,7 @@ breakthrough curve, developeds as a function of the adsorption properties. This 
 fresh GAC downstream. The CPHSDM is valid under the assumption that the shape of the MTZ is constant as it travels through the
 bed and a constant pattern solution (CPS) may be determined. The CPS is calculated through a multistep procedure utilizing common
 dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be
-derived from experimental dataof the intended system to produce valid results. Coefficients for common compounds treated by GAC may be
+derived from experimental data of the intended system to produce valid results. Coefficients for common compounds treated by GAC may be
 found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
 shorter than the minimum length determined by the CPHSDM within the error threshold (or lengths greater than the minimum).
 
