@@ -130,10 +130,27 @@ def set_operating_conditions(m):
     # ---specifications---
     # feed
     flow_vol = 1 * pyunits.m**3 / pyunits.day
-    # conc_mass_XXXX = XX *
+    conc_mass_arsenic = 0.04 * pyunits.mg / pyunits.liter
+    conc_mass_uranium = 0.06 * pyunits.mg / pyunits.liter
+    conc_mass_nitrate = 10 * pyunits.mg / pyunits.liter
+    conc_mass_phosphates = 0.1 * pyunits.mg / pyunits.liter
+    conc_mass_iron = 0.5 * pyunits.mg / pyunits.liter
+    conc_mass_filtration_media = 0.1 * pyunits.mg / pyunits.liter
 
-    # TODO
     m.fs.feed.flow_vol[0].fix(flow_vol)
+    m.fs.feed.conc_mass_comp[0, "arsenic"].fix(conc_mass_arsenic)
+    m.fs.feed.conc_mass_comp[0, "uranium"].fix(conc_mass_uranium)
+    m.fs.feed.conc_mass_comp[0, "nitrate"].fix(conc_mass_nitrate)
+    m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_phosphates)
+    m.fs.feed.conc_mass_comp[0, "iron"].fix(conc_mass_iron)
+    m.fs.feed.conc_mass_comp[0, "filtration_media"].fix(conc_mass_filtration_media)
+
+    # pump
+    m.fs.pump.load_parameters_from_database(use_default_removal=True)
+    m.fs.pump.lift_height.fix(30)  # head of 30 m to pump groundwater
+
+    # microbial battery
+    m.fs.micbatt.load_parameters_from_database(use_default_removal=True)
 
 
 def initialize_system(m):
@@ -157,7 +174,11 @@ def display_results(m):
     print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    # TODO
+    unit_list = ["feed", "pump", "micbatt"]
+    for u in unit_list:
+        m.fs.component(u).report()
+
+    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 def add_costing(m):
@@ -166,7 +187,102 @@ def add_costing(m):
         "groundwater_treatment_case_study.yaml",
     )
 
-    # TODO
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.micbatt.costing = UnitModelCostingBlock(**costing_kwargs)
+
+    m.fs.costing.cost_process()
+
+    m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+
+    m.fs.costing.spent_media_recovery_mass = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.byproduct.flow_mass_comp[0, "filtration_media"],
+            to_units=pyunits.kg / m.fs.costing.base_period,
+        ),
+        doc="Mass of spent filtration media generated per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.cost_spent_media_disposal = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.spent_media_recovery_mass
+            * m.fs.costing.filtration_media_disposal_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Disposal cost of spent filtration media per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.fresh_media_mass = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.flow_mass_comp[0, "filtration_media"],
+            to_units=pyunits.kg / m.fs.costing.base_period,
+        ),
+        doc="Mass of fresh filtration media used per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.cost_fresh_media = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.fresh_media_mass * m.fs.costing.filtration_media_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Cost of fresh filtration media used per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.water_product_volume = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.filtered_water.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        ),
+        doc="Volume of product water generated per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.value_water_product = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.water_product_volume * m.fs.costing.water_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Dollar value of product water generated per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.LCOW = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+            + m.fs.costing.cost_spent_media_disposal
+            + m.fs.costing.cost_fresh_media
+        )
+        / (
+            pyunits.convert(
+                m.fs.filtered_water.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
+            * m.fs.costing.utilization_factor
+        ),
+        doc="Levelized Cost of Water when accounting for seed media acquisition and spent media disposal costs",
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+            + m.fs.costing.cost_spent_media_disposal
+            + m.fs.costing.cost_fresh_media
+            - m.fs.costing.value_water_product
+        )
+        / (
+            pyunits.convert(
+                m.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
+            * m.fs.costing.utilization_factor
+        ),
+        doc="Levelized Cost of Treatment with respect to influent flowrate (accounts for seed media acquisition and spent media disposal costs and sale of treated water)",
+    )
 
 
 def display_costing(m):
@@ -174,7 +290,54 @@ def display_costing(m):
     print("++++++++++++++++++++ DISPLAY COSTING ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    # TODO
+    print("\n------------- Unit Capital Costs -------------")
+    for u in m.fs.costing._registered_unit_costing:
+        print(
+            f"{u.name} :   {value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)):.3f} $"
+        )
+
+    print("\n------------- Utility Costs -------------")
+    for f in m.fs.costing.flow_types:
+        print(
+            f"{f} :   {value(pyunits.convert(m.fs.costing.aggregate_flow_costs[f], to_units=pyunits.USD_2020 / pyunits.year)):.3f} $/year"
+        )
+
+    print("\n---------------------------------------")
+
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2020)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.3f} M$")
+
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+        )
+    )
+    print(f"Total Operating Costs: {total_operating_cost:.3f} M$/year")
+
+    electricity_intensity = value(
+        pyunits.convert(
+            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+        )
+    )
+    print(
+        f"Electricity Intensity with respect to influent flowrate: {electricity_intensity:.3f} kWh/m^3"
+    )
+
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(
+        f"Levelized Cost of Treatment with respect to influent flowrate: {LCOT:.3f} $/m^3"
+    )
+
+    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 if __name__ == "__main__":
