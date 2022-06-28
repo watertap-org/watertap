@@ -206,7 +206,7 @@ Equations
    "Mass of solute adsorbed if the bed was fully saturated", ":math:`M_{solute\text{,}e}=q_eM_{GAC}`"
    "Saturation fraction of the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{M_{solute}}{M_{solute\text{,}e}}`"
    "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
-   "EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ} = \left( T_{MTZ}-T \right)EBCT_{min}`"
+   "EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ} = \left( T\big{|}_{Upstream\,MTZ\,edge}-T \right)EBCT_{min}`"
    "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{v_s}`"
    "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{1\left( L-L_{MTZ} \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
 
@@ -215,20 +215,20 @@ if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Hayduk-Laudie correlation", ":math:`D_l\left[ \frac{m^2}{s} \right] = \frac{13.26\times 10^{-9}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
+   "Hayduk-Laudie correlation*", ":math:`D_l\left[ \frac{m^2}{s} \right] = \frac{13.26\times 10^{-9}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
 
-Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
+\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
 
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Reynolds number for packed beds", ":math:`Re=\frac{\rho_w\phi d_pv_i}{\epsilon\mu_w}`"
-   "Schmidt number for packed beds", ":math:`Sc=\frac{\mu_w}{\rho_wD_l}`"
+   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_w\phi d_pv_i}{\epsilon\mu_w}`"
+   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_w}{\rho_wD_l}`"
    "Gnielinski correlation", ":math:`k_f=\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
-Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
+\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations
 
 if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
