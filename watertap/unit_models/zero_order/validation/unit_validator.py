@@ -143,10 +143,10 @@ _column_to_component_map = {
     "uvt": ("fs.unit.uv_transmittance_in[0]", pyunits.dimensionless),  # uv + uv_aop
     "ebct": ("fs.unit.empty_bed_contact_time", pyunits.minute),  # gac
     "hours_per_day_operation": (
-        "fs.unit.hours_per_day_operation",
+        "fs.unit.hours_per_day_operation[0]",
         pyunits.hr / pyunits.day,
     ),  # filter_press
-    "cycle_time_hr": ("fs.unit.cycle_time", pyunits.hr),  # filter_press
+    "cycle_time_hr": ("fs.unit.cycle_time[0]", pyunits.hr),  # filter_press
     "settling_velocity": (
         "fs.unit.settling_velocity",
         pyunits.m / pyunits.s,
