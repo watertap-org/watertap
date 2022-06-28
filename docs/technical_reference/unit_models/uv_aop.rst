@@ -21,7 +21,7 @@ This model also accounts for the energy demand for the disinfection process. The
 Ports
 -----
 
-The model provides two ports (Pyomo notation in parenthesis):
+The model provides two ports (Pyomo notation in parentheses):
 
 * Inlet port (inlet)
 * Outlet port (outlet)
@@ -38,7 +38,6 @@ Sets
 Degrees of Freedom and Variables
 --------------------------------
 Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
-
 the UV AOP model has at least an additional 5 degrees of freedom that
 the user must specify. The table below gives an outline of these.
 

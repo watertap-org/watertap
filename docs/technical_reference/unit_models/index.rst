@@ -15,5 +15,5 @@ Unit Models
    boron_removal
    electrodialysis_0D
    electrodialysis_1D
-   ultraviolet
+   uv_aop
    zero_order_unit_models/index
