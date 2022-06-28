@@ -1,5 +1,5 @@
-Municipal Wwtp (ZO)
-===================
+Municipal Wastewater Treatment Plant (ZO)
+=========================================
 
 Model Type
 ----------
