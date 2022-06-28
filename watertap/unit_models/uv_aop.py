@@ -218,7 +218,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             bounds=(1e-18, 100),
             domain=NonNegativeReals,
             units=units_meta("time") ** 2 * units_meta("mass") ** -1,
-            doc="Inactivation rate coeff.",
+            doc="Inactivation rate coefficient with respect to uv dose.",
         )
 
         self.rate_constant = Var(
