@@ -52,10 +52,10 @@ In the default configuration of the GAC unit model there are 18 degrees of freed
 In association with using the Freundlich adsorption isotherm and empirical model, the following 9 variables are almost always fixed
 and may be derived from experimental data:
 
-   * Freundlich isotherm k parameter
-   * Freundlich isotherm 1/n parameter
-   * Stanton number equation parameters :math:`\text{a}_0` and :math:`\text{a}_1`
-   * throughput ratio equation parameters :math:`\text{b}_0`, :math:`\text{b}_1`, :math:`\text{b}_2`, :math:`\text{b}_3` and :math:`\text{b}_4`
+   * Freundlich isotherm ":math:`k`" parameter
+   * Freundlich isotherm ":math:`\frac{1}{n}`" parameter
+   * Stanton number equation parameters :math:`a_0` and :math:`a_1`
+   * throughput ratio equation parameters :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4`
 
 Additionally, the following 9 variables are traditionally fixed:
 
@@ -115,7 +115,7 @@ Variables
    "Adsorber bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
    "Adsorber bed area", ":math:`A`", "bed_area", "None", ":math:`\text{m}^2`"
    "Adsorber bed length", ":math:`L`", "bed_length", "None", ":math:`\text{m}`"
-   "Mass of fresh GAC in the bed", ":math:`M`", "bed_mass_gac", "None", ":math:`\text{kg}`"
+   "Mass of fresh GAC in the bed", ":math:`M_{GAC}`", "bed_mass_gac", "None", ":math:`\text{kg}`"
    "Superficial velocity", ":math:`v_s`", "velocity_sup", "None", ":math:`\text{m/s}`"
    "Interstitial velocity", ":math:`v_i`", "velocity_int", "None", ":math:`\text{m/s}`"
    "GAC particle porosity", ":math:`\epsilon_p`", "particle_porosity", "None", ":math:`\text{dimensionless}`"
@@ -123,13 +123,13 @@ Variables
    "GAC particle bulk density", ":math:`\rho_b`", "particle_dens_bulk", "None", ":math:`\text{kg/}\text{m}^3`"
    "GAC particle solid density", ":math:`\rho_s`", "particle_dens_sol", "None", ":math:`\text{kg/}\text{m}^3`"
    "GAC particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
-   "Average dimensionless concentration in the duration of operation", ":math:`\bar{\left( \frac{C}{C_{0}} \right)}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "Dimensionless concentration of the effluent at the time of replacement", ":math:`\left( \frac{C}{C_{0}} \right)|_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "Approximate saturation of the GAC in the bed at the time of replacement", ":math:`\bar{\left( \frac{q}{q_{e}} \right)}`", "gac_saturation_replace", "None", ":math:`\text{dimensionless}`"
+   "Average dimensionless concentration of the effluent in the operating duration", ":math:`\frac{\bar{C}}{C_{0}}\Bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
+   "Dimensionless concentration of the effluent at the time of replacement", ":math:`\frac{C}{C_{0}}\Bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
+   "Approximate saturation of the GAC in the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\Bigg{|}_{t=t_{op}}`", "gac_saturation_replace", "None", ":math:`\text{dimensionless}`"
    "Empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
    "Mass throughput ratio", ":math:`T`", "mass_throughput", "None", ":math:`\text{dimensionless}`"
    "Residence time", ":math:`\tau`", "res_time", "None", ":math:`\text{s}`"
-   "Elapsed operation time", ":math:`t`", "elap_time", "None", ":math:`\text{s}`"
+   "Elapsed operation time", ":math:`t_{op}`", "elap_time", "None", ":math:`\text{s}`"
    "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}`", "gac_mass_replace_rate", "None", ":math:`\text{s}`"
    "Liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
    "Surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
@@ -175,7 +175,7 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Tortuosity of the path that the adsorbate must take as compared to the radius", ":math:`\tau_p`", "tort", "None", ":math:`\text{dimensionless}`"
-   "Surface-to-pore diffusion flux ratio", ":math:`SPDFR`", "spdfr", "None", ":math:`\text{dimensionless}`"
+   "Surface-to-pore diffusion flux ratio", ":math:`S\!P\!D\!F\!R`", "spdfr", "None", ":math:`\text{dimensionless}`"
 
 .. _GAC_equations:
 
@@ -194,10 +194,10 @@ Equations
    "Residence time", ":math:`\tau=EBCT\epsilon`"
    "Mass throughput ratio", ":math:`T=b_0+b_1\left( \frac{C}{C_0} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0} \right)^{b_4}}`"
    "Minimum elapsed operation time to achieve CPS", ":math:`t_{min}=\tau_{min}\left( D_g+1 \right)T`"
-   "Elapsed operation time", ":math:`t=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
+   "Elapsed operation time", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
    "Density relation to bed voidage", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
    "Density relation to particle porosity", ":math:`\epsilon_p=1-\frac{\rho_a}{\rho_s}`"
-   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t}`"
+   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
    "Adsorber bed volume", ":math:`EBCT=\frac{V}{Q}`"
    "Mass of GAC in a fresh adsorber bed", ":math:`M_{GAC}=V\rho_b`"
    "Velocity relationship", ":math:`v_i=\frac{v_s}{\epsilon}`"
