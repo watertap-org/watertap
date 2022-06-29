@@ -124,7 +124,7 @@ Variables
    "GAC particle solid density", ":math:`\rho_s`", "particle_dens_sol", "None", ":math:`\text{kg/}\text{m}^3`"
    "GAC particle diameter", ":math:`d_p`", "particle_dia", "None", ":math:`\text{m}`"
    "Average dimensionless concentration of the effluent in the operating duration", ":math:`\frac{\bar{C}}{C_{0}}\bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
-   "Dimensionless concentration of the effluent at the time of replacement", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L}`", "conc_ratio_avg", "None", ":math:`\text{dimensionless}`"
+   "Dimensionless concentration of the effluent at the time of replacement", ":math:`\frac{C}{C_{0}}\bigg{|}_{z=L,t=t_{op}}`", "conc_ratio_replace", "None", ":math:`\text{dimensionless}`"
    "Approximate saturation of the GAC in the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}`", "gac_saturation_replace", "None", ":math:`\text{dimensionless}`"
    "Empty bed contact time", ":math:`EBCT`", "ebct", "None", ":math:`\text{s}`"
    "Mass throughput ratio", ":math:`T`", "mass_throughput", "None", ":math:`\text{dimensionless}`"
