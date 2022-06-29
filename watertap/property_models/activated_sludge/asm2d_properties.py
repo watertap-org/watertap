@@ -85,7 +85,7 @@ class ASM2dParameterData(PhysicalParameterBlock):
         self.S_ALK = Component(doc="Alkalinity, [mol HCO3- per m^3]")
 
         # Particulate species
-        self.X_AUT = Solute(doc="Nitrifying organisms. [kg COD/m^3]")
+        self.X_AUT = Solute(doc="Autotrophic nitrifying organisms. [kg COD/m^3]")
         self.X_H = Solute(doc="Heterotrophic organisms. [kg COD/m^3]")
         self.X_I = Solute(doc="Inert particulate organic material. [kg COD/m^3]")
         self.X_MeOH = Solute(doc="Metal-hydroxides. [kg TSS/m^3]")
