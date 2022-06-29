@@ -1,6 +1,11 @@
 Ultraviolet Advanced Oxidation Process
 ======================================
 
+.. index::
+   pair: watertap.unit_models.uv_aop;uv_aop
+
+.. currentmodule:: watertap.unit_models.uv_aop
+
 Introduction
 ------------
 
@@ -60,7 +65,7 @@ the user must specify. The table below gives an outline of these.
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
 
-**NOTE: Variables for 'temperature', 'pressure', and 'flow_mass_phase_comp' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
+**NOTE: Variables for 'temperature', 'pressure', 'flow_mass_phase_comp', and 'flow_vol' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
 
 Equations and Relationships
 ---------------------------
@@ -73,6 +78,11 @@ Equations and Relationships
    "Solvent mass balance", ":math:`M_{\text{H2O},out} = M_{\text{H2O},in}`"
    "Solute mass balance", ":math:`M_{j,out} = M_{j,in} \cdot \exp(D \cdot k)`"
    "Electricity demand", ":math:`E_j = EE/O_j \cdot F_{in} \cdot \log(M_{j,in} / M_{j,out}) / \eta`"
+
+Class Documentation
+-------------------
+
+* :mod:`watertap.unit_models.uv_aop`
 
 References
 ----------
