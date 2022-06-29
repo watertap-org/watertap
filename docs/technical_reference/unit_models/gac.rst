@@ -53,7 +53,7 @@ In association with using the Freundlich adsorption isotherm and empirical model
 and may be derived from experimental data:
 
    * Freundlich isotherm :math:`k` parameter
-   * Freundlich isotherm ":math:`\frac{1}{n}`" parameter
+   * Freundlich isotherm :math:`\frac{1}{n}` parameter
    * Stanton number equation parameters :math:`a_0` and :math:`a_1`
    * throughput ratio equation parameters :math:`b_0`, :math:`b_1`, :math:`b_2`, :math:`b_3` and :math:`b_4`
 
