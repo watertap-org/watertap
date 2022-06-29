@@ -130,7 +130,7 @@ Variables
    "Mass throughput ratio", ":math:`T`", "mass_throughput", "None", ":math:`\text{dimensionless}`"
    "Residence time", ":math:`\tau`", "res_time", "None", ":math:`\text{s}`"
    "Elapsed operation time", ":math:`t_{op}`", "elap_time", "None", ":math:`\text{s}`"
-   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}`", "gac_mass_replace_rate", "None", ":math:`\text{s}`"
+   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}`", "gac_mass_replace_rate", "None", ":math:`\text{m/s}`"
    "Liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
    "Surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"
    "Solute distribution parameter", ":math:`D_g`", "dg", "None", ":math:`\text{dimensionless}`"
