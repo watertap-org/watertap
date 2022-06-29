@@ -1,5 +1,5 @@
-Metab  (ZO)
-===========
+Modular Encapsulated Two-stage Anaerobic Biological Reactor (ZO)
+================================================================
 
 Model Type
 ----------
@@ -14,7 +14,7 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 Costing Method
 --------------
 Costing is calculated using the cost_metab method in the zero-order costing package.
-See documentation for the zero-order costing package.
+See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::
    pair: watertap.unit_models.zero_order.metab_zo;metab_zo

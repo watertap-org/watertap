@@ -28,10 +28,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import EvaporationPondZO
 from watertap.core.wt_database import Database
@@ -150,6 +150,12 @@ class TestEvaporationPondZO:
         assert (
             model.fs.unit.adj_area_calc_b_parameter[0].value
             == data["adj_area_calc_b_parameter"]["value"]
+        )
+
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
         )
 
     @pytest.mark.component

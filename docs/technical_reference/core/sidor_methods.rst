@@ -13,7 +13,7 @@ The `build_sido_reactive` method is intended to be used to rapidly construct a s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_sido_reactive, ZeroOrderBaseData
@@ -112,4 +112,4 @@ A mass balance constraint is then written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_sido_reactive.build_sido_reactive
+* :mod:`watertap.core.zero_order_sido_reactive`

@@ -11,11 +11,10 @@
 #
 ###############################################################################
 
-from pyomo.environ import Constraint
 from pyomo.common.config import In
 
 # Import IDAES cores
-from idaes.generic_models.unit_models.pressure_changer import PumpData
+from idaes.models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
 import idaes.core.util.scaling as iscale
 

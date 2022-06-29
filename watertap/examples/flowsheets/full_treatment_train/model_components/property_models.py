@@ -15,7 +15,7 @@
 
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.util.scaling import calculate_scaling_factors

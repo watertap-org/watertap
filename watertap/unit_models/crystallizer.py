@@ -39,7 +39,7 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -774,7 +774,7 @@ class CrystallizationData(UnitModelBlockData):
         var_dict["Operating Pressure (Pa)"] = self.pressure_operating
         var_dict["Magma density of solution (Kg/m**3)"] = self.dens_mass_magma
         var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
-        var_dict["Heat requirement (kW)"] = self.work_mechanical[time_point]
+        var_dict["Heat requirement"] = self.work_mechanical[time_point]
         var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
         var_dict[
             "Magma circulation flow rate (m**3/s)"
@@ -782,7 +782,7 @@ class CrystallizationData(UnitModelBlockData):
         var_dict[
             "Vol. frac. of solids in suspension, 1-E"
         ] = self.product_volumetric_solids_fraction
-        var_dict["Residence time (h)"] = self.t_res
+        var_dict["Residence time"] = self.t_res
         var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
         var_dict["Suspension height in crystallizer (m)"] = self.height_slurry
         var_dict["Crystallizer height (m)"] = self.height_crystallizer

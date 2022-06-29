@@ -15,7 +15,7 @@ import pytest
 
 from pyomo.environ import ConcreteModel, Var, Constraint, Block, SolverFactory
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from watertap.core.util.initialization import (
     check_dof,
     assert_degrees_of_freedom,

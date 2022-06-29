@@ -1,5 +1,5 @@
-Anaerobic Mbr Mec (ZO)
-======================
+Integrated Anaerobic Membrane Bioreactor/Microbial Electrolysis Cell (ZO)
+=========================================================================
 
 Model Type
 ----------
@@ -14,7 +14,7 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 Costing Method
 --------------
 Costing is calculated using the False method in the zero-order costing package.
-See documentation for the zero-order costing package.
+See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::
    pair: watertap.unit_models.zero_order.anaerobic_mbr_mec_zo;anaerobic_mbr_mec_zo
