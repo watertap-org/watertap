@@ -123,7 +123,7 @@ def build():
     # scaling
     iscale.calculate_scaling_factors(m)
 
-    return
+    return m
 
 
 def set_operating_conditions(m):
@@ -144,6 +144,8 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_phosphates)
     m.fs.feed.conc_mass_comp[0, "iron"].fix(conc_mass_iron)
     m.fs.feed.conc_mass_comp[0, "filtration_media"].fix(conc_mass_filtration_media)
+
+    solve(m.fs.feed)
 
     # pump
     m.fs.pump.load_parameters_from_database(use_default_removal=True)

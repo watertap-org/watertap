@@ -10,3 +10,26 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+
+import os
+import pytest
+from watertap.examples.flowsheets.case_studies.groundwater_treatment import (
+    groundwater_treatment_sweep,
+)
+
+sweep_list = []
+for case_num in [1, 2, 3]:
+    sweep_list.append(case_num)
+
+
+@pytest.mark.parametrize("case_num", sweep_list)
+@pytest.mark.integration
+def test_sweep(case_num, tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    nx = 11
+    global_results, sweep_params, m = groundwater_treatment_sweep.run_analysis(
+        case_num, nx, interpolate_nan_outputs=False
+    )
+    os.chdir(cwd)
+    return
