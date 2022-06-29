@@ -1006,7 +1006,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize_build(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
