@@ -42,9 +42,7 @@ Sets
 
 Degrees of Freedom and Variables
 --------------------------------
-Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
-the UV AOP model has at least an additional 5 degrees of freedom that
-the user must specify. The table below gives an outline of these.
+The UV system includes the state variables from the associated property package, and an outline of these variables are listed below:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -54,6 +52,16 @@ the user must specify. The table below gives an outline of these.
    "Outlet pressure", ":math:`P_{out}`", "pressure", "[t]", ":math:`\text{Pa}`"
    "Mass flowrate of components", ":math:`M_j`", "flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
    "Inlet volumetric flowrate", ":math:`F_{in}`", "flow_vol", "[t]", ":math:`\text{m}^3\text{/s}`"
+
+**NOTE: Variables for 'temperature', 'pressure', 'flow_mass_phase_comp', and 'flow_vol' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
+
+Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
+the UV AOP model has at least an additional 5 degrees of freedom that
+the user must specify. The table below gives an outline of these.
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
    "Inactivation rate coefficient", ":math:`k`", "inactivation_rate", "['Liq', j]", ":math:`\text{m}^2\text{/J}`"
    "Pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
    "UV dose", ":math:`D`", "uv_dose", None, ":math:`\text{J/}\text{m}^2`"
@@ -65,8 +73,6 @@ the user must specify. The table below gives an outline of these.
 
 **Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
 
-**NOTE: Variables for 'temperature', 'pressure', 'flow_mass_phase_comp', and 'flow_vol' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
-
 Equations and Relationships
 ---------------------------
 
@@ -77,7 +83,7 @@ Equations and Relationships
    "Pseudo-first order rate constant", ":math:`k_0 = I \cdot k`"
    "Solvent mass balance", ":math:`M_{\text{H2O},out} = M_{\text{H2O},in}`"
    "Solute mass balance", ":math:`M_{j,out} = M_{j,in} \cdot \exp(D \cdot k)`"
-   "Electricity demand", ":math:`E_j = EE/O_j \cdot F_{in} \cdot \log(M_{j,in} / M_{j,out}) / \eta`"
+   "Electricity demand", ":math:`E_j = EE/O_j \cdot F_{in} \cdot \log_{10}(M_{j,in} / M_{j,out}) / \eta`"
 
 Class Documentation
 -------------------
