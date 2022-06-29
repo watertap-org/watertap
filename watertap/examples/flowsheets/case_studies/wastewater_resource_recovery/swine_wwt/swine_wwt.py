@@ -317,313 +317,118 @@ def add_costing(m):
         # also try "costing_method": cost_power_law_flow
     )
     m.fs.costing.cost_process()
-    m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
 
-    # m.fs.costing.add_LCOW(m.fs.product_H2O.properties[0].flow_vol)
-
-    # other levelized costs
-    # TODO -resolve discrepancy between sum of cost components and total levelized costs
-    m.fs.costing.annual_water_production = Expression(
-        expr=m.fs.costing.utilization_factor
-        * pyunits.convert(
-            m.fs.product_H2O.properties[0].flow_vol,
-            to_units=pyunits.m**3 / m.fs.costing.base_period,
-        )
-    )
-    m.fs.costing.annual_cod_removal = Expression(
-        expr=(
-            m.fs.costing.utilization_factor
-            * pyunits.convert(
-                m.fs.feed.outlet.flow_mass_comp[0, "cod"]
-                - m.fs.product_H2O.inlet.flow_mass_comp[0, "cod"],
-                to_units=pyunits.kg / m.fs.costing.base_period,
-            )
-        )
-    )
+    # Resource recovery in terms of annual production
+    # Hydrogen gas production
     m.fs.costing.annual_hydrogen_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
-                m.fs.metab_hydrogen.byproduct.flow_mass_comp[0, "hydrogen"],
+                m.fs.gas_sparged_membrane.flow_mass_gas_extraction[0],
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
         )
     )
-    m.fs.costing.annual_methane_production = Expression(
+    # Phosphorus production
+    m.fs.costing.annual_phosphate_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
-                m.fs.metab_methane.byproduct.flow_mass_comp[0, "methane"],
+                m.fs.product_phosphate.flow_mass_comp[0, "phosphates"],
                 to_units=pyunits.kg / m.fs.costing.base_period,
             )
         )
     )
+    # Nitrogen production
+    m.fs.costing.annual_nitrogen_production = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.product_ammonia.flow_mass_comp[0, "ammonium_as_nitrogen"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        )
+    )
+    # VFA production
+    m.fs.costing.vfa_production = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.product_vfa.flow_mass_comp[0, "nonbiodegradable_cod"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        )
+    )
+    # Treated effluent production
+    m.fs.costing.annual_water_production = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.product_water.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
     )
-
+    # Levelized cost of water
     m.fs.costing.LCOW = Expression(
         expr=(
             m.fs.costing.total_annualized_cost / m.fs.costing.annual_water_production
         ),
-        doc="Levelized Cost of Water",
+        doc="Levelized Cost of Treated Water",
     )
-
-    m.fs.costing.LCOCR = Expression(
-        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_cod_removal),
-        doc="Levelized Cost of COD Removal",
-    )
-
-    m.fs.costing.LCOH = Expression(
+    # Levelized cost of hydrogen
+    m.fs.costing.LCOH2 = Expression(
         expr=(
-            (
-                m.fs.metab_hydrogen.costing.capital_cost
-                * m.fs.costing.capital_recovery_factor
-                + m.fs.metab_hydrogen.costing.capital_cost
-                * m.fs.costing.maintenance_costs_percent_FCI
-                + m.fs.metab_hydrogen.costing.fixed_operating_cost
-                + (
-                    pyunits.convert(
-                        m.fs.metab_hydrogen.heat[0] * m.fs.costing.heat_cost,
-                        to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-                    )
-                    + pyunits.convert(
-                        m.fs.metab_hydrogen.electricity[0]
-                        * m.fs.costing.electricity_cost,
-                        to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-                    )
-                )
-                * m.fs.costing.utilization_factor
-            )
-            / m.fs.costing.annual_hydrogen_production
+            m.fs.costing.total_annualized_cost / m.fs.costing.annual_hydrogen_production
         ),
-        doc="Levelized Cost of Hydrogen",
+        doc="Levelized Cost of Hydrogen Production",
     )
-
-    m.fs.costing.LCOM = Expression(
+    # Levelized cost of nitrogen
+    m.fs.costing.LCON = Expression(
         expr=(
-            (
-                m.fs.metab_methane.costing.capital_cost
-                * m.fs.costing.capital_recovery_factor
-                + m.fs.metab_methane.costing.capital_cost
-                * m.fs.costing.maintenance_costs_percent_FCI
-                + m.fs.metab_methane.costing.fixed_operating_cost
-                + (
-                    pyunits.convert(
-                        m.fs.metab_methane.heat[0] * m.fs.costing.heat_cost,
-                        to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-                    )
-                    + pyunits.convert(
-                        m.fs.metab_methane.electricity[0]
-                        * m.fs.costing.electricity_cost,
-                        to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-                    )
-                )
-                * m.fs.costing.utilization_factor
-            )
-            / m.fs.costing.annual_methane_production
+            m.fs.costing.total_annualized_cost / m.fs.costing.annual_nitrogen_production
         ),
-        doc="Levelized Cost of Methane",
+        doc="Levelized Cost of Nitrogen Production",
+    )
+    # Levelized cost of VFAs
+    m.fs.costing.LCOVFA = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_vfa_production),
+        doc="Levelized Cost of VFA Production",
+    )
+    # Levelized cost of phosphorus
+    m.fs.costing.LCOP = Expression(
+        expr=(
+            m.fs.costing.total_annualized_cost
+            / m.fs.costing.annual_phosphate_production
+        ),
+        doc="Levelized Cost of Phosphorus Production",
     )
 
-    m.fs.costing.LC_comp = Set(
-        initialize=[
-            "bead",
-            "reactor",
-            "mixer",
-            "membrane",
-            "vacuum",
-            "heat",
-            "electricity_mixer",
-            "electricity_vacuum",
-            "hydrogen_product",
-            "methane_product",
-        ]
-    )
-    m.fs.costing.LCOH_comp = Expression(m.fs.costing.LC_comp)
 
-    m.fs.costing.LCOH_comp["bead"] = (
-        m.fs.metab_hydrogen.costing.DCC_bead
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-        + m.fs.metab_hydrogen.costing.fixed_operating_cost
-    ) / m.fs.costing.annual_hydrogen_production
+# m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
+# m.fs.costing.add_LCOW(m.fs.product_H2O.properties[0].flow_vol)
 
-    m.fs.costing.LCOH_comp["reactor"] = (
-        m.fs.metab_hydrogen.costing.DCC_reactor
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_hydrogen_production
 
-    m.fs.costing.LCOH_comp["mixer"] = (
-        m.fs.metab_hydrogen.costing.DCC_mixer
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOH_comp["vacuum"] = (
-        m.fs.metab_hydrogen.costing.DCC_vacuum
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOH_comp["membrane"] = (
-        m.fs.metab_hydrogen.costing.DCC_membrane
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOH_comp["electricity_vacuum"] = (
-        pyunits.convert(
-            m.fs.metab_hydrogen.energy_electric_vacuum_flow_vol_byproduct
-            * m.fs.metab_hydrogen.properties_byproduct[0].flow_mass_comp["hydrogen"]
-            * m.fs.costing.electricity_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOH_comp["electricity_mixer"] = (
-        pyunits.convert(
-            m.fs.metab_hydrogen.energy_electric_mixer_vol
-            * m.fs.metab_hydrogen.volume
-            * m.fs.costing.electricity_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOH_comp["heat"] = (
-        pyunits.convert(
-            m.fs.metab_hydrogen.heat[0] * m.fs.costing.heat_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_hydrogen_production
-
-    m.fs.costing.LCOM_comp = Expression(m.fs.costing.LC_comp)
-
-    m.fs.costing.LCOM_comp["bead"] = (
-        m.fs.metab_methane.costing.DCC_bead
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-        + m.fs.metab_methane.costing.fixed_operating_cost
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["reactor"] = (
-        m.fs.metab_methane.costing.DCC_reactor
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["mixer"] = (
-        m.fs.metab_methane.costing.DCC_mixer
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["vacuum"] = (
-        m.fs.metab_methane.costing.DCC_vacuum
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["membrane"] = (
-        m.fs.metab_methane.costing.DCC_membrane
-        * m.fs.costing.TIC
-        * (
-            m.fs.costing.capital_recovery_factor
-            + m.fs.costing.maintenance_costs_percent_FCI
-        )
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["electricity_vacuum"] = (
-        pyunits.convert(
-            m.fs.metab_methane.energy_electric_vacuum_flow_vol_byproduct
-            * m.fs.metab_methane.properties_byproduct[0].flow_mass_comp["methane"]
-            * m.fs.costing.electricity_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["electricity_mixer"] = (
-        pyunits.convert(
-            m.fs.metab_methane.energy_electric_mixer_vol
-            * m.fs.metab_methane.volume
-            * m.fs.costing.electricity_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_methane_production
-
-    m.fs.costing.LCOM_comp["heat"] = (
-        pyunits.convert(
-            m.fs.metab_methane.heat[0] * m.fs.costing.heat_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-        * m.fs.costing.utilization_factor
-    ) / m.fs.costing.annual_methane_production
-
-    def rule_LCOW_comp(b, c):
-        if c in ["hydrogen_product", "methane_product"]:
-            return (
-                m.fs.costing.aggregate_flow_costs[c]
-                * m.fs.costing.utilization_factor
-                / m.fs.costing.annual_water_production
-            )
-        else:
-            return (
-                m.fs.costing.LCOH_comp[c] * m.fs.costing.annual_hydrogen_production
-                + m.fs.costing.LCOM_comp[c] * m.fs.costing.annual_methane_production
-            ) / m.fs.costing.annual_water_production
-
-    m.fs.costing.LCOW_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOW_comp)
-
-    def rule_LCOCR_comp(b, c):
-        if c in ["hydrogen_product", "methane_product"]:
-            return (
-                m.fs.costing.aggregate_flow_costs[c]
-                * m.fs.costing.utilization_factor
-                / m.fs.costing.annual_cod_removal
-            )
-        else:
-            return (
-                m.fs.costing.LCOH_comp[c] * m.fs.costing.annual_hydrogen_production
-                + m.fs.costing.LCOM_comp[c] * m.fs.costing.annual_methane_production
-            ) / m.fs.costing.annual_cod_removal
-
-    m.fs.costing.LCOCR_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOCR_comp)
+# m.fs.costing.annual_cod_removal = Expression(
+#     expr=(
+#         m.fs.costing.utilization_factor
+#         * pyunits.convert(
+#             m.fs.feed.outlet.flow_mass_comp[0, "cod"]
+#             - m.fs.product_H2O.inlet.flow_mass_comp[0, "cod"],
+#             to_units=pyunits.kg / m.fs.costing.base_period,
+#         )
+#     )
+# )
+# m.fs.product_water = Product(default={"property_package": m.fs.prop})
+# m.fs.product_phosphate = Product(default={"property_package": m.fs.prop})
+# m.fs.product_ammonia = Product(default={"property_package": m.fs.prop})
+# m.fs.product_vfa = Product(default={"property_package": m.fs.prop})
+# m.fs.waste_vfa
 
 
 def display_costing(fs):
