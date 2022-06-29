@@ -11,7 +11,13 @@
 # license information.
 #################################################################################
 """
-Thermophysical property package to be used in conjucntion with ASM1 reactions.
+Thermophysical property package to be used in conjunction with ASM2d reactions. 
+
+Reference:
+[1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
+Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
+Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
+
 """
 
 # Import Pyomo libraries
@@ -43,8 +49,8 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ASM1ParameterBlock")
-class ASM1ParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ASM2dParameterBlock")
+class ASM2dParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -55,7 +61,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ASM1StateBlock
+        self._state_block_class = ASM2dStateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
@@ -63,20 +69,40 @@ class ASM1ParameterData(PhysicalParameterBlock):
         # Add Component objects
         self.H2O = Solvent()
 
-        self.S_I = Solute(doc="Soluble inert organic matter, S_I")
-        self.S_S = Solute(doc="Readily biodegradable substrate, S_S")
-        self.X_I = Solute(doc="Particulate inert organic matter, X_I")
-        self.X_S = Solute(doc="Slowly biodegradable substrate, X_S")
-        self.X_BH = Solute(doc="Active heterotrophic biomass, X_B,H")
-        self.X_BA = Solute(doc="Active autotrophic biomass, X_B,A")
-        self.X_P = Solute(doc="Particulate products arising from biomass decay, X_P")
-        self.S_O = Solute(doc="Oxygen, S_O")
-        self.S_NO = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
-        self.S_NH = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
-        self.S_ND = Solute(doc="Soluble biodegradable organic nitrogen, S_ND")
-        self.X_ND = Solute(doc="Particulate biodegradable organic nitrogen, X_ND")
+        # Soluble species
+        self.S_A = Solute(
+            doc="Fermentation products, considered to be acetate. [kg COD/m^3]"
+        )
+        self.S_F = Solute(
+            doc="Fermentable, readily bio-degradable organic substrates. [kg COD/m^3]"
+        )
+        self.S_I = Solute(doc="Inert soluble organic material. [kg COD/m^3]")
+        self.S_N2 = Solute(
+            doc="Dinitrogen, N2. SN2 is assumed to be the only nitrogenous product of denitrification. [kg N/m^3]"
+        )
+        self.S_NH4 = Solute(doc="Ammonium plus ammonia nitrogen. [kg N/m^3]")
+        self.S_NO3 = Solute(
+            doc="Nitrate plus nitrite nitrogen (N03' + N02' -N). SN03 is assumed to include nitrate as well as nitrite nitrogen. [kg N/m^3]"
+        )
+        self.S_O2 = Solute(doc="Dissolved oxygen. [kg O2/m^3]")
+        self.S_PO4 = Solute(
+            doc="Inorganic soluble phosphorus, primarily ortho-phosphates. [kg P/m^3]"
+        )
+        self.S_ALK = Component(doc="Alkalinity, [mol HCO3- per m^3]")
 
-        self.S_ALK = Component(doc="Alkalinity, S_ALK")
+        # Particulate species
+        self.X_AUT = Solute(doc="Autotrophic nitrifying organisms. [kg COD/m^3]")
+        self.X_H = Solute(doc="Heterotrophic organisms. [kg COD/m^3]")
+        self.X_I = Solute(doc="Inert particulate organic material. [kg COD/m^3]")
+        self.X_MeOH = Solute(doc="Metal-hydroxides. [kg TSS/m^3]")
+        self.X_MeP = Solute(doc="Metal-phosphate, MeP04. [kg TSS/m^3]")
+        self.X_PAO = Solute(doc="Phosphate-accumulating organisms. [kg COD/m^3]")
+        self.X_PHA = Solute(
+            doc="A cell internal storage product of phosphorus-accumulating organisms, primarily comprising poly-hydroxy-alkanoates (PHA). [kg COD/m^3]"
+        )
+        self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
+        self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
+        self.X_TSS = Solute(doc="Total suspended solids, TSS. [kg TSS/m^3]")
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
@@ -131,7 +157,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         )
 
 
-class _ASM1StateBlock(StateBlock):
+class _ASM2dStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -234,10 +260,10 @@ class _ASM1StateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("ASM1StateBlock", block_class=_ASM1StateBlock)
-class ASM1StateBlockData(StateBlockData):
+@declare_process_block_class("ASM2dStateBlock", block_class=_ASM2dStateBlock)
+class ASM2dStateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical proeprties associated with the ASM1
+    StateBlock for calculating thermophysical proeprties associated with the ASM2d
     reaction system.
     """
 
@@ -286,8 +312,8 @@ class ASM1StateBlockData(StateBlockData):
         if j == "H2O":
             return b.flow_vol * b.params.dens_mass
         elif j == "S_ALK":
-            # Convert moles of alkalinity to mass of C assuming all is HCO3-
-            return b.flow_vol * b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
+            # Convert moles of alkalinity to mass assuming all is HCO3-
+            return b.flow_vol * b.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.flow_vol * b.conc_mass_comp[j]
 
@@ -303,8 +329,8 @@ class ASM1StateBlockData(StateBlockData):
         if j == "H2O":
             return b.params.dens_mass
         elif j == "S_ALK":
-            # Convert moles of alkalinity to mass of C assuming all is HCO3-
-            return b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
+            # Convert moles of alkalinity to mass assuming all is HCO3-
+            return b.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.conc_mass_comp[j]
 
