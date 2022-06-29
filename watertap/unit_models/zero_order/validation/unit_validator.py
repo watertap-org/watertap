@@ -253,7 +253,10 @@ def _run_analysis(m, df, columns):
                 cost = value(cost_expr)
                 if cost == 0:
                     continue
-                _print_row(f + "_cost", cost, float("nan"))
+                if f == "electricity":
+                    _print_row(f + "_cost", cost, df["electricity_cost"][index])
+                else:
+                    _print_row(f + "_cost", cost, float("nan"))
                 print(f"\t\t{f}_cost == {cost_expr.to_string()}")
                 print(
                     f"\t\t{m.fs.costing.utilization_factor} == {m.fs.costing.utilization_factor.value}"
