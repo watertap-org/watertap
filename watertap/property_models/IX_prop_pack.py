@@ -722,42 +722,6 @@ class IXStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_mass_frac_phase_comp
         )
 
-    # def _mole_frac_phase_comp(self):
-    #     self.mole_frac_phase_comp = Var(
-    #         self.params.phase_list,
-    #         self.params.component_list,
-    #         initialize=0.5,
-    #         bounds=(1e-8, 1.001),
-    #         units=pyunits.dimensionless,
-    #         doc="Mole fraction",
-    #     )
-
-    #     def rule_mole_frac_phase_comp(b, j):
-    #         return b.mole_frac_phase_comp["Liq", j] == b.flow_mol_phase_comp["Liq", j] / sum(b.flow_mol_phase_comp["Liq", j] for j in b.params.component_list)
-
-    #     self.eq_mole_frac_phase_comp = Constraint(
-    #         self.params.component_list, rule=rule_mole_frac_phase_comp
-    #     )
-
-    # def _equiv_frac_phase_comp(self):
-    #     self.equiv_frac_phase_comp = Var(
-    #         self.params.phase_list,
-    #         self.params.component_list,
-    #         initialize=0.5,
-    #         bounds=(1e-8, 1.001),
-    #         units=pyunits.dimensionless,
-    #         doc="Mole fraction",
-    #     )
-
-    #     def rule_equiv_frac_phase_comp(b, j):
-    #         return b.equiv_frac_phase_comp["Liq", j] == b.flow_equiv_phase_comp[
-    #             "Liq", j
-    #         ] / sum(b.flow_equiv_phase_comp["Liq", j] for j in b.params.component_list)
-
-    #     self.eq_equiv_frac_phase_comp = Constraint(
-    #         self.params.component_list, rule=rule_equiv_frac_phase_comp
-    #     )
-
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
             ["Liq"],
@@ -863,73 +827,50 @@ class IXStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        t0 = self.flowsheet().time.first()
-        try:
-            target_ion = self.parent_block().config.target_ion
-            prop_in = self.parent_block().properties_in[t0]
-        except:
-            pass
-
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
-            if "properties_in" in self.name or "properties_out" in self.name:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-3, warning=False
-                )
-            elif "properties_waste" in self.name:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
-                )
-            else:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-2, warning=False
-                )
+            sf = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+            )
             iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"], sf)
 
         if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"]) is None:
-            if "properties_in" in self.name or "properties_out" in self.name:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-3, warning=False
-                )
-            elif "properties_waste" in self.name:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
-                )
-            else:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1e-2, warning=False
-                )
+            sf = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=False
+            )
             iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"], sf)
 
         for j in self.params.ion_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j]) is None:
-                if "properties_in" in self.name:
-                    sf = 1 / self.flow_mol_phase_comp["Liq", j].value
-                elif "properties_out" in self.name:
-                    if j == target_ion:
-                        sf = iscale.get_scaling_factor(
-                            self.flow_mol_phase_comp["Liq", j],
-                            default=1e4,
-                            warning=False,
-                        )
-                    else:
-                        sf = iscale.get_scaling_factor(
-                            self.flow_mol_phase_comp["Liq", j], default=1, warning=False
-                        )
-                elif "properties_waste" in self.name:
-                    if j == target_ion:
-                        sf = 1 / prop_in.flow_mol_phase_comp["Liq", j].value
-                    else:
-                        sf = iscale.get_scaling_factor(
-                            self.flow_mol_phase_comp["Liq", j],
-                            default=1e5,
-                            warning=False,
-                        )
-                else:
-                    sf = 1
+                # if "properties_in" in self.name:
+                #     sf = 1 / self.flow_mol_phase_comp["Liq", j].value
+                # elif "properties_out" in self.name:
+                #     if j == target_ion:
+                #         sf = iscale.get_scaling_factor(
+                #             self.flow_mol_phase_comp["Liq", j],
+                #             default=1e4,
+                #             warning=False,
+                #         )
+                #     else:
+                #         sf = iscale.get_scaling_factor(
+                #             self.flow_mol_phase_comp["Liq", j], default=1, warning=False
+                #         )
+                # elif "properties_waste" in self.name:
+                #     if j == target_ion:
+                #         sf = 1 / prop_in.flow_mol_phase_comp["Liq", j].value
+                #     else:
+                #         sf = iscale.get_scaling_factor(
+                #             self.flow_mol_phase_comp["Liq", j],
+                #             default=1e5,
+                #             warning=False,
+                #         )
+                # else:
+                sf = iscale.get_scaling_factor(
+                    self.flow_mol_phase_comp["Liq", j], default=1, warning=False
+                )
                 iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
             if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", j]) is None:
                 sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", j], default=1e3, warning=True
+                    self.flow_mol_phase_comp["Liq", j], default=1, warning=True
                 )
                 iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", j], sf)
 
@@ -1067,8 +1008,6 @@ class IXStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_vol, sf)
 
         # transforming constraints
-        # property relationships with no index, simple constraint
-
         # property relationships with phase index, but simple constraint
         for v_str in ["flow_vol_phase", "dens_mass_phase", "visc_k_phase"]:
             if self.is_property_constructed(v_str):
@@ -1077,13 +1016,9 @@ class IXStateBlockData(StateBlockData):
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
-        # property relationship indexed by component
-
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = [
             "mass_frac_phase_comp",
-            # "equiv_frac_phase_comp",
-            # "mole_frac_phase_comp",
             "flow_mass_phase_comp",
             "flow_equiv_phase_comp",
             "conc_mass_phase_comp",
