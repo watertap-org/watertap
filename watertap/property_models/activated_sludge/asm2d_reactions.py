@@ -1006,7 +1006,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize_build(blk, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1500,7 +1500,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R21":
-                    # R21: Re-disolution
+                    # R21: Re-dissolution
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.k_red
                         * b.conc_mass_comp_ref["X_MeP"]

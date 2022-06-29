@@ -365,7 +365,7 @@ class TestAerobic:
         m.fs.R1.inlet.temperature.fix(298.15 * units.K)
         m.fs.R1.inlet.pressure.fix(1 * units.atm)
         # For aerobic operation, the final spec on O2 will be on the outlet concentration
-        # This is is to account for O2 addition under aerobic operation
+        # This is to account for O2 addition under aerobic operation
         # For now, pick a reasonable positive value for initialization
         m.fs.R1.inlet.conc_mass_comp[0, "S_O2"].fix(10 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(EPS * units.mg / units.liter)
@@ -533,7 +533,7 @@ class TestAnoxic:
         # However, TSS is needed for this reaction
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(100 * units.mg / units.liter)
 
-        # Alkalinity was givien in mg/L based on C
+        # Alkalinity was given in mg/L based on C
         m.fs.R1.inlet.alkalinity[0].fix(61 / 12 * units.mmol / units.liter)
 
         m.fs.R1.volume.fix(1000 * units.m**3)

@@ -11,7 +11,13 @@
 # license information.
 #################################################################################
 """
-Thermophysical property package to be used in conjucntion with ASM2d reactions.
+Thermophysical property package to be used in conjunction with ASM2d reactions. 
+
+Reference:
+[1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
+Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
+Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
+
 """
 
 # Import Pyomo libraries
@@ -92,7 +98,7 @@ class ASM2dParameterData(PhysicalParameterBlock):
         self.X_MeP = Solute(doc="Metal-phosphate, MeP04. [kg TSS/m^3]")
         self.X_PAO = Solute(doc="Phosphate-accumulating organisms. [kg COD/m^3]")
         self.X_PHA = Solute(
-            doc="A cell internal storage product of phosphorus-accumulating organisms. [kg COD/m^3]"
+            doc="A cell internal storage product of phosphorus-accumulating organisms, primarily comprising poly-hydroxy-alkanoates (PHA). [kg COD/m^3]"
         )
         self.X_PP = Solute(doc="Poly-phosphate. [kg P/m^3]")
         self.X_S = Solute(doc="Slowly biodegradable substrates. [kg COD/m^3]")
