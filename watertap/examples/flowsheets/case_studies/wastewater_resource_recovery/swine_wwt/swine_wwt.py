@@ -43,7 +43,7 @@ from watertap.unit_models.zero_order import (
     SedimentationZO,
     VFARecoveryZO,
 )
-from idaes.models.unit_models import Mixer, MomentumMixingType
+from idaes.models.unit_models import Mixer, MomentumMixingType, MixingType
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
 
@@ -60,15 +60,15 @@ def main():
     assert_optimal_termination(results)
     display_results(m.fs)
 
-    add_costing(m)
-    m.fs.costing.initialize()
-
-    adjust_default_parameters(m)
-
-    assert_degrees_of_freedom(m, 0)
-    results = solve(m)
-    assert_optimal_termination(results)
-    display_costing(m.fs)
+    # add_costing(m)
+    # m.fs.costing.initialize()
+    #
+    # adjust_default_parameters(m)
+    #
+    # assert_degrees_of_freedom(m, 0)
+    # results = solve(m)
+    # assert_optimal_termination(results)
+    # display_costing(m.fs)
 
     return m, results
 
@@ -107,6 +107,7 @@ def build():
     m.fs.gas_sparged_membrane = GasSpargedMembraneZO(
         default={
             "property_package": m.fs.prop,
+            "database": m.db,
         },
     )
     m.fs.ion_exchange = IonExchangeZO(
@@ -142,6 +143,7 @@ def build():
             "property_package": m.fs.prop,
             "inlet_list": ["inlet1", "inlet2"],
             "momentum_mixing_type": MomentumMixingType.none,
+            "energy_mixing_type": MixingType.none,
         },
     )
 
@@ -150,7 +152,10 @@ def build():
     m.fs.product_ammonia = Product(default={"property_package": m.fs.prop})
     m.fs.product_vfa = Product(default={"property_package": m.fs.prop})
     m.fs.waste_vfa = Product(default={"property_package": m.fs.prop})
-    m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
+    # TODO: because of gas-sparged membrane formulation, H2 gas flow is a unit variable
+    #  instead of a mass flow via property model; hence, gas flow exiting the unit is
+    #  not connected to a port or state block
+    # m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.mbr_mec.inlet)
@@ -188,9 +193,8 @@ def build():
         source=m.fs.sedimentation.treated, destination=m.fs.constructed_wetlands.inlet
     )
     m.fs.s15 = Arc(
-        source=m.fs.constructed_wetlands.treated, destination=m.fs.product_H2O.inlet
+        source=m.fs.constructed_wetlands.treated, destination=m.fs.product_water.inlet
     )
-    # TODO: need to resolve H2 product from gas-sparged membrane
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -220,18 +224,27 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "cod"].fix(conc_mass_cod)
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_po4)
-
-    m.fs.feed.properties[0].flow_mass_comp["nonbiodegradable_cod"].fix(1e-8)
+    m.fs.feed.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
     solve(m.fs.feed)
 
     # anaerobic fermentation and MEC
     m.fs.mbr_mec.load_parameters_from_database(use_default_removal=True)
+    assert_degrees_of_freedom(m.fs.mbr_mec, expected_dof=5)
 
     # gas-sparged membrane
     m.fs.gas_sparged_membrane.load_parameters_from_database(use_default_removal=True)
+    assert_degrees_of_freedom(m.fs.gas_sparged_membrane, expected_dof=5)
+
+    m.fs.food_waste.flow_vol[0].fix(25e3 * pyunits.L / pyunits.day)
+    m.fs.food_waste.conc_mass_comp[0, "cod"].fix(29.23 * pyunits.mg / pyunits.L)
+    m.fs.food_waste.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(1e-8)
+    m.fs.food_waste.conc_mass_comp[0, "phosphates"].fix(1e-8)
+    m.fs.food_waste.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
+    solve(m.fs.food_waste)
 
     # cofermentation
     m.fs.cofermentation.load_parameters_from_database(use_default_removal=True)
+    assert_degrees_of_freedom(m.fs.cofermentation, expected_dof=10)
 
     # mixer
 
@@ -265,7 +278,18 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(fs):
-    unit_list = ["feed", "metab_hydrogen", "metab_methane"]
+    unit_list = [
+        "feed",
+        "mbr_mec",
+        "gas_sparged_membrane",
+        "ion_exchange",
+        "sedimentation",
+        "food_waste",
+        "cofermentation",
+        "mixer",
+        "vfa_recovery",
+        "constructed_wetlands",
+    ]
     for u in unit_list:
         fs.component(u).report()
 
