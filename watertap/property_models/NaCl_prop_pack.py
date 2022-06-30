@@ -714,16 +714,17 @@ class NaClStateBlockData(StateBlockData):
 
     def _pressure_osm_phase(self):
         self.pressure_osm_phase = Var(
+            self.params.phase_list,
             initialize=1e6, bounds=(5e2, 5e7), units=pyunits.Pa, doc="Osmotic pressure"
         )
 
-        def rule_pressure_osm_phase(b):
+        def rule_pressure_osm_phase(b, p):
             i = 2  # number of ionic species
             rhow = (
                 1000 * pyunits.kg / pyunits.m**3
             )  # TODO: could make this variable based on temperature
             return (
-                b.pressure_osm_phase
+                b.pressure_osm_phase[p]
                 == i
                 * b.osm_coeff
                 * b.molality_phase_comp["Liq", "NaCl"]
@@ -732,7 +733,7 @@ class NaClStateBlockData(StateBlockData):
                 * b.temperature
             )
 
-        self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
+        self.eq_pressure_osm_phase = Constraint(self.params.phase_list, rule=rule_pressure_osm_phase)
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -856,7 +857,7 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 iscale.set_scaling_factor(
-                    self.pressure_osm_phase, iscale.get_scaling_factor(self.pressure)
+                    self.pressure_osm_phase["Liq"], iscale.get_scaling_factor(self.pressure)
                 )
 
         if self.is_property_constructed("mass_frac_phase_comp"):
@@ -961,7 +962,7 @@ class NaClStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(
                 self.pressure_osm_phase, default=1, warning=True
             )
-            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase, sf)
+            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
         if self.is_property_constructed("osm_coeff"):
             sf = iscale.get_scaling_factor(self.osm_coeff, default=1, warning=True)
             iscale.constraint_scaling_transform(self.eq_osm_coeff, sf)

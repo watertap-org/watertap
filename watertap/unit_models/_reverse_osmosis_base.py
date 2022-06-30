@@ -616,7 +616,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - (interface.pressure_osm_phase - prop_perm.pressure_osm_phase)
+                    - (interface.pressure_osm_phase["Liq"] - prop_perm.pressure_osm_phase["Liq"])
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
@@ -1126,24 +1126,24 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         ):
             var_dict[
                 "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm_phase
+            ] = interface_outlet.pressure_osm_phase["Liq"]
         if (
             feed_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase
+            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase["Liq"]
         if (
             interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
             var_dict[
                 "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm_phase
+            ] = interface_inlet.pressure_osm_phase["Liq"]
         if (
             feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase
+            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase["Liq"]
         if (
             feed_inlet.is_property_constructed("flow_vol_phase")
             and self.config.has_full_reporting
@@ -1273,7 +1273,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     if blk.is_property_constructed("molality_phase_comp"):
                         self._rescale_permeate_variable(blk.molality_phase_comp["Liq", j])
                 if blk.is_property_constructed("pressure_osm_phase"):
-                    self._rescale_permeate_variable(blk.pressure_osm_phase)
+                    self._rescale_permeate_variable(blk.pressure_osm_phase["Liq"])
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
