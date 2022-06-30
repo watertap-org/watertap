@@ -10,9 +10,23 @@ defined_flows:
   hydrogen_product:
     value: -2
     units: USD_2020/kg
-  methane_product:
-    value: -0.305
+  ammonia_product:
+    value: -800
+    units: USD_2020/short_ton
+    metadata: Anhydrous ammonia (fertilizer) prices have varied between 400 - 1516 $/ton based on USDA data from 2008-2021 in Illinois; the upper limit is associated with the Russia-Ukraine War
+  phosphorus_product:
+    value: -40
     units: USD_2020/kg
+  vfa_product:
+    value: -384
+    units: USD_2020/metric_ton
+    metadata: 384 $/ton (assumed metric) estimated as minimum selling price in Fasahati & Liu, 2014.
+  water_product:
+    value: -0.1
+    units: USD_2020/m**3
+  waste_disposal:
+    value: 1
+    units: USD_2020/m**3
 global_parameters:
   plant_lifetime:
     value: 30
