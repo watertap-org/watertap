@@ -1,11 +1,25 @@
 Nanofiltration- Donnan Steric Pore Model with Dielectric Exclusion (0D)
 =======================================================================
 
-This unit model implements the Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
+This unit model implements the Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE) for nanofiltration.
 
 .. note::
 
     Documentation for the DSPM-DE model is undergoing refinement.
+
+Model Structure
+------------------
+The model consists of 1 ControlVolume0DBlock for the feed-side of the membrane and includes 11 stateblocks overall.
+
+* The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum
+balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface).
+* 2 StateBlocks are attributed to the membrane pore entrance (pore_entrance) at the inlet and outlet of the module.
+* 2 StateBlocks are attributed to the membrane pore exit (pore_exit) at the inlet and outlet of the module.
+* The permeate-side of the membrane includes 3 StateBlocks; 2 of them are attributed to the permeate side at the inlet
+and outlet (permeate_side), and the 3rd StateBlock is attributed to the final, mixed permeate exiting the module.
+The inlet and outlet StateBlocks of the permeate are used to only determine the permeate solute concentration for
+solvent and solute flux at the feed-side inlet and outlet, while the mixed StateBlock is used for mass balance based
+on the average flux.
 
 Variables
 ----------
