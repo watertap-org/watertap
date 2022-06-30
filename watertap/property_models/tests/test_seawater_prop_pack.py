@@ -59,7 +59,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("molality_phase_comp", ("Liq", "TDS")): 1.155,
             ("visc_d_phase", "Liq"): 9.588e-4,
             ("osm_coeff", None): 0.9068,
-            ("pressure_osm_phase", None): 2.588e6,
+            ("pressure_osm_phase", "Liq"): 2.588e6,
             ("enth_mass_phase", "Liq"): 9.9765e4,
             ("pressure_sat_comp", None): 3111,
             ("cp_mass_phase", "Liq"): 4001,
@@ -103,7 +103,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("molality_phase_comp", ("Liq", "TDS")): 0.3216,
             ("visc_d_phase", "Liq"): 5.596e-4,
             ("osm_coeff", None): 0.9029,
-            ("pressure_osm_phase", None): 7.710e5,
+            ("pressure_osm_phase", "Liq"): 7.710e5,
             ("enth_mass_phase", "Liq"): 2.066e5,
             ("pressure_sat_comp", None): 1.229e4,
             ("cp_mass_phase", "Liq"): 4.130e3,
@@ -147,7 +147,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("molality_phase_comp", ("Liq", "TDS")): 1.676,
             ("visc_d_phase", "Liq"): 1.443e-3,
             ("osm_coeff", None): 0.9106,
-            ("pressure_osm_phase", None): 3.591e6,
+            ("pressure_osm_phase", "Liq"): 3.591e6,
             ("enth_mass_phase", "Liq"): 3.897e4,
             ("pressure_sat_comp", None): 1.194e3,
             ("cp_mass_phase", "Liq"): 3.916e3,
@@ -197,7 +197,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
         }
         self.var_args = {
             ("flow_vol_phase", "Liq"): 1e-3,
-            ("pressure_osm_phase", None): 100e5,
+            ("pressure_osm_phase", "Liq"): 100e5,
             ("temperature", None): 273.15 + 25,
             ("pressure", None): 5e5,
         }

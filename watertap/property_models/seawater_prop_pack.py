@@ -1242,16 +1242,17 @@ class SeawaterStateBlockData(StateBlockData):
 
     def _pressure_osm_phase(self):
         self.pressure_osm_phase = Var(
+            self.params.phase_list,
             initialize=1e6, bounds=(1, 1e8), units=pyunits.Pa, doc="Osmotic pressure"
         )
 
         def rule_pressure_osm_phase(
-            b,
+            b, p
         ):  # osmotic pressure, based on eq. 48 in Nayar et al. (2016)
             i = 2  # number of ionic species
             rhow = b.dens_mass_solvent
             return (
-                b.pressure_osm_phase
+                b.pressure_osm_phase[p]
                 == b.osm_coeff
                 * b.molality_phase_comp["Liq", "TDS"]
                 * rhow
@@ -1259,7 +1260,7 @@ class SeawaterStateBlockData(StateBlockData):
                 * b.temperature
             )
 
-        self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
+        self.eq_pressure_osm_phase = Constraint(self.params.phase_list, rule=rule_pressure_osm_phase)
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -1513,7 +1514,7 @@ class SeawaterStateBlockData(StateBlockData):
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 iscale.set_scaling_factor(
-                    self.pressure_osm_phase, iscale.get_scaling_factor(self.pressure)
+                    self.pressure_osm_phase["Liq"], iscale.get_scaling_factor(self.pressure)
                 )
 
         if self.is_property_constructed("mass_frac_phase_comp"):
@@ -1619,7 +1620,6 @@ class SeawaterStateBlockData(StateBlockData):
         v_str_lst_simple = [
             "dens_mass_solvent",
             "osm_coeff",
-            "pressure_osm_phase",
             "pressure_sat_comp",
             "dh_vap_mass_phase",
         ]
@@ -1629,6 +1629,12 @@ class SeawaterStateBlockData(StateBlockData):
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed("pressure_osm_phase"):
+            sf = iscale.get_scaling_factor(
+                self.pressure_osm_phase, default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
 
         # property relationships with phase index, but simple constraint
         v_str_lst_phase = [
