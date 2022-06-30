@@ -1132,6 +1132,7 @@ class SeawaterStateBlockData(StateBlockData):
 
     def _molality_phase_comp(self):
         self.molality_phase_comp = Var(
+            self.params.phase_list,
             ["TDS"],
             initialize=1,
             bounds=(1e-6, 1e6),
@@ -1141,7 +1142,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_molality_phase_comp(b, j):
             return (
-                self.molality_phase_comp[j]
+                self.molality_phase_comp["Liq", j]
                 == b.mass_frac_phase_comp["Liq", j]
                 / (1 - b.mass_frac_phase_comp["Liq", j])
                 / b.params.mw_comp[j]
@@ -1190,6 +1191,7 @@ class SeawaterStateBlockData(StateBlockData):
     ):  # TODO: diffusivity from NaCl prop model used temporarily--reconsider this
         self.diffus_phase_comp = Var(
             self.params.phase_list,
+            ["TDS"],
             initialize=1e-9,
             bounds=(1e-10, 1e-8),
             units=pyunits.m**2 * pyunits.s**-1,
@@ -1197,9 +1199,9 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_diffus_phase_comp(
-            b,
+            b, j
         ):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
-            return b.diffus_phase_comp["Liq"] == (
+            return b.diffus_phase_comp["Liq", j] == (
                 b.params.diffus_param["4"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 4
                 + b.params.diffus_param["3"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 3
                 + b.params.diffus_param["2"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 2
@@ -1207,7 +1209,7 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.diffus_param["0"]
             )
 
-        self.eq_diffus_phase_comp = Constraint(rule=rule_diffus_phase_comp)
+        self.eq_diffus_phase_comp = Constraint(["TDS"], rule=rule_diffus_phase_comp)
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -1251,7 +1253,7 @@ class SeawaterStateBlockData(StateBlockData):
             return (
                 b.pressure_osm_phase
                 == b.osm_coeff
-                * b.molality_phase_comp["TDS"]
+                * b.molality_phase_comp["Liq", "TDS"]
                 * rhow
                 * Constants.gas_constant
                 * b.temperature
@@ -1598,12 +1600,12 @@ class SeawaterStateBlockData(StateBlockData):
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
-                    if iscale.get_scaling_factor(self.molality_phase_comp[j]) is None:
+                    if iscale.get_scaling_factor(self.molality_phase_comp["Liq", j]) is None:
                         sf = iscale.get_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j]
                         )
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-                        iscale.set_scaling_factor(self.molality_phase_comp[j], sf)
+                        iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("enth_flow"):
             iscale.set_scaling_factor(
@@ -1634,7 +1636,6 @@ class SeawaterStateBlockData(StateBlockData):
             "flow_vol_phase",
             "visc_d_phase",
             "enth_mass_phase",
-            "diffus_phase_comp",
             "cp_mass_phase",
             "therm_cond_phase",
         ]
@@ -1645,22 +1646,14 @@ class SeawaterStateBlockData(StateBlockData):
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
-        # property relationship indexed by component
-        v_str_lst_comp = ["molality_phase_comp"]
-        for v_str in v_str_lst_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
-
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = [
             "mass_frac_phase_comp",
             "conc_mass_phase_comp",
             "flow_mol_phase_comp",
             "mole_frac_phase_comp",
+            "molality_phase_comp",
+            "diffus_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):

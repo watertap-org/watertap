@@ -56,7 +56,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("flow_mol_phase_comp", ("Liq", "TDS")): 1.1145,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9796,
             ("mole_frac_phase_comp", ("Liq", "TDS")): 2.038e-2,
-            ("molality_phase_comp", "TDS"): 1.155,
+            ("molality_phase_comp", ("Liq", "TDS")): 1.155,
             ("visc_d_phase", "Liq"): 9.588e-4,
             ("osm_coeff", None): 0.9068,
             ("pressure_osm_phase", None): 2.588e6,
@@ -65,7 +65,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("cp_mass_phase", "Liq"): 4001,
             ("therm_cond_phase", "Liq"): 0.6086,
             ("dh_vap_mass_phase", None): 2.356e6,
-            ("diffus_phase_comp", "Liq"): 1.471e-9,
+            ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
         }
 
 
@@ -100,7 +100,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "TDS")): 0.3184,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9942,
             ("mole_frac_phase_comp", ("Liq", "TDS")): 5.761e-3,
-            ("molality_phase_comp", "TDS"): 0.3216,
+            ("molality_phase_comp", ("Liq", "TDS")): 0.3216,
             ("visc_d_phase", "Liq"): 5.596e-4,
             ("osm_coeff", None): 0.9029,
             ("pressure_osm_phase", None): 7.710e5,
@@ -109,7 +109,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("cp_mass_phase", "Liq"): 4.130e3,
             ("therm_cond_phase", "Liq"): 0.6400,
             ("dh_vap_mass_phase", None): 2.358e6,
-            ("diffus_phase_comp", "Liq"): 1.493e-9,
+            ("diffus_phase_comp", ("Liq", "TDS")): 1.493e-9,
         }
 
 
@@ -144,7 +144,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "TDS")): 1.592,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9707,
             ("mole_frac_phase_comp", ("Liq", "TDS")): 2.931e-2,
-            ("molality_phase_comp", "TDS"): 1.676,
+            ("molality_phase_comp", ("Liq", "TDS")): 1.676,
             ("visc_d_phase", "Liq"): 1.443e-3,
             ("osm_coeff", None): 0.9106,
             ("pressure_osm_phase", None): 3.591e6,
@@ -153,7 +153,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("cp_mass_phase", "Liq"): 3.916e3,
             ("therm_cond_phase", "Liq"): 0.5854,
             ("dh_vap_mass_phase", None): 2.353e6,
-            ("diffus_phase_comp", "Liq"): 1.471e-9,
+            ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
         }
 
 
