@@ -317,7 +317,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         #     doc="Minimum electricity demand of unit",
         # )
 
-        self.electrical_efficiency = Var(
+        self.electrical_efficiency_phase_comp = Var(
             self.flowsheet().time,
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
@@ -442,7 +442,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_electricity_demand_phase_comp(b, t, p, j):
             prop_in = b.control_volume.properties_in[t]
             return b.electricity_demand_phase_comp[t, p, j] == (
-                b.electrical_efficiency[t, p, j]
+                b.electrical_efficiency_phase_comp[t, p, j]
                 * prop_in.flow_vol
                 * log10(
                     1
@@ -583,11 +583,11 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
         iscale.set_scaling_factor(self.reaction_rate_constant, sf)
 
-        if iscale.get_scaling_factor(self.electrical_efficiency) is None:
+        if iscale.get_scaling_factor(self.electrical_efficiency_phase_comp) is None:
             sf = iscale.get_scaling_factor(
-                self.electrical_efficiency, default=1e-6, warning=True
+                self.electrical_efficiency_phase_comp, default=1e-6, warning=True
             )
-        iscale.set_scaling_factor(self.electrical_efficiency, sf)
+        iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -612,7 +612,7 @@ class Ultraviolet0DData(UnitModelBlockData):
                     self.uv_dose
                 ) * iscale.get_scaling_factor(self.inactivation_rate[p, j])
                 sf = (
-                    iscale.get_scaling_factor(self.electrical_efficiency[t, p, j])
+                    iscale.get_scaling_factor(self.electrical_efficiency_phase_comp[t, p, j])
                     * (1 / log10(1 / exp(removal)))
                     * iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].flow_vol

@@ -90,7 +90,7 @@ class TestUltraviolet:
         m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
         m.fs.unit.photolysis_rate_constant["Liq", "NDMA"].fix(photolysis_rate_constant)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.electrical_efficiency[0, "Liq", "NDMA"].fix(EEO)
+        m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         m.fs.unit.UVT.fix(UVT)
         return m
