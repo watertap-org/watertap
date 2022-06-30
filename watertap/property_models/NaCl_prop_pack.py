@@ -860,7 +860,7 @@ class NaClStateBlockData(StateBlockData):
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if self.is_property_constructed("pressure_osm_phase"):
-            if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
+            if iscale.get_scaling_factor(self.pressure_osm_phase["Liq"]) is None:
                 iscale.set_scaling_factor(
                     self.pressure_osm_phase["Liq"],
                     iscale.get_scaling_factor(self.pressure),
@@ -971,7 +971,7 @@ class NaClStateBlockData(StateBlockData):
         # transforming constraints
         if self.is_property_constructed("pressure_osm_phase"):
             sf = iscale.get_scaling_factor(
-                self.pressure_osm_phase, default=1, warning=True
+                self.pressure_osm_phase["Liq"], default=1, warning=True
             )
             iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
         if self.is_property_constructed("osm_coeff"):
