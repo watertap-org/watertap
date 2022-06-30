@@ -72,9 +72,9 @@ the user must specify. The table below gives an outline of these.
    "Lamp efficiency", ":math:`\eta`", "lamp_efficiency", None, None
 
 **Users must provide values for and 'fix' certain variables to solve the model with DOF=0. Thus, users should fix**
-    * either 'inactivation_rate' and 'rate_constant',
+    * either 'inactivation_rate' or 'rate_constant',
     * two variables out of 'uv_dose', 'uv_intensity' and 'exposure_time',
-    * either 'electricity_demand_phase_comp' and 'electrical_efficiency',
+    * either 'electricity_demand_phase_comp' or 'electrical_efficiency',
     * and 'lamp_efficiency'.
 
 **However, users may later unfix certain variables for optimization purposes.**
