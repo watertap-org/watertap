@@ -52,7 +52,7 @@ Relationships
    "Steric partitioning factor", ":math:`Φ_i = (1-λ_{i})^2`"
    "Born solvation partitioning", ":math:`Φ_b = exp(\frac{-ΔG_{i}}{k_{b}T})`"
    "Gibbs free energy of solvation", ":math:`ΔG = \frac{z_{i}^{2}e_{0}^{2}}{8πε_{0}r_{i}}(\frac{1}{ε_{pore}}-\frac{1}{ε_{f}})`"
-   "Solvent flux (Hagen-Poiseuille)", ":math:`J_w = ΔP_{net}\frac{r_{pore}^{2}}{8vρ_{w}Δx_e}} =((P_{f}-P_{p})-Δπ)\frac{r_{pore}^{2}}{8vρ_{w}Δx_e}}`"
+   "Solvent flux (Hagen-Poiseuille)", ":math:`J_w = ΔP_{net}\frac{r_{pore}^{2}}{8vρ_{w}Δx_e} =((P_{f}-P_{p})-Δπ)\frac{r_{pore}^{2}}{8vρ_{w}Δx_e}`"
    "Membrane-solution interface equilibrium", ":math:`γ_{i,1}c_{i,1} = γ_{i,m}c_{i,m}Φ_{i}Φ_{b}exp(\frac{-z_{i}FΔψ_{D,m}}{RT})`"
    "Membrane-solution interface equilibrium", ":math:`γ_{i,N}c_{i,N} = γ_{i,p}c_{i,p}Φ_{i}Φ_{b}exp(\frac{-z_{i}FΔψ_{D,p}}{RT})`"
    
