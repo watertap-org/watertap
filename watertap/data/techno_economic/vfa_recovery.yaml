@@ -10,6 +10,7 @@ default:
       value: 0.5    # Todo: revisit this value later
       units: dimensionless
       constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD) representing volatile fatty acids (VFAs)
-  energy_electric_flow_vol_inlet:
-    value: 0      #todo: revisit this value later on
-    units: kWh/m^3
+  heat_required_per_vfa_mass:
+    value: 0.273231148
+    units: kJ/kg
+    metadata: assuming kJ/kmol value divided by molecular weight of propionate
