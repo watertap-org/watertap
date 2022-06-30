@@ -9,7 +9,7 @@ This unit model implements the Donnan Steric Pore Model with Dielectric Exclusio
 
 Model Structure
 ------------------
-The model consists of 1 ControlVolume0DBlock for the feed-side of the membrane and includes 11 stateblocks overall.
+The model consists of 1 ControlVolume0DBlock for the feed-side of the membrane and includes 11 StateBlocks overall.
 
 * The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface).
 * 2 StateBlocks are attributed to the membrane pore entrance (pore_entrance) at the inlet and outlet of the module.
