@@ -1,4 +1,4 @@
-Co2 Addition (ZO)
+CO2 Addition (ZO)
 =================
 
 Model Type
