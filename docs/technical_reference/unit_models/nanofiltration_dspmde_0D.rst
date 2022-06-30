@@ -1,33 +1,31 @@
 Nanofiltration- Donnan Steric Pore Model with Dielectric Exclusion (0D)
 =======================================================================
 
-This unit model implement the Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
+This unit model implements the Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
 
 .. note::
 
-    The DSPM-DE model is still undergoing validation and refinement, as is this documentation.
+    Documentation for the DSPM-DE model is undergoing refinement.
 
 Variables
 ----------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Water flux, solute flux", ":math:`jv, js_i`", "flux_mass_phase_comp", "[p]", ":math:`\text{kg/m^{2}/s}`"
-   "Pore diffusivity of ion", ":math:`Di, p`", "diffus_pore_phase_comp", "[p]", ":math:`\text{m^{2}/s}`"
-   "Convective hindrance factor", ":math:`ki, c`", "hindrance_factor_term_comp[[convective, diffusive],c]", "None", ":math:`\text{dimensionless}`"
-   "Diffusive hindrance factor", ":math:`ki, d`", "hindrance_factor_term_comp[[convective, diffusive],c]", "None", ":math:`\text{dimensionless}`"
-   "Pore Diffusivity of ion", ":math:`Di, p`", "diffus_pore_phase_comp", "[p]", ":math:`\text{m^{2}/s}`"
-   "Pore radius", ":math:`rp`", "radius_pore", "[p]", ":math:`\text{m}`"
-   "Stokes radius", ":math:`rs_i`", "radius_stokes_comp[c]", "[p]", ":math:`\text{m}`"
+   "Water flux, solute flux", ":math:`j_v, j_s,_i`", "flux_mass_phase_comp", "[p]", ":math:`\text{kg/m^{2}/s}`"
+   "Pore diffusivity of ion", ":math:`D_i,_p`", "diffus_pore_phase_comp", "[p]", ":math:`\text{m^{2}/s}`"
+   "Convective hindrance factor", ":math:`k_i,_c`", "hindrance_factor_term_comp[[convective, diffusive],c]", "None", ":math:`\text{dimensionless}`"
+   "Diffusive hindrance factor", ":math:`k_i,_d`", "hindrance_factor_term_comp[[convective, diffusive],c]", "None", ":math:`\text{dimensionless}`"
+   "Pore Diffusivity of ion", ":math:`D_i,_p`", "diffus_pore_phase_comp", "[p]", ":math:`\text{m^{2}/s}`"
+   "Pore radius", ":math:`r_p`", "radius_pore", "[p]", ":math:`\text{m}`"
+   "Stokes radius", ":math:`r_s,_i`", "radius_stokes_comp[c]", "[p]", ":math:`\text{m}`"
    "rs/rp", ":math:`λ_i`", "lambda_comp[c]", "[p]", ":math:`\text{dimensionless}`"
    "Effective membrane thickness", ":math:`dx_e`", "membrane_thickness_effective", "None", ":math:`\text{m}`"
-   "Membrane porosity", ":math:`Ak`", "membrane_porosity", "None", ":math:`\text{dimensionless}`"
-   "Active layer thickness", ":math:`dx`", "membrane_thickness_active_layer", "None", ":math:`\text{m}`"
    "Valency", ":math:`z_i`", "charge_comp[c]", "[p]", ":math:`\text{dimensionless}`"
-   "Streic partitioning factor", ":math:`φ_i`", "partitioning_factor_steric_comp", "None", ":math:`\text{dimensionless}`"
+   "Steric partitioning factor", ":math:`φ_i`", "partitioning_factor_steric_comp", "None", ":math:`\text{dimensionless}`"
    "Born solvation contribution to partitioning", ":math:`φ_{b_i}`", "partitioning_factor_born_solvation_comp", "[p]", ":math:`\text{dimensionless}`"
-   "Gibbs free energy of solvation", ":math:`dGsolv`", "gibbs_solvation_comp", "None", ":math:`\text{J}`"
-   "Membrane charge density", ":math:`cx`", "membrane_charge_density", "None", ":math:`\text{mol/m^3}`"
+   "Gibbs free energy of solvation", ":math:`dG_{solv}`", "gibbs_solvation_comp", "None", ":math:`\text{J}`"
+   "Membrane charge density", ":math:`c_x`", "membrane_charge_density", "None", ":math:`\text{mol/m^3}`"
    "Dielectric constant of medium (pore)", ":math:`Σ_p`", "dielectric_constant_pore", "[p]", ":math:`\text{dimensionless}`"
    "Dielectric constant of medium (feed) assumed equal to that of water", ":math:`Σ_f`", "dielectric_constant_feed", "[p]", ":math:`\text{dimensionless}`"
    "Concentration", ":math:`C_{i,j}`", "[feed,interface,pore_entrance,pore_exit,permeate].conc_mol)phase_comp", "[p,j]", ":math:`\text{kg/m^{3}`"
