@@ -46,7 +46,7 @@ Relationships
    "Solute flux - solvent flux relationship", ":math:`J_i = J_{v}c_{i,p}`" 
    "Diffusive hindered transport coefficient :math:`(λ_{i} ≤ 0.95)`", ":math:`K_{i,d} = \frac{1+(\frac{9}{8})λ_{i}ln(λ_{i})-1.56034λ_{i}+0.528155λ_{i}^{2}+1.91521λ_{i}^{3}-2.81903λ_{i}^{4}+0.270788λ_{i}^{5}-1.10115λ_{i}^{6}-0.435933λ_{i}^{7}}{(1-λ_{i})^{2}}`"
    "Diffusive hindered transport coefficient :math:`(λ_{i} > 0.95)`", ":math:`K_{i,d} = 0.984(\frac{1-λ_{i}}{λ_{i}})^{(5/2)}`"
-   "Convectve hindered transport coefficient", ":math:`K_{i,c} = \frac{1+3.867λ_{i}-1.907λ_{i}^{2}-0.834λ_{i}^{3}}{1+1.867λ_{i}-0.741λ_{i}^{2}}`"
+   "Convective hindered transport coefficient", ":math:`K_{i,c} = \frac{1+3.867λ_{i}-1.907λ_{i}^{2}-0.834λ_{i}^{3}}{1+1.867λ_{i}-0.741λ_{i}^{2}}`"
    "Stokes pore radius ratio", ":math:`λ_{i} = \frac{r_{i,stokes}}{r_{pore}}`"
    "Pore diffusion coefficient", ":math:`D_{i,p} = K_{i,d}D_{i,∞}`"
    "Steric partitioning factor", ":math:`Φ_i = (1-λ_{i})^2`"
