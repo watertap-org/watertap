@@ -305,6 +305,8 @@ def add_costing(m):
     # typing aid
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
 
+    # NOTE: costing not applied directly to gas-sparged membrane unit;
+    # accounted for in mbr_mec for now
     m.fs.mbr_mec.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.vfa_recovery.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.ion_exchange.costing = UnitModelCostingBlock(**costing_kwargs)

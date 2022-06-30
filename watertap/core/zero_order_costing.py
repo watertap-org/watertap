@@ -28,6 +28,7 @@ from idaes.core.base.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
+    AnaerobicMBRMECZO,
     ATHTLZO,
     BrineConcentratorZO,
     ChemicalAdditionZO,
@@ -59,6 +60,7 @@ from watertap.unit_models.zero_order import (
     WellFieldZO,
     PhotothermalMembraneZO,
     CANDOPZO,
+    VFARecoveryZO,
 )
 
 global_params = [
@@ -415,6 +417,74 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
+    def cost_anaerobic_mbr_mec(blk):
+        """
+        Method for costing anaerobic membrane bioreactor integrated with
+        microbial electrolysis cell.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        unit_capex, unit_opex = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["unit_capex", "unit_opex"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        capex_expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * unit_capex,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            capex_expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            capex_expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == capex_expr
+        )
+
+        # Add fixed operating cost variable and constraint
+        blk.fixed_operating_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency
+            / blk.config.flowsheet_costing_block.base_period,
+            bounds=(0, None),
+            doc="Fixed operating cost of unit",
+        )
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == pyo.units.convert(
+                blk.unit_model.properties_in[t0].flow_vol * unit_opex,
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
+            )
+        )
+
+        # TODO: double-check email to see if electricity for pumping included
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
@@ -2655,6 +2725,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     # Map costing methods to unit model classes
     unit_mapping = {
         ZeroOrderBase: cost_power_law_flow,
+        AnaerobicMBRMECZO: cost_anaerobic_mbr_mec,
         ATHTLZO: cost_autothermal_hydrothermal_liquefaction,
         BrineConcentratorZO: cost_brine_concentrator,
         ChemicalAdditionZO: cost_chemical_addition,
