@@ -75,21 +75,15 @@ the user must specify. The table below gives an outline of these.
    "UV transmittance", ":math:`UVT`", "UVT", None, None
    "UV absorbance", ":math:`UVA`", "UVA", None, None
 
-**Users must provide values for and 'fix' certain variables to solve the model with DOF=0. Thus, users should fix
+**Users must provide values for and 'fix' certain variables to solve the model with DOF=0. Thus, users should fix**
     * either 'inactivation_rate' or 'rate_constant',
-
     * either 'photolysis_rate_constant' or 'reaction_rate_constant',
-
     * two variables out of 'uv_dose', 'uv_intensity' and 'exposure_time',
-
-    * either 'electricity_demand_phase_comp' or 'electrical_efficiency_phase_comp',
-
+    * either 'electricity_demand_phase_comp' or 'electrical_efficiency',
     * either 'UVT' or 'UVA',
-
     * and 'lamp_efficiency'.
 
-
-However, users may later unfix certain variables for optimization purposes.**
+**However, users may later unfix certain variables for optimization purposes.**
 
 Equations and Relationships
 ---------------------------
