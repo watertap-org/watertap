@@ -57,7 +57,7 @@ class TestNDMAProperty(PropertyTestHarness):
             ("flow_mol_phase_comp", ("Liq", "NDMA")): 9.9889e-7,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.999999982,
             ("mole_frac_phase_comp", ("Liq", "NDMA")): 1.7995e-8,
-            ("molality_comp", "NDMA"): 9.9889e-7,
+            ("molality_phase_comp", ("Liq", "NDMA")): 9.9889e-7,
         }
 
 
@@ -91,7 +91,7 @@ class TestNDMAPropertySolution_1(PropertyRegressionTest):
             ("flow_mol_phase_comp", ("Liq", "NDMA")): 0.6749,
             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9874,
             ("mole_frac_phase_comp", ("Liq", "NDMA")): 1.2637e-2,
-            ("molality_comp", "NDMA"): 0.7105,
+            ("molality_phase_comp", ("Liq", "NDMA")): 0.7105,
         }
 
 
