@@ -523,7 +523,7 @@ class _DSPMDEStateBlock(StateBlock):
             # Vars indexd by solute_set
             for j in self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
-                    self[k].molality_phase_comp[j].set_value(
+                    self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
                         / self[k].flow_mol_phase_comp["Liq", "H2O"]
                         / self[k].params.mw_comp["H2O"]
@@ -533,7 +533,7 @@ class _DSPMDEStateBlock(StateBlock):
                 self[k].ionic_strength_molal.set_value(
                     0.5
                     * sum(
-                        self[k].charge_comp[j] ** 2 * self[k].molality_phase_comp[j]
+                        self[k].charge_comp[j] ** 2 * self[k].molality_phase_comp["Liq", j]
                         for j in self[k].params.ion_set | self[k].params.solute_set
                     )
                 )
@@ -943,6 +943,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _molality_phase_comp(self):
         self.molality_phase_comp = Var(
+            self.params.phase_list,
             self.params.ion_set | self.params.solute_set,
             initialize=1,
             bounds=(0, 10),
@@ -952,7 +953,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_molality_phase_comp(b, j):
             return (
-                b.molality_phase_comp[j]
+                b.molality_phase_comp["Liq", j]
                 == b.flow_mol_phase_comp["Liq", j]
                 / b.flow_mol_phase_comp["Liq", "H2O"]
                 / b.params.mw_comp["H2O"]
@@ -1032,7 +1033,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_ionic_strength_molal(b):
             return b.ionic_strength_molal == 0.5 * sum(
-                b.charge_comp[j] ** 2 * b.molality_phase_comp[j]
+                b.charge_comp[j] ** 2 * b.molality_phase_comp["Liq", j]
                 for j in self.params.ion_set | self.params.solute_set
             )
 
@@ -1454,7 +1455,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.ion_set | self.params.solute_set:
-                if iscale.get_scaling_factor(self.molality_phase_comp[j]) is None:
+                if iscale.get_scaling_factor(self.molality_phase_comp["Liq", j]) is None:
                     sf = (
                         iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
                         / iscale.get_scaling_factor(
@@ -1462,7 +1463,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         )
                         / iscale.get_scaling_factor(self.mw_comp["H2O"])
                     )
-                    iscale.set_scaling_factor(self.molality_phase_comp[j], sf)
+                    iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("act_coeff_phase_comp"):
             for j in self.params.ion_set | self.params.solute_set:
@@ -1479,7 +1480,7 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed("ionic_strength_molal"):
             if iscale.get_scaling_factor(self.ionic_strength_molal) is None:
                 sf = min(
-                    iscale.get_scaling_factor(self.molality_phase_comp[j])
+                    iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
                     for j in self.params.ion_set | self.params.solute_set
                 )
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
@@ -1507,6 +1508,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationship indexed by component
+        '''
         v_str_lst_comp = ["molality_phase_comp"]
         for v_str in v_str_lst_comp:
             if self.is_property_constructed(v_str):
@@ -1515,6 +1517,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 for j, c in c_comp.items():
                     sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+        '''
 
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = [
@@ -1524,6 +1527,7 @@ class DSPMDEStateBlockData(StateBlockData):
             "mole_frac_phase_comp",
             "conc_mol_phase_comp",
             "act_coeff_phase_comp",
+            "molality_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):

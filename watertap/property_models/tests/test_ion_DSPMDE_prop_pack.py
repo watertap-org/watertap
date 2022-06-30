@@ -188,7 +188,7 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].conc_mol_phase_comp["Liq", "A"]) == pytest.approx(
         21.288, rel=1e-3
     )
-    assert value(m.fs.stream[0].molality_phase_comp["A"]) == pytest.approx(
+    assert value(m.fs.stream[0].molality_phase_comp["Liq", "A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
     assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(16.7, rel=1e-3)
