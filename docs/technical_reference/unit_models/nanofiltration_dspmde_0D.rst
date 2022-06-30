@@ -20,7 +20,7 @@ Variables
    "Pore radius", ":math:`r_p`", "radius_pore", "[p]", ":math:`\text{m}`"
    "Stokes radius", ":math:`r_s,_i`", "radius_stokes_comp[c]", "[p]", ":math:`\text{m}`"
    "rs/rp", ":math:`λ_i`", "lambda_comp[c]", "[p]", ":math:`\text{dimensionless}`"
-   "Effective membrane thickness", ":math:`dx_e`", "membrane_thickness_effective", "None", ":math:`\text{m}`"
+   "Effective membrane thickness", ":math:`Δx_e`", "membrane_thickness_effective", "None", ":math:`\text{m}`"
    "Valency", ":math:`z_i`", "charge_comp[c]", "[p]", ":math:`\text{dimensionless}`"
    "Steric partitioning factor", ":math:`φ_i`", "partitioning_factor_steric_comp", "None", ":math:`\text{dimensionless}`"
    "Born solvation contribution to partitioning", ":math:`φ_{b_i}`", "partitioning_factor_born_solvation_comp", "[p]", ":math:`\text{dimensionless}`"
@@ -41,7 +41,7 @@ Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux in active layer (pore) domain", ":math:`X_j = -D_{i,p}\frac{c_{i,j+1}-c_{i,j}}{δx_{j}}-0.5z_{i}(c_{i,j}+c_{i,j+1})D_{i,p}\frac{F}{RT}\frac{ψ_{j+1}-ψ_{j}}{δx_{j}}+0.5K_{i,c}(c_{i,j}+c_{i,j+1})J_{v}`"
+   "Solvent flux in active layer (pore) domain", ":math:`J_s,_j = -D_{i,p}\frac{c_{i,j+1}-c_{i,j}}{δx_{j}}-0.5z_{i}(c_{i,j}+c_{i,j+1})D_{i,p}\frac{F}{RT}\frac{ψ_{j+1}-ψ_{j}}{δx_{j}}+0.5K_{i,c}(c_{i,j}+c_{i,j+1})J_{v}`"
    "Solute flux at feed/interface domain", ":math:`J_i = -k_{i}(C_{i,m}-C_{i,f})+J_{w}C_{i,m}-z_{i}C_{i,m}D_{i,∞}\frac{F}{RT}ξ`"
    "Solute flux - solvent flux relationship", ":math:`J_i = J_{v}c_{i,p}`" 
    "Diffusive hindered transport coefficient :math:`(λ_{i} ≤ 0.95)`", ":math:`K_{i,d} = \frac{1+(\frac{9}{8})λ_{i}ln(λ_{i})-1.56034λ_{i}+0.528155λ_{i}^{2}+1.91521λ_{i}^{3}-2.81903λ_{i}^{4}+0.270788λ_{i}^{5}-1.10115λ_{i}^{6}-0.435933λ_{i}^{7}}{(1-λ_{i})^{2}}`"
@@ -52,15 +52,27 @@ Relationships
    "Steric partitioning factor", ":math:`Φ_i = (1-λ_{i})^2`"
    "Born solvation partitioning", ":math:`Φ_b = exp(\frac{-ΔG_{i}}{k_{b}T})`"
    "Gibbs free energy of solvation", ":math:`ΔG = \frac{z_{i}^{2}e_{0}^{2}}{8πε_{0}r_{i}}(\frac{1}{ε_{pore}}-\frac{1}{ε_{f}})`"
-   "Solvent flux (Hagen-Poiseuille)", ":math:`J_w = ΔP_{net}\frac{r_{pore}^{2}}{8vρ_{w}\frac{Δx}{A_{k}}} =((P_{f}-P_{p})-Δπ)\frac{r_{pore}^{2}}{8vρ_{w}\frac{Δx}{A_{k}}}`"
+   "Solvent flux (Hagen-Poiseuille)", ":math:`J_w = ΔP_{net}\frac{r_{pore}^{2}}{8vρ_{w}Δx_e}} =((P_{f}-P_{p})-Δπ)\frac{r_{pore}^{2}}{8vρ_{w}Δx_e}}`"
    "Membrane-solution interface equilibrium", ":math:`γ_{i,1}c_{i,1} = γ_{i,m}c_{i,m}Φ_{i}Φ_{b}exp(\frac{-z_{i}FΔψ_{D,m}}{RT})`"
    "Membrane-solution interface equilibrium", ":math:`γ_{i,N}c_{i,N} = γ_{i,p}c_{i,p}Φ_{i}Φ_{b}exp(\frac{-z_{i}FΔψ_{D,p}}{RT})`"
    
 
 Scaling
 -------
-This DSPM-DE model includes support for scaling, such as providing default or calculating scaling factors for almost all variables.
+The DSPM-DE model includes support for scaling, such as providing default or calculating scaling factors for almost all variables.
 
    
+Class Documentation
+-------------------
+* :mod:`watertap.unit_models.nanofiltration_DSPMDE_0D`
+
+
 References
 ----------
+Geraldes and Alves, 2008 `<https://doi.org/10.1016/j.memsci.2008.04.054>`_
+
+Roy et al., 2015 `<http://dx.doi.org/10.1016/j.memsci.2015.06.030>`_
+
+Labban et al., 2017 `<http://dx.doi.org/10.1016/j.memsci.2016.08.062>`_
+
+Wang and Lin, 2021 `<https://doi.org/10.1016/j.memsci.2020.118809>`_
