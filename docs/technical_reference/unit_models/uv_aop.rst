@@ -56,26 +56,35 @@ The UV system includes the state variables from the associated property package,
 **NOTE: Variables for 'temperature', 'pressure', 'flow_mass_phase_comp', and 'flow_vol' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
 
 Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
-the UV AOP model has at least an additional 5 degrees of freedom that
+the UV AOP model has at least an additional 7 degrees of freedom that
 the user must specify. The table below gives an outline of these.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Inactivation rate coefficient", ":math:`k`", "inactivation_rate", "['Liq', j]", ":math:`\text{m}^2\text{/J}`"
-   "Pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
+   "Overall pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
+   "Pseudo-first order rate constant for direct photolysis of component", ":math:`k_d`", "photolysis_rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
+   "Pseudo-first order rate constant for indirect photolysis of component", ":math:`k_i`", "reaction_rate_constant", "['Liq', j]", ":math:`\text{s}^{-1}`"
    "UV dose", ":math:`D`", "uv_dose", None, ":math:`\text{J/}\text{m}^2`"
    "Average intensity of UV light", ":math:`I`", "uv_intensity", None, ":math:`\text{J/}\text{m}^2\text{/s}`"
    "Exposure time of UV light", ":math:`t`", "exposure_time", None, ":math:`\text{s}`"
    "Electricity demand of components", ":math:`E_j`", "electricity_demand_phase_comp", "[t, 'Liq', j]", ":math:`\text{W}`"
-   "Electricity efficiency per log order reduction (EE/O)", ":math:`EE/O_j`", "electrical_efficiency", "[t, 'Liq', j]", ":math:`\text{J/}\text{m}^3`"
+   "Electricity efficiency per log order reduction (EE/O)", ":math:`EE/O_j`", "electrical_efficiency_phase_comp", "[t, 'Liq', j]", ":math:`\text{J/}\text{m}^3`"
    "Lamp efficiency", ":math:`\eta`", "lamp_efficiency", None, None
+   "UV transmittance", ":math:`UVT`", "UVT", None, None
+   "UV absorbance", ":math:`UVA`", "UVA", None, None
 
 **Users must provide values for and 'fix' certain variables to solve the model with DOF=0. Thus, users should fix
-    * either 'inactivation_rate' and 'rate_constant',
+    * either 'inactivation_rate' or 'rate_constant',
+
+    * either 'photolysis_rate_constant' or 'reaction_rate_constant',
 
     * two variables out of 'uv_dose', 'uv_intensity' and 'exposure_time',
-    * either 'electricity_demand_phase_comp' and 'electrical_efficiency', 
+
+    * either 'electricity_demand_phase_comp' or 'electrical_efficiency_phase_comp',
+
+    * either 'UVT' or 'UVA',
 
     * and 'lamp_efficiency'.
 
@@ -90,9 +99,11 @@ Equations and Relationships
 
    "UV dose", ":math:`D = I \cdot t`"
    "Pseudo-first order rate constant", ":math:`k_0 = I \cdot k`"
+   "Pseudo-first order rate constant", ":math:`k_0 = k_d + k_i`"
    "Solvent mass balance", ":math:`M_{\text{H2O},out} = M_{\text{H2O},in}`"
    "Solute mass balance", ":math:`M_{j,out} = M_{j,in} \cdot \exp(D \cdot k)`"
    "Electricity demand", ":math:`E_j = EE/O_j \cdot F_{in} \cdot \log_{10}(M_{j,in} / M_{j,out}) / \eta`"
+   "UV absorbance", ":math:`UVA = -\log_{10}(UVT)`"
 
 Class Documentation
 -------------------
