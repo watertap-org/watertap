@@ -207,7 +207,7 @@ class CompressorData(UnitModelBlockData):
         def eq_condenser_pressure_sat(b, t):
             return (
                 b.control_volume.properties_out[t].pressure
-                >= b.control_volume.properties_out[t].pressure_sat_comp
+                >= b.control_volume.properties_out[t].pressure_sat
             )
 
         # Add ports
