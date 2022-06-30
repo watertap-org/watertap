@@ -1270,7 +1270,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     if blk.is_property_constructed("mole_frac_phase_comp"):
                         self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
                     if blk.is_property_constructed("molality_phase_comp"):
-                        self._rescale_permeate_variable(blk.molality_phase_comp[j])
+                        self._rescale_permeate_variable(blk.molality_phase_comp["Liq", j])
                 if blk.is_property_constructed("pressure_osm_phase"):
                     self._rescale_permeate_variable(blk.pressure_osm_phase)
 

@@ -633,6 +633,7 @@ class NaClStateBlockData(StateBlockData):
 
     def _molality_phase_comp(self):
         self.molality_phase_comp = Var(
+            self.params.phase_list,
             ["NaCl"],
             initialize=1,
             bounds=(1e-4, 10),
@@ -642,7 +643,7 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_molality_phase_comp(b, j):
             return (
-                self.molality_phase_comp[j]
+                self.molality_phase_comp["Liq", j]
                 == b.mass_frac_phase_comp["Liq", j]
                 / (1 - b.mass_frac_phase_comp["Liq", j])
                 / b.params.mw_comp[j]
@@ -724,7 +725,7 @@ class NaClStateBlockData(StateBlockData):
                 b.pressure_osm_phase
                 == i
                 * b.osm_coeff
-                * b.molality_phase_comp["NaCl"]
+                * b.molality_phase_comp["Liq", "NaCl"]
                 * rhow
                 * Constants.gas_constant
                 * b.temperature
@@ -941,12 +942,12 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
-                    if iscale.get_scaling_factor(self.molality_phase_comp[j]) is None:
+                    if iscale.get_scaling_factor(self.molality_phase_comp["Liq", j]) is None:
                         sf = iscale.get_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j]
                         )
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-                        iscale.set_scaling_factor(self.molality_phase_comp[j], sf)
+                        iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("enth_flow"):
             iscale.set_scaling_factor(
@@ -982,12 +983,14 @@ class NaClStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
 
         # property relationship indexed by component
+        '''
         if self.is_property_constructed("molality_phase_comp"):
             for j, c in self.eq_molality_phase_comp.items():
                 sf = iscale.get_scaling_factor(
-                    self.molality_phase_comp[j], default=1, warning=True
+                    self.molality_phase_comp["Liq", j], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf)
+        '''
 
         # property relationships indexed by component and phase
         for v_str in (
@@ -995,6 +998,7 @@ class NaClStateBlockData(StateBlockData):
             "conc_mass_phase_comp",
             "flow_mol_phase_comp",
             "mole_frac_phase_comp",
+            "molality_phase_comp",
         ):
             if self.is_property_constructed(v_str):
                 v_comp = self.component(v_str)
