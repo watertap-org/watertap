@@ -533,7 +533,8 @@ class _DSPMDEStateBlock(StateBlock):
                 self[k].ionic_strength_molal.set_value(
                     0.5
                     * sum(
-                        self[k].charge_comp[j] ** 2 * self[k].molality_phase_comp["Liq", j]
+                        self[k].charge_comp[j] ** 2
+                        * self[k].molality_phase_comp["Liq", j]
                         for j in self[k].params.ion_set | self[k].params.solute_set
                     )
                 )
@@ -1455,7 +1456,10 @@ class DSPMDEStateBlockData(StateBlockData):
 
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.ion_set | self.params.solute_set:
-                if iscale.get_scaling_factor(self.molality_phase_comp["Liq", j]) is None:
+                if (
+                    iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                    is None
+                ):
                     sf = (
                         iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
                         / iscale.get_scaling_factor(

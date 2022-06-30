@@ -193,7 +193,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
-        self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq","NaCl"))
+        self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
 
@@ -715,7 +715,10 @@ class NaClStateBlockData(StateBlockData):
     def _pressure_osm_phase(self):
         self.pressure_osm_phase = Var(
             self.params.phase_list,
-            initialize=1e6, bounds=(5e2, 5e7), units=pyunits.Pa, doc="Osmotic pressure"
+            initialize=1e6,
+            bounds=(5e2, 5e7),
+            units=pyunits.Pa,
+            doc="Osmotic pressure",
         )
 
         def rule_pressure_osm_phase(b, p):
@@ -733,7 +736,9 @@ class NaClStateBlockData(StateBlockData):
                 * b.temperature
             )
 
-        self.eq_pressure_osm_phase = Constraint(self.params.phase_list, rule=rule_pressure_osm_phase)
+        self.eq_pressure_osm_phase = Constraint(
+            self.params.phase_list, rule=rule_pressure_osm_phase
+        )
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -857,7 +862,8 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
                 iscale.set_scaling_factor(
-                    self.pressure_osm_phase["Liq"], iscale.get_scaling_factor(self.pressure)
+                    self.pressure_osm_phase["Liq"],
+                    iscale.get_scaling_factor(self.pressure),
                 )
 
         if self.is_property_constructed("mass_frac_phase_comp"):
@@ -944,12 +950,17 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
-                    if iscale.get_scaling_factor(self.molality_phase_comp["Liq", j]) is None:
+                    if (
+                        iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                        is None
+                    ):
                         sf = iscale.get_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j]
                         )
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-                        iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
+                        iscale.set_scaling_factor(
+                            self.molality_phase_comp["Liq", j], sf
+                        )
 
         if self.is_property_constructed("enth_flow"):
             iscale.set_scaling_factor(
