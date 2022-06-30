@@ -736,7 +736,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 return (
                     b.Kf[t, x, j] * b.dh
                     == bulk.diffus_phase_comp[
-                        "Liq", "NaCl"
+                        "Liq", j
                     ]  # TODO: add diff coefficient to SW prop and consider multi-components
                     * b.N_Sh[t, x]
                 )
@@ -752,10 +752,13 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             )
             def eq_N_Sc(b, t, x):
                 bulk = b.feed_side.properties[t, x]
+                # # TODO: This needs to be revisted. Diffusion is now by component, but
+                #   not H2O and this var should also be by component, but the implementation
+                #   is not immediately clear.
                 return (
                     b.N_Sc[t, x]
                     * bulk.dens_mass_phase["Liq"]
-                    * bulk.diffus_phase_comp["Liq", "NaCl"]
+                    * bulk.diffus_phase_comp["Liq", bulk.params.component_list.last()]
                     == bulk.visc_d_phase["Liq"]
                 )
 
