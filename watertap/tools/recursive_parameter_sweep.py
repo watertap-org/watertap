@@ -12,6 +12,7 @@
 ###############################################################################
 import numpy as np
 import warnings
+import pprint
 from enum import Enum
 from watertap.tools.parameter_sweep import (
     _aggregate_results_arr,
@@ -215,6 +216,8 @@ def recursive_parameter_sweep(
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary based on a filter, e.g., optimal solves.
+    print("\nlocal_output_collection")
+    pprint.pprint(local_output_collection)
     local_filtered_dict, local_n_successful = _filter_recursive_solves(
         model, sweep_params, outputs, local_output_collection, comm
     )

@@ -9,7 +9,7 @@ import warnings
 from pyomo.environ import value
 
 from watertap.tools.sampling_types import *
-from watertap.tools.parameter_sweep_class import *
+from watertap.tools.parameter_sweep_class import ParameterSweep
 from watertap.tools.parameter_sweep_writer import *
 
 # -----------------------------------------------------------------------------

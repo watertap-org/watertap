@@ -170,6 +170,7 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
+    @staticmethod
     def _default_optimize(self, model, options=None, tee=False):
         """
         Default optimization function used in parameter_sweep.
@@ -481,59 +482,6 @@ class ParameterSweep(_ParameterSweepBase):
         **kwargs
     ):
 
-        # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
-
-        # Initialize the writer
-        if self.rank == 0:
-            if h5_results_file_name is None and csv_results_file_name is None:
-                warnings.warn(
-                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-                )
-                self.write_outputs = False
-            else:
-                self.write_outputs = True
-                self.writer = ParameterSweepWriter(
-                    self.comm,
-                    csv_results_file_name=csv_results_file_name,
-                    h5_results_file_name=h5_results_file_name,
-                    debugging_data_dir=debugging_data_dir,
-                    interpolate_nan_outputs=interpolate_nan_outputs
-                )
-
-
-
-    def _aggregate_local_results(
-        self,
-        global_values,
-        local_output_dict,
-        num_samples,
-        local_num_cases
-    ):
-
-        # Create the dictionary
-        global_results_dict = self._create_global_output(local_output_dict, num_samples)
-
-        # Create the array
-        num_global_samples = np.shape(global_values)[0]
-        global_results_arr = self._aggregate_results_arr(global_results_dict, num_global_samples)
-
-        return global_results_dict, global_results_arr
-
-    def parameter_sweep(
-        self,
-        model,
-        sweep_params,
-        outputs=None,
-        optimize_function=None, # self._default_optimize,
-        optimize_kwargs=None,
-        reinitialize_function=None,
-        reinitialize_kwargs=None,
-        reinitialize_before_sweep=False,
-        num_samples=None,
-        seed=None,
-    ):
-
         """
         This function offers a general way to perform repeated optimizations
         of a model for the purposes of exploring a parameter space while
@@ -619,6 +567,59 @@ class ParameterSweep(_ParameterSweepBase):
                         by ``sweep_params`` and the remaining columns are the values of the
                         simulation identified by the ``outputs`` argument.
         """
+
+        # Initialize the base Class
+        _ParameterSweepBase.__init__(self)
+
+        # Initialize the writer
+        if self.rank == 0:
+            if h5_results_file_name is None and csv_results_file_name is None:
+                warnings.warn(
+                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+                )
+                self.write_outputs = False
+            else:
+                self.write_outputs = True
+                self.writer = ParameterSweepWriter(
+                    self.comm,
+                    csv_results_file_name=csv_results_file_name,
+                    h5_results_file_name=h5_results_file_name,
+                    debugging_data_dir=debugging_data_dir,
+                    interpolate_nan_outputs=interpolate_nan_outputs
+                )
+
+
+
+    def _aggregate_local_results(
+        self,
+        global_values,
+        local_output_dict,
+        num_samples,
+        local_num_cases
+    ):
+
+        # Create the dictionary
+        global_results_dict = self._create_global_output(local_output_dict, num_samples)
+
+        # Create the array
+        num_global_samples = np.shape(global_values)[0]
+        global_results_arr = self._aggregate_results_arr(global_results_dict, num_global_samples)
+
+        return global_results_dict, global_results_arr
+
+    def parameter_sweep(
+        self,
+        model,
+        sweep_params,
+        outputs=None,
+        optimize_function=None, # self._default_optimize,
+        optimize_kwargs=None,
+        reinitialize_function=None,
+        reinitialize_kwargs=None,
+        reinitialize_before_sweep=False,
+        num_samples=None,
+        seed=None,
+    ):
 
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
@@ -707,7 +708,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary of successful solves.
-        local_filtered_dict = _create_local_output_skeleton(
+        local_filtered_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, filter_counter
         )
         local_filtered_dict["solve_successful"] = []
@@ -742,7 +743,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
     # ================================================================
 
 
-    def _aggregate_filtered_input_arr(self, global_filtered_dict, req_num_samples):
+    def _aggregate_filtered_input_arr(global_filtered_dict, req_num_samples):
 
         global_filtered_values = np.zeros(
             (req_num_samples, len(global_filtered_dict["sweep_params"])), dtype=np.float64
@@ -763,9 +764,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
     def _aggregate_filtered_results(self, local_filtered_dict, req_num_samples):
 
-        global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples)
-        global_filtered_results = _aggregate_results_arr(global_filtered_dict, req_num_samples)
-        global_filtered_values = _aggregate_filtered_input_arr(global_filtered_dict, req_num_samples)
+        global_filtered_dict = self._create_global_output(local_filtered_dict, req_num_samples)
+        global_filtered_results = self._aggregate_results_arr(global_filtered_dict, req_num_samples)
+        global_filtered_values = self._aggregate_filtered_input_arr(global_filtered_dict, req_num_samples)
 
         return global_filtered_dict, global_filtered_results, global_filtered_values
 
@@ -778,7 +779,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         model,
         sweep_params,
         outputs=None,
-        optimize_function=None, #_default_optimize,
+        optimize_function=None, # _default_optimize,
         optimize_kwargs=None,
         reinitialize_function=None,
         reinitialize_kwargs=None,
@@ -787,11 +788,8 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         seed=None,
     ):
 
-        # Get an MPI communicator
-        comm, rank, num_procs = _init_mpi(mpi_comm)
-
         # Convert sweep_params to LinearSamples
-        sweep_params, sampling_type = _process_sweep_params(sweep_params)
+        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
         # Set the seed before sampling
         np.random.seed(seed)
@@ -810,17 +808,17 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         loop_ctr = 0
         while n_samples_remaining > 0 and loop_ctr < 10:
             # Enumerate/Sample the parameter space
-            global_values = _build_combinations(
-                sweep_params, sampling_type, num_total_samples, comm, rank, num_procs
+            global_values = self._build_combinations(
+                sweep_params, sampling_type, num_total_samples
             )
 
             # divide the workload between processors
-            local_values = _divide_combinations(global_values, rank, num_procs)
+            local_values = self._divide_combinations(global_values)
             local_num_cases = np.shape(local_values)[0]
             if loop_ctr == 0:
                 true_local_num_cases = local_num_cases
 
-            local_output_collection[loop_ctr] = _do_param_sweep(
+            local_output_collection[loop_ctr] = self._do_param_sweep(
                 model,
                 sweep_params,
                 outputs,
@@ -830,7 +828,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 reinitialize_function,
                 reinitialize_kwargs,
                 reinitialize_before_sweep,
-                comm,
             )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
@@ -838,7 +835,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             failure_count = local_num_cases - success_count
 
             # Get the global number of successful solves and update the number of remaining samples
-            if num_procs > 1:  # pragma: no cover
+            if self.num_procs > 1:  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=np.float64)
                 global_failure_count = np.zeros(1, dtype=np.float64)
                 comm.Allreduce(
@@ -869,12 +866,14 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.
-        local_filtered_dict, local_n_successful = _filter_recursive_solves(
-            model, sweep_params, outputs, local_output_collection, comm
+        print("\nlocal_output_collection")
+        pprint.pprint(local_output_collection)
+        local_filtered_dict, local_n_successful = self._filter_recursive_solves(
+            model, sweep_params, outputs, local_output_collection
         )
 
         # if we are debugging
-        if debugging_data_dir is not None:
+        if self.writer.debugging_data_dir is not None:
             local_filtered_values = np.zeros(
                 (local_n_successful, len(local_filtered_dict["sweep_params"])),
                 dtype=np.float64,
@@ -890,28 +889,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             global_filtered_dict,
             global_filtered_results,
             global_filtered_values,
-        ) = _aggregate_filtered_results(
-            local_filtered_dict, req_num_samples, comm, rank, num_procs
-        )
+        ) = self._aggregate_filtered_results(local_filtered_dict, req_num_samples)
 
         # Now we can save this
-        if num_procs > 1:  # pragma: no cover
-            comm.Barrier()
+        self.comm.Barrier()
 
-        global_save_data = _save_results(
-            sweep_params,
-            local_filtered_values,
-            global_filtered_values,
-            local_filtered_dict,
-            global_filtered_dict,
-            global_filtered_results,
-            csv_results_file_name,
-            h5_results_file_name,
-            debugging_data_dir,
-            comm,
-            rank,
-            num_procs,
-            interpolate_nan_outputs,
-        )
+        # Save to file
+        global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
+            global_results_dict, global_results_arr)
 
         return global_save_data
