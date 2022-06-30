@@ -214,21 +214,41 @@ class Ultraviolet0DData(UnitModelBlockData):
         self.inactivation_rate = Var(
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            initialize=0.002245,
+            initialize=2.5e-4,
             bounds=(1e-18, 100),
             domain=NonNegativeReals,
             units=units_meta("time") ** 2 * units_meta("mass") ** -1,
-            doc="Inactivation rate coeff.",
+            doc="Inactivation rate coefficient with respect to uv dose.",
         )
 
         self.rate_constant = Var(
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            initialize=0.002245,
+            initialize=2.5e-3,
             bounds=(1e-18, 100),
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
-            doc="Pseudo-first order rate constant.",
+            doc="Overall pseudo-first order rate constant.",
+        )
+
+        self.photolysis_rate_constant = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            initialize=2e-3,
+            bounds=(1e-18, 100),
+            domain=NonNegativeReals,
+            units=units_meta("time") ** -1,
+            doc="Pseudo-first order rate constant for direct photolysis of component.",
+        )
+
+        self.reaction_rate_constant = Var(
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            initialize=5e-4,
+            bounds=(1e-18, 100),
+            domain=NonNegativeReals,
+            units=units_meta("time") ** -1,
+            doc="Pseudo-first order rate constant for indirect photolysis of component.",
         )
 
         self.dens_solvent = Param(
@@ -239,14 +259,14 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         # Add uv variables
         self.uv_dose = Var(
-            initialize=500,
+            initialize=5000,
             bounds=(1e-18, 10000),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -2,
             doc="UV dose.",
         )
         self.uv_intensity = Var(
-            initialize=1,
+            initialize=10,
             bounds=(1e-18, 10000),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -3,
@@ -258,6 +278,20 @@ class Ultraviolet0DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="Exposure time of UV light.",
+        )
+        self.UVT = Var(
+            initialize=0.9,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="UV transmittance.",
+        )
+        self.UVA = Var(
+            initialize=0.045,
+            bounds=(0, 10),
+            domain=NonNegativeReals,
+            units=pyunits.cm**-1,
+            doc="UV absorbance.",
         )
 
         # Add electricity parameters
@@ -347,14 +381,31 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_uv_dose(b):
             return b.uv_dose == b.uv_intensity * b.exposure_time
 
+        @self.Constraint(
+            doc="Constraint for UV absorbance",
+        )
+        def eq_UVA(b):
+            return b.UVA == -log10(b.UVT) / (1 * pyunits.cm)
+
         # rate constant
         @self.Constraint(
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            doc="Constraint for pseudo-first order rate constant",
+            doc="Constraint for pseudo-first order rate constant with respect to uv intensity",
         )
         def eq_rate_constant(b, p, j):
             return b.rate_constant[p, j] == b.uv_intensity * b.inactivation_rate[p, j]
+
+        @self.Constraint(
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            doc="Constraint for pseudo-first order rate constant with respect to direct and indirect photolysis",
+        )
+        def eq_overall_rate_constant(b, p, j):
+            return (
+                b.rate_constant[p, j]
+                == b.photolysis_rate_constant[p, j] + b.reaction_rate_constant[p, j]
+            )
 
         # mass transfer
         @self.Constraint(
@@ -390,15 +441,16 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
         def eq_electricity_demand_phase_comp(b, t, p, j):
             prop_in = b.control_volume.properties_in[t]
-            prop_out = b.control_volume.properties_out[t]
             return b.electricity_demand_phase_comp[t, p, j] == (
                 b.electrical_efficiency[t, p, j]
                 * prop_in.flow_vol
                 * log10(
-                    pyunits.convert(
-                        prop_in.get_material_flow_terms(p, j)
-                        / prop_out.get_material_flow_terms(p, j),
-                        to_units=pyunits.dimensionless,
+                    1
+                    / exp(
+                        pyunits.convert(
+                            -b.uv_dose * b.inactivation_rate[p, j],
+                            to_units=pyunits.dimensionless,
+                        )
                     )
                 )
                 / b.lamp_efficiency
@@ -494,7 +546,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         # setting scaling factors for variables
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
-            sf = iscale.get_scaling_factor(self.uv_intensity, default=1, warning=True)
+            sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
         iscale.set_scaling_factor(self.uv_intensity, sf)
 
         if iscale.get_scaling_factor(self.exposure_time) is None:
@@ -504,12 +556,12 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.exposure_time, sf)
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
-            sf = iscale.get_scaling_factor(self.uv_dose, default=1e-2, warning=True)
+            sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)
         iscale.set_scaling_factor(self.uv_dose, sf)
 
         if iscale.get_scaling_factor(self.inactivation_rate) is None:
             sf = iscale.get_scaling_factor(
-                self.inactivation_rate, default=1e3, warning=True
+                self.inactivation_rate, default=1e4, warning=True
             )
         iscale.set_scaling_factor(self.inactivation_rate, sf)
 
@@ -518,6 +570,18 @@ class Ultraviolet0DData(UnitModelBlockData):
                 self.rate_constant, default=1e3, warning=True
             )
         iscale.set_scaling_factor(self.rate_constant, sf)
+
+        if iscale.get_scaling_factor(self.photolysis_rate_constant) is None:
+            sf = iscale.get_scaling_factor(
+                self.photolysis_rate_constant, default=1e3, warning=True
+            )
+        iscale.set_scaling_factor(self.photolysis_rate_constant, sf)
+
+        if iscale.get_scaling_factor(self.reaction_rate_constant) is None:
+            sf = iscale.get_scaling_factor(
+                self.reaction_rate_constant, default=1e3, warning=True
+            )
+        iscale.set_scaling_factor(self.reaction_rate_constant, sf)
 
         if iscale.get_scaling_factor(self.electrical_efficiency) is None:
             sf = iscale.get_scaling_factor(
@@ -530,6 +594,12 @@ class Ultraviolet0DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.lamp_efficiency) is None:
             iscale.set_scaling_factor(self.lamp_efficiency, 10)
 
+        if iscale.get_scaling_factor(self.UVT) is None:
+            iscale.set_scaling_factor(self.UVT, 10)
+
+        if iscale.get_scaling_factor(self.UVA) is None:
+            iscale.set_scaling_factor(self.UVA, 100)
+
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(
                 self.control_volume.properties_in[0].dens_mass_phase["Liq"]
@@ -538,9 +608,12 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         for (t, p, j), v in self.electricity_demand_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
+                removal = -iscale.get_scaling_factor(
+                    self.uv_dose
+                ) * iscale.get_scaling_factor(self.inactivation_rate[p, j])
                 sf = (
                     iscale.get_scaling_factor(self.electrical_efficiency[t, p, j])
-                    * (1 / log10(10))
+                    * (1 / log10(1 / exp(removal)))
                     * iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].flow_vol
                     )
@@ -589,11 +662,27 @@ class Ultraviolet0DData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.uv_dose)
             iscale.constraint_scaling_transform(c, sf)
 
+        for c in self.eq_UVA.values():
+            if iscale.get_scaling_factor(self.UVA) is None:
+                sf = -log10(iscale.get_scaling_factor(self.UVT))
+            else:
+                sf = iscale.get_scaling_factor(self.UVA)
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_rate_constant.items():
             if iscale.get_scaling_factor(self.rate_constant) is None:
                 sf = iscale.get_scaling_factor(
                     self.uv_intensity
                 ) * iscale.get_scaling_factor(self.inactivation_rate[ind])
+            else:
+                sf = iscale.get_scaling_factor(self.rate_constant[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_overall_rate_constant.items():
+            if iscale.get_scaling_factor(self.rate_constant) is None:
+                sf = iscale.get_scaling_factor(
+                    self.photolysis_rate_constant[ind]
+                ) + iscale.get_scaling_factor(self.reaction_rate_constant[ind])
             else:
                 sf = iscale.get_scaling_factor(self.rate_constant[ind])
             iscale.constraint_scaling_transform(c, sf)
