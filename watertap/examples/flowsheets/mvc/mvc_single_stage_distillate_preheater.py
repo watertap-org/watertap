@@ -62,12 +62,17 @@ def main():
     display_seawater_states(m.fs.evaporator.properties_feed[0])
     print("\nVapor State:")
     display_water_states(m.fs.evaporator.properties_vapor[0])
+    print("\nIsentropic compressed Vapor State:")
+    display_water_states(m.fs.compressor.properties_isentropic_out[0])
     print("\nCompressed Vapor State:")
     display_water_states(m.fs.compressor.control_volume.properties_out[0])
     print("\nCondensed Vapor State:")
     display_water_states(m.fs.condenser.control_volume.properties_out[0])
     print("\nDistillate exiting HX State:")
     display_water_states(m.fs.distillate.properties[0])
+    m.fs.condenser.report()
+    m.fs.pump_distillate.report()
+    m.fs.hx_distillate.report()
     # optimize(m)
     # display_system(m)
 
@@ -107,6 +112,9 @@ def build():
     m.fs.compressor = Compressor(default={"property_package": m.fs.properties_vapor})
 
     m.fs.condenser = Condenser(default={"property_package": m.fs.properties_vapor})
+
+    # add translator block
+
 
     m.fs.pump_brine = Pump(default={"property_package": m.fs.properties_feed})
 
@@ -154,7 +162,13 @@ def build():
     m.fs.pump_brine.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing}
     )
-
+    m.fs.evaporator.costing = UnitModelCostingBlock(
+        default={'flowsheet_costing_block': m.fs.costing}
+    )
+    m.fs.compressor.costing = UnitModelCostingBlock(
+        default={'flowsheet_costing_block': m.fs.costing}
+    )
+    
     m.fs.costing.cost_process()
     # m.fs.costing.cost_pump(m.fs.pump_feed,pump_type=PumpType.low_pressure, cost_electricity_flow=True)
     # m.fs.costing.cost_pump(m.fs.pump_distillate,pump_type=PumpType.low_pressure, cost_electricity_flow=True)
@@ -371,6 +385,7 @@ def display_system(m):
         "U: ", m.fs.evaporator.U.value, " W/m^2-K"
     )  # , ', Fixed? ', m.fs.evaporator.U.isfixed())
     print("heat transfer: ", m.fs.evaporator.heat_transfer.value, " W")
+    print("LMTD: ", m.fs.evaporator.lmtd.value, " K")
     print("\nCompressor")
     print("Work: ", m.fs.compressor.control_volume.work[0].value, " W")
     print("Pressure ratio: ", m.fs.compressor.pressure_ratio.value)
@@ -378,7 +393,13 @@ def display_system(m):
     print("\nCondenser")
     print("Heat transfer: ", m.fs.condenser.control_volume.heat[0].value, " W")
     print("\n Outcome Metrics")
-    print("Energy consumption: ", value(m.fs.costing.specific_energy_consumption), " kWh/m3")
+    print('Evaporator capital cost: ', m.fs.evaporator.costing.capital_cost.value)
+    print('Compressor capital cost: ', m.fs.compressor.costing.capital_cost.value)
+    print(
+        "Energy consumption: ",
+        value(m.fs.costing.specific_energy_consumption),
+        " kWh/m3",
+    )
     print("LCOW: ", value(m.fs.costing.LCOW), " $/m3")
 
 

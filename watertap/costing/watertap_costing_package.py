@@ -38,6 +38,11 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
 )
 
+from watertap.unit_models.mvc.components import (
+    Evaporator,
+    Compressor,
+)
+
 
 class ROType(StrEnum):
     standard = "standard"
@@ -233,6 +238,35 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
+        self.evaporator_material_factor_cost = pyo.Var(
+            initialize=10,
+            doc="Horizontal falling tube evaporator material factor (Couper et al., 2005)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.evaporator_unit_cost = pyo.Var(
+            initialize=360,
+            doc="Horizontal falling tube evaporator unit cost per area (Couper et al., 2005)",
+            units=pyo.units.USD_2005,
+        )
+
+        self.evaporator_exponent = pyo.Var(
+            initialize=0.85,
+            doc="Horizontal falling tube evaporator area-based cost exponent (Couper et al., 2005)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.compressor_unit_cost = pyo.Var(
+            initialize=7364,
+            doc="Compressor unit cost (El-Sayed et al., 2001)",
+            units=pyo.units.USD_2001,
+        )
+
+        self.compressor_exponent = pyo.Var(
+            initialize=0.7,
+            doc="Compressor exponent (El-Sayed et al., 2001)",
+            units=pyo.units.dimensionless,
+        )
         # fix the parameters
         for var in self.component_objects(pyo.Var):
             var.fix()
@@ -738,12 +772,46 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_evaporator(blk):
         """
         Capital cost for MVC horizontal falling tube evaporator by area and material factor
+        Assumes the unit_model has an `area` variable or parameter.
         """
-        _make_capital_cost_var(blk)
-        # blk.capital_cost_constraint = pyo.Constraint(
-        # expr= blk.capital_cost ==
-        # 1000*0.36*F_evap*(10.7649*A_evap)**0.85)
+        make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (
+                blk.costing_package.evaporator_unit_cost
+                * blk.costing_package.evaporator_material_factor_cost
+                * (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.ft**2))
+                   /pyo.units.ft**2) ** blk.costing_package.evaporator_exponent)
+                ,
+                to_units=blk.costing_package.base_currency
+                )
+            )
 
+    @staticmethod
+    def cost_compressor(blk):
+        """
+        Capital cost for compressor.
+        Assumes the unit_model has an `area` variable or parameter.
+        """
+        make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (blk.costing_package.compressor_unit_cost
+                 * blk.unit_model.control_volume.properties_in[0].flow_mass_phase_comp['Vap','H2O'] # Add a convert to kg/s
+                 / (pyo.units.kg / pyo.units.s)
+                 * blk.unit_model.pressure_ratio
+                 * (blk.unit_model.efficiency/(1-blk.unit_model.efficiency))
+                 ** blk.costing_package.compressor_exponent
+                ),
+                to_units=blk.costing_package.base_currency
+            )
+        )
+
+        blk.costing_package.cost_flow(
+            pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "electricity"
+        )
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
@@ -756,6 +824,8 @@ WaterTAPCostingData.unit_mapping = {
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
+    Evaporator: WaterTAPCostingData.cost_evaporator,
+    Compressor: WaterTAPCostingData.cost_compressor,
 }
 
 

@@ -265,11 +265,11 @@ class CompressorData(UnitModelBlockData):
             return (
                 b.efficiency
                 * (
-                    b.control_volume.properties_out[0].enth_mass_phase["Vap"]
-                    - b.control_volume.properties_in[0].enth_mass_phase["Vap"]
+                    b.control_volume.properties_out[0].enth_flow_phase["Vap"]
+                    - b.control_volume.properties_in[0].enth_flow_phase["Vap"]
                 )
-                == b.properties_isentropic_out[0].enth_mass_phase["Vap"]
-                - b.control_volume.properties_in[0].enth_mass_phase["Vap"]
+                == b.properties_isentropic_out[0].enth_flow_phase["Vap"]
+                - b.control_volume.properties_in[0].enth_flow_phase["Vap"]
             )
 
     def initialize_build(
