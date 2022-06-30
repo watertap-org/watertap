@@ -71,7 +71,10 @@ the user must specify. The table below gives an outline of these.
    "Electricity efficiency per log order reduction (EE/O)", ":math:`EE/O_j`", "electrical_efficiency", "[t, 'Liq', j]", ":math:`\text{J/}\text{m}^3`"
    "Lamp efficiency", ":math:`\eta`", "lamp_efficiency", None, None
 
-**Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
+**Users must provide values for and 'fix' these variables to solve the model with DOF=0. Thus, users should fix
+one variable of 'inactivation_rate' and 'rate_constant', two variables of 'uv_dose', 'uv_intensity' and 'exposure_time',
+one variable of 'electricity_demand_phase_comp' and 'electrical_efficiency', and one variable of 'lamp_efficiency'.
+However, users may also leave variables unfixed for optimization purposes.**
 
 Equations and Relationships
 ---------------------------
