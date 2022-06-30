@@ -733,7 +733,8 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 return (
                     b.Kf[t, x, j] * b.dh
                     == bulk.diffus_phase_comp[
-                        "Liq"
+                        "Liq",
+                        "NaCl"
                     ]  # TODO: add diff coefficient to SW prop and consider multi-components
                     * b.N_Sh[t, x]
                 )
@@ -752,7 +753,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 return (
                     b.N_Sc[t, x]
                     * bulk.dens_mass_phase["Liq"]
-                    * bulk.diffus_phase_comp["Liq"]
+                    * bulk.diffus_phase_comp["Liq", "NaCl"]
                     == bulk.visc_d_phase["Liq"]
                 )
 

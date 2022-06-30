@@ -193,7 +193,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
-        self.set_default_scaling("diffus_phase_comp", 1e9, index="Liq")
+        self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq","NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
 
@@ -674,14 +674,15 @@ class NaClStateBlockData(StateBlockData):
     def _diffus_phase_comp(self):
         self.diffus_phase_comp = Var(
             self.params.phase_list,
+            ["NaCl"],
             initialize=1e-9,
             bounds=(1e-10, 1e-8),
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
 
-        def rule_diffus_phase_comp(b):  # diffusivity, eq 6 in Bartholomew
-            return b.diffus_phase_comp["Liq"] == (
+        def rule_diffus_phase_comp(b, j):  # diffusivity, eq 6 in Bartholomew
+            return b.diffus_phase_comp["Liq", j] == (
                 b.params.diffus_param["4"] * b.mass_frac_phase_comp["Liq", "NaCl"] ** 4
                 + b.params.diffus_param["3"]
                 * b.mass_frac_phase_comp["Liq", "NaCl"] ** 3
@@ -691,7 +692,7 @@ class NaClStateBlockData(StateBlockData):
                 + b.params.diffus_param["0"]
             )
 
-        self.eq_diffus_phase_comp = Constraint(rule=rule_diffus_phase_comp)
+        self.eq_diffus_phase_comp = Constraint(["NaCl"], rule=rule_diffus_phase_comp)
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -970,7 +971,6 @@ class NaClStateBlockData(StateBlockData):
             "visc_d_phase",
             "enth_mass_phase",
             "flow_vol_phase",
-            "diffus_phase_comp",
         ):
             if self.is_property_constructed(v_str):
                 sf = iscale.get_scaling_factor(
@@ -982,16 +982,6 @@ class NaClStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
             iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
 
-        # property relationship indexed by component
-        '''
-        if self.is_property_constructed("molality_phase_comp"):
-            for j, c in self.eq_molality_phase_comp.items():
-                sf = iscale.get_scaling_factor(
-                    self.molality_phase_comp["Liq", j], default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(c, sf)
-        '''
-
         # property relationships indexed by component and phase
         for v_str in (
             "mass_frac_phase_comp",
@@ -999,6 +989,7 @@ class NaClStateBlockData(StateBlockData):
             "flow_mol_phase_comp",
             "mole_frac_phase_comp",
             "molality_phase_comp",
+            "diffus_phase_comp",
         ):
             if self.is_property_constructed(v_str):
                 v_comp = self.component(v_str)
