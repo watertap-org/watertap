@@ -371,7 +371,7 @@ class WaterParameterData(PhysicalParameterBlock):
         # self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-6, index="Vap")
-        self.set_default_scaling("pressure_sat_comp", 1e-5)
+        self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Vap")
         self.set_default_scaling("dh_vap_mass", 1e-6)
@@ -389,7 +389,7 @@ class WaterParameterData(PhysicalParameterBlock):
                 "flow_vol": {"method": "_flow_vol"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "pressure_sat_comp": {"method": "_pressure_sat_comp"},
+                "pressure_sat": {"method": "_pressure_sat"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
@@ -807,15 +807,15 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_enth_mass_phase
         )
 
-    def _pressure_sat_comp(self):
-        self.pressure_sat_comp = Var(
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
             initialize=1e3,
             bounds=(1, 1e8),
             units=pyunits.Pa,
             doc="Saturation vapor pressure",
         )
 
-        def rule_pressure_sat_comp(
+        def rule_pressure_sat(
             b,
         ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
@@ -830,9 +830,9 @@ class WaterStateBlockData(StateBlockData):
                 )
                 * pyunits.Pa
             )
-            return b.pressure_sat_comp == psatw
+            return b.pressure_sat == psatw
 
-        self.eq_pressure_sat_comp = Constraint(rule=rule_pressure_sat_comp)
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     def _enth_flow_phase(self):
         # enthalpy flow variable

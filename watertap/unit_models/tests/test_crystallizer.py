@@ -275,7 +275,7 @@ class TestCrystallization:
             "eq_enth_mass_solvent",
         ]
         # List of attributes for liquid stateblocks only
-        stateblock_objs_liq_lst = ["pressure_sat_comp", "eq_pressure_sat_comp"]
+        stateblock_objs_liq_lst = ["pressure_sat", "eq_pressure_sat"]
         # Inlet block
         assert hasattr(m.fs.unit, "properties_in")
         blk = getattr(m.fs.unit, "properties_in")

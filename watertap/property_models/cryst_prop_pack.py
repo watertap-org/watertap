@@ -811,7 +811,7 @@ class NaClParameterData(PhysicalParameterBlock):
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
         self.set_default_scaling("pressure", 1e-6)
-        self.set_default_scaling("pressure_sat_comp", 1e-5)
+        self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("dens_mass_solvent", 1e-3, index="Liq")
         self.set_default_scaling("dens_mass_solvent", 1, index="Vap")
         self.set_default_scaling("dens_mass_solute", 1e-3, index="Sol")
@@ -854,7 +854,7 @@ class NaClParameterData(PhysicalParameterBlock):
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "flow_vol": {"method": "_flow_vol"},
-                "pressure_sat_comp": {"method": "_pressure_sat_comp"},
+                "pressure_sat": {"method": "_pressure_sat"},
                 "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "enth_mass_solvent": {"method": "_enth_mass_solvent"},
@@ -1488,15 +1488,15 @@ class NaClStateBlockData(StateBlockData):
         self.flow_vol = Expression(rule=rule_flow_vol)
 
     # 13. Vapour pressure of the NaCl solution based on the boiling temperature
-    def _pressure_sat_comp(self):
-        self.pressure_sat_comp = Var(
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
             initialize=1e3,
             bounds=(0.001, 1e6),
             units=pyunits.Pa,
             doc="Vapor pressure of NaCl solution",
         )
 
-        def rule_pressure_sat_comp(b):  # vapor pressure, eq6 in Sparrow (2003)
+        def rule_pressure_sat(b):  # vapor pressure, eq6 in Sparrow (2003)
             t = b.temperature - 273.15 * pyunits.K
             x = b.mass_frac_phase_comp["Liq", "NaCl"]
 
@@ -1543,9 +1543,9 @@ class NaClStateBlockData(StateBlockData):
             p_sat = (
                 ps_a + (ps_b * t) + (ps_c * t**2) + (ps_d * t**3) + (ps_e * t**4)
             )
-            return b.pressure_sat_comp == pyunits.convert(p_sat, to_units=pyunits.Pa)
+            return b.pressure_sat == pyunits.convert(p_sat, to_units=pyunits.Pa)
 
-        self.eq_pressure_sat_comp = Constraint(rule=rule_pressure_sat_comp)
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     # 14. Saturation temperature for water vapour at calculated boiling pressure
     def _temperature_sat_solvent(self):
@@ -1557,7 +1557,7 @@ class NaClStateBlockData(StateBlockData):
         )
 
         def rule_temperature_sat_solvent(b):
-            psat = pyunits.convert(b.pressure_sat_comp, to_units=pyunits.kPa)
+            psat = pyunits.convert(b.pressure_sat, to_units=pyunits.kPa)
             return (
                 b.temperature_sat_solvent
                 == b.params.temp_sat_solvent_A1
@@ -2078,7 +2078,7 @@ class NaClStateBlockData(StateBlockData):
         # Transforming constraints
         # property relationships with no index, simple constraint
         v_str_lst_simple = [
-            "pressure_sat_comp",
+            "pressure_sat",
             "dh_vap_mass_solvent",
             "temperature_sat_solvent",
         ]

@@ -671,7 +671,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
-        self.set_default_scaling("pressure_sat_comp", 1e-5)
+        self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("dh_vap_mass", 1e-6)
@@ -699,7 +699,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow": {"method": "_enth_flow"},
-                "pressure_sat_comp": {"method": "_pressure_sat_comp"},
+                "pressure_sat": {"method": "_pressure_sat"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
@@ -1314,12 +1314,12 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
-    def _pressure_sat_comp(self):
-        self.pressure_sat_comp = Var(
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
             initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Vapor pressure"
         )
 
-        def rule_pressure_sat_comp(
+        def rule_pressure_sat(
             b,
         ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
@@ -1335,12 +1335,12 @@ class SeawaterStateBlockData(StateBlockData):
                 )
                 * pyunits.Pa
             )
-            return b.pressure_sat_comp == psatw * exp(
+            return b.pressure_sat == psatw * exp(
                 b.params.pressure_sat_param_B1 * s
                 + b.params.pressure_sat_param_B2 * s**2
             )
 
-        self.eq_pressure_sat_comp = Constraint(rule=rule_pressure_sat_comp)
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     def _cp_mass_phase(self):
         self.cp_mass_phase = Var(
@@ -1631,7 +1631,7 @@ class SeawaterStateBlockData(StateBlockData):
         v_str_lst_simple = [
             "dens_mass_solvent",
             "osm_coeff",
-            "pressure_sat_comp",
+            "pressure_sat",
             "dh_vap_mass",
         ]
         for v_str in v_str_lst_simple:

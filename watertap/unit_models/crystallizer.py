@@ -378,7 +378,7 @@ class CrystallizationData(UnitModelBlockData):
         # (d) Operating pressure constraint
         @self.Constraint(doc="Operating pressure constraint")
         def eq_operating_pressure_constraint(b):
-            return self.pressure_operating - b.properties_out[0].pressure_sat_comp == 0
+            return self.pressure_operating - b.properties_out[0].pressure_sat == 0
 
         # (e) Relative supersaturation
         @self.Constraint(

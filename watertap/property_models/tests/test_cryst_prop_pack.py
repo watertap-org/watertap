@@ -94,7 +94,7 @@ class TestDefaultNaClwaterProperty:
         ("flow_vol_phase", "Liq"): 9.79e-4,
         ("flow_vol_phase", "Sol"): 0,
         ("flow_vol_phase", "Vap"): 0,
-        ("pressure_sat_comp", None): 2932.43,
+        ("pressure_sat", None): 2932.43,
         ("temperature_sat_solvent", None): 296.79,
         ("conc_mass_phase_comp", ("Liq", "NaCl")): 35.753,
         ("conc_mass_phase_comp", ("Liq", "H2O")): 985.753,
@@ -359,7 +359,7 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
             ("dh_vap_mass_solvent", None): 2441.808,
             ("cp_mass_solvent", "Vap"): 1864.52,
             ("flow_vol_phase", "Vap"): 1 / 3.633,  # mass flow / density
-            ("pressure_sat_comp", None): 2905.28,
+            ("pressure_sat", None): 2905.28,
             ("flow_mol_phase_comp", ("Vap", "H2O")): 1 / 18.01528e-3,  # mass flow / mw
             ("mole_frac_phase_comp", ("Vap", "H2O")): 1.0,
         }
@@ -402,7 +402,7 @@ class TestNaClPropertySolution_6(PropertyRegressionTest):
             ("flow_vol_phase", "Liq"): 8.53e-4,
             ("flow_vol_phase", "Sol"): 1.182e-4,
             ("flow_vol_phase", "Vap"): 7.46e-2,
-            ("pressure_sat_comp", None): 9799.91,
+            ("pressure_sat", None): 9799.91,
             ("temperature_sat_solvent", None): 318.52,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 292.88,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 878.65,
@@ -463,7 +463,7 @@ class TestNaClPropertySolution_7(PropertyRegressionTest):
             ("flow_vol_phase", "Liq"): 1.011e-3,
             ("flow_vol_phase", "Sol"): 1.182e-4,
             ("flow_vol_phase", "Vap"): 7.46e-2,
-            ("pressure_sat_comp", None): 12614.93,
+            ("pressure_sat", None): 12614.93,
             ("temperature_sat_solvent", None): 323.55,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 0.9887,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 987.73,
@@ -533,7 +533,7 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
             ("flow_vol_phase", "Liq"): 0.02015,
             ("flow_vol_phase", "Sol"): 2.624e-3,
             ("flow_vol_phase", "Vap"): 278.04,
-            ("pressure_sat_comp", None): 1679.64,
+            ("pressure_sat", None): 1679.64,
             ("temperature_sat_solvent", None): 287.88,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 246.17,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 911.74,
@@ -603,7 +603,7 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
             ("flow_vol_phase", "Liq"): 0.02047,
             ("flow_vol_phase", "Sol"): 2.624e-3,
             ("flow_vol_phase", "Vap"): 311.233,
-            ("pressure_sat_comp", None): 13201.77,
+            ("pressure_sat", None): 13201.77,
             ("temperature_sat_solvent", None): 324.47,
             ("conc_mass_phase_comp", ("Liq", "NaCl")): 242.22,
             ("conc_mass_phase_comp", ("Liq", "H2O")): 897.107,
@@ -690,7 +690,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
 
 @pytest.mark.component
 class TestNaClCalculateState_3(PropertyCalculateStateTest):
-    # Test pure liquid solution with pressure_sat_comp defined instead of temperature
+    # Test pure liquid solution with pressure_sat defined instead of temperature
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
@@ -707,7 +707,7 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
             ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.05,
             ("flow_vol_phase", "Sol"): 0,
             ("flow_vol_phase", "Vap"): 0,
-            ("pressure_sat_comp", None): 2905,
+            ("pressure_sat", None): 2905,
             ("pressure", None): 5e5,
         }
 
