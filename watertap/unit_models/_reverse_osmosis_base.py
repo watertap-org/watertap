@@ -616,7 +616,7 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - (interface.pressure_osm_phase["Liq"] - prop_perm.pressure_osm_phase["Liq"])
+                    - (interface.pressure_osm_phase[p] - prop_perm.pressure_osm_phase[p])
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
