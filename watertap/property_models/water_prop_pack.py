@@ -374,7 +374,7 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure_sat_comp", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Vap")
-        self.set_default_scaling("dh_vap_mass_phase", 1e-6)
+        self.set_default_scaling("dh_vap_mass", 1e-6)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -393,7 +393,7 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
-                "dh_vap_mass_phase": {"method": "_dh_vap_mass_phase"},
+                "dh_vap_mass": {"method": "_dh_vap_mass"},
             }
         )
 
@@ -801,7 +801,7 @@ class WaterStateBlockData(StateBlockData):
                 # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
                 #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
                 # h_vap = h_w + dh_vap_w
-                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass_phase
+                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -900,20 +900,20 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_cp_mass_phase
         )
 
-    def _dh_vap_mass_phase(self):
-        self.dh_vap_mass_phase = Var(
+    def _dh_vap_mass(self):
+        self.dh_vap_mass = Var(
             initialize=2.4e6,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap_mass_phase(
+        def rule_dh_vap_mass(
             b,
         ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
             return (
-                b.dh_vap_mass_phase
+                b.dh_vap_mass
                 == b.params.dh_vap_w_param_0
                 + b.params.dh_vap_w_param_1 * t
                 + b.params.dh_vap_w_param_2 * t**2
@@ -921,7 +921,7 @@ class WaterStateBlockData(StateBlockData):
                 + b.params.dh_vap_w_param_4 * t**4
             )
 
-        self.eq_dh_vap_mass_phase = Constraint(rule=rule_dh_vap_mass_phase)
+        self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must

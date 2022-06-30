@@ -674,7 +674,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure_sat_comp", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
-        self.set_default_scaling("dh_vap_mass_phase", 1e-6)
+        self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("diffus_phase_comp", 1e9)
 
     @classmethod
@@ -702,7 +702,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "dh_vap_mass_phase": {"method": "_dh_vap_mass_phase"},
+                "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
             }
         )
@@ -1423,29 +1423,29 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_therm_cond_phase = Constraint(rule=rule_therm_cond_phase)
 
-    def _dh_vap_mass_phase(self):
-        self.dh_vap_mass_phase = Var(
+    def _dh_vap_mass(self):
+        self.dh_vap_mass = Var(
             initialize=2.4e3,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap_mass_phase(
+        def rule_dh_vap_mass(
             b,
         ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_phase_comp["Liq", "TDS"]
-            dh_vap_mass_phase_w = (
+            dh_vap_mass_w = (
                 b.params.dh_vap_w_param_0
                 + b.params.dh_vap_w_param_1 * t
                 + b.params.dh_vap_w_param_2 * t**2
                 + b.params.dh_vap_w_param_3 * t**3
                 + b.params.dh_vap_w_param_4 * t**4
             )
-            return b.dh_vap_mass_phase == dh_vap_mass_phase_w * (1 - s)
+            return b.dh_vap_mass == dh_vap_mass_w * (1 - s)
 
-        self.eq_dh_vap_mass_phase = Constraint(rule=rule_dh_vap_mass_phase)
+        self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1632,7 +1632,7 @@ class SeawaterStateBlockData(StateBlockData):
             "dens_mass_solvent",
             "osm_coeff",
             "pressure_sat_comp",
-            "dh_vap_mass_phase",
+            "dh_vap_mass",
         ]
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
