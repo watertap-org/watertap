@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for ASM1 thero property package.
+Tests for ASM1 thermo property package.
 Authors: Andrew Lee
 """
 
