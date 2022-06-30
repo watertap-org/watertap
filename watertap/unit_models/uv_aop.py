@@ -612,7 +612,9 @@ class Ultraviolet0DData(UnitModelBlockData):
                     self.uv_dose
                 ) * iscale.get_scaling_factor(self.inactivation_rate[p, j])
                 sf = (
-                    iscale.get_scaling_factor(self.electrical_efficiency_phase_comp[t, p, j])
+                    iscale.get_scaling_factor(
+                        self.electrical_efficiency_phase_comp[t, p, j]
+                    )
                     * (1 / log10(1 / exp(removal)))
                     * iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].flow_vol
