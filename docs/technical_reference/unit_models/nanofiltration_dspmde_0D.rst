@@ -50,7 +50,7 @@ Relationships
    "Stokes pore radius ratio", ":math:`λ_{i} = \frac{r_{i,stokes}}{r_{pore}}`"
    "Pore diffusion coefficient", ":math:`D_{i,p} = K_{i,d}D_{i,∞}`"
    "Steric partitioning factor", ":math:`Φ_i = (1-λ_{i})^2`"
-   "Born solvation partitioning", ":math:`Φ_b = \frac{-ΔG_{i}}{k_{b}T}`"
+   "Born solvation partitioning", ":math:`Φ_b = exp^{\frac{-ΔG_{i}}{k_{b}T}}`"
    "Gibbs free energy of solvation", ":math:`ΔG = \frac{z_{i}^{2}e_{0}^{2}}{8πε_{0}r_{i}}(\frac{1}{ε_{pore}}-\frac{1}{ε_{f}})`"
    "Solvent flux (Hagen-Poiseuille)", ":math:`J_w = ΔP_{net}\frac{r_{pore}^{2}}{8vρ_{w}\frac{Δx}{A_{k}}} =((P_{f}-P_{p})-Δπ)\frac{r_{pore}^{2}}{8vρ_{w}\frac{Δx}{A_{k}}}`"
    "Membrane-solution interface equilibrium", ":math:`γ_{i,1}c_{i,1} = γ_{i,m}c_{i,m}Φ_{i}Φ_{b}exp(\frac{-z_{i}FΔψ_{D,m}}{RT})`"
