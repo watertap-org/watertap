@@ -284,7 +284,7 @@ def calculate_operating_pressure(
     results = solve_indexed_blocks(solver, [t.brine])
     assert_optimal_termination(results)
 
-    return value(t.brine[0].pressure_osm_phase) * (1 + over_pressure)
+    return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
