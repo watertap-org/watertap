@@ -4,12 +4,12 @@ Granular Activated Carbon (GAC)
 
     The GAC model is an ongoing project and subject to change, as is this documentation.
 
-This is a empirical-performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions
+This is an empirical-performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:
    * supports a single liquid phase only
    * supports a single solute and single solvent (water) only
    * supports steady-state only
    * assumes isothermal conditions
-   * model performance is independent of a gravity-fed or pressurized GAC unit, therefore assumes isobaric
+   * model performance is independent of a gravity-fed or pressurized GAC unit, therefore assumes isobaric conditions
 
 .. index::
    pair: watertap.unit_models.gac;gac
@@ -27,7 +27,7 @@ bed and a constant pattern solution (CPS) may be determined. The CPS is calculat
 dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be
 derived from experimental data of the intended system to produce valid results. Coefficients for common compounds treated by GAC may be
 found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
-shorter than the minimum length determined by the CPHSDM within the error threshold (or lengths greater than the minimum).
+shorter than the minimum length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
 
 The batch operation results of the CPS are converted to approximate steady state results for intuitive use of the model for
 flowsheet purposes. A description of the transformation is provided in Figure 1.
@@ -48,7 +48,7 @@ flowsheet purposes. A description of the transformation is provided in Figure 1.
 Degrees of Freedom
 ------------------
 In the default configuration of the GAC unit model there are 18 degrees of freedom in addition to the inlet state variables
-(i.e. temperature, pressure, component flowrates) that should be fixed for the model to be fully specified.
+(i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified.
 In association with using the Freundlich adsorption isotherm and empirical model, the following 9 variables are almost always fixed
 and may be derived from experimental data:
 
@@ -82,7 +82,7 @@ Model Structure
 ------------------
 The GAC model consists of 1 ControlVolume0DBlock (process_flow) for the process flow of the water treatment train.
 The process flow includes 2 StateBlocks (inlet and outlet) which are used for mass and momentum balances.
-It also includes 1 StateBlock (adsorbed) for the solute that is adsorbed into the GAC parties.
+It also includes 1 StateBlock (adsorbed) for the solute that is adsorbed into the GAC particles.
 The material removed in the adsorbed state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed
 into the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a unit model
 variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in property package specifications.
@@ -109,7 +109,7 @@ Variables
    "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
    "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
    "Equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
-   "Mass of contaminant absorbed at the time of replacement", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
+   "Mass of contaminant adsorbed at the time of replacement", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
    "Mass of contaminant adsorbed if fully saturated", ":math:`M_{solute\text{,}e}`", "mass_adsorbed_saturated", "None", ":math:`\text{kg}`"
    "Adsorber bed void fraction", ":math:`\epsilon`", "bed_voidage", "None", ":math:`\text{dimensionless}`"
    "Adsorber bed volume", ":math:`V`", "bed_volume", "None", ":math:`\text{m}^3`"
