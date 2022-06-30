@@ -484,7 +484,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        # TODO: double-check email to see if electricity for pumping included
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
@@ -2609,6 +2608,58 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def cost_vfa_recovery(blk):
+        """
+        Method for costing VFA recovery unit.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        unit_capex = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["unit_capex"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        capex_expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * unit_capex,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            capex_expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            capex_expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == capex_expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.heat_consumption[t0], "heat"
+        )
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -2757,6 +2808,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         WellFieldZO: cost_well_field,
         PhotothermalMembraneZO: cost_photothermal_membrane,
         CANDOPZO: cost_CANDOP,
+        VFARecoveryZO: cost_vfa_recovery,
     }
 
 

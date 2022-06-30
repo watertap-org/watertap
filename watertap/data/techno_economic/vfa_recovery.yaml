@@ -14,3 +14,9 @@ default:
     value: 0.273231148
     units: kJ/kg
     metadata: assuming kJ/kmol value divided by molecular weight of propionate
+  capital_cost:
+    cost_factor: None
+    unit_capex:
+      value: 25.53
+      units: USD_2020/(L/day)
+
