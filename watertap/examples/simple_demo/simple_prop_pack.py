@@ -32,14 +32,14 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom, number_unfixed_variables
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -412,13 +412,18 @@ class PropStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['dens_mass_phase', 'flow_vol_phase']
+        v_str_lst_simple = ['flow_vol_phase']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
                 c = getattr(self, 'eq_' + v_str)
                 iscale.constraint_scaling_transform(c, sf)
+
+        # density constraint
+        if self.is_property_constructed("dens_mass_phase"):
+            sf = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+            iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
 
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp']

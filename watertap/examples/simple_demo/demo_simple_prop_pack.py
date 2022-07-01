@@ -3,7 +3,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import watertap.examples.simple_demo.simple_prop_pack as props
 
@@ -34,7 +34,7 @@ def main():
     print('\n---third display---')
     m.fs.stream[0].display()
 
-    # touch last property
+    # touch another property
     m.fs.stream[0].flow_vol_phase
 
     # now that we have a state block, we can fix the state variables and solve for the properties
@@ -54,9 +54,6 @@ def main():
     # solving
     assert_units_consistent(m)  # check that units are consistent
     assert(degrees_of_freedom(m) == 0)  # check that the degrees of freedom are what we expect
-
-    # solver = SolverFactory('ipopt')
-    # solver.options = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
     solver = get_solver()
 
