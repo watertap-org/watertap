@@ -171,7 +171,7 @@ class _ParameterSweepBase(ABC):
     # ================================================================
 
     @staticmethod
-    def _default_optimize(self, model, options=None, tee=False):
+    def _default_optimize(model, options=None, tee=False):
         """
         Default optimization function used in parameter_sweep.
         Optimizes ``model`` using the IDAES default solver.
@@ -743,7 +743,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
     # ================================================================
 
 
-    def _aggregate_filtered_input_arr(global_filtered_dict, req_num_samples):
+    def _aggregate_filtered_input_arr(self, global_filtered_dict, req_num_samples):
 
         global_filtered_values = np.zeros(
             (req_num_samples, len(global_filtered_dict["sweep_params"])), dtype=np.float64
@@ -770,6 +770,27 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         return global_filtered_dict, global_filtered_results, global_filtered_values
 
+    # ================================================================
+
+    # @staticmethod
+    # def _default_optimize(model, options=None, tee=False):
+    #     """
+    #     Default optimization function used in parameter_sweep.
+    #     Optimizes ``model`` using the IDAES default solver.
+    #     Raises a RuntimeError if the TerminationCondition is not optimal
+    #
+    #     Arguments:
+    #
+    #         model : A Pyomo ConcreteModel to optimize
+    #
+    #         options (optional) : Solver options to pass into idaes.core.utils.get_solver.
+    #                              Default is None
+    #         tee (options) : To display the solver log. Default it False
+    #
+    #     """
+    #     solver = get_solver(options=options)
+    #     results = solver.solve(model, tee=tee)
+    #     return results
 
     # ================================================================
 
@@ -787,6 +808,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         req_num_samples=None,
         seed=None,
     ):
+
+        if optimize_function is None:
+            optimize_function = self._default_optimize
 
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
@@ -864,10 +888,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
             loop_ctr += 1
 
+            # break # Delete me
+
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.
-        print("\nlocal_output_collection")
-        pprint.pprint(local_output_collection)
         local_filtered_dict, local_n_successful = self._filter_recursive_solves(
             model, sweep_params, outputs, local_output_collection
         )
@@ -895,7 +919,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         self.comm.Barrier()
 
         # Save to file
-        global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
-            global_results_dict, global_results_arr)
+        global_save_data = self.writer.save_results(
+            sweep_params,
+            local_filtered_values,
+            global_filtered_values,
+            local_filtered_dict,
+            global_filtered_dict,
+            global_filtered_results
+        )
 
         return global_save_data

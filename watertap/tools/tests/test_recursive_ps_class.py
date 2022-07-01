@@ -22,7 +22,7 @@ from pyomo.environ import value
 from watertap.tools.sampling_types import *
 from watertap.tools.parameter_sweep_class import RecursiveParameterSweep
 from watertap.tools.parameter_sweep_writer import *
-
+from watertap.tools.tests.test_ps_class import (_read_output_h5, _assert_dictionary_correctness)
 # -----------------------------------------------------------------------------
 
 
@@ -206,12 +206,12 @@ def test_recursive_parameter_sweep(model, tmp_path):
         assert np.allclose(reference_save_data, data, equal_nan=True)
         assert np.allclose(np.sum(data, axis=1), value(m.fs.success_prob))
 
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file)
 
             # Check that all local output files have been created
-            for k in range(num_procs):
+            for k in range(ps.num_procs):
                 assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.h5"))
                 assert os.path.isfile(os.path.join(tmp_path, f"local_results_{k:03}.csv"))
 
