@@ -29,12 +29,11 @@ def test_demo_simple_prop_pack():
     m = main()
 
     assert pytest.approx(0.97, rel=1e-3) == value(
-        m.fs.filter.properties_out[0].flow_mass_phase_comp['Liq', 'H2O']
+        m.fs.filter.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
     )
     assert pytest.approx(3.395e-2, rel=1e-3) == value(
-        m.fs.filter.properties_out[0].flow_mass_phase_comp['Liq', 'NaCl']
+        m.fs.filter.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"]
     )
     assert pytest.approx(1.200e-5, rel=1e-3) == value(
-        m.fs.filter.properties_out[0].flow_mass_phase_comp['Liq', 'TSS']
+        m.fs.filter.properties_out[0].flow_mass_phase_comp["Liq", "TSS"]
     )
-

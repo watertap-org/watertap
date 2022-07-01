@@ -29,20 +29,16 @@ def test_demo_simple_prop_pack():
     m = main()
 
     assert pytest.approx(1.471, rel=1e-3) == value(
-        m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']
+        m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"]
     )
     assert pytest.approx(0.07746, rel=1e-3) == value(
-        m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl']
+        m.fs.stream[0].flow_mass_phase_comp["Liq", "NaCl"]
     )
     assert pytest.approx(1.239e-4, rel=1e-3) == value(
-        m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS']
+        m.fs.stream[0].flow_mass_phase_comp["Liq", "TSS"]
     )
-    assert pytest.approx(298.15, rel=1e-3) == value(
-        m.fs.stream[0].temperature
-    )
-    assert pytest.approx(1.01325e5, rel=1e-3) == value(
-        m.fs.stream[0].pressure
-    )
+    assert pytest.approx(298.15, rel=1e-3) == value(m.fs.stream[0].temperature)
+    assert pytest.approx(1.01325e5, rel=1e-3) == value(m.fs.stream[0].pressure)
     assert pytest.approx(0.9499, rel=1e-3) == value(
         m.fs.stream[0].mass_frac_phase_comp["Liq", "H2O"]
     )
