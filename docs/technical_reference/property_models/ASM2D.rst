@@ -1,7 +1,7 @@
 ASM2D Property Package
 =====================
 
-This package implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in `Henze, M. et al. (1999) <https://www.sciencedirect.com/science/article/pii/S0273122398008294>`_.
+This package implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in Henze, M. et al. (1999) [1].
 
 This Activated Sludge Model no.2D (ASM2D) property/reaction package:
    * supports 'H2O', 'S_A', 'S_F', 'S_I', S_N2, S_NH4, S_NO3, S_O2, S_PO4, S_ALK, X_AUT, X_H, X_I, X_MeOH, X_MeP, X_PAO, X_PHA, X_PP, X_S, and X_TSS as components
@@ -138,10 +138,6 @@ A thorough scaling routine for the ASM2D property package has yet to be implemen
 
 References
 ----------
-[1] Henze, M., Grady, C.P.L., Gujer, W., Marais, G.v.R., Matsuo, T.,
-"Activated Sludge Model No. 1", 1987, IAWPRC Task Group on Mathematical Modeling
-for Design and Operation of Biological Wastewater Treatment.
-https://belinra.inrae.fr/doc_num.php?explnum_id=4467
+[1] M. Henze, W. Gujer, T. Mino, T. Matsuo, M.C. Wentzel, G. v. R. Marais, M.C.M. Van Loosdrecht, Activated sludge model No.2D, ASM2D, Water Science and Technology. 39 (1999) 165–182. https://doi.org/10.1016/S0273-1223(98)00829-4.
 
-[2] Alex, J. et al. Benchmark Simulation Model no.1 (BSM1). Lund University, 2008, 5-6.
-https://www.iea.lth.se/publications/Reports/LTH-IEA-7229.pdf
+
