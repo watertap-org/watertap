@@ -3,10 +3,9 @@ ASM1 Property Package
 
 This package implements property relationships for the treatment of wastewater using an activated sludge biological reactor as provided in `Henze, M. et al. (1987) <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
 
-This Activated Sludge Model no.1 (ASM1) property package:
+This Activated Sludge Model no.1 (ASM1) property/reaction package:
    * supports 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
    * supports only liquid phase
-   * is formulated on a mass basis
 
 Sets
 ----
@@ -49,33 +48,33 @@ State variables
 Stoichiometric Parameters
 -------------------------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
+ :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
-   "Yield of cell COD formed per g N consumed, Y_A", ":math:`Y_A`", "Y_A", "[p]", 0.24, ":math:`\text{dimensionless}`"
-   "Yield of cell COD formed per g COD oxidized, Y_H", ":math:`Y_H`", "Y_H", "[p]", 0.67, ":math:`\text{dimensionless}`"
-   "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", "[p]", 0.08, ":math:`\text{dimensionless}`"
-   "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", "[p]", 0.08, ":math:`\text{dimensionless}`"
-   "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", "[p]", 0.06, ":math:`\text{dimensionless}`"
+   "Yield of cell COD formed per g N consumed, Y_A", ":math:`Y_A`", "Y_A", 0.24, ":math:`\text{dimensionless}`"
+   "Yield of cell COD formed per g COD oxidized, Y_H", ":math:`Y_H`", "Y_H", 0.67, ":math:`\text{dimensionless}`"
+   "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", 0.08, ":math:`\text{dimensionless}`"
+   "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", 0.08, ":math:`\text{dimensionless}`"
+   "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", 0.06, ":math:`\text{dimensionless}`"
 
 Kinetic Parameters
 ------------------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
+ :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
-   "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", "[p]", 0.5, ":math:`\text{d}^{-1}`"
-   "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", "[p]", 4.0, ":math:`\text{d}^{-1}`"
-   "Half-saturation coefficient for heterotrophic biomass, K_S", ":math:`K_S`", "K_S", "[p]", 0.01, ":math:`\text{kg COD/}\text{m}^{3}`"
-   "Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H", ":math:`K_{O,H}`", "K_OH", "[p]", 0.0002, ":math:`\text{kg -COD/}\text{m}^{3}`"
-   "Oxygen half-saturation coefficient for autotrophic biomass, K_O,A", ":math:`K_{O,A}`", "K_OA", "[p]", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
-   "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO", ":math:`K_{NO}`", "K_NO", "[p]", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
-   "Decay coefficient for heterotrophic biomass, b_H", ":math:`b_H`", "b_H", "[p]", 0.3, ":math:`\text{d}^{-1}`"
-   "Decay coefficient for autotrophic biomass, b_A", ":math:`b_A`", "b_A", "[p]", 0.05, ":math:`\text{d}^{-1}`"
-   "Correction factor for mu_H under anoxic conditions, eta_g", ":math:`η_g`", "eta_g", "[p]", 0.8, ":math:`\text{dimensionless}`"
-   "Correction factor for hydrolysis under anoxic conditions, eta_h", ":math:`η_h`", "eta_h", "[p]", 0.8, ":math:`\text{dimensionless}`"
-   "Maximum specific hydrolysis rate, k_h", ":math:`k_h`", "k_h", "[p]", 3.0, ":math:`\text{d}^{-1}`"
-   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", "[p]", 0.1, ":math:`\text{dimensionless}`"
-   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", "[p]", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
-   "Ammonification rate, k_a", ":math:`k_a`", "k_a", "[p]", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
+   "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", 0.5, ":math:`\text{d}^{-1}`"
+   "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", 4.0, ":math:`\text{d}^{-1}`"
+   "Half-saturation coefficient for heterotrophic biomass, K_S", ":math:`K_S`", "K_S", 0.01, ":math:`\text{kg COD/}\text{m}^{3}`"
+   "Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H", ":math:`K_{O,H}`", "K_OH", 0.0002, ":math:`\text{kg -COD/}\text{m}^{3}`"
+   "Oxygen half-saturation coefficient for autotrophic biomass, K_O,A", ":math:`K_{O,A}`", "K_OA", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
+   "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO", ":math:`K_{NO}`", "K_NO", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
+   "Decay coefficient for heterotrophic biomass, b_H", ":math:`b_H`", "b_H", 0.3, ":math:`\text{d}^{-1}`"
+   "Decay coefficient for autotrophic biomass, b_A", ":math:`b_A`", "b_A", 0.05, ":math:`\text{d}^{-1}`"
+   "Correction factor for mu_H under anoxic conditions, eta_g", ":math:`η_g`", "eta_g", 0.8, ":math:`\text{dimensionless}`"
+   "Correction factor for hydrolysis under anoxic conditions, eta_h", ":math:`η_h`", "eta_h", 0.8, ":math:`\text{dimensionless}`"
+   "Maximum specific hydrolysis rate, k_h", ":math:`k_h`", "k_h", 3.0, ":math:`\text{d}^{-1}`"
+   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", 0.1, ":math:`\text{dimensionless}`"
+   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
+   "Ammonification rate, k_a", ":math:`k_a`", "k_a", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
 
 Properties
 ----------

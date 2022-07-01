@@ -1,41 +1,53 @@
 ASM2D Property Package
 =====================
 
-This package implements property relationships of the activated sludge model 2D (ASM2D) for the treatment of wastewater using an activated sludge biological reactor.
+This package implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in `Henze, M. et al. (1999) <https://www.sciencedirect.com/science/article/pii/S0273122398008294>`_.
 
-as provided in `Henze, M. et al. (1987) <https://belinra.inrae.fr/doc_num.php?explnum_id=4467>`_.
-
-This Activated Sludge Model no.2D (ASM2D) property package:
-   * supports 'H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', and 'S_ALK' as components
+This Activated Sludge Model no.2D (ASM2D) property/reaction package:
+   * supports 'H2O', 'S_A', 'S_F', 'S_I', S_N2, S_NH4, S_NO3, S_O2, S_PO4, S_ALK, X_AUT, X_H, X_I, X_MeOH, X_MeP, X_PAO, X_PHA, X_PP, X_S, and X_TSS as components
    * supports only liquid phase
-   * is formulated on a mass basis
+
+Limitations of the model, based on the original literature referenced, are as follows:
+  * valid for municipal wastewater only
+  * overflow of fermentation products (considered to be acetate) to the aeration tank cannot be modeled
+  * influent wastewater requires sufficient concentrations of magnesium and potassium
+  * pH should be near neutral
+  * temperature in the range of 10-25°C
 
 Sets
 ----
 .. csv-table::
   :header: "Description", "Symbol", "Indices"
 
-  "Components", ":math:`j`", "['H2O', 'S_I', 'S_S', 'X_I', 'X_S', 'X_BH', 'X_BA', 'X_P', 'S_O', 'S_NO', 'S_NH', 'S_ND', 'X_ND', 'S_ALK']"
+  "Components", ":math:`j`", "['H2O', 'S_A', 'S_F', 'S_I', S_N2, S_NH4, S_NO3, S_O2, S_PO4, S_ALK, X_AUT, X_H, X_I, X_MeOH, X_MeP, X_PAO, X_PHA, X_PP, X_S, X_TSS]"
   "Phases", ":math:`p`", "['Liq']"
 
 Components
 ----------
-.. csv-table::
-  :header: "Description", "Symbol", "Variable"
+The ASM2D model includes 19 components as outlined in the table below.
 
-  "Soluble inert organic matter, S_I", ":math:`S_I`", "S_I"
-  "Readily biodegradable substrate S_S", ":math:`S_S`", "S_S"
-  "Particulate inert organic matter, X_I", ":math:`X_I`", "X_I"
-  "Slowly biodegradable substrate X_S", ":math:`X_S`", "X_S"
-  "Active heterotrophic biomass X_B,H", ":math:`X_{B,H}`", "X_BH"
-  "Active autotrophic biomass X_B,A", ":math:`X_{B,A}`", "X_BA"
-  "Particulate products arising from biomass decay, X_P", ":math:`X_P`", "X_P"
-  "Oxygen, S_O", ":math:`S_O`", "S_O"
-  "Nitrate and nitrite nitrogen, S_NO", ":math:`S_{NO}`", "S_NO"
-  "NH4 :math:`^{+}` + NH :math:`_{3}` Nitrogen, S_NH", ":math:`S_{NH}`", "S_NH"
-  "Soluble biodegradable organic nitrogen, S_ND", ":math:`S_{ND}`", "S_ND"
-  "Particulate biodegradable organic nitrogen, X_ND", ":math:`X_{ND}`", "X_ND"
-  "Alkalinity, S_ALK", ":math:`S_{ALK}`", "S_ALK"
+.. csv-table::
+  :header: "Description", "Symbol", "Name in Model"
+
+  "Fermentation products, considered to be acetate.", ":math:`S_A`", "S_A"
+  "Fermentable, readily bio-degradable organic substrates", ":math:`S_F`", "S_F"
+  "Inert soluble organic material.", ":math:`S_I`", "S_I"
+  "Dinitrogen, N2. SN2 is assumed to be the only nitrogenous product of denitrification", ":math:`S_N_2`", "S_N2"
+  "Ammonium plus ammonia nitrogen.", ":math:`NH_4`", "NH_4"
+  "Nitrate plus nitrite nitrogen (N03' + N02' -N). SN03 is assumed to include nitrate as well as nitrite nitrogen.", ":math:`S_NO_3`", "S_NO3"
+  "Dissolved oxygen", ":math:`S_O_2`", "S_O2"
+  "Inorganic soluble phosphorus, primarily ortho-phosphates.", ":math:`S_PO4`", "S_PO4"
+  "Alkalinity, [mol HCO_3- per m^3]", ":math:`S_{ALK}`", "S_ALK"
+  "Autotrophic nitrifying organisms.", ":math:`X_{AUT}`", "X_AUT"
+  "Heterotrophic organisms.", ":math:`X_H`", "X_H"
+  "Inert particulate organic material.", ":math:`X_I`", "X_I"
+  "Metal-hydroxides.", ":math:`X_{MeOH}`", "X_MeOH"
+  "Metal-phosphate.", ":math:`X_{MeP}`", "X_MeP"
+  "Phosphate-accumulating organisms.", ":math:`X_{PAO}`", "X_PAO"
+  "A cell internal storage product of phosphorus-accumulating organisms, primarily comprising poly-hydroxy-alkanoates (PHA).", ":math:`X_{PHA}`", "X_PHA"
+  "Poly-phosphate.", ":math:`X_{PP}`", "X_PP"
+  "Slowly biodegradable substrates.", ":math:`X_S`", "X_S"
+  "Total suspended solids, TSS.", ":math:`X_{TSS}`", "X_TSS"
 
 State variables
 ---------------
@@ -46,18 +58,35 @@ State variables
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Alkalinity in molar concentration", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
+   "Molar alkalinity", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
-Stoichiometric Parameters
+Stoichiometric Coefficients
 -------------------------
-.. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
+The table below provides typical values for stoichiometric coefficients (from Table 9 of reference).
 
-   "Yield of cell COD formed per g N consumed, Y_A", ":math:`Y_A`", "Y_A", "[p]", 0.24, ":math:`\text{dimensionless}`"
-   "Yield of cell COD formed per g COD oxidized, Y_H", ":math:`Y_H`", "Y_H", "[p]", 0.67, ":math:`\text{dimensionless}`"
-   "Fraction of biomass yielding particulate products, f_p", ":math:`f_P`", "f_p", "[p]", 0.08, ":math:`\text{dimensionless}`"
-   "Mass fraction of N per COD in biomass, i_xb", ":math:`i_{XB}`", "i_xb", "[p]", 0.08, ":math:`\text{dimensionless}`"
-   "Mass fraction of N per COD in particulates, i_xp", ":math:`i_{XP}`", "i_xp", "[p]", 0.06, ":math:`\text{dimensionless}`"
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Default Value", "Units"
+
+   "N content of inert soluble COD S_I", ":math:`i_{NSI}`", "i_NSI", 0.01, ":math:`\text{dimensionless}`"
+   "N content of fermentable substrate S_F", ":math:`i_{NSF}`", "i_NSF", 0.03, ":math:`\text{dimensionless}`"
+   "N content of inert particulate COD X_I", ":math:`i_{NXI}`", "i_NXI", 0.02, ":math:`\text{dimensionless}`"
+   "N content of slowly biodegradable substrate X_S", ":math:`i_{NXS}`", "i_NXS", 0.08, ":math:`\text{dimensionless}`"
+   "N content of biomass, X_H, X_PAO, X_AUT", ":math:`i_{NBM}`", "i_NBM", 0.07, ":math:`\text{dimensionless}`"
+   "P content of inert soluble COD S_I", ":math:`i_{PSI}`", "i_PSI", 0.00, ":math:`\text{dimensionless}`"
+   "P content of fermentable substrate, S_F", ":math:`i_{SF}`", "i_SF", 0.01, ":math:`\text{dimensionless}`"
+   "P content of inert particulate COD X_I", ":math:`i_{PXI}`", "i_PXI", 0.01, ":math:`\text{dimensionless}`"
+   "P content of slowly biodegradable substrate X_S", ":math:`i_{PXS}`", "i_PXS", 0.01, ":math:`\text{dimensionless}`"
+   "P content of biomass, X_H, X_PAO, X_AUT", ":math:`i_{PBM}`", "i_PBM", 0.02, ":math:`\text{dimensionless}`"
+   "TSS to COD ratio for X_I", ":math:`i_{TSSXI}`", "i_TSSXI", 0.75, ":math:`\text{dimensionless}`"
+   "TSS to COD ratio for X_S", ":math:`i_{TSSXS}`", "i_TSSXS", 0.75, ":math:`\text{dimensionless}`"
+   "TSS to COD ratio for biomass, X_H, X_PAO, X_AUT", ":math:`i_{TSSBM}`", "i_TSSBM", 0.90, ":math:`\text{dimensionless}`"
+   "Production of S_I in hydrolysis", ":math:`f_{SI}`", "f_SI", 0, ":math:`\text{dimensionless}`"
+   "Yield coefficient for heterotrophic biomass X_H", ":math:`Y_{H}`", "Y_H", 0.625, ":math:`\text{dimensionless}`"
+   "Fraction of inert COD generated in lysis", ":math:`f_{XI}`", "f_XI", 0.1, ":math:`\text{dimensionless}`"
+   "Yield coefficient for P accumulating organisms (biomass/PHA)", ":math:`Y_{PAO}`", "Y_PAO", 0.625, ":math:`\text{dimensionless}`"
+   "PP requirement (PO4 release) per PHA stored", ":math:`Y_{PO4}`", "Y_PO4", 0.40, ":math:`\text{dimensionless}`"
+   "PHA requirement for PP storage", ":math:`Y_{PHA}`", "Y_PHA", 0, ":math:`\text{dimensionless}`"
+   "Yield of autotrophic biomass per NO3- N", ":math:`Y_{A}`", "Y_A", 0.24, ":math:`\text{dimensionless}`"
 
 Kinetic Parameters
 ------------------
