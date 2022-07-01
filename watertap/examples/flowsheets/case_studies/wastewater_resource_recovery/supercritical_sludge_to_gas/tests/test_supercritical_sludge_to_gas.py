@@ -101,10 +101,10 @@ class TestSupercritical_Sludge_to_GasFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(4153.46, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOG) == pytest.approx(27.937, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOC) == pytest.approx(478.891, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOS) == pytest.approx(55.629, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOW) == pytest.approx(3532.68, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOG) == pytest.approx(23.7615, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOC) == pytest.approx(407.316, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOS) == pytest.approx(47.315, rel=1e-3)  # in $/kg
 
     @pytest.mark.component
     def test_display(self, system_frame):
