@@ -14,5 +14,8 @@ default:
       value: 0.40
       units: dimensionless
       reference: https://doi.org/10.1016/j.wre.2013.09.001
-  capital cost:  # TODO: placeholder until costs available
+  capital_cost:
     cost_factor: None
+    unit_capex:
+      value: 6.09
+      units: USD_2020/(L/day)

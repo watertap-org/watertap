@@ -16,8 +16,8 @@ for wastewater resource recovery flowsheets.
 """
 
 from idaes.core import declare_process_block_class
-from watertap.core import build_diso, ZeroOrderBaseData, constant_intensity
-from pyomo.environ import Var, Constraint, units as pyunits
+from watertap.core import build_diso, ZeroOrderBaseData, pump_electricity
+from pyomo.environ import Var, Constraint, units as pyunits, Reference
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -46,4 +46,9 @@ class CofermentationZOData(ZeroOrderBaseData):
                 " this unit model converts cod to nonbiodegradable_cod."
             )
         build_diso(self)
-        constant_intensity(self)
+
+        @self.Expression(self.flowsheet().time, doc="Total flowrate into unit")
+        def flow_vol_in(b, t):
+            return b.properties_in1[t].flow_vol + b.properties_in2[t].flow_vol
+
+        pump_electricity(self, self.flow_vol_in)

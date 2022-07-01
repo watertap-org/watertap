@@ -19,6 +19,7 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     assert_optimal_termination,
+    Block,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -61,14 +62,11 @@ def main():
     assert_optimal_termination(results)
     display_results(m.fs)
 
-    # add_costing(m)
-    # m.fs.costing.initialize()
-    #
-    # adjust_default_parameters(m)
-    #
-    # assert_degrees_of_freedom(m, 0)
-    # results = solve(m)
-    # assert_optimal_termination(results)
+    add_costing(m)
+    m.fs.costing.initialize()
+    assert_degrees_of_freedom(m, 0)
+    results = solve(m)
+    assert_optimal_termination(results)
     # display_costing(m.fs)
 
     return m, results
@@ -300,9 +298,13 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "swine_wwt_global_costing.yaml",
     )
+
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
-    m.fs.mixer_costing = WaterTAPCosting()
+    m.fs.watertap_costing = WaterTAPCosting()
     # typing aid
+    m.fs.mixer.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.watertap_costing}
+    )
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
 
     # NOTE: costing not applied directly to gas-sparged membrane unit;
@@ -314,11 +316,8 @@ def add_costing(m):
     m.fs.cofermentation.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.constructed_wetlands.costing = UnitModelCostingBlock(**costing_kwargs)
 
-    m.fs.mixer.costing = UnitModelCostingBlock(
-        {"default": {"flowsheet_costing_block": m.fs.mixer_costing}}
-    )
     m.fs.costing.cost_process()
-    m.fs.mixer_costing.cost_process()
+    m.fs.watertap_costing.cost_process()
 
     # Resource recovery in terms of annual production
     # Hydrogen gas production
@@ -352,7 +351,7 @@ def add_costing(m):
         )
     )
     # VFA production
-    m.fs.costing.vfa_production = Expression(
+    m.fs.costing.annual_vfa_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -392,23 +391,20 @@ def add_costing(m):
     # Annual costs and revenues
     # Annual water revenue
     m.fs.costing.annual_water_revenue = Expression(
-        expr=(
-            m.fs.zo_costing.water_product_cost * m.fs.costing.annual_water_production
-        ),
+        expr=(m.fs.costing.water_product_cost * m.fs.costing.annual_water_production),
         doc="Value of annual water savings, considering treated effluent is utilized to displace freshwater usage",
     )
 
     # Annual VFA revenue
     m.fs.costing.annual_vfa_revenue = Expression(
-        expr=(m.fs.zo_costing.vfa_product_cost * m.fs.costing.annual_vfa_production),
+        expr=(m.fs.costing.vfa_product_cost * m.fs.costing.annual_vfa_production),
         doc="Annual VFA revenue",
     )
 
     # Annual Nitrogen revenue
     m.fs.costing.annual_ammonia_revenue = Expression(
         expr=(
-            m.fs.zo_costing.ammonia_product_cost
-            * m.fs.costing.annual_nitrogen_production
+            m.fs.costing.ammonia_product_cost * m.fs.costing.annual_nitrogen_production
         ),
         doc="Annual ammonia revenue",
     )
@@ -416,7 +412,7 @@ def add_costing(m):
     # Annual Phosphorus revenue
     m.fs.costing.annual_phosphorus_revenue = Expression(
         expr=(
-            m.fs.zo_costing.phosphorus_product_cost
+            m.fs.costing.phosphorus_product_cost
             * m.fs.costing.annual_phosphate_production
         ),
         doc="Annual phosphorus revenue",
@@ -425,15 +421,14 @@ def add_costing(m):
     # Annual Hydrogen revenue
     m.fs.costing.annual_hydrogen_revenue = Expression(
         expr=(
-            m.fs.zo_costing.hydrogen_product_cost
-            * m.fs.costing.annual_hydrogen_production
+            m.fs.costing.hydrogen_product_cost * m.fs.costing.annual_hydrogen_production
         ),
         doc="Annual hydrogen revenue",
     )
 
     # Annual sludge disposal cost
     m.fs.costing.annual_disposal_cost = Expression(
-        expr=(m.fs.zo_costing.waste_disposal_cost * m.fs.costing.annual_sludge_waste),
+        expr=(m.fs.costing.waste_disposal_cost * m.fs.costing.annual_sludge_waste),
         doc="Annual sludge disposal cost",
     )
     # Combine results from costing packages and calculate overall metrics
@@ -441,24 +436,24 @@ def add_costing(m):
     def total_capital_cost(b):
         return (
             pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=m.fs.costing.base_currency
+                m.fs.costing.total_capital_cost, to_units=m.fs.costing.base_currency
             )
-            + m.fs.mixer_costing.total_investment_cost
+            + m.fs.watertap_costing.total_investment_cost
         )
 
     @m.Expression()
     def total_operating_cost(b):
         return (
             pyunits.convert(
-                m.fs.zo_costing.total_fixed_operating_cost,
+                m.fs.costing.total_fixed_operating_cost,
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
             + pyunits.convert(
-                m.fs.zo_costing.total_variable_operating_cost,
+                m.fs.costing.total_variable_operating_cost,
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
             + pyunits.convert(
-                m.fs.mixer_costing.total_operating_cost,
+                m.fs.watertap_costing.total_operating_cost,
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
             + m.fs.costing.annual_disposal_cost
@@ -614,42 +609,6 @@ def display_costing(fs):
         pyunits.convert(fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg)
     )
     print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
-
-
-def adjust_default_parameters(m):
-    m.fs.metab_hydrogen.hydraulic_retention_time.fix(6)  # default - 12 hours, 0.5x
-    m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"].set_value(
-        0.05
-    )  # default - 0.005, 10x
-    m.fs.costing.metab.bead_bulk_density["hydrogen"].fix(7.17)  # default 23.9, 0.3x
-    m.fs.costing.metab.bead_replacement_factor["hydrogen"].fix(1)  # default 3.376, 0.3x
-    m.fs.metab_hydrogen.energy_electric_mixer_vol.fix(0.049875)  # default 0.049875
-    m.fs.metab_hydrogen.energy_electric_vacuum_flow_vol_byproduct.fix(
-        9.190
-    )  # default 9190, 0.001x
-    m.fs.metab_hydrogen.energy_thermal_flow_vol_inlet.fix(7875)  # default 78750, 0.1x
-    m.fs.costing.metab.bead_cost["hydrogen"].fix(14.40)  # default 1440, 0.01x
-    m.fs.costing.metab.reactor_cost["hydrogen"].fix(78.9)  # default 789, 0.1x
-    m.fs.costing.metab.vacuum_cost["hydrogen"].fix(5930)  # default 59300, 0.1x
-    m.fs.costing.metab.mixer_cost["hydrogen"].fix(27.40)  # default 2740, 0.01x
-    m.fs.costing.metab.membrane_cost["hydrogen"].fix(498)  # default 498
-
-    m.fs.metab_methane.hydraulic_retention_time.fix(15)  # default 150, 0.1x
-    m.fs.metab_methane.generation_ratio["cod_to_methane", "methane"].set_value(
-        0.101
-    )  # default 0.101, no change
-    m.fs.costing.metab.bead_bulk_density["methane"].fix(7.17)  # default 23.9, 0.3x
-    m.fs.costing.metab.bead_replacement_factor["methane"].fix(1)  # default 3.376, 0.3x
-    m.fs.metab_methane.energy_electric_mixer_vol.fix(0.049875)  # default 0.049875
-    m.fs.metab_methane.energy_electric_vacuum_flow_vol_byproduct.fix(
-        1.53
-    )  # default 15.3, 0.1x
-    m.fs.metab_methane.energy_thermal_flow_vol_inlet.fix(0)  # default 0
-    m.fs.costing.metab.bead_cost["methane"].fix(14.40)  # default 1440, 0.01x
-    m.fs.costing.metab.reactor_cost["methane"].fix(78.9)  # default 789, 0.1x
-    m.fs.costing.metab.vacuum_cost["methane"].fix(136.0)  # default 1360, 0.1x
-    m.fs.costing.metab.mixer_cost["methane"].fix(27.40)  # default 2740, 0.01x
-    m.fs.costing.metab.membrane_cost["methane"].fix(498)  # default 498
 
 
 if __name__ == "__main__":

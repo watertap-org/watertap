@@ -11,8 +11,11 @@ default:
       value: 0.7    # Todo: revisit this value later
       units: dimensionless
       constituent_longform: Chemical Oxygen Demand (COD)
-  capital cost:  # TODO: placeholder until costs available
+  capital_cost:
     cost_factor: None
-  energy_electric_flow_vol_inlet:
-    value: 0   #todo: get this value
-    units: kWh/m^3
+    unit_capex:
+      value: 7.14
+      units: USD_2020/(L/day)
+    unit_opex:  #TODO: verify whether this includes any electricity/heat costs. Adding pump electricity cost in flowsheet
+      value: 5.63
+      units: USD_2020/m^3

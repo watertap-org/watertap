@@ -24,19 +24,23 @@ from pyomo.environ import (
     assert_optimal_termination,
     TransformationFactory,
     units as pyunits,
+    Param,
+    Expression,
+    Block,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
 
-import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CofermentationZO, FeedZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -110,9 +114,12 @@ class TestCofermentationZO:
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
 
+        assert isinstance(model.fs.unit.lift_height, Param)
+        assert isinstance(model.fs.unit.eta_pump, Param)
+        assert isinstance(model.fs.unit.eta_motor, Param)
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.flow_vol_in, Expression)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -129,12 +136,6 @@ class TestCofermentationZO:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
-
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert (
-            model.fs.unit.energy_electric_flow_vol_inlet.value
-            == data["energy_electric_flow_vol_inlet"]["value"]
-        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -170,7 +171,9 @@ class TestCofermentationZO:
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(0.000150593, rel=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -223,3 +226,41 @@ def test_COD_not_in_solute_list():
         model.fs.unit = CofermentationZO(
             default={"property_package": model.fs.params, "database": model.db}
         )
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = CofermentationZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
+
+    m.fs.unit1.inlet1.flow_mass_comp[0, "H2O"].fix(0.043642594)
+    m.fs.unit1.inlet1.flow_mass_comp[0, "cod"].fix(1.00625e-4)
+    m.fs.unit1.inlet2.flow_mass_comp[0, "H2O"].fix(0.043642594)
+    m.fs.unit1.inlet2.flow_mass_comp[0, "cod"].fix(1.00625e-4)
+
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+
+    assert isinstance(m.fs.costing.cofermentation, Block)
+    assert isinstance(m.fs.costing.cofermentation.unit_capex, Var)
+    assert isinstance(m.fs.costing.cofermentation.unit_opex, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
