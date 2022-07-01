@@ -277,7 +277,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Other variable costs
         self.total_variable_operating_cost = pyo.Expression(
             expr=self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs[f] for f in self.flow_types),
+            + sum(self.aggregate_flow_costs[f] for f in self.flow_types)
+            * self.utilization_factor,
             doc="Total variable operating cost of process per operating period",
         )
 

@@ -28,7 +28,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.ultraviolet import Ultraviolet0D
+from watertap.unit_models.uv_aop import Ultraviolet0D
 import watertap.property_models.NDMA_prop_pack as props
 
 from idaes.core.util import get_solver
@@ -69,9 +69,11 @@ class TestUltraviolet:
         feed_temperature = (273.15 + 25) * pyunits.K
         uv_intensity = 1 * pyunits.mW / pyunits.cm**2
         exporure_time = 500 * pyunits.s
-        inactivation_rate = 0.002245 * pyunits.cm**2 / pyunits.mJ
+        inactivation_rate = 2.8 * pyunits.cm**2 / pyunits.J
+        photolysis_rate_constant = 0.16 * pyunits.min**-1
         EEO = 0.25 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.3
+        UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
@@ -86,9 +88,11 @@ class TestUltraviolet:
         m.fs.unit.uv_intensity.fix(uv_intensity)
         m.fs.unit.exposure_time.fix(exporure_time)
         m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
+        m.fs.unit.photolysis_rate_constant["Liq", "NDMA"].fix(photolysis_rate_constant)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.electrical_efficiency[0, "Liq", "NDMA"].fix(EEO)
+        m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
+        m.fs.unit.UVT.fix(UVT)
         return m
 
     @pytest.mark.unit
@@ -156,8 +160,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 31
-        assert number_total_constraints(m) == 20
+        assert number_variables(m) == 35
+        assert number_total_constraints(m) == 22
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test unit consistency
@@ -219,11 +223,16 @@ class TestUltraviolet:
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(2.4084e-8, rel=1e-3) == value(
+        assert pytest.approx(1.8248e-8, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(1466.887, rel=1e-3) == value(
+        assert pytest.approx(5000, rel=1e-3) == value(m.fs.unit.uv_dose)
+        assert pytest.approx(0.04576, rel=1e-3) == value(m.fs.unit.UVA)
+        assert pytest.approx(1.3333e-4, rel=1e-3) == value(
+            m.fs.unit.reaction_rate_constant["Liq", "NDMA"]
+        )
+        assert pytest.approx(1829.525, rel=1e-3) == value(
             m.fs.unit.electricity_demand_phase_comp[0, "Liq", "NDMA"]
         )
