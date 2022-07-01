@@ -1,5 +1,5 @@
-Metab  (ZO)
-===========
+Modular Encapsulated Two-stage Anaerobic Biological Reactor (ZO)
+================================================================
 
 Model Type
 ----------
