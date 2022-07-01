@@ -91,7 +91,7 @@ The table below provides typical values for stoichiometric coefficients (from Ta
 Kinetic Parameters
 ------------------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Value at 20 C", "Units"
+ :header: "Description", "Symbol", "Parameter", "Index", "Value at 20°C", "Units"
 
    "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", "[p]", 0.5, ":math:`\text{d}^{-1}`"
    "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", "[p]", 4.0, ":math:`\text{d}^{-1}`"
