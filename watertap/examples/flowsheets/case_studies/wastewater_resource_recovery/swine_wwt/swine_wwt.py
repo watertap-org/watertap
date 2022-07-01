@@ -465,6 +465,8 @@ def add_costing(m):
             + m.total_operating_cost
         )
     )
+    # TODO: review all cost related metrics and revise as needed
+    # - add levelized cost of treatment that calculates net cost per influent flow accounting for all revenue
     # Levelized cost of water
     m.fs.costing.LCOW = Expression(
         expr=(
