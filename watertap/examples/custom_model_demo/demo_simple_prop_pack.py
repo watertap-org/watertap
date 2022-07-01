@@ -5,7 +5,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
-import watertap.examples.simple_demo.simple_prop_pack as props
+import watertap.examples.custom_model_demo.simple_prop_pack as props
 
 
 def main():
