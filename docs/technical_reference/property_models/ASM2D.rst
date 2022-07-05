@@ -137,7 +137,8 @@ Process Rate Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Aerobic growth of heterotrophs", ":math:`ρ_1 = µ_{H}(\frac{S_{S}}{K_{S}+S_{S}})(\frac{S_{O}}{K_{O,H}+S_{O}})X_{B,H}`"
+   "Aerobic hydrolysis", ":math:`ρ_1 = K_{H}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{X_{S}/X_{H}}{K_{X}+X_{S}/X_{H}})X_{H}`"
+   "Aerobic hydrolysis", ":math:`ρ_1 = µ_{H}(\frac{S_{S}}{K_{S}+S_{S}})(\frac{S_{O}}{K_{O,H}+S_{O}})X_{B,H}`"
    "Anoxic growth of heterotrophs", ":math:`ρ_2 = µ_{H}(\frac{S_{S}}{K_{S}+S_{S}})(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})η_{g}X_{B,H}`"
    "Aerobic growth of autotrophs", ":math:`ρ_3 = µ_{A}(\frac{S_{NH}}{K_{NH}+S_{NH}})(\frac{S_{O}}{K_{O,A}+S_{O}})X_{B,A}`"
    "Decay of heterotrophs", ":math:`ρ_4 = b_{H}X_{B,H}`"
