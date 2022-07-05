@@ -84,8 +84,8 @@ Properties
   "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
   "Mass density", ":math:`\rho`", "dens_mass", "[p]", ":math:`\text{kg/}\text{m}^3`"
 
-Relationships
--------------
+Process Rate Equations
+----------------------
 .. csv-table::
    :header: "Description", "Equation"
 

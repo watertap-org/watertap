@@ -104,9 +104,12 @@ Kinetic Parameters
    "Rate constant for lysis and decay", ":math:`b_H`", "b_H", 0.4, ":math:`\text{day}^{-1}`"
    "Saturation coefficient for growth on SF", ":math:`K_F`", "K_F", 0.004, ":math:`\text{kg COD/}\text{m}^{3}`"
    "Saturation coefficient for fermentation of SF", ":math:`K_fe`", "K_fe", 0.004, ":math:`\text{d}^{-1}`"
-   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", 0.1, ":math:`\text{dimensionless}`"
-   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
-   "Ammonification rate, k_a", ":math:`k_a`", "k_a", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
+   "Saturation coefficient for growth on acetate SA", ":math:`K_A`", "K_A", 0.004, ":math:`\text{kg COD/}\text{m}^{3}`"
+   "Saturation coefficient for ammonium (nutrient)", ":math:`K_{NH4}`", "K_NH4", 0.00005, ":math:`\text{kg N/}\text{m}^{3}`"
+   "Saturation coefficient for phosphate (nutrient)", ":math:`K_P`", "K_P", 0.00001, ":math:`\text{kg P/}\text{m}^{3}`"
+   "Saturation coefficient for alkalinity (HCO3-)", ":math:`K_ALK`", "K_ALK", 0.0001, ":math:`\text{kmol HCO_{3}^{-}/}\text{m}^{3}`"
+   "Rate constant for storage of X_PHA (base Xpp)", ":math:`q_PHA`", "q_PHA", 3, ":math:`\text{kg PHA/}\text{kg PAO . day}`"
+
 
 Properties
 ----------
@@ -116,8 +119,8 @@ Properties
   "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
   "Mass density", ":math:`\rho`", "dens_mass", "[p]", ":math:`\text{kg/}\text{m}^3`"
 
-Relationships
--------------
+Process Rate Equations
+----------------------
 .. csv-table::
    :header: "Description", "Equation"
 
@@ -128,7 +131,7 @@ Relationships
    "Decay of autotrophs", ":math:`ρ_5 = b_{H}X_{B,H}`"
    "Ammonification of soluble organic nitrogen", ":math:`ρ_6 = k_{a}S_{ND}X_{B,H}`"
    "Hydrolysis of entrapped organics", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}`"
-   "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
+   "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_8 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
 
 
 Scaling
