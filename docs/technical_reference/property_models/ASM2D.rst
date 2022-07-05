@@ -91,22 +91,22 @@ The table below provides typical values for stoichiometric coefficients (from Ta
 Kinetic Parameters
 ------------------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Index", "Value at 20°C", "Units"
+ :header: "Description", "Symbol", "Parameter", "Value at 20°C", "Units"
 
-   "Maximum specific growth rate for autotrophic biomass, mu_A", ":math:`µ_A`", "mu_A", "[p]", 0.5, ":math:`\text{d}^{-1}`"
-   "Maximum specific growth rate for heterotrophic biomass, mu_H", ":math:`µ_H`", "mu_H", "[p]", 4.0, ":math:`\text{d}^{-1}`"
-   "Half-saturation coefficient for heterotrophic biomass, K_S", ":math:`K_S`", "K_S", "[p]", 0.01, ":math:`\text{kg COD/}\text{m}^{3}`"
-   "Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H", ":math:`K_{O,H}`", "K_OH", "[p]", 0.0002, ":math:`\text{kg -COD/}\text{m}^{3}`"
-   "Oxygen half-saturation coefficient for autotrophic biomass, K_O,A", ":math:`K_{O,A}`", "K_OA", "[p]", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
-   "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO", ":math:`K_{NO}`", "K_NO", "[p]", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
-   "Decay coefficient for heterotrophic biomass, b_H", ":math:`b_H`", "b_H", "[p]", 0.3, ":math:`\text{d}^{-1}`"
-   "Decay coefficient for autotrophic biomass, b_A", ":math:`b_A`", "b_A", "[p]", 0.05, ":math:`\text{d}^{-1}`"
-   "Correction factor for mu_H under anoxic conditions, eta_g", ":math:`η_g`", "eta_g", "[p]", 0.8, ":math:`\text{dimensionless}`"
-   "Correction factor for hydrolysis under anoxic conditions, eta_h", ":math:`η_h`", "eta_h", "[p]", 0.8, ":math:`\text{dimensionless}`"
-   "Maximum specific hydrolysis rate, k_h", ":math:`k_h`", "k_h", "[p]", 3.0, ":math:`\text{d}^{-1}`"
-   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", "[p]", 0.1, ":math:`\text{dimensionless}`"
-   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", "[p]", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
-   "Ammonification rate, k_a", ":math:`k_a`", "k_a", "[p]", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
+   "Hydrolysis rate constant", ":math:`K_H`", "K_H", 3, ":math:`\text{day}^{-1}`"
+   "Anoxic hydrolysis reduction factor", ":math:`η_{NO3}`", "eta_NO3", 0.6, ":math:`\text{dimensionless}`"
+   "Anaerobic hydrolysis reduction factor", ":math:`η_{fe}`", "eta_fe", 0.40, ":math:`\text{dimensionless}`"
+   "Saturation/inhibition coefficient for oxygen", ":math:`K_{O2}`", "K_O2", 0.0002, ":math:`\text{kg O_2/}\text{m}^{3}`"
+   "Oxygen half-saturation coefficient for autotrophic biomass, K_O,A", ":math:`K_{O,A}`", "K_OA", 0.0004, ":math:`\text{kg -COD/}\text{m}^{3}`"
+   "Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO", ":math:`K_{NO}`", "K_NO", 0.0005, ":math:`\text{kg NO}_{3}\text{-N/}\text{m}^{3}`"
+   "Decay coefficient for heterotrophic biomass, b_H", ":math:`b_H`", "b_H", 0.3, ":math:`\text{d}^{-1}`"
+   "Decay coefficient for autotrophic biomass, b_A", ":math:`b_A`", "b_A", 0.05, ":math:`\text{d}^{-1}`"
+   "Correction factor for mu_H under anoxic conditions, eta_g", ":math:`η_g`", "eta_g", 0.8, ":math:`\text{dimensionless}`"
+   "Correction factor for hydrolysis under anoxic conditions, eta_h", ":math:`η_h`", "eta_h", 0.8, ":math:`\text{dimensionless}`"
+   "Maximum specific hydrolysis rate, k_h", ":math:`k_h`", "k_h", 3.0, ":math:`\text{d}^{-1}`"
+   "Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X", ":math:`K_X`", "K_X", 0.1, ":math:`\text{dimensionless}`"
+   "Ammonia Half-saturation coefficient for autotrophic biomass, K_NH", ":math:`K_{NH}`", "K_NH", 1.0, ":math:`\text{kg NH}_{3}\text{-N/}\text{m}^{3}`"
+   "Ammonification rate, k_a", ":math:`k_a`", "k_a", 0.00005, ":math:`\text{m}^{3}\text{/}\text{kg COD . d}`"
 
 Properties
 ----------
