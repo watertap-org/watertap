@@ -412,7 +412,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             initialize=1e3,
             units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
             domain=pyo.NonNegativeReals,
-            doc="Rate constant for P precipitaion, [m^3/kg Fe(OH)3/day",
+            doc="Rate constant for P precipitation, [m^3/kg Fe(OH)3/day",
         )
         self.k_red = pyo.Var(
             initialize=0.6,
