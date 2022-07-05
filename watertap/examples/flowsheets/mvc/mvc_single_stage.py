@@ -39,6 +39,7 @@ from idaes.models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
+from idaes.generic_models.costing import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -59,41 +60,39 @@ def main():
     initialize_system(m)
     print('DOF after initialization: ', degrees_of_freedom(m))
     solver = get_solver()
-    m.fs.objective = Objective(expr=1)
     results = solver.solve(m, tee=False)
+
+    print('First solve preheater areas')
+    print(m.fs.hx_distillate.area.value)
+    print(m.fs.hx_brine.area.value)
+    print(results.solver.termination_condition)
     m.fs.hx_distillate.area.unfix()
+    m.fs.hx_distillate.area.setlb(5)
+    m.fs.hx_distillate.area.setub(500)
     m.fs.hx_brine.area.unfix()
+    m.fs.hx_brine.area.setlb(5)
+    m.fs.hx_brine.area.setub(500)
     results = solver.solve(m, tee=False)
 
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
 
     #assert False
+    print('Second solve preheater areas')
     print(m.fs.hx_distillate.area.value)
     print(m.fs.hx_brine.area.value)
+    print(results.solver.termination_condition)
 
-    # m.fs.evaporator.display()
-    # m.fs.compressor.display()
-    print(
-        "Preheated feed temperature:              ",
-        m.fs.evaporator.properties_feed[0].temperature.value,
-    )
-    print(
-        "Evaporator temperature:                  ",
-        m.fs.evaporator.properties_brine[0].temperature.value,
-    )
-    print(
-        "Enthalpy flow into compressor:           ",
-        value(m.fs.compressor.control_volume.properties_in[0].enth_flow_phase["Vap"]),
-    )
-    print(
-        "Isentropic enthalpy flow out compressor: ",
-        value(m.fs.compressor.properties_isentropic_out[0].enth_flow_phase["Vap"]),
-    )
-    print(
-        "Actual Enthalpy flow out compressor:     ",
-        value(m.fs.compressor.control_volume.properties_out[0].enth_flow_phase["Vap"]),
-    )
+    # Fix areas again
+    m.fs.hx_brine.area.fix(100)
+    m.fs.hx_distillate.area.fix(25)
+    results = solver.solve(m, tee=False)
+    print('Third solve')
+    print(m.fs.hx_distillate.area.value)
+    print(m.fs.hx_brine.area.value)
+    print(results.solver.termination_condition)
+    assert False
+    print('Simulation results')
     print(
         "Compressor work:                         ",
         m.fs.compressor.control_volume.work[0].value,
@@ -103,21 +102,35 @@ def main():
         m.fs.compressor.pressure_ratio.value,
     )
     print("Evaporator area:                         ", m.fs.evaporator.area.value)
-    print("Evap. Overall Heat Transfer Coefficient: ", m.fs.evaporator.U.value)
+    print('LCOW:      ', m.fs.costing.LCOW.value)
 
+    # Optimize
+    print('Optimization results')
     assert_optimal_termination(results)
+    optimize(m)
+    print('Optimization results')
+    print(
+        "Compressor work:                         ",
+        m.fs.compressor.control_volume.work[0].value,
+    )
+    print(
+        "Compressor pressure ratio:               ",
+        m.fs.compressor.pressure_ratio.value,
+    )
+    print("Evaporator area:                         ", m.fs.evaporator.area.value)
+    print('LCOW:      ', m.fs.costing.LCOW.value)
 
-    display_system(m)
-    print("\nPreheated Feed State:")
-    display_seawater_states(m.fs.evaporator.properties_feed[0])
-    print("\nVapor State:")
-    display_water_states(m.fs.evaporator.properties_vapor[0])
-    print("\nCompressed Vapor State:")
-    display_water_states(m.fs.compressor.control_volume.properties_out[0])
-    print("\nCondensed Vapor State:")
-    display_water_states(m.fs.condenser.control_volume.properties_out[0])
-    print("\nDistillate exiting HX State:")
-    display_seawater_states(m.fs.distillate.properties[0])
+    # display_system(m)
+    # print("\nPreheated Feed State:")
+    # display_seawater_states(m.fs.evaporator.properties_feed[0])
+    # print("\nVapor State:")
+    # display_water_states(m.fs.evaporator.properties_vapor[0])
+    # print("\nCompressed Vapor State:")
+    # display_water_states(m.fs.compressor.control_volume.properties_out[0])
+    # print("\nCondensed Vapor State:")
+    # display_water_states(m.fs.condenser.control_volume.properties_out[0])
+    # print("\nDistillate exiting HX State:")
+    # display_seawater_states(m.fs.distillate.properties[0])
 
 
 def build():
@@ -263,6 +276,9 @@ def build():
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.evaporator.connect_to_condenser(m.fs.condenser)
 
+    # Add costing
+    add_costing(m)
+
     # Scaling
     # properties
     m.fs.properties_feed.set_default_scaling(
@@ -328,16 +344,13 @@ def build():
 def add_costing(m):
     m.fs.costing = WaterTAPCosting()
     m.fs.pump_feed.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing,
-                 "pump_type": PumpType.low_pressure}
+        default={"flowsheet_costing_block": m.fs.costing}
     )
     m.fs.pump_distillate.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing,
-                 "pump_type": PumpType.low_pressure}
+        default={"flowsheet_costing_block": m.fs.costing}
     )
     m.fs.pump_brine.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing,
-                 "pump_type": PumpType.low_pressure}
+        default={"flowsheet_costing_block": m.fs.costing}
     )
     m.fs.evaporator.costing = UnitModelCostingBlock(
         default={'flowsheet_costing_block': m.fs.costing}
@@ -350,6 +363,7 @@ def add_costing(m):
     m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
+
 
 def add_pressure_drop_to_hx(hx_blk, time_point):
     # input: hx_blk - heat exchanger block
@@ -384,14 +398,14 @@ def set_operating_conditions(m):
 
     # distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_distillate.area.fix(50)
+    m.fs.hx_distillate.area.fix(25)
     # m.fs.hx_distillate.cold.deltaP[0] = m.fs.pump_feed.control_volume.deltaP[0].value
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # brine HX
     m.fs.hx_brine.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_brine.area.fix(50)  # = m.fs.hx_distillate.area.value
+    m.fs.hx_brine.area.fix(100)  # = m.fs.hx_distillate.area.value
     # m.fs.hx_brine.cold.deltaP[0] = m.fs.pump_feed.control_volume.deltaP[0].value
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
@@ -441,16 +455,10 @@ def initialize_system(m, solver=None):
         solver = get_solver()
     optarg = solver.options
 
-    n = 0
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
-
     # initialize feed pump
     propagate_state(m.fs.s01)
     # m.fs.pump_feed.control_volume.deltaP[0].fix(7e4)
     m.fs.pump_feed.initialize(optarg=optarg)
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize separator
     propagate_state(m.fs.s02)
@@ -481,10 +489,6 @@ def initialize_system(m, solver=None):
 
     # fix for initialization
     m.fs.hx_distillate.initialize_build()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
-
-    # Unfix for simulation and optimization
 
     # initialize brine heat exchanger
     propagate_state(m.fs.s04)
@@ -503,19 +507,13 @@ def initialize_system(m, solver=None):
         0
     ].value
     m.fs.hx_brine.hot_inlet.pressure[0] = 101325
-    # m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.initialize()
-    # m.fs.hx_brine.cold.deltaP[0].unfix()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize mixer
     propagate_state(m.fs.s05)
     propagate_state(m.fs.s06)
     m.fs.mixer_feed.initialize()
     m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize evaporator
     propagate_state(m.fs.s07)
@@ -523,45 +521,32 @@ def initialize_system(m, solver=None):
         delta_temperature_in=70, delta_temperature_out=9
     )  # fixes and unfixes those values
 
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
-
     # initialize compressor
     propagate_state(m.fs.s08)
     m.fs.compressor.initialize_build()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize condenser
     propagate_state(m.fs.s09)
     m.fs.condenser.initialize_build(heat=-m.fs.evaporator.heat_transfer.value)
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize brine pump
     propagate_state(m.fs.s10)
     m.fs.pump_brine.initialize(optarg=optarg)
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize distillate pump
     propagate_state(m.fs.s13) # to translator block
     propagate_state(m.fs.s14) # from translator block to pump
     m.fs.pump_distillate.initialize(optarg=optarg)
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # Initialize brine HX again
     propagate_state(m.fs.s11)
     m.fs.hx_brine.initialize()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # Initialize distillate HX again
     propagate_state(m.fs.s15)
     m.fs.hx_distillate.initialize()
-    n += 1
-    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
+
+    # m.fs.costing.initialize()
 
     print('Initialization done')
     # print("\nFeed state")
@@ -654,14 +639,6 @@ def display_water_states(state_blk):
     print("temperature      ", state_blk.temperature.value)
     print("pressure         ", state_blk.pressure.value)
 
-    # print("Feed inlet enth_flow: ", value(m.fs.evaporator.properties_feed[0].enth_flow))
-    # print(
-    #     "Brine inlet enth_flow: ", value(m.fs.evaporator.properties_brine[0].enth_flow)
-    # )
-    # print(
-    #     "Vapor inlet enth_flow: ",
-    #     m.fs.evaporator.properties_vapor[0].enth_flow_phase["Vap"].value,
-
 
 def optimize(m):
     m.fs.objective = Objective(
@@ -695,6 +672,22 @@ def debug_infeasible(m, solver):
     # dh.find_candidate_equations(verbose=True,tee=True)
     # dh.check_rank_equality_constraints()
 
+def set_up_optimization(m):
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    m.fs.evaporator.area.unfix()
+    m.fs.evaporator.inlet_feed.temperature[0].unfix()
+    m.fs.evaporator.outlet_brine.temperature[0].unfix()
+    m.fs.compressor.control_volume.work[0].unfix()
+    m.fs.hx_distillate.area.unfix()
+
+def optimize(m):
+    solver = get_solver()
+    print("\nSet objective to minimize cost")
+
+
+    results = solver.solve(m, tee=False)
+    assert_optimal_termination(results)
 
 if __name__ == "__main__":
     main()
