@@ -32,6 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 from idaes.models.unit_models import Feed, Separator, Mixer, Product
+from idaes.models.unit_models.translator import Translator
 from idaes.models.unit_models.separator import SplittingType
 from idaes.models.unit_models.mixer import MomentumMixingType, MixingType
 from idaes.models.unit_models.heat_exchanger import (
@@ -48,6 +49,7 @@ from watertap.unit_models.mvc.components.lmtd_chen_callback import (
 from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
+from watertap.costing import WaterTAPCosting, PumpType
 
 
 def main():
@@ -55,12 +57,20 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m)
+    print('DOF after initialization: ', degrees_of_freedom(m))
     solver = get_solver()
     m.fs.objective = Objective(expr=1)
+    results = solver.solve(m, tee=False)
+    m.fs.hx_distillate.area.unfix()
+    m.fs.hx_brine.area.unfix()
     results = solver.solve(m, tee=False)
 
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
+
+    #assert False
+    print(m.fs.hx_distillate.area.value)
+    print(m.fs.hx_brine.area.value)
 
     # m.fs.evaporator.display()
     # m.fs.compressor.display()
@@ -107,7 +117,7 @@ def main():
     print("\nCondensed Vapor State:")
     display_water_states(m.fs.condenser.control_volume.properties_out[0])
     print("\nDistillate exiting HX State:")
-    display_water_states(m.fs.distillate.properties[0])
+    display_seawater_states(m.fs.distillate.properties[0])
 
 
 def build():
@@ -133,7 +143,7 @@ def build():
         default={
             "hot_side_name": "hot",
             "cold_side_name": "cold",
-            "hot": {"property_package": m.fs.properties_vapor},
+            "hot": {"property_package": m.fs.properties_feed},
             "cold": {"property_package": m.fs.properties_feed},
             "delta_temperature_callback": delta_temperature_chen_callback,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
@@ -162,7 +172,7 @@ def build():
     )
     # m.fs.mixer_feed.display()
     # m.fs.mixer_feed.pressure_equality_constraints[0,1].pprint()
-    # m.fs.mixer_feed.pressure_equality_constraints[0,2].pprint()
+    m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
 
     # assert False
 
@@ -177,11 +187,38 @@ def build():
 
     m.fs.condenser = Condenser(default={"property_package": m.fs.properties_vapor})
 
+    m.fs.tb_distillate = Translator(
+        default={
+            "inlet_property_package": m.fs.properties_vapor,
+            "outlet_property_package": m.fs.properties_feed
+        }
+    )
+
+    @m.fs.tb_distillate.Constraint()
+    def eq_flow_mass_comp(blk):
+        return (
+            blk.properties_in[0].flow_mass_phase_comp['Liq','H2O']
+            == blk.properties_out[0].flow_mass_phase_comp["Liq", 'H2O']
+        )
+
+    @m.fs.tb_distillate.Constraint()
+    def eq_temperature(blk):
+        return (
+                blk.properties_in[0].temperature
+                == blk.properties_out[0].temperature
+        )
+
+    @m.fs.tb_distillate.Constraint()
+    def eq_pressure(blk):
+        return (
+                blk.properties_in[0].pressure
+                == blk.properties_out[0].pressure
+        )
     m.fs.pump_brine = Pump(default={"property_package": m.fs.properties_feed})
 
-    m.fs.pump_distillate = Pump(default={"property_package": m.fs.properties_vapor})
+    m.fs.pump_distillate = Pump(default={"property_package": m.fs.properties_feed})
 
-    m.fs.distillate = Product(default={"property_package": m.fs.properties_vapor})
+    m.fs.distillate = Product(default={"property_package": m.fs.properties_feed})
 
     m.fs.brine = Product(default={"property_package": m.fs.properties_feed})
 
@@ -214,11 +251,12 @@ def build():
     )
     m.fs.s11 = Arc(source=m.fs.pump_brine.outlet, destination=m.fs.hx_brine.hot_inlet)
     m.fs.s12 = Arc(source=m.fs.hx_brine.hot_outlet, destination=m.fs.brine.inlet)
-    m.fs.s13 = Arc(source=m.fs.condenser.outlet, destination=m.fs.pump_distillate.inlet)
-    m.fs.s14 = Arc(
+    m.fs.s13 = Arc(source=m.fs.condenser.outlet, destination=m.fs.tb_distillate.inlet)
+    m.fs.s14 = Arc(source=m.fs.tb_distillate.outlet, destination=m.fs.pump_distillate.inlet)
+    m.fs.s15 = Arc(
         source=m.fs.pump_distillate.outlet, destination=m.fs.hx_distillate.hot_inlet
     )
-    m.fs.s15 = Arc(
+    m.fs.s16 = Arc(
         source=m.fs.hx_distillate.hot_outlet, destination=m.fs.distillate.inlet
     )
 
@@ -287,6 +325,31 @@ def build():
 
     return m
 
+def add_costing(m):
+    m.fs.costing = WaterTAPCosting()
+    m.fs.pump_feed.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing,
+                 "pump_type": PumpType.low_pressure}
+    )
+    m.fs.pump_distillate.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing,
+                 "pump_type": PumpType.low_pressure}
+    )
+    m.fs.pump_brine.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing,
+                 "pump_type": PumpType.low_pressure}
+    )
+    m.fs.evaporator.costing = UnitModelCostingBlock(
+        default={'flowsheet_costing_block': m.fs.costing}
+    )
+    m.fs.compressor.costing = UnitModelCostingBlock(
+        default={'flowsheet_costing_block': m.fs.costing}
+    )
+
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.distillate.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
 
 def add_pressure_drop_to_hx(hx_blk, time_point):
     # input: hx_blk - heat exchanger block
@@ -321,14 +384,14 @@ def set_operating_conditions(m):
 
     # distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_distillate.area.fix(46)
+    m.fs.hx_distillate.area.fix(50)
     # m.fs.hx_distillate.cold.deltaP[0] = m.fs.pump_feed.control_volume.deltaP[0].value
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # brine HX
     m.fs.hx_brine.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_brine.area.fix(47)  # = m.fs.hx_distillate.area.value
+    m.fs.hx_brine.area.fix(50)  # = m.fs.hx_distillate.area.value
     # m.fs.hx_brine.cold.deltaP[0] = m.fs.pump_feed.control_volume.deltaP[0].value
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
@@ -338,8 +401,8 @@ def set_operating_conditions(m):
     # m.fs.evaporator.inlet_feed.temperature[0] = 273.15 + 50.52
     # m.fs.evaporator.inlet_feed.pressure[0].fix(101325)
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
-    # m.fs.evaporator.U.fix(1e3)  # W/K-m^2
-    m.fs.evaporator.area.fix(400)  # m^2
+    m.fs.evaporator.U.fix(1e3)  # W/K-m^2
+    # m.fs.evaporator.area.fix(400)  # m^2
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(5)
 
     # compressor
@@ -361,7 +424,13 @@ def set_operating_conditions(m):
 
     # Distillate outlet
     # m.fs.distillate.properties[0].pressure.fix(101325)
-    m.fs.distillate.properties[0].flow_mass_phase_comp["Vap", "H2O"].fix(1e-8)
+
+    # Fix 0 TDS
+    m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq','TDS'].fix(1e-5)
+    #m.fs.pump_distillate.control_volume.properties_in[0].flow_mass_phase_comp['Liq','TDS'].fix(1e-8)
+    #m.fs.hx_distillate.hot.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].fix(1e-8)
+    #m.fs.distillate.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(1e-8)
+
 
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
@@ -372,39 +441,26 @@ def initialize_system(m, solver=None):
         solver = get_solver()
     optarg = solver.options
 
+    n = 0
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
+
     # initialize feed pump
     propagate_state(m.fs.s01)
     # m.fs.pump_feed.control_volume.deltaP[0].fix(7e4)
     m.fs.pump_feed.initialize(optarg=optarg)
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize separator
     propagate_state(m.fs.s02)
     # Touch property for initialization
     m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.mixed_state.initialize(optarg=optarg)
-    # Fix inlet for initialization
-    # m.fs.separator_feed.mixed_state[0].flow_mass_phase_comp[
-    #     "Liq", "H2O"
-    # ].fix()
-    # m.fs.separator_feed.mixed_state[0].flow_mass_phase_comp[
-    #     "Liq", "TDS"
-    # ].fix()
-    # m.fs.separator_feed.mixed_state[0].temperature.fix()
-    # m.fs.separator_feed.mixed_state[0].pressure.fix()
-
     # Touch properties for initialization
     m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.hx_distillate_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.initialize_build(optarg=optarg, outlvl=idaeslog.INFO_HIGH)
-    # Unfix for flowsheet simulation and optimization
-    # m.fs.separator_feed.mixed_state[0].flow_mass_phase_comp[
-    #     "Liq", "H2O"
-    # ].unfix()
-    # m.fs.separator_feed.mixed_state[0].flow_mass_phase_comp[
-    #     "Liq", "TDS"
-    # ].unfix()
-    # m.fs.separator_feed.mixed_state[0].temperature.unfix()
-    # m.fs.separator_feed.mixed_state[0].pressure.unfix()
 
     # initialize distillate heat exchanger
     propagate_state(m.fs.s03)
@@ -417,12 +473,18 @@ def initialize_system(m, solver=None):
     m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] = (
         m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value
     )
-    m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Vap", "H2O"] = 1e-8
+    m.fs.hx_distillate.hot_inlet.flow_mass_phase_comp[0, "Liq", "TDS"] = 1e-4
     m.fs.hx_distillate.hot_inlet.temperature[
         0
     ] = m.fs.evaporator.outlet_brine.temperature[0].value
     m.fs.hx_distillate.hot_inlet.pressure[0] = 101325
+
+    # fix for initialization
     m.fs.hx_distillate.initialize_build()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
+
+    # Unfix for simulation and optimization
 
     # initialize brine heat exchanger
     propagate_state(m.fs.s04)
@@ -444,11 +506,16 @@ def initialize_system(m, solver=None):
     # m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.initialize()
     # m.fs.hx_brine.cold.deltaP[0].unfix()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize mixer
     propagate_state(m.fs.s05)
     propagate_state(m.fs.s06)
     m.fs.mixer_feed.initialize()
+    m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize evaporator
     propagate_state(m.fs.s07)
@@ -456,58 +523,75 @@ def initialize_system(m, solver=None):
         delta_temperature_in=70, delta_temperature_out=9
     )  # fixes and unfixes those values
 
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
+
     # initialize compressor
     propagate_state(m.fs.s08)
     m.fs.compressor.initialize_build()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize condenser
     propagate_state(m.fs.s09)
     m.fs.condenser.initialize_build(heat=-m.fs.evaporator.heat_transfer.value)
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize brine pump
     propagate_state(m.fs.s10)
     m.fs.pump_brine.initialize(optarg=optarg)
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # initialize distillate pump
-    propagate_state(m.fs.s13)
+    propagate_state(m.fs.s13) # to translator block
+    propagate_state(m.fs.s14) # from translator block to pump
     m.fs.pump_distillate.initialize(optarg=optarg)
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # Initialize brine HX again
     propagate_state(m.fs.s11)
     m.fs.hx_brine.initialize()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
     # Initialize distillate HX again
-    propagate_state(m.fs.s14)
+    propagate_state(m.fs.s15)
     m.fs.hx_distillate.initialize()
+    n += 1
+    print("%d DOF = %d" % (n, degrees_of_freedom(m)))
 
-    print("\nFeed state")
-    display_seawater_states(m.fs.feed.properties[0])
-    print("\nFeed entering distillate HX")
-    display_seawater_states(m.fs.separator_feed.hx_distillate_cold_state[0])
-    print("\nFeed entering brine HX")
-    display_seawater_states(m.fs.separator_feed.hx_brine_cold_state[0])
-    print("\nFeed exiting distillate HX")
-    display_seawater_states(m.fs.hx_distillate.cold.properties_out[0])
-    print("\nFeed exiting brine HX")
-    display_seawater_states(m.fs.hx_brine.cold.properties_out[0])
-    print("\nMixed feed from mixer")
-    display_seawater_states(m.fs.mixer_feed.mixed_state[0])
-    print("\nBrine exiting evaporator")
-    display_seawater_states(m.fs.evaporator.properties_brine[0])
-    print("\nBrine exiting brine pump")
-    display_seawater_states(m.fs.pump_brine.control_volume.properties_out[0])
-    print("\nBrine exiting brine HX")
-    display_seawater_states(m.fs.hx_brine.hot.properties_out[0])
-    print("\nVapor exiting evaporator")
-    display_water_states(m.fs.evaporator.properties_vapor[0])
-    print("\nVapor exiting compressor")
-    display_water_states(m.fs.compressor.control_volume.properties_out[0])
-    print("\nDistillate exiting condenser")
-    display_water_states(m.fs.condenser.control_volume.properties_out[0])
-    print("\nDistillate exiting distillate pump")
-    display_water_states(m.fs.pump_distillate.control_volume.properties_out[0])
-    print("\nDistillate exiting distillate HX")
-    display_water_states(m.fs.hx_distillate.hot.properties_out[0])
+    print('Initialization done')
+    # print("\nFeed state")
+    # display_seawater_states(m.fs.feed.properties[0])
+    # print("\nFeed entering distillate HX")
+    # display_seawater_states(m.fs.separator_feed.hx_distillate_cold_state[0])
+    # print("\nFeed entering brine HX")
+    # display_seawater_states(m.fs.separator_feed.hx_brine_cold_state[0])
+    # print("\nFeed exiting distillate HX")
+    # display_seawater_states(m.fs.hx_distillate.cold.properties_out[0])
+    # print("\nFeed exiting brine HX")
+    # display_seawater_states(m.fs.hx_brine.cold.properties_out[0])
+    # print("\nMixed feed from mixer")
+    # display_seawater_states(m.fs.mixer_feed.mixed_state[0])
+    # print("\nBrine exiting evaporator")
+    # display_seawater_states(m.fs.evaporator.properties_brine[0])
+    # print("\nBrine exiting brine pump")
+    # display_seawater_states(m.fs.pump_brine.control_volume.properties_out[0])
+    # print("\nBrine exiting brine HX")
+    # display_seawater_states(m.fs.hx_brine.hot.properties_out[0])
+    # print("\nVapor exiting evaporator")
+    # display_water_states(m.fs.evaporator.properties_vapor[0])
+    # print("\nVapor exiting compressor")
+    # display_water_states(m.fs.compressor.control_volume.properties_out[0])
+    # print("\nDistillate exiting condenser")
+    # display_water_states(m.fs.condenser.control_volume.properties_out[0])
+    # print("\nDistillate exiting distillate pump")
+    # display_seawater_states(m.fs.pump_distillate.control_volume.properties_out[0])
+    # print("\nDistillate exiting distillate HX")
+    # display_seawater_states(m.fs.hx_distillate.hot.properties_out[0])
 
 
 def display_system(m):

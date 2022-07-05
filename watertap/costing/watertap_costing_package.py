@@ -789,7 +789,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
     @staticmethod
-    def cost_compressor(blk):
+    def cost_compressor(blk, work):
         """
         Capital cost for compressor.
         Assumes the unit_model has an `area` variable or parameter.
@@ -810,7 +810,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         blk.costing_package.cost_flow(
-            pyo.units.convert(dosing_rate, pyo.units.kg / pyo.units.s), "electricity"
+            pyo.units.convert(work, pyo.units.J / pyo.units.s), "electricity"
         )
 
 # Define default mapping of costing methods to unit models
