@@ -72,6 +72,7 @@ def test_unit_parameter_files(tech):
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
     no_energy_electric_flow_vol_inlet = [
+        "anaerobic_mbr_mec",
         "autothermal_hydrothermal_liquefaction",
         "backwash_solids_handling",
         "brine_concentrator",
@@ -102,6 +103,8 @@ def test_unit_parameter_files(tech):
         "water_pumping_station",
         "well_field",
         "mbr",
+        "vfa_recovery",
+        "cofermentation",
     ]
 
     expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
