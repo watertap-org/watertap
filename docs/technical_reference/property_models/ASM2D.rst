@@ -1,5 +1,5 @@
 ASM2D Property Package
-=====================
+======================
 
 This package implements properties and reactions of an activated sludge model for biological nutrient removal from wastewater using an activated sludge biological reactor with biological phosphorus removal as provided in Henze, M. et al. (1999) [1].
 
@@ -61,7 +61,7 @@ State variables
    "Molar alkalinity", ":math:`A`", "alkalinity", "[p]", ":math:`\text{kmol HCO}_{3}^{-}\text{/m}^{3}`"
 
 Stoichiometric Coefficients
--------------------------
+---------------------------
 The table below provides typical values for stoichiometric coefficients (from Table 9 of reference).
 
 .. csv-table::
