@@ -121,8 +121,8 @@ Kinetic Parameters
    "Saturation coefficient for PHA", ":math:`K_{PHA}`", "K_PHA", 0.01, ":math:`\text{kg PHA/}\text{kg PAO}`"
    "Maximum growth rate of X_AUT", ":math:`µ_{AUT}`", "mu_AUT", 1, ":math:`\text{day}^{-1}`"
    "Decay rate of X_AUT", ":math:`µ_{AUT}`", "mu_{AUT}", 0.15, ":math:`\text{day}^{-1}`"
-   "Rate constant for P precipitation", ":math:`k_{pre}`", "k_pre", 1000, ":math:`\text{m/}^{3}\text{kg Fe(OH)_3 . day}`"
-   "Rate constant for redissolution", ":math:`k_{red}`", "k_red", 0.6, ":math:`\text{day}^{-1}`"
+   "Rate constant for P precipitation", ":math:`k_{PRE}`", "k_pre", 1000, ":math:`\text{m/}^{3}\text{kg Fe(OH)_3 . day}`"
+   "Rate constant for redissolution", ":math:`k_{RED}`", "k_red", 0.6, ":math:`\text{day}^{-1}`"
 
 Properties
 ----------
@@ -138,15 +138,26 @@ Process Rate Equations
    :header: "Description", "Equation"
 
    "Aerobic hydrolysis", ":math:`ρ_1 = K_{H}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{X_{S}/X_{H}}{K_{X}+X_{S}/X_{H}})X_{H}`"
-   "Aerobic hydrolysis", ":math:`ρ_1 = µ_{H}(\frac{S_{S}}{K_{S}+S_{S}})(\frac{S_{O}}{K_{O,H}+S_{O}})X_{B,H}`"
-   "Anoxic growth of heterotrophs", ":math:`ρ_2 = µ_{H}(\frac{S_{S}}{K_{S}+S_{S}})(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})η_{g}X_{B,H}`"
-   "Aerobic growth of autotrophs", ":math:`ρ_3 = µ_{A}(\frac{S_{NH}}{K_{NH}+S_{NH}})(\frac{S_{O}}{K_{O,A}+S_{O}})X_{B,A}`"
-   "Decay of heterotrophs", ":math:`ρ_4 = b_{H}X_{B,H}`"
-   "Decay of autotrophs", ":math:`ρ_5 = b_{H}X_{B,H}`"
-   "Ammonification of soluble organic nitrogen", ":math:`ρ_6 = k_{a}S_{ND}X_{B,H}`"
-   "Hydrolysis of entrapped organics", ":math:`ρ_7 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}`"
-   "Hydrolysis of entrapped organic nitrogen", ":math:`ρ_8 = k_{H}(\frac{X_{S}/X_{B,H}}{K_{X}+(X_{S}/X_{B,H})})[(\frac{S_{O}}{K_{O,H}+S_{O}})+η_{h}(\frac{K_{O,H}}{K_{O,H}+S_{O}})(\frac{S_{NO}}{K_{NO}+S_{NO}})]X_{B,H}(X_{ND}/X_{S})`"
-
+   "Anoxic hydrolysis", ":math:`ρ_2 = K_{H}η_{NO3}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})(\frac{X_{S}/X_{H}}{K_{X}+X_{S}/X_{H}})X_{H}`"
+   "Anaerobic hydrolysis", ":math:`ρ_3 = K_{H}η_{fe}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{K_{NO3}}{K_{NO3}+S_{NO3}})(\frac{X_{S}/X_{H}}{K_{X}+X_{S}/X_{H}})X_{H}`"
+   "Growth on fermentable substrates, S_F ", ":math:`ρ_4 = µ_{H}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})X_{H}`"
+   "Growth on fermentation products, S_A", ":math:`ρ_5 = µ_{H}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{S_{A}}{K_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})X_{H}`"
+   "Denitrification with fermentable substrates, S_F", ":math:`ρ_6 = µ_{H}η_{NO3}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{S_{ALK}+S_{ALK}})X_{H}`"
+   "Denitrification with fermentation products, S_A", ":math:`ρ_7 = µ_{H}η_{NO3}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{A}}{K_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{S_{ALK}+S_{ALK}})X_{H}`"
+   "Fermentation", ":math:`ρ_8 = q_{fe}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{K_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})X_{H}`"
+   "Lysis", ":math:`ρ_9 = b_{H}X_{H}`"
+   "Storage of X_PHA", ":math:`ρ_{10} = q_{PHA}(\frac{S_{A}}{K_{A}+S_{A}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})(\frac{X_{PP}/X_{PAO}}{K_{PP}+X_{PP}/X_{PAO}})X_{PAO}`"
+   "Aerobic storage of X_PP", ":math:`ρ_{11} = q_{PP}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{S_{PO4}}{K_{PS}+S_{PO4}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})(\frac{X_{PHA}/X_{PAO}}{K_{PHA}+X_{PHA}/X_{PAO}})(\frac{K_{MAX} - X_{PP}/X_{PAO}}{K_{IPP}+K_{MAX} - X_{PP}/X_{PAO}})X_{PAO}`"
+   "Anoxic storage of X_PP", ":math:`ρ_{12} = ρ_{11}η_{NO3}(\frac{K_{O2}}{S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}}) `"
+   "Aerobic growth on X_PHA", ":math:`ρ_{13} = µ_{PAO}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})(\frac{X_{PHA}/X_{PAO}}{K_{PHA}+X_{PHA}/X_{PAO}})X_{PAO}`"
+   "Anoxic growth on X_PHA", ":math:`ρ_{14} = ρ_{13}η_{NO3}(\frac{K_{O2}}{S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})`"
+   "Lysis of X_PAO", ":math:`ρ_{15} = b_{PAO}X_{PAO}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
+   "Lysis of X_PP", ":math:`ρ_{16} = b_{PP}X_{PP}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
+   "Lysis of X_PHA", ":math:`ρ_{17} = b_{PHA}X_{PHA}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
+   "Aerobic growth of X_AUT", ":math:`ρ_{18} = µ_{AUT}(\frac{S_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})X_{AUT}`"
+   "Lysis of X_AUT", ":math:`ρ_{19} = k_{AUT}X_{AUT}`"
+   "Precipitation of phosphorus with ferric hydroxide", ":math:`ρ_{20} = k_{PRE}S_{PO4}X_{MeOH}`"
+   "Redissolution", ":math:`ρ_{21} = k_{RED}X_{MeP}(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})`"
 
 Scaling
 -------
