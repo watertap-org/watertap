@@ -7,7 +7,7 @@ This Activated Sludge Model no.2D (ASM2D) property/reaction package:
    * supports 'H2O', 'S_A', 'S_F', 'S_I', S_N2, S_NH4, S_NO3, S_O2, S_PO4, S_ALK, X_AUT, X_H, X_I, X_MeOH, X_MeP, X_PAO, X_PHA, X_PP, X_S, and X_TSS as components
    * supports only liquid phase
 
-Limitations of the model, based on the original literature referenced, are as follows:
+Limitations of the model, as noted in [1], are as follows:
   * valid for municipal wastewater only
   * overflow of fermentation products (considered to be acetate) to the aeration tank cannot be modeled
   * influent wastewater requires sufficient concentrations of magnesium and potassium
