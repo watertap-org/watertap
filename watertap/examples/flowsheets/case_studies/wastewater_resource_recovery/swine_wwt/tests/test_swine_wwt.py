@@ -53,32 +53,6 @@ class Test_Swine_WWT_Flowsheet:
         results = solve(m)
         assert_optimal_termination(results)
 
-        # check two water product flow
-        assert value(
-            m.fs.product_H2O.properties[0].flow_mass_comp["H2O"]
-        ) == pytest.approx(4.5949, rel=1e-3)
-        assert value(
-            m.fs.product_H2O.properties[0].flow_mass_comp["inorganic_solid"]
-        ) == pytest.approx(0.0671333, rel=1e-3)
-
-        # check natural gas product flow
-        assert value(
-            m.fs.product_natural_gas.properties[0].flow_mass_comp["carbon_dioxide"]
-        ) == pytest.approx(0.69416, rel=1e-3)
-
-        # check CO2 (from AT_HTL) product flow
-        assert value(
-            m.fs.product_CO2.properties[0].flow_mass_comp["carbon_dioxide"]
-        ) == pytest.approx(0.040495, rel=1e-3)
-
-        # check salts product flow
-        assert value(
-            m.fs.product_salts.properties[0].flow_mass_comp["organic_solid"]
-        ) == pytest.approx(0.082407, rel=1e-3)
-        assert value(
-            m.fs.product_salts.properties[0].flow_mass_comp["inorganic_solid"]
-        ) == pytest.approx(0.2662, rel=1e-3)
-
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -90,13 +64,13 @@ class Test_Swine_WWT_Flowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(3532.68, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOG) == pytest.approx(23.7615, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOC) == pytest.approx(407.316, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOS) == pytest.approx(47.315, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOW) == pytest.approx(
+            1242.686, rel=1e-3
+        )  # in $/m**3
+        assert value(m.fs.costing.LCOT) == pytest.approx(392.768, rel=1e-3)  # in $/m**3
 
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        display_results(m)
-        display_costing(m)
+        display_results(m.fs)
+        display_costing(m.fs)
