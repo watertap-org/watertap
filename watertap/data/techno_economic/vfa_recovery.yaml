@@ -1,6 +1,6 @@
 default:
   recovery_frac_mass_H2O:
-    value: 1
+    value: 0
     units: dimensionless
   default_removal_frac_mass_solute:
     value: 0

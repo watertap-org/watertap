@@ -60,14 +60,14 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    display_results(m.fs)
+    display_results(m)
 
     add_costing(m)
     m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
     results = solve(m)
     assert_optimal_termination(results)
-    display_costing(m.fs)
+    display_costing(m)
 
     return m, results
 
@@ -137,7 +137,16 @@ def build():
             "database": m.db,
         },
     )
-    m.fs.mixer = Mixer(
+    m.fs.mixer_to_vfa_recovery = Mixer(
+        default={
+            "property_package": m.fs.prop,
+            "inlet_list": ["inlet1", "inlet2"],
+            "momentum_mixing_type": MomentumMixingType.none,
+            "energy_mixing_type": MixingType.none,
+        },
+    )
+
+    m.fs.mixer_to_cofermentation = Mixer(
         default={
             "property_package": m.fs.prop,
             "inlet_list": ["inlet1", "inlet2"],
@@ -163,20 +172,29 @@ def build():
     )
     m.fs.s03 = Arc(
         source=m.fs.mbr_mec.byproduct,
-        destination=m.fs.mixer.inlet1,  # Todo: need to add mixer inlet instead of straight to vfa_rec
+        destination=m.fs.mixer_to_vfa_recovery.inlet1,
     )
     m.fs.s04 = Arc(
         source=m.fs.gas_sparged_membrane.treated, destination=m.fs.ion_exchange.inlet
     )
     m.fs.s05 = Arc(
         source=m.fs.gas_sparged_membrane.byproduct,
-        destination=m.fs.cofermentation.inlet1,
+        destination=m.fs.mixer_to_cofermentation.inlet1,
     )
     m.fs.s06 = Arc(
-        source=m.fs.food_waste.outlet, destination=m.fs.cofermentation.inlet2
+        source=m.fs.food_waste.outlet, destination=m.fs.mixer_to_cofermentation.inlet2
     )
-    m.fs.s07 = Arc(source=m.fs.cofermentation.treated, destination=m.fs.mixer.inlet2)
-    m.fs.s08 = Arc(source=m.fs.mixer.outlet, destination=m.fs.vfa_recovery.inlet)
+    m.fs.s06a = Arc(
+        source=m.fs.mixer_to_cofermentation.outlet,
+        destination=m.fs.cofermentation.inlet,
+    )
+    m.fs.s07 = Arc(
+        source=m.fs.cofermentation.byproduct,
+        destination=m.fs.mixer_to_vfa_recovery.inlet2,
+    )
+    m.fs.s08 = Arc(
+        source=m.fs.mixer_to_vfa_recovery.outlet, destination=m.fs.vfa_recovery.inlet
+    )
     m.fs.s09 = Arc(source=m.fs.vfa_recovery.treated, destination=m.fs.product_vfa.inlet)
     m.fs.s10 = Arc(source=m.fs.vfa_recovery.byproduct, destination=m.fs.waste_vfa.inlet)
     m.fs.s11 = Arc(
@@ -234,8 +252,8 @@ def set_operating_conditions(m):
     m.fs.gas_sparged_membrane.load_parameters_from_database(use_default_removal=True)
     assert_degrees_of_freedom(m.fs.gas_sparged_membrane, expected_dof=5)
 
-    m.fs.food_waste.flow_vol[0].fix(25e3 * pyunits.L / pyunits.day)
-    m.fs.food_waste.conc_mass_comp[0, "cod"].fix(29.23 * pyunits.mg / pyunits.L)
+    m.fs.food_waste.flow_vol[0].fix(30 * pyunits.L / pyunits.day)
+    m.fs.food_waste.conc_mass_comp[0, "cod"].fix(25000 * pyunits.mg / pyunits.L)
     m.fs.food_waste.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "phosphates"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
@@ -243,7 +261,6 @@ def set_operating_conditions(m):
 
     # cofermentation
     m.fs.cofermentation.load_parameters_from_database(use_default_removal=True)
-    assert_degrees_of_freedom(m.fs.cofermentation, expected_dof=10)
 
     # mixer
 
@@ -276,7 +293,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def display_results(fs):
+def display_results(m):
     unit_list = [
         "feed",
         "mbr_mec",
@@ -284,13 +301,14 @@ def display_results(fs):
         "ion_exchange",
         "sedimentation",
         "food_waste",
+        "mixer_to_cofermentation",
         "cofermentation",
-        "mixer",
+        "mixer_to_vfa_recovery",
         "vfa_recovery",
         "constructed_wetlands",
     ]
     for u in unit_list:
-        fs.component(u).report()
+        m.fs.component(u).report()
 
 
 def add_costing(m):
@@ -302,7 +320,7 @@ def add_costing(m):
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     m.fs.watertap_costing = WaterTAPCosting()
     # typing aid
-    m.fs.mixer.costing = UnitModelCostingBlock(
+    m.fs.mixer_to_vfa_recovery.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.watertap_costing}
     )
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
@@ -319,9 +337,12 @@ def add_costing(m):
     m.fs.costing.cost_process()
     m.fs.watertap_costing.cost_process()
 
+    costing = m.fs.costing
+
     # Resource recovery in terms of annual production
+    costing.annual_production = Block()
     # Hydrogen gas production
-    m.fs.costing.annual_hydrogen_production = Expression(
+    costing.annual_production.annual_hydrogen_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -331,7 +352,7 @@ def add_costing(m):
         )
     )
     # Phosphorus production
-    m.fs.costing.annual_phosphate_production = Expression(
+    costing.annual_production.annual_phosphate_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -341,7 +362,7 @@ def add_costing(m):
         )
     )
     # Nitrogen production
-    m.fs.costing.annual_nitrogen_production = Expression(
+    costing.annual_production.annual_nitrogen_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -351,7 +372,7 @@ def add_costing(m):
         )
     )
     # VFA production
-    m.fs.costing.annual_vfa_production = Expression(
+    costing.annual_production.annual_vfa_production = Expression(
         expr=(
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -361,7 +382,7 @@ def add_costing(m):
         )
     )
     # Treated effluent production
-    m.fs.costing.annual_water_production = Expression(
+    costing.annual_production.annual_water_production = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
             m.fs.product_water.properties[0].flow_vol,
@@ -369,7 +390,7 @@ def add_costing(m):
         )
     )
     # Annual influent flow
-    m.fs.costing.annual_feed = Expression(
+    costing.annual_production.annual_feed = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
             m.fs.feed.properties[0].flow_vol,
@@ -377,7 +398,7 @@ def add_costing(m):
         )
     )
     # Annual COD removed
-    m.fs.costing.annual_cod_removed = Expression(
+    costing.annual_production.annual_cod_removed = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
             m.fs.feed.flow_mass_comp[0, "cod"]
@@ -387,7 +408,7 @@ def add_costing(m):
         )
     )
     # Annual waste sludge released
-    m.fs.costing.annual_sludge_waste = Expression(
+    costing.annual_production.annual_sludge_waste = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
             m.fs.waste_vfa.properties[0].flow_vol,
@@ -397,55 +418,67 @@ def add_costing(m):
 
     # Annual costs and revenues
     # Annual water revenue
-    m.fs.costing.annual_water_revenue = Expression(
-        expr=(m.fs.costing.water_product_cost * m.fs.costing.annual_water_production),
+    costing.annual_costs_revenues = Block()
+    costing.annual_costs_revenues.annual_water_revenue = Expression(
+        expr=(
+            m.fs.costing.water_product_cost
+            * costing.annual_production.annual_water_production
+        ),
         doc="Value of annual water savings, considering treated effluent is utilized to displace freshwater usage",
     )
 
     # Annual VFA revenue
-    m.fs.costing.annual_vfa_revenue = Expression(
-        expr=(m.fs.costing.vfa_product_cost * m.fs.costing.annual_vfa_production),
+    costing.annual_costs_revenues.annual_vfa_revenue = Expression(
+        expr=(
+            m.fs.costing.vfa_product_cost
+            * costing.annual_production.annual_vfa_production
+        ),
         doc="Annual VFA revenue",
     )
 
     # Annual Nitrogen revenue
-    m.fs.costing.annual_ammonia_revenue = Expression(
+    costing.annual_costs_revenues.annual_ammonia_revenue = Expression(
         expr=(
-            m.fs.costing.ammonia_product_cost * m.fs.costing.annual_nitrogen_production
+            m.fs.costing.ammonia_product_cost
+            * costing.annual_production.annual_nitrogen_production
         ),
         doc="Annual ammonia revenue",
     )
 
     # Annual Phosphorus revenue
-    m.fs.costing.annual_phosphorus_revenue = Expression(
+    costing.annual_costs_revenues.annual_phosphorus_revenue = Expression(
         expr=(
             m.fs.costing.phosphorus_product_cost
-            * m.fs.costing.annual_phosphate_production
+            * costing.annual_production.annual_phosphate_production
         ),
         doc="Annual phosphorus revenue",
     )
 
     # Annual Hydrogen revenue
-    m.fs.costing.annual_hydrogen_revenue = Expression(
+    costing.annual_costs_revenues.annual_hydrogen_revenue = Expression(
         expr=(
-            m.fs.costing.hydrogen_product_cost * m.fs.costing.annual_hydrogen_production
+            m.fs.costing.hydrogen_product_cost
+            * costing.annual_production.annual_hydrogen_production
         ),
         doc="Annual hydrogen revenue",
     )
 
     # Annual sludge disposal cost
-    m.fs.costing.annual_disposal_cost = Expression(
-        expr=(m.fs.costing.waste_disposal_cost * m.fs.costing.annual_sludge_waste),
+    costing.annual_costs_revenues.annual_disposal_cost = Expression(
+        expr=(
+            m.fs.costing.waste_disposal_cost
+            * costing.annual_production.annual_sludge_waste
+        ),
         doc="Annual sludge disposal cost",
     )
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.costing.total_capital_cost, to_units=m.fs.costing.base_currency
-            )
-            + m.fs.watertap_costing.total_investment_cost
+        return pyunits.convert(
+            m.fs.costing.total_capital_cost, to_units=m.fs.costing.base_currency
+        ) + pyunits.convert(
+            m.fs.watertap_costing.total_investment_cost,
+            to_units=m.fs.costing.base_currency,
         )
 
     @m.Expression()
@@ -463,7 +496,7 @@ def add_costing(m):
                 m.fs.watertap_costing.total_operating_cost,
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
-            + m.fs.costing.annual_disposal_cost
+            + m.fs.costing.annual_costs_revenues.annual_disposal_cost
         )
 
     m.fs.costing.total_annualized_cost = Expression(
@@ -473,93 +506,93 @@ def add_costing(m):
         )
     )
     # TODO: review all cost related metrics and revise as needed
-    # - add levelized cost of treatment that calculates net cost per influent flow accounting for all revenue
+    costing.levelized_costs = Block()
     # Levelized cost of water
-    m.fs.costing.LCOW = Expression(
+    costing.levelized_costs.LCOW = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
         )
-        / m.fs.costing.annual_water_production,
+        / costing.annual_production.annual_water_production,
         doc="Levelized Cost of Treated Water",
     )
     # Levelized cost of hydrogen
-    m.fs.costing.LCOH2 = Expression(
+    costing.levelized_costs.LCOH2 = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_water_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
         )
-        / m.fs.costing.annual_hydrogen_production,
+        / costing.annual_production.annual_hydrogen_production,
         doc="Levelized Cost of Hydrogen Production",
     )
     # Levelized cost of nitrogen
-    m.fs.costing.LCON = Expression(
+    costing.levelized_costs.LCON = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_water_revenue
-            - m.fs.costing.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
         )
-        / m.fs.costing.annual_nitrogen_production,
+        / costing.annual_production.annual_nitrogen_production,
         doc="Levelized Cost of Nitrogen Production",
     )
     # Levelized cost of VFAs
-    m.fs.costing.LCOVFA = Expression(
+    costing.levelized_costs.LCOVFA = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_water_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
         )
-        / m.fs.costing.annual_vfa_production,
+        / costing.annual_production.annual_vfa_production,
         doc="Levelized Cost of VFA Production",
     )
     # Levelized cost of phosphorus
-    m.fs.costing.LCOP = Expression(
+    costing.levelized_costs.LCOP = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_water_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
         )
-        / m.fs.costing.annual_phosphate_production,
+        / costing.annual_production.annual_phosphate_production,
         doc="Levelized Cost of Phosphorus Production",
     )
 
     # Levelized cost of COD removal
-    m.fs.costing.LCOCOD = Expression(
+    costing.levelized_costs.LCOCOD = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_phosphorus_revenue
-            - m.fs.costing.annual_water_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
         )
-        / m.fs.costing.annual_cod_removed,
+        / costing.annual_production.annual_cod_removed,
         doc="Levelized Cost of COD Removal",
     )
 
     # Levelized cost of treatment with respect to influent flow
-    m.fs.costing.LCOT = Expression(
+    costing.levelized_costs.LCOT = Expression(
         expr=(
             m.fs.costing.total_annualized_cost
-            - m.fs.costing.annual_vfa_revenue
-            - m.fs.costing.annual_hydrogen_revenue
-            - m.fs.costing.annual_ammonia_revenue
-            - m.fs.costing.annual_phosphorus_revenue
-            - m.fs.costing.annual_water_revenue
+            - costing.annual_costs_revenues.annual_vfa_revenue
+            - costing.annual_costs_revenues.annual_hydrogen_revenue
+            - costing.annual_costs_revenues.annual_ammonia_revenue
+            - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_water_revenue
         )
-        / m.fs.costing.annual_feed,
+        / costing.annual_production.annual_feed,
         doc="Levelized Cost of Treatment with respect to influent flow",
     )
 
@@ -567,20 +600,28 @@ def add_costing(m):
     # m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
 
 
-def display_costing(fs):
-    fs.costing.total_capital_cost.display()
-    fs.costing.total_operating_cost.display()
-    fs.costing.LCOW.display()
+def display_costing(m):
+    m.fs.costing.total_capital_cost.display()
+    m.fs.costing.total_operating_cost.display()
+    print("Annual Costs & Revenues-----------------------------------------------")
+    for i in m.fs.costing.annual_costs_revenues.component_data_objects(Expression):
+        print(i, value(i))
+    print("Annual Production & Consumption---------------------------------------")
+    for i in m.fs.costing.annual_production.component_data_objects(Expression):
+        print(i, value(i))
+    print("Levelized Costs-------------------------------------------------------")
+    for i in m.fs.costing.levelized_costs.component_data_objects(Expression):
+        print(i, value(i))
 
     print("\nUnit Capital Costs\n")
-    for u in fs.costing._registered_unit_costing:
+    for u in m.fs.costing._registered_unit_costing:
         print(
             u.name,
             " :   ",
             value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)),
         )
     print("\nUnit Fixed Operating Costs\n")
-    for u in fs.costing._registered_unit_costing:
+    for u in m.fs.costing._registered_unit_costing:
         if hasattr(u, "fixed_operating_cost"):
             print(
                 u.name,
@@ -593,13 +634,13 @@ def display_costing(fs):
             )
 
     print("\nUtility Costs\n")
-    for f in fs.costing.flow_types:
+    for f in m.fs.costing.flow_types:
         print(
             f,
             " :   ",
             value(
                 pyunits.convert(
-                    fs.costing.aggregate_flow_costs[f],
+                    m.fs.costing.aggregate_flow_costs[f],
                     to_units=pyunits.USD_2020 / pyunits.year,
                 )
             ),
@@ -607,43 +648,16 @@ def display_costing(fs):
 
     print("")
     total_capital_cost = value(
-        pyunits.convert(fs.costing.total_capital_cost, to_units=pyunits.MUSD_2020)
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2020)
     )
     print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
 
     total_operating_cost = value(
         pyunits.convert(
-            fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
-
-    # electricity_intensity = value(
-    #     pyunits.convert(
-    #         fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
-    #     )
-    # )
-    # print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
-    # LCOW = value(
-    #     pyunits.convert(
-    #         fs.costing.LCOW, to_units=fs.costing.base_currency / pyunits.m**3
-    #     )
-    # )
-    # print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
-    # LCOCR = value(
-    #     pyunits.convert(
-    #         fs.costing.LCOCR, to_units=fs.costing.base_currency / pyunits.kg
-    #     )
-    # )
-    # print(f"Levelized Cost of COD Removal: {LCOCR:.4f} $/kg")
-    # LCOH = value(
-    #     pyunits.convert(fs.costing.LCOH, to_units=fs.costing.base_currency / pyunits.kg)
-    # )
-    # print(f"Levelized Cost of Hydrogen: {LCOH:.4f} $/kg")
-    # LCOM = value(
-    #     pyunits.convert(fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg)
-    # )
-    # print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
 
 
 if __name__ == "__main__":

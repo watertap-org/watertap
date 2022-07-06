@@ -52,62 +52,18 @@ class TestCofermentationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["cod", "nonbiodegradable_cod", "foo"]}
+        )
 
         m.fs.unit = CofermentationZO(
             default={"property_package": m.fs.params, "database": m.db}
         )
-        m.fs.feed1 = FeedZO(
-            default={
-                "property_package": m.fs.params,
-            }
-        )
-        m.fs.feed2 = FeedZO(
-            default={
-                "property_package": m.fs.params,
-            }
-        )
 
-        m.fs.feed1.flow_vol[0].fix(
-            value(
-                pyunits.convert(
-                    32.1 * pyunits.L / pyunits.day, to_units=pyunits.m**3 / pyunits.s
-                )
-            )
-        )
-        m.fs.feed1.conc_mass_comp[0, "cod"].fix(
-            value(
-                pyunits.convert(
-                    69781.93146 * pyunits.mg / pyunits.L,
-                    to_units=pyunits.kg / pyunits.m**3,
-                )
-            )
-        )
-
-        m.fs.feed2.flow_vol[0].fix(
-            value(
-                pyunits.convert(
-                    3.21 * pyunits.L / pyunits.day, to_units=pyunits.m**3 / pyunits.s
-                )
-            )
-        )
-        m.fs.feed2.conc_mass_comp[0, "cod"].fix(
-            value(
-                pyunits.convert(
-                    1e4 * pyunits.mg / pyunits.L, to_units=pyunits.kg / pyunits.m**3
-                )
-            )
-        )
-
-        m.fs.feed1_to_coferm = Arc(
-            source=m.fs.feed1.outlet, destination=m.fs.unit.inlet1
-        )
-        m.fs.feed2_to_coferm = Arc(
-            source=m.fs.feed2.outlet, destination=m.fs.unit.inlet2
-        )
-
-        TransformationFactory("network.expand_arcs").apply_to(m)
-
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
+        m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
+        m.fs.unit.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1e-20)
+        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1e-20)
         return m
 
     @pytest.mark.unit
@@ -119,7 +75,6 @@ class TestCofermentationZO:
         assert isinstance(model.fs.unit.eta_motor, Param)
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
-        assert isinstance(model.fs.unit.flow_vol_in, Expression)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -135,7 +90,10 @@ class TestCofermentationZO:
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
-            assert v.value == data["removal_frac_mass_solute"][j]["value"]
+            if j not in data["removal_frac_mass_solute"].keys():
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -162,48 +120,58 @@ class TestCofermentationZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(7.8892e-9, rel=1e-5) == value(
+        assert pytest.approx(4.3692908e-5, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.68163, rel=1e-5) == value(
+        assert pytest.approx(5.0314895e-8, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(4.347069, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(0.000150593, rel=1e-5) == value(
-            model.fs.unit.electricity[0]
+        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+            pyunits.convert(
+                model.fs.unit.properties_treated[0].flow_mass_comp[
+                    "nonbiodegradable_cod"
+                ],
+                to_units=pyunits.kg / pyunits.day,
+            )
         )
+        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+            pyunits.convert(
+                model.fs.unit.properties_byproduct[0].flow_mass_comp["cod"],
+                to_units=pyunits.kg / pyunits.day,
+            )
+        )
+        assert pytest.approx(4.347069, rel=1e-5) == value(
+            pyunits.convert(
+                model.fs.unit.properties_byproduct[0].flow_mass_comp[
+                    "nonbiodegradable_cod"
+                ],
+                to_units=pyunits.kg / pyunits.day,
+            )
+        )
+        assert pytest.approx(0.0161188, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
-        for j in model.fs.params.solute_set:
+        for j in model.fs.params.component_list:
             assert 1e-6 >= abs(
                 value(
-                    (
-                        (1 - model.fs.unit.removal_frac_mass_solute[0, j])
-                        * (
-                            model.fs.unit.properties_in1[0].flow_mass_comp[j]
-                            + model.fs.unit.properties_in2[0].flow_mass_comp[j]
-                        )
-                        - model.fs.unit.properties_treated[0].flow_mass_comp[j]
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    + sum(
+                        model.fs.unit.generation_rxn_comp[0, r, j]
+                        for r in model.fs.unit.reaction_set
                     )
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
                 )
             )
-        assert 1e-6 >= abs(
-            (
-                value(
-                    (
-                        model.fs.unit.properties_in1[0].flow_mass_comp["H2O"]
-                        + model.fs.unit.properties_in2[0].flow_mass_comp["H2O"]
-                    )
-                    * model.fs.unit.recovery_frac_mass_H2O[0]
-                    - model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
-                )
-            )
-        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -234,7 +202,9 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["cod", "nonbiodegradable_cod"]}
+    )
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -242,10 +212,9 @@ def test_costing():
         default={"property_package": m.fs.params, "database": m.db}
     )
 
-    m.fs.unit1.inlet1.flow_mass_comp[0, "H2O"].fix(0.043642594)
-    m.fs.unit1.inlet1.flow_mass_comp[0, "cod"].fix(1.00625e-4)
-    m.fs.unit1.inlet2.flow_mass_comp[0, "H2O"].fix(0.043642594)
-    m.fs.unit1.inlet2.flow_mass_comp[0, "cod"].fix(1.00625e-4)
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
+    m.fs.unit1.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
+    m.fs.unit1.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1e-20)
 
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0

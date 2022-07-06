@@ -45,6 +45,7 @@ class Test_Swine_WWT_Flowsheet:
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
         set_operating_conditions(m)
+        assert_degrees_of_freedom(m, 0)
         initialize_system(m)
 
     @pytest.mark.component
@@ -64,13 +65,15 @@ class Test_Swine_WWT_Flowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(
-            1242.686, rel=1e-3
+        assert value(m.fs.costing.levelized_costs.LCOW) == pytest.approx(
+            1469.8854, rel=1e-3
         )  # in $/m**3
-        assert value(m.fs.costing.LCOT) == pytest.approx(392.768, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.levelized_costs.LCOT) == pytest.approx(
+            464.5717, rel=1e-3
+        )  # in $/m**3
 
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        display_results(m.fs)
-        display_costing(m.fs)
+        display_results(m)
+        display_costing(m)

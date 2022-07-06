@@ -955,7 +955,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         capex_expr = pyo.units.convert(
-            blk.unit_model.flow_vol_in[t0] * unit_capex,
+            blk.unit_model.properties_in[t0].flow_vol * unit_capex,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
@@ -982,7 +982,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
             == pyo.units.convert(
-                blk.unit_model.flow_vol_in[t0] * unit_opex,
+                blk.unit_model.properties_in[t0].flow_vol * unit_opex,
                 to_units=blk.config.flowsheet_costing_block.base_currency
                 / blk.config.flowsheet_costing_block.base_period,
             )

@@ -1,16 +1,28 @@
 default:
   recovery_frac_mass_H2O:
-    value: 0       #Todo: revisit value later
+    value: 1       #Todo: revisit value later
     units: dimensionless
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    #TODO: consider making this a reactive unit that converts cod to ffcod; this will suffice for now
     cod:
-      value: 0.7    # Todo: revisit this value later
+      value: 0
       units: dimensionless
-      constituent_longform: Chemical Oxygen Demand (COD)
+      constituent_longform: Chemical Oxygen Demand
+    nonbiodegradable_cod:
+      value: 1
+      units: dimensionless
+      constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
+  reactions:
+    cod_to_nonbiodegradable_cod:
+      key_reactant: cod
+      conversion: 0.5
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        nonbiodegradable_cod:
+          conversion_ratio: 1
   capital_cost:
     cost_factor: None
     unit_capex:

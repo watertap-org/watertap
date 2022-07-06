@@ -127,16 +127,16 @@ class TestVFARecoveryZO_no_default:
         assert pytest.approx(90.909090, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]
         )
-        assert pytest.approx(0.0105, rel=1e-5) == value(
+        assert pytest.approx(0.0005, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(47.619047, rel=1e-5) == value(
+        assert pytest.approx(999.999998, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]
         )
-        assert pytest.approx(0.0005, rel=1e-5) == value(
+        assert pytest.approx(0.0105, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1000.0, rel=1e-5) == value(
+        assert pytest.approx(47.6190476, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
         )
         assert pytest.approx(4.05336, rel=1e-5) == value(model.fs.unit.electricity[0])
@@ -256,22 +256,22 @@ class TestVFARecoveryZO_w_default_removal:
         assert pytest.approx(83.333, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.0115, rel=1e-5) == value(
+        assert pytest.approx(0.0015, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(43.478261, rel=1e-5) == value(
+        assert pytest.approx(333.3333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]
         )
-        assert pytest.approx(86.95652, rel=1e-5) == value(
+        assert pytest.approx(666.6666663, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.0005, rel=1e-5) == value(
+        assert pytest.approx(0.01050, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1000.0, rel=1e-5) == value(
+        assert pytest.approx(47.6190476, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
         )
-        assert pytest.approx(1.6e-06, rel=1e-5) == value(
+        assert pytest.approx(7.6190476e-8, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(4.42184, rel=1e-5) == value(model.fs.unit.electricity[0])
