@@ -346,8 +346,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
         def over_pressure_ratio(b, t):
             return (
-                b.feed_side.properties_out[t].pressure_osm
-                - b.permeate_side[t, 1.0].pressure_osm
+                b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
+                - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
 
     def initialize_build(
