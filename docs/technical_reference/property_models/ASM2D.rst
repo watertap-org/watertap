@@ -145,6 +145,8 @@ Process Rate Equations
    "Denitrification with fermentable substrates, S_F", ":math:`ρ_6 = µ_{H}η_{NO3}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{F}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{S_{ALK}+S_{ALK}})X_{H}`"
    "Denitrification with fermentation products, S_A", ":math:`ρ_7 = µ_{H}η_{NO3}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{S_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{A}}{K_{A}+S_{A}})(\frac{S_{A}}{S_{F}+S_{A}})(\frac{S_{NH4}}{K_{NH4}+S_{NH4}})(\frac{S_{PO4}}{K_{P}+S_{PO4}})(\frac{S_{ALK}}{S_{ALK}+S_{ALK}})X_{H}`"
    "Fermentation", ":math:`ρ_8 = q_{fe}(\frac{K_{O2}}{K_{O2}+S_{O2}})(\frac{K_{NO3}}{K_{NO3}+S_{NO3}})(\frac{S_{F}}{K_{F}+S_{F}})(\frac{S_{ALK}}{K_{ALK}+S_{ALK}})X_{H}`"
+   "Lysis", ":math:`ρ_9 = b_{H}X_{H}`"
+
 
 
 Scaling
