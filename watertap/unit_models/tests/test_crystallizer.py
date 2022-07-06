@@ -256,21 +256,21 @@ class TestCrystallization:
             "dens_mass_solvent",
             "dens_mass_solute",
             "dens_mass_phase",
-            "cp_phase",
-            "cp_solvent",
+            "cp_mass_phase",
+            "cp_mass_solvent",
             "flow_vol_phase",
             "flow_vol",
             "enth_flow",
             "enth_mass_solvent",
-            "dh_crystallization",
+            "dh_crystallization_mass_comp",
             "eq_solubility_mass_phase_comp",
             "eq_solubility_mass_frac_phase_comp",
             "eq_mass_frac_phase_comp",
             "eq_dens_mass_solvent",
             "eq_dens_mass_solute",
             "eq_dens_mass_phase",
-            "eq_cp_solute",
-            "eq_cp_phase",
+            "eq_cp_mass_solute",
+            "eq_cp_mass_phase",
             "eq_flow_vol_phase",
             "eq_enth_mass_solvent",
         ]
@@ -425,7 +425,7 @@ class TestCrystallization:
                     - flow_mass_vapor * b.properties_vapor[0].enth_mass_solvent["Vap"]
                     - flow_mass_solids * b.properties_solids[0].enth_mass_solute["Sol"]
                     - flow_mass_solids
-                    * b.properties_solids[0].dh_crystallization["NaCl"]
+                    * b.properties_solids[0].dh_crystallization_mass_comp["NaCl"]
                     + b.work_mechanical[0]
                 )
             )
