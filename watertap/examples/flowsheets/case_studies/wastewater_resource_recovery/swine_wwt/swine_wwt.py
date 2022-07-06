@@ -368,7 +368,14 @@ def add_costing(m):
             to_units=pyunits.m**3 / m.fs.costing.base_period,
         )
     )
-
+    # Annual influent flow
+    m.fs.costing.annual_feed = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
     # Annual COD removed
     m.fs.costing.annual_cod_removed = Expression(
         expr=m.fs.costing.utilization_factor
@@ -540,6 +547,20 @@ def add_costing(m):
         )
         / m.fs.costing.annual_cod_removed,
         doc="Levelized Cost of COD Removal",
+    )
+
+    # Levelized cost of treatment with respect to influent flow
+    m.fs.costing.LCOT = Expression(
+        expr=(
+            m.fs.costing.total_annualized_cost
+            - m.fs.costing.annual_vfa_revenue
+            - m.fs.costing.annual_hydrogen_revenue
+            - m.fs.costing.annual_ammonia_revenue
+            - m.fs.costing.annual_phosphorus_revenue
+            - m.fs.costing.annual_water_revenue
+        )
+        / m.fs.costing.annual_feed,
+        doc="Levelized Cost of Treatment with respect to influent flow",
     )
 
     # TODO add SEC with respect to influent
