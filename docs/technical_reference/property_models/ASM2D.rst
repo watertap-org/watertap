@@ -65,7 +65,7 @@ Stoichiometric Coefficients
 The table below provides typical values for stoichiometric coefficients (from Table 9 of reference).
 
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Default Value", "Units"
+   :header: "Description", "Symbol", "Parameter", "Default Value", "Units"
 
    "N content of inert soluble COD S_I", ":math:`i_{NSI}`", "i_NSI", 0.01, ":math:`\text{dimensionless}`"
    "N content of fermentable substrate S_F", ":math:`i_{NSF}`", "i_NSF", 0.03, ":math:`\text{dimensionless}`"
@@ -91,7 +91,7 @@ The table below provides typical values for stoichiometric coefficients (from Ta
 Kinetic Parameters
 ------------------
 .. csv-table::
- :header: "Description", "Symbol", "Parameter", "Value at 20°C", "Units"
+   :header: "Description", "Symbol", "Parameter", "Value at 20°C", "Units"
 
    "Hydrolysis rate constant", ":math:`K_H`", "K_H", 3, ":math:`\text{day}^{-1}`"
    "Anoxic hydrolysis reduction factor", ":math:`η_{NO3}`", "eta_NO3", 0.6, ":math:`\text{dimensionless}`"
