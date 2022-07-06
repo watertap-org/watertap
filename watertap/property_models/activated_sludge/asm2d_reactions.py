@@ -1223,9 +1223,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.state_ref.alkalinity
-                            / (
-                                b.params.K_ALK + b.state_ref.alkalinity
-                            )  # TODO: Literature lists this denominator as S_alk + S_alk; is the error in lit or in this implementation?
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1264,9 +1262,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         )
                         * (
                             b.state_ref.alkalinity
-                            / (
-                                b.params.K_ALK + b.state_ref.alkalinity
-                            )  # TODO: Literature lists this denominator as S_alk + S_alk; is the error in lit or in this implementation?
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
                         )
                         * b.conc_mass_comp_ref["X_H"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
