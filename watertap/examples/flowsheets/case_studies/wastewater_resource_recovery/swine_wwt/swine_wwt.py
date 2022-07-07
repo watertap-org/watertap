@@ -339,7 +339,7 @@ def add_costing(m):
 
     costing = m.fs.costing
 
-    # Resource recovery in terms of annual production
+    # Resource recovery in terms of annual production-----------------
     costing.annual_production = Block()
     # Hydrogen gas production
     costing.annual_production.annual_hydrogen_production = Expression(
@@ -416,7 +416,16 @@ def add_costing(m):
         )
     )
 
-    # Annual costs and revenues
+    # Annual food waste accepted
+    costing.annual_production.annual_food_waste = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.food_waste.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    # Annual costs and revenues -------------------------------------
     # Annual water revenue
     costing.annual_costs_revenues = Block()
     costing.annual_costs_revenues.annual_water_revenue = Expression(
@@ -489,6 +498,18 @@ def add_costing(m):
         ),
         doc="Annual sludge disposal cost",
     )
+
+    # Annual food waste tipping fee revenue
+    costing.annual_costs_revenues.annual_food_waste_revenue = Expression(
+        expr=(
+            pyunits.convert(
+                m.fs.costing.food_waste_tipping_fee_cost
+                * costing.annual_production.annual_food_waste,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
+        ),
+        doc="Annual sludge disposal cost",
+    )
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b):
@@ -524,6 +545,7 @@ def add_costing(m):
         )
     )
     # TODO: review all cost related metrics and revise as needed
+    #  - Not accounting for food waste entering the system for relevant cost metrics; consider adding denominator that includes influent feed AND food waste IN
     costing.levelized_costs = Block()
     # Levelized cost of water
     costing.levelized_costs.LCOW = Expression(
@@ -533,6 +555,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_hydrogen_revenue
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_water_production,
         doc="Levelized Cost of Treated Water",
@@ -545,6 +568,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_water_revenue
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_hydrogen_production,
         doc="Levelized Cost of Hydrogen Production",
@@ -557,6 +581,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_hydrogen_revenue
             - costing.annual_costs_revenues.annual_water_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_nitrogen_production,
         doc="Levelized Cost of Nitrogen Production",
@@ -569,6 +594,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_hydrogen_revenue
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_vfa_production,
         doc="Levelized Cost of VFA Production",
@@ -581,6 +607,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_hydrogen_revenue
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_phosphate_production,
         doc="Levelized Cost of Phosphorus Production",
@@ -595,6 +622,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
             - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_cod_removed,
         doc="Levelized Cost of COD Removal",
@@ -609,6 +637,7 @@ def add_costing(m):
             - costing.annual_costs_revenues.annual_ammonia_revenue
             - costing.annual_costs_revenues.annual_phosphorus_revenue
             - costing.annual_costs_revenues.annual_water_revenue
+            - costing.annual_costs_revenues.annual_food_waste_revenue
         )
         / costing.annual_production.annual_feed,
         doc="Levelized Cost of Treatment with respect to influent flow",

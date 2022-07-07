@@ -64,14 +64,20 @@ class Test_Swine_WWT_Flowsheet:
         results = solve(m)
 
         assert_optimal_termination(results)
-
         # check costing
-        assert value(m.fs.costing.levelized_costs.LCOW) == pytest.approx(
-            80.0018, rel=1e-3
-        )  # in $/m**3
-        assert value(m.fs.costing.levelized_costs.LCOT) == pytest.approx(
-            25.252, rel=1e-3
-        )  # in $/m**3
+        lev_costs = {
+            "LCOW": 79.9767,
+            "LCOH2": 156.3806,
+            "LCON": 241.5425,
+            "LCOVFA": 28.0608,
+            "LCOP": 545.3874,
+            "LCOCOD": 10.1041,
+            "LCOT": 25.2441,
+        }
+        for k, v in lev_costs.items():
+            assert value(getattr(m.fs.costing.levelized_costs, k)) == pytest.approx(
+                v, rel=1e-3
+            )
 
     @pytest.mark.component
     def test_display(self, system_frame):
