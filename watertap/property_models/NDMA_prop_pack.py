@@ -132,7 +132,7 @@ class NDMAParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_comp": {"method": "_molality_comp"},
+                "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
@@ -542,8 +542,9 @@ class NDMAStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_mole_frac_phase_comp
         )
 
-    def _molality_comp(self):
-        self.molality_comp = Var(
+    def _molality_phase_comp(self):
+        self.molality_phase_comp = Var(
+            self.params.phase_list,
             ["NDMA"],
             initialize=1,
             bounds=(1e-18, 10),
@@ -551,15 +552,17 @@ class NDMAStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_comp(b, j):
+        def rule_molality_phase_comp(b, j):
             return (
-                self.molality_comp[j]
+                self.molality_phase_comp["Liq", j]
                 == b.mass_frac_phase_comp["Liq", j]
                 / (1 - b.mass_frac_phase_comp["Liq", j])
                 / b.params.mw_comp[j]
             )
 
-        self.eq_molality_comp = Constraint(["NDMA"], rule=rule_molality_comp)
+        self.eq_molality_phase_comp = Constraint(
+            ["NDMA"], rule=rule_molality_phase_comp
+        )
 
     # TODO: check enthalpy
     def _enth_flow(self):
@@ -728,15 +731,20 @@ class NDMAStateBlockData(StateBlockData):
                             self.mole_frac_phase_comp["Liq", j], 1
                         )
 
-        if self.is_property_constructed("molality_comp"):
+        if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
-                    if iscale.get_scaling_factor(self.molality_comp[j]) is None:
+                    if (
+                        iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                        is None
+                    ):
                         sf = iscale.get_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j]
                         )
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-                        iscale.set_scaling_factor(self.molality_comp[j], sf)
+                        iscale.set_scaling_factor(
+                            self.molality_phase_comp["Liq", j], sf
+                        )
 
         if self.is_property_constructed("enth_flow"):
             sf = (
@@ -755,20 +763,13 @@ class NDMAStateBlockData(StateBlockData):
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
-        # property relationship indexed by component
-        if self.is_property_constructed("molality_comp"):
-            for j, c in self.eq_molality_comp.items():
-                sf = iscale.get_scaling_factor(
-                    self.molality_comp[j], default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(c, sf)
-
         # property relationships indexed by component and phase
         for v_str in (
             "mass_frac_phase_comp",
             "conc_mass_phase_comp",
             "flow_mol_phase_comp",
             "mole_frac_phase_comp",
+            "molality_phase_comp",
         ):
             if self.is_property_constructed(v_str):
                 v_comp = self.component(v_str)

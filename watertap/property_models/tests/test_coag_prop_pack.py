@@ -262,7 +262,7 @@ class TestCoagulationPropPack:
         assert value(model.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
             1013.95727, rel=1e-4
         )
-        assert value(model.fs.stream[0].visc_d["Liq"]) == pytest.approx(
+        assert value(model.fs.stream[0].visc_d_phase["Liq"]) == pytest.approx(
             0.0008944, rel=1e-4
         )
 
