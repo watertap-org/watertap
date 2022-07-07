@@ -14,7 +14,7 @@
 ASM2d reaction package.
 
 Important Note: ASM2d reactions depend on the presences of TSS in solution, however
-TSS does not take part in the rate expressiosn. Thus, it is possible to have cases
+TSS does not take part in the rate expressions. Thus, it is possible to have cases
 where there is insufficient TSS present in the system for the reactions to occur
 resulting in an infeasible solution.
 
@@ -124,7 +124,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             initialize=0.03,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="N content of fermentale substrate, S_F, [kg N/kg COD]",
+            doc="N content of fermentable substrate, S_F, [kg N/kg COD]",
         )
         self.i_NXI = pyo.Var(
             initialize=0.02,
@@ -154,7 +154,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             initialize=0.01,
             units=pyo.units.dimensionless,
             domain=pyo.NonNegativeReals,
-            doc="P content of fermentale substrate, S_F, [kg P/kg COD]",
+            doc="P content of fermentable substrate, S_F, [kg P/kg COD]",
         )
         self.i_PXI = pyo.Var(
             initialize=0.01,
@@ -412,7 +412,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
             initialize=1e3,
             units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
             domain=pyo.NonNegativeReals,
-            doc="Rate constant for P precipitaion, [m^3/kg Fe(OH)3/day",
+            doc="Rate constant for P precipitation, [m^3/kg Fe(OH)3/day",
         )
         self.k_red = pyo.Var(
             initialize=0.6,
