@@ -421,8 +421,11 @@ def add_costing(m):
     costing.annual_costs_revenues = Block()
     costing.annual_costs_revenues.annual_water_revenue = Expression(
         expr=(
-            m.fs.costing.water_product_cost
-            * costing.annual_production.annual_water_production
+            pyunits.convert(
+                m.fs.costing.water_product_cost
+                * costing.annual_production.annual_water_production,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Value of annual water savings, considering treated effluent is utilized to displace freshwater usage",
     )
@@ -430,8 +433,11 @@ def add_costing(m):
     # Annual VFA revenue
     costing.annual_costs_revenues.annual_vfa_revenue = Expression(
         expr=(
-            m.fs.costing.vfa_product_cost
-            * costing.annual_production.annual_vfa_production
+            pyunits.convert(
+                m.fs.costing.vfa_product_cost
+                * costing.annual_production.annual_vfa_production,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Annual VFA revenue",
     )
@@ -439,8 +445,11 @@ def add_costing(m):
     # Annual Nitrogen revenue
     costing.annual_costs_revenues.annual_ammonia_revenue = Expression(
         expr=(
-            m.fs.costing.ammonia_product_cost
-            * costing.annual_production.annual_nitrogen_production
+            pyunits.convert(
+                m.fs.costing.ammonia_product_cost
+                * costing.annual_production.annual_nitrogen_production,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Annual ammonia revenue",
     )
@@ -448,8 +457,11 @@ def add_costing(m):
     # Annual Phosphorus revenue
     costing.annual_costs_revenues.annual_phosphorus_revenue = Expression(
         expr=(
-            m.fs.costing.phosphorus_product_cost
-            * costing.annual_production.annual_phosphate_production
+            pyunits.convert(
+                m.fs.costing.phosphorus_product_cost
+                * costing.annual_production.annual_phosphate_production,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Annual phosphorus revenue",
     )
@@ -457,8 +469,11 @@ def add_costing(m):
     # Annual Hydrogen revenue
     costing.annual_costs_revenues.annual_hydrogen_revenue = Expression(
         expr=(
-            m.fs.costing.hydrogen_product_cost
-            * costing.annual_production.annual_hydrogen_production
+            pyunits.convert(
+                m.fs.costing.hydrogen_product_cost
+                * costing.annual_production.annual_hydrogen_production,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Annual hydrogen revenue",
     )
@@ -466,8 +481,11 @@ def add_costing(m):
     # Annual sludge disposal cost
     costing.annual_costs_revenues.annual_disposal_cost = Expression(
         expr=(
-            m.fs.costing.waste_disposal_cost
-            * costing.annual_production.annual_sludge_waste
+            pyunits.convert(
+                m.fs.costing.waste_disposal_cost
+                * costing.annual_production.annual_sludge_waste,
+                to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+            )
         ),
         doc="Annual sludge disposal cost",
     )

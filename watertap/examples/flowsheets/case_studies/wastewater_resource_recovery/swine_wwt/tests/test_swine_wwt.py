@@ -59,6 +59,7 @@ class Test_Swine_WWT_Flowsheet:
         m = system_frame
 
         add_costing(m)
+        assert_units_consistent(m)
         m.fs.costing.initialize()
         results = solve(m)
 
