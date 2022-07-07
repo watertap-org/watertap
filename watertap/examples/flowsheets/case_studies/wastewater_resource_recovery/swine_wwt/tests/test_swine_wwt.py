@@ -67,10 +67,10 @@ class Test_Swine_WWT_Flowsheet:
 
         # check costing
         assert value(m.fs.costing.levelized_costs.LCOW) == pytest.approx(
-            1469.8854, rel=1e-3
+            80.0018, rel=1e-3
         )  # in $/m**3
         assert value(m.fs.costing.levelized_costs.LCOT) == pytest.approx(
-            464.5717, rel=1e-3
+            25.252, rel=1e-3
         )  # in $/m**3
 
     @pytest.mark.component
