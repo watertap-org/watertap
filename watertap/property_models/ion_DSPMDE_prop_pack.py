@@ -383,21 +383,19 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_comp": {"method": "_molality_comp"},
+                "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
                 "electrical_mobility_comp": {"method": "_electrical_mobility_comp"},
-                "electrical_conductivity_phase": {
-                    "method": "_electrical_conductivity_phase"
-                },
+                "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
                 "dielectric_constant": {"method": "_dielectric_constant"},
                 "debye_huckel_constant": {"method": "_debye_huckel_constant"},
-                "ionic_strength": {"method": "_ionic_strength"},
+                "ionic_strength_molal": {"method": "_ionic_strength_molal"},
             }
         )
 
@@ -524,18 +522,19 @@ class _DSPMDEStateBlock(StateBlock):
                     )
             # Vars indexd by solute_set
             for j in self[k].params.solute_set:
-                if self[k].is_property_constructed("molality_comp"):
-                    self[k].molality_comp[j].set_value(
+                if self[k].is_property_constructed("molality_phase_comp"):
+                    self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
                         / self[k].flow_mol_phase_comp["Liq", "H2O"]
                         / self[k].params.mw_comp["H2O"]
                     )
             # Vars indexd not indexed or indexed only by phase
-            if self[k].is_property_constructed("ionic_strength"):
-                self[k].ionic_strength.set_value(
+            if self[k].is_property_constructed("ionic_strength_molal"):
+                self[k].ionic_strength_molal.set_value(
                     0.5
                     * sum(
-                        self[k].charge_comp[j] ** 2 * self[k].molality_comp[j]
+                        self[k].charge_comp[j] ** 2
+                        * self[k].molality_phase_comp["Liq", j]
                         for j in self[k].params.ion_set | self[k].params.solute_set
                     )
                 )
@@ -548,8 +547,8 @@ class _DSPMDEStateBlock(StateBlock):
                     * Constants.gas_constant
                     * self[k].temperature
                 )
-            if self[k].is_property_constructed("electrical_conductivity_phase"):
-                self[k].electrical_conductivity_phase["Liq"].set_value(
+            if self[k].is_property_constructed("elec_cond_phase"):
+                self[k].elec_cond_phase["Liq"].set_value(
                     sum(
                         Constants.faraday_constant
                         * abs(self[k].charge_comp[j])
@@ -943,8 +942,9 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_mole_frac_phase_comp
         )
 
-    def _molality_comp(self):
-        self.molality_comp = Var(
+    def _molality_phase_comp(self):
+        self.molality_phase_comp = Var(
+            self.params.phase_list,
             self.params.ion_set | self.params.solute_set,
             initialize=1,
             bounds=(0, 10),
@@ -952,16 +952,16 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_comp(b, j):
+        def rule_molality_phase_comp(b, j):
             return (
-                b.molality_comp[j]
+                b.molality_phase_comp["Liq", j]
                 == b.flow_mol_phase_comp["Liq", j]
                 / b.flow_mol_phase_comp["Liq", "H2O"]
                 / b.params.mw_comp["H2O"]
             )
 
-        self.eq_molality_comp = Constraint(
-            self.params.ion_set | self.params.solute_set, rule=rule_molality_comp
+        self.eq_molality_phase_comp = Constraint(
+            self.params.ion_set | self.params.solute_set, rule=rule_molality_phase_comp
         )
 
     def _radius_stokes_comp(self):
@@ -1010,7 +1010,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 b.params.config.activity_coefficient_model
                 == ActivityCoefficientModel.davies
             ):
-                I = b.ionic_strength
+                I = b.ionic_strength_molal
                 return log(
                     b.act_coeff_phase_comp["Liq", j]
                 ) == -b.debye_huckel_constant * b.charge_comp[j] ** 2 * (
@@ -1024,21 +1024,21 @@ class DSPMDEStateBlockData(StateBlockData):
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
     # the MIT's DSPMDE paper indicates usage of molar concentration
-    def _ionic_strength(self):
-        self.ionic_strength = Var(
+    def _ionic_strength_molal(self):
+        self.ionic_strength_molal = Var(
             initialize=1,
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.kg,
             doc="Molal ionic strength",
         )
 
-        def rule_ionic_strength(b):
-            return b.ionic_strength == 0.5 * sum(
-                b.charge_comp[j] ** 2 * b.molality_comp[j]
+        def rule_ionic_strength_molal(b):
+            return b.ionic_strength_molal == 0.5 * sum(
+                b.charge_comp[j] ** 2 * b.molality_phase_comp["Liq", j]
                 for j in self.params.ion_set | self.params.solute_set
             )
 
-        self.eq_ionic_strength = Constraint(rule=rule_ionic_strength)
+        self.eq_ionic_strength_molal = Constraint(rule=rule_ionic_strength_molal)
 
     def _debye_huckel_constant(self):
         self.debye_huckel_constant = Var(
@@ -1101,16 +1101,16 @@ class DSPMDEStateBlockData(StateBlockData):
 
         self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
-    def _electrical_conductivity_phase(self):
-        self.electrical_conductivity_phase = Var(
+    def _elec_cond_phase(self):
+        self.elec_cond_phase = Var(
             self.params.phase_list,
             initialize=0.1,
             units=pyunits.ohm**-1 * pyunits.meter**-1,
             doc="Electrical conductivity",
         )
 
-        def rule_electrical_conductivity_phase(b):
-            return b.electrical_conductivity_phase["Liq"] == sum(
+        def rule_elec_cond_phase(b):
+            return b.elec_cond_phase["Liq"] == sum(
                 Constants.faraday_constant
                 * abs(b.charge_comp[j])
                 * b.electrical_mobility_comp[j]
@@ -1118,9 +1118,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 for j in self.params.ion_set | self.params.solute_set
             )  # maybe revisit for other emprical calculation or non-ideal situation
 
-        self.eq_electrical_conductivity_phase = Constraint(
-            rule=rule_electrical_conductivity_phase
-        )
+        self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1430,8 +1428,8 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
-        if self.is_property_constructed("electrical_conductivity_phase"):
-            if iscale.get_scaling_factor(self.electrical_conductivity_phase) is None:
+        if self.is_property_constructed("elec_cond_phase"):
+            if iscale.get_scaling_factor(self.elec_cond_phase) is None:
                 sf = 1e-4 * min(
                     (
                         0.5
@@ -1440,7 +1438,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
                     for j in self.params.ion_set | self.params.solute_set
                 )
-                iscale.set_scaling_factor(self.electrical_conductivity_phase, sf)
+                iscale.set_scaling_factor(self.elec_cond_phase, sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1456,9 +1454,12 @@ class DSPMDEStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.flow_vol_phase)
             iscale.set_scaling_factor(self.flow_vol, sf)
 
-        if self.is_property_constructed("molality_comp"):
+        if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.ion_set | self.params.solute_set:
-                if iscale.get_scaling_factor(self.molality_comp[j]) is None:
+                if (
+                    iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                    is None
+                ):
                     sf = (
                         iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
                         / iscale.get_scaling_factor(
@@ -1466,7 +1467,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         )
                         / iscale.get_scaling_factor(self.mw_comp["H2O"])
                     )
-                    iscale.set_scaling_factor(self.molality_comp[j], sf)
+                    iscale.set_scaling_factor(self.molality_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("act_coeff_phase_comp"):
             for j in self.params.ion_set | self.params.solute_set:
@@ -1480,13 +1481,13 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.debye_huckel_constant) is None:
                 iscale.set_scaling_factor(self.debye_huckel_constant, 10)
 
-        if self.is_property_constructed("ionic_strength"):
-            if iscale.get_scaling_factor(self.ionic_strength) is None:
+        if self.is_property_constructed("ionic_strength_molal"):
+            if iscale.get_scaling_factor(self.ionic_strength_molal) is None:
                 sf = min(
-                    iscale.get_scaling_factor(self.molality_comp[j])
+                    iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
                     for j in self.params.ion_set | self.params.solute_set
                 )
-                iscale.set_scaling_factor(self.ionic_strength, sf)
+                iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
         # transforming constraints
         # property relationships with no index, simple constraint
@@ -1502,23 +1503,13 @@ class DSPMDEStateBlockData(StateBlockData):
             "pressure_osm_phase",
             "flow_vol_phase",
             "dens_mass_phase",
-            "electrical_conductivity_phase",
+            "elec_cond_phase",
         ]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
-
-        # property relationship indexed by component
-        v_str_lst_comp = ["molality_comp"]
-        for v_str in v_str_lst_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = [
@@ -1528,6 +1519,7 @@ class DSPMDEStateBlockData(StateBlockData):
             "mole_frac_phase_comp",
             "conc_mol_phase_comp",
             "act_coeff_phase_comp",
+            "molality_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
@@ -1542,5 +1534,5 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed("debye_huckel_constant"):
             iscale.constraint_scaling_transform(self.eq_debye_huckel_constant, 10)
 
-        if self.is_property_constructed("ionic_strength"):
-            iscale.constraint_scaling_transform(self.eq_ionic_strength, 1)
+        if self.is_property_constructed("ionic_strength_molal"):
+            iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)

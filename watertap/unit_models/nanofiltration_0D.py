@@ -409,7 +409,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j] * (
@@ -438,7 +442,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j] * (
