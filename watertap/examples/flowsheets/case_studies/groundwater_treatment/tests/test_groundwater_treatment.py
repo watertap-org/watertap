@@ -152,8 +152,8 @@ class TestGroundwaterTreatmentFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.533, rel=1e-3)
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.533, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(1.5316, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.5316, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):
