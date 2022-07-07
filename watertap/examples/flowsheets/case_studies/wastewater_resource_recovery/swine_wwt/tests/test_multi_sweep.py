@@ -18,7 +18,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supe
 )
 
 sweep_list = []
-for case_num in [1]:
+for case_num in [1, 2, 3]:
     sweep_list.append(case_num)
 
 
@@ -27,7 +27,7 @@ for case_num in [1]:
 def test_multi_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
-    nx = 5
+    nx = 3
     global_results, sweep_params, m = multi_sweep.run_analysis(
         case_num, nx, interpolate_nan_outputs=False
     )
