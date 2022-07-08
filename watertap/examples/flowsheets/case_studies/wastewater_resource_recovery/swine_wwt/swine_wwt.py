@@ -508,7 +508,7 @@ def add_costing(m):
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
         ),
-        doc="Annual sludge disposal cost",
+        doc="Annual food waste tipping fee revenue",
     )
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
