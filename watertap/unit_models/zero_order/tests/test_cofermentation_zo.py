@@ -126,9 +126,9 @@ class TestCofermentationZO:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            assert v.value == data["removal_frac_mass_solute"][j]["value"]
+            assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert (
@@ -180,7 +180,7 @@ class TestCofermentationZO:
             assert 1e-6 >= abs(
                 value(
                     (
-                        (1 - model.fs.unit.removal_frac_mass_solute[0, j])
+                        (1 - model.fs.unit.removal_frac_mass_comp[0, j])
                         * (
                             model.fs.unit.properties_in1[0].flow_mass_comp[j]
                             + model.fs.unit.properties_in2[0].flow_mass_comp[j]

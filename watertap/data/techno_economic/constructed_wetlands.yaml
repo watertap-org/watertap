@@ -2,10 +2,10 @@ default:
   recovery_frac_mass_H2O:
     value: 0.85       #Todo: revisit value later
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nitrate:      #TODO: just a placeholder until we have info on removal fractions of constituents
       value: 0.40
       units: dimensionless
