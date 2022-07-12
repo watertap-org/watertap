@@ -41,7 +41,9 @@ class IonExchangeZOData(ZeroOrderBaseData):
         pump_electricity(self, self._Q)
 
         # mutable parameter; default value found in WT3 for anion exchange
-        if self.config.process_subtype != "clinoptilolite":
+        if self.config.process_subtype == "clinoptilolite":
+            pass
+        else:
             self.eta_pump.set_value(0.8)
             # mutable parameter; default value of 2 bar converted to feet head
             self.lift_height.set_value(69.91052 * pyunits.feet)
