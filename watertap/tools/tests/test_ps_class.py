@@ -14,6 +14,7 @@ from watertap.tools.parameter_sweep_writer import *
 
 # -----------------------------------------------------------------------------
 
+
 class TestParallelManager:
     @pytest.fixture(scope="class")
     def model(self):
@@ -82,7 +83,9 @@ class TestParallelManager:
         param_dict["var_B"] = LinearSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = ps._build_combinations(param_dict, SamplingType.FIXED, None)
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -117,7 +120,9 @@ class TestParallelManager:
         param_dict["var_B"] = GeomSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = GeomSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = ps._build_combinations(param_dict, SamplingType.FIXED, None)
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -152,7 +157,9 @@ class TestParallelManager:
         param_dict["var_B"] = ReverseGeomSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = ReverseGeomSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = ps._build_combinations(param_dict, SamplingType.FIXED, None)
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -248,7 +255,9 @@ class TestParallelManager:
         param_dict["var_B"] = LinearSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = ps._build_combinations(param_dict, SamplingType.FIXED, None)
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
+        )
 
         num_procs = ps.num_procs
         rank = ps.rank
@@ -488,7 +497,9 @@ class TestParallelManager:
         local_output_dict["solve_successful"] = [True] * local_num_cases
 
         # Get the global output dictionary, This is properly created only on rank 0
-        global_output_dict = ps._create_global_output(local_output_dict, global_num_cases)
+        global_output_dict = ps._create_global_output(
+            local_output_dict, global_num_cases
+        )
 
         if ps.num_procs == 1:
             assert local_output_dict == global_output_dict
@@ -514,8 +525,8 @@ class TestParallelManager:
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
+            interpolate_nan_outputs=True,
+        )
 
         tmp_path = _get_rank0_path(ps.comm, tmp_path)
 
@@ -679,8 +690,8 @@ class TestParallelManager:
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
+            interpolate_nan_outputs=True,
+        )
 
         tmp_path = _get_rank0_path(ps.comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -823,8 +834,8 @@ class TestParallelManager:
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
+            interpolate_nan_outputs=True,
+        )
 
         tmp_path = _get_rank0_path(ps.comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -842,7 +853,6 @@ class TestParallelManager:
         A = m.fs.input["a"]
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
 
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
@@ -967,8 +977,8 @@ class TestParallelManager:
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
+            interpolate_nan_outputs=True,
+        )
 
         tmp_path = _get_rank0_path(ps.comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -986,7 +996,6 @@ class TestParallelManager:
         A = m.fs.input["a"]
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-
 
         # Call the parameter_sweep function
         _ = ps.parameter_sweep(
@@ -1134,8 +1143,8 @@ class TestParallelManager:
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
-            interpolate_nan_outputs=False
-            )
+            interpolate_nan_outputs=False,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1342,7 +1351,6 @@ def _assert_h5_csv_agreement(csv_filename, h5_dict):
             assert np.allclose(
                 h5_dict[output_type][key]["value"], csv_data[:, idx], equal_nan=True
             )
-            # print(f'Passed test of {key}')
 
 
 def _build_header_list_from_csv(csv_filename):
@@ -1365,6 +1373,7 @@ def _build_header_list_from_csv(csv_filename):
                 csv_header[-1] += f",{item}"
 
     return csv_header
+
 
 def _read_output_h5(filepath):
 

@@ -312,66 +312,66 @@ class _ParameterSweepBase(ABC):
                     if "_pyo_obj" in subval:
                         del subval["_pyo_obj"]
 
-        if self.num_procs == 1:
-            global_output_dict = local_output_dict
-        else:  # pragma: no cover
-            # We make the assumption that the parameter sweep is running the same
-            # flowsheet num_samples number of times, i.e., the structure of the
-            # local_output_dict remains the same across all mpi_ranks
-            local_num_cases = len(local_output_dict["solve_successful"])
+        # if self.num_procs == 1:
+        #     global_output_dict = local_output_dict
+        # else:  # pragma: no cover
+        # We make the assumption that the parameter sweep is running the same
+        # flowsheet num_samples number of times, i.e., the structure of the
+        # local_output_dict remains the same across all mpi_ranks
+        local_num_cases = len(local_output_dict["solve_successful"])
 
-            # Gather the size of the value array on each MPI rank
-            sample_split_arr = self.comm.allgather(local_num_cases)
-            num_total_samples = sum(sample_split_arr)
+        # Gather the size of the value array on each MPI rank
+        sample_split_arr = self.comm.allgather(local_num_cases)
+        num_total_samples = sum(sample_split_arr)
 
-            # Create the global value array on rank 0
-            if self.rank == 0:
-                global_output_dict = copy.deepcopy(local_output_dict)
-                # Create a global value array of inputs in the dictionary
-                for key, item in global_output_dict.items():
-                    if key != "solve_successful":
-                        for subkey, subitem in item.items():
-                            subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
-
-            else:
-                global_output_dict = local_output_dict
-
-            # Finally collect the values
-            for key, item in local_output_dict.items():  # This probably doesnt work
+        # Create the global value array on rank 0
+        if self.rank == 0:
+            global_output_dict = copy.deepcopy(local_output_dict)
+            # Create a global value array of inputs in the dictionary
+            for key, item in global_output_dict.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        self.comm.Gatherv(
-                            sendbuf=subitem["value"],
-                            recvbuf=(
-                                global_output_dict[key][subkey]["value"],
-                                sample_split_arr,
-                            ),
-                            root=0,
-                        )
+                        subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
 
-                        # Trim to the exact number
-                        global_output_dict[key][subkey]["value"] = global_output_dict[key][
-                            subkey
-                        ]["value"][0:req_num_samples]
+        else:
+            global_output_dict = local_output_dict
 
-                elif key == "solve_successful":
-                    local_solve_successful = np.fromiter(
-                        item, dtype=np.bool, count=len(item)
-                    )
-
-                    if self.rank == 0:
-                        global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
-                    else:
-                        global_solve_successful = None
-
+        # Finally collect the values
+        for key, item in local_output_dict.items():  # This probably doesnt work
+            if key != "solve_successful":
+                for subkey, subitem in item.items():
                     self.comm.Gatherv(
-                        sendbuf=local_solve_successful,
-                        recvbuf=(global_solve_successful, sample_split_arr),
+                        sendbuf=subitem["value"],
+                        recvbuf=(
+                            global_output_dict[key][subkey]["value"],
+                            sample_split_arr,
+                        ),
                         root=0,
                     )
 
-                    if self.rank == 0:
-                        global_output_dict[key] = global_solve_successful[0:req_num_samples]
+                    # Trim to the exact number
+                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
+                        subkey
+                    ]["value"][0:req_num_samples]
+
+            elif key == "solve_successful":
+                local_solve_successful = np.fromiter(
+                    item, dtype=np.bool, count=len(item)
+                )
+        
+                if self.rank == 0:
+                    global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
+                else:
+                    global_solve_successful = None
+
+                self.comm.Gatherv(
+                    sendbuf=local_solve_successful,
+                    recvbuf=(global_solve_successful, sample_split_arr),
+                    root=0,
+                )
+
+                if self.rank == 0:
+                    global_output_dict[key] = global_solve_successful[0:req_num_samples]
 
         return global_output_dict
 
@@ -915,6 +915,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Now we can save this
         self.comm.Barrier()
+
+        if self.rank == 0:
+            print("global_filtered_dict")
+            pprint.pprint(global_filtered_dict)
 
         # Save to file
         global_save_data = self.writer.save_results(
