@@ -96,12 +96,8 @@ from idaes.core import FlowsheetBlock
 
 # ========================== (3 & 4) ================================
 # Import ElectrolyteDB object
-from watertap.edb import ElectrolyteDB
 from watertap.examples.edb.the_basics import (
-    connect_to_edb,
-    is_thermo_config_valid,
     grab_base_reaction_config,
-    is_thermo_reaction_pair_valid,
 )
 
 __author__ = "Austin Ladshaw"

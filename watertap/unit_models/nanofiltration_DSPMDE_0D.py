@@ -50,7 +50,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants
-from watertap.core.util.initialization import check_solve, check_dof
+from watertap.core.util.initialization import check_dof
 
 import idaes.logger as idaeslog
 

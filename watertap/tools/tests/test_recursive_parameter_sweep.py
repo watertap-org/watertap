@@ -21,21 +21,8 @@ from pyomo.environ import value
 
 from watertap.tools.parameter_sweep import (
     _init_mpi,
-    _build_combinations,
-    _divide_combinations,
-    _update_model_values,
-    _interp_nan_values,
-    _process_sweep_params,
-    _write_output_to_h5,
     _read_output_h5,
-    _create_local_output_skeleton,
-    _create_global_output,
-    parameter_sweep,
-    LinearSample,
     UniformSample,
-    NormalSample,
-    SamplingType,
-    LatinHypercubeSample,
 )
 
 from watertap.tools.recursive_parameter_sweep import (
@@ -45,16 +32,8 @@ from watertap.tools.recursive_parameter_sweep import (
 from watertap.tools.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,
-    _assert_h5_csv_agreement,
 )
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
-    build,
-    set_operating_conditions,
-    initialize_system,
-    solve,
-    optimize,
-)
 
 # -----------------------------------------------------------------------------
 

@@ -32,9 +32,7 @@ from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
-    MunicipalDrinkingZO,
     WaterPumpingStationZO,
-    PumpZO,
     CoagulationFlocculationZO,
     SedimentationZO,
     OzoneZO,
@@ -44,7 +42,6 @@ from watertap.unit_models.zero_order import (
     IonExchangeZO,
     ChlorinationZO,
     StorageTankZO,
-    BackwashSolidsHandlingZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 

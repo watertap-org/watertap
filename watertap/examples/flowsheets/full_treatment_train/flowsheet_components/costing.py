@@ -28,23 +28,7 @@ from watertap.costing import (
     ROType,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    feed_block,
-)
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    unit_separator,
-    unit_0DRO,
-    unit_1DRO,
-    property_models,
-)
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.desalination import (
-    build_desalination,
-    solve_desalination,
-    scale_desalination,
-    initialize_desalination,
-    display_desalination,
-)
 
 import idaes.core.util.scaling as iscale
 

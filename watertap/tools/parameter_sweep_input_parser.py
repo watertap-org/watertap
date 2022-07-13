@@ -18,7 +18,6 @@ from watertap.tools.parameter_sweep import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
-    _read_output_h5,
 )
 import yaml
 import idaes.logger as idaeslog

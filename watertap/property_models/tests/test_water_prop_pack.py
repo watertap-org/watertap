@@ -18,7 +18,6 @@ from idaes.generic_models.properties.tests.test_harness import (
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
     PropertyRegressionTest,
-    PropertyCalculateStateTest,
 )
 
 # -----------------------------------------------------------------------------

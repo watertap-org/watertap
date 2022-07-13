@@ -35,7 +35,7 @@ from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
 import watertap.property_models.seawater_prop_pack as prop_SW

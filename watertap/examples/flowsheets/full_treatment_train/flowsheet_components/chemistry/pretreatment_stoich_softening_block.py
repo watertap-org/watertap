@@ -85,9 +85,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    property_models,
-)
 from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions

@@ -16,7 +16,7 @@ This module contains a zero-order representation of a photothermal membrane unit
 
 from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
-from watertap.core import build_sido, ZeroOrderBaseData, pump_electricity
+from watertap.core import ZeroOrderBaseData, build_sido
 
 # Some more information about this module
 __author__ = "Travis Arnold"

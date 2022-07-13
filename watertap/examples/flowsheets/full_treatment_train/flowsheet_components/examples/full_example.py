@@ -29,7 +29,6 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
     pretreatment_NF,
     desalination,
     translator_block,
-    feed_block,
     gypsum_saturation_index,
     costing,
 )
@@ -39,8 +38,6 @@ from watertap.examples.flowsheets.full_treatment_train.model_components import (
 from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
-    check_build,
-    check_scaling,
 )
 
 """Flowsheet example that satisfy minimum viable product requirements"""

@@ -22,7 +22,6 @@ from watertap.tools.parameter_sweep import (
     _do_param_sweep,
     _init_mpi,
     _process_sweep_params,
-    _process_results_filename,
     _save_results,
 )
 

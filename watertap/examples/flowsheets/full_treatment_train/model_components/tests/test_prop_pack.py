@@ -14,7 +14,6 @@
 import pytest
 from watertap.property_models.tests.property_test_harness import (
     PropertyTestHarness,
-    PropertyRegressionTest,
 )
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock

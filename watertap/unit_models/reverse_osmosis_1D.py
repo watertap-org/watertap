@@ -35,8 +35,6 @@ from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from watertap.core.util.initialization import check_solve, check_dof
 from watertap.unit_models._reverse_osmosis_base import (
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
     PressureChangeType,
     _ReverseOsmosisBaseData,
 )

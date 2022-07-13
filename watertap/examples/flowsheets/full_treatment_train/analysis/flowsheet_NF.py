@@ -25,7 +25,6 @@ from idaes.core.util.scaling import (
 from idaes.core.util.initialization import propagate_state
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_NF,
-    desalination,
     gypsum_saturation_index,
     translator_block,
     costing,

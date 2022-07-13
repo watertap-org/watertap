@@ -108,7 +108,6 @@ from watertap.examples.chemistry.chem_scaling_utils import (
     _set_equ_rxn_scaling,
     _set_mat_bal_scaling_FpcTP,
     _set_mat_bal_scaling_FTPx,
-    _set_ene_bal_scaling,
 )
 
 __author__ = "Austin Ladshaw"

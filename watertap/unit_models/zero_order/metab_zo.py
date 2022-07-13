@@ -18,7 +18,7 @@ This module contains a zero-order representation of a METAB bioreactor with simp
 from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
+from watertap.core import ZeroOrderBaseData, build_sido_reactive
 from watertap.ui.api import export_variables
 
 # Some more information about this module

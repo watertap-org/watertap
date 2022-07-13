@@ -82,7 +82,6 @@ from pydantic import BaseModel, ValidationError
 import yaml
 
 # local
-from watertap.ui import api_util
 from watertap.ui.api_util import open_file_or_stream
 from watertap.ui import api_model as model
 

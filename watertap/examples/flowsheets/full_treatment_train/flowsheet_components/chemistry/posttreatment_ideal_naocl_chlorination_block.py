@@ -77,9 +77,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
-    property_models,
-)
 from idaes.core.solvers import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -113,7 +110,6 @@ import idaes.logger as idaeslog
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors,
-    calculate_chemical_scaling_factors_for_energy_balances,
 )
 
 from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
@@ -124,9 +120,6 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
     seq_decomp_initializer,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    desalination,
-)
 
 __author__ = "Austin Ladshaw"
 

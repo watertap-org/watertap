@@ -14,13 +14,11 @@
 __author__ = "Adam Atia"
 
 import pandas as pd
-from watertap.core import ZeroOrderBaseData
 from pyomo.environ import ConcreteModel, Var, Constraint
 from watertap.core.wt_database import Database
 from idaes.core import FlowsheetBlock
 from watertap.core.zero_order_properties import WaterParameterBlock
 import watertap.unit_models.zero_order as zo
-from watertap.core import ZeroOrderBaseData
 from watertap.core.tests.test_zero_order_base import DerivedZOBase
 from watertap.core import build_pt, build_sido, build_siso, build_sido_reactive
 from watertap.core import pump_electricity, constant_intensity
