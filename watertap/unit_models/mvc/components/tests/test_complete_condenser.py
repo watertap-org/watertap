@@ -60,7 +60,7 @@ def test_complete_condense():
     assert pytest.approx(1.0, rel=1e-4) == value(
         m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.0, rel=1e-4) == value(
+    assert pytest.approx(0.0, abs=1e-10) == value(
         m.fs.unit.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
     )
     assert pytest.approx(5.0e4, rel=1e-4) == value(m.fs.unit.outlet.pressure[0])
