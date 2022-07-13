@@ -298,7 +298,7 @@ def _calculate_relative_difference(a, b):
     """
     assume b is the reference
     """
-    return np.abs(a - b) / np.maximum(np.abs(b), 1e-06)
+    return (a - b) / np.maximum(np.abs(b), 1e-06)
 
 
 def ZeroOrderModel(data):
@@ -455,7 +455,8 @@ class ZeroOrderUnitChecker:
         print(msg)
 
         self.infeasible_points = _run_analysis(self.model, df, self._columns)
-        max_diff = -1.0
+        max_abs_diff = -1.0
+        max_diff = -float('inf')
         max_name = None
         arg_max = None
         for wt3_k, wt_k in _WT3_stone.items():
@@ -463,23 +464,24 @@ class ZeroOrderUnitChecker:
             df[key] = _calculate_relative_difference(
                 np.array(df[wt_k]), np.array(df[wt3_k])
             )
-            max_for_key = df[key].max()
-            if max_for_key > max_diff:
-                arg_max = df[key].argmax()
-                max_diff = max_for_key
+            max_for_key = df[key].abs().max()
+            if max_for_key > max_abs_diff:
+                arg_max = df[key].abs().argmax()
+                max_diff = df[key].iloc[arg_max]
+                max_abs_diff = max_for_key
                 max_name = wt_k
 
         self.worst_difference = max_diff
         self.worst_difference_name = max_name
         self.worst_difference_point = arg_max
-        msg = "Worst relative difference"
+        msg = "WORST relative difference"
         if self.infeasible_points:
             msg += " among *feasible* points"
         msg += f": {self.worst_difference*100:.4f}% in {self.worst_difference_name} at "
         max_index = df.index[arg_max] if len(self._columns) > 1 else [df.index[arg_max]]
         for name, val in zip(self._columns, max_index):
             msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
-        print(msg)
+        print("\n"+msg)
         print("\nAll relative differences:")
         cols = [col for col in df.columns if "relative_diff" in col]
         print(df[cols])
