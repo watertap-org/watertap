@@ -819,7 +819,8 @@ def _do_param_sweep(
                 )
             else:
                 for v, val in reinitialize_values.items():
-                    v.set_value(val, skip_validation=True)
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 reinitialize_function(model, **reinitialize_kwargs)
 
         try:
@@ -832,7 +833,8 @@ def _do_param_sweep(
             # run_successful remains false. We try to reinitialize and solve again
             if reinitialize_function is not None:
                 for v, val in reinitialize_values.items():
-                    v.set_value(val, skip_validation=True)
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 try:
                     reinitialize_function(model, **reinitialize_kwargs)
                     with capture_output():
