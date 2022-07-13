@@ -14,6 +14,7 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
+    RangeSet,
     Set,
     Var,
     Param,
@@ -307,15 +308,39 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Electricity demand per component",
         )
 
-        # self.electricity_demand_minimum = Var(
-        #     self.flowsheet().config.time,
-        #     initialize=1,
-        #     bounds=(0, None),
-        #     units=units_meta("mass")
-        #     * units_meta("length") ** 2
-        #     * units_meta("time") ** -3,
-        #     doc="Minimum electricity demand of unit",
-        # )
+        # if not hasattr(self, "inlet_idx"):
+        #     self.inlet_idx = RangeSet(len(self.config.property_package.solute_set))
+
+        self.electricity_demand_minimum = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            initialize=1,
+            bounds=(0, None),
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Minimum electricity demand of unit",
+        )
+
+        self.electricity_demand = Var(
+            self.flowsheet().config.time,
+            initialize=1,
+            bounds=(0, None),
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Electricity demand of unit",
+        )
+
+        self.eps_electricity = Param(
+            mutable=True,
+            initialize=1e-3,
+            domain=NonNegativeReals,
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Smoothing term for minimum electricity demand",
+        )
 
         self.electrical_efficiency_phase_comp = Var(
             self.flowsheet().time,
@@ -457,12 +482,29 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
 
         # TODO: add minimum electricity demand for multiple solutes
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Constraints for minimum electricity demand of the UV reactor.",
-        # )
-        # def eq_minimum_electricity_demand(b, t):
-        #     return b.electricity_demand_minimum[t] == smooth_max(b.electricity_demand_phase_comp[t, p, j])
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Constraints for minimum electricity demand of the UV reactor.",
+        )
+        def eq_min_electricity_demand(b, t, j):
+            if j == b.config.property_package.solute_set.first():
+                return b.electricity_demand_minimum[t, j] == b.electricity_demand_phase_comp[t, "Liq", j]
+            else:
+                return b.electricity_demand_minimum[t, j] == (
+                    smooth_max(
+                        b.electricity_demand_phase_comp[t, "Liq", b.config.property_package.solute_set.prev(j)],
+                        b.electricity_demand_phase_comp[t, "Liq", j],
+                        b.eps_electricity,
+                    )
+                )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraints for total electricity demand of the UV reactor.",
+        )
+        def eq_electricity_demand(b, t):
+            return b.electricity_demand[t] == b.electricity_demand_minimum[t, b.config.property_package.solute_set.last()]
 
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
@@ -606,6 +648,9 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
+        if iscale.get_scaling_factor(self.eps_electricity) is None:
+            iscale.set_scaling_factor(self.eps_electricity, 1e3)
+
         for (t, p, j), v in self.electricity_demand_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 removal = -iscale.get_scaling_factor(
@@ -621,6 +666,22 @@ class Ultraviolet0DData(UnitModelBlockData):
                     )
                     / iscale.get_scaling_factor(self.lamp_efficiency)
                 )
+                iscale.set_scaling_factor(v, sf)
+
+        for (t, j), v in self.electricity_demand_minimum.items():
+            if iscale.get_scaling_factor(v) is None:
+                j = self.config.property_package.solute_set.first()
+                sf = iscale.get_scaling_factor(
+                        self.electricity_demand_phase_comp[t, "Liq", j]
+                    )
+                iscale.set_scaling_factor(v, sf)
+
+        for t, v in self.electricity_demand.items():
+            if iscale.get_scaling_factor(v) is None:
+                j = self.config.property_package.solute_set.last()
+                sf = iscale.get_scaling_factor(
+                        self.electricity_demand_minimum[t, j]
+                    )
                 iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.control_volume.mass_transfer_term.items():
@@ -699,4 +760,13 @@ class Ultraviolet0DData(UnitModelBlockData):
         for ind, c in self.eq_electricity_demand_phase_comp.items():
             (t, p, j) = ind
             sf = iscale.get_scaling_factor(self.electricity_demand_phase_comp[t, p, j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_min_electricity_demand.items():
+            (t, j) = ind
+            sf = iscale.get_scaling_factor(self.electricity_demand_minimum[t, j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_electricity_demand.items():
+            sf = iscale.get_scaling_factor(self.electricity_demand[t])
             iscale.constraint_scaling_transform(c, sf)

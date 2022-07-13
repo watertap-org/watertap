@@ -160,8 +160,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 35
-        assert number_total_constraints(m) == 22
+        assert number_variables(m) == 37
+        assert number_total_constraints(m) == 24
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test unit consistency
@@ -234,5 +234,5 @@ class TestUltraviolet:
             m.fs.unit.reaction_rate_constant["Liq", "NDMA"]
         )
         assert pytest.approx(1829.525, rel=1e-3) == value(
-            m.fs.unit.electricity_demand_phase_comp[0, "Liq", "NDMA"]
+            m.fs.unit.electricity_demand[0]
         )

@@ -29,6 +29,7 @@ from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
+    Ultraviolet0D,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     NanoFiltration0D,
@@ -111,6 +112,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane replacement factor [fraction of membrane replaced/year]",
             units=pyo.units.year**-1,
         )
+        self.factor_uv_dose_replacement = pyo.Var(
+            initialize=0.012,
+            doc="UV replacement factor [fraction of uv replaced/year]",
+            units=pyo.units.year**-1,
+        )
         self.reverse_osmosis_membrane_cost = pyo.Var(
             initialize=30,
             doc="Membrane cost",
@@ -125,6 +131,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=15,
             doc="Membrane cost",
             units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.uv_dose_cost = pyo.Var(
+            initialize=48346.875,
+            doc="UV dose cost",
+            units=self.base_currency / (pyo.units.mJ/pyo.units.cm ** 2),
         )
         self.high_pressure_pump_cost = pyo.Var(
             initialize=53 / 1e5 * 3600,
@@ -436,6 +447,30 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     # Define costing methods supported by package
+
+    @staticmethod
+    def cost_uv_aop(blk, cost_electricity_flow=True):
+        """
+        UV-AOP costing method
+
+        TODO: describe equations
+        """
+        cost_uv_dose(
+            blk,
+            blk.costing_package.uv_dose_cost,
+            blk.costing_package.factor_uv_dose_replacement,
+        )
+
+        t0 = blk.flowsheet().time.first()
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.electricity_demand[t0],
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
+
     @staticmethod
     def cost_nanofiltration(blk):
         """
@@ -930,6 +965,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
+    Ultraviolet0D: WaterTAPCostingData.cost_uv_aop,
     Mixer: WaterTAPCostingData.cost_mixer,
     Pump: WaterTAPCostingData.cost_pump,
     EnergyRecoveryDevice: WaterTAPCostingData.cost_energy_recovery_device,
@@ -1059,4 +1095,24 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
+    )
+
+def cost_uv_dose(blk, uv_dose_cost, factor_uv_dose_replacement):
+    """
+    Generic function for costing by flow volume.
+
+    Args:
+        uv_dose_cost - The cost of the UV reactor in [currency]/([mass]/[time]^2)
+        uv_dose - The uv dose costed in [mass]/[time]^2
+    """
+    make_capital_cost_var(blk)
+    blk.uv_dose_cost = pyo.Expression(expr=uv_dose_cost)
+    blk.factor_uv_dose_replacement = pyo.Expression(expr=factor_uv_dose_replacement)
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost == blk.uv_dose_cost * blk.unit_model.uv_dose
+    )
+    blk.fixed_operating_cost_constraint = pyo.Constraint(
+        expr=blk.fixed_operating_cost
+        == blk.factor_uv_dose_replacement * blk.uv_dose_cost * blk.unit_model.uv_dose
     )
