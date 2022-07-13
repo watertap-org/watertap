@@ -22,19 +22,19 @@ from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
     revert_state_vars,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models.translator import Translator
-from idaes.generic_models.unit_models import Mixer, Separator, Product
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models.translator import Translator
+from idaes.models.unit_models import Mixer, Separator, Product
+from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 import watertap.property_models.seawater_prop_pack as prop_SW
 from watertap.unit_models.reverse_osmosis_0D import (
@@ -68,11 +68,50 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
 
-def main(erd_type="pressure_exchanger"):
-    m = build(erd_type=erd_type)
+def flowsheet_interface():
+    from watertap.ui.api import FlowsheetInterface, WorkflowActions
 
+    fsi = FlowsheetInterface(
+        {
+            "display_name": "Seawater RO Desalination (ERD=pressure exchanger)",
+            "description": "Seawater reverse osmosis desalination",
+        }
+    )
+    fsi.set_action(
+        WorkflowActions.build, build_flowsheet, erd_type="pressure_exchanger"
+    )
+    fsi.set_action(WorkflowActions.solve, solve_flowsheet)
+    # note: don't have any flowsheet block yet, will get that in build_flowsheet()
+    return fsi
+
+
+def build_flowsheet(ui=None, erd_type=None, **kw):
+    m = build(erd_type=erd_type)
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
+    if ui:
+        ui.set_block(m.fs)
+    return m
+
+
+def solve_flowsheet(block=None, **kwargs):
+    m = block.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
+    initialize_system(m)
+    assert_degrees_of_freedom(m, 0)
+    solve(m)
+    display_results(m)
+    add_costing(m)
+    initialize_costing(m)
+    assert_degrees_of_freedom(m, 0)
+    solve(m)
+
+
+def main(erd_type="pressure_exchanger"):
+    m = build_flowsheet(erd_type=erd_type)
+    # m = build(erd_type=erd_type)
+    #
+    # set_operating_conditions(m)
+    # assert_degrees_of_freedom(m, 0)
 
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)

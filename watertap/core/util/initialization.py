@@ -20,7 +20,7 @@ __author__ = "Adam Atia"
 from pyomo.environ import check_optimal_termination, Var
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import get_scaling_factor, __none_left_mult
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)

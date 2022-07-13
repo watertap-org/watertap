@@ -130,12 +130,12 @@ _column_to_component_map = {
     "recovery": ("fs.unit.recovery_frac_mass_H2O[0]", pyunits.dimensionless),
     "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
     "toc": ("fs.feed.conc_mass_comp[0.0, toc]", pyunits.mg / pyunits.L),
-    "alum_dose": ("fs.unit.alum_dose", pyunits.mg / pyunits.L),
-    "polymer_dose": ("fs.unit.polymer_dose", pyunits.mg / pyunits.L),
-    "chem_dose": ("fs.unit.chemical_dosage", pyunits.mg / pyunits.L),
-    "avg_storage_time": ("fs.unit.storage_time", pyunits.hr),  # storage_tank
-    "surge_cap": ("fs.unit.surge_capacity", pyunits.dimensionless),  # storage_tank
-    "h2o2_dose": ("fs.unit.oxidant_dose", pyunits.mg / pyunits.L),  # uv_aop
+    "alum_dose": ("fs.unit.alum_dose[0]", pyunits.mg / pyunits.L),
+    "polymer_dose": ("fs.unit.polymer_dose[0]", pyunits.mg / pyunits.L),
+    "chem_dose": ("fs.unit.chemical_dosage[0]", pyunits.mg / pyunits.L),
+    "avg_storage_time": ("fs.unit.storage_time[0]", pyunits.hr),  # storage_tank
+    "surge_cap": ("fs.unit.surge_capacity[0]", pyunits.dimensionless),  # storage_tank
+    "h2o2_dose": ("fs.unit.oxidant_dose[0]", pyunits.mg / pyunits.L),  # uv_aop
     "uv_dose": (
         "fs.unit.uv_reduced_equivalent_dose[0]",
         pyunits.mJ / pyunits.cm**2,
@@ -143,12 +143,12 @@ _column_to_component_map = {
     "uvt": ("fs.unit.uv_transmittance_in[0]", pyunits.dimensionless),  # uv + uv_aop
     "ebct": ("fs.unit.empty_bed_contact_time", pyunits.minute),  # gac
     "hours_per_day_operation": (
-        "fs.unit.hours_per_day_operation",
+        "fs.unit.hours_per_day_operation[0]",
         pyunits.hr / pyunits.day,
     ),  # filter_press
-    "cycle_time_hr": ("fs.unit.cycle_time", pyunits.hr),  # filter_press
+    "cycle_time_hr": ("fs.unit.cycle_time[0]", pyunits.hr),  # filter_press
     "settling_velocity": (
-        "fs.unit.settling_velocity",
+        "fs.unit.settling_velocity[0]",
         pyunits.m / pyunits.s,
     ),  # sedimentation
     "piping_distance": (
@@ -161,12 +161,24 @@ _column_to_component_map = {
 }
 
 
+def _annualized_cost_expr(m, flow):
+    var = m.fs.costing.aggregate_flow_costs[flow]
+    expr = pyunits.convert(
+        var * m.fs.costing.utilization_factor, pyunits.MUSD_2020 / pyunits.year
+    )
+    return expr
+
+
 def _initialize_flowsheet(m):
     m.fs.feed.initialize()
     m.fs.unit.initialize()
     m.fs.product.initialize()
 
     m.fs.costing.initialize()
+
+
+def _print_row(name, v1, v2):
+    print(f"\t{name:<25}  {v1:.8e}  {v2:.8e}")
 
 
 def _run_analysis(m, df, columns):
@@ -228,6 +240,37 @@ def _run_analysis(m, df, columns):
                     vals.append(value(m.fs.costing.component(att)) * 1e06)
                 else:
                     vals.append(value(m.fs.costing.component(att)))
+
+            print(f"\t{'Name':<25}  WaterTAP Value  WT3 Value")
+            _print_row(
+                "electricity_intensity",
+                value(m.fs.costing.electricity_intensity),
+                df["electricity_intensity"][index],
+            )
+            total_chemical_cost = 0.0
+            for f in m.fs.costing.flow_types:
+                cost_expr = _annualized_cost_expr(m, f)
+                cost = value(cost_expr)
+                if cost == 0:
+                    continue
+                if f == "electricity":
+                    _print_row(f + "_cost", cost, df["electricity_cost"][index])
+                else:
+                    _print_row(f + "_cost", cost, float("nan"))
+                print(f"\t\t{f}_cost == {cost_expr.to_string()}")
+                print(
+                    f"\t\t{m.fs.costing.utilization_factor} == {m.fs.costing.utilization_factor.value}"
+                )
+                print(
+                    f"\t\t{m.fs.costing.aggregate_flow_costs_constraint[f].expr.to_string()}"
+                )
+                flow_var = m.fs.costing.component(f"aggregate_flow_{f}")
+                cost_var = m.fs.costing.component(f"{f}_cost")
+                print(f"\t\t{flow_var} == {flow_var.value} {flow_var.get_units()}")
+                print(f"\t\t{cost_var} == {cost_var.value} {cost_var.get_units()}")
+                if f != "electricity":
+                    total_chemical_cost += cost
+            _print_row("chemical_cost", total_chemical_cost, df["chem_cost"][index])
         else:
             _infeasible_pnt()
     for att, vals in watertap_costing_attributes.items():

@@ -30,8 +30,8 @@ import idaes.core.util.model_statistics as stats
 from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core.solvers import get_solver
+from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
@@ -129,8 +129,9 @@ if __name__ == "__main__":
     # m.fs.crystallizer.display()
 
     m.fs.crystallizer.report()
+    m.fs.crystallizer.costing.capital_cost.pprint()
 
-    # assert False
+    #  assert False
     ##########################################
     # # Case 2: Fix crystallizer yield
     ##########################################

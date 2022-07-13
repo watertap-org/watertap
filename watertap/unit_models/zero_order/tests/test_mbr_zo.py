@@ -14,7 +14,7 @@
 Tests for zero-order membrane bioreactor model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -27,10 +27,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MBRZO
 from watertap.core.wt_database import Database
@@ -78,9 +78,12 @@ class TestMBRZOdefault:
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
 
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
-        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.electricity_intensity, Var)
+        assert isinstance(model.fs.unit.electricity_intensity_constraint, Constraint)
+        assert isinstance(model.fs.unit.electricity_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -98,11 +101,11 @@ class TestMBRZOdefault:
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert (
-            model.fs.unit.energy_electric_flow_vol_inlet.value
-            == data["energy_electric_flow_vol_inlet"]["value"]
-        )
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data["elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data["elec_coeff_2"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -205,8 +208,11 @@ class TestMBRZOdefault:
         assert pytest.approx(173.0757847, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cryptosporidium"]
         )
-        assert pytest.approx(8580.775896, abs=1e-5) == value(
+        assert pytest.approx(2946.15766, abs=1e-5) == value(
             model.fs.unit.electricity[0]
+        )
+        assert pytest.approx(0.812688, abs=1e-5) == value(
+            model.fs.unit.electricity_intensity[0]
         )
 
     @pytest.mark.solver
@@ -224,46 +230,8 @@ class TestMBRZOdefault:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                              Electricity Demand :  8580.8 : False : (0, None)
-                           Electricity Intensity :  2.3670 :  True : (None, None)
-                Solute Removal [cryptosporidium] : 0.99990 :  True : (0, None)
-                            Solute Removal [eeq] : 0.88000 :  True : (0, None)
-                Solute Removal [nonvolatile_toc] : 0.60000 :  True : (0, None)
-                            Solute Removal [toc] : 0.70854 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
-                            Solute Removal [tss] : 0.50000 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated   Byproduct
-    Volumetric Flowrate                             1.0070     1.0012 0.0057772 
-    Mass Concentration H2O                          993.05     998.68    17.309 
-    Mass Concentration tss                         0.99305    0.49939    86.547 
-    Mass Concentration nonvolatile_toc             0.99305    0.39951    103.86 
-    Mass Concentration toc                         0.99305    0.29110    122.64 
-    Mass Concentration eeq                         0.99305    0.11985    152.32 
-    Mass Concentration viruses_enteric             0.99305  0.0099878    171.36 
-    Mass Concentration total_coliforms_fecal_ecoli 0.99305  0.0012005    172.89 
-    Mass Concentration cryptosporidium             0.99305 9.9878e-05    173.08 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 class TestMBRZO_w_default_removal:
@@ -306,9 +274,12 @@ class TestMBRZO_w_default_removal:
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
 
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
-        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.electricity_intensity, Var)
+        assert isinstance(model.fs.unit.electricity_intensity_constraint, Constraint)
+        assert isinstance(model.fs.unit.electricity_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -329,11 +300,11 @@ class TestMBRZO_w_default_removal:
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert (
-            model.fs.unit.energy_electric_flow_vol_inlet.value
-            == data["energy_electric_flow_vol_inlet"]["value"]
-        )
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data["elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data["elec_coeff_2"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -445,8 +416,11 @@ class TestMBRZO_w_default_removal:
         assert pytest.approx(1.73093e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(8589.297024, abs=1e-5) == value(
+        assert pytest.approx(2948.205338, abs=1e-5) == value(
             model.fs.unit.electricity[0]
+        )
+        assert pytest.approx(0.812446, abs=1e-5) == value(
+            model.fs.unit.electricity_intensity[0]
         )
 
     @pytest.mark.solver
@@ -464,48 +438,8 @@ class TestMBRZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                          : Value   : Fixed : Bounds
-                              Electricity Demand :  8589.3 : False : (0, None)
-                           Electricity Intensity :  2.3670 :  True : (None, None)
-                Solute Removal [cryptosporidium] : 0.99990 :  True : (0, None)
-                            Solute Removal [eeq] : 0.88000 :  True : (0, None)
-                            Solute Removal [foo] :  0.0000 :  True : (0, None)
-                Solute Removal [nonvolatile_toc] : 0.60000 :  True : (0, None)
-                            Solute Removal [toc] : 0.70854 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] : 0.99880 :  True : (0, None)
-                            Solute Removal [tss] : 0.50000 :  True : (0, None)
-                Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                                  Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                     Inlet   Treated   Byproduct
-    Volumetric Flowrate                             1.0080     1.0022  0.0057772
-    Mass Concentration H2O                          992.06     997.68     17.309
-    Mass Concentration tss                         0.99206    0.49889     86.547
-    Mass Concentration nonvolatile_toc             0.99206    0.39911     103.86
-    Mass Concentration toc                         0.99206    0.29081     122.64
-    Mass Concentration eeq                         0.99206    0.11973     152.32
-    Mass Concentration viruses_enteric             0.99206  0.0099778     171.36
-    Mass Concentration total_coliforms_fecal_ecoli 0.99206  0.0011993     172.89
-    Mass Concentration cryptosporidium             0.99206 9.9788e-05     173.08
-    Mass Concentration foo                         0.99206    0.99778 1.7309e-06
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()
@@ -554,11 +488,11 @@ class TestMBRZOsubtype:
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert (
-            model.fs.unit.energy_electric_flow_vol_inlet.value
-            == data["energy_electric_flow_vol_inlet"]["value"]
-        )
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data["elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data["elec_coeff_2"]["value"]
 
 
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])

@@ -15,7 +15,7 @@ Tests for zero-order walnut shell filter model
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -27,10 +27,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import WalnutShellFilterZO
 from watertap.core.wt_database import Database
@@ -51,10 +51,6 @@ class TestWalnutShellFilterZO_w_default_removal:
             default={
                 "solute_list": [
                     "nonvolatile_toc",
-                    "tds",
-                    "chloride",
-                    "electrical_conductivity",
-                    "sodium",
                     "tss",
                     "foo",
                 ]
@@ -67,10 +63,6 @@ class TestWalnutShellFilterZO_w_default_removal:
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "nonvolatile_toc"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "chloride"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "electrical_conductivity"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "sodium"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
@@ -134,80 +126,40 @@ class TestWalnutShellFilterZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(1.007, rel=1e-5) == value(
+        assert pytest.approx(1.003, rel=1e-5) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["electrical_conductivity"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.99208, rel=1e-5) == value(
+        assert pytest.approx(0.991829, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.80639, rel=1e-5) == value(
+        assert pytest.approx(0.806589, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(0.1007983, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp[
-                "electrical_conductivity"
-            ]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(0.0302395, rel=1e-5) == value(
+        assert pytest.approx(0.030247, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(1.007983, rel=1e-5) == value(
+        assert pytest.approx(1.008237, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.01492, rel=1e-5) == value(
+        assert pytest.approx(0.01117, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(13.4048, rel=1e-5) == value(
+        assert pytest.approx(17.90510, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(60.322, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "electrical_conductivity"
-            ]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(65.013, rel=1e-5) == value(
+        assert pytest.approx(86.83974, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(6.7024e-07, rel=1e-5) == value(
+        assert pytest.approx(8.952551e-07, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(1.007 * 0 * 3600, abs=1e-5) == value(
@@ -229,46 +181,8 @@ class TestWalnutShellFilterZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                      : Value      : Fixed : Bounds
-                          Electricity Demand : 1.0000e-08 : False : (0, None)
-                       Electricity Intensity :     0.0000 :  True : (None, None)
-                   Solute Removal [chloride] :    0.95000 :  True : (0, None)
-    Solute Removal [electrical_conductivity] :    0.95000 :  True : (0, None)
-                        Solute Removal [foo] :     0.0000 :  True : (0, None)
-            Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                     Solute Removal [sodium] :    0.95000 :  True : (0, None)
-                        Solute Removal [tds] :    0.90000 :  True : (0, None)
-                        Solute Removal [tss] :    0.97000 :  True : (0, None)
-                              Water Recovery :    0.99000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                                 Inlet  Treated  Byproduct
-    Volumetric Flowrate                         1.0070  0.99208   0.014920
-    Mass Concentration H2O                      993.05   997.90     670.24
-    Mass Concentration nonvolatile_toc         0.99305  0.80639     13.405
-    Mass Concentration tds                     0.99305  0.10080     60.322
-    Mass Concentration chloride                0.99305 0.050399     63.673
-    Mass Concentration electrical_conductivity 0.99305 0.050399     63.673
-    Mass Concentration sodium                  0.99305 0.050399     63.673
-    Mass Concentration tss                     0.99305 0.030239     65.013
-    Mass Concentration foo                     0.99305   1.0080 6.7024e-07
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

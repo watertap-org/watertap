@@ -44,19 +44,19 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Imports from idaes core
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.state_definitions import FpcTP
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Import the idaes objects for Generic Properties
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 
@@ -163,9 +163,9 @@ def test_property_ions(model):
 
     m.fs.stream[0].flow_mass_phase_comp
 
-    m.fs.stream[0].molality_comp
+    m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
-    m.fs.stream[0].electrical_conductivity_phase
+    m.fs.stream[0].elec_cond_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
@@ -188,12 +188,10 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].conc_mol_phase_comp["Liq", "A"]) == pytest.approx(
         21.288, rel=1e-3
     )
-    assert value(m.fs.stream[0].molality_comp["A"]) == pytest.approx(
+    assert value(m.fs.stream[0].molality_phase_comp["Liq", "A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
-    assert value(m.fs.stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        16.7, rel=1e-3
-    )
+    assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(16.7, rel=1e-3)
     assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
         60.546e5, rel=1e-3
     )
@@ -263,8 +261,8 @@ def test_property_ions(model2):
 
     stream[0].flow_mass_phase_comp
 
-    stream[0].molality_comp
-    stream[0].electrical_conductivity_phase
+    stream[0].molality_phase_comp
+    stream[0].elec_cond_phase
     stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
     stream[0].conc_mol_phase_comp
@@ -346,8 +344,8 @@ def test_build(model3):
         "conc_mass_phase_comp",
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
-        "molality_comp",
-        "electrical_conductivity_phase",
+        "molality_phase_comp",
+        "elec_cond_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
@@ -387,7 +385,7 @@ def test_default_scaling(model3):
     assert hasattr(m.fs.properties, "default_scaling_factor")
     default_scaling_var_dict = {
         ("temperature", None): 1e-2,
-        ("pressure", None): 1e-6,
+        ("pressure", None): 1e-4,
         ("dens_mass_phase", "Liq"): 1e-3,
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
@@ -581,9 +579,7 @@ def test_seawater_data():
     assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
         29.132e5, rel=1e-3
     )
-    assert value(stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        8.08, rel=1e-3
-    )
+    assert value(stream[0].elec_cond_phase["Liq"]) == pytest.approx(8.08, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(
@@ -676,7 +672,7 @@ def test_seawater_data():
     )
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
-    assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
 
 
 @pytest.mark.requires_idaes_solver
@@ -880,19 +876,15 @@ def test_assert_electroneutrality_get_property():
             defined_state=True, adjust_by_ion="Cl_-", get_property=1
         )
 
-    # check error when electroneutralit condition violated for stringent tolerance
+    # check error when electroneutrality condition violated for stringent tolerance
+    #   Changed the error message to look for the correct pattern instead of
+    #   exact match of the numeric value in the string
     stream[0].flow_mol_phase_comp.unfix()
     with pytest.raises(
         AssertionError,
-        match=re.escape(
-            "Electroneutrality condition violated in fs.stream[0]. "
-            "Ion concentrations should be adjusted to bring "
-            "the result of 9.09E-13 closer towards 0."
-        ),
+        match=re.escape("Electroneutrality condition violated in fs.stream[0]. "),
     ):
-        stream[0].assert_electroneutrality(
-            defined_state=False, adjust_by_ion="Cl_-", tol=1e-18
-        )
+        stream[0].assert_electroneutrality(defined_state=False, tol=1e-25)
 
 
 @pytest.fixture(scope="module")

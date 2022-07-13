@@ -26,11 +26,11 @@ from pyomo.environ import (
 )
 from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
-from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Mixer, Separator, Product, Feed
+from idaes.models.unit_models.mixer import MomentumMixingType
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.scaling import (
     unscaled_variables_generator,

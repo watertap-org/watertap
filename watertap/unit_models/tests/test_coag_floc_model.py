@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
+# "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
 import pytest
@@ -41,7 +41,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import re
 
 __author__ = "Austin Ladshaw"
