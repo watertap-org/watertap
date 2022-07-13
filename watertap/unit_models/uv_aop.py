@@ -13,7 +13,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     Set,
     Var,
     Param,
@@ -40,7 +39,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util.math import smooth_min, smooth_max
 
 _log = idaeslog.getLogger(__name__)
 

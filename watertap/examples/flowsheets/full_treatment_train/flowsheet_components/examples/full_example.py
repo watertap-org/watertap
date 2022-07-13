@@ -19,11 +19,9 @@ from pyomo.environ import (
     TransformationFactory,
     value,
     Param,
-    Block,
 )
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state

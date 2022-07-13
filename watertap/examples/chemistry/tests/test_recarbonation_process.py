@@ -52,7 +52,6 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 

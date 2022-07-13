@@ -20,7 +20,6 @@ from pyomo.environ import (
     ConcreteModel,
     Constraint,
     Param,
-    Block,
     value,
     Var,
     assert_optimal_termination,

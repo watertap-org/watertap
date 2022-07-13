@@ -14,11 +14,9 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
     Param,
     TransformationFactory,
-    units as pyunits,
     assert_optimal_termination,
 )
 from pyomo.network import Arc

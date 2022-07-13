@@ -14,7 +14,7 @@
 This module contains a zero-order representation of a hydrothermal gasification unit.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData

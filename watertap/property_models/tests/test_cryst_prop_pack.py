@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 import watertap.property_models.cryst_prop_pack as props
-from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.generic_models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,

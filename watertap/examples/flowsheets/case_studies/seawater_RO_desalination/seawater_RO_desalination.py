@@ -33,7 +33,6 @@ from idaes.models.unit_models.translator import Translator
 from idaes.models.unit_models import Mixer, Separator, Product
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 from idaes.core import UnitModelCostingBlock
 
 import watertap.property_models.seawater_prop_pack as prop_SW

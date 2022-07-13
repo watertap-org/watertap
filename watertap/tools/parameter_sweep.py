@@ -12,7 +12,6 @@
 ###############################################################################
 import numpy as np
 import pyomo.environ as pyo
-import sys
 import os
 import itertools
 import warnings

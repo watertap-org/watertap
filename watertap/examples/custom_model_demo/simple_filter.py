@@ -13,21 +13,14 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
     Var,
-    Param,
     Suffix,
-    NonNegativeReals,
-    Reference,
-    Constraint,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,

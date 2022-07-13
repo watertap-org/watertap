@@ -12,7 +12,6 @@
 ###############################################################################
 import os
 from pyomo.environ import (
-    Constraint,
     ConcreteModel,
     Block,
     Expression,
@@ -30,11 +29,10 @@ from idaes.core.util import get_solver
 from idaes.core.util.initialization import propagate_state
 
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
+from idaes.generic_models.unit_models import Mixer, Product, Separator
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.costing import UnitModelCostingBlock
-from idaes.core.util.exceptions import ConfigurationError
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice

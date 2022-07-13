@@ -15,7 +15,6 @@ This module contains a zero-order representation of an integrated anaerobic memb
 with microbial electrolysis cell (anaerobic MBR-MEC).
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData

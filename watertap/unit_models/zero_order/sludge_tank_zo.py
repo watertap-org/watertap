@@ -14,7 +14,6 @@
 This module contains a zero-order representation of a sludge tank unit.
 """
 
-from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData

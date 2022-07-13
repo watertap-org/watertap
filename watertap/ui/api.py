@@ -76,10 +76,9 @@ from pathlib import Path
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
 
 # third-party
-import pyomo.core
 from pyomo.environ import Block, Var, value
 import idaes.logger as idaeslog
-from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
+from pydantic import BaseModel, ValidationError
 import yaml
 
 # local

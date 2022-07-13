@@ -29,7 +29,6 @@ from pyomo.environ import (
     Param,
     exp,
     log,
-    Suffix,
     value,
     check_optimal_termination,
 )
@@ -46,12 +45,11 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Solute, Solvent
 from idaes.core.base.phases import (
     LiquidPhase,
     VaporPhase,
     SolidPhase,
-    Phase,
     PhaseType as PT,
 )
 from idaes.core.util.constants import Constants
@@ -60,7 +58,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.misc import extract_data
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,

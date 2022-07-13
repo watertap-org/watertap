@@ -75,23 +75,12 @@
 
 # ========= These imports (below) are for testing the configs from EDB ===============
 # Import specific pyomo objects
-from pyomo.environ import (
-    ConcreteModel,
-)
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
-from idaes.models.properties.modular_properties.base.generic_reaction import (
-    GenericReactionParameterBlock,
-)
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import FlowsheetBlock
 
 # ========= These imports (above) are for testing the configs from EDB ===============
 

@@ -26,7 +26,6 @@ from watertap.tools.parameter_sweep_input_parser import (
 )
 
 # Imports for conditional fails
-from idaes.config import bin_directory as idaes_bin_directory
 
 # -----------------------------------------------------------------------------
 

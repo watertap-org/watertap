@@ -14,7 +14,7 @@
 Model for the data that is created and consumed by the user interface API.
 """
 import logging
-from typing import List, Union, Optional, Dict, Tuple, Type
+from typing import Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel, Extra
 
 _log = logging.getLogger(__name__)

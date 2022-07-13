@@ -15,8 +15,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     Var,
     units as pyunits,
@@ -26,7 +24,6 @@ from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
@@ -45,11 +42,9 @@ from watertap.core.util.initialization import check_dof
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import ConfigurationError
@@ -57,10 +52,8 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     unscaled_constraints_generator,
-    constraints_with_scale_factor_generator,
     badly_scaled_var_generator,
 )
-import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

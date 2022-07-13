@@ -28,7 +28,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
 
-import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom

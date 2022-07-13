@@ -65,7 +65,6 @@ import pytest
 
 # Importing the object for units from pyomo
 from pyomo.environ import units as pyunits
-from pyomo.environ import Var
 
 # Imports from idaes core
 from idaes.core import AqueousPhase, SolidPhase, FlowsheetBlock, EnergyBalanceType
@@ -73,10 +72,8 @@ from idaes.core.base.components import Solvent, Solute, Cation, Anion, Component
 from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-import idaes
-import idaes.models.properties.modular_properties.pure.Perrys as Perrys
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
-from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
@@ -90,7 +87,6 @@ from idaes.models.properties.modular_properties.reactions.dh_rxn import constant
 # Import safe log power law equation
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     log_power_law_equil,
-    power_law_equil,
 )
 
 # Import built-in van't Hoff function
@@ -99,12 +95,8 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 )
 
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    solubility_product,
     log_solubility_product,
     log_power_law_equil,
-)
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    ConstantKeq,
 )
 
 # Import specific pyomo objects
@@ -117,22 +109,15 @@ from pyomo.environ import (
 )
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
-    fixed_variables_set,
-    activated_constraints_set,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
 )
 
 # Import the idaes objects for Generic Properties and Reactions

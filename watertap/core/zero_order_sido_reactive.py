@@ -24,7 +24,6 @@ from idaes.core.util.exceptions import InitializationError
 from pyomo.environ import (
     check_optimal_termination,
     NonNegativeReals,
-    Param,
     Set,
     Var,
     units as pyunits,

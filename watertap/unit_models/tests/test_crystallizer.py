@@ -14,7 +14,6 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
     TerminationCondition,
     SolverStatus,
     value,
@@ -23,9 +22,6 @@ from pyomo.environ import (
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
 )
 from pyomo.util.check_units import assert_units_consistent
 from watertap.unit_models.crystallizer import Crystallization
@@ -42,7 +38,6 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 from idaes.core import UnitModelCostingBlock

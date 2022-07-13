@@ -14,7 +14,6 @@
 import os
 from pyomo.environ import (
     ConcreteModel,
-    Set,
     Expression,
     value,
     TransformationFactory,

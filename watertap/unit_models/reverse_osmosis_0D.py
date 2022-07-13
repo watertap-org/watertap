@@ -18,15 +18,12 @@ from pyomo.environ import (
     NonNegativeReals,
     NegativeReals,
     Reference,
-    units as pyunits,
-    exp,
     value,
     check_optimal_termination,
 )
 
 # Import IDAES cores
 from idaes.core import ControlVolume0DBlock, declare_process_block_class
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale

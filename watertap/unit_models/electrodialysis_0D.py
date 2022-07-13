@@ -13,17 +13,12 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     Set,
     Var,
     Param,
-    Expression,
     Suffix,
     NonNegativeReals,
-    NonNegativeIntegers,
-    Reference,
     value,
-    Constraint,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -33,17 +28,13 @@ from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
-    components,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants

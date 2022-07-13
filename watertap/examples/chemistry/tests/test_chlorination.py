@@ -75,7 +75,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 
 # Import k-value functions
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
     van_t_hoff,
 )
 

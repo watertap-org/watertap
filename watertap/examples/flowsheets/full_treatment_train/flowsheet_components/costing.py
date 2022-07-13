@@ -13,14 +13,11 @@
 
 from pyomo.environ import (
     Block,
-    ConcreteModel,
     Constraint,
     Expression,
     Var,
     Param,
     value,
-    TransformationFactory,
-    units as pyunits,
 )
 from idaes.core import UnitModelCostingBlock
 from watertap.costing import (

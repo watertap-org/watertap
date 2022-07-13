@@ -14,7 +14,6 @@
 import os
 import pytest
 
-import numpy as np
 import pandas as pd
 
 from watertap.examples.flowsheets.lsrro.multi_sweep import run_case

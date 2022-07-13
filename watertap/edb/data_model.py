@@ -74,7 +74,6 @@ Class diagram::
 __author__ = "Dan Gunter"
 
 # stdlib
-import collections
 
 from contextlib import contextmanager
 import copy

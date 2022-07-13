@@ -61,21 +61,16 @@ from pyomo.environ import (
     ConcreteModel,
     Var,
     Constraint,
-    SolverStatus,
-    TerminationCondition,
     TransformationFactory,
     value,
-    Suffix,
     Expression,
 )
 
 from pyomo.network import Arc
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
 
 
 from watertap.examples.flowsheets.full_treatment_train.util import (
@@ -132,7 +127,6 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     desalination,
 )
-from idaes.core.util.initialization import propagate_state
 
 __author__ = "Austin Ladshaw"
 

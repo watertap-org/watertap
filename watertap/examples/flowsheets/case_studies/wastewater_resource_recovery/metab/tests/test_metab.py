@@ -12,32 +12,12 @@
 ###############################################################################
 import pytest
 from pyomo.environ import (
-    ConcreteModel,
-    Block,
-    Var,
-    Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     assert_optimal_termination,
-    SolverFactory,
-    Expression,
-    TransformationFactory,
-    units as pyunits,
 )
-from pyomo.network import Arc, Port
-from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
-from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core.util.scaling import (
-    unscaled_variables_generator,
-    unscaled_constraints_generator,
-)
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
