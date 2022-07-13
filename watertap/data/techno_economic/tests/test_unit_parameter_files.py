@@ -79,6 +79,7 @@ def test_unit_parameter_files(tech):
         "CANDO_P",
         "chemical_addition",
         "coag_and_floc",
+        "cofermentation",
         "constructed_wetlands",
         "deep_well_injection",
         "electrochemical_nutrient_removal",
@@ -90,6 +91,7 @@ def test_unit_parameter_files(tech):
         "hydrothermal_gasification",
         "ion_exchange",
         "iron_and_manganese_removal",
+        "mbr",
         "metab",
         "municipal_drinking",
         "ozonation",
@@ -100,11 +102,9 @@ def test_unit_parameter_files(tech):
         "supercritical_salt_precipitation",
         "surface_discharge",
         "sw_onshore_intake",
+        "vfa_recovery",
         "water_pumping_station",
         "well_field",
-        "mbr",
-        "vfa_recovery",
-        "cofermentation",
     ]
 
     expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
