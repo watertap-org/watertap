@@ -18,7 +18,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "description": "Valid phase types should start with 'PT.' and then match attributes in idaes.core.phases.PhaseType",
+        "description": "Valid phase types should start with 'PT.' and then match attributes in idaes.core.base.phases.PhaseType",
         "examples": [
           [
             "PT.liquidPhase"

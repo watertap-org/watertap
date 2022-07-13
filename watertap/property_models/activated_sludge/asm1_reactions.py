@@ -38,7 +38,7 @@ from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 
@@ -196,8 +196,7 @@ class ASM1ReactionParameterData(ReactionParameterBlock):
         # This is the stoichiometric part the Peterson matrix in dict form
         # Note that reaction stoichiometry is on a mass basis.
         # For alkalinity, this requires converting the mass of nitrogen species
-        # reacted to be converted to mass of alkalinity converted using a
-        # charge balance (efficively MW_C/MW_N)
+        # reacted to mass of alkalinity converted using a charge balance (effectively MW_C/MW_N)
         mw_alk = 12 * pyo.units.kg / pyo.units.kmol
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {

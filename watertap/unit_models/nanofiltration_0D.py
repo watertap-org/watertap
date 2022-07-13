@@ -34,7 +34,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
@@ -409,7 +409,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j] * (
@@ -438,7 +442,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j] * (

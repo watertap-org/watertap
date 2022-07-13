@@ -36,6 +36,7 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         super().build()
 
         build_sido(self)
+        constant_intensity(self)
 
         self._tech_type = "evaporation_pond"
 

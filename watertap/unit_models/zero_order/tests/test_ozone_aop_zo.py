@@ -28,10 +28,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import OzoneAOPZO
 from watertap.core.wt_database import Database
@@ -88,7 +88,7 @@ class TestOzoneAOPZO_with_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="TOC must be in solute list for Ozonation or Ozone/AOP",
+            match="toc must be in solute list for Ozonation or Ozone/AOP",
         ):
             model.fs.unit = OzoneAOPZO(
                 default={"property_package": model.fs.params, "database": model.db}
@@ -247,7 +247,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="TOC must be in solute list for Ozonation or Ozone/AOP",
+            match="toc must be in solute list for Ozonation or Ozone/AOP",
         ):
             model.fs.unit = OzoneAOPZO(
                 default={"property_package": model.fs.params, "database": model.db}

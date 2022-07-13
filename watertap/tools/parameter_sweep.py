@@ -23,9 +23,10 @@ import pathlib
 from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
-from idaes.surrogate.pysmo import sampling
+
+from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 
@@ -510,6 +511,14 @@ def _update_local_output_dict(
 
 
 def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
+
+    # Before we can create the global dictionary, we need to delete the pyomo
+    # object contained within the dictionary
+    for key, val in local_output_dict.items():
+        if key != "solve_successful":
+            for subval in val.values():
+                if "_pyo_obj" in subval:
+                    del subval["_pyo_obj"]
 
     if num_procs == 1:
         global_output_dict = local_output_dict

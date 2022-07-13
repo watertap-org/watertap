@@ -80,15 +80,15 @@ from pyomo.environ import (
 )
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
 )
 
 # Import the idaes object for the EquilibriumReactor unit model
-from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock

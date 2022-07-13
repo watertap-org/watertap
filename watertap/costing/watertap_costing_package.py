@@ -17,15 +17,16 @@ import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
-from idaes.generic_models.costing.costing_base import (
+from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
+from idaes.core.util.constants import Constants
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import StrEnum
 
-from idaes.generic_models.unit_models import Mixer
+from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
     ReverseOsmosis0D,
@@ -36,6 +37,8 @@ from watertap.unit_models import (
     Crystallization,
     Pump,
     EnergyRecoveryDevice,
+    Electrodialysis0D,
+    Electrodialysis1D,
 )
 
 
@@ -50,7 +53,6 @@ class PumpType(StrEnum):
 
 
 class EnergyRecoveryDeviceType(StrEnum):
-    default = "default"
     pressure_exchanger = "pressure_exchanger"
 
 
@@ -198,6 +200,37 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
+        self.electrodialysis_cem_membrane_cost = pyo.Var(
+            initialize=43,
+            doc="Cost of CEM membrane used in Electrodialysis ($/CEM/area)",
+            units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.electrodialysis_aem_membrane_cost = pyo.Var(
+            initialize=43,
+            doc="Cost of AEM membrane used in Electrodialysis ($/AEM/area)",
+            units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.electrodialysis_flowspacer_cost = pyo.Var(
+            initialize=3,
+            doc="Cost of the spacers used in Electrodialysis ($/spacer/area)",
+            units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.factor_electrodialysis_membrane_housing_replacement = pyo.Var(
+            initialize=0.2,
+            doc="Membrane housing replacement factor for CEM, AEM, and spacer replacements [fraction of membrane replaced/year]",
+            units=pyo.units.year**-1,
+        )
+        self.electrodialysis_electrode_cost = pyo.Var(
+            initialize=2000,
+            doc="Cost of the electrodes used in Electrodialysis ($/electrode/area)",
+            units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.factor_electrodialysis_electrode_replacement = pyo.Var(
+            initialize=0.02,
+            doc="Electrode replacements [fraction of electrode replaced/year]",
+            units=pyo.units.year**-1,
+        )
+
         self.fc_crystallizer_fob_unit_cost = pyo.Var(
             initialize=675000,
             doc="Forced circulation crystallizer reference free-on-board cost (Woods, 2007)",
@@ -234,6 +267,31 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
+        # Crystallizer operating cost information from literature
+        self.steam_unit_cost = pyo.Var(
+            initialize=0.004,
+            units=pyo.units.USD_2018 / (pyo.units.meter**3),
+            doc="Steam cost, Panagopoulos (2019)",
+        )
+
+        self.crystallizer_steam_pressure = pyo.Var(
+            initialize=3,
+            units=pyo.units.bar,
+            doc="Steam pressure (gauge) for crystallizer heating: 3 bar default based on Dutta example",
+        )
+
+        self.crystallizer_efficiency_pump = pyo.Var(
+            initialize=0.7,
+            units=pyo.units.dimensionless,
+            doc="Crystallizer pump efficiency - assumed",
+        )
+
+        self.crystallizer_pump_head_height = pyo.Var(
+            initialize=1,
+            units=pyo.units.m,
+            doc="Crystallizer pump head height -  assumed, unvalidated",
+        )
+
         # fix the parameters
         for var in self.component_objects(pyo.Var):
             var.fix()
@@ -242,6 +300,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["electricity"] = self.electricity_base_cost
         self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
         self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
+        self.defined_flows["steam"] = self.steam_unit_cost
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
@@ -443,7 +502,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_energy_recovery_device(
         blk,
-        energy_recovery_device_type=EnergyRecoveryDeviceType.default,
+        energy_recovery_device_type=EnergyRecoveryDeviceType.pressure_exchanger,
         cost_electricity_flow=True,
     ):
         """
@@ -453,14 +512,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             energy_recovery_device_type: EnergyRecoveryDeviceType Enum indicating ERD type,
-                default = EnergyRecoveryDeviceType.default
+                default = EnergyRecoveryDeviceType.pressure_exchanger.
 
             cost_electricity_flow: bool, if True, the ERD's work_mechanical will
                 be converted to kW and costed as an electricity default = True
         """
-        if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
-            WaterTAPCostingData.cost_default_energy_recovery_device(blk)
-        elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
+        if energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
             WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
         else:
             raise ConfigurationError(
@@ -481,7 +538,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                                     default = True
         """
         t0 = blk.flowsheet().time.first()
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.costing_package.high_pressure_pump_cost
@@ -544,47 +601,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 blk.unit_model.control_volume.properties_in[t0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
             ),
-        )
-        if cost_electricity_flow:
-            blk.costing_package.cost_flow(
-                pyo.units.convert(
-                    blk.unit_model.work_mechanical[t0], to_units=pyo.units.kW
-                ),
-                "electricity",
-            )
-
-    @staticmethod
-    def cost_default_energy_recovery_device(blk, cost_electricity_flow=True):
-        """
-        Energy recovery device costing method
-
-        TODO: describe equations
-
-        Args:
-            cost_electricity_flow - bool, if True, the ERD's work_mechanical will
-                                    be converted to kW and costed as an electricity
-                                    default = True
-        """
-        t0 = blk.flowsheet().time.first()
-        _make_capital_cost_var(blk)
-        unit_cv_in = blk.unit_model.control_volume.properties_in[t0]
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost
-            == blk.costing_package.energy_recovery_device_linear_coefficient
-            * (
-                pyo.units.convert(
-                    (
-                        sum(
-                            unit_cv_in.flow_mass_phase_comp["Liq", j]
-                            for j in blk.unit_model.config.property_package.component_list
-                        )
-                        / unit_cv_in.dens_mass_phase["Liq"]
-                    ),
-                    pyo.units.m**3 / pyo.units.hour,
-                )
-                / (pyo.units.m**3 / pyo.units.hour)
-            )
-            ** blk.costing_package.energy_recovery_device_exponent
         )
         if cost_electricity_flow:
             blk.costing_package.cost_flow(
@@ -703,9 +719,49 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
+    def cost_electrodialysis(blk, cost_electricity_flow=True):
+        """
+        Function for costing the Electrodialysis unit
+
+        Args:
+            cost_electricity_flow - Option for including the costing of electricity
+        """
+        t0 = blk.flowsheet().time.first()
+
+        membrane_cost = (
+            blk.costing_package.electrodialysis_cem_membrane_cost
+            + blk.costing_package.electrodialysis_aem_membrane_cost
+        )
+        spacer_cost = 2.0 * blk.costing_package.electrodialysis_flowspacer_cost
+        electrode_cost = 2.0 * blk.costing_package.electrodialysis_electrode_cost
+
+        cost_electrodialysis_stack(
+            blk,
+            membrane_cost,
+            spacer_cost,
+            blk.costing_package.factor_electrodialysis_membrane_housing_replacement,
+            electrode_cost,
+            blk.costing_package.factor_electrodialysis_electrode_replacement,
+        )
+
+        # Changed this to grab power from performance table which is identified
+        #   by same key regardless of whether the Electrodialysis unit is 0D or 1D
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model._get_performance_contents(t0)["vars"][
+                        "Total electrical power consumption(Watt)"
+                    ],
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
+
+    @staticmethod
     def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
         """
         Function for costing the FC crystallizer by the mass flow of produced crystals.
+        The operating cost model assumes that heat is supplied via condensation of saturated steam (see Dutta et al.)
 
         Args:
             cost_type - Option for crystallizer cost function type - volume or mass basis
@@ -723,12 +779,37 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 f" {cost_type}. Argument must be a member of the CrystallizerCostType Enum."
             )
 
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
+                    blk.unit_model.magma_circulation_flow_vol
+                    * blk.unit_model.dens_mass_slurry
+                    * Constants.acceleration_gravity
+                    * blk.costing_package.crystallizer_pump_head_height
+                    / blk.costing_package.crystallizer_efficiency_pump
+                ),
+                to_units=pyo.units.kW,
+            ),
+            "electricity",
+        )
+
+        blk.costing_package.cost_flow(
+            pyo.units.convert(
+                (
+                    blk.unit_model.work_mechanical[0]
+                    / WaterTAPCostingData._compute_steam_properties(blk)
+                ),
+                to_units=pyo.units.m**3 / pyo.units.s,
+            ),
+            "steam",
+        )
+
     @staticmethod
     def cost_crystallizer_by_crystal_mass(blk):
         """
         Mass-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
@@ -753,7 +834,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         """
         Volume-based capital cost for FC crystallizer
         """
-        _make_capital_cost_var(blk)
+        make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
@@ -778,6 +859,74 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
+    def _compute_steam_properties(blk):
+        """
+        Function for computing saturated steam properties for thermal heating estimation.
+
+        Args:
+            pressure_sat:   Steam gauge pressure in bar
+
+        Out:
+            Steam thermal capacity (latent heat of condensation * density) in kJ/m3
+        """
+        pressure_sat = blk.costing_package.crystallizer_steam_pressure
+        # 1. Compute saturation temperature of steam: computed from El-Dessouky expression
+        tsat_constants = [
+            42.6776 * pyo.units.K,
+            -3892.7 * pyo.units.K,
+            1000 * pyo.units.kPa,
+            -9.48654 * pyo.units.dimensionless,
+        ]
+        psat = (
+            pyo.units.convert(pressure_sat, to_units=pyo.units.kPa)
+            + 101.325 * pyo.units.kPa
+        )
+        temperature_sat = tsat_constants[0] + tsat_constants[1] / (
+            pyo.log(psat / tsat_constants[2]) + tsat_constants[3]
+        )
+
+        # 2. Compute latent heat of condensation/vaporization: computed from Sharqawy expression
+        t = temperature_sat - 273.15 * pyo.units.K
+        enth_mass_units = pyo.units.J / pyo.units.kg
+        t_inv_units = pyo.units.K**-1
+        dh_constants = [
+            2.501e6 * enth_mass_units,
+            -2.369e3 * enth_mass_units * t_inv_units**1,
+            2.678e-1 * enth_mass_units * t_inv_units**2,
+            -8.103e-3 * enth_mass_units * t_inv_units**3,
+            -2.079e-5 * enth_mass_units * t_inv_units**4,
+        ]
+        dh_vap = (
+            dh_constants[0]
+            + dh_constants[1] * t
+            + dh_constants[2] * t**2
+            + dh_constants[3] * t**3
+            + dh_constants[4] * t**4
+        )
+        dh_vap = pyo.units.convert(dh_vap, to_units=pyo.units.kJ / pyo.units.kg)
+
+        # 3. Compute specific volume: computed from Affandi expression (Eq 5)
+        t_critical = 647.096 * pyo.units.K
+        t_red = temperature_sat / t_critical  # Reduced temperature
+        sp_vol_constants = [
+            -7.75883 * pyo.units.dimensionless,
+            3.23753 * pyo.units.dimensionless,
+            2.05755 * pyo.units.dimensionless,
+            -0.06052 * pyo.units.dimensionless,
+            0.00529 * pyo.units.dimensionless,
+        ]
+        log_sp_vol = (
+            sp_vol_constants[0]
+            + sp_vol_constants[1] * (pyo.log(1 / t_red)) ** 0.4
+            + sp_vol_constants[2] / (t_red**2)
+            + sp_vol_constants[3] / (t_red**4)
+            + sp_vol_constants[4] / (t_red**5)
+        )
+        sp_vol = pyo.exp(log_sp_vol) * pyo.units.m**3 / pyo.units.kg
+
+        # 4. Return specific energy: density * latent heat
+        return dh_vap / sp_vol
+
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
@@ -790,10 +939,12 @@ WaterTAPCostingData.unit_mapping = {
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
+    Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
+    Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
 }
 
 
-def _make_capital_cost_var(blk):
+def make_capital_cost_var(blk):
     blk.capital_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -802,7 +953,7 @@ def _make_capital_cost_var(blk):
     )
 
 
-def _make_fixed_operating_cost_var(blk):
+def make_fixed_operating_cost_var(blk):
     blk.fixed_operating_cost = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
@@ -820,11 +971,10 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
         membrane_cost - The cost of the membrane in currency per area
         factor_membrane_replacement - Membrane replacement factor
                                       [fraction of membrane replaced/year]
-
     """
-    _make_capital_cost_var(blk)
-    _make_fixed_operating_cost_var(blk)
 
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
@@ -837,6 +987,66 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
+def cost_electrodialysis_stack(
+    blk,
+    membrane_cost,
+    spacer_cost,
+    membrane_replacement_factor,
+    electrode_cost,
+    electrode_replacement_factor,
+):
+    """
+    Generic function for costing the stack in an electrodialysis unit.
+    Assumes the unit_model has a `cell_pair_num`, `cell_width`, and `cell_length`
+    set of variables used to size the total membrane area.
+
+    Args:
+        membrane_cost - The total cost of the CEM and AEM per cell pair in currency per area
+
+        spacer_cost - The total cost of the spacers per cell pair in currency per area
+
+        membrane_replacement_factor - Replacement factor for membranes and spacers
+                                      [fraction of membranes/spacers replaced/year]
+
+        electrode_cost - The total cost of electrodes in a given stack in currency per area
+
+        electrode_replacement_factor - Replacement factor for electrodes
+                                        [fraction of electrodes replaced/year]
+    """
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
+
+    blk.membrane_cost = pyo.Expression(expr=membrane_cost)
+    blk.membrane_replacement_factor = pyo.Expression(expr=membrane_replacement_factor)
+    blk.spacer_cost = pyo.Expression(expr=spacer_cost)
+    blk.electrode_cost = pyo.Expression(expr=electrode_cost)
+    blk.electrode_replacement_factor = pyo.Expression(expr=electrode_replacement_factor)
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost
+        == (blk.membrane_cost + blk.spacer_cost)
+        * (
+            blk.unit_model.cell_pair_num
+            * blk.unit_model.cell_width
+            * blk.unit_model.cell_length
+        )
+        + blk.electrode_cost * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+    )
+    blk.fixed_operating_cost_constraint = pyo.Constraint(
+        expr=blk.fixed_operating_cost
+        == blk.membrane_replacement_factor
+        * (blk.membrane_cost + blk.spacer_cost)
+        * (
+            blk.unit_model.cell_pair_num
+            * blk.unit_model.cell_width
+            * blk.unit_model.cell_length
+        )
+        + blk.electrode_replacement_factor
+        * blk.electrode_cost
+        * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+    )
+
+
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
     Generic function for costing by flow volume.
@@ -845,7 +1055,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
     """
-    _make_capital_cost_var(blk)
+    make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
