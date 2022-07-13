@@ -23,7 +23,7 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.functions import functions_lib
@@ -462,8 +462,10 @@ class EvaporatorData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         var_dict = {
             "Heat transfer": self.feed_side.heat_transfer,
-            "Evaporator temperature": self.feed_side.properties_brine[0].temperature,
-            "Evaporator pressure": self.feed_side.properties_brine[0].pressure,
+            "Evaporator temperature": self.feed_side.properties_brine[
+                time_point
+            ].temperature,
+            "Evaporator pressure": self.feed_side.properties_brine[time_point].pressure,
         }
 
         return {"vars": var_dict}

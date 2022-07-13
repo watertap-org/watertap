@@ -14,16 +14,16 @@
 Tests for zero-order tramp oil tank model
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import TrampOilTankZO
 from watertap.core.wt_database import Database
@@ -95,32 +95,8 @@ class TestTrampOilZOdefault:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                         Inlet    Outlet 
-    Volumetric Flowrate                0.010000  0.010000
-    Mass Concentration H2O            0.0010000 0.0010000
-    Mass Concentration oil_and_grease    1000.0    1000.0
-====================================================================================
-"""
-
-        assert output == stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

@@ -17,7 +17,7 @@ import pytest
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-from pyomo.environ import ConcreteModel, Var
+from pyomo.environ import ConcreteModel, Var, units as pyunits
 
 from watertap.core import ZeroOrderBaseData
 from watertap.core import WaterParameterBlock
@@ -351,3 +351,96 @@ class TestZOBase:
                 index="D",
                 use_default_removal=True,
             )
+
+    @pytest.mark.unit
+    def test_get_performance_contents(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C"]
+
+        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+
+        model.fs.unit.removal_frac_mass_solute = Var(
+            model.fs.time, model.fs.params.solute_set
+        )
+
+        model.fs.unit.set_param_from_data(
+            model.fs.unit.removal_frac_mass_solute[0, "A"],
+            {
+                "removal_frac_mass_solute": {"A": {"value": 0.42, "units": "m^3/m^3"}},
+                "default_removal_frac_mass_solute": {"value": 0.70, "units": "kg/kg"},
+            },
+            index="D",
+            use_default_removal=True,
+        )
+
+        model.fs.unit._perf_var_dict[
+            "Solute Removal"
+        ] = model.fs.unit.removal_frac_mass_solute
+
+        model.fs.unit.time_indexed_performance_var = Var(
+            model.fs.time, doc="test variable"
+        )
+
+        model.fs.unit._perf_var_dict[
+            "Test Variable 1"
+        ] = model.fs.unit.time_indexed_performance_var
+
+        model.fs.unit.nonindexed_performance_var = Var(doc="test_variable")
+        model.fs.unit._perf_var_dict[
+            "Test Variable 2"
+        ] = model.fs.unit.nonindexed_performance_var
+
+        perf_dict = model.fs.unit._get_performance_contents()
+
+        expected = {
+            "vars": {
+                "Solute Removal [A]": model.fs.unit.removal_frac_mass_solute[0, "A"],
+                "Solute Removal [B]": model.fs.unit.removal_frac_mass_solute[0, "B"],
+                "Solute Removal [C]": model.fs.unit.removal_frac_mass_solute[0, "C"],
+                "Test Variable 1": model.fs.unit.time_indexed_performance_var[0],
+                "Test Variable 2": model.fs.unit.nonindexed_performance_var,
+            }
+        }
+
+        assert perf_dict == expected
+
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C"]
+
+        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+
+        model.fs.unit.port_properties = model.fs.params.build_state_block(
+            model.fs.time, doc="test"
+        )
+
+        model.fs.unit.add_port(
+            "test_port", model.fs.unit.port_properties, doc="test port"
+        )
+
+        model.fs.unit._stream_table_dict["test port"] = model.fs.unit.test_port
+        stable = model.fs.unit._get_stream_table_contents()
+
+        expected = {
+            "test port": {
+                "Mass Concentration A": pytest.approx(250.000, rel=1e-4),
+                "Mass Concentration B": pytest.approx(250.000, rel=1e-4),
+                "Mass Concentration C": pytest.approx(250.000, rel=1e-4),
+                "Mass Concentration H2O": pytest.approx(250.000, rel=1e-4),
+                "Volumetric Flowrate": pytest.approx(0.004, rel=1e-4),
+            },
+            "Units": {
+                "Mass Concentration A": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration B": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration C": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Mass Concentration H2O": getattr(pyunits.pint_registry, "kg/m**3"),
+                "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/s"),
+            },
+        }
+
+        assert stable.to_dict() == expected

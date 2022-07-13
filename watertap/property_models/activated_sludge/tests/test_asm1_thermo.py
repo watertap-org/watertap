@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for ASM1 thero property package.
+Tests for ASM1 thermo property package.
 Authors: Andrew Lee
 """
 
@@ -29,7 +29,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

@@ -72,6 +72,7 @@ def test_unit_parameter_files(tech):
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
     no_energy_electric_flow_vol_inlet = [
+        "autothermal_hydrothermal_liquefaction",
         "backwash_solids_handling",
         "brine_concentrator",
         "CANDO_P",
@@ -85,6 +86,7 @@ def test_unit_parameter_files(tech):
         "filter_press",
         "gac",
         "gas_sparged_membrane",
+        "hydrothermal_gasification",
         "ion_exchange",
         "iron_and_manganese_removal",
         "metab",
@@ -94,10 +96,12 @@ def test_unit_parameter_files(tech):
         "photothermal_membrane",
         "pump_electricity",
         "storage_tank",
+        "supercritical_salt_precipitation",
         "surface_discharge",
         "sw_onshore_intake",
         "water_pumping_station",
         "well_field",
+        "mbr",
     ]
 
     expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]

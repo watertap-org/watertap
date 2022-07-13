@@ -15,7 +15,7 @@ Tests for zero-order constructed wetlands
 """
 import pytest
 
-from io import StringIO
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -26,7 +26,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
@@ -116,27 +116,5 @@ class TestConstructedWetlandsZO_w_default_removal:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                      : Value   : Fixed : Bounds
-    Solute Removal [nitrate] : 0.40000 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet    Treated
-    Volumetric Flowrate        0.011000 0.0091000
-    Mass Concentration H2O       909.09    934.07
-    Mass Concentration nitrate   90.909    65.934
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
