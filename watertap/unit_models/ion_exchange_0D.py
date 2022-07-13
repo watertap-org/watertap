@@ -258,14 +258,14 @@ class IonExchangeODData(UnitModelBlockData):
         self.resin_max_capacity = Var(
             initialize=5,
             units=pyunits.mol / pyunits.kg,
-            bounds=(0.5, 10),  # Perry's
+            bounds=(0.5, None),  # Perry's
             doc="Resin max capacity [mol/kg]",
         )
 
         self.resin_eq_capacity = Var(
             initialize=1,
             units=pyunits.mol / pyunits.kg,
-            bounds=(0.5, 9),  # Perry's
+            bounds=(0.5, None),  # Perry's
             doc="Resin equilibrium capacity [mol/kg]",
         )
 
@@ -293,7 +293,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.K_eq = Var(
             ion_set,
             initialize=1.5,
-            bounds=(0.5, 10),
+            bounds=(0.5, None),
             units=pyunits.dimensionless,
             doc="Selectivity coefficient [-]",
         )
@@ -743,7 +743,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Bed velocity lb")
         def eq_vel_bed_lb(b):
-            return self.vel_bed >= self.vel_min
+            return b.vel_bed >= b.vel_min
 
         @self.Constraint(doc="Interstitial velocity")
         def eq_vel_inter(b):
