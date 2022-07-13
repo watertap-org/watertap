@@ -57,7 +57,7 @@ np.set_printoptions(linewidth=200)
 #     def __init__(self):
 #         pass
 
-class ParameterSweepWriter:
+class ParameterSweepWriter(ABC):
 
     def __init__(self,
         comm,
@@ -136,6 +136,21 @@ class ParameterSweepWriter:
             warnings.warn("Too few points to perform interpolation.")
 
         return global_results_clean
+
+    # ================================================================
+
+    def set_debugging_data_dir(self, dirpath):
+        self.debugging_data_dir = dirpath
+
+    # ================================================================
+
+    def set_csv_results_filename(self, new_fname):
+        self.csv_results_file_name = new_fname
+
+    # ================================================================
+
+    def set_h5_results_file_name(self, new_fname):
+        self.h5_results_file_name = new_fname
 
     # ================================================================
 

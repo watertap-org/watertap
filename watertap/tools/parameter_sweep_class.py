@@ -340,7 +340,7 @@ class _ParameterSweepBase(ABC):
             for key, item in local_output_dict.items():  # This probably doesnt work
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        comm.Gatherv(
+                        self.comm.Gatherv(
                             sendbuf=subitem["value"],
                             recvbuf=(
                                 global_output_dict[key][subkey]["value"],
@@ -572,23 +572,21 @@ class ParameterSweep(_ParameterSweepBase):
         _ParameterSweepBase.__init__(self)
 
         # Initialize the writer
-        if self.rank == 0:
-            if h5_results_file_name is None and csv_results_file_name is None:
-                warnings.warn(
-                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-                )
-                self.write_outputs = False
-            else:
-                self.write_outputs = True
-                self.writer = ParameterSweepWriter(
-                    self.comm,
-                    csv_results_file_name=csv_results_file_name,
-                    h5_results_file_name=h5_results_file_name,
-                    debugging_data_dir=debugging_data_dir,
-                    interpolate_nan_outputs=interpolate_nan_outputs
-                )
-
-
+        # if h5_results_file_name is None and csv_results_file_name is None:
+        #     if self.rank == 0:
+        #         warnings.warn(
+        #             "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+        #         )
+        #     self.write_outputs = False
+        # else:
+        #     self.write_outputs = True
+        self.writer = ParameterSweepWriter(
+            self.comm,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=debugging_data_dir,
+            interpolate_nan_outputs=interpolate_nan_outputs
+        )
 
     def _aggregate_local_results(
         self,
@@ -683,21 +681,21 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         _ParameterSweepBase.__init__(self)
 
         # Initialize the writer
-        if self.rank == 0:
-            if h5_results_file_name is None and csv_results_file_name is None:
-                warnings.warn(
-                    "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-                )
-                self.write_outputs = False
-            else:
-                self.write_outputs = True
-                self.writer = ParameterSweepWriter(
-                    self.comm,
-                    csv_results_file_name=csv_results_file_name,
-                    h5_results_file_name=h5_results_file_name,
-                    debugging_data_dir=debugging_data_dir,
-                    interpolate_nan_outputs=interpolate_nan_outputs
-                )
+        # if self.rank == 0:
+        #     if h5_results_file_name is None and csv_results_file_name is None:
+        #         warnings.warn(
+        #             "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+        #         )
+        #         self.write_outputs = False
+        #     else:
+        #         self.write_outputs = True
+        self.writer = ParameterSweepWriter(
+            self.comm,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=debugging_data_dir,
+            interpolate_nan_outputs=interpolate_nan_outputs
+        )
 
     def _filter_recursive_solves(self, model, sweep_params, outputs, recursive_local_dict):
 
@@ -862,10 +860,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             if self.num_procs > 1:  # pragma: no cover
                 global_success_count = np.zeros(1, dtype=np.float64)
                 global_failure_count = np.zeros(1, dtype=np.float64)
-                comm.Allreduce(
+                self.comm.Allreduce(
                     np.array(success_count, dtype=np.float64), global_success_count
                 )
-                comm.Allreduce(
+                self.comm.Allreduce(
                     np.array(failure_count, dtype=np.float64), global_failure_count
                 )
             else:

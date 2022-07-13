@@ -494,10 +494,10 @@ class TestParallelManager:
             assert local_output_dict == global_output_dict
         else:
             ps.comm.Barrier()
-            if rank > 0:
+            if ps.rank > 0:
                 assert global_output_dict == local_output_dict
             else:
-                test_array = np.repeat(np.arange(0, num_procs, dtype=float), 2)
+                test_array = np.repeat(np.arange(0, ps.num_procs, dtype=float), 2)
                 test_list = [True] * global_num_cases
                 for key, value in global_output_dict.items():
                     if key != "solve_successful":
@@ -505,21 +505,27 @@ class TestParallelManager:
                             assert np.allclose(subvalue["value"], test_array)
                     elif key == "solve_successful":
                         assert list(value) == test_list
-            comm.Barrier()
+            ps.comm.Barrier()
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
 
-        results_fname = os.path.join(tmp_path, "global_results")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
         ps = ParameterSweep(
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=tmp_path,
+            csv_results_file_name=None,
+            h5_results_file_name=None,
+            debugging_data_dir=None,
             interpolate_nan_outputs=True
             )
 
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps.writer.set_debugging_data_dir(tmp_path)
+        ps.writer.set_csv_results_filename(csv_results_file_name)
+        ps.writer.set_h5_results_file_name(h5_results_file_name)
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -669,15 +675,21 @@ class TestParallelManager:
     @pytest.mark.requires_idaes_solver
     def test_parameter_sweep_optimize(self, model, tmp_path):
 
+        ps = ParameterSweep(
+            csv_results_file_name=None,
+            h5_results_file_name=None,
+            debugging_data_dir=None,
+            interpolate_nan_outputs=True
+            )
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
-        ps = ParameterSweep(
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=tmp_path,
-            interpolate_nan_outputs=True
-            )
+
+        ps.writer.set_debugging_data_dir(tmp_path)
+        ps.writer.set_csv_results_filename(csv_results_file_name)
+        ps.writer.set_h5_results_file_name(h5_results_file_name)
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -807,15 +819,21 @@ class TestParallelManager:
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
 
-        results_fname = os.path.join(tmp_path, "global_results_recover")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
         ps = ParameterSweep(
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=tmp_path,
+            csv_results_file_name=None,
+            h5_results_file_name=None,
+            debugging_data_dir=None,
             interpolate_nan_outputs=True
             )
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps.writer.set_debugging_data_dir(tmp_path)
+        ps.writer.set_csv_results_filename(csv_results_file_name)
+        ps.writer.set_h5_results_file_name(h5_results_file_name)
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -945,15 +963,21 @@ class TestParallelManager:
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
 
-        results_fname = os.path.join(tmp_path, "global_results_bad_recover")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
         ps = ParameterSweep(
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=tmp_path,
+            csv_results_file_name=None,
+            h5_results_file_name=None,
+            debugging_data_dir=None,
             interpolate_nan_outputs=True
             )
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps.writer.set_debugging_data_dir(tmp_path)
+        ps.writer.set_csv_results_filename(csv_results_file_name)
+        ps.writer.set_h5_results_file_name(h5_results_file_name)
 
         m = model
         m.fs.slack_penalty = 1000.0

@@ -22,7 +22,11 @@ from pyomo.environ import value
 from watertap.tools.sampling_types import *
 from watertap.tools.parameter_sweep_class import RecursiveParameterSweep
 from watertap.tools.parameter_sweep_writer import *
-from watertap.tools.tests.test_ps_class import (_read_output_h5, _assert_dictionary_correctness)
+from watertap.tools.tests.test_ps_class import (
+    _read_output_h5,
+    _get_rank0_path,
+    _assert_dictionary_correctness
+    )
 # -----------------------------------------------------------------------------
 
 
@@ -154,15 +158,21 @@ def test_recursive_parameter_sweep(model, tmp_path):
         # comm, rank, num_procs = _init_mpi()
         # tmp_path = _get_rank0_path(comm, tmp_path)
 
+        ps = RecursiveParameterSweep(
+            csv_results_file_name=None,
+            h5_results_file_name=None,
+            debugging_data_dir = None,
+        )
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+
         results_fname = os.path.join(tmp_path, "global_results")
         csv_results_file = str(results_fname) + ".csv"
         h5_results_file = str(results_fname) + ".h5"
 
-        ps = RecursiveParameterSweep(
-            csv_results_file_name=csv_results_file,
-            h5_results_file_name=h5_results_file,
-            debugging_data_dir = tmp_path,
-        )
+        ps.writer.set_debugging_data_dir(tmp_path)
+        ps.writer.set_csv_results_filename(csv_results_file)
+        ps.writer.set_h5_results_file_name(h5_results_file)
 
         m = model
 
