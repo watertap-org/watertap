@@ -94,8 +94,8 @@ class TestElectroNPFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(75.330, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOS) == pytest.approx(126.935, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(64.031, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOS) == pytest.approx(107.896, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

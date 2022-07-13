@@ -1,0 +1,24 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.85
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    A:
+      value: 0.50
+      units: dimensionless
+    B:
+      value: 0.40
+      units: dimensionless
+  reactions:
+    Rxn1:
+      key_reactant: toc
+      conversion: 0.8
+      stoichiometry:
+        toc:
+          conversion_ratio: -1
+        tss:
+          conversion_ratio: 1
+

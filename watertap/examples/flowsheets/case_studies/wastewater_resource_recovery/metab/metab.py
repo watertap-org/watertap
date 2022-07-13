@@ -51,7 +51,7 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    display_results(m)
+    display_results(m.fs)
 
     add_costing(m)
     m.fs.costing.initialize()
@@ -61,7 +61,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     results = solve(m)
     assert_optimal_termination(results)
-    display_costing(m)
+    display_costing(m.fs)
 
     return m, results
 
@@ -153,10 +153,10 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def display_results(m):
+def display_results(fs):
     unit_list = ["feed", "metab_hydrogen", "metab_methane"]
     for u in unit_list:
-        m.fs.component(u).report()
+        fs.component(u).report()
 
 
 def add_costing(m):
@@ -480,13 +480,13 @@ def add_costing(m):
     m.fs.costing.LCOCR_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOCR_comp)
 
 
-def display_costing(m):
-    m.fs.costing.total_capital_cost.display()
-    m.fs.costing.total_operating_cost.display()
-    m.fs.costing.LCOW.display()
+def display_costing(fs):
+    fs.costing.total_capital_cost.display()
+    fs.costing.total_operating_cost.display()
+    fs.costing.LCOW.display()
 
     print("\nUnit Capital Costs\n")
-    for u in m.fs.costing._registered_unit_costing:
+    for u in fs.costing._registered_unit_costing:
         print(
             u.name,
             " :   ",
@@ -494,13 +494,13 @@ def display_costing(m):
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.costing.flow_types:
+    for f in fs.costing.flow_types:
         print(
             f,
             " :   ",
             value(
                 pyunits.convert(
-                    m.fs.costing.aggregate_flow_costs[f],
+                    fs.costing.aggregate_flow_costs[f],
                     to_units=pyunits.USD_2018 / pyunits.year,
                 )
             ),
@@ -508,45 +508,41 @@ def display_costing(m):
 
     print("")
     total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+        pyunits.convert(fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
     )
     print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
 
     total_operating_cost = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
     electricity_intensity = value(
         pyunits.convert(
-            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+            fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
         )
     )
     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
     LCOW = value(
         pyunits.convert(
-            m.fs.costing.LCOW, to_units=m.fs.costing.base_currency / pyunits.m**3
+            fs.costing.LCOW, to_units=fs.costing.base_currency / pyunits.m**3
         )
     )
     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
     LCOCR = value(
         pyunits.convert(
-            m.fs.costing.LCOCR, to_units=m.fs.costing.base_currency / pyunits.kg
+            fs.costing.LCOCR, to_units=fs.costing.base_currency / pyunits.kg
         )
     )
     print(f"Levelized Cost of COD Removal: {LCOCR:.4f} $/kg")
     LCOH = value(
-        pyunits.convert(
-            m.fs.costing.LCOH, to_units=m.fs.costing.base_currency / pyunits.kg
-        )
+        pyunits.convert(fs.costing.LCOH, to_units=fs.costing.base_currency / pyunits.kg)
     )
     print(f"Levelized Cost of Hydrogen: {LCOH:.4f} $/kg")
     LCOM = value(
-        pyunits.convert(
-            m.fs.costing.LCOM, to_units=m.fs.costing.base_currency / pyunits.kg
-        )
+        pyunits.convert(fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg)
     )
     print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
 

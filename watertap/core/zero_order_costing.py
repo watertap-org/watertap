@@ -277,7 +277,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Other variable costs
         self.total_variable_operating_cost = pyo.Expression(
             expr=self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs[f] for f in self.flow_types),
+            + sum(self.aggregate_flow_costs[f] for f in self.flow_types)
+            * self.utilization_factor,
             doc="Total variable operating cost of process per operating period",
         )
 
@@ -1831,6 +1832,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_surface_discharge(blk):
         """
         General method for costing surface discharge. Capital cost is based on
@@ -2214,6 +2220,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
 
     def cost_filter_press(blk):
         """
