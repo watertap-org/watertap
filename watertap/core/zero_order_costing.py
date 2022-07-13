@@ -1003,7 +1003,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
             blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
         )
-        parameter_dict
         # Get costing parameter sub-block for this technology
         unit_capex = _get_tech_parameters(
             blk, parameter_dict, blk.unit_model.config.process_subtype, ["unit_capex"]
