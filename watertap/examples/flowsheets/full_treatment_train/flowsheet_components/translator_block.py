@@ -14,7 +14,7 @@
 """Translator blocks for supported property packages"""
 
 from pyomo.environ import Constraint
-from idaes.generic_models.unit_models.translator import Translator
+from idaes.models.unit_models.translator import Translator
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     constraint_scaling_transform,

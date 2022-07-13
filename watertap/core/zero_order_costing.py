@@ -21,7 +21,7 @@ from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
-from idaes.generic_models.costing.costing_base import (
+from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
@@ -277,7 +277,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Other variable costs
         self.total_variable_operating_cost = pyo.Expression(
             expr=self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs[f] for f in self.flow_types),
+            + sum(self.aggregate_flow_costs[f] for f in self.flow_types)
+            * self.utilization_factor,
             doc="Total variable operating cost of process per operating period",
         )
 
@@ -358,7 +359,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Unit operation costing methods
-    def cost_power_law_flow(blk):
+    def cost_power_law_flow(blk, number_of_parallel_units=1):
         """
         General method for costing equipment based on power law form. This is
         the most common costing form for zero-order models.
@@ -367,6 +368,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         This method also registers electricity demand as a costed flow (if
         present in the unit operation model).
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
 
@@ -407,7 +412,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(blk, A, B, sizing_term, factor)
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -625,13 +632,17 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_chemical_addition(blk):
+    def cost_chemical_addition(blk, number_of_parallel_units=1):
         """
         General method for costing chemical addition processes. Capital cost is
         based on the mass flow rate of chemical added.
 
         This method also registers the chemical flow and electricity demand as
         costed flows.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         chem_name = blk.unit_model.config.process_subtype
 
@@ -662,7 +673,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(blk, A, B, sizing_term, factor)
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -843,11 +856,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_deep_well_injection(blk):
+    def cost_deep_well_injection(blk, number_of_parallel_units=1):
         """
         General method for costing deep well injection processes. Capital cost
         is based on the cost of pump and pipe.
         This method also registers the electricity demand as a costed flow.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
 
@@ -895,7 +912,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         # Call general power law costing method
         ZeroOrderCostingData._general_power_law_form(
-            blk, cost_total, C, sizing_term, factor
+            blk,
+            cost_total,
+            C,
+            sizing_term,
+            factor,
+            number_of_parallel_units,
         )
 
         # Register flows
@@ -1011,17 +1033,21 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.MgCl2_flowrate[t0], "magnesium_chloride"
         )
 
-    def cost_fixed_bed(blk):
+    def cost_fixed_bed(blk, number_of_parallel_units=1):
         """
         General method for costing fixed bed units. This primarily calls the
         cost_power_law_flow method.
 
         This method also registers demand for a number of additional material
         flows.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
 
-        ZeroOrderCostingData.cost_power_law_flow(blk)
+        ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
 
         # Register flows - electricity already done by cost_power_law_flow
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1608,12 +1634,16 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.resin_demand[t0], "ion_exchange_resin"
         )
 
-    def cost_iron_and_manganese_removal(blk):
+    def cost_iron_and_manganese_removal(blk, number_of_parallel_units=1):
         """
         General method for costing iron and manganese removal processes. Capital cost
         is based on the cost of air blower, backwash and dual media filter.
 
         This method also registers the electricity demand as a costed flow.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
 
@@ -1672,7 +1702,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         # Call general power law costing method
         ZeroOrderCostingData._general_power_law_form(
-            blk, cost_total, F, sizing_term, factor
+            blk,
+            cost_total,
+            F,
+            sizing_term,
+            factor,
+            number_of_parallel_units,
         )
 
         # Register flows
@@ -1727,10 +1762,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_sedimentation(blk):
+    def cost_sedimentation(blk, number_of_parallel_units=1):
         """
         General method for costing sedimentaion processes. Capital cost is
         based on the surface area of the basin.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
         sizing_term = blk.unit_model.basin_surface_area[t0] / pyo.units.foot**2
@@ -1751,17 +1790,23 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(blk, A, B, sizing_term, factor)
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_storage_tank(blk):
+    def cost_storage_tank(blk, number_of_parallel_units=1):
         """
         General method for costing storage tanks. Capital cost is based on the
         volume of the tank.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         t0 = blk.flowsheet().time.first()
         sizing_term = blk.unit_model.tank_volume[t0] / pyo.units.m**3
@@ -1783,7 +1828,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(blk, A, B, sizing_term, factor)
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
 
     def cost_surface_discharge(blk):
         """
@@ -2169,6 +2221,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_filter_press(blk):
         """
         General method for costing belt filter press. Capital cost is a function
@@ -2215,10 +2272,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_landfill(blk):
+    def cost_landfill(blk, number_of_parallel_units=1):
         """
         General method for costing landfill. Capital cost is based on the total mass and
         capacity basis.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
 
         t0 = blk.flowsheet().time.first()
@@ -2241,7 +2302,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(blk, A, B, sizing_term, factor)
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2307,18 +2370,24 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def cost_nanofiltration(blk):
+    def cost_nanofiltration(blk, number_of_parallel_units=1):
         """
         General method for costing nanofiltration. Costing is carried out
         using either the general_power_law form or the standard form which
         computes membrane cost and replacement rate.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         # Get cost method for this technology
         cost_method = _get_unit_cost_method(blk)
         valid_methods = ["cost_power_law_flow", "cost_membrane"]
         if cost_method == "cost_power_law_flow":
-            ZeroOrderCostingData.cost_power_law_flow(blk)
+            ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
         elif cost_method == "cost_membrane":
+            # NOTE: number of units does not matter for cost_membrane
+            #       as its a linear function of membrane area
             ZeroOrderCostingData.cost_membrane(blk)
         else:
             raise KeyError(
@@ -2557,9 +2626,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         return expr
 
-    def _general_power_law_form(blk, A, B, sizing_term, factor=None):
+    def _general_power_law_form(
+        blk, A, B, sizing_term, factor=None, number_of_parallel_units=1
+    ):
         """
         General method for building power law costing expressions.
+
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
         """
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -2569,9 +2644,16 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            A * pyo.units.convert(sizing_term, to_units=pyo.units.dimensionless) ** B,
+            A
+            * (
+                pyo.units.convert(sizing_term, to_units=pyo.units.dimensionless)
+                / number_of_parallel_units
+            )
+            ** B,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
+
+        expr *= number_of_parallel_units
 
         if factor == "TPEC":
             expr *= blk.config.flowsheet_costing_block.TPEC

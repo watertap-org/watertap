@@ -27,7 +27,7 @@ from pyomo.environ import (
 # Import IDAES cores
 from idaes.core import ControlVolume0DBlock, declare_process_block_class
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 from watertap.core.util.initialization import check_solve, check_dof
@@ -346,8 +346,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
         def over_pressure_ratio(b, t):
             return (
-                b.feed_side.properties_out[t].pressure_osm
-                - b.permeate_side[t, 1.0].pressure_osm
+                b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
+                - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
 
     def initialize_build(

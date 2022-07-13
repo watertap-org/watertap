@@ -30,7 +30,7 @@ from idaes.core import (
 from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
 import watertap.property_models.NaCl_prop_pack as props
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -161,13 +161,13 @@ class TestNanoFiltration:
             "flow_mass_phase_comp",
             "pressure",
             "temperature",
-            "pressure_osm",
+            "pressure_osm_phase",
             "osm_coeff",
             "mass_frac_phase_comp",
             "conc_mass_phase_comp",
             "dens_mass_phase",
             "enth_mass_phase",
-            "eq_pressure_osm",
+            "eq_pressure_osm_phase",
             "eq_osm_coeff",
             "eq_mass_frac_phase_comp",
             "eq_conc_mass_phase_comp",

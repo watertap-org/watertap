@@ -1,5 +1,5 @@
-Dmbr  (ZO)
-==========
+Recirculating Dynamic Membrane Bioreactor (ZO)
+==============================================
 
 Model Type
 ----------

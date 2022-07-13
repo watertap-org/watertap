@@ -86,7 +86,7 @@ class CANDOPData(ZeroOrderBaseData):
         self.oxygen_nitrogen_ratio = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Oxygen consumed / nitrogen reacted ratio",
+            doc="Oxygen consumed - nitrogen reacted ratio",
         )
         self._fixed_perf_vars.append(self.oxygen_nitrogen_ratio)
         self._perf_var_dict[

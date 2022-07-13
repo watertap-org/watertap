@@ -44,15 +44,15 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import (
     ConfigurationError,
@@ -88,15 +88,15 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         """ References
         This package was developed from the following references:
-        
+
         - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
 
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
-                
+
         Diffusivity for NaCl is being used temporarily based on
         Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
         """
@@ -672,10 +672,10 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
-        self.set_default_scaling("cp_phase", 1e-3, index="Liq")
+        self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
-        self.set_default_scaling("dh_vap", 1e-6)
-        self.set_default_scaling("diffus_phase", 1e9)
+        self.set_default_scaling("dh_vap_mass", 1e-6)
+        self.set_default_scaling("diffus_phase_comp", 1e9)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -693,17 +693,17 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
-                "molality_comp": {"method": "_molality_comp"},
+                "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "osm_coeff": {"method": "_osm_coeff"},
-                "pressure_osm": {"method": "_pressure_osm"},
+                "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow": {"method": "_enth_flow"},
                 "pressure_sat": {"method": "_pressure_sat"},
-                "cp_phase": {"method": "_cp_phase"},
+                "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
-                "dh_vap": {"method": "_dh_vap"},
-                "diffus_phase": {"method": "_diffus_phase"},
+                "dh_vap_mass": {"method": "_dh_vap_mass"},
+                "diffus_phase_comp": {"method": "_diffus_phase_comp"},
             }
         )
         # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
@@ -1130,8 +1130,9 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_mole_frac_phase_comp
         )
 
-    def _molality_comp(self):
-        self.molality_comp = Var(
+    def _molality_phase_comp(self):
+        self.molality_phase_comp = Var(
+            self.params.phase_list,
             ["TDS"],
             initialize=1,
             bounds=(0.0, 1e6),
@@ -1139,15 +1140,15 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_comp(b, j):
+        def rule_molality_phase_comp(b, j):
             return (
-                self.molality_comp[j]
+                self.molality_phase_comp["Liq", j]
                 == b.mass_frac_phase_comp["Liq", j]
                 / (1 - b.mass_frac_phase_comp["Liq", j])
                 / b.params.mw_comp[j]
             )
 
-        self.eq_molality_comp = Constraint(["TDS"], rule=rule_molality_comp)
+        self.eq_molality_phase_comp = Constraint(["TDS"], rule=rule_molality_phase_comp)
 
     def _visc_d_phase(self):
         self.visc_d_phase = Var(
@@ -1185,21 +1186,22 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
 
-    def _diffus_phase(
+    def _diffus_phase_comp(
         self,
     ):  # TODO: diffusivity from NaCl prop model used temporarily--reconsider this
-        self.diffus_phase = Var(
+        self.diffus_phase_comp = Var(
             self.params.phase_list,
+            ["TDS"],
             initialize=1e-9,
             bounds=(1e-10, 1e-8),
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity",
         )
 
-        def rule_diffus_phase(
-            b,
+        def rule_diffus_phase_comp(
+            b, j
         ):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
-            return b.diffus_phase["Liq"] == (
+            return b.diffus_phase_comp["Liq", j] == (
                 b.params.diffus_param["4"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 4
                 + b.params.diffus_param["3"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 3
                 + b.params.diffus_param["2"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 2
@@ -1207,7 +1209,7 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.diffus_param["0"]
             )
 
-        self.eq_diffus_phase = Constraint(rule=rule_diffus_phase)
+        self.eq_diffus_phase_comp = Constraint(["TDS"], rule=rule_diffus_phase_comp)
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -1238,26 +1240,32 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
 
-    def _pressure_osm(self):
-        self.pressure_osm = Var(
-            initialize=1e6, bounds=(1, 1e8), units=pyunits.Pa, doc="Osmotic pressure"
+    def _pressure_osm_phase(self):
+        self.pressure_osm_phase = Var(
+            self.params.phase_list,
+            initialize=1e6,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Osmotic pressure",
         )
 
-        def rule_pressure_osm(
-            b,
+        def rule_pressure_osm_phase(
+            b, p
         ):  # osmotic pressure, based on eq. 48 in Nayar et al. (2016)
             i = 2  # number of ionic species
             rhow = b.dens_mass_solvent
             return (
-                b.pressure_osm
+                b.pressure_osm_phase[p]
                 == b.osm_coeff
-                * b.molality_comp["TDS"]
+                * b.molality_phase_comp["Liq", "TDS"]
                 * rhow
                 * Constants.gas_constant
                 * b.temperature
             )
 
-        self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
+        self.eq_pressure_osm_phase = Constraint(
+            self.params.phase_list, rule=rule_pressure_osm_phase
+        )
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -1311,7 +1319,9 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Vapor pressure"
         )
 
-        def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        def rule_pressure_sat(
+            b,
+        ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
             s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
             psatw = (
@@ -1332,8 +1342,8 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
-    def _cp_phase(self):
-        self.cp_phase = Var(
+    def _cp_mass_phase(self):
+        self.cp_mass_phase = Var(
             self.params.phase_list,
             initialize=4e3,
             bounds=(0.0, 1e8),
@@ -1341,7 +1351,7 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Specific heat capacity",
         )
 
-        def rule_cp_phase(b):  # specific heat, eq. 9 in Sharqawy et al. (2010)
+        def rule_cp_mass_phase(b):  # specific heat, eq. 9 in Sharqawy et al. (2010)
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
             t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
             s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
@@ -1365,9 +1375,11 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.cp_phase_param_D2 * s
                 + b.params.cp_phase_param_D3 * s**2
             )
-            return b.cp_phase["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
+            return (
+                b.cp_mass_phase["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
+            )
 
-        self.eq_cp_phase = Constraint(rule=rule_cp_phase)
+        self.eq_cp_mass_phase = Constraint(rule=rule_cp_mass_phase)
 
     def _therm_cond_phase(self):
         self.therm_cond_phase = Var(
@@ -1411,29 +1423,29 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_therm_cond_phase = Constraint(rule=rule_therm_cond_phase)
 
-    def _dh_vap(self):
-        self.dh_vap = Var(
+    def _dh_vap_mass(self):
+        self.dh_vap_mass = Var(
             initialize=2.4e3,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap(
+        def rule_dh_vap_mass(
             b,
         ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_phase_comp["Liq", "TDS"]
-            dh_vap_w = (
+            dh_vap_mass_w = (
                 b.params.dh_vap_w_param_0
                 + b.params.dh_vap_w_param_1 * t
                 + b.params.dh_vap_w_param_2 * t**2
                 + b.params.dh_vap_w_param_3 * t**3
                 + b.params.dh_vap_w_param_4 * t**4
             )
-            return b.dh_vap == dh_vap_w * (1 - s)
+            return b.dh_vap_mass == dh_vap_mass_w * (1 - s)
 
-        self.eq_dh_vap = Constraint(rule=rule_dh_vap)
+        self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1504,10 +1516,11 @@ class SeawaterStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        if self.is_property_constructed("pressure_osm"):
-            if iscale.get_scaling_factor(self.pressure_osm) is None:
+        if self.is_property_constructed("pressure_osm_phase"):
+            if iscale.get_scaling_factor(self.pressure_osm_phase["Liq"]) is None:
                 iscale.set_scaling_factor(
-                    self.pressure_osm, iscale.get_scaling_factor(self.pressure)
+                    self.pressure_osm_phase["Liq"],
+                    iscale.get_scaling_factor(self.pressure),
                 )
 
         if self.is_property_constructed("mass_frac_phase_comp"):
@@ -1591,15 +1604,20 @@ class SeawaterStateBlockData(StateBlockData):
                             self.mole_frac_phase_comp["Liq", j], 1
                         )
 
-        if self.is_property_constructed("molality_comp"):
+        if self.is_property_constructed("molality_phase_comp"):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
-                    if iscale.get_scaling_factor(self.molality_comp[j]) is None:
+                    if (
+                        iscale.get_scaling_factor(self.molality_phase_comp["Liq", j])
+                        is None
+                    ):
                         sf = iscale.get_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j]
                         )
                         sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
-                        iscale.set_scaling_factor(self.molality_comp[j], sf)
+                        iscale.set_scaling_factor(
+                            self.molality_phase_comp["Liq", j], sf
+                        )
 
         if self.is_property_constructed("enth_flow"):
             iscale.set_scaling_factor(
@@ -1613,9 +1631,8 @@ class SeawaterStateBlockData(StateBlockData):
         v_str_lst_simple = [
             "dens_mass_solvent",
             "osm_coeff",
-            "pressure_osm",
             "pressure_sat",
-            "dh_vap",
+            "dh_vap_mass",
         ]
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
@@ -1624,14 +1641,19 @@ class SeawaterStateBlockData(StateBlockData):
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
+        if self.is_property_constructed("pressure_osm_phase"):
+            sf = iscale.get_scaling_factor(
+                self.pressure_osm_phase["Liq"], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
+
         # property relationships with phase index, but simple constraint
         v_str_lst_phase = [
             "dens_mass_phase",
             "flow_vol_phase",
             "visc_d_phase",
             "enth_mass_phase",
-            "diffus_phase",
-            "cp_phase",
+            "cp_mass_phase",
             "therm_cond_phase",
         ]
         for v_str in v_str_lst_phase:
@@ -1641,22 +1663,14 @@ class SeawaterStateBlockData(StateBlockData):
                 c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
-        # property relationship indexed by component
-        v_str_lst_comp = ["molality_comp"]
-        for v_str in v_str_lst_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
-
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = [
             "mass_frac_phase_comp",
             "conc_mass_phase_comp",
             "flow_mol_phase_comp",
             "mole_frac_phase_comp",
+            "molality_phase_comp",
+            "diffus_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
