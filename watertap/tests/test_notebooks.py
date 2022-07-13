@@ -12,6 +12,7 @@ from nbconvert.preprocessors import ExecutePreprocessor, CellExecutionError
 import pytest
 
 # package
+from watertap.edb import ElectrolyteDB
 
 # Logging setup
 
