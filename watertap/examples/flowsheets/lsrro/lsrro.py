@@ -149,7 +149,7 @@ def build(
     m.fs.costing = WaterTAPCosting()
 
     # explicitly set the costing parameters used
-    m.fs.costing.load_factor.fix(0.9)
+    m.fs.costing.utilization_factor.fix(0.9)
     m.fs.costing.factor_total_investment.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
@@ -352,7 +352,7 @@ def build(
         expr=pyunits.convert(
             m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
         )
-        * m.fs.costing.load_factor
+        * m.fs.costing.utilization_factor
     )
     m.fs.final_permeate_concentration = Expression(
         expr=m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
@@ -409,7 +409,7 @@ def build(
 
     m.fs.costing.electricity_lcow = Expression(
         expr=m.fs.costing.aggregate_flow_costs["electricity"]
-        * m.fs.costing.load_factor
+        * m.fs.costing.utilization_factor
         / m.fs.costing.annual_water_production
     )
 
@@ -1194,7 +1194,7 @@ def display_system(m):
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
-        * m.fs.costing.load_factor
+        * m.fs.costing.utilization_factor
         / m.fs.costing.annual_water_production
     )
     print(f"Electricity cost ($/m3): {electricity_cost}")
