@@ -26,6 +26,7 @@ from idaes.core.base.costing_base import (
 )
 
 from idaes.models.unit_models import Mixer
+from idaes.models.unit_models.heat_exchanger import HeatExchanger
 
 from watertap.unit_models import (
     ReverseOsmosis0D,
@@ -265,6 +266,29 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.compressor_exponent = pyo.Var(
             initialize=0.7,
             doc="Compressor exponent (El-Sayed et al., 2001)",
+            units=pyo.units.dimensionless,
+        )
+
+        self.heat_exchanger_material_factor_cost = pyo.Var(
+            initialize=1,
+            doc='Heat exchanger material factor',
+            units=pyo.units.dimensionless
+        )
+        self.heat_exchanger_base_cost = pyo.Var(
+            initialize=31683,
+            doc='Heat exchanger base cost',
+            units=pyo.units.USD_2018
+        )
+
+        self.heat_exchanger_unit_cost = pyo.Var(
+            initialize=61,
+            doc='Heat exchanger unit cost per area',
+            units=pyo.units.USD_2018
+        )
+
+        self.heat_exchanger_exponent = pyo.Var(
+            initialize=1.2,
+            doc='Heat exchanger area based exponent',
             units=pyo.units.dimensionless,
         )
         # fix the parameters
@@ -789,10 +813,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
     @staticmethod
-    def cost_compressor(blk, work):
+    def cost_compressor(blk, cost_electricity_flow=True):
         """
         Capital cost for compressor.
-        Assumes the unit_model has an `area` variable or parameter.
+        Costs electricity flow based on compressor mechanical work.
         """
         make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(
@@ -809,8 +833,30 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        blk.costing_package.cost_flow(
-            pyo.units.convert(work, pyo.units.J / pyo.units.s), "electricity"
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.control_volume.work[0], to_units=pyo.units.kW
+                ),
+                "electricity",
+            )
+
+    @staticmethod
+    def cost_heat_exchanger(blk):
+        """
+        Capital cost for heat exchanger.
+        Assumes the unit_model has 'area' variable.
+        """
+        make_capital_cost_var(blk)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == pyo.units.convert(
+                (blk.costing_package.heat_exchanger_material_factor_cost*
+                 (blk.costing_package.heat_exchanger_base_cost +
+                  blk.costing_package.heat_exchanger_unit_cost*
+                  (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))/pyo.units.m**2)
+                  **blk.costing_package.heat_exchanger_exponent)),
+                                 to_units=blk.costing_package.base_currency)
         )
 
 # Define default mapping of costing methods to unit models
@@ -826,6 +872,7 @@ WaterTAPCostingData.unit_mapping = {
     Crystallization: WaterTAPCostingData.cost_crystallizer,
     Evaporator: WaterTAPCostingData.cost_evaporator,
     Compressor: WaterTAPCostingData.cost_compressor,
+    HeatExchanger: WaterTAPCostingData.cost_heat_exchanger,
 }
 
 
