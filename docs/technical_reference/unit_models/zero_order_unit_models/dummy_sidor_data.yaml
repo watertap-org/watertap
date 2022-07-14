@@ -21,11 +21,4 @@ default:
           conversion_ratio: -1
         tss:
           conversion_ratio: 1
-    cod_to_methane:
-      key_reactant: cod
-      conversion: 0.59
-      stoichiometry:
-        cod:
-          conversion_ratio: -1
-        methane:
-          conversion_ratio: 0.101
+
