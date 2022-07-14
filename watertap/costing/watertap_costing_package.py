@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-
+import math
 from enum import Enum
 
 import pyomo.environ as pyo
@@ -40,6 +40,7 @@ from watertap.unit_models import (
     Electrodialysis0D,
     Electrodialysis1D,
 )
+from watertap.unit_models.gac import GAC
 
 
 class ROType(StrEnum):
@@ -290,6 +291,60 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=1,
             units=pyo.units.m,
             doc="Crystallizer pump head height -  assumed, unvalidated",
+        )
+
+        self.gac_num_contactors = pyo.Var(
+            initialize=2,
+            units=pyo.units.dimensionless,
+            doc="Number of GAC contactors in parallel",
+        )
+
+        self.gac_contactor_cost_coeff_0 = pyo.Var(
+            initialize=10010.859100985,
+            units=pyo.units.USD_2020,
+            doc="GAC contactor polynomial cost coefficient 0",
+        )
+
+        self.gac_contactor_cost_coeff_1 = pyo.Var(
+            initialize=2204.95245503305,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
+            doc="GAC contactor polynomial cost coefficient 1",
+        )
+
+        self.gac_contactor_cost_coeff_2 = pyo.Var(
+            initialize=-15.9377885738609,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
+            doc="GAC contactor polynomial cost coefficient 2",
+        )
+
+        self.gac_contactor_cost_coeff_3 = pyo.Var(
+            initialize=0.110591952020239,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
+            doc="GAC contactor polynomial cost coefficient 3",
+        )
+
+        self.gac_adsorbent_unit_cost_coeff = pyo.Var(
+            initialize=4.58341889627683,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="GAC adsorbent exponential cost pre-exponential coefficient",
+        )
+
+        self.gac_adsorbent_unit_cost_exp_coeff = pyo.Var(
+            initialize=-1.25310852043246e-5,
+            units=pyo.units.kg**-1,
+            doc="GAC adsorbent exponential cost parameter coefficient",
+        )
+
+        self.gac_other_cost_coeff = pyo.Var(
+            initialize=16660.6931081066,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="GAC other cost power law coefficient",
+        )
+
+        self.gac_other_cost_exp = pyo.Var(
+            initialize=0.552206579,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="GAC other cost power law exponent",
         )
 
         # fix the parameters
@@ -859,6 +914,104 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
+    @staticmethod
+    def cost_gac(blk):
+        """
+        Notes
+        """
+        make_capital_cost_var(blk)
+        blk.contactor_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit contactor capital cost",
+        )
+        blk.adsorbent_unit_cost = pyo.Var(
+            initialize=2,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency * pyo.units.kg**-1,
+            doc="Unit adsorbent unit cost per mass",
+        )
+        blk.adsorbent_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit adsorbent capital cost",
+        )
+        blk.other_process_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit other process capital cost",
+        )
+
+        blk.costing_package.gac_contactor_cost_coeff_3.display()
+        blk.unit_model.bed_volume.display()
+        blk.costing_package.gac_contactor_cost_coeff_2.display()
+        blk.costing_package.gac_contactor_cost_coeff_1.display()
+        blk.costing_package.gac_contactor_cost_coeff_0.display()
+        blk.costing_package.gac_num_contactors.display()
+        blk.contactor_cost.display()
+        print(blk.costing_package.base_currency)
+
+        blk.contactor_cost_constraint = pyo.Constraint(
+            expr=blk.contactor_cost
+            == blk.costing_package.gac_num_contactors
+            * pyo.units.convert(
+                (
+                    blk.costing_package.gac_contactor_cost_coeff_3
+                    * blk.unit_model.bed_volume**3
+                    + blk.costing_package.gac_contactor_cost_coeff_2
+                    * blk.unit_model.bed_volume**2
+                    + blk.costing_package.gac_contactor_cost_coeff_1
+                    * blk.unit_model.bed_volume**1
+                    + blk.costing_package.gac_contactor_cost_coeff_0
+                )
+            ),
+            to_units=blk.costing_package.base_currency,
+        )
+        if blk.unit_model.bed_mass_gac < 18143.68:
+            blk.adsorbent_unit_cost_constraint = pyo.Constraint(
+                expr=blk.adsorbent_unit_cost
+                == pyo.units.convert(
+                    blk.costing_package.gac_adsorbent_unit_cost_coeff
+                    * math.exp(
+                        blk.unit_model.bed_mass_gac
+                        * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
+                    ),
+                    to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
+                )
+            )
+        else:
+            blk.adsorbent_unit_cost_constraint = pyo.Constraint(
+                expr=blk.adsorbent_unit_cost
+                == pyo.units.convert(
+                    blk.costing_package.gac_adsorbent_unit_cost_coeff
+                    * math.exp(
+                        18143.68 * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
+                    ),
+                    to_units=blk.costing_package.base_currency * pyo.units.kg,
+                )
+            )
+        blk.adsorbent_cost_constraint = pyo.Constraint(
+            expr=blk.adsorbent_cost
+            == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
+        )
+        blk.other_process_cost = pyo.Constraint(
+            expr=blk.other_prcoess_cost
+            == pyo.units.convert(
+                blk.costing_package.gac_other_cost_coeff
+                * (blk.costing_package.gac_num_contactors * blk.unit_model.bed_volume)
+                ** blk.costing_package.gac_other_cost_exp
+            ),
+            to_units=blk.costing_package.base_currency,
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == blk.contactor_cost + blk.adsorbent_cost + blk.other_process_cost
+        )
+
     def _compute_steam_properties(blk):
         """
         Function for computing saturated steam properties for thermal heating estimation.
@@ -941,6 +1094,7 @@ WaterTAPCostingData.unit_mapping = {
     Crystallization: WaterTAPCostingData.cost_crystallizer,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
+    GAC: WaterTAPCostingData.cost_gac,
 }
 
 
