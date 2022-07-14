@@ -603,7 +603,6 @@ class NanofiltrationData(UnitModelBlockData):
             time_point=time_point,
         )
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
