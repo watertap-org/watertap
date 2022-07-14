@@ -917,7 +917,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_gac(blk):
         """
-        Notes
+        3 equation capital cost estimation for GAC
+            contactor/pressure vessel cost by polynomial with single contactor volume
+            initial charge of GAC adsorbent cost by exponential with GAC mass
+            other process costs calculated power law with total contactor volume
         """
         make_capital_cost_var(blk)
         blk.contactor_cost = pyo.Var(
@@ -945,6 +948,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Unit other process capital cost",
         )
 
+        # TODO: currently costed as 1 operating, 1 redundant vessel (gac_num_contactor = 2)
+        #  where flexibility can be added to volume by number in operation and add redundant vessels
         blk.contactor_cost_constraint = pyo.Constraint(
             expr=blk.contactor_cost
             == blk.costing_package.gac_num_contactors
