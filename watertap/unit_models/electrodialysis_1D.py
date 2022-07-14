@@ -12,9 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from email.policy import default
-from logging import warning
-from numpy import NAN
 from pyomo.environ import (
     Set,
     Var,
@@ -32,7 +29,6 @@ from pyomo.dae import (
     DerivativeVar,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from sympy import Derivative
 
 # Import Watertap cores
 from watertap.core.util.initialization import check_solve, check_dof

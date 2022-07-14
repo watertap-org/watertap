@@ -12,12 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from asyncio import constants
-from cmath import inf
-from tkinter.messagebox import NO
-from xmlrpc.client import Boolean
-from attr import mutable
-from numpy import Inf, integer
 from pyomo.environ import (
     Block,
     Set,
@@ -52,7 +46,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from sympy import Domain, Integer, Integers
 from idaes.core.util.constants import Constants
 
 __author__ = "Austin Ladshaw, Xiangyu Bi"
