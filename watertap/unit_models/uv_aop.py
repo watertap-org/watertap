@@ -308,9 +308,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Electricity demand per component",
         )
 
-        # if not hasattr(self, "inlet_idx"):
-        #     self.inlet_idx = RangeSet(len(self.config.property_package.solute_set))
-
         self.electricity_demand_minimum = Var(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,

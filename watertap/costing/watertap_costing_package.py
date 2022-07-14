@@ -1097,17 +1097,26 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
     )
 
-def cost_uv_dose(blk, uv_dose_cost, factor_uv_dose_replacement):
+def cost_uv_aop_stack(blk, flow_cost, factor_reactor_replacement, electricity_cost, factor_electricity_replacement):
     """
     Generic function for costing by flow volume.
 
     Args:
-        uv_dose_cost - The cost of the UV reactor in [currency]/([mass]/[time]^2)
-        uv_dose - The uv dose costed in [mass]/[time]^2
+        flow_cost - The cost of UV reactor in [currency]/([volume]/[time])
+        electricity_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/([kW])
     """
     make_capital_cost_var(blk)
-    blk.uv_dose_cost = pyo.Expression(expr=uv_dose_cost)
-    blk.factor_uv_dose_replacement = pyo.Expression(expr=factor_uv_dose_replacement)
+    blk.flow_cost = pyo.Expression(expr=flow_cost)
+    blk.factor_reactor_replacement = pyo.Expression(expr=factor_reactor_replacement)
+
+    flow_in = pyo.units.convert(
+        blk.unit_model.control_volume.properties_in[0].flow_vol,
+        to_units=pyo.units.m ** 3 / pyo.units.s)
+
+    electricity_demand = pyo.units.convert(
+                    blk.unit_model.electricity_demand[0],
+                    to_units=pyo.units.kW,
+                )
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.uv_dose_cost * blk.unit_model.uv_dose
