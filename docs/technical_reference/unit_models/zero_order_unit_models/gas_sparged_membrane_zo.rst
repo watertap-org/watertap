@@ -3,7 +3,8 @@ Gas Sparged Membrane (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a custom model form.
+This unit model is formulated as a single-input, double-output model form.
+See documentation for :ref:`single-input, double-output Helper Methods<sido_methods>`.
 
 Electricity Consumption
 -----------------------
@@ -14,6 +15,24 @@ Costing Method
 --------------
 Costing is calculated using the False method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Variable Name", "Units"
+
+   "Mass flow of gas extracted per mass flow of influent", "gas_mass_influent_ratio", "None"
+   "Mass flow of hydrogen extracted", "flow_mass_gas_extraction", "kg/s"
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Overall flow balance", "mass_balance"
+   "Gas extraction equation", "mass_gas_extraction_equation"
 
 .. index::
    pair: watertap.unit_models.zero_order.gas_sparged_membrane_zo;gas_sparged_membrane_zo

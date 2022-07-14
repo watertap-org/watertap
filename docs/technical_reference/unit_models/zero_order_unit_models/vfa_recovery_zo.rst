@@ -16,6 +16,23 @@ Costing Method
 Costing is calculated using the cost_vfa_recovery method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Variable Name", "Units"
+
+   "Thermal energy required per mass VFA", "heat_required_per_vfa_mass", "kJ/kg"
+   "Thermal energy required", "heat_consumption", "kJ/s"
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Constraint for heat consumption", "eq_heat_consumption"
+
 .. index::
    pair: watertap.unit_models.zero_order.vfa_recovery_zo;vfa_recovery_zo
 

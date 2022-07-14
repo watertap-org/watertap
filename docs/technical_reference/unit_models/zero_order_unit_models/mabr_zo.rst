@@ -16,6 +16,26 @@ Costing Method
 Costing is calculated using the cost_mabr method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Variable Name", "Units"
+
+   "Nitrogen removal rate per day", "nitrogen_removal_rate", "g/d/m**2"
+   "Sizing variable for effective reactor area", "reactor_area", "m**2"
+   "Air flow rate per area", "air_flow_rate", "m/hr"
+   "Volumetric air flow rate", "air_flow_vol", "m**3/hr"
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Constraint for effective reactor area", "reactor_area_constraint"
+   "Constraint for air flow", "air_flow_constraint"
+
 .. index::
    pair: watertap.unit_models.zero_order.mabr_zo;mabr_zo
 

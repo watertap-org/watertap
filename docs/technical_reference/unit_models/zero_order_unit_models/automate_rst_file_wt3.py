@@ -58,16 +58,26 @@ def grab_unit_components(unit_class):
                 "tds",
                 "nitrogen",
                 "phosphates",
+                "phosphorus",
+                "struvite",
                 "nonbiodegradable_cod",
+                "hydrogen",
+                "ammonium_as_nitrogen",
+                "nitrate",
+                "bod",
             ]
         }
     )
     unit = getattr(zo, unit_class)
+    if unit_class == "MetabZO":
+        p_subtype = "hydrogen"
+    else:
+        p_subtype = "default"
     m.fs.unit = unit(
         default={
             "property_package": m.fs.props,
             "database": m.db,
-            "process_subtype": "default",
+            "process_subtype": p_subtype,
         }
     )
 
@@ -186,6 +196,7 @@ elec_func_exceptions = {}
 
 costing_exceptions = {}
 
+p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
 
@@ -232,9 +243,7 @@ for i, u in enumerate(unit_name_list):
         f.write("-" * len("Model Type"))
         f.write(f"\n{list[count]}")
         count += 1
-        if not (
-            zo_name_list[i] == "feed_zo" or zo_name_list[i] == "gas_sparged_membrane_zo"
-        ):
+        if not (zo_name_list[i] == "feed_zo"):
 
             f.write(f"\n{list[count]}\n")
         else:
@@ -244,26 +253,26 @@ for i, u in enumerate(unit_name_list):
         # write Electricity Consumption section
         f.write("\nElectricity Consumption\n")
         f.write("-" * len("Electricity Consumption"))
-        if (
-            (class_list[i] == "non-basic")
-            and (elect_func_list[i] != "pump_electricity")
-            and (elect_func_list[i] != "constant_intensity")
+        if (elect_func_list[i] != "pump_electricity") and (
+            elect_func_list[i] != "constant_intensity"
         ):
-            (
-                _,
-                _,
-                _,
-                _,
-                _,
-                addedconscheck,
-                _,
-            ) = grab_unit_components(class_name_list[i])
+            if not (zo_name_list[i] == "feed_zo"):
+                (
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    addedconscheck,
+                    _,
+                ) = grab_unit_components(class_name_list[i])
+            else:
+                addedconscheck = []
             if len(addedconscheck) > 0:
                 f.write(
                     "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
                 )
             else:
-                print("NO ENERGY CONSUMPTION:", unit_name_list[i])
                 f.write("\nThis unit does not include energy consumption.\n")
             count += 1
         else:
@@ -284,10 +293,8 @@ for i, u in enumerate(unit_name_list):
 
         # write Additional Variables section if unit is non-basic
         # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
-        if class_list[i] == "non-basic":
-            f.write("\nAdditional Variables\n")
-            f.write("-" * len("Additional Variables"))
-            f.write("\n\n")
+        # if class_list[i] == "non-basic":
+        if not (zo_name_list[i] == "feed_zo"):
             print(class_name_list[i])
             (
                 _,
@@ -298,9 +305,12 @@ for i, u in enumerate(unit_name_list):
                 addedcons,
                 condocs,
             ) = grab_unit_components(class_name_list[i])
-            f.write(".. csv-table::\n")
-            f.write('   :header: "Description", "Variable Name", "Units"\n\n')
-
+            if len(addedvars) > 0:
+                f.write("\nAdditional Variables\n")
+                f.write("-" * len("Additional Variables"))
+                f.write("\n\n")
+                f.write(".. csv-table::\n")
+                f.write('   :header: "Description", "Variable Name", "Units"\n\n')
             for k, v in enumerate(addedvars):
                 f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
 

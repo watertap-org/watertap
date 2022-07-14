@@ -16,6 +16,23 @@ Costing Method
 Costing is calculated using the cost_landfill method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Variable Name", "Units"
+
+   "capacity basis for capital cost", "capacity_basis", "kg/hr"
+   "total mass flow rate", "total_mass", "kg/hr"
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Total mass constraint", "total_mass_constraint"
+
 .. index::
    pair: watertap.unit_models.zero_order.landfill_zo;landfill_zo
 

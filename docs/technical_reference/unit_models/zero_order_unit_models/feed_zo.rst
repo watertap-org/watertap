@@ -7,8 +7,7 @@ This unit model is formulated as a None model form.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the -- helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+This unit does not include energy consumption.
 
 Costing Method
 --------------

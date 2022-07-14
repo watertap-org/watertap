@@ -8,8 +8,7 @@ See documentation for :ref:`single-input, single-output Helper Methods<siso_meth
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the -- helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+This unit does not include energy consumption.
 
 Costing Method
 --------------
