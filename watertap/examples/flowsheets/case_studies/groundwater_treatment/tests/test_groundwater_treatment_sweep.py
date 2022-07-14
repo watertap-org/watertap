@@ -27,7 +27,7 @@ for case_num in [1, 2, 3]:
 def test_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
-    nx = 11
+    nx = 2
     global_results, sweep_params, m = groundwater_treatment_sweep.run_analysis(
         case_num, nx, interpolate_nan_outputs=False
     )
