@@ -13,8 +13,7 @@ See documentation for :ref:`Helper Methods for Electricity Demand<electricity_me
 
 Costing Method
 --------------
-Costing is calculated using the False method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+This unit does not include costing.
 
 Additional Variables
 --------------------

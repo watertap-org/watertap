@@ -285,11 +285,15 @@ for i, u in enumerate(unit_name_list):
         # write Costing Method section
         f.write("\nCosting Method\n")
         f.write("-" * len("Costing Method"))
-        f.write(f"\n{list[count]}")
-        count += 1
-        f.write(
-            f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
-        )
+        if not cost_func_list[i]:
+            f.write("\nThis unit does not include costing.\n")
+            count += 1
+        else:
+            f.write(f"\n{list[count]}")
+            count += 1
+            f.write(
+                f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
+            )
 
         # write Additional Variables section if unit is non-basic
         # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
