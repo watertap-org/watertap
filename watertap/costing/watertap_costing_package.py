@@ -86,9 +86,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # Build flowsheet level costing components
         # This is package specific
-        self.load_factor = pyo.Var(
+        self.utilization_factor = pyo.Var(
             initialize=0.9,
-            doc="Load factor [fraction of uptime]",
+            doc="Plant capacity utilization [fraction of uptime]",
             units=pyo.units.dimensionless,
         )
         self.factor_total_investment = pyo.Var(
@@ -339,7 +339,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             == self.maintenance_labor_chemical_operating_cost
             + self.aggregate_fixed_operating_cost
             + self.aggregate_variable_operating_cost
-            + sum(self.aggregate_flow_costs.values()) * self.load_factor
+            + sum(self.aggregate_flow_costs.values()) * self.utilization_factor
         )
 
     def initialize_build(self):
@@ -382,7 +382,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 pyo.units.convert(
                     flow_rate, to_units=pyo.units.m**3 / self.base_period
                 )
-                * self.load_factor
+                * self.utilization_factor
             ),
             doc=f"Constraint for Levelized Cost of Water based on flow {flow_rate.name}",
         )
@@ -406,7 +406,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     pyo.units.convert(
                         flow_rate, to_units=pyo.units.m**3 / self.base_period
                     )
-                    * self.load_factor
+                    * self.utilization_factor
                 ),
                 doc=f"Annual water production based on flow {flow_rate.name}",
             ),

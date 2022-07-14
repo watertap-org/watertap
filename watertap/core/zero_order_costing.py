@@ -31,6 +31,7 @@ from watertap.unit_models.zero_order import (
     AnaerobicMBRMECZO,
     ATHTLZO,
     BrineConcentratorZO,
+    CANDOPZO,
     ChemicalAdditionZO,
     ChlorinationZO,
     CoagulationFlocculationZO,
@@ -39,17 +40,21 @@ from watertap.unit_models.zero_order import (
     DeepWellInjectionZO,
     DMBRZO,
     ElectroNPZO,
+    EvaporationPondZO,
+    FilterPressZO,
     FixedBedZO,
     GACZO,
     HTGZO,
-    LandfillZO,
-    MABRZO,
     IonExchangeZO,
     IronManganeseRemovalZO,
+    LandfillZO,
+    MABRZO,
     MetabZO,
+    MicrobialBatteryZO,
     NanofiltrationZO,
     OzoneZO,
     OzoneAOPZO,
+    PhotothermalMembraneZO,
     PumpElectricityZO,
     SaltPrecipitationZO,
     SedimentationZO,
@@ -57,12 +62,8 @@ from watertap.unit_models.zero_order import (
     SurfaceDischargeZO,
     UVZO,
     UVAOPZO,
-    EvaporationPondZO,
-    FilterPressZO,
-    WellFieldZO,
-    PhotothermalMembraneZO,
-    CANDOPZO,
     VFARecoveryZO,
+    WellFieldZO,
 )
 
 global_params = [
@@ -2858,6 +2859,53 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def cost_microbial_battery(blk):
+        """
+        General method for costing microbial battery treatment unit.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        sizing_cost = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["sizing_cost"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * sizing_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_vfa_recovery(blk):
         """
         Method for costing VFA recovery unit.
@@ -2906,6 +2954,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
+
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.heat_consumption[t0], "heat"
         )
@@ -3060,6 +3109,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         WellFieldZO: cost_well_field,
         PhotothermalMembraneZO: cost_photothermal_membrane,
         CANDOPZO: cost_CANDOP,
+        MicrobialBatteryZO: cost_microbial_battery,
         VFARecoveryZO: cost_vfa_recovery,
     }
 
