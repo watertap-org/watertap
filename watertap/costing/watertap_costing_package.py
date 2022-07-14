@@ -39,8 +39,8 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    GAC,
 )
-from watertap.unit_models.gac import GAC
 
 
 class ROType(StrEnum):
@@ -337,13 +337,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         self.gac_other_cost_coeff = pyo.Var(
             initialize=16660.6931081066,
-            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            units=pyo.units.USD_2020,
             doc="GAC other cost power law coefficient",
         )
 
         self.gac_other_cost_exp = pyo.Var(
             initialize=0.552206579,
-            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            units=pyo.units.dimensionless,
             doc="GAC other cost power law exponent",
         )
 
@@ -945,15 +945,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Unit other process capital cost",
         )
 
-        blk.costing_package.gac_contactor_cost_coeff_3.display()
-        blk.unit_model.bed_volume.display()
-        blk.costing_package.gac_contactor_cost_coeff_2.display()
-        blk.costing_package.gac_contactor_cost_coeff_1.display()
-        blk.costing_package.gac_contactor_cost_coeff_0.display()
-        blk.costing_package.gac_num_contactors.display()
-        blk.contactor_cost.display()
-        print(blk.costing_package.base_currency)
-
         blk.contactor_cost_constraint = pyo.Constraint(
             expr=blk.contactor_cost
             == blk.costing_package.gac_num_contactors
@@ -966,16 +957,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     + blk.costing_package.gac_contactor_cost_coeff_1
                     * blk.unit_model.bed_volume**1
                     + blk.costing_package.gac_contactor_cost_coeff_0
-                )
-            ),
-            to_units=blk.costing_package.base_currency,
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
         )
-        if blk.unit_model.bed_mass_gac < 18143.68:
+        if blk.unit_model.bed_mass_gac.value < 18143.68:
             blk.adsorbent_unit_cost_constraint = pyo.Constraint(
                 expr=blk.adsorbent_unit_cost
                 == pyo.units.convert(
                     blk.costing_package.gac_adsorbent_unit_cost_coeff
-                    * math.exp(
+                    * pyo.exp(
                         blk.unit_model.bed_mass_gac
                         * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
                     ),
@@ -987,7 +978,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 expr=blk.adsorbent_unit_cost
                 == pyo.units.convert(
                     blk.costing_package.gac_adsorbent_unit_cost_coeff
-                    * math.exp(
+                    * pyo.exp(
                         18143.68 * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
                     ),
                     to_units=blk.costing_package.base_currency * pyo.units.kg,
@@ -997,14 +988,23 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.adsorbent_cost
             == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
         )
-        blk.other_process_cost = pyo.Constraint(
-            expr=blk.other_prcoess_cost
+        other_process_cost_units = (
+            pyo.units.m**3
+        ) ** -blk.costing_package.gac_other_cost_exp
+        blk.other_process_cost_constraint = pyo.Constraint(
+            expr=blk.other_process_cost
             == pyo.units.convert(
-                blk.costing_package.gac_other_cost_coeff
-                * (blk.costing_package.gac_num_contactors * blk.unit_model.bed_volume)
-                ** blk.costing_package.gac_other_cost_exp
-            ),
-            to_units=blk.costing_package.base_currency,
+                (
+                    blk.costing_package.gac_other_cost_coeff
+                    * other_process_cost_units
+                    * (
+                        blk.costing_package.gac_num_contactors
+                        * blk.unit_model.bed_volume
+                    )
+                    ** blk.costing_package.gac_other_cost_exp
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
         )
 
         blk.capital_cost_constraint = pyo.Constraint(
