@@ -534,11 +534,6 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         return {"vars": var_dict}
 
-    # TODO: add costing
-    # def get_costing(self, module=None, **kwargs):
-    #     self.costing = Block()
-    #     module.UV_costing(self.costing, **kwargs)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
