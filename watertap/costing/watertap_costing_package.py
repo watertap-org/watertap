@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import math
+
 from enum import Enum
 
 import pyomo.environ as pyo
