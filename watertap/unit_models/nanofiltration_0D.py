@@ -607,9 +607,6 @@ class NanoFiltrationData(UnitModelBlockData):
 
         return {"vars": var_dict}
 
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.NanoFiltration_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
