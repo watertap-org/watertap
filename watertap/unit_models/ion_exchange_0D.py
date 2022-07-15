@@ -696,7 +696,7 @@ class IonExchangeODData(UnitModelBlockData):
             default=tmp_dict,
         )
 
-        self.properties_waste = self.config.property_package.state_block_class(
+        self.properties_regen = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of waste",
             default=tmp_dict,
@@ -705,7 +705,7 @@ class IonExchangeODData(UnitModelBlockData):
         # Add ports - oftentimes users interact with these rather than the state blocks
         self.add_port(name="inlet", block=self.properties_in)
         self.add_port(name="outlet", block=self.properties_out)
-        self.add_port(name="waste", block=self.properties_waste)
+        self.add_port(name="waste", block=self.properties_regen)
 
         # Add constraints
         # =========== EQUILIBRIUM ===========
@@ -889,23 +889,23 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_flow_conservation(b, j):
             prop_in = b.properties_in[0]
             prop_out = b.properties_out[0]
-            prop_waste = b.properties_waste[0]
+            prop_regen = b.properties_regen[0]
             return (
                 prop_in.flow_vol_phase["Liq"] * prop_in.conc_equiv_phase_comp["Liq", j]
                 == prop_out.flow_vol_phase["Liq"]
                 * prop_out.conc_equiv_phase_comp["Liq", j]
-                + prop_waste.flow_vol_phase["Liq"]
-                * prop_waste.conc_equiv_phase_comp["Liq", j]
+                + prop_regen.flow_vol_phase["Liq"]
+                * prop_regen.conc_equiv_phase_comp["Liq", j]
             )
 
         @self.Constraint(doc="Flow conservation")
         def eq_flow_conservation2(b):
             prop_in = b.properties_in[0]
             prop_out = b.properties_out[0]
-            prop_waste = b.properties_waste[0]
+            prop_regen = b.properties_regen[0]
             return (
                 prop_in.flow_vol_phase["Liq"]
-                == prop_out.flow_vol_phase["Liq"] + prop_waste.flow_vol_phase["Liq"]
+                == prop_out.flow_vol_phase["Liq"] + prop_regen.flow_vol_phase["Liq"]
             )
 
         @self.Constraint(ion_set, doc="Influent total mass of ion")
@@ -940,8 +940,8 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(ion_set, doc="Steady-state waste concentration")
         def eq_ss_waste(b, j):
             prop_in = b.properties_in[0]
-            prop_waste = b.properties_waste[0]
-            return prop_waste.conc_equiv_phase_comp["Liq", j] == b.mass_removed[j] / (
+            prop_regen = b.properties_regen[0]
+            return prop_regen.conc_equiv_phase_comp["Liq", j] == b.mass_removed[j] / (
                 prop_in.flow_vol_phase["Liq"] * b.t_waste
             )
 
@@ -1146,24 +1146,20 @@ class IonExchangeODData(UnitModelBlockData):
             solver=solver,
             state_args=state_args_out,
         )
-        blk.state_args_out = state_args_out
-        blk.state_args = state_args
 
-        state_args_waste = deepcopy(state_args)
+        state_args_regen = deepcopy(state_args)
 
-        for p, j in blk.properties_waste.phase_component_set:
+        for p, j in blk.properties_regen.phase_component_set:
             if j == "H2O":
-                state_args_waste["flow_mol_phase_comp"][(p, j)] = (
+                state_args_regen["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * blk.t_waste_param.value
                 )
 
-        blk.state_args_waste = state_args_waste
-
-        blk.properties_waste.initialize(
+        blk.properties_regen.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_waste,
+            state_args=state_args_regen,
         )
 
         init_log.info("Initialization Step 2 Complete.")
