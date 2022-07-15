@@ -459,13 +459,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         # # ====== Hydrodynamic variables ====== #
 
-        self.vel_min = Var(
-            initialize=0.0048,
-            bounds=(0, 0.009),
-            units=pyunits.m / pyunits.s,
-            doc="Minimum bed velocity [m/s]",
-        )
-
         self.vel_bed = Var(
             initialize=0.0086,
             bounds=(0, 0.01),  # MWH, Perry's
@@ -734,14 +727,6 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(doc="Resin equilibrium concentration bounds")
         def eq_resin_eq_capacity(b):
             return b.resin_eq_capacity <= b.resin_max_capacity
-
-        @self.Constraint(doc="Bed velocity ub")
-        def eq_vel_bed_ub(b):
-            return b.vel_bed <= b.vel_bed_ratio * b.vel_min
-
-        @self.Constraint(doc="Bed velocity lb")
-        def eq_vel_bed_lb(b):
-            return b.vel_bed >= b.vel_min
 
         @self.Constraint(doc="Interstitial velocity")
         def eq_vel_inter(b):
@@ -1245,8 +1230,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.mass_out, 1)
 
-        iscale.set_scaling_factor(self.vel_min, 1e3)
-
         iscale.set_scaling_factor(self.vel_bed, 1e3)
 
         iscale.set_scaling_factor(self.vel_inter, 1e3)
@@ -1326,7 +1309,6 @@ class IonExchangeODData(UnitModelBlockData):
         var_dict["Dimensionless Time"] = self.dimensionless_time
         var_dict["LH of Constant Pattern Sol'n."] = self.lh
         var_dict["Partition Ratio"] = self.partition_ratio
-        var_dict["Minimum bed velocity"] = self.vel_min
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Holdup"] = self.holdup
         var_dict["Re"] = self.Re
