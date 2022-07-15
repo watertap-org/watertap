@@ -3,17 +3,16 @@ Constructed Wetlands  (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a single-input, single-output model form.
+This unit model is formulated as a **single-input, single-output** model form.
 See documentation for :ref:`single-input, single-output Helper Methods<siso_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the -- helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+This unit does not include energy consumption.
 
 Costing Method
 --------------
-Costing is calculated using the False method in the zero-order costing package.
+Costing is calculated using the **cost_constructed_wetlands** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::

@@ -3,7 +3,7 @@ Water Pumping Station (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a pass-through model form.
+This unit model is formulated as a **pass-through** model form.
 See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_power_law_flow method in the zero-order costing package.
+Costing is calculated using the **cost_power_law_flow** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,10 +21,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Electricity consumption of unit", "electricity", "kW"
-   "Lift height for pump", "lift_height", "ft"
-   "Efficiency of pump", "eta_pump", "None"
-   "Efficiency of motor", "eta_motor", "None"
+   "Electricity consumption of unit", "electricity", ":math:`kW`"
+   "Lift height for pump", "lift_height", ":math:`ft`"
+   "Efficiency of pump", "eta_pump", ":math:`dimensionless`"
+   "Efficiency of motor", "eta_motor", ":math:`dimensionless`"
 
 Additional Constraints
 ----------------------

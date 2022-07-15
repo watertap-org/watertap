@@ -3,17 +3,17 @@ Ion Exchange (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a single-input, double-output model form.
+This unit model is formulated as a **single-input, double-output** model form.
 See documentation for :ref:`single-input, double-output Helper Methods<sido_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the pump_electricity helper function.
+Electricity consumption is calculated using the **pump_electricity** helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
-Costing is calculated using the cost_ion_exchange method in the zero-order costing package.
+Costing is calculated using the **cost_ion_exchange** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -22,10 +22,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Flowrate of NaCl addition", "NaCl_flowrate", "kg/s"
-   "Dosage of NaCl addition", "NaCl_dose", "kg/m**3"
-   "Replacement rate of ion exchange resin", "resin_demand", "kg/s"
-   "Resin replacement as a function of flow", "resin_replacement", "kg/m**3"
+   "Flowrate of NaCl addition", "NaCl_flowrate", ":math:`kg/s`"
+   "Dosage of NaCl addition", "NaCl_dose", ":math:`kg/m^3`"
+   "Replacement rate of ion exchange resin", "resin_demand", ":math:`kg/s`"
+   "Resin replacement as a function of flow", "resin_replacement", ":math:`kg/m^3`"
 
 Additional Constraints
 ----------------------
