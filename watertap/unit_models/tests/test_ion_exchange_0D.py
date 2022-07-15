@@ -32,9 +32,11 @@ from idaes.core import (
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
-from watertap.property_models.IX_prop_pack import (
-    IXParameterBlock,
-    IXStateBlock,
+from watertap.property_models.ion_DSPMDE_prop_pack import (
+    DSPMDEParameterBlock,
+    ActivityCoefficientModel,
+    DensityCalculation,
+    DSPMDEStateBlock,
 )
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
 from watertap.core.util.initialization import check_dof
@@ -54,6 +56,7 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     constraints_with_scale_factor_generator,
     badly_scaled_var_generator,
+    set_scaling_factor,
 )
 import idaes.logger as idaeslog
 
@@ -78,12 +81,38 @@ ix_in = {
 target_ion = "Na_+"
 
 
+def ix_scaling(m, sf=1e4):
+    ix = m.fs.unit
+    prop_in = ix.properties_in[0]
+    prop_out = ix.properties_out[0]
+    prop_regen = ix.properties_regen[0]
+    target_ion = ix.config.target_ion
+    ions = ix.config.property_package.ion_set
+    set_scaling_factor(prop_in.flow_mol_phase_comp["Liq", "H2O"], 10 / sf)
+    set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", "H2O"], 10 / sf)
+    set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", "H2O"], 10)
+    for ion in ions:
+        set_scaling_factor(
+            prop_in.flow_mol_phase_comp["Liq", ion],
+            1 / prop_in.flow_mol_phase_comp["Liq", ion].value,
+        )
+        if ion == target_ion:
+            set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", ion], sf)
+            set_scaling_factor(
+                prop_regen.flow_mol_phase_comp["Liq", ion],
+                1 / prop_in.flow_mol_phase_comp["Liq", ion].value,
+            )
+        else:
+            set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", ion], 1)
+            set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf * 10)
+    return m
+
+
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = IXParameterBlock(default=ix_in)
+    m.fs.properties = DSPMDEParameterBlock(default=ix_in)
     m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
     # check unit config arguments
     assert len(m.fs.unit.config) == 6
@@ -99,7 +128,7 @@ class TestIonExchange:
     def IX_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = IXParameterBlock(default=ix_in)
+        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
 
         ix = m.fs.unit = IonExchange0D(
             default={"property_package": m.fs.properties, "target_ion": target_ion}
@@ -130,9 +159,28 @@ class TestIonExchange:
         ix.inlet.pressure[0].fix(101325)
         ix.inlet.temperature[0].fix(298.15)
         ix.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
-        ix.K_eq[ion].fix(1.5)
+        ix.selectivity[ion].fix(3)
         ix.resin_max_capacity.fix(5)
         ix.bed_depth.fix(3)
+        ix.resin_diam.fix()
+        ix.resin_bulk_dens.fix()
+        ix.bed_porosity.fix()
+        ix.dimensionless_time.fix()
+        ix.lh.fix()
+        ix.regen_dose.fix()
+        ix.regen_ww.fix()
+        ix.regen_sg.fix()
+        ix.t_bw.fix()
+        ix.bw_rate.fix()
+        ix.rinse_bv.fix()
+        ix.pump_efficiency.fix()
+        ix.p_drop_A.fix()
+        ix.p_drop_B.fix()
+        ix.p_drop_C.fix()
+        ix.bed_expansion_frac_A.fix()
+        ix.bed_expansion_frac_B.fix()
+        ix.bed_expansion_frac_C.fix()
+        ix.bed_depth_to_diam_ratio.fix()
 
         return m
 
@@ -177,14 +225,6 @@ class TestIonExchange:
             "Sh_A",
             "Sh_exp",
             "t_waste_param",
-            "vel_bed_ratio",
-            "bed_depth_to_diam_ratio",
-            "bed_expansion_A",
-            "bed_expansion_B",
-            "bed_expansion_C",
-            "p_drop_A",
-            "p_drop_B",
-            "p_drop_C",
         ]
         for p in ix_params:
             assert hasattr(ix, p)
@@ -192,13 +232,20 @@ class TestIonExchange:
             assert isinstance(param, Param)
 
         ix_vars = [
+            "bed_depth_to_diam_ratio",
+            "bed_expansion_frac_A",
+            "bed_expansion_frac_B",
+            "bed_expansion_frac_C",
+            "p_drop_A",
+            "p_drop_B",
+            "p_drop_C",
             "resin_max_capacity",
             "resin_eq_capacity",
             "resin_diam",
             "resin_bulk_dens",
             "resin_particle_dens",
-            "K_eq",
-            "R_eq",
+            "selectivity",
+            "separation_factor",
             "resin_surf_per_vol",
             "bed_vol",
             "bed_diam",
@@ -220,7 +267,6 @@ class TestIonExchange:
             "mass_in",
             "mass_removed",
             "mass_out",
-            "vel_min",
             "vel_bed",
             "vel_inter",
             "sfr",
@@ -256,17 +302,17 @@ class TestIonExchange:
         stateblock_lst = [
             "properties_in",
             "properties_out",
-            "properties_waste",
+            "properties_regen",
         ]
         # feed side
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, IXStateBlock)
+            assert isinstance(sb, DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 110
-        assert number_total_constraints(m) == 91
-        assert number_unused_variables(m) == 3
+        assert number_variables(m) == 126
+        assert number_total_constraints(m) == 86
+        assert number_unused_variables(m) == 16
 
     @pytest.mark.unit
     def test_dof(self, IX_frame):
@@ -276,6 +322,7 @@ class TestIonExchange:
     @pytest.mark.unit
     def test_calculate_scaling(self, IX_frame):
         m = IX_frame
+        m = ix_scaling(m)
 
         calculate_scaling_factors(m)
 
@@ -292,7 +339,7 @@ class TestIonExchange:
     @pytest.mark.component
     def test_initialize(self, IX_frame):
         m = IX_frame
-        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         initialization_tester(m)
 
     @pytest.mark.component
@@ -325,30 +372,29 @@ class TestIonExchange:
         ix = m.fs.unit
 
         results_dict = {
-            "resin_eq_capacity": 2.85198,
-            "R_eq": 0.6667,
-            "bed_vol": 0.4057530,
-            "partition_ratio": 91.8337,
-            "fluid_mass_transfer_coeff": 5.3557e-5,
-            "mass_in": 814.4503,
-            "mass_out": 4.41035,
-            "mass_removed": 810.03994,
-            "vel_bed": 0.007393,
-            "sfr": 8.87239,
-            "Re": 6.6542,
-            "Sc": 751.8796,
-            "Sh": 36.24174,
-            "t_breakthru": 37464.714,
-            "t_contact": 202.8765,
-            "t_waste": 1648.5400,
-            "t_regen": 274.1574,
-            "t_rinse": 1014.382,
+            "resin_eq_capacity": 3.45272,
+            "separation_factor": 0.33333333,
+            "bed_vol": 0.416727,
+            "partition_ratio": 111.17771,
+            "fluid_mass_transfer_coeff": 5.3087646e-05,
+            "mass_in": 1011.720811,
+            "mass_out": 4.5296449,
+            "mass_removed": 1007.1911668,
+            "vel_bed": 0.00719895,
+            "sfr": 8.63874,
+            "Re": 6.4790566,
+            "Sc": 751.87969,
+            "Sh": 35.923971,
+            "t_breakthru": 46539.15732,
+            "t_contact": 208.36366,
+            "t_waste": 1683.39085,
+            "t_regen": 281.57252,
+            "t_rinse": 1041.81833,
         }
 
         for v, val in results_dict.items():
             var = getattr(ix, v)
             if var.is_indexed():
-
                 assert pytest.approx(val, rel=5e-2) == value(var[target_ion])
             else:
                 assert pytest.approx(val, rel=5e-2) == value(var)
