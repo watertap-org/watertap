@@ -138,6 +138,8 @@ def grab_unit_components(unit_class):
             added_vars.append(newname)
             added_var_docs.append(model_var.doc)
             added_var_units.append(str(model_var._units).replace("'", ""))
+            if added_var_units[-1] == "None":
+                added_var_units[-1] = "dimensionless"
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         addedconame = con.name
         connewname = addedconame.replace("fs.unit.", "").split("[", 1)[0]

@@ -23,7 +23,7 @@ Additional Variables
 
    "Dosing rate of chemical", "chemical_dosage", "mg/l"
    "Mass density of chemical solution", "solution_density", "kg/m**3"
-   "Mass fraction of chemical in solution", "ratio_in_solution", "None"
+   "Mass fraction of chemical in solution", "ratio_in_solution", "dimensionless"
    "Volumetric flow rate of chemical solution", "chemical_flow_vol", "m**3/s"
    "Electricity consumption of unit", "electricity", "kW"
 

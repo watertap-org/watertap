@@ -22,8 +22,8 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Lift height for pump", "lift_height", "m"
-   "Efficiency of pump", "eta_pump", "None"
-   "Efficiency of motor", "eta_motor", "None"
+   "Efficiency of pump", "eta_pump", "dimensionless"
+   "Efficiency of motor", "eta_motor", "dimensionless"
    "Electricity for low pressure pump", "electricity", "kW"
    "Applied pressure", "applied_pressure", "bar"
 

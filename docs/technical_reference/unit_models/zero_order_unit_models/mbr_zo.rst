@@ -23,7 +23,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Constant 1 in electricity intensity equation", "elec_coeff_1", "kWh/m**3"
-   "Constant 2 in electricity intensity equation", "elec_coeff_2", "None"
+   "Constant 2 in electricity intensity equation", "elec_coeff_2", "dimensionless"
    "Specific energy consumption with respect to feed flowrate", "electricity_intensity", "kWh/m**3"
 
 Additional Constraints

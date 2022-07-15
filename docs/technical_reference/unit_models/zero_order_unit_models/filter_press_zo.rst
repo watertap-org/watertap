@@ -24,7 +24,7 @@ Additional Variables
    "Hours per day of filter press operation", "hours_per_day_operation", "hr/d"
    "Filter press cycle time", "cycle_time", "hr"
    "Parameter A for electricity calculation", "electricity_a_parameter", "kWh/a/ft**3"
-   "Parameter B for electricity calculation", "electricity_b_parameter", "None"
+   "Parameter B for electricity calculation", "electricity_b_parameter", "dimensionless"
    "Filter press capacity", "filter_press_capacity", "ft**3"
    "Filter press power", "electricity", "kW"
 

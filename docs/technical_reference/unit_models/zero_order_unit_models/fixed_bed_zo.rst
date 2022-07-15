@@ -30,16 +30,16 @@ Additional Variables
    "Consumption rate of ferric chloride", "ferric_chloride_demand", "kg/hr"
    "Replacement rate for activated carbon", "activated_carbon_demand", "kg/hr"
    "Pre-exponential factor for activated carbon demand", "activated_carbon_parameter_a", "kg/m**3"
-   "Exponential factor for activated carbon demand", "activated_carbon_parameter_b", "None"
+   "Exponential factor for activated carbon demand", "activated_carbon_parameter_b", "dimensionless"
    "Replacement rate for sand", "sand_demand", "kg/hr"
    "Pre-exponential factor for sand demand", "sand_parameter_a", "kg/m**3"
-   "Exponential factor for sand demand", "sand_parameter_b", "None"
+   "Exponential factor for sand demand", "sand_parameter_b", "dimensionless"
    "Replacement rate for anthracite", "anthracite_demand", "kg/hr"
    "Pre-exponential factor for anthracite demand", "anthracite_parameter_a", "kg/m**3"
-   "Exponential factor for anthracite demand", "anthracite_parameter_b", "None"
+   "Exponential factor for anthracite demand", "anthracite_parameter_b", "dimensionless"
    "Replacement rate for cationic polymer", "cationic_polymer_demand", "kg/hr"
    "Pre-exponential factor for cationic polymer demand", "cationic_polymer_parameter_a", "kg/m**3"
-   "Exponential factor for cationic polymer demand", "cationic_polymer_parameter_b", "None"
+   "Exponential factor for cationic polymer demand", "cationic_polymer_parameter_b", "dimensionless"
 
 Additional Constraints
 ----------------------

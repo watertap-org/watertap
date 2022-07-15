@@ -21,7 +21,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Mass flow of gas extracted per mass flow of influent", "gas_mass_influent_ratio", "None"
+   "Mass flow of gas extracted per mass flow of influent", "gas_mass_influent_ratio", "dimensionless"
    "Mass flow of hydrogen extracted", "flow_mass_gas_extraction", "kg/s"
 
 Additional Constraints

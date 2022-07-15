@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Cycles of concentration", "cycles", "None"
+   "Cycles of concentration", "cycles", "dimensionless"
    "Flowrate of blowdown", "blowdown", "m**3/hr"
 
 Additional Constraints

@@ -24,7 +24,7 @@ Additional Variables
    "Electricity consumption of unit", "electricity", "kW"
    "Electricity demand per kg N reacted", "electricity_intensity_N", "kWh/kg"
    "Oxygen demand", "O2_demand", "kg/s"
-   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", "None"
+   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", "dimensionless"
 
 Additional Constraints
 ----------------------

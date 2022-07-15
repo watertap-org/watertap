@@ -23,15 +23,15 @@ Additional Variables
 
    "Ozone contact time", "contact_time", "min"
    "CT value for ozone contactor", "concentration_time", "mg*min/l"
-   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "None"
+   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "dimensionless"
    "Specific energy consumption for ozone generation", "specific_energy_coeff", "kWh/lb"
    "Mass flow rate of ozone", "ozone_flow_mass", "lb/hr"
    "Ozone consumption", "ozone_consumption", "mg/l"
    "Ozone generation power demand", "electricity", "kW"
    "Oxidant dosage", "oxidant_dose", "mg/l"
    "Mass flow rate of oxidant solution", "chemical_flow_mass", "kg/s"
-   "Ratio of ozone to total organic carbon", "ozone_toc_ratio", "None"
-   "Ratio of oxidant to ozone", "oxidant_ozone_ratio", "None"
+   "Ratio of ozone to total organic carbon", "ozone_toc_ratio", "dimensionless"
+   "Ratio of oxidant to ozone", "oxidant_ozone_ratio", "dimensionless"
 
 Additional Constraints
 ----------------------

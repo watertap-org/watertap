@@ -23,7 +23,7 @@ Additional Variables
 
    "Ozone contact time", "contact_time", "min"
    "CT value for ozone contactor", "concentration_time", "mg*min/l"
-   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "None"
+   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "dimensionless"
    "Specific energy consumption for ozone generation", "specific_energy_coeff", "kWh/lb"
    "Mass flow rate of ozone", "ozone_flow_mass", "lb/hr"
    "Ozone consumption", "ozone_consumption", "mg/l"

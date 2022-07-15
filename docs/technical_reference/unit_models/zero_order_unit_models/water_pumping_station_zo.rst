@@ -23,8 +23,8 @@ Additional Variables
 
    "Electricity consumption of unit", "electricity", "kW"
    "Lift height for pump", "lift_height", "ft"
-   "Efficiency of pump", "eta_pump", "None"
-   "Efficiency of motor", "eta_motor", "None"
+   "Efficiency of pump", "eta_pump", "dimensionless"
+   "Efficiency of motor", "eta_motor", "dimensionless"
 
 Additional Constraints
 ----------------------

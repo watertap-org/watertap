@@ -23,7 +23,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Storage time needed", "storage_time", "hr"
-   "Additional capacity needed for surge flow", "surge_capacity", "None"
+   "Additional capacity needed for surge flow", "surge_capacity", "dimensionless"
    "Storage tank volume", "tank_volume", "m**3"
 
 Additional Constraints
