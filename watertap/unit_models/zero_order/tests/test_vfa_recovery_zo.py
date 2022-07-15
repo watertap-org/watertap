@@ -331,7 +331,6 @@ class Test_VFARecovery_ZOsubtype:
             assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
 
-
 @pytest.mark.unit
 def test_ffCOD_not_in_solute_list():
     model = ConcreteModel()
