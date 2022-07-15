@@ -3,7 +3,7 @@ Coagulation Flocculation (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a pass-through model form.
+This unit model is formulated as a **pass-through** model form.
 See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_coag_and_floc method in the zero-order costing package.
+Costing is calculated using the **cost_coag_and_floc** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables

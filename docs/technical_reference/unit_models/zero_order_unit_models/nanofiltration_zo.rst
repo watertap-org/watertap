@@ -3,7 +3,7 @@ Nanofiltration  (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a single-input, double-output model form.
+This unit model is formulated as a **single-input, double-output** model form.
 See documentation for :ref:`single-input, double-output Helper Methods<sido_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_nanofiltration method in the zero-order costing package.
+Costing is calculated using the **cost_nanofiltration** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables

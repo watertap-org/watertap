@@ -213,10 +213,10 @@ with open("index.rst", "w") as f:
 for i, u in enumerate(unit_name_list):
 
     list = [
-        f"This unit model is formulated as a {model_type_list[i]} model form.",
+        f"This unit model is formulated as a **{model_type_list[i]}** model form.",
         f"See documentation for :ref:`{model_type_list[i]} Helper Methods<{model_type_ref_list[i]}>`.",
-        f"Electricity consumption is calculated using the {elect_func_list[i]} helper function.",
-        f"Costing is calculated using the {cost_func_list[i]} method in the zero-order costing package.",
+        f"Electricity consumption is calculated using the **{elect_func_list[i]}** helper function.",
+        f"Costing is calculated using the **{cost_func_list[i]}** method in the zero-order costing package.",
         f"   pair: watertap.unit_models.zero_order.{zo_name_list[i]};{zo_name_list[i]}",
         f".. currentmodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
         f".. automodule:: watertap.unit_models.zero_order.{zo_name_list[i]}",
