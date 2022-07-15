@@ -879,7 +879,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         num_cols = 2
         col_cost_params = [9120, 0.49]
         resin_cost_params = resin_dict["strong_acid_macro"]
-        tic = 1.65
+        TPEC = 3.4
         blk.capital_cost_column = pyo.Var(
             initialize=1e5,
             domain=pyo.NonNegativeReals,
@@ -901,7 +901,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
-            == ((blk.capital_cost_column + blk.capital_cost_resin) * num_cols) * tic
+            == ((blk.capital_cost_column + blk.capital_cost_resin) * num_cols) * TPEC
         )
 
     def _compute_steam_properties(blk):
