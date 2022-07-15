@@ -294,10 +294,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Crystallizer pump head height -  assumed, unvalidated",
         )
 
-        self.gac_num_contactors = pyo.Var(
-            initialize=2,
+        self.gac_num_contactors_op = pyo.Var(
+            initialize=1,
             units=pyo.units.dimensionless,
-            doc="Number of GAC contactors in parallel",
+            doc="Number of GAC contactors in operation in parallel",
+        )
+
+        self.gac_num_contactors_redundant = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
+            doc="Number of off-line redundant GAC contactors in parallel",
         )
 
         self.gac_contactor_cost_coeff_0 = pyo.Var(
@@ -985,15 +991,30 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         #  where flexibility can be added to volume by number in operation and add redundant vessels
         blk.contactor_cost_constraint = pyo.Constraint(
             expr=blk.contactor_cost
-            == blk.costing_package.gac_num_contactors
+            == (
+                blk.costing_package.gac_num_contactors_op
+                + blk.costing_package.gac_num_contactors_redundant
+            )
             * pyo.units.convert(
                 (
                     blk.costing_package.gac_contactor_cost_coeff_3
-                    * blk.unit_model.bed_volume**3
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 3
                     + blk.costing_package.gac_contactor_cost_coeff_2
-                    * blk.unit_model.bed_volume**2
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 2
                     + blk.costing_package.gac_contactor_cost_coeff_1
-                    * blk.unit_model.bed_volume**1
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 1
                     + blk.costing_package.gac_contactor_cost_coeff_0
                 ),
                 to_units=blk.costing_package.base_currency,
@@ -1033,8 +1054,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     blk.costing_package.gac_other_cost_coeff
                     * other_process_cost_units
                     * (
-                        blk.costing_package.gac_num_contactors
-                        * blk.unit_model.bed_volume
+                        (
+                            blk.costing_package.gac_num_contactors_op
+                            + blk.costing_package.gac_num_contactors_redundant
+                        )
+                        * (
+                            blk.unit_model.bed_volume
+                            / blk.costing_package.gac_num_contactors_op
+                        )
                     )
                     ** blk.costing_package.gac_other_cost_exp
                 ),
