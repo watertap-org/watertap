@@ -22,6 +22,7 @@ from watertap.unit_models.gac import (
 )
 
 import pytest
+import pyomo.environ as pyo
 from pyomo.environ import (
     ConcreteModel,
     TerminationCondition,
@@ -49,6 +50,9 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
+
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
 
 __author__ = "Hunter Barber"
 
@@ -362,3 +366,112 @@ class TestGACSimplified:
         assert pytest.approx(1.139, rel=1e-3) == value(m.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(m.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-3) == value(m.fs.unit.bed_area)
+
+    @pytest.mark.component
+    def test_costing_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyo.units.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Check for known cost solution of default twin alternating contactors
+        assert value(m.fs.costing.gac_num_contactors_op) == 1
+        assert value(m.fs.costing.gac_num_contactors_redundant) == 1
+        assert pytest.approx(56900.93523, rel=1e-5) == value(
+            m.fs.unit.costing.contactor_cost
+        )
+        assert pytest.approx(4.359114384, rel=1e-5) == value(
+            m.fs.unit.costing.adsorbent_unit_cost
+        )
+        assert pytest.approx(17454.52868, rel=1e-5) == value(
+            m.fs.unit.costing.adsorbent_cost
+        )
+        assert pytest.approx(81692.69369, rel=1e-5) == value(
+            m.fs.unit.costing.other_process_cost
+        )
+        assert pytest.approx(156048.1576, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(13535.92023, rel=1e-5) == value(
+            m.fs.unit.costing.gac_makeup_cost
+        )
+        assert pytest.approx(29524.89977, rel=1e-5) == value(
+            m.fs.unit.costing.gac_regen_cost
+        )
+        assert pytest.approx(43060.81999, rel=1e-5) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
+
+    @pytest.mark.component
+    def test_costing_modular_contactors_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyo.units.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+
+        m.fs.costing.gac_num_contactors_op.fix(4)
+        m.fs.costing.gac_num_contactors_redundant.fix(2)
+
+        results = solver.solve(m)
+
+        # Check for known cost solution when changing volume scale of vessels in parallel
+        assert value(m.fs.costing.gac_num_contactors_op) == 4
+        assert value(m.fs.costing.gac_num_contactors_redundant) == 2
+        assert pytest.approx(89035.16691, rel=1e-5) == value(
+            m.fs.unit.costing.contactor_cost
+        )
+        assert pytest.approx(69693.33132, rel=1e-5) == value(
+            m.fs.unit.costing.other_process_cost
+        )
+        assert pytest.approx(176183.0269, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+
+    @pytest.mark.component
+    def test_costing_max_gac_ref_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+
+        # scale flow up 10x
+        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
+            10 * 824.0736620370348
+        )
+        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
+            10 * 5.644342973110135e-05
+        )
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyo.units.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+        # not necessarily an optimum solution because poor scaling but just checking the conditional
+        results = solver.solve(m)
+
+        # Check for bed_mass_gac_cost_ref to be overwritten if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
+        assert value(m.fs.unit.bed_mass_gac) > value(m.fs.costing.bed_mass_gac_max_ref)
+        assert value(m.fs.unit.costing.bed_mass_gac_ref) == (
+            pytest.approx(value(m.fs.costing.bed_mass_gac_max_ref), 1e-5)
+        )

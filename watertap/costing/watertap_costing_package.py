@@ -963,7 +963,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=blk.costing_package.base_currency,
             doc="Unit contactor capital cost",
         )
-        blk.bed_mass_gac_cost_ref = pyo.Var(
+        blk.bed_mass_gac_ref = pyo.Var(
             initialize=4,
             domain=pyo.NonNegativeReals,
             units=pyo.units.kg,
@@ -1020,8 +1020,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 to_units=blk.costing_package.base_currency,
             )
         )
-        blk.bed_mass_gac_cost_ref_constraint = pyo.Constraint(
-            expr=blk.bed_mass_gac_cost_ref
+        blk.bed_mass_gac_ref_constraint = pyo.Constraint(
+            expr=blk.bed_mass_gac_ref
             == smooth_min(
                 blk.costing_package.bed_mass_gac_max_ref / pyo.units.kg,
                 pyo.units.convert(blk.unit_model.bed_mass_gac, to_units=pyo.units.kg)
@@ -1034,7 +1034,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             == pyo.units.convert(
                 blk.costing_package.gac_adsorbent_unit_cost_coeff
                 * pyo.exp(
-                    blk.bed_mass_gac_cost_ref
+                    blk.bed_mass_gac_ref
                     * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
                 ),
                 to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
