@@ -1060,7 +1060,6 @@ class GACData(UnitModelBlockData):
 
     # TODO: def _get_performance_contents(self, time_point=0):
     # TODO: def _get_stream_table_contents(self, time_point=0):
-    # TODO: def get_costing(self, module=None, **kwargs):
 
     # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):

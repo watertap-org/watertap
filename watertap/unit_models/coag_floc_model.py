@@ -307,7 +307,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         self.slope = Var(
             self.flowsheet().config.time,
             initialize=1.86,
-            bounds=(1e-8, 10),
+            bounds=(0.0, 10),
             domain=NonNegativeReals,
             units=pyunits.mg / pyunits.L,
             doc="Slope relation between TSS (mg/L) and Turbidity (NTU)",

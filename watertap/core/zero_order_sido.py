@@ -96,7 +96,7 @@ def build_sido(self):
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        bounds=(1e-8, 1.0000001),
+        bounds=(0.0, 1.0000001),
         doc="Mass recovery fraction of water in the treated stream",
     )
     self.removal_frac_mass_comp = Var(

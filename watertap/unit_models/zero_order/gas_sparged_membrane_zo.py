@@ -53,7 +53,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         * solute_removal_equation (indexed by time and solute)
         * solute_treated_equation (indexed by time and solute)
 
-    Th build method also sets private attributes on the unit model with references
+    The build method also sets private attributes on the unit model with references
     to the appropriate initialization and scaling methods to use and to return
     the inlet volumetric flow rate.
     """
@@ -107,7 +107,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
             initialize=0.8,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            bounds=(1e-8, 1.0000001),
+            bounds=(0.0, 1.0000001),
             doc="Mass recovery fraction of water in the treated stream",
         )
         self.removal_frac_mass_comp = Var(
