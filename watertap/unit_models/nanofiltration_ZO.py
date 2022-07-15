@@ -213,7 +213,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.solvent_set,
             initialize=1.67e-6,
-            bounds=(1e-8, 1e-4),
+            bounds=(0.0, 1e-4),
             units=units_meta("length") * units_meta("time") ** -1,
             doc="Solvent volumetric flux",
         )
@@ -235,7 +235,7 @@ class NanofiltrationData(UnitModelBlockData):
         # Add unit variables
         self.area = Var(
             initialize=1,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="Membrane area",
@@ -333,7 +333,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             solvent_solute_set,
             initialize=1,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
             doc="Mass transfer to permeate",
