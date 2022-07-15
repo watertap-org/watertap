@@ -487,7 +487,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_flow_dict,
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -517,7 +517,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.mass_frac_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_frac_dict,
-            bounds=(1e-16, 1.001),
+            bounds=(0.0, 1.001),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -571,7 +571,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize={"Liq": 1e-3},
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -596,7 +596,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.conc_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_conc_dict,
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             units=pyunits.kg / pyunits.m**3,
             doc="Mass concentration",
         )
@@ -615,7 +615,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.visc_d_phase = Var(
             self.params.phase_list,
             initialize={"Liq": 0.001},
-            bounds=(1e-6, 0.01),
+            bounds=(0.0, 0.01),
             units=pyunits.kg / pyunits.m / pyunits.s,
             doc="Dynamic viscosity",
         )
