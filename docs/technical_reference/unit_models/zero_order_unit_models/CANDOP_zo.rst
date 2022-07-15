@@ -3,7 +3,7 @@ CANDO-P (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a reactive single-inlet, double-outlet model form.
+This unit model is formulated as a **reactive single-inlet, double-outlet** model form.
 See documentation for :ref:`reactive single-inlet, double-outlet Helper Methods<sidor_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_CANDOP method in the zero-order costing package.
+Costing is calculated using the **cost_CANDOP** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,10 +21,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Electricity consumption of unit", "electricity", "kW"
-   "Electricity demand per kg N reacted", "electricity_intensity_N", "kWh/kg"
-   "Oxygen demand", "O2_demand", "kg/s"
-   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", "None"
+   "Electricity consumption of unit", "electricity", ":math:`kW`"
+   "Electricity demand per kg N reacted", "electricity_intensity_N", ":math:`kWh/kg`"
+   "Oxygen demand", "O2_demand", ":math:`kg/s`"
+   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", ":math:`dimensionless`"
 
 Additional Constraints
 ----------------------

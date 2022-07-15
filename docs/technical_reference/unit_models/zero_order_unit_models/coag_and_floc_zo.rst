@@ -3,7 +3,7 @@ Coagulation Flocculation (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a pass-through model form.
+This unit model is formulated as a **pass-through** model form.
 See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_coag_and_floc method in the zero-order costing package.
+Costing is calculated using the **cost_coag_and_floc** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,28 +21,28 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Dosing rate of alum", "alum_dose", "mg/l"
-   "Dosing rate of polymer", "polymer_dose", "mg/l"
-   "Ratio of anionic to cationic polymer in dosage", "anion_to_cation_polymer_ratio", "None"
-   "Dosing rate of anionic polymer", "anionic_polymer_dose", "mg/l"
-   "Dosing rate of cationic polymer", "cationic_polymer_dose", "mg/l"
-   "Mass flow rate of chemical solution", "chemical_flow_mass", "kg/s"
-   "Mass flow rate of chemical solution", "chemical_flow_mass", "kg/s"
-   "Rapid Mix Retention Time", "rapid_mix_retention_time", "s"
-   "Floc Retention Time", "floc_retention_time", "min"
-   "Rapid Mix Basin Volume", "rapid_mix_basin_vol", "m**3"
-   "Floc Basin Volume", "floc_basin_vol", "m**3"
-   "Number of Rapid Mixers", "num_rapid_mixers", "None"
-   "Number of Floc Mixers", "num_floc_mixers", "None"
-   "Number of Rapid Mix Processes", "num_rapid_mix_processes", "None"
-   "Number of Floc Processes", "num_floc_processes", "None"
-   "Number of Coagulation Processes", "num_coag_processes", "None"
-   "Number of Floc Injection Processes", "num_floc_injection_processes", "None"
-   "Rapid Mix Velocity Gradient", "velocity_gradient_rapid_mix", "1/s"
-   "Floc Velocity Gradient", "velocity_gradient_floc", "1/s"
-   "Rapid Mix Power Consumption", "power_rapid_mix", "kW"
-   "Floc Power Consumption", "power_floc", "kW"
-   "Total Power Consumption", "electricity", "kW"
+   "Dosing rate of alum", "alum_dose", ":math:`mg/l`"
+   "Dosing rate of polymer", "polymer_dose", ":math:`mg/l`"
+   "Ratio of anionic to cationic polymer in dosage", "anion_to_cation_polymer_ratio", ":math:`dimensionless`"
+   "Dosing rate of anionic polymer", "anionic_polymer_dose", ":math:`mg/l`"
+   "Dosing rate of cationic polymer", "cationic_polymer_dose", ":math:`mg/l`"
+   "Mass flow rate of chemical solution", "chemical_flow_mass", ":math:`kg/s`"
+   "Mass flow rate of chemical solution", "chemical_flow_mass", ":math:`kg/s`"
+   "Rapid Mix Retention Time", "rapid_mix_retention_time", ":math:`s`"
+   "Floc Retention Time", "floc_retention_time", ":math:`min`"
+   "Rapid Mix Basin Volume", "rapid_mix_basin_vol", ":math:`m^3`"
+   "Floc Basin Volume", "floc_basin_vol", ":math:`m^3`"
+   "Number of Rapid Mixers", "num_rapid_mixers", ":math:`dimensionless`"
+   "Number of Floc Mixers", "num_floc_mixers", ":math:`dimensionless`"
+   "Number of Rapid Mix Processes", "num_rapid_mix_processes", ":math:`dimensionless`"
+   "Number of Floc Processes", "num_floc_processes", ":math:`dimensionless`"
+   "Number of Coagulation Processes", "num_coag_processes", ":math:`dimensionless`"
+   "Number of Floc Injection Processes", "num_floc_injection_processes", ":math:`dimensionless`"
+   "Rapid Mix Velocity Gradient", "velocity_gradient_rapid_mix", ":math:`1/s`"
+   "Floc Velocity Gradient", "velocity_gradient_floc", ":math:`1/s`"
+   "Rapid Mix Power Consumption", "power_rapid_mix", ":math:`kW`"
+   "Floc Power Consumption", "power_floc", ":math:`kW`"
+   "Total Power Consumption", "electricity", ":math:`kW`"
 
 Additional Constraints
 ----------------------
