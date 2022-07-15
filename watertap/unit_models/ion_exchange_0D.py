@@ -61,7 +61,6 @@ class IonExchangeODData(UnitModelBlockData):
     Zero order ion exchange model
     """
 
-    # CONFIG are options for the unit model, this simple model only has the mandatory config options
     CONFIG = ConfigBlock()
 
     CONFIG.declare(
@@ -71,8 +70,7 @@ class IonExchangeODData(UnitModelBlockData):
             default=False,
             description="Dynamic model flag - must be False",
             doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. The filtration unit does not support dynamic
-    behavior, thus this must be False.""",
+    **default** = False.""",
         ),
     )
 
@@ -166,15 +164,19 @@ class IonExchangeODData(UnitModelBlockData):
         # Eq. 4.101 in Inamuddin/Luqman
 
         self.holdup_A = Param(
-            initialize=21, units=pyunits.dimensionless, doc="Holdup eq A parameter"
+            initialize=21,
+            units=pyunits.dimensionless,
+            doc="Holdup equation A parameter",
         )
 
         self.holdup_B = Param(
-            initialize=99.72, units=pyunits.dimensionless, doc="Holdup eq B parameter"
+            initialize=99.72,
+            units=pyunits.dimensionless,
+            doc="Holdup equation B parameter",
         )
 
         self.holdup_exp = Param(
-            initialize=0.28, units=pyunits.dimensionless, doc="Holdup eq exponent"
+            initialize=0.28, units=pyunits.dimensionless, doc="Holdup equation exponent"
         )
 
         # Particle Peclet number correlation
@@ -183,13 +185,13 @@ class IonExchangeODData(UnitModelBlockData):
         self.Pe_p_A = Param(
             initialize=0.05,
             units=pyunits.dimensionless,
-            doc="Peclet particle eq A parameter",
+            doc="Peclet particle equation A parameter",
         )
 
         self.Pe_p_exp = Param(
             initialize=0.48,
             units=pyunits.dimensionless,
-            doc="Peclet particle eq exponent",
+            doc="Peclet particle equation exponent",
         )
 
         # Sherwood number as a function of Reynolds and Schmidt number
@@ -197,11 +199,13 @@ class IonExchangeODData(UnitModelBlockData):
         # Wilson and Geankoplis, Ind. Eng. Chem. Fundam., 5, 9 (1966)
 
         self.Sh_A = Param(
-            initialize=1.09, units=pyunits.dimensionless, doc="Sherwood eq A parameter"
+            initialize=1.09,
+            units=pyunits.dimensionless,
+            doc="Sherwood equation A parameter",
         )
 
         self.Sh_exp = Param(
-            initialize=0.33, units=pyunits.dimensionless, doc="Sherwood eq exp"
+            initialize=0.33, units=pyunits.dimensionless, doc="Sherwood equation exp"
         )
 
         self.t_waste_param = Param(
@@ -231,13 +235,13 @@ class IonExchangeODData(UnitModelBlockData):
         self.bed_expansion_frac_B = Var(
             initialize=1.02e-1,
             units=pyunits.hr / pyunits.m,
-            doc="Bed expansion fraction eq B",
+            doc="Bed expansion fraction equation B parameter",
         )
 
         self.bed_expansion_frac_C = Var(
             initialize=-1.35e-3,
             units=pyunits.hr**2 / pyunits.m**2,
-            doc="Bed expansion fraction eq C",
+            doc="Bed expansion fraction equation C parameter",
         )
 
         # Pressure drop (psi/m of resin bed depth) is a function of loading rate (vel_bed) in m/hr
@@ -248,19 +252,19 @@ class IonExchangeODData(UnitModelBlockData):
         self.p_drop_A = Var(
             initialize=0.609,
             units=pyunits.psi / pyunits.m,
-            doc="Pressure drop eq intercept",
+            doc="Pressure drop equation intercept",
         )
 
         self.p_drop_B = Var(
             initialize=0.173,
             units=(pyunits.psi * pyunits.hr) / pyunits.m**2,
-            doc="Pressure drop eq B",
+            doc="Pressure drop equation B",
         )
 
         self.p_drop_C = Var(
             initialize=8.28e-4,
             units=(pyunits.psi * pyunits.hr**2) / pyunits.m**3,
-            doc="Pressure drop eq C",
+            doc="Pressure drop equation C",
         )
 
         # ====== Resin variables ====== #
@@ -300,7 +304,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Resin particle density",
         )
 
-        self.K_eq = Var(
+        self.selectivity = Var(
             ion_set,
             initialize=1.5,
             bounds=(0.5, None),
@@ -308,7 +312,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Selectivity coefficient",
         )
 
-        self.R_eq = Var(
+        self.separation_factor = Var(
             ion_set,
             initialize=0.2,
             bounds=(0, 1.1),
@@ -711,7 +715,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Separation factor calc",
         )
         def eq_sep_factor(b, j):
-            return b.R_eq[j] == 1 / b.K_eq[j]
+            return b.separation_factor[j] == 1 / b.selectivity[j]
 
         @self.Constraint(
             ion_set,
@@ -719,7 +723,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
         def eq_langmuir(b, j):
             if j == target_ion:
-                return b.R_eq[j] == (
+                return b.separation_factor[j] == (
                     b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
                 ) / (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
             else:
@@ -855,8 +859,8 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_fixed_pattern_soln(b, j):
             return (
                 b.lh
-                == (log(b.c_norm[j]) - b.R_eq[j] * log(1 - b.c_norm[j]))
-                / (1 - b.R_eq[j])
+                == (log(b.c_norm[j]) - b.separation_factor[j] * log(1 - b.c_norm[j]))
+                / (1 - b.separation_factor[j])
                 + 1
             )
 
@@ -1131,8 +1135,6 @@ class IonExchangeODData(UnitModelBlockData):
                     state_args[k] = state_dict[k].value
         state_args_out = deepcopy(state_args)
         for p, j in blk.properties_out.phase_component_set:
-            # comp = blk.properties_out.params.get_component()
-            # if comp.is_solute():
             if j == blk.config.target_ion:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
@@ -1198,7 +1200,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.resin_particle_dens, 1)
 
-        iscale.set_scaling_factor(self.K_eq, 1)
+        iscale.set_scaling_factor(self.selectivity, 1)
 
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
@@ -1228,7 +1230,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.c_norm, 1)
 
-        iscale.set_scaling_factor(self.R_eq, 10)
+        iscale.set_scaling_factor(self.separation_factor, 10)
 
         iscale.set_scaling_factor(self.fluid_mass_transfer_coeff, 1e5)
 
@@ -1282,7 +1284,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
-            sf = iscale.get_scaling_factor(self.R_eq)
+            sf = iscale.get_scaling_factor(self.separation_factor)
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_ss_effluent.items():
@@ -1327,19 +1329,19 @@ class IonExchangeODData(UnitModelBlockData):
         var_dict["Partition Ratio"] = self.partition_ratio
         var_dict["Bed Velocity"] = self.vel_bed
         var_dict["Holdup"] = self.holdup
-        var_dict["Re"] = self.Re
-        var_dict["Pe (bed)"] = self.Pe_bed
-        var_dict["Pe (particle)"] = self.Pe_p
+        var_dict["Reynolds Number"] = self.Re
+        var_dict["Peclet Number (bed)"] = self.Pe_bed
+        var_dict["Peclet Number (particle)"] = self.Pe_p
         for i in self.config.property_package.ion_set:
             ion = i.replace("_", "")
-            keq = f"Resin Selecitivity for {ion}"
+            keq = f"Resin Selectivity for {ion}"
             req = f"Resin Separation Factor for {ion}"
             kf = f"Fluid Mass Transfer Coeff. for {ion}"
             kd = f"Rate Coeff. for {ion}"
-            sc = f"Sc for {ion}"
-            sh = f"Sh for {ion}"
-            var_dict[keq] = self.K_eq[i]
-            var_dict[req] = self.R_eq[i]
+            sc = f"Schmidt Number for {ion}"
+            sh = f"Sherwood Number for {ion}"
+            var_dict[keq] = self.selectivity[i]
+            var_dict[req] = self.separation_factor[i]
             var_dict[kf] = self.fluid_mass_transfer_coeff[i]
             var_dict[kd] = self.rate_coeff[i]
             var_dict[sc] = self.Sc[i]
