@@ -15,35 +15,36 @@ import os, sys
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595 as amo_1595
+import watertap.examples.flowsheets.case_studies.groundwater_treatment.groundwater_treatment as groundwater_treatment
 
 
 def set_up_sensitivity(m):
     outputs = {}
     optimize_kwargs = {"check_termination": False}
-    opt_function = amo_1595.solve
+    opt_function = groundwater_treatment.solve
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOW_bcp"] = m.fs.costing.LCOW_bcp
     outputs["LCOT"] = m.fs.costing.LCOT
 
     return outputs, optimize_kwargs, opt_function
 
 
 def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
-    m = amo_1595.main()[0]
+    m = groundwater_treatment.main()[0]
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
     sweep_params = {}
 
     if case_num == 1:
-        sweep_params["bcp_cost"] = LinearSample(m.fs.costing.bcp_cost, 0.1, 1, nx)
-    elif case_num == 2:
-        sweep_params["water_cost"] = LinearSample(m.fs.costing.water_cost, 0, 2, nx)
-    elif case_num == 3:
-        sweep_params["nitrous_oxide_cost"] = LinearSample(
-            m.fs.costing.nitrous_oxide_cost, 0, 5, nx
+        sweep_params["filtration_media_disposal_cost"] = LinearSample(
+            m.fs.costing.filtration_media_disposal_cost, 10, 1000, nx
         )
+    elif case_num == 2:
+        sweep_params["filtration_media_cost"] = LinearSample(
+            m.fs.costing.filtration_media_cost, 100, 5000, nx
+        )
+    elif case_num == 3:
+        sweep_params["water_cost"] = LinearSample(m.fs.costing.water_cost, 0, 2, nx)
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 

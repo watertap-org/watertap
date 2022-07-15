@@ -53,7 +53,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         * solute_removal_equation (indexed by time and solute)
         * solute_treated_equation (indexed by time and solute)
 
-    Th build method also sets private attributes on the unit model with references
+    The build method also sets private attributes on the unit model with references
     to the appropriate initialization and scaling methods to use and to return
     the inlet volumetric flow rate.
     """

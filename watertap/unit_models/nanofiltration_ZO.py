@@ -603,10 +603,6 @@ class NanofiltrationData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.Nanofiltration_costing(self.costing, **kwargs)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
