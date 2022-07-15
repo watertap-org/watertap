@@ -25,8 +25,9 @@ from enum import Enum, auto
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
+
 from idaes.core.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 
 # ================================================================
@@ -795,6 +796,11 @@ def _do_param_sweep(
 
     local_solve_successful_list = []
 
+    if reinitialize_function is not None:
+        reinitialize_values = ComponentMap()
+        for v in model.component_data_objects(pyo.Var):
+            reinitialize_values[v] = v.value
+
     # ================================================================
     # Run all optimization cases
     # ================================================================
@@ -807,13 +813,14 @@ def _do_param_sweep(
 
         # Forced reinitialization of the flowsheet if enabled
         if reinitialize_before_sweep:
-            try:
-                assert reinitialize_function is not None
-            except:
+            if reinitialize_function is None:
                 raise ValueError(
                     "Reinitialization function was not specified. The model will not be reinitialized."
                 )
             else:
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 reinitialize_function(model, **reinitialize_kwargs)
 
         try:
@@ -825,6 +832,9 @@ def _do_param_sweep(
         except:
             # run_successful remains false. We try to reinitialize and solve again
             if reinitialize_function is not None:
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 try:
                     reinitialize_function(model, **reinitialize_kwargs)
                     with capture_output():
