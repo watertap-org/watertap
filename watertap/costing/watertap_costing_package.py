@@ -39,6 +39,7 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    IonExchange0D,
 )
 
 
@@ -859,6 +860,50 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
+    @staticmethod
+    def cost_ion_exchange(blk):
+        """
+        Volume-based capital cost for Ion Exchange
+        """
+        resin_dict = {
+            "strong_acid_gel_1": 3689,
+            "strong_acid_macro": 6255,
+            "strong_base_styrenic_gel_1": 5214,
+            "strong_base_styrenic_gel_2": 6116,
+            "strong_base_styrenic_macro_1": 7298,
+            "strong_base_styrenic_macro_2": 7810,
+            "strong_base_polyacrylic": 8658,
+            "strong_base_nitrate": 6116,
+        }  # cost of resin per m3, adapted to $/m3 from EPA models
+        make_capital_cost_var(blk)
+        num_cols = 2
+        col_cost_params = [9120, 0.49]
+        resin_cost_params = resin_dict["strong_acid_macro"]
+        tic = 1.65
+        blk.capital_cost_column = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for one column",
+        )
+        blk.capital_cost_resin = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for resin for one column",
+        )
+        blk.capital_cost_column_constraint = pyo.Constraint(
+            expr=blk.capital_cost_column
+            == col_cost_params[0] * blk.unit_model.col_vol ** col_cost_params[1]
+        )
+        blk.capital_cost_resin_constraint = pyo.Constraint(
+            expr=blk.capital_cost_resin == resin_cost_params * blk.unit_model.bed_vol
+        )
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == ((blk.capital_cost_column + blk.capital_cost_resin) * num_cols) * tic
+        )
+
     def _compute_steam_properties(blk):
         """
         Function for computing saturated steam properties for thermal heating estimation.
@@ -941,6 +986,7 @@ WaterTAPCostingData.unit_mapping = {
     Crystallization: WaterTAPCostingData.cost_crystallizer,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
+    IonExchange0D: WaterTAPCostingData.cost_ion_exchange,
 }
 
 
