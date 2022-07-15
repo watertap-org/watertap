@@ -151,16 +151,19 @@ class IonExchangeODData(UnitModelBlockData):
         self.diff_ion_resin = Param(
             initialize=1e-13,
             units=pyunits.m**2 / pyunits.s,
-            doc="Diffusivity of ion resin [m2/s]",  # Perry's
+            doc="Diffusivity of ion through resin bead",  # Perry's
         )
 
         self.underdrain_h = Param(
-            initialize=0.5, units=pyunits.m, doc="Underdrain height [m]"  # Perry's
+            initialize=0.5, units=pyunits.m, doc="Underdrain height"  # Perry's
         )
 
         self.distributor_h = Param(
-            initialize=1.5, units=pyunits.m, doc="Distributor height [m]"  # Perry's
+            initialize=1.5, units=pyunits.m, doc="Distributor height"  # Perry's
         )
+
+        # Liquid holdup correlation
+        # Eq. 4.101 in Inamuddin/Luqman
 
         self.holdup_A = Param(
             initialize=21, units=pyunits.dimensionless, doc="Holdup eq A parameter"
@@ -174,22 +177,31 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.28, units=pyunits.dimensionless, doc="Holdup eq exponent"
         )
 
+        # Particle Peclet number correlation
+        # Eq. 4.100 in Inamuddin/Luqman
+
         self.Pe_p_A = Param(
             initialize=0.05,
             units=pyunits.dimensionless,
-            doc="Pe particle eq A parameter",
+            doc="Peclet particle eq A parameter",
         )
 
         self.Pe_p_exp = Param(
-            initialize=0.48, units=pyunits.dimensionless, doc="Pe particle eq exp"
+            initialize=0.48,
+            units=pyunits.dimensionless,
+            doc="Peclet particle eq exponent",
         )
 
+        # Sherwood number as a function of Reynolds and Schmidt number
+        # Table 16-9 in Perry's
+        # Wilson and Geankoplis, Ind. Eng. Chem. Fundam., 5, 9 (1966)
+
         self.Sh_A = Param(
-            initialize=1.09, units=pyunits.dimensionless, doc="Sh eq A parameter"
+            initialize=1.09, units=pyunits.dimensionless, doc="Sherwood eq A parameter"
         )
 
         self.Sh_exp = Param(
-            initialize=0.33, units=pyunits.dimensionless, doc="Sh eq exp"
+            initialize=0.33, units=pyunits.dimensionless, doc="Sherwood eq exp"
         )
 
         self.t_waste_param = Param(
@@ -198,49 +210,54 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Ratio of breakthru to waste time",
         )
 
-        self.vel_bed_ratio = Param(
-            initialize=2.5,
-            units=pyunits.dimensionless,
-            doc="Ratio of min to max bed velocity",
-        )
-
-        self.bed_depth_to_diam_ratio = Param(
+        self.bed_depth_to_diam_ratio = Var(
             initialize=2.5,
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
 
-        self.bed_expansion_A = Param(
+        # Bed expansion is calculated as a fraction of the bed_depth
+        # These coefficients are used to calculate that fraction (bed_expansion_frac) as a function of backwash rate (bw_rate, m/hr)
+        # bed_expansion_frac = bed_expansion_A + bed_expansion_B * bw_rate + bed_expansion_C * bw_rate**2
+        # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
+        # Data extracted from MWH Chap 16, Figure 16-15 and fit with Excel
+
+        self.bed_expansion_frac_A = Var(
             initialize=-1.23e-2,
             units=pyunits.dimensionless,
-            doc="Bed expansion eq intercept",
+            doc="Bed expansion fraction eq intercept",
         )
 
-        self.bed_expansion_B = Param(
+        self.bed_expansion_frac_B = Var(
             initialize=1.02e-1,
             units=pyunits.hr / pyunits.m,
-            doc="Bed expansion eq B",
+            doc="Bed expansion fraction eq B",
         )
 
-        self.bed_expansion_C = Param(
+        self.bed_expansion_frac_C = Var(
             initialize=-1.35e-3,
             units=pyunits.hr**2 / pyunits.m**2,
-            doc="Bed expansion eq C",
+            doc="Bed expansion fraction eq C",
         )
 
-        self.p_drop_A = Param(
+        # Pressure drop (psi/m of resin bed depth) is a function of loading rate (vel_bed) in m/hr
+        # p_drop (psi/m) = p_drop_A + p_drop_B * vel_bed + p_drop_C * vel_bed**2
+        # Default is for strong-base type I acrylic anion exchanger resin (A-850, Purolite), @20C
+        # Data extracted from MWH Chap 16, Figure 16-14 and fit with Excel
+
+        self.p_drop_A = Var(
             initialize=0.609,
             units=pyunits.psi / pyunits.m,
             doc="Pressure drop eq intercept",
         )
 
-        self.p_drop_B = Param(
+        self.p_drop_B = Var(
             initialize=0.173,
             units=(pyunits.psi * pyunits.hr) / pyunits.m**2,
             doc="Pressure drop eq B",
         )
 
-        self.p_drop_C = Param(
+        self.p_drop_C = Var(
             initialize=8.28e-4,
             units=(pyunits.psi * pyunits.hr**2) / pyunits.m**3,
             doc="Pressure drop eq C",
@@ -252,35 +269,35 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=5,
             units=pyunits.mol / pyunits.kg,
             bounds=(0.5, None),  # Perry's
-            doc="Resin max capacity [mol/kg]",
+            doc="Resin max capacity",
         )
 
         self.resin_eq_capacity = Var(
             initialize=1,
             units=pyunits.mol / pyunits.kg,
             bounds=(0.5, None),  # Perry's
-            doc="Resin equilibrium capacity [mol/kg]",
+            doc="Resin equilibrium capacity",
         )
 
         self.resin_diam = Var(
             initialize=9e-4,
             bounds=(5e-4, 1.5e-3),
             units=pyunits.m,  # Perry's
-            doc="Resin bead diameter [m]",
+            doc="Resin bead diameter",
         )
 
         self.resin_bulk_dens = Var(
             initialize=0.7,
             bounds=(0.65, 0.95),  # Perry's
             units=pyunits.kg / pyunits.L,
-            doc="Resin bulk density [kg/L]",
+            doc="Resin bulk density",
         )
 
         self.resin_particle_dens = Var(
             initialize=1.4,
             bounds=(0.5, None),
             units=pyunits.kg / pyunits.L,
-            doc="Resin particle density [kg/L]",
+            doc="Resin particle density",
         )
 
         self.K_eq = Var(
@@ -288,7 +305,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=1.5,
             bounds=(0.5, None),
             units=pyunits.dimensionless,
-            doc="Selectivity coefficient [-]",
+            doc="Selectivity coefficient",
         )
 
         self.R_eq = Var(
@@ -296,14 +313,14 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.2,
             bounds=(0, 1.1),
             units=pyunits.dimensionless,
-            doc="Separation factor [-]",
+            doc="Separation factor",
         )
 
         self.resin_surf_per_vol = Var(
             initialize=3333.33,
             bounds=(0, 1e5),
             units=pyunits.m**-1,
-            doc="Resin surface area per volume [m-1]",
+            doc="Resin surface area per volume",
         )
 
         # ====== Bed/Column variables ====== #
@@ -312,44 +329,44 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=2,
             bounds=(0.1, 75),
             units=pyunits.m**3,
-            doc="Bed volume of one unit [m3]",
+            doc="Bed volume of one unit",
         )
 
         self.bed_diam = Var(
             initialize=0.4,
             bounds=(0.01, 4),  # DOW
             units=pyunits.m,
-            doc="Bed diameter [m]",
+            doc="Bed diameter",
         )
 
         self.bed_depth = Var(
-            initialize=4, bounds=(0.1, 12), units=pyunits.m, doc="Bed depth [m]"
+            initialize=4, bounds=(0.1, 12), units=pyunits.m, doc="Bed depth"
         )
 
         self.bed_area = Var(
             initialize=0.63,
             units=pyunits.m**2,
-            doc="Bed area [m2]",
+            doc="Bed area",
         )
 
         self.bed_porosity = Var(
             initialize=0.5,
             bounds=(0.45, 0.65),
             units=pyunits.dimensionless,
-            doc="Bed porosity [-]",
+            doc="Bed porosity",
         )
 
         self.col_height = Var(
             initialize=2,
             bounds=(0.6, 12),
             units=pyunits.m,
-            doc="Column height [m]",
+            doc="Column height",
         )
 
         self.col_vol = Var(
             initialize=10,
             units=pyunits.m**3,
-            doc="Column volume of one unit [m3]",
+            doc="Column volume of one unit",
         )
 
         # ====== Kinetic variables ====== #
@@ -358,7 +375,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=100,
             bounds=(0, None),
             units=pyunits.dimensionless,
-            doc="Partition ratio [-]",
+            doc="Partition ratio",
         )
 
         self.fluid_mass_transfer_coeff = Var(
@@ -366,7 +383,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=1e-3,
             bounds=(0, None),
             units=pyunits.m / pyunits.s,
-            doc="Fluid mass transfer coefficient [m/s]",
+            doc="Fluid mass transfer coefficient",
         )
 
         self.rate_coeff = Var(
@@ -374,7 +391,7 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.214e-3,
             bounds=(0, 1),
             units=pyunits.m**3 / (pyunits.kg * pyunits.s),
-            doc="Rate coefficient [m3/(kg*s)]",
+            doc="Rate coefficient",
         )
 
         self.t_breakthru = Var(
@@ -382,28 +399,28 @@ class IonExchangeODData(UnitModelBlockData):
             # bounds=(0, 4.3E6),  #DOW, ~7 weeks max breakthru time
             bounds=(0, None),
             units=pyunits.s,
-            doc="Breakthrough time [s]",
+            doc="Breakthrough time",
         )
 
         self.t_contact = Var(
             initialize=520,
             bounds=(120, None),
             units=pyunits.s,
-            doc="Contact time [s]",
+            doc="Contact time",
         )
 
         self.t_waste = Var(
             initialize=12,
             bounds=(1, None),
             units=pyunits.s,
-            doc="Regen + Rinse + Backwash time [s]",
+            doc="Regen + Rinse + Backwash time",
         )
 
         self.num_transfer_units = Var(
             initialize=1e6,
             bounds=(0, None),
             units=pyunits.dimensionless,
-            doc="Number of transfer units [-]",
+            doc="Number of transfer units",
         )
 
         self.HTU = Var(
@@ -418,14 +435,14 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=1,
             bounds=(0, 1),
             units=pyunits.dimensionless,
-            doc="Dimensionless time [-]",
+            doc="Dimensionless time",
         )
 
         self.lh = Var(
             initialize=0,
             bounds=(-20, 20),
             units=pyunits.dimensionless,
-            doc="Left hand side of kinetic equation",
+            doc="Position of breakthrough on constant-pattern wave (0 at stoichiometric center)",
         )
 
         self.mass_in = Var(
@@ -458,21 +475,21 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.0086,
             bounds=(0, 0.01),  # MWH, Perry's
             units=pyunits.m / pyunits.s,
-            doc="Velocity through resin bed [m/s]",
+            doc="Velocity through resin bed",
         )
 
         self.vel_inter = Var(
             initialize=0.0173,
             bounds=(0, 0.07),
             units=pyunits.m / pyunits.s,
-            doc="Interstitial velocity [m/s]",
+            doc="Interstitial velocity",
         )
 
         self.holdup = Var(
             initialize=100,
-            bounds=(90, 250),  # IX1
+            bounds=(90, 250),  # Inamuddin/Luqman
             units=pyunits.dimensionless,
-            doc="Holdup percent [-]",
+            doc="Holdup percent",
         )
 
         self.sfr = Var(
@@ -521,7 +538,10 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.Pe_bed = Var(
             initialize=1000,
-            bounds=(90, None),  # IX1 - Pe_bed > ~100 considered to be plug flow
+            bounds=(
+                90,
+                None,
+            ),  # Inamuddin/Luqman - Pe_bed > ~100 considered to be plug flow
             units=pyunits.dimensionless,
             doc="Peclet bed number",
         )
@@ -631,19 +651,19 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.main_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Main pump power [kW]"
+            initialize=4e-6, units=pyunits.kW, doc="Main pump power"
         )
 
         self.regen_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Regen pump power [kW]"
+            initialize=4e-6, units=pyunits.kW, doc="Regen pump power"
         )
 
         self.bw_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Backwash pump power [kW]"
+            initialize=4e-6, units=pyunits.kW, doc="Backwash pump power"
         )
 
         self.rinse_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Rinse pump power [kW]"
+            initialize=4e-6, units=pyunits.kW, doc="Rinse pump power"
         )
 
         self.pump_efficiency = Var(
@@ -652,20 +672,6 @@ class IonExchangeODData(UnitModelBlockData):
             bounds=(0, 1),
             doc="Pump efficiency",
         )
-
-        # Fix variables that should be fixed
-        self.resin_diam.fix()
-        self.resin_bulk_dens.fix()
-        self.bed_porosity.fix()
-        self.dimensionless_time.fix()
-        self.lh.fix()
-        self.regen_dose.fix()
-        self.regen_ww.fix()
-        self.regen_sg.fix()
-        self.t_bw.fix()
-        self.bw_rate.fix()
-        self.rinse_bv.fix()
-        self.pump_efficiency.fix()
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -990,10 +996,10 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_bed_expansion_frac(b):
             return (
                 b.bed_expansion_frac
-                == b.bed_expansion_A
-                + b.bed_expansion_B * b.bw_rate
-                + b.bed_expansion_C * b.bw_rate**2
-            )  # for 25C
+                == b.bed_expansion_frac_A
+                + b.bed_expansion_frac_B * b.bw_rate
+                + b.bed_expansion_frac_C * b.bw_rate**2
+            )  # for 20C
 
         @self.Constraint(doc="Bed expansion from backwashing")
         def eq_bw_bed_expansion(b):
@@ -1064,7 +1070,7 @@ class IonExchangeODData(UnitModelBlockData):
                 b.pressure_drop
                 == (b.p_drop_A + b.p_drop_B * vel_bed + b.p_drop_C * vel_bed**2)
                 * b.bed_depth
-            )  # for 25C;
+            )  # for 20C;
 
         @self.Constraint()
         def eq_press_conservation(b):
