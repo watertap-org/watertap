@@ -347,6 +347,24 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="GAC other cost power law exponent",
         )
 
+        self.gac_regen_frac = pyo.Var(
+            initialize=0.70,
+            units=pyo.units.dimensionless,
+            doc="Fraction of spent GAC adsorbent that can be regenerated for reuse",
+        )
+
+        self.gac_regen_unit_cost = pyo.Var(
+            initialize=4.283522249590950,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        )
+
+        self.gac_makeup_unit_cost = pyo.Var(
+            initialize=4.582232978299970,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
+        )
+
         # fix the parameters
         for var in self.component_objects(pyo.Var):
             var.fix()
@@ -1015,6 +1033,52 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == blk.contactor_cost + blk.adsorbent_cost + blk.other_process_cost
+        )
+
+        make_fixed_operating_cost_var(blk)
+        blk.gac_regen_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency / blk.costing_package.base_period,
+            doc="Cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        )
+        blk.gac_makeup_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency / blk.costing_package.base_period,
+            doc="Cost to makeup spent GAC adsorbent with fresh adsorbent",
+        )
+
+        blk.gac_regen_cost_constraint = pyo.Constraint(
+            expr=blk.gac_regen_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.gac_regen_unit_cost
+                    * (
+                        blk.costing_package.gac_regen_frac
+                        * blk.unit_model.gac_mass_replace_rate
+                    )
+                ),
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+        blk.gac_makeup_cost_constraint = pyo.Constraint(
+            expr=blk.gac_makeup_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.gac_makeup_unit_cost
+                    * (
+                        (1 - blk.costing_package.gac_regen_frac)
+                        * blk.unit_model.gac_mass_replace_rate
+                    )
+                ),
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost == blk.gac_regen_cost + blk.gac_makeup_cost
         )
 
     def _compute_steam_properties(blk):
