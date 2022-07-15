@@ -112,8 +112,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane replacement factor [fraction of membrane replaced/year]",
             units=pyo.units.year**-1,
         )
-        self.factor_uv_dose_replacement = pyo.Var(
-            initialize=0.012,
+        self.factor_uv_replacement = pyo.Var(
+            initialize=0.3993,
             doc="UV replacement factor [fraction of uv replaced/year]",
             units=pyo.units.year**-1,
         )
@@ -132,10 +132,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane cost",
             units=self.base_currency / (pyo.units.meter**2),
         )
-        self.uv_dose_cost = pyo.Var(
-            initialize=48346.875,
-            doc="UV dose cost",
-            units=self.base_currency / (pyo.units.mJ/pyo.units.cm ** 2),
+        self.uv_reactor_cost = pyo.Var(
+            initialize=728440,
+            doc="UV reactor cost",
+            units=self.base_currency / (pyo.units.m ** 3/pyo.units.s),
+        )
+        self.uv_lamp_cost = pyo.Var(
+            initialize=196.25,
+            doc="UV lamps, sleeves, ballasts and sensors cost",
+            units=self.base_currency / pyo.units.kW,
         )
         self.high_pressure_pump_cost = pyo.Var(
             initialize=53 / 1e5 * 3600,
@@ -455,10 +460,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        cost_uv_dose(
+        cost_uv_aop_stack(
             blk,
-            blk.costing_package.uv_dose_cost,
-            blk.costing_package.factor_uv_dose_replacement,
+            blk.costing_package.uv_reactor_cost,
+            blk.costing_package.uv_lamp_cost,
+            blk.costing_package.factor_uv_replacement,
         )
 
         t0 = blk.flowsheet().time.first()
@@ -1097,7 +1103,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
     )
 
-def cost_uv_aop_stack(blk, flow_cost, factor_reactor_replacement, electricity_cost, factor_electricity_replacement):
+def cost_uv_aop_stack(blk, flow_cost, electricity_cost, factor_uv_replacement):
     """
     Generic function for costing by flow volume.
 
@@ -1107,21 +1113,21 @@ def cost_uv_aop_stack(blk, flow_cost, factor_reactor_replacement, electricity_co
     """
     make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
-    blk.factor_reactor_replacement = pyo.Expression(expr=factor_reactor_replacement)
+    blk.electricity_cost = pyo.Expression(expr=electricity_cost)
+    blk.factor_uv_replacement = pyo.Expression(expr=factor_uv_replacement)
 
     flow_in = pyo.units.convert(
         blk.unit_model.control_volume.properties_in[0].flow_vol,
         to_units=pyo.units.m ** 3 / pyo.units.s)
 
     electricity_demand = pyo.units.convert(
-                    blk.unit_model.electricity_demand[0],
-                    to_units=pyo.units.kW,
-                )
+        blk.unit_model.electricity_demand[0],
+        to_units=pyo.units.kW)
 
     blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost == blk.uv_dose_cost * blk.unit_model.uv_dose
+        expr=blk.capital_cost == blk.flow_cost * flow_in + blk.electricity_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_uv_dose_replacement * blk.uv_dose_cost * blk.unit_model.uv_dose
+        == blk.factor_uv_replacement * blk.electricity_cost * electricity_demand
     )
