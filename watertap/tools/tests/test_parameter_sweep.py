@@ -816,7 +816,6 @@ class TestParallelManager:
             assert read_txt_dict == truth_txt_dict
 
     @pytest.mark.component
-    @pytest.mark.requires_idaes_solver
     def test_parameter_sweep_optimize(self, model, tmp_path):
 
         comm, rank, num_procs = _init_mpi()
@@ -1442,6 +1441,7 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                             test_dict[key][subkey]["value"],
                             subitem["value"],
                             equal_nan=True,
+                            rtol=1e-04,
                         )
                     else:
                         assert subsubitem == test_dict[key][subkey][subsubkey]
