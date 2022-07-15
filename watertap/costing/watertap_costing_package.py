@@ -25,6 +25,7 @@ from idaes.core.base.costing_base import (
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.math import smooth_min
 
 from idaes.models.unit_models import Mixer
 
@@ -321,6 +322,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=0.110591952020239,
             units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
             doc="GAC contactor polynomial cost coefficient 3",
+        )
+
+        self.bed_mass_gac_max_ref = pyo.Var(
+            initialize=18143.68,
+            units=pyo.units.kg,
+            doc="Reference maximum value of GAC mass needed for initial charge where "
+            "economy of scale no longer discounts the unit price",
         )
 
         self.gac_adsorbent_unit_cost_coeff = pyo.Var(
@@ -947,6 +955,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=blk.costing_package.base_currency,
             doc="Unit contactor capital cost",
         )
+        blk.bed_mass_gac_cost_ref = pyo.Var(
+            initialize=4,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.kg,
+            doc="Reference value of GAC mass needed for initial charge where "
+            "economy of scale no longer discounts the unit price",
+        )
         blk.adsorbent_unit_cost = pyo.Var(
             initialize=2,
             domain=pyo.NonNegativeReals,
@@ -984,29 +999,26 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 to_units=blk.costing_package.base_currency,
             )
         )
-        if blk.unit_model.bed_mass_gac.value < 18143.68:
-            blk.adsorbent_unit_cost_constraint = pyo.Constraint(
-                expr=blk.adsorbent_unit_cost
-                == pyo.units.convert(
-                    blk.costing_package.gac_adsorbent_unit_cost_coeff
-                    * pyo.exp(
-                        blk.unit_model.bed_mass_gac
-                        * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
-                    ),
-                    to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
-                )
+        blk.bed_mass_gac_cost_ref_constraint = pyo.Constraint(
+            expr=blk.bed_mass_gac_cost_ref
+            == smooth_min(
+                blk.costing_package.bed_mass_gac_max_ref / pyo.units.kg,
+                pyo.units.convert(blk.unit_model.bed_mass_gac, to_units=pyo.units.kg)
+                / pyo.units.kg,
             )
-        else:
-            blk.adsorbent_unit_cost_constraint = pyo.Constraint(
-                expr=blk.adsorbent_unit_cost
-                == pyo.units.convert(
-                    blk.costing_package.gac_adsorbent_unit_cost_coeff
-                    * pyo.exp(
-                        18143.68 * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
-                    ),
-                    to_units=blk.costing_package.base_currency * pyo.units.kg,
-                )
+            * pyo.units.kg
+        )
+        blk.adsorbent_unit_cost_constraint = pyo.Constraint(
+            expr=blk.adsorbent_unit_cost
+            == pyo.units.convert(
+                blk.costing_package.gac_adsorbent_unit_cost_coeff
+                * pyo.exp(
+                    blk.bed_mass_gac_cost_ref
+                    * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
+                ),
+                to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
             )
+        )
         blk.adsorbent_cost_constraint = pyo.Constraint(
             expr=blk.adsorbent_cost
             == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
