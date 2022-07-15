@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ASM1 reactions.
+Thermophysical property package to be used in conjunction with ADM1 reactions.
 """
 
 # Import Pyomo libraries
@@ -36,15 +36,15 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
 # Some more information about this module
-__author__ = "Andrew Lee"
-
+__author__ = "Adam Atia"
+# Using Andrew Lee's formulation of ASM1 as a template
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("ASM1ParameterBlock")
-class ASM1ParameterData(PhysicalParameterBlock):
+@declare_process_block_class("ADM1ParameterBlock")
+class ADM1ParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     """
@@ -55,7 +55,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = ASM1StateBlock
+        self._state_block_class = ADM1StateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()
@@ -131,7 +131,7 @@ class ASM1ParameterData(PhysicalParameterBlock):
         )
 
 
-class _ASM1StateBlock(StateBlock):
+class _ADM1StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -153,7 +153,7 @@ class _ASM1StateBlock(StateBlock):
         state_args : Dictionary with initial guesses for the state vars
                      chosen. Note that if this method is triggered
                      through the control volume, and if initial guesses
-                     were not provide at the unit model level, the
+                     were not provided at the unit model level, the
                      control volume passes the inlet values as initial
                      guess.The keys for the state_args dictionary are:
 
@@ -234,10 +234,10 @@ class _ASM1StateBlock(StateBlock):
         init_log.info("State Released.")
 
 
-@declare_process_block_class("ASM1StateBlock", block_class=_ASM1StateBlock)
-class ASM1StateBlockData(StateBlockData):
+@declare_process_block_class("ADM1StateBlock", block_class=_ADM1StateBlock)
+class ADM1StateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical properties associated with the ASM1
+    StateBlock for calculating thermophysical properties associated with the ADM1
     reaction system.
     """
 
