@@ -16,8 +16,8 @@ for wastewater resource recovery flowsheets.
 """
 
 from idaes.core import declare_process_block_class
-from watertap.core import build_diso, ZeroOrderBaseData, constant_intensity
-from pyomo.environ import Var, Constraint, units as pyunits
+from watertap.core import build_sido_reactive, ZeroOrderBaseData, pump_electricity
+from pyomo.environ import Var, Constraint, units as pyunits, Reference
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -40,10 +40,11 @@ class CofermentationZOData(ZeroOrderBaseData):
         # cod/nonbiodegradable cod to be in solute set. For now, unit assumes any solutes provided are
         # cod with a removal fraction to get the final ffCOD (i.e., (1-removal_frac)*mass_cod_in = mass_ffCOD
 
-        if "cod" not in self.config.property_package.solute_set:
+        if "nonbiodegradable_cod" not in self.config.property_package.solute_set:
             raise ValueError(
-                "cod must be included in the solute list since"
+                "nonbiodegradable_cod must be included in the solute list since"
                 " this unit model converts cod to nonbiodegradable_cod."
             )
-        build_diso(self)
-        constant_intensity(self)
+        build_sido_reactive(self)
+        self._Q = Reference(self.properties_in[:].flow_vol)
+        pump_electricity(self, self._Q)

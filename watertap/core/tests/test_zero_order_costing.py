@@ -91,9 +91,10 @@ class TestGeneralMethods:
         assert model.frame.base_currency == pyunits.MUSD_2018
         assert model.frame.base_period == pyunits.year
 
-        assert len(model.frame.defined_flows) == 20
+        assert len(model.frame.defined_flows) == 21
         for f in model.frame.defined_flows:
             assert f in [
+                "heat",
                 "electricity",
                 "acetic_acid",
                 "activated_carbon",

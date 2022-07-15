@@ -480,7 +480,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize={("Liq", "H2O"): 0.965, ("Liq", "NaCl"): 0.035},
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -509,10 +509,8 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize={("Liq", "H2O"): 0.965, ("Liq", "NaCl"): 0.035},
-            bounds=(
-                1e-6,
-                None,
-            ),  # upper bound set to None because of stability benefits
+            # upper bound set to None because of stability benefits
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -550,7 +548,7 @@ class NaClStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -597,7 +595,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-6, None),
+            bounds=(0.0, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate",
         )
@@ -617,7 +615,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-6, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
