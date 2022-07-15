@@ -83,8 +83,7 @@ class IonExchangeODData(UnitModelBlockData):
             domain=In([False]),
             description="Holdup construction flag - must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
-    this must be False.""",
+    **default** - False.""",
         ),
     )
 
@@ -148,10 +147,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        self.gravity = Param(
-            initialize=9.81, units=pyunits.m / pyunits.s**2, doc="Gravity [m/s2]"
-        )
 
         self.diff_ion_resin = Param(
             initialize=1e-13,
@@ -981,7 +976,12 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_regen_pump_power(b):
             p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
             return b.regen_pump_power == pyunits.convert(
-                (b.regen_density * b.gravity * p_drop_m * b.regen_flow)
+                (
+                    b.regen_density
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * b.regen_flow
+                )
                 / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
@@ -1009,7 +1009,12 @@ class IonExchangeODData(UnitModelBlockData):
             prop_in = b.properties_in[0]
             p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
             return b.bw_pump_power == pyunits.convert(
-                (prop_in.dens_mass_phase["Liq"] * b.gravity * p_drop_m * b.bw_flow)
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * b.bw_flow
+                )
                 / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
@@ -1027,7 +1032,12 @@ class IonExchangeODData(UnitModelBlockData):
             prop_in = b.properties_in[0]
             p_drop_m = b.pressure_drop * (0.70325 * (pyunits.m / pyunits.psi))
             return b.rinse_pump_power == pyunits.convert(
-                (prop_in.dens_mass_phase["Liq"] * b.gravity * p_drop_m * b.rinse_flow)
+                (
+                    prop_in.dens_mass_phase["Liq"]
+                    * Constants.acceleration_gravity
+                    * p_drop_m
+                    * b.rinse_flow
+                )
                 / b.pump_efficiency,
                 to_units=pyunits.kilowatts,
             )
@@ -1039,7 +1049,7 @@ class IonExchangeODData(UnitModelBlockData):
             return b.main_pump_power == pyunits.convert(
                 (
                     prop_in.dens_mass_phase["Liq"]
-                    * b.gravity
+                    * Constants.acceleration_gravity
                     * p_drop_m
                     * prop_in.flow_vol_phase["Liq"]
                 )
