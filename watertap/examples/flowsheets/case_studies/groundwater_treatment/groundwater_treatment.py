@@ -37,8 +37,7 @@ from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
     FeedZO,
-    PhotothermalMembraneZO,
-    CANDOPZO,
+    MicrobialBatteryZO,
     PumpElectricityZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -78,10 +77,12 @@ def build():
     m.fs.prop = prop_ZO.WaterParameterBlock(
         default={
             "solute_list": [
-                "nitrogen",
+                "arsenic",
+                "uranium",
+                "nitrate",
                 "phosphates",
-                "bioconcentrated_phosphorous",
-                "nitrous_oxide",
+                "iron",
+                "filtration_media",
             ]
         }
     )
@@ -98,19 +99,8 @@ def build():
         },
     )
 
-    # photothermal membrane
-    m.fs.photothermal = PhotothermalMembraneZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-
-    # CANDO+P reactor
-    # Note that CANDOPZO model electricity costing includes pumping costs for
-    # the unit, so a pump has not been included in this flowsheet between the
-    # photothermal membrane and CANDO+P units
-    m.fs.candop = CANDOPZO(
+    # microbial battery
+    m.fs.micbatt = MicrobialBatteryZO(
         default={
             "property_package": m.fs.prop,
             "database": m.db,
@@ -118,21 +108,14 @@ def build():
     )
 
     # product streams
-    m.fs.photothermal_water = Product(default={"property_package": m.fs.prop})
-    m.fs.candop_treated = Product(default={"property_package": m.fs.prop})
-    m.fs.candop_byproduct = Product(default={"property_package": m.fs.prop})
+    m.fs.filtered_water = Product(default={"property_package": m.fs.prop})
+    m.fs.byproduct = Product(default={"property_package": m.fs.prop})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
-    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.photothermal.inlet)
-    m.fs.s03 = Arc(
-        source=m.fs.photothermal.byproduct, destination=m.fs.photothermal_water.inlet
-    )
-    m.fs.s04 = Arc(source=m.fs.photothermal.treated, destination=m.fs.candop.inlet)
-    m.fs.s05 = Arc(
-        source=m.fs.candop.byproduct, destination=m.fs.candop_byproduct.inlet
-    )
-    m.fs.s06 = Arc(source=m.fs.candop.treated, destination=m.fs.candop_treated.inlet)
+    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.micbatt.inlet)
+    m.fs.s03 = Arc(source=m.fs.micbatt.treated, destination=m.fs.filtered_water.inlet)
+    m.fs.s04 = Arc(source=m.fs.micbatt.byproduct, destination=m.fs.byproduct.inlet)
 
     # expand arcs
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -146,28 +129,30 @@ def build():
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 800 * pyunits.m**3 / pyunits.hr
-    conc_mass_nitrogen = 35 * pyunits.mg / pyunits.liter
-    conc_mass_phosphates = 6 * pyunits.mg / pyunits.liter
-    conc_mass_bcp = 1e-6 * pyunits.mg / pyunits.liter
-    conc_mass_no2 = 1e-6 * pyunits.mg / pyunits.liter
+    flow_vol = 1 * pyunits.m**3 / pyunits.day
+    conc_mass_arsenic = 0.04 * pyunits.mg / pyunits.liter
+    conc_mass_uranium = 0.06 * pyunits.mg / pyunits.liter
+    conc_mass_nitrate = 10 * pyunits.mg / pyunits.liter
+    conc_mass_phosphates = 0.1 * pyunits.mg / pyunits.liter
+    conc_mass_iron = 0.5 * pyunits.mg / pyunits.liter
+    conc_mass_filtration_media = 0.1 * pyunits.mg / pyunits.liter
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
-    m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(conc_mass_nitrogen)
+    m.fs.feed.conc_mass_comp[0, "arsenic"].fix(conc_mass_arsenic)
+    m.fs.feed.conc_mass_comp[0, "uranium"].fix(conc_mass_uranium)
+    m.fs.feed.conc_mass_comp[0, "nitrate"].fix(conc_mass_nitrate)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_phosphates)
-    m.fs.feed.conc_mass_comp[0, "bioconcentrated_phosphorous"].fix(conc_mass_bcp)
-    m.fs.feed.conc_mass_comp[0, "nitrous_oxide"].fix(conc_mass_no2)
+    m.fs.feed.conc_mass_comp[0, "iron"].fix(conc_mass_iron)
+    m.fs.feed.conc_mass_comp[0, "filtration_media"].fix(conc_mass_filtration_media)
+
     solve(m.fs.feed)
 
     # pump
     m.fs.pump.load_parameters_from_database(use_default_removal=True)
-    m.fs.pump.lift_height.fix(4.2)  # head of 4.2 m
+    m.fs.pump.lift_height.fix(30)  # head of 30 m to pump groundwater
 
-    # photothermal membrane
-    m.fs.photothermal.load_parameters_from_database(use_default_removal=True)
-
-    # CANDO+P reactor
-    m.fs.candop.load_parameters_from_database(use_default_removal=True)
+    # microbial battery
+    m.fs.micbatt.load_parameters_from_database(use_default_removal=True)
 
 
 def initialize_system(m):
@@ -191,7 +176,7 @@ def display_results(m):
     print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    unit_list = ["feed", "pump", "photothermal", "candop"]
+    unit_list = ["feed", "pump", "micbatt"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -201,96 +186,95 @@ def display_results(m):
 def add_costing(m):
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "amo_1595_case_study.yaml",
+        "groundwater_treatment_case_study.yaml",
     )
 
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
 
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
     m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.photothermal.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.candop.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.micbatt.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
 
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.photothermal_water.properties[0].flow_vol)
 
-    m.fs.costing.bcp_recovery_mass = Expression(
+    m.fs.costing.spent_media_recovery_mass = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
-            m.fs.candop_treated.flow_mass_comp[0, "bioconcentrated_phosphorous"],
+            m.fs.byproduct.flow_mass_comp[0, "filtration_media"],
             to_units=pyunits.kg / m.fs.costing.base_period,
         ),
-        doc="Mass of BCP generated per year",
+        doc="Mass of spent filtration media generated per year (accounting for utilization factor)",
     )
 
-    m.fs.costing.value_bcp_recovery = Expression(
+    m.fs.costing.cost_spent_media_disposal = Expression(
         expr=pyunits.convert(
-            m.fs.costing.bcp_recovery_mass * m.fs.costing.bcp_cost,
+            m.fs.costing.spent_media_recovery_mass
+            * m.fs.costing.filtration_media_disposal_cost,
             to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
         ),
-        doc="Dollar value of BCP generated per year",
+        doc="Disposal cost of spent filtration media per year (accounting for utilization factor)",
     )
 
-    m.fs.costing.water_byproduct_volume = Expression(
+    m.fs.costing.fresh_media_mass = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
-            m.fs.photothermal_water.properties[0].flow_vol,
+            m.fs.feed.flow_mass_comp[0, "filtration_media"],
+            to_units=pyunits.kg / m.fs.costing.base_period,
+        ),
+        doc="Mass of fresh filtration media used per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.cost_fresh_media = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.fresh_media_mass * m.fs.costing.filtration_media_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Cost of fresh filtration media used per year (accounting for utilization factor)",
+    )
+
+    m.fs.costing.water_product_volume = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.filtered_water.properties[0].flow_vol,
             to_units=pyunits.m**3 / m.fs.costing.base_period,
         ),
-        doc="Volume of byproduct water generated per year",
+        doc="Volume of product water generated per year (accounting for utilization factor)",
     )
 
-    m.fs.costing.value_water_byproduct = Expression(
+    m.fs.costing.value_water_product = Expression(
         expr=pyunits.convert(
-            m.fs.costing.water_byproduct_volume * m.fs.costing.water_cost,
+            m.fs.costing.water_product_volume * m.fs.costing.water_cost,
             to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
         ),
-        doc="Dollar value of byproduct water generated per year",
+        doc="Dollar value of product water generated per year (accounting for utilization factor)",
     )
 
-    m.fs.costing.N2O_byproduct_mass = Expression(
-        expr=m.fs.costing.utilization_factor
-        * pyunits.convert(
-            m.fs.candop_byproduct.flow_mass_comp[0, "nitrous_oxide"],
-            to_units=pyunits.kg / m.fs.costing.base_period,
-        ),
-        doc="Mass of byproduct nitrous oxide generated per year",
-    )
-
-    m.fs.costing.value_N2O_byproduct = Expression(
-        expr=pyunits.convert(
-            m.fs.costing.N2O_byproduct_mass * m.fs.costing.nitrous_oxide_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        ),
-        doc="Dollar value of byproduct nitrous oxide generated per year",
-    )
-
-    m.fs.costing.LCOW_bcp = Expression(
+    m.fs.costing.LCOW = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
-            - m.fs.costing.value_bcp_recovery
-            - m.fs.costing.value_N2O_byproduct
+            + m.fs.costing.cost_spent_media_disposal
+            + m.fs.costing.cost_fresh_media
         )
         / (
             pyunits.convert(
-                m.fs.photothermal_water.properties[0].flow_vol,
+                m.fs.filtered_water.properties[0].flow_vol,
                 to_units=pyunits.m**3 / m.fs.costing.base_period,
             )
             * m.fs.costing.utilization_factor
         ),
-        doc="Levelized Cost of Water when accounting for salable BCP",
+        doc="Levelized Cost of Water when accounting for seed media acquisition and spent media disposal costs",
     )
 
     m.fs.costing.LCOT = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
-            - m.fs.costing.value_bcp_recovery
-            - m.fs.costing.value_N2O_byproduct
-            - m.fs.costing.value_water_byproduct
+            + m.fs.costing.cost_spent_media_disposal
+            + m.fs.costing.cost_fresh_media
+            - m.fs.costing.value_water_product
         )
         / (
             pyunits.convert(
@@ -299,7 +283,7 @@ def add_costing(m):
             )
             * m.fs.costing.utilization_factor
         ),
-        doc="Levelized Cost of Treatment with respect to influent flowrate (accounts for salable BCP)",
+        doc="Levelized Cost of Treatment with respect to influent flowrate (accounts for seed media acquisition and spent media disposal costs and sale of treated water)",
     )
 
 
@@ -347,15 +331,6 @@ def display_costing(m):
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
-
-    LCOW_with_bcp = value(
-        pyunits.convert(
-            m.fs.costing.LCOW_bcp, to_units=pyunits.USD_2020 / pyunits.m**3
-        )
-    )
-    print(
-        f"Levelized Cost of Water (accounting for BCP sale): {LCOW_with_bcp:.3f} $/m^3"
-    )
 
     LCOT = value(
         pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)

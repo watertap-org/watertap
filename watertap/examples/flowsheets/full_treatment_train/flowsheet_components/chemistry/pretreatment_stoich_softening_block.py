@@ -513,7 +513,7 @@ def build_stoich_softening_mixer_unit(model):
     model.fs.stoich_softening_mixer_unit.dosing_rate = Var(
         initialize=dr,
         domain=NonNegativeReals,
-        bounds=(1e-8, 1),
+        bounds=(0.0, 1),
         units=pyunits.kg / pyunits.s,
     )
 
