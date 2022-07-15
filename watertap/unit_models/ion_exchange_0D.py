@@ -153,8 +153,6 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=9.81, units=pyunits.m / pyunits.s**2, doc="Gravity [m/s2]"
         )
 
-        self.pi = Param(initialize=3.14159, units=pyunits.dimensionless, doc="Pi")
-
         self.diff_ion_resin = Param(
             initialize=1e-13,
             units=pyunits.m**2 / pyunits.s,
@@ -807,7 +805,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Bed area calculation")
         def eq_bed_area(b):
-            return b.bed_area == b.pi * (b.bed_diam / 2) ** 2
+            return b.bed_area == Constants.pi * (b.bed_diam / 2) ** 2
 
         @self.Constraint(doc="Bed volume calculation")
         def eq_bed_vol(b):
