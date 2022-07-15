@@ -21,11 +21,11 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Lift height for pump", "lift_height", "m"
-   "Efficiency of pump", "eta_pump", "dimensionless"
-   "Efficiency of motor", "eta_motor", "dimensionless"
-   "Electricity for low pressure pump", "electricity", "kW"
-   "Applied pressure", "applied_pressure", "bar"
+   "Lift height for pump", "lift_height", ":math:`m`"
+   "Efficiency of pump", "eta_pump", ":math:`dimensionless`"
+   "Efficiency of motor", "eta_motor", ":math:`dimensionless`"
+   "Electricity for low pressure pump", "electricity", ":math:`kW`"
+   "Applied pressure", "applied_pressure", ":math:`bar`"
 
 Additional Constraints
 ----------------------

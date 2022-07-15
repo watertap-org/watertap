@@ -22,11 +22,11 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Initial chlorine demand", "initial_chlorine_demand", "mg/l"
-   "Chlorine contact time", "contact_time", "hr"
-   "CT value for chlorination", "concentration_time", "mg*min/l"
-   "Chlorine decay rate", "chlorine_decay_rate", "mg/hr/l"
-   "Chlorine dose", "chlorine_dose", "mg/l"
+   "Initial chlorine demand", "initial_chlorine_demand", ":math:`mg/l`"
+   "Chlorine contact time", "contact_time", ":math:`hr`"
+   "CT value for chlorination", "concentration_time", ":math:`mg*min/l`"
+   "Chlorine decay rate", "chlorine_decay_rate", ":math:`mg/hr/l`"
+   "Chlorine dose", "chlorine_dose", ":math:`mg/l`"
 
 Additional Constraints
 ----------------------

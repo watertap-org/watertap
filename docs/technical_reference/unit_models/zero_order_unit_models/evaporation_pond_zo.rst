@@ -22,19 +22,19 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Air temperature", "air_temperature", "K"
+   "Air temperature", "air_temperature", ":math:`K`"
    "Daily solar radiation incident", "solar_radiation", ":math:`mJ/m^2`"
-   "Pond dike height", "dike_height", "ft"
-   "Factor to adjust evaporation rate of pure water", "evaporation_rate_adj_factor", "dimensionless"
-   "Evaporation rate calculation parameter A", "evap_rate_calc_a_parameter", "mm/d"
+   "Pond dike height", "dike_height", ":math:`ft`"
+   "Factor to adjust evaporation rate of pure water", "evaporation_rate_adj_factor", ":math:`dimensionless`"
+   "Evaporation rate calculation parameter A", "evap_rate_calc_a_parameter", ":math:`mm/d`"
    "Evaporation rate calculation parameter B", "evap_rate_calc_b_parameter", ":math:`m^2/mJ`"
    "Evaporation rate calculation parameter C", "evap_rate_calc_c_parameter", ":math:`m^2/mJ`"
-   "Adjusted area calculation parameter A", "adj_area_calc_a_parameter", "acre"
-   "Adjusted area calculation parameter B", "adj_area_calc_b_parameter", "dimensionless"
-   "Pond area needed based on evaporation rate", "area", "acre"
-   "Adjusted pond area needed", "adj_area", "acre"
-   "Calculated evaporation rate of pure water", "evaporation_rate_pure", "mm/d"
-   "Pure water evaporation rate adjusted for salinity", "evaporation_rate_salt", "gal/acre/min"
+   "Adjusted area calculation parameter A", "adj_area_calc_a_parameter", ":math:`acre`"
+   "Adjusted area calculation parameter B", "adj_area_calc_b_parameter", ":math:`dimensionless`"
+   "Pond area needed based on evaporation rate", "area", ":math:`acre`"
+   "Adjusted pond area needed", "adj_area", ":math:`acre`"
+   "Calculated evaporation rate of pure water", "evaporation_rate_pure", ":math:`mm/d`"
+   "Pure water evaporation rate adjusted for salinity", "evaporation_rate_salt", ":math:`gal/acre/min`"
 
 Additional Constraints
 ----------------------

@@ -21,11 +21,11 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Dosing rate of chemical", "chemical_dosage", "mg/l"
+   "Dosing rate of chemical", "chemical_dosage", ":math:`mg/l`"
    "Mass density of chemical solution", "solution_density", ":math:`kg/m^3`"
-   "Mass fraction of chemical in solution", "ratio_in_solution", "dimensionless"
+   "Mass fraction of chemical in solution", "ratio_in_solution", ":math:`dimensionless`"
    "Volumetric flow rate of chemical solution", "chemical_flow_vol", ":math:`m^3/s`"
-   "Electricity consumption of unit", "electricity", "kW"
+   "Electricity consumption of unit", "electricity", ":math:`kW`"
 
 Additional Constraints
 ----------------------

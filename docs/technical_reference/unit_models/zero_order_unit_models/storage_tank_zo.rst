@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Storage time needed", "storage_time", "hr"
-   "Additional capacity needed for surge flow", "surge_capacity", "dimensionless"
+   "Storage time needed", "storage_time", ":math:`hr`"
+   "Additional capacity needed for surge flow", "surge_capacity", ":math:`dimensionless`"
    "Storage tank volume", "tank_volume", ":math:`m^3`"
 
 Additional Constraints

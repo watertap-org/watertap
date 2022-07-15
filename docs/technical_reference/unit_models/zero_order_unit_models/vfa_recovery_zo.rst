@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Thermal energy required per mass VFA", "heat_required_per_vfa_mass", "kJ/kg"
-   "Thermal energy required", "heat_consumption", "kJ/s"
+   "Thermal energy required per mass VFA", "heat_required_per_vfa_mass", ":math:`kJ/kg`"
+   "Thermal energy required", "heat_consumption", ":math:`kJ/s`"
 
 Additional Constraints
 ----------------------

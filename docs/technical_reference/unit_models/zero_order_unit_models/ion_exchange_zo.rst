@@ -22,9 +22,9 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Flowrate of NaCl addition", "NaCl_flowrate", "kg/s"
+   "Flowrate of NaCl addition", "NaCl_flowrate", ":math:`kg/s`"
    "Dosage of NaCl addition", "NaCl_dose", ":math:`kg/m^3`"
-   "Replacement rate of ion exchange resin", "resin_demand", "kg/s"
+   "Replacement rate of ion exchange resin", "resin_demand", ":math:`kg/s`"
    "Resin replacement as a function of flow", "resin_replacement", ":math:`kg/m^3`"
 
 Additional Constraints

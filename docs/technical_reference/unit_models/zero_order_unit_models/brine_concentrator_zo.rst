@@ -25,7 +25,7 @@ Additional Variables
    "Constant 2 in electricity intensity equation", "elec_coeff_2", ":math:`kWh*l/m^3/mg`"
    "Constant 3 in electricity intensity equation", "elec_coeff_3", ":math:`kWh/m^3`"
    "Constant 4 in electricity intensity equation", "elec_coeff_4", ":math:`hr*kWh/m^6`"
-   "Power consumption of brine concentrator", "electricity", "kW"
+   "Power consumption of brine concentrator", "electricity", ":math:`kW`"
    "Specific energy consumption with respect to feed flowrate", "electricity_intensity", ":math:`kWh/m^3`"
 
 Additional Constraints

@@ -23,7 +23,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Surface area of sedimentation tank", "basin_surface_area", ":math:`ft^2`"
-   "Particle settling velocity", "settling_velocity", "m/s"
+   "Particle settling velocity", "settling_velocity", ":math:`m/s`"
 
 Additional Constraints
 ----------------------

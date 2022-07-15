@@ -144,6 +144,8 @@ def grab_unit_components(unit_class):
                 added_var_units[-1] = (":math:" + f"`{added_var_units[-1]}`").replace(
                     "**", "^"
                 )
+            else:
+                added_var_units[-1] = ":math:" + f"`{added_var_units[-1]}`"
 
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         addedconame = con.name

@@ -21,10 +21,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Electricity consumption of unit", "electricity", "kW"
-   "Electricity demand per kg N reacted", "electricity_intensity_N", "kWh/kg"
-   "Oxygen demand", "O2_demand", "kg/s"
-   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", "dimensionless"
+   "Electricity consumption of unit", "electricity", ":math:`kW`"
+   "Electricity demand per kg N reacted", "electricity_intensity_N", ":math:`kWh/kg`"
+   "Oxygen demand", "O2_demand", ":math:`kg/s`"
+   "Oxygen consumed - nitrogen reacted ratio", "oxygen_nitrogen_ratio", ":math:`dimensionless`"
 
 Additional Constraints
 ----------------------

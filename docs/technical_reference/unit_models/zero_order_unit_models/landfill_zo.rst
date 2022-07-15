@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "capacity basis for capital cost", "capacity_basis", "kg/hr"
-   "total mass flow rate", "total_mass", "kg/hr"
+   "capacity basis for capital cost", "capacity_basis", ":math:`kg/hr`"
+   "total mass flow rate", "total_mass", ":math:`kg/hr`"
 
 Additional Constraints
 ----------------------

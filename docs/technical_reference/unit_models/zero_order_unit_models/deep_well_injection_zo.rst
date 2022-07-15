@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Piping distance", "pipe_distance", "mi"
-   "Pipe diameter", "pipe_diameter", "in"
+   "Piping distance", "pipe_distance", ":math:`mi`"
+   "Pipe diameter", "pipe_diameter", ":math:`in`"
    "flow basis", "flow_basis", ":math:`m^3/hr`"
 
 .. index::

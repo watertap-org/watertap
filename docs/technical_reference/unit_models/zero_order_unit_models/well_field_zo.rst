@@ -22,8 +22,8 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Piping distance", "pipe_distance", "mi"
-   "Pipe diameter", "pipe_diameter", "in"
+   "Piping distance", "pipe_distance", ":math:`mi`"
+   "Pipe diameter", "pipe_diameter", ":math:`in`"
 
 .. index::
    pair: watertap.unit_models.zero_order.well_field_zo;well_field_zo
