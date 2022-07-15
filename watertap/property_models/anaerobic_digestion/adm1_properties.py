@@ -63,20 +63,33 @@ class ADM1ParameterData(PhysicalParameterBlock):
         # Add Component objects
         self.H2O = Solvent()
 
-        self.S_I = Solute(doc="Soluble inert organic matter, S_I")
-        self.S_S = Solute(doc="Readily biodegradable substrate, S_S")
-        self.X_I = Solute(doc="Particulate inert organic matter, X_I")
-        self.X_S = Solute(doc="Slowly biodegradable substrate, X_S")
-        self.X_BH = Solute(doc="Active heterotrophic biomass, X_B,H")
-        self.X_BA = Solute(doc="Active autotrophic biomass, X_B,A")
-        self.X_P = Solute(doc="Particulate products arising from biomass decay, X_P")
-        self.S_O = Solute(doc="Oxygen, S_O")
-        self.S_NO = Solute(doc="Nitrate and nitrite nitrogen, S_NO")
-        self.S_NH = Solute(doc="NH4+ + NH3 nitrogen, S_NH")
-        self.S_ND = Solute(doc="Soluble biodegradable organic nitrogen, S_ND")
-        self.X_ND = Solute(doc="Particulate biodegradable organic nitrogen, X_ND")
+        # All soluble components on kg COD/m^3 basis
+        self.S_su = Solute(doc="Monosaccharides")
+        self.S_aa = Solute(doc="Amino acids")
+        self.S_fa = Solute(doc="Long chain fatty acids")
+        self.S_va = Solute(doc="Total valerate")
+        self.S_bu = Solute(doc="Total butyrate")
+        self.S_pro = Solute(doc="Total propionate")
+        self.S_ac = Solute(doc="Total acetate")
+        self.S_h2 = Solute(doc="Hydrogen gas")
+        self.S_ch4 = Solute(doc="Methane gas")
+        self.S_IC = Solute(doc="Inorganic carbon")
+        self.S_IN = Solute(doc="Inorganic nitrogen")
+        self.S_I = Solute(doc="Soluble inerts")
 
-        self.S_ALK = Component(doc="Alkalinity, S_ALK")
+        self.X_c = Solute(doc="Composites")
+        self.X_ch = Solute(doc="Carbohydrates")
+        self.X_pr = Solute(doc="Proteins")
+        self.X_li = Solute(doc="Lipids")
+        self.X_su = Solute(doc="Sugar degraders")
+        self.X_aa = Solute(doc="Amino acid degraders")
+        self.X_fa = Solute(doc="Long chain fatty acid (LCFA) degraders")
+        self.X_c4 = Solute(doc="Valerate degraders")
+        self.X_pro = Solute(doc="Propionate degraders")
+        self.X_ac = Solute(doc="Acetate degraders")
+        self.X_h2 = Solute(doc="Hydrogen degraders")
+        self.X_I = Solute(doc="Particulate inerts")
+        # TODO: checkpoint
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(
