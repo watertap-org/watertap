@@ -22,7 +22,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Electricity consumption of unit", "electricity", "kW"
-   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", "kWh/m**3"
+   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", ":math:`kWh/m^3`"
 
 Additional Constraints
 ----------------------

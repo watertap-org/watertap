@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Reduced equivalent dosage", "uv_reduced_equivalent_dose", "mJ/cm**2"
+   "Reduced equivalent dosage", "uv_reduced_equivalent_dose", ":math:`mJ/cm^2`"
    "UV transmittance of solution at UV reactor inlet", "uv_transmittance_in", "dimensionless"
 
 .. index::

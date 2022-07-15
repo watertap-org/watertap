@@ -24,7 +24,7 @@ Additional Variables
 
    "Piping distance", "pipe_distance", "mi"
    "Pipe diameter", "pipe_diameter", "in"
-   "flow basis", "flow_basis", "m**3/hr"
+   "flow basis", "flow_basis", ":math:`m^3/hr`"
 
 .. index::
    pair: watertap.unit_models.zero_order.deep_well_injection_zo;deep_well_injection_zo

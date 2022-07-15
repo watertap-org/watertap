@@ -23,7 +23,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Cycles of concentration", "cycles", "dimensionless"
-   "Flowrate of blowdown", "blowdown", "m**3/hr"
+   "Flowrate of blowdown", "blowdown", ":math:`m^3/hr`"
 
 Additional Constraints
 ----------------------

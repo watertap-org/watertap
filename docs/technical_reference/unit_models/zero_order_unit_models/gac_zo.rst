@@ -23,9 +23,9 @@ Additional Variables
 
    "Empty bed contact time of unit", "empty_bed_contact_time", "hr"
    "Electricity consumption of unit", "electricity", "kW"
-   "Parameter for calculating electricity based on empty bed contact time", "electricity_intensity_parameter", "kW/m**3"
-   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", "kWh/m**3"
-   "Replacement rate of activated carbon", "activated_carbon_replacement", "kg/m**3"
+   "Parameter for calculating electricity based on empty bed contact time", "electricity_intensity_parameter", ":math:`kW/m^3`"
+   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", ":math:`kWh/m^3`"
+   "Replacement rate of activated carbon", "activated_carbon_replacement", ":math:`kg/m^3`"
    "Demand for activated carbon", "activated_carbon_demand", "kg/hr"
 
 Additional Constraints

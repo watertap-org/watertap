@@ -21,13 +21,13 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Reactor volume", "volume", "m**3"
+   "Reactor volume", "volume", ":math:`m^3`"
    "Hydraulic residence time", "hydraulic_retention_time", "hr"
    "Electricity demand of unit", "electricity", "kW"
    "Thermal demand of unit", "heat", "kW"
-   "Electricity intensity of mixer with respect to reactor volume", "energy_electric_mixer_vol", "kW/m**3"
+   "Electricity intensity of mixer with respect to reactor volume", "energy_electric_mixer_vol", ":math:`kW/m^3`"
    "Electricity intensity of vacuum pump with respect to product gas flow", "energy_electric_vacuum_flow_vol_byproduct", "hr*kW/kg"
-   "Thermal energy intensity of reactor with respect to inlet volumetric flowrate", "energy_thermal_flow_vol_inlet", "kJ/m**3"
+   "Thermal energy intensity of reactor with respect to inlet volumetric flowrate", "energy_thermal_flow_vol_inlet", ":math:`kJ/m^3`"
 
 Additional Constraints
 ----------------------

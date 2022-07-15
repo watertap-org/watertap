@@ -22,10 +22,10 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Nitrogen removal rate per day", "nitrogen_removal_rate", "g/d/m**2"
-   "Sizing variable for effective reactor area", "reactor_area", "m**2"
+   "Nitrogen removal rate per day", "nitrogen_removal_rate", ":math:`g/d/m^2`"
+   "Sizing variable for effective reactor area", "reactor_area", ":math:`m^2`"
    "Air flow rate per area", "air_flow_rate", "m/hr"
-   "Volumetric air flow rate", "air_flow_vol", "m**3/hr"
+   "Volumetric air flow rate", "air_flow_vol", ":math:`m^3/hr`"
 
 Additional Constraints
 ----------------------

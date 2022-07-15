@@ -22,13 +22,13 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Ratio of air to water", "air_water_ratio", "dimensionless"
-   "Flow basis", "flow_basis", "m**3/hr"
-   "Air flow rate", "air_flow_rate", "m**3/hr"
-   "Constant in electricity intensity equation", "electricity_intensity_parameter", "hp*hr/m**3"
-   "Dual media filter surface area", "filter_surf_area", "m**2"
+   "Flow basis", "flow_basis", ":math:`m^3/hr`"
+   "Air flow rate", "air_flow_rate", ":math:`m^3/hr`"
+   "Constant in electricity intensity equation", "electricity_intensity_parameter", ":math:`hp*hr/m^3`"
+   "Dual media filter surface area", "filter_surf_area", ":math:`m^2`"
    "Number of dual media filter units", "num_filter_units", "dimensionless"
    "Power consumption of iron and manganese removal", "electricity", "kW"
-   "Specific energy consumption with respect to feed flowrate", "electricity_intensity", "kWh/m**3"
+   "Specific energy consumption with respect to feed flowrate", "electricity_intensity", ":math:`kWh/m^3`"
 
 Additional Constraints
 ----------------------

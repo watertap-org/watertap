@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Surface area of sedimentation tank", "basin_surface_area", "ft**2"
+   "Surface area of sedimentation tank", "basin_surface_area", ":math:`ft^2`"
    "Particle settling velocity", "settling_velocity", "m/s"
 
 Additional Constraints
