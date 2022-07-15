@@ -3,17 +3,17 @@ Storage Tank (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a pass-through model form.
+This unit model is formulated as a **pass-through** model form.
 See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
+Electricity consumption is calculated using the **constant_intensity** helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
-Costing is calculated using the cost_storage_tank method in the zero-order costing package.
+Costing is calculated using the **cost_storage_tank** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -22,9 +22,9 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Storage time needed", "storage_time", "hr"
-   "Additional capacity needed for surge flow", "surge_capacity", "None"
-   "Storage tank volume", "tank_volume", "m**3"
+   "Storage time needed", "storage_time", ":math:`hr`"
+   "Additional capacity needed for surge flow", "surge_capacity", ":math:`dimensionless`"
+   "Storage tank volume", "tank_volume", ":math:`m^3`"
 
 Additional Constraints
 ----------------------

@@ -460,10 +460,6 @@ class PressureExchangerData(UnitModelBlockData):
         # reactivate volumetric flow constraint
         self.eq_equal_flow_vol.activate()
 
-    def get_costing(self, module=None):
-        self.costing = Block()
-        module.PressureExchanger_costing(self.costing)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
