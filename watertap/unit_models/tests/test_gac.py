@@ -367,6 +367,7 @@ class TestGACSimplified:
         assert pytest.approx(12830000, rel=1e-3) == value(m.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-3) == value(m.fs.unit.bed_area)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -414,6 +415,7 @@ class TestGACSimplified:
             m.fs.unit.costing.fixed_operating_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_modular_contactors_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -446,6 +448,7 @@ class TestGACSimplified:
             m.fs.unit.costing.capital_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_max_gac_ref_robust(self, gac_frame_robust):
         m = gac_frame_robust
