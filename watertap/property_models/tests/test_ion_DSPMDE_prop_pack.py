@@ -357,7 +357,7 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 78
+    assert number_variables(m) == 76
     assert number_total_constraints(m) == 60
     [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
