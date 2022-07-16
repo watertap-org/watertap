@@ -962,12 +962,17 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_flow_equiv_phase_comp(b, j):
-            return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] * abs(b.params.charge_comp[j])
+            if j == "H2O":
+                return (
+                    b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp["Liq", j]
+                )
+            else:
+                return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
+                    "Liq", j
+                ] * abs(b.params.charge_comp[j])
 
         self.eq_flow_equiv_phase_comp = Constraint(
-            self.params.ion_set, rule=rule_flow_equiv_phase_comp
+            self.params.component_list, rule=rule_flow_equiv_phase_comp
         )
 
     def _conc_equiv_phase_comp(self):
@@ -981,12 +986,17 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, j):
-            return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
-                "Liq", j
-            ] * abs(b.params.charge_comp[j])
+            if j == "H2O":
+                return (
+                    b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp["Liq", j]
+                )
+            else:
+                return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
+                    "Liq", j
+                ] * abs(b.params.charge_comp[j])
 
         self.eq_conc_equiv_phase_comp = Constraint(
-            self.params.ion_set, rule=rule_conc_equiv_phase_comp
+            self.params.component_list, rule=rule_conc_equiv_phase_comp
         )
 
     def _mole_frac_phase_comp(self):
@@ -1391,11 +1401,15 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
                 iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
 
-            if iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", j]) is None:
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", j], default=1, warning=True
-                )
-                iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", j], sf)
+            if self.is_property_constructed("flow_equiv_phase_comp"):
+                if (
+                    iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mol_phase_comp["Liq", j], default=1, warning=True
+                    )
+                    iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", j], sf)
 
         # scaling factors for parameters
         for j, v in self.mw_comp.items():
@@ -1615,6 +1629,7 @@ class DSPMDEStateBlockData(StateBlockData):
             "flow_vol_phase",
             "dens_mass_phase",
             "elec_cond_phase",
+            "visc_k_phase",
         ]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
