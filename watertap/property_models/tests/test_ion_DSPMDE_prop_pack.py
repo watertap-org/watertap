@@ -358,7 +358,7 @@ def test_build(model3):
         assert isinstance(c, Constraint)
 
     assert number_variables(m) == 76
-    assert number_total_constraints(m) == 60
+    assert number_total_constraints(m) ==58
     [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
 
