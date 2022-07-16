@@ -62,17 +62,27 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
 
         # Reaction Index
         # Reaction names based on standard numbering in ADM1 paper
-        # R1: Aerobic growth of heterotrophs
-        # R2: Anoxic growth of heterotrophs
-        # R3: Aerobic growth of autotrophs
-        # R4: Decay of heterotrophs
-        # R5: Decay of autotrophs
-        # R6: Ammonification of soluble organic nitrogen
-        # R7: Hydrolysis of entrapped organics
-        # R8: Hydrolysis of entrapped organic nitrogen
-        self.rate_reaction_idx = pyo.Set(
-            initialize=["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
-        )
+        # R1:  Disintegration
+        # R2:  Hydrolysis of carbohydrates
+        # R3:  Hydrolysis of proteins
+        # R4:  Hydrolysis of lipids
+        # R5:  Uptake of sugars
+        # R6:  Uptake of amino acids
+        # R7:  Uptake of long chain fatty acids (LCFAs)
+        # R8:  Uptake of valerate
+        # R9:  Uptake of butyrate
+        # R10: Uptake of propionate
+        # R11: Uptake of acetate
+        # R12: Uptake of hydrogen
+        # R13: Decay of X_su
+        # R14: Decay of X_aa
+        # R15: Decay of X_fa
+        # R16: Decay of X_c4
+        # R17: Decay of X_pro
+        # R18: Decay of X_ac
+        # R19: Decay of X_h2
+
+        self.rate_reaction_idx = pyo.Set(initialize=[f"R{i}" for i in range(1, 20)])
 
         # Stoichiometric Parameters
         self.Y_A = pyo.Var(

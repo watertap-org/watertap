@@ -89,6 +89,11 @@ class ADM1ParameterData(PhysicalParameterBlock):
         self.X_ac = Solute(doc="Acetate degraders")
         self.X_h2 = Solute(doc="Hydrogen degraders")
         self.X_I = Solute(doc="Particulate inerts")
+
+        # TODO: Additional components not in Table but referred to in text
+        self.S_cat = Solute(doc="Total cation equivalents concentration")
+        self.S_an = Solute(doc="Total anion equivalents concentration")
+
         # TODO: checkpoint
 
         # Heat capacity of water
@@ -130,7 +135,6 @@ class ADM1ParameterData(PhysicalParameterBlock):
                 "pressure": {"method": None},
                 "temperature": {"method": None},
                 "conc_mass_comp": {"method": None},
-                "alkalinity": {"method": None},
             }
         )
         obj.add_default_units(
@@ -288,19 +292,10 @@ class ADM1StateBlockData(StateBlockData):
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
-        self.alkalinity = pyo.Var(
-            domain=pyo.NonNegativeReals,
-            initialize=1,
-            doc="Alkalinity in molar concentration",
-            units=pyo.units.kmol / pyo.units.m**3,
-        )
 
     def get_material_flow_terms(b, p, j):
         if j == "H2O":
             return b.flow_vol * b.params.dens_mass
-        elif j == "S_ALK":
-            # Convert moles of alkalinity to mass of C assuming all is HCO3-
-            return b.flow_vol * b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.flow_vol * b.conc_mass_comp[j]
 
@@ -315,9 +310,6 @@ class ADM1StateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         if j == "H2O":
             return b.params.dens_mass
-        elif j == "S_ALK":
-            # Convert moles of alkalinity to mass of C assuming all is HCO3-
-            return b.alkalinity * (12 * pyo.units.kg / pyo.units.kmol)
         else:
             return b.conc_mass_comp[j]
 
@@ -337,7 +329,6 @@ class ADM1StateBlockData(StateBlockData):
     def define_state_vars(b):
         return {
             "flow_vol": b.flow_vol,
-            "alkalinity": b.alkalinity,
             "conc_mass_comp": b.conc_mass_comp,
             "temperature": b.temperature,
             "pressure": b.pressure,
@@ -346,7 +337,6 @@ class ADM1StateBlockData(StateBlockData):
     def define_display_vars(b):
         return {
             "Volumetric Flowrate": b.flow_vol,
-            "Molar Alkalinity": b.alkalinity,
             "Mass Concentration": b.conc_mass_comp,
             "Temperature": b.temperature,
             "Pressure": b.pressure,
