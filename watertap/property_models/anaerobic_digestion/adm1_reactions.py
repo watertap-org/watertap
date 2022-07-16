@@ -84,148 +84,157 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
 
         self.rate_reaction_idx = pyo.Set(initialize=[f"R{i}" for i in range(1, 20)])
 
-        # Stoichiometric Parameters
-        self.Y_A = pyo.Var(
-            initialize=0.24,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Yield of cell COD formed per g N consumed, Y_A",
-        )
-        self.Y_H = pyo.Var(
-            initialize=0.67,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Yield of cell COD formed per g COD oxidized, Y_H",
-        )
-        self.f_p = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Fraction of biomass yielding particulate products, f_p",
-        )
-        self.i_xb = pyo.Var(
-            initialize=0.08,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in biomass, i_xb",
-        )
-        self.i_xp = pyo.Var(
-            initialize=0.06,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Mass fraction of N per COD in particulates, i_xp",
-        )
-
-        # Kinetic Parameters
-        self.mu_A = pyo.Var(
-            initialize=0.5,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Maximum specific growth rate for autotrophic biomass, mu_A",
-        )
-        self.mu_H = pyo.Var(
-            initialize=4,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Maximum specific growth rate for heterotrophic biomass, mu_H",
-        )
-        self.K_S = pyo.Var(
-            initialize=10e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Half-saturation coefficient for heterotrophic biomass, K_S",
-        )
-        self.K_OH = pyo.Var(
-            initialize=0.2e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H",
-        )
-        self.K_OA = pyo.Var(
-            initialize=0.4e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Oxygen half-saturation coefficient for autotrophic biomass, K_O,A",
-        )
-        self.K_NO = pyo.Var(
-            initialize=0.5e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO",
-        )
-        self.b_H = pyo.Var(
-            initialize=0.3,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Decay coefficient for heterotrophic biomass, b_H",
-        )
-        self.b_A = pyo.Var(
-            initialize=0.05,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Decay coefficient for autotrophic biomass, b_A",
-        )
-        self.eta_g = pyo.Var(
-            initialize=0.8,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Correction factor for mu_H under anoxic conditions, eta_g",
-        )
-        self.eta_h = pyo.Var(
-            initialize=0.8,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Correction factor for hydrolysis under anoxic conditions, eta_h",
-        )
-        self.k_h = pyo.Var(
-            initialize=3,
-            units=1 / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Maximum specific hydrolysis rate, k_h",
-        )
-        self.K_X = pyo.Var(
-            initialize=0.1,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X",
-        )
-        self.K_NH = pyo.Var(
-            initialize=1e-3,
-            units=pyo.units.kg / pyo.units.m**3,
-            domain=pyo.PositiveReals,
-            doc="Ammonia Half-saturation coefficient for autotrophic biomass, K_NH",
-        )
-        self.k_a = pyo.Var(
-            initialize=0.05e3,
-            units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
-            domain=pyo.PositiveReals,
-            doc="Ammonification rate, k_a",
-        )
+        # Biochemical Rate Coefficients
+        # self.Y_A = pyo.Var(
+        #     initialize=0.24,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Yield of cell COD formed per g N consumed, Y_A",
+        # )
+        # self.Y_H = pyo.Var(
+        #     initialize=0.67,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Yield of cell COD formed per g COD oxidized, Y_H",
+        # )
+        # self.f_p = pyo.Var(
+        #     initialize=0.08,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Fraction of biomass yielding particulate products, f_p",
+        # )
+        # self.i_xb = pyo.Var(
+        #     initialize=0.08,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Mass fraction of N per COD in biomass, i_xb",
+        # )
+        # self.i_xp = pyo.Var(
+        #     initialize=0.06,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Mass fraction of N per COD in particulates, i_xp",
+        # )
+        #
+        # # Kinetic Parameters
+        # self.mu_A = pyo.Var(
+        #     initialize=0.5,
+        #     units=1 / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Maximum specific growth rate for autotrophic biomass, mu_A",
+        # )
+        # self.mu_H = pyo.Var(
+        #     initialize=4,
+        #     units=1 / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Maximum specific growth rate for heterotrophic biomass, mu_H",
+        # )
+        # self.K_S = pyo.Var(
+        #     initialize=10e-3,
+        #     units=pyo.units.kg / pyo.units.m**3,
+        #     domain=pyo.PositiveReals,
+        #     doc="Half-saturation coefficient for heterotrophic biomass, K_S",
+        # )
+        # self.K_OH = pyo.Var(
+        #     initialize=0.2e-3,
+        #     units=pyo.units.kg / pyo.units.m**3,
+        #     domain=pyo.PositiveReals,
+        #     doc="Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H",
+        # )
+        # self.K_OA = pyo.Var(
+        #     initialize=0.4e-3,
+        #     units=pyo.units.kg / pyo.units.m**3,
+        #     domain=pyo.PositiveReals,
+        #     doc="Oxygen half-saturation coefficient for autotrophic biomass, K_O,A",
+        # )
+        # self.K_NO = pyo.Var(
+        #     initialize=0.5e-3,
+        #     units=pyo.units.kg / pyo.units.m**3,
+        #     domain=pyo.PositiveReals,
+        #     doc="Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO",
+        # )
+        # self.b_H = pyo.Var(
+        #     initialize=0.3,
+        #     units=1 / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Decay coefficient for heterotrophic biomass, b_H",
+        # )
+        # self.b_A = pyo.Var(
+        #     initialize=0.05,
+        #     units=1 / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Decay coefficient for autotrophic biomass, b_A",
+        # )
+        # self.eta_g = pyo.Var(
+        #     initialize=0.8,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Correction factor for mu_H under anoxic conditions, eta_g",
+        # )
+        # self.eta_h = pyo.Var(
+        #     initialize=0.8,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Correction factor for hydrolysis under anoxic conditions, eta_h",
+        # )
+        # self.k_h = pyo.Var(
+        #     initialize=3,
+        #     units=1 / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Maximum specific hydrolysis rate, k_h",
+        # )
+        # self.K_X = pyo.Var(
+        #     initialize=0.1,
+        #     units=pyo.units.dimensionless,
+        #     domain=pyo.PositiveReals,
+        #     doc="Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X",
+        # )
+        # self.K_NH = pyo.Var(
+        #     initialize=1e-3,
+        #     units=pyo.units.kg / pyo.units.m**3,
+        #     domain=pyo.PositiveReals,
+        #     doc="Ammonia Half-saturation coefficient for autotrophic biomass, K_NH",
+        # )
+        # self.k_a = pyo.Var(
+        #     initialize=0.05e3,
+        #     units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
+        #     domain=pyo.PositiveReals,
+        #     doc="Ammonification rate, k_a",
+        # )
 
         # Reaction Stoichiometry
-        # This is the stoichiometric part the Peterson matrix in dict form
+        # This is the stoichiometric part of the Peterson matrix in dict form.
         # Note that reaction stoichiometry is on a mass basis.
-        # For alkalinity, this requires converting the mass of nitrogen species
-        # reacted to mass of alkalinity converted using a charge balance (effectively MW_C/MW_N)
-        mw_alk = 12 * pyo.units.kg / pyo.units.kmol
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
         self.rate_reaction_stoichiometry = {
-            # R1: Aerobic growth of heterotrophs
+            # R1: Disintegration
             ("R1", "Liq", "H2O"): 0,
-            ("R1", "Liq", "S_I"): 0,
-            ("R1", "Liq", "S_S"): -1 / self.Y_H,
-            ("R1", "Liq", "X_I"): 0,
-            ("R1", "Liq", "X_S"): 0,
-            ("R1", "Liq", "X_BH"): 1,
-            ("R1", "Liq", "X_BA"): 0,
-            ("R1", "Liq", "X_P"): 0,
-            ("R1", "Liq", "S_O"): -(1 - self.Y_H) / self.Y_H,
-            ("R1", "Liq", "S_NO"): 0,
-            ("R1", "Liq", "S_NH"): -self.i_xb,
-            ("R1", "Liq", "S_ND"): 0,
-            ("R1", "Liq", "X_ND"): 0,
-            ("R1", "Liq", "S_ALK"): -self.i_xb * (mw_alk / mw_n),
-            # R2: Anoxic growth of heterotrophs
+            ("R1", "Liq", "S_su"): 0,
+            ("R1", "Liq", "S_aa"): 0,
+            ("R1", "Liq", "S_fa"): 0,
+            ("R1", "Liq", "S_va"): 0,
+            ("R1", "Liq", "S_bu"): 0,
+            ("R1", "Liq", "S_pro"): 0,
+            ("R1", "Liq", "S_ac"): 0,
+            ("R1", "Liq", "S_h2"): 0,
+            ("R1", "Liq", "S_ch4"): 0,
+            ("R1", "Liq", "S_IC"): 0,
+            ("R1", "Liq", "S_IN"): 0,
+            ("R1", "Liq", "S_I"): self.f_sI_xc,
+            ("R1", "Liq", "X_c"): -1,
+            ("R1", "Liq", "X_ch"): self.f_ch_xc,
+            ("R1", "Liq", "X_pr"): self.f_pr_xc,
+            ("R1", "Liq", "X_li"): self.f_li_xc,
+            ("R1", "Liq", "X_su"): 0,
+            ("R1", "Liq", "X_aa"): 0,
+            ("R1", "Liq", "X_fa"): 0,
+            ("R1", "Liq", "X_c4"): 0,
+            ("R1", "Liq", "X_pro"): 0,
+            ("R1", "Liq", "X_ac"): 0,
+            ("R1", "Liq", "X_h2"): 0,
+            ("R1", "Liq", "X_I"): self.f_xI_xc,
+            # R2: Hydrolysis of carbohydrates
+            # TODO: checkpoint
             ("R2", "Liq", "H2O"): 0,
             ("R2", "Liq", "S_I"): 0,
             ("R2", "Liq", "S_S"): -1 / self.Y_H,
