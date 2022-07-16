@@ -23,6 +23,7 @@ from pyomo.environ import (
     Expression,
     Suffix,
     log,
+    value,
     NonNegativeReals,
     Reference,
     units as pyunits,
@@ -141,6 +142,7 @@ class IonExchangeODData(UnitModelBlockData):
         # Ion Exchange Technology I: Theory and Materials.
 
         ion_set = self.config.property_package.ion_set
+        # print('IIIIIII',value(ion_set))
         target_ion = self.config.target_ion
 
         # this creates blank scaling factors, which are populated later
@@ -843,11 +845,13 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Partition ratio")
         def eq_partition_ratio(b):
-            prop_in = b.properties_in[0]
+            # prop_in = b.properties_in[0]
             return b.partition_ratio == (
                 b.resin_eq_capacity * b.resin_bulk_dens
             ) / pyunits.convert(
-                sum(prop_in.conc_equiv_phase_comp["Liq", j] for j in ion_set),
+                sum(
+                    b.properties_in[0].conc_equiv_phase_comp["Liq", j] for j in ion_set
+                ),
                 to_units=pyunits.mol / pyunits.L,
             )
 

@@ -310,9 +310,9 @@ class TestIonExchange:
             assert isinstance(sb, DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 126
+        assert number_variables(m) == 123
         assert number_total_constraints(m) == 86
-        assert number_unused_variables(m) == 16
+        assert number_unused_variables(m) == 13
 
     @pytest.mark.unit
     def test_dof(self, IX_frame):

@@ -515,16 +515,7 @@ class _DSPMDEStateBlock(StateBlock):
                         self[k].conc_mass_phase_comp["Liq", j]
                         / self[k].params.mw_comp[j]
                     )
-                if self[k].is_property_constructed("conc_equiv_phase_comp"):
-                    if j == "H2O":
-                        self[k].conc_equiv_phase_comp["Liq", j].set_value(
-                            self[k].conc_mol_phase_comp["Liq", j]
-                        )
-                    else:
-                        self[k].conc_equiv_phase_comp["Liq", j].set_value(
-                            self[k].conc_mol_phase_comp["Liq", j]
-                            / abs(self[k].params.charge_comp[j])
-                        )
+
                 if self[k].is_property_constructed("flow_mass_phase_comp"):
                     self[k].flow_mass_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -538,24 +529,28 @@ class _DSPMDEStateBlock(StateBlock):
                             for j in self[k].params.component_list
                         )
                     )
-                if self[k].is_property_constructed("flow_equiv_phase_comp"):
-                    if j == "H2O":
-                        self[k].flow_equiv_phase_comp["Liq", j].set_value(
-                            self[k].flow_mol_phase_comp["Liq", j]
-                        )
-                    else:
-                        self[k].flow_equiv_phase_comp["Liq", j].set_value(
-                            self[k].flow_mol_phase_comp["Liq", j]
-                            * abs(self[k].params.charge_comp[j])
-                        )
+
             # Vars indexed by solute_set
-            for j in self[k].params.solute_set:
+            for j in self[k].params.ion_set | self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
                         / self[k].flow_mol_phase_comp["Liq", "H2O"]
                         / self[k].params.mw_comp["H2O"]
                     )
+                if self[k].is_property_constructed("conc_equiv_phase_comp"):
+
+                    self[k].conc_equiv_phase_comp["Liq", j].set_value(
+                        self[k].conc_mol_phase_comp["Liq", j]
+                        / abs(self[k].params.charge_comp[j])
+                    )
+                if self[k].is_property_constructed("flow_equiv_phase_comp"):
+
+                    self[k].flow_equiv_phase_comp["Liq", j].set_value(
+                        self[k].flow_mol_phase_comp["Liq", j]
+                        * abs(self[k].params.charge_comp[j])
+                    )
+
             # Vars indexed not indexed or indexed only by phase
             if self[k].is_property_constructed("ionic_strength_molal"):
                 self[k].ionic_strength_molal.set_value(
@@ -954,7 +949,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def _flow_equiv_phase_comp(self):
         self.flow_equiv_phase_comp = Var(
             self.params.phase_list,
-            self.params.component_list,
+            self.params.ion_set | self.params.solute_set,
             initialize=0.1,
             bounds=(0, None),
             units=pyunits.mol / pyunits.s,
@@ -962,23 +957,20 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_flow_equiv_phase_comp(b, j):
-            if j == "H2O":
-                return (
-                    b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp["Liq", j]
-                )
-            else:
-                return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                    "Liq", j
-                ] * abs(b.params.charge_comp[j])
+
+            return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
+                "Liq", j
+            ] * abs(b.params.charge_comp[j])
 
         self.eq_flow_equiv_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_equiv_phase_comp
+            self.params.ion_set | self.params.solute_set,
+            rule=rule_flow_equiv_phase_comp,
         )
 
     def _conc_equiv_phase_comp(self):
         self.conc_equiv_phase_comp = Var(
             self.params.phase_list,
-            self.params.component_list,
+            self.params.ion_set | self.params.solute_set,
             initialize=500,
             bounds=(0, None),
             units=pyunits.mol / pyunits.m**3,
@@ -986,17 +978,14 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_conc_equiv_phase_comp(b, j):
-            if j == "H2O":
-                return (
-                    b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp["Liq", j]
-                )
-            else:
-                return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
-                    "Liq", j
-                ] * abs(b.params.charge_comp[j])
+
+            return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
+                "Liq", j
+            ] * abs(b.params.charge_comp[j])
 
         self.eq_conc_equiv_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_equiv_phase_comp
+            self.params.ion_set | self.params.solute_set,
+            rule=rule_conc_equiv_phase_comp,
         )
 
     def _mole_frac_phase_comp(self):
@@ -1438,16 +1427,6 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.visc_k_phase[p], 1e6)
 
-        if self.is_property_constructed("flow_equiv_phase_comp"):
-            if (
-                iscale.get_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"])
-                is None
-            ):
-                sf = iscale.get_scaling_factor(
-                    self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=True
-                )
-                iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", "H2O"], sf)
-
         if self.is_property_constructed("mole_frac_phase_comp"):
             for j in self.params.component_list:
                 if (
@@ -1535,7 +1514,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.conc_mol_phase_comp["Liq", j], sf)
 
         if self.is_property_constructed("conc_equiv_phase_comp"):
-            for j in self.params.component_list:
+            for j in self.params.ion_set | self.params.solute_set:
                 if (
                     iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
                     is None

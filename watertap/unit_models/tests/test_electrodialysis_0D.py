@@ -687,7 +687,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "N")
+            "flow_mol_phase_comp", 1e6, index=("Liq", "N")
         )
         iscale.calculate_scaling_factors(m.fs)
         initialization_tester(m)
