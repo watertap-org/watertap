@@ -1,0 +1,38 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0.5
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    bod:
+      value: 0.9682
+      units: dimensionless
+      constituent_longform: Biological Oxygen Demand (BOD)
+    tss:
+      value: 0.9851
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    tkn:
+      value: 0.8846
+      units: dimensionless
+      constituent_longform: Total Kjeldahl Nitrogen (TKN)
+    phosphorus:
+      value: 0.8333
+      units: dimensionless
+      constituent_longform: Phosphorus
+  capital_cost:
+    cost_factor: None
+    aeration_basin_cost:
+      value: 4e6
+      units: USD_2020/mgd
+    mixer_cost:
+      value: 3e4
+      units: USD_2020
+    num_of_mixers:
+      value: 9
+      units: dimensionless
