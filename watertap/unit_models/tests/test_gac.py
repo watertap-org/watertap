@@ -340,14 +340,9 @@ class TestGACRobust:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    @pytest.mark.skip("Scaling for GAC model needs to be revisited")
     def test_var_scaling_robust(self, gac_frame_robust):
         m = gac_frame_robust
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        for i in badly_scaled_var_lst:
-            i[0].pprint()
-            print(i[1])
-            print()
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver

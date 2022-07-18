@@ -390,7 +390,6 @@ def test_default_scaling(model3):
         ("dens_mass_phase", "Liq"): 1e-3,
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
-        ("visc_k_phase", "Liq"): 1e6,
     }
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
