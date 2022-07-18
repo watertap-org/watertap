@@ -932,3 +932,6 @@ class Electrodialysis0DData(UnitModelBlockData):
             "exprs": {},
             "params": {},
         }
+
+    def get_power_electrical(self, time_point=0):
+        return self.power_electrical[time_point]
