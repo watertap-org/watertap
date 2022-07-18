@@ -65,7 +65,7 @@ class TestUltraviolet:
         m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
 
         # fully specify system
-        feed_flow_mass = 1 * pyunits.kg / pyunits.s
+        feed_flow_mass = 500 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325 * pyunits.Pa
         feed_temperature = (273.15 + 25) * pyunits.K
@@ -209,23 +209,23 @@ class TestUltraviolet:
     @pytest.mark.component
     def test_solution(self, UV_frame):
         m = UV_frame
-        assert pytest.approx(0.999999999, rel=1e-3) == value(
+        assert pytest.approx(499.999963, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(0.001003, rel=1e-3) == value(
+        assert pytest.approx(0.5015, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_vol
         )
-        assert pytest.approx(74e-9, rel=1e-3) == value(
+        assert pytest.approx(3.7e-5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(0.999999999, rel=1e-3) == value(
+        assert pytest.approx(499.999963, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(1.8248e-8, rel=1e-3) == value(
+        assert pytest.approx(9.1241e-6, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
@@ -235,7 +235,7 @@ class TestUltraviolet:
         assert pytest.approx(1.3333e-4, rel=1e-3) == value(
             m.fs.unit.reaction_rate_constant["Liq", "NDMA"]
         )
-        assert pytest.approx(1829.525, rel=1e-3) == value(
+        assert pytest.approx(914762.7, rel=1e-3) == value(
             m.fs.unit.electricity_demand[0]
         )
 
@@ -258,7 +258,7 @@ class TestUltraviolet:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(967.423, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(143.3664, rel=1e-5) == value(
+        assert pytest.approx(483711.497, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(71683.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )

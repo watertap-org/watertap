@@ -460,7 +460,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        cost_uv_aop_stack(
+        cost_uv_aop_bundle(
             blk,
             blk.costing_package.uv_reactor_cost,
             blk.costing_package.uv_lamp_cost,
@@ -1102,9 +1102,9 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     )
 
 
-def cost_uv_aop_stack(blk, flow_cost, electricity_cost, factor_uv_replacement):
+def cost_uv_aop_bundle(blk, flow_cost, electricity_cost, factor_uv_replacement):
     """
-    Generic function for costing by flow volume.
+    Generic function for costing a UV system.
 
     Args:
         flow_cost - The cost of UV reactor in [currency]/[volume]
