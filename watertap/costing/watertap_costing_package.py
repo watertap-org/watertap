@@ -750,9 +750,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         if cost_electricity_flow:
             blk.costing_package.cost_flow(
                 pyo.units.convert(
-                    blk.unit_model._get_performance_contents(t0)["vars"][
-                        "Total electrical power consumption(Watt)"
-                    ],
+                    blk.unit_model.get_power_electrical(t0),
                     to_units=pyo.units.kW,
                 ),
                 "electricity",
