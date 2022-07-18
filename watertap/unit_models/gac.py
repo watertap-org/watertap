@@ -1064,7 +1064,7 @@ class GACData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # overwrite default scaling
+        # overwrite default scaling for state block variables
         for j in self.config.property_package.solute_set:
             sf = 100 * iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
@@ -1074,6 +1074,18 @@ class GACData(UnitModelBlockData):
             )
 
         # scaling for gac created variables that are flow magnitude dependent
+        # scale based on molar flow traditionally provided by user for building flowsheets
+        for j in self.config.property_package.solute_set:
+            sf_solute = iscale.get_scaling_factor(
+                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+            )
+        for j in self.config.property_package.solvent_set:
+            sf_solvent = iscale.get_scaling_factor(
+                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+            )
+        print(sf_solute)
+        print(sf_solvent)
+
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, 1e-3)
 

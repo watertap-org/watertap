@@ -148,6 +148,7 @@ class TestGACSimplified:
             port = getattr(m.fs.unit, port_str)
             assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
+        # print(unused_variables_set(m))
 
         # test statistics
         assert number_variables(m) == 77
@@ -184,7 +185,12 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_var_scaling_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m, large=1e2, small=1e-2)
+        )
+        for i in badly_scaled_var_lst:
+            i[0].pprint()
+            print(i[0].name, "scaled to", i[1], "\n")
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
@@ -201,6 +207,8 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
+        m.fs.unit.bed_area.display()
+
         # Approx data pulled from graph in Hand, 1984 at ~30 days
         # 30 days adjusted to actual solution to account for web plot data extraction error within reason
         assert pytest.approx(29.563, rel=1e-3) == value(m.fs.unit.elap_time) / 24 / 3600
@@ -299,8 +307,7 @@ class TestGACSimplified:
             port = getattr(m.fs.unit, port_str)
             assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
-
-        print(unused_variables_set(m))
+        # print(unused_variables_set(m))
 
         # test statistics
         assert number_variables(m) == 84
@@ -337,7 +344,12 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_var_scaling_robust(self, gac_frame_robust):
         m = gac_frame_robust
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m, large=1e2, small=1e-2)
+        )
+        for i in badly_scaled_var_lst:
+            i[0].pprint()
+            print(i[0].name, "scaled to", i[1], "\n")
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
@@ -354,6 +366,7 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
+        m.fs.unit.bed_area.display()
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(m.fs.unit.mass_throughput)
