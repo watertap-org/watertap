@@ -482,10 +482,7 @@ class _DSPMDEStateBlock(StateBlock):
 
         # initialize vars caculated from state vars
         for k in self.keys():
-            if self[k].is_property_constructed("visc_k_phase"):
-                self[k].visc_k_phase["Liq"].set_value(
-                    self[k].visc_d_phase["Liq"] / self[k].dens_mass_phase["Liq"]
-                )
+            
             # Vars indexed by component (and phase)
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
@@ -552,6 +549,10 @@ class _DSPMDEStateBlock(StateBlock):
                     )
 
             # Vars indexed not indexed or indexed only by phase
+            if self[k].is_property_constructed("visc_k_phase"):
+                self[k].visc_k_phase["Liq"].set_value(
+                    self[k].visc_d_phase["Liq"] / self[k].dens_mass_phase["Liq"]
+                )
             if self[k].is_property_constructed("ionic_strength_molal"):
                 self[k].ionic_strength_molal.set_value(
                     0.5
