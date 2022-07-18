@@ -65,7 +65,7 @@ class TestUltraviolet:
         m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
 
         # fully specify system
-        feed_flow_mass = 500 * pyunits.kg / pyunits.s
+        feed_flow_mass = 2053 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325 * pyunits.Pa
         feed_temperature = (273.15 + 25) * pyunits.K
@@ -81,9 +81,17 @@ class TestUltraviolet:
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
             feed_flow_mass * feed_mass_frac_NDMA
         )
+
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e4, index=("Liq", "NDMA")
+        )
+
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         # m.fs.unit.uv_dose.fix(uv_dose)
@@ -194,7 +202,7 @@ class TestUltraviolet:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
+        [print(i[0].name, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -209,23 +217,23 @@ class TestUltraviolet:
     @pytest.mark.component
     def test_solution(self, UV_frame):
         m = UV_frame
-        assert pytest.approx(499.999963, rel=1e-3) == value(
+        assert pytest.approx(2052.999848078, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(0.5015, rel=1e-3) == value(
+        assert pytest.approx(2.0592, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_vol
         )
-        assert pytest.approx(3.7e-5, rel=1e-3) == value(
+        assert pytest.approx(1.51922e-4, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(499.999963, rel=1e-3) == value(
+        assert pytest.approx(2053, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(9.1241e-6, rel=1e-3) == value(
+        assert pytest.approx(3.74635e-5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
@@ -235,7 +243,7 @@ class TestUltraviolet:
         assert pytest.approx(1.3333e-4, rel=1e-3) == value(
             m.fs.unit.reaction_rate_constant["Liq", "NDMA"]
         )
-        assert pytest.approx(914762.7, rel=1e-3) == value(
+        assert pytest.approx(3756015.6, rel=1e-3) == value(
             m.fs.unit.electricity_demand[0]
         )
 
@@ -258,7 +266,9 @@ class TestUltraviolet:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(483711.497, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(71683.2, rel=1e-5) == value(
+        assert pytest.approx(1986119.410, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(294331.2456, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
