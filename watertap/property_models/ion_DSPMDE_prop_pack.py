@@ -365,7 +365,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
-        self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
 
     @classmethod
     def define_metadata(cls, obj):
