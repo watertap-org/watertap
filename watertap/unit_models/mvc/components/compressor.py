@@ -171,7 +171,7 @@ class CompressorData(UnitModelBlockData):
         )
 
         self.efficiency = Var(
-            initialize=0.8, bounds=(1e-8, 1), units=pyunits.dimensionless
+            initialize=0.8, bounds=(0.0, 1), units=pyunits.dimensionless
         )
 
         # Build control volume

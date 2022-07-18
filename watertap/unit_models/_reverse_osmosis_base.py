@@ -911,10 +911,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.ReverseOsmosis_costing(self.costing, **kwargs)
-
     def _get_state_args(
         self, source, mixed_permeate_properties, initialize_guess, state_args
     ):
