@@ -482,8 +482,8 @@ class _DSPMDEStateBlock(StateBlock):
 
         # initialize vars caculated from state vars
         for k in self.keys():
-            
-            # Vars indexed by component (and phase)
+
+            # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
                     self[k].mass_frac_phase_comp["Liq", j].set_value(
@@ -498,15 +498,7 @@ class _DSPMDEStateBlock(StateBlock):
                         self[k].dens_mass_phase["Liq"]
                         * self[k].mass_frac_phase_comp["Liq", j]
                     )
-                if self[k].is_property_constructed("flow_vol_phase"):
-                    self[k].flow_vol_phase["Liq"].set_value(
-                        sum(
-                            self[k].flow_mol_phase_comp["Liq", j]
-                            * self[k].params.mw_comp[j]
-                            for j in self[k].params.component_list
-                        )
-                        / self[k].dens_mass_phase["Liq"]
-                    )
+
                 if self[k].is_property_constructed("conc_mol_phase_comp"):
                     self[k].conc_mol_phase_comp["Liq", j].set_value(
                         self[k].conc_mass_phase_comp["Liq", j]
@@ -527,7 +519,7 @@ class _DSPMDEStateBlock(StateBlock):
                         )
                     )
 
-            # Vars indexed by solute_set
+            # Vars indexed by ion_set | solute_set
             for j in self[k].params.ion_set | self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
@@ -548,7 +540,16 @@ class _DSPMDEStateBlock(StateBlock):
                         * abs(self[k].params.charge_comp[j])
                     )
 
-            # Vars indexed not indexed or indexed only by phase
+            # Vars not indexed or indexed only by phase
+            if self[k].is_property_constructed("flow_vol_phase"):
+                self[k].flow_vol_phase["Liq"].set_value(
+                    sum(
+                        self[k].flow_mol_phase_comp["Liq", j]
+                        * self[k].params.mw_comp[j]
+                        for j in self[k].params.component_list
+                    )
+                    / self[k].dens_mass_phase["Liq"]
+                )
             if self[k].is_property_constructed("visc_k_phase"):
                 self[k].visc_k_phase["Liq"].set_value(
                     self[k].visc_d_phase["Liq"] / self[k].dens_mass_phase["Liq"]
@@ -1417,17 +1418,18 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-3)
-
-        for p, v in self.dens_mass_phase.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-3)
-        for p, v in self.visc_d_phase.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.visc_d_phase[p], 1e3)
-        for p, v in self.visc_k_phase.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.visc_k_phase[p], 1e6)
-
+        if self.is_property_constructed("dens_mass_phase"):
+            for p, v in self.dens_mass_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-3)
+        if self.is_property_constructed("visc_d_phase"):
+            for p, v in self.visc_d_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.visc_d_phase[p], 1e3)
+        if self.is_property_constructed("visc_k_phase"):
+            for p, v in self.visc_k_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.visc_k_phase[p], 1e6)
         if self.is_property_constructed("mole_frac_phase_comp"):
             for j in self.params.component_list:
                 if (
