@@ -222,7 +222,7 @@ class GACData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Isothermal assumption for absorbed contaminant",
         )
-        def eq_isothermal_adsorbate(b, t):
+        def eq_isothermal_adsorbed_contam(b, t):
             return (
                 b.process_flow.properties_in[t].temperature
                 == b.adsorbed_contam[t].temperature
@@ -232,7 +232,7 @@ class GACData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Isobaric assumption for absorbed contaminant",
         )
-        def eq_isobaric_adsorbate(b, t):
+        def eq_isobaric_adsorbed_contam(b, t):
             return (
                 b.process_flow.properties_in[t].pressure
                 == b.adsorbed_contam[t].pressure
@@ -1027,8 +1027,7 @@ class GACData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
-        # Initialize adsorbate port
-
+        # Initialize adsorbed_contam port
         for j in blk.config.property_package.solvent_set:
             state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-8
 
