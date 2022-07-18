@@ -133,9 +133,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / (pyo.units.meter**2),
         )
         self.uv_reactor_cost = pyo.Var(
-            initialize=728440,
+            initialize=1213.107,
             doc="UV reactor cost",
-            units=self.base_currency / (pyo.units.m ** 3/pyo.units.s),
+            units=self.base_currency / (pyo.units.m**3 / pyo.units.s),
         )
         self.uv_lamp_cost = pyo.Var(
             initialize=196.25,
@@ -1103,29 +1103,32 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
     )
 
+
 def cost_uv_aop_stack(blk, flow_cost, electricity_cost, factor_uv_replacement):
     """
     Generic function for costing by flow volume.
 
     Args:
-        flow_cost - The cost of UV reactor in [currency]/([volume]/[time])
-        electricity_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/([kW])
+        flow_cost - The cost of UV reactor in [currency]/[volume]
+        electricity_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
     """
     make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.electricity_cost = pyo.Expression(expr=electricity_cost)
     blk.factor_uv_replacement = pyo.Expression(expr=factor_uv_replacement)
 
-    flow_in = pyo.units.convert(
-        blk.unit_model.control_volume.properties_in[0].flow_vol,
-        to_units=pyo.units.m ** 3 / pyo.units.s)
+    reactor_volume = pyo.units.convert(
+        blk.unit_model.reactor_volume, to_units=pyo.units.m**3
+    )
 
     electricity_demand = pyo.units.convert(
-        blk.unit_model.electricity_demand[0],
-        to_units=pyo.units.kW)
+        blk.unit_model.electricity_demand[0], to_units=pyo.units.kW
+    )
 
     blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost == blk.flow_cost * flow_in + blk.electricity_cost * electricity_demand
+        expr=blk.capital_cost
+        == blk.flow_cost * reactor_volume + blk.electricity_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost

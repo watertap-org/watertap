@@ -46,6 +46,8 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from pyomo.util.check_units import assert_units_consistent
+from idaes.core import UnitModelCostingBlock
+from watertap.costing import WaterTAPCosting
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -160,8 +162,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 37
-        assert number_total_constraints(m) == 24
+        assert number_variables(m) == 38
+        assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test unit consistency
@@ -235,4 +237,28 @@ class TestUltraviolet:
         )
         assert pytest.approx(1829.525, rel=1e-3) == value(
             m.fs.unit.electricity_demand[0]
+        )
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, UV_frame):
+        m = UV_frame
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyunits.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+        results = solver.solve(m)
+
+        assert results.solver.termination_condition == TerminationCondition.optimal
+
+        # Check solutions
+        assert pytest.approx(967.423, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(143.3664, rel=1e-5) == value(
+            m.fs.unit.costing.fixed_operating_cost
         )
