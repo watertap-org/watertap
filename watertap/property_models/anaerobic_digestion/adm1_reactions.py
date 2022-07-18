@@ -40,6 +40,7 @@ import idaes.logger as idaeslog
 
 # Some more information about this module
 __author__ = "Adam Atia"
+# Using Andrew Lee's formulation of ASM1 as a template
 
 
 # Set up logger
@@ -84,123 +85,116 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
 
         self.rate_reaction_idx = pyo.Set(initialize=[f"R{i}" for i in range(1, 20)])
 
-        # Biochemical Rate Coefficients
-        # self.Y_A = pyo.Var(
-        #     initialize=0.24,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Yield of cell COD formed per g N consumed, Y_A",
-        # )
-        # self.Y_H = pyo.Var(
-        #     initialize=0.67,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Yield of cell COD formed per g COD oxidized, Y_H",
-        # )
-        # self.f_p = pyo.Var(
-        #     initialize=0.08,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Fraction of biomass yielding particulate products, f_p",
-        # )
-        # self.i_xb = pyo.Var(
-        #     initialize=0.08,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Mass fraction of N per COD in biomass, i_xb",
-        # )
-        # self.i_xp = pyo.Var(
-        #     initialize=0.06,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Mass fraction of N per COD in particulates, i_xp",
-        # )
-        #
-        # # Kinetic Parameters
-        # self.mu_A = pyo.Var(
-        #     initialize=0.5,
-        #     units=1 / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Maximum specific growth rate for autotrophic biomass, mu_A",
-        # )
-        # self.mu_H = pyo.Var(
-        #     initialize=4,
-        #     units=1 / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Maximum specific growth rate for heterotrophic biomass, mu_H",
-        # )
-        # self.K_S = pyo.Var(
-        #     initialize=10e-3,
-        #     units=pyo.units.kg / pyo.units.m**3,
-        #     domain=pyo.PositiveReals,
-        #     doc="Half-saturation coefficient for heterotrophic biomass, K_S",
-        # )
-        # self.K_OH = pyo.Var(
-        #     initialize=0.2e-3,
-        #     units=pyo.units.kg / pyo.units.m**3,
-        #     domain=pyo.PositiveReals,
-        #     doc="Oxygen half-saturation coefficient for heterotrophic biomass, K_O,H",
-        # )
-        # self.K_OA = pyo.Var(
-        #     initialize=0.4e-3,
-        #     units=pyo.units.kg / pyo.units.m**3,
-        #     domain=pyo.PositiveReals,
-        #     doc="Oxygen half-saturation coefficient for autotrophic biomass, K_O,A",
-        # )
-        # self.K_NO = pyo.Var(
-        #     initialize=0.5e-3,
-        #     units=pyo.units.kg / pyo.units.m**3,
-        #     domain=pyo.PositiveReals,
-        #     doc="Nitrate half-saturation coefficient for denitrifying heterotrophic biomass, K_NO",
-        # )
-        # self.b_H = pyo.Var(
-        #     initialize=0.3,
-        #     units=1 / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Decay coefficient for heterotrophic biomass, b_H",
-        # )
-        # self.b_A = pyo.Var(
-        #     initialize=0.05,
-        #     units=1 / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Decay coefficient for autotrophic biomass, b_A",
-        # )
-        # self.eta_g = pyo.Var(
-        #     initialize=0.8,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Correction factor for mu_H under anoxic conditions, eta_g",
-        # )
-        # self.eta_h = pyo.Var(
-        #     initialize=0.8,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Correction factor for hydrolysis under anoxic conditions, eta_h",
-        # )
-        # self.k_h = pyo.Var(
-        #     initialize=3,
-        #     units=1 / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Maximum specific hydrolysis rate, k_h",
-        # )
-        # self.K_X = pyo.Var(
-        #     initialize=0.1,
-        #     units=pyo.units.dimensionless,
-        #     domain=pyo.PositiveReals,
-        #     doc="Half-saturation coefficient for hydrolysis of slowly biodegradable substrate, K_X",
-        # )
-        # self.K_NH = pyo.Var(
-        #     initialize=1e-3,
-        #     units=pyo.units.kg / pyo.units.m**3,
-        #     domain=pyo.PositiveReals,
-        #     doc="Ammonia Half-saturation coefficient for autotrophic biomass, K_NH",
-        # )
-        # self.k_a = pyo.Var(
-        #     initialize=0.05e3,
-        #     units=pyo.units.m**3 / pyo.units.kg / pyo.units.day,
-        #     domain=pyo.PositiveReals,
-        #     doc="Ammonification rate, k_a",
-        # )
+        # Stoichiometric Parameters (Table 6.1 in Batstone et al., 2002)
+        self.f_sI_xc = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Soluble inerts from composites",
+        )
+        self.f_xI_xc = pyo.Var(
+            initialize=0.25,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Particulate inerts from composites",
+        )
+        self.f_ch_xc = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Carbohydrates from composites",
+        )
+        self.f_pr_xc = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Proteins from composites",
+        )
+        self.f_li_xc = pyo.Var(
+            initialize=0.25,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Lipids from composites",
+        )
+        self.N_xc = pyo.Var(
+            initialize=0.002,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen content of composites",
+        )
+        self.N_I = pyo.Var(
+            initialize=0.002,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen content of inerts",
+        )
+        self.f_fa_li = pyo.Var(
+            initialize=0.95,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Fatty acids from lipids",
+        )
+        self.f_h2_su = pyo.Var(
+            initialize=0.19,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Hydrogen from sugars",
+        )
+        self.f_bu_su = pyo.Var(
+            initialize=0.13,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Butyrate from sugars",
+        )
+        self.f_pro_su = pyo.Var(
+            initialize=0.95,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Propionate from sugars",
+        )
+        self.f_ac_su = pyo.Var(
+            initialize=0.41,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Acetate from sugars",
+        )
+        self.f_h2_aa = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Hydrogen from amino acids",
+        )
+        self.N_aa = pyo.Var(
+            initialize=0.007,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen in amino acids and proteins",
+        )
+        self.f_va_aa = pyo.Var(
+            initialize=0.23,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Valerate from amino acids",
+        )
+        self.f_bu_aa = pyo.Var(
+            initialize=0.26,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Butyrate from amino acids",
+        )
+        self.f_pro_aa = pyo.Var(
+            initialize=0.05,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Propionate from amino acids",
+        )
+        self.f_ac_aa = pyo.Var(
+            initialize=0.05,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Acetate from amino acids",
+        )
+        # Kinetic Parameters
 
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
@@ -236,110 +230,72 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             # R2: Hydrolysis of carbohydrates
             # TODO: checkpoint
             ("R2", "Liq", "H2O"): 0,
+            ("R2", "Liq", "S_su"): 1,
+            ("R2", "Liq", "S_aa"): 0,
+            ("R2", "Liq", "S_fa"): 0,
+            ("R2", "Liq", "S_va"): 0,
+            ("R2", "Liq", "S_bu"): 0,
+            ("R2", "Liq", "S_pro"): 0,
+            ("R2", "Liq", "S_ac"): 0,
+            ("R2", "Liq", "S_h2"): 0,
+            ("R2", "Liq", "S_ch4"): 0,
+            ("R2", "Liq", "S_IC"): 0,
+            ("R2", "Liq", "S_IN"): 0,
             ("R2", "Liq", "S_I"): 0,
-            ("R2", "Liq", "S_S"): -1 / self.Y_H,
+            ("R2", "Liq", "X_c"): 0,
+            ("R2", "Liq", "X_ch"): -1,
+            ("R2", "Liq", "X_pr"): 0,
+            ("R2", "Liq", "X_li"): 0,
+            ("R2", "Liq", "X_su"): 0,
+            ("R2", "Liq", "X_aa"): 0,
+            ("R2", "Liq", "X_fa"): 0,
+            ("R2", "Liq", "X_c4"): 0,
+            ("R2", "Liq", "X_pro"): 0,
+            ("R2", "Liq", "X_ac"): 0,
+            ("R2", "Liq", "X_h2"): 0,
             ("R2", "Liq", "X_I"): 0,
-            ("R2", "Liq", "X_S"): 0,
-            ("R2", "Liq", "X_BH"): 1,
-            ("R2", "Liq", "X_BA"): 0,
-            ("R2", "Liq", "X_P"): 0,
-            ("R2", "Liq", "S_O"): 0,
-            ("R2", "Liq", "S_NO"): -(1 - self.Y_H) / (2.86 * self.Y_H),
-            ("R2", "Liq", "S_NH"): -self.i_xb,
-            ("R2", "Liq", "S_ND"): 0,
-            ("R2", "Liq", "X_ND"): 0,
-            ("R2", "Liq", "S_ALK"): ((1 - self.Y_H) / (2.86 * self.Y_H) - self.i_xb)
-            * (mw_alk / mw_n),
-            # R3: Aerobic growth of autotrophs
+            # R3:  Hydrolysis of proteins
             ("R3", "Liq", "H2O"): 0,
+            ("R3", "Liq", "S_su"): 0,
+            ("R3", "Liq", "S_aa"): 1,
+            ("R3", "Liq", "S_fa"): 0,
+            ("R3", "Liq", "S_va"): 0,
+            ("R3", "Liq", "S_bu"): 0,
+            ("R3", "Liq", "S_pro"): 0,
+            ("R3", "Liq", "S_ac"): 0,
+            ("R3", "Liq", "S_h2"): 0,
+            ("R3", "Liq", "S_ch4"): 0,
+            ("R3", "Liq", "S_IC"): 0,
+            ("R3", "Liq", "S_IN"): 0,
             ("R3", "Liq", "S_I"): 0,
-            ("R3", "Liq", "S_S"): 0,
+            ("R3", "Liq", "X_c"): 0,
+            ("R3", "Liq", "X_ch"): 0,
+            ("R3", "Liq", "X_pr"): -1,
+            ("R3", "Liq", "X_li"): 0,
+            ("R3", "Liq", "X_su"): 0,
+            ("R3", "Liq", "X_aa"): 0,
+            ("R3", "Liq", "X_fa"): 0,
+            ("R3", "Liq", "X_c4"): 0,
+            ("R3", "Liq", "X_pro"): 0,
+            ("R3", "Liq", "X_ac"): 0,
+            ("R3", "Liq", "X_h2"): 0,
             ("R3", "Liq", "X_I"): 0,
-            ("R3", "Liq", "X_S"): 0,
-            ("R3", "Liq", "X_BH"): 0,
-            ("R3", "Liq", "X_BA"): 1,
-            ("R3", "Liq", "X_P"): 0,
-            ("R3", "Liq", "S_O"): -(4.57 - self.Y_A) / self.Y_A,
-            ("R3", "Liq", "S_NO"): 1 / self.Y_A,
-            ("R3", "Liq", "S_NH"): -self.i_xb - 1 / self.Y_A,
-            ("R3", "Liq", "S_ND"): 0,
-            ("R3", "Liq", "X_ND"): 0,
-            ("R3", "Liq", "S_ALK"): (-self.i_xb - 2 / (self.Y_A)) * (mw_alk / mw_n),
-            # R4: Decay of heterotrophs
-            ("R4", "Liq", "H2O"): 0,
-            ("R4", "Liq", "S_I"): 0,
-            ("R4", "Liq", "S_S"): 0,
-            ("R4", "Liq", "X_I"): 0,
-            ("R4", "Liq", "X_S"): 1 - self.f_p,
-            ("R4", "Liq", "X_BH"): -1,
-            ("R4", "Liq", "X_BA"): 0,
-            ("R4", "Liq", "X_P"): self.f_p,
-            ("R4", "Liq", "S_O"): 0,
-            ("R4", "Liq", "S_NO"): 0,
-            ("R4", "Liq", "S_NH"): 0,
-            ("R4", "Liq", "S_ND"): 0,
-            ("R4", "Liq", "X_ND"): self.i_xb - self.f_p * self.i_xp,
-            ("R4", "Liq", "S_ALK"): 0,
-            # R5: Decay of autotrophs
-            ("R5", "Liq", "H2O"): 0,
-            ("R5", "Liq", "S_I"): 0,
-            ("R5", "Liq", "S_S"): 0,
-            ("R5", "Liq", "X_I"): 0,
-            ("R5", "Liq", "X_S"): 1 - self.f_p,
-            ("R5", "Liq", "X_BH"): 0,
-            ("R5", "Liq", "X_BA"): -1,
-            ("R5", "Liq", "X_P"): self.f_p,
-            ("R5", "Liq", "S_O"): 0,
-            ("R5", "Liq", "S_NO"): 0,
-            ("R5", "Liq", "S_NH"): 0,
-            ("R5", "Liq", "S_ND"): 0,
-            ("R5", "Liq", "X_ND"): self.i_xb - self.f_p * self.i_xp,
-            ("R5", "Liq", "S_ALK"): 0,
-            # R6: Ammonification of soluble organic nitrogen
-            ("R6", "Liq", "H2O"): 0,
-            ("R6", "Liq", "S_I"): 0,
-            ("R6", "Liq", "S_S"): 0,
-            ("R6", "Liq", "X_I"): 0,
-            ("R6", "Liq", "X_S"): 0,
-            ("R6", "Liq", "X_BH"): 0,
-            ("R6", "Liq", "X_BA"): 0,
-            ("R6", "Liq", "X_P"): 0,
-            ("R6", "Liq", "S_O"): 0,
-            ("R6", "Liq", "S_NO"): 0,
-            ("R6", "Liq", "S_NH"): 1,
-            ("R6", "Liq", "S_ND"): -1,
-            ("R6", "Liq", "X_ND"): 0,
-            ("R6", "Liq", "S_ALK"): 1 * (mw_alk / mw_n),
-            # R7: Hydrolysis of entrapped organics
-            ("R7", "Liq", "H2O"): 0,
-            ("R7", "Liq", "S_I"): 0,
-            ("R7", "Liq", "S_S"): 1,
-            ("R7", "Liq", "X_I"): 0,
-            ("R7", "Liq", "X_S"): -1,
-            ("R7", "Liq", "X_BH"): 0,
-            ("R7", "Liq", "X_BA"): 0,
-            ("R7", "Liq", "X_P"): 0,
-            ("R7", "Liq", "S_O"): 0,
-            ("R7", "Liq", "S_NO"): 0,
-            ("R7", "Liq", "S_NH"): 0,
-            ("R7", "Liq", "S_ND"): 0,
-            ("R7", "Liq", "X_ND"): 0,
-            ("R7", "Liq", "S_ALK"): 0,
-            # R8: Hydrolysis of entrapped organic nitrogen
-            ("R8", "Liq", "H2O"): 0,
-            ("R8", "Liq", "S_I"): 0,
-            ("R8", "Liq", "S_S"): 0,
-            ("R8", "Liq", "X_I"): 0,
-            ("R8", "Liq", "X_S"): 0,
-            ("R8", "Liq", "X_BH"): 0,
-            ("R8", "Liq", "X_BA"): 0,
-            ("R8", "Liq", "X_P"): 0,
-            ("R8", "Liq", "S_O"): 0,
-            ("R8", "Liq", "S_NO"): 0,
-            ("R8", "Liq", "S_NH"): 0,
-            ("R8", "Liq", "S_ND"): 1,
-            ("R8", "Liq", "X_ND"): -1,
-            ("R8", "Liq", "S_ALK"): 0,
+            # R4:  Hydrolysis of lipids
+            # R5:  Uptake of sugars
+            # R6:  Uptake of amino acids
+            # R7:  Uptake of long chain fatty acids (LCFAs)
+            # R8:  Uptake of valerate
+            # R9:  Uptake of butyrate
+            # R10: Uptake of propionate
+            # R11: Uptake of acetate
+            # R12: Uptake of hydrogen
+            # R13: Decay of X_su
+            # R14: Decay of X_aa
+            # R15: Decay of X_fa
+            # R16: Decay of X_c4
+            # R17: Decay of X_pro
+            # R18: Decay of X_ac
+            # R19: Decay of X_h2
         }
         # Fix all the variables we just created
         for v in self.component_objects(pyo.Var, descend_into=False):
@@ -408,127 +364,127 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
 
-        try:
+        # try:
+        #
+        #     def rate_expression_rule(b, r):
+        # if r == "R1":
+        #     # R1: Aerobic growth of heterotrophs
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.mu_H
+        #         * (
+        #             b.conc_mass_comp_ref["S_S"]
+        #             / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
+        #         )
+        #         * (
+        #             b.conc_mass_comp_ref["S_O"]
+        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
+        #         )
+        #         * b.conc_mass_comp_ref["X_BH"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R2":
+        #     # R2: Anoxic growth of heterotrophs
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.mu_H
+        #         * (
+        #             b.conc_mass_comp_ref["S_S"]
+        #             / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
+        #         )
+        #         * (
+        #             b.params.K_OH
+        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
+        #         )
+        #         * (
+        #             b.conc_mass_comp_ref["S_NO"]
+        #             / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
+        #         )
+        #         * b.params.eta_g
+        #         * b.conc_mass_comp_ref["X_BH"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R3":
+        #     # R3: Aerobic growth of autotrophs
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.mu_A
+        #         * (
+        #             b.conc_mass_comp_ref["S_NH"]
+        #             / (b.params.K_NH + b.conc_mass_comp_ref["S_NH"])
+        #         )
+        #         * (
+        #             b.conc_mass_comp_ref["S_O"]
+        #             / (b.params.K_OA + b.conc_mass_comp_ref["S_O"])
+        #         )
+        #         * b.conc_mass_comp_ref["X_BA"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R4":
+        #     # R4: Decay of heterotrophs
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.b_H * b.conc_mass_comp_ref["X_BH"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R5":
+        #     # R5: Decay of autotrophs
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.b_A * b.conc_mass_comp_ref["X_BA"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R6":
+        #     # R6: Ammonification of soluble organic nitrogen
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.k_a
+        #         * b.conc_mass_comp_ref["S_ND"]
+        #         * b.conc_mass_comp_ref["X_BH"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R7":
+        #     # R7: Hydrolysis of entrapped organics
+        #     return b.reaction_rate[r] == pyo.units.convert(
+        #         b.params.k_h
+        #         * (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_BH"])
+        #         / (
+        #             b.params.K_X
+        #             + (
+        #                 b.conc_mass_comp_ref["X_S"]
+        #                 / b.conc_mass_comp_ref["X_BH"]
+        #             )
+        #         )
+        #         * (
+        #             (
+        #                 b.conc_mass_comp_ref["S_O"]
+        #                 / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
+        #             )
+        #             + b.params.eta_h
+        #             * b.params.K_OH
+        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
+        #             * (
+        #                 b.conc_mass_comp_ref["S_NO"]
+        #                 / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
+        #             )
+        #         )
+        #         * b.conc_mass_comp_ref["X_BH"],
+        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+        #     )
+        # elif r == "R8":
+        #     # R8: Hydrolysis of entrapped organic nitrogen
+        #     return b.reaction_rate[r] == (
+        #         b.reaction_rate["R7"]
+        #         * (b.conc_mass_comp_ref["X_ND"] / b.conc_mass_comp_ref["X_S"])
+        #     )
+        # else:
+        #     raise BurntToast()
 
-            def rate_expression_rule(b, r):
-                if r == "R1":
-                    # R1: Aerobic growth of heterotrophs
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_H
-                        * (
-                            b.conc_mass_comp_ref["S_S"]
-                            / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_O"]
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                        )
-                        * b.conc_mass_comp_ref["X_BH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R2":
-                    # R2: Anoxic growth of heterotrophs
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_H
-                        * (
-                            b.conc_mass_comp_ref["S_S"]
-                            / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
-                        )
-                        * (
-                            b.params.K_OH
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_NO"]
-                            / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-                        )
-                        * b.params.eta_g
-                        * b.conc_mass_comp_ref["X_BH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R3":
-                    # R3: Aerobic growth of autotrophs
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_A
-                        * (
-                            b.conc_mass_comp_ref["S_NH"]
-                            / (b.params.K_NH + b.conc_mass_comp_ref["S_NH"])
-                        )
-                        * (
-                            b.conc_mass_comp_ref["S_O"]
-                            / (b.params.K_OA + b.conc_mass_comp_ref["S_O"])
-                        )
-                        * b.conc_mass_comp_ref["X_BA"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R4":
-                    # R4: Decay of heterotrophs
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_H * b.conc_mass_comp_ref["X_BH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R5":
-                    # R5: Decay of autotrophs
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_A * b.conc_mass_comp_ref["X_BA"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R6":
-                    # R6: Ammonification of soluble organic nitrogen
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_a
-                        * b.conc_mass_comp_ref["S_ND"]
-                        * b.conc_mass_comp_ref["X_BH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R7":
-                    # R7: Hydrolysis of entrapped organics
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.k_h
-                        * (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_BH"])
-                        / (
-                            b.params.K_X
-                            + (
-                                b.conc_mass_comp_ref["X_S"]
-                                / b.conc_mass_comp_ref["X_BH"]
-                            )
-                        )
-                        * (
-                            (
-                                b.conc_mass_comp_ref["S_O"]
-                                / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                            )
-                            + b.params.eta_h
-                            * b.params.K_OH
-                            / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-                            * (
-                                b.conc_mass_comp_ref["S_NO"]
-                                / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-                            )
-                        )
-                        * b.conc_mass_comp_ref["X_BH"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R8":
-                    # R8: Hydrolysis of entrapped organic nitrogen
-                    return b.reaction_rate[r] == (
-                        b.reaction_rate["R7"]
-                        * (b.conc_mass_comp_ref["X_ND"] / b.conc_mass_comp_ref["X_S"])
-                    )
-                else:
-                    raise BurntToast()
+        # self.rate_expression = pyo.Constraint(
+        #     self.params.rate_reaction_idx,
+        #     rule=rate_expression_rule,
+        #     doc="ADM1 rate expressions",
+        # )
 
-            self.rate_expression = pyo.Constraint(
-                self.params.rate_reaction_idx,
-                rule=rate_expression_rule,
-                doc="ADM1 rate expressions",
-            )
-
-        except AttributeError:
-            # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.reaction_rate)
-            self.del_component(self.rate_expression)
-            raise
+        # except AttributeError:
+        #     # If constraint fails, clean up so that DAE can try again later
+        #     self.del_component(self.reaction_rate)
+        #     self.del_component(self.rate_expression)
+        #     raise
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.mass
