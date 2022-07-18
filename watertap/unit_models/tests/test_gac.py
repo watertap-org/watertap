@@ -146,9 +146,7 @@ class TestGACSimplified:
         port_lst = ["inlet", "outlet", "adsorbed"]
         for port_str in port_lst:
             port = getattr(m.fs.unit, port_str)
-            assert (
-                len(port.vars) == 3
-            )  # number of state variables for NaCl property package
+            assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
 
         # test statistics
@@ -203,8 +201,9 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
-        # test within 3 days of data pulled from graph in Hand, 1984
-        assert pytest.approx(30, rel=1e-1) == value(m.fs.unit.elap_time) / 24 / 3600
+        # Approx data pulled from graph in Hand, 1984 at ~30 days
+        # 30 days adjusted to actual solution to account for web plot data extraction error within reason
+        assert pytest.approx(29.563, rel=1e-3) == value(m.fs.unit.elap_time) / 24 / 3600
 
     @pytest.fixture(scope="class")
     def gac_frame_robust(self):
@@ -298,9 +297,7 @@ class TestGACSimplified:
         port_lst = ["inlet", "outlet", "adsorbed"]
         for port_str in port_lst:
             port = getattr(m.fs.unit, port_str)
-            assert (
-                len(port.vars) == 3
-            )  # number of state variables for NaCl property package
+            assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
 
         print(unused_variables_set(m))

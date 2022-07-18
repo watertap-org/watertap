@@ -248,7 +248,7 @@ class GACData(UnitModelBlockData):
         self.saturation_mtz_upstream = Param(
             default=0.95,
             initialize=0.95,
-            within={0.95, 0.99},
+            domain={0.95, 0.99},
             units=pyunits.dimensionless,
             doc="GAC particle saturation of the lagging/upstream edge"
             " of the mass transfer zone, typically 0.95 or 0.99",
