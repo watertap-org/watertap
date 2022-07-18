@@ -206,6 +206,7 @@ class TestGACSimplified:
         # test within 3 days of data pulled from graph in Hand, 1984
         assert pytest.approx(30, rel=1e-1) == value(m.fs.unit.elap_time) / 24 / 3600
 
+
 class TestGACRobust:
     @pytest.fixture(scope="class")
     def gac_frame_robust(self):
