@@ -1073,16 +1073,7 @@ class GACData(UnitModelBlockData):
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j], sf
             )
 
-        # scaling for gac created variables
-        if iscale.get_scaling_factor(self.freund_k) is None:
-            iscale.set_scaling_factor(self.freund_k, 1)
-
-        if iscale.get_scaling_factor(self.freund_ninv) is None:
-            iscale.set_scaling_factor(self.freund_ninv, 1)
-
-        if iscale.get_scaling_factor(self.equil_conc) is None:
-            iscale.set_scaling_factor(self.equil_conc, 1e4)
-
+        # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, 1e-3)
 
@@ -1092,17 +1083,30 @@ class GACData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.bed_volume) is None:
             iscale.set_scaling_factor(self.bed_volume, 1e-2)
 
-        if iscale.get_scaling_factor(self.bed_voidage) is None:
-            iscale.set_scaling_factor(self.bed_voidage, 1e1)
-
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, 1e-1)
 
-        if iscale.get_scaling_factor(self.bed_length) is None:
-            iscale.set_scaling_factor(self.bed_length, 1e-1)
-
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, 1e-2)
+
+        if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
+            iscale.set_scaling_factor(self.gac_mass_replace_rate, 1e2)
+
+        # scaling for gac created variables that are flow magnitude independent
+        if iscale.get_scaling_factor(self.freund_k) is None:
+            iscale.set_scaling_factor(self.freund_k, 1)
+
+        if iscale.get_scaling_factor(self.freund_ninv) is None:
+            iscale.set_scaling_factor(self.freund_ninv, 1)
+
+        if iscale.get_scaling_factor(self.equil_conc) is None:
+            iscale.set_scaling_factor(self.equil_conc, 1e4)
+
+        if iscale.get_scaling_factor(self.bed_voidage) is None:
+            iscale.set_scaling_factor(self.bed_voidage, 1e1)
+
+        if iscale.get_scaling_factor(self.bed_length) is None:
+            iscale.set_scaling_factor(self.bed_length, 1e-1)
 
         if iscale.get_scaling_factor(self.velocity_sup) is None:
             iscale.set_scaling_factor(self.velocity_sup, 1e3)
@@ -1145,9 +1149,6 @@ class GACData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.elap_time) is None:
             iscale.set_scaling_factor(self.elap_time, 1e-5)
-
-        if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
-            iscale.set_scaling_factor(self.gac_mass_replace_rate, 1e2)
 
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)
