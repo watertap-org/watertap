@@ -13,6 +13,8 @@
 
 from copy import deepcopy
 
+from enum import Enum, auto
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -20,12 +22,10 @@ from pyomo.environ import (
     Var,
     Param,
     Constraint,
-    Expression,
     Suffix,
     log,
     value,
     NonNegativeReals,
-    Reference,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -48,10 +48,16 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util.math import smooth_max
 
 
 _log = idaeslog.getLogger(__name__)
+
+
+class IonExchangeType(Enum):
+    anion = auto()
+    cation = auto()
+    mixed = auto()
+
 
 __author__ = "Kurban Sitterley"
 
@@ -110,6 +116,16 @@ class IonExchangeODData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}""",
+        ),
+    )
+
+    CONFIG.declare(
+        "ion_exchange_type",
+        ConfigValue(
+            default=IonExchangeType.cation,
+            domain=In(IonExchangeType),
+            description="Ion exchange type construction flag",
+            doc="""Options for different types of ion exchange process. **default** - ``IonExchangeType.cation``""",
         ),
     )
 
