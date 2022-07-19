@@ -1126,7 +1126,8 @@ def cost_uv_aop_bundle(blk, flow_cost, electricity_cost, factor_uv_replacement):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.flow_cost * reactor_volume * blk.unit_model.num_of_reactors + blk.electricity_cost * electricity_demand
+        == blk.flow_cost * reactor_volume * blk.unit_model.num_of_reactors
+        + blk.electricity_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
