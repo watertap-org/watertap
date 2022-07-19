@@ -1102,18 +1102,18 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     )
 
 
-def cost_uv_aop_bundle(blk, flow_cost, electricity_cost, factor_uv_replacement):
+def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_replacement):
     """
     Generic function for costing a UV system.
 
     Args:
-        flow_cost - The cost of UV reactor in [currency]/[volume]
-        electricity_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
+        reactor_cost - The cost of UV reactor in [currency]/[volume]
+        lamp_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
     """
     make_capital_cost_var(blk)
     make_fixed_operating_cost_var(blk)
-    blk.flow_cost = pyo.Expression(expr=flow_cost)
-    blk.electricity_cost = pyo.Expression(expr=electricity_cost)
+    blk.reactor_cost = pyo.Expression(expr=reactor_cost)
+    blk.lamp_cost = pyo.Expression(expr=lamp_cost)
     blk.factor_uv_replacement = pyo.Expression(expr=factor_uv_replacement)
 
     reactor_volume = pyo.units.convert(
@@ -1126,10 +1126,10 @@ def cost_uv_aop_bundle(blk, flow_cost, electricity_cost, factor_uv_replacement):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.flow_cost * reactor_volume * blk.unit_model.num_of_reactors
-        + blk.electricity_cost * electricity_demand
+        == blk.reactor_cost * reactor_volume * blk.unit_model.num_of_reactors
+        + blk.lamp_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_uv_replacement * blk.electricity_cost * electricity_demand
+        == blk.factor_uv_replacement * blk.lamp_cost * electricity_demand
     )
