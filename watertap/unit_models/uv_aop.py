@@ -287,6 +287,13 @@ class Ultraviolet0DData(UnitModelBlockData):
             units=units_meta("length") ** 3,
             doc="UV reactor volume.",
         )
+        self.num_of_reactors = Var(
+            initialize=1,
+            bounds=(0, 10000),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Number of reactors.",
+        )
         self.UVT = Var(
             initialize=0.9,
             bounds=(0, 1),
@@ -424,7 +431,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             t0 = b.flowsheet().time.first()
             return (
                 b.reactor_volume
-                == b.control_volume.properties_in[t0].flow_vol * b.exposure_time
+                == b.control_volume.properties_in[t0].flow_vol * b.exposure_time / b.num_of_reactors
             )
 
         # rate constant
@@ -661,10 +668,13 @@ class Ultraviolet0DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.UVA) is None:
             iscale.set_scaling_factor(self.UVA, 100)
 
+        if iscale.get_scaling_factor(self.num_of_reactors) is None:
+            iscale.set_scaling_factor(self.num_of_reactors, 100)
+
         if iscale.get_scaling_factor(self.reactor_volume) is None:
             sf = iscale.get_scaling_factor(
                 self.control_volume.properties_in[0].flow_vol
-            ) * iscale.get_scaling_factor(self.exposure_time)
+            ) * iscale.get_scaling_factor(self.exposure_time) / iscale.get_scaling_factor(self.num_of_reactors)
             iscale.set_scaling_factor(self.reactor_volume, sf)
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:

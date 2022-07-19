@@ -133,7 +133,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / (pyo.units.meter**2),
         )
         self.uv_reactor_cost = pyo.Var(
-            initialize=1213.107,
+            initialize=242.81,
             doc="UV reactor cost",
             units=self.base_currency / (pyo.units.m**3 / pyo.units.s),
         )
@@ -1126,7 +1126,7 @@ def cost_uv_aop_bundle(blk, flow_cost, electricity_cost, factor_uv_replacement):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.flow_cost * reactor_volume + blk.electricity_cost * electricity_demand
+        == blk.flow_cost * reactor_volume * blk.unit_model.num_of_reactors + blk.electricity_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost

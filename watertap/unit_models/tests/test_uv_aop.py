@@ -103,6 +103,7 @@ class TestUltraviolet:
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         m.fs.unit.UVT.fix(UVT)
+        m.fs.unit.num_of_reactors.fix(3)
         return m
 
     @pytest.mark.unit
@@ -170,7 +171,7 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 38
+        assert number_variables(m) == 39
         assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
@@ -266,7 +267,7 @@ class TestUltraviolet:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(1986119.410, rel=1e-5) == value(
+        assert pytest.approx(987112.52, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
         assert pytest.approx(294331.2456, rel=1e-5) == value(
