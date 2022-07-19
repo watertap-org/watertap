@@ -1083,8 +1083,6 @@ class GACData(UnitModelBlockData):
             sf_solvent = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
             )
-        print(sf_solute)
-        print(sf_solvent)
 
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
             iscale.set_scaling_factor(self.mass_adsorbed, 1e-3)
@@ -1099,7 +1097,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.bed_area, 1e-1)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
-            iscale.set_scaling_factor(self.bed_mass_gac, 1e-2)
+            iscale.set_scaling_factor(self.bed_mass_gac, 1e-5)
 
         if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
             iscale.set_scaling_factor(self.gac_mass_replace_rate, 1e2)
@@ -1112,7 +1110,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.freund_ninv, 1)
 
         if iscale.get_scaling_factor(self.equil_conc) is None:
-            iscale.set_scaling_factor(self.equil_conc, 1e4)
+            iscale.set_scaling_factor(self.equil_conc, 1e3)
 
         if iscale.get_scaling_factor(self.bed_voidage) is None:
             iscale.set_scaling_factor(self.bed_voidage, 1e1)
@@ -1160,7 +1158,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.res_time, 1e-2)
 
         if iscale.get_scaling_factor(self.elap_time) is None:
-            iscale.set_scaling_factor(self.elap_time, 1e-5)
+            iscale.set_scaling_factor(self.elap_time, 1e-6)
 
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)
@@ -1184,7 +1182,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.min_res_time, 1e-2)
 
         if iscale.get_scaling_factor(self.min_elap_time) is None:
-            iscale.set_scaling_factor(self.min_elap_time, 1e-5)
+            iscale.set_scaling_factor(self.min_elap_time, 1e-6)
 
         if iscale.get_scaling_factor(self.mass_throughput_mtz_upstream) is None:
             iscale.set_scaling_factor(self.mass_throughput_mtz_upstream, 1)

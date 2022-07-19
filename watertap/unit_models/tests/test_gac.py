@@ -207,7 +207,6 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
-        m.fs.unit.bed_area.display()
 
         # Approx data pulled from graph in Hand, 1984 at ~30 days
         # 30 days adjusted to actual solution to account for web plot data extraction error within reason
@@ -366,7 +365,6 @@ class TestGACSimplified:
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
-        m.fs.unit.bed_area.display()
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(m.fs.unit.mass_throughput)
