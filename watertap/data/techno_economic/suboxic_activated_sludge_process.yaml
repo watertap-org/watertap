@@ -36,3 +36,51 @@ default:
     num_of_mixers:
       value: 9
       units: dimensionless
+    blower_cost:
+      value: 3e5
+      units: USD_2020
+    num_of_blowers:
+      value: 3
+      units: dimensionless
+    MLR_pump_cost:
+      value: 5e4
+      units: USD_2020
+    num_of_MLR_pumps:
+      value: 3
+      units: dimensionless
+    RAS_pump_cost:
+      value: 15e4
+      units: USD_2020
+    num_of_RAS_pumps:
+      value: 3
+      units: dimensionless
+    automated_valve_cost:
+      value: 2e4
+      units: USD_2020
+    num_of_automated_valves:
+      value: 9
+      units: dimensionless
+    advanced_predicted_control_cost:
+      value: 15e4
+      units: USD_2020
+    DO_probe_cost:
+      value: 5e3
+      units: USD_2020
+    num_of_DO_probes:
+      value: 9
+      units: dimensionless
+    ammonia_probe_cost:
+      value: 12e3
+      units: USD_2020
+    num_of_ammonia_probes:
+      value: 4
+      units: dimensionless
+    phosphorus_analyzer_cost:
+      value: 5e4
+      units: USD_2020
+    air_flowmeter_cost:
+      value: 1e3
+      units: USD_2020
+    num_of_air_flowmeters:
+      value: 9
+      units: dimensionless
