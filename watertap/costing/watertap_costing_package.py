@@ -307,7 +307,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.gac_contactor_cost_coeff_0 = pyo.Var(
-            initialize=10010.859100985,
+            initialize=10010.9,
+
             units=pyo.units.USD_2020,
             doc="GAC contactor polynomial cost coefficient 0",
         )
