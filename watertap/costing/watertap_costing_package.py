@@ -313,50 +313,58 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.gac_contactor_cost_coeff_1 = pyo.Var(
-            initialize=2204.95245503305,
+            initialize=2204.95,
+
             units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
             doc="GAC contactor polynomial cost coefficient 1",
         )
 
         self.gac_contactor_cost_coeff_2 = pyo.Var(
-            initialize=-15.9377885738609,
+            initialize=-15.9378,
+
             units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
             doc="GAC contactor polynomial cost coefficient 2",
         )
 
         self.gac_contactor_cost_coeff_3 = pyo.Var(
-            initialize=0.110591952020239,
+            initialize=0.110592,
+
             units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
             doc="GAC contactor polynomial cost coefficient 3",
         )
 
         self.bed_mass_gac_max_ref = pyo.Var(
-            initialize=18143.68,
+            initialize=18143.7,
+
             units=pyo.units.kg,
             doc="Reference maximum value of GAC mass needed for initial charge where "
             "economy of scale no longer discounts the unit price",
         )
 
         self.gac_adsorbent_unit_cost_coeff = pyo.Var(
-            initialize=4.58341889627683,
+            initialize=4.58342,
+
             units=pyo.units.USD_2020 * pyo.units.kg**-1,
             doc="GAC adsorbent exponential cost pre-exponential coefficient",
         )
 
         self.gac_adsorbent_unit_cost_exp_coeff = pyo.Var(
-            initialize=-1.25310852043246e-5,
+            initialize=-1.25311e-5,
+
             units=pyo.units.kg**-1,
             doc="GAC adsorbent exponential cost parameter coefficient",
         )
 
         self.gac_other_cost_coeff = pyo.Var(
-            initialize=16660.6931081066,
+            initialize=16660.7,
+
             units=pyo.units.USD_2020,
             doc="GAC other cost power law coefficient",
         )
 
         self.gac_other_cost_exp = pyo.Var(
-            initialize=0.552206579,
+            initialize=0.552207,
+
             units=pyo.units.dimensionless,
             doc="GAC other cost power law exponent",
         )
@@ -368,13 +376,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.gac_regen_unit_cost = pyo.Var(
-            initialize=4.283522249590950,
+            initialize=4.28352,
+
             units=pyo.units.USD_2020 * pyo.units.kg**-1,
             doc="Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
         )
 
         self.gac_makeup_unit_cost = pyo.Var(
-            initialize=4.582232978299970,
+            initialize=4.58223,
+
             units=pyo.units.USD_2020 * pyo.units.kg**-1,
             doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
         )
