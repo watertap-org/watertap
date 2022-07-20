@@ -6,4 +6,6 @@ Property Models
 
    NaCl
    seawater
-   coagulation 
+   coagulation
+   ASM1
+   ASM2D

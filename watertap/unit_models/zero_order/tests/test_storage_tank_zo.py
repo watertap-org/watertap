@@ -14,7 +14,7 @@
 Tests for zero-order storage tank model.
 """
 import pytest
-from io import StringIO
+
 
 from pyomo.environ import (
     Block,
@@ -27,10 +27,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import StorageTankZO
 from watertap.core.wt_database import Database
@@ -83,6 +83,9 @@ class TestStorageTankZO:
         assert model.fs.unit.surge_capacity[0].fixed
         assert model.fs.unit.surge_capacity[0].value == 0
 
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == 0
+
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
         assert degrees_of_freedom(model.fs.unit) == 0
@@ -119,37 +122,8 @@ class TestStorageTankZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-     Storage Time (hr) : 24.000 :  True : (None, None)
-    Surge Capacity (%) : 0.0000 :  True : (None, None)
-      Tank Volume (m3) : 45285. : False : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                 Inlet   Outlet 
-    Volumetric Flowrate         0.52413  0.52413
-    Mass Concentration H2O       953.96   953.96
-    Mass Concentration toc       5.7238   5.7238
-    Mass Concentration tds      0.19079  0.19079
-    Mass Concentration eeq     0.057238 0.057238
-    Mass Concentration nitrate   7.6317   7.6317
-    Mass Concentration tss       32.435   32.435
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 db = Database()

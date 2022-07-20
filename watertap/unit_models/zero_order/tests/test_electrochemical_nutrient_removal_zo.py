@@ -16,7 +16,7 @@ Tests for zero-order electrochemical nutrient recovery model
 import pytest
 import os
 
-from io import StringIO
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -29,10 +29,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import ElectroNPZO
 from watertap.core.wt_database import Database
@@ -185,43 +185,8 @@ class TestElectroNPZO:
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
 
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                                       : Value   : Fixed : Bounds
-    Dosage of magnesium chloride per struvite : 0.38800 :  True : (0, None)
-                           Electricity Demand :  1350.5 : False : (0, None)
-                        Electricity Intensity : 0.20500 :  True : (None, None)
-                    Magnesium Chloride Demand :  2556.1 : False : (0, None)
-                Reaction Extent [extract_N_P] : 0.83000 : False : (None, None)
-                         Solute Removal [foo] :  0.0000 :  True : (0, None)
-                    Solute Removal [nitrogen] :  0.0000 :  True : (0, None)
-                  Solute Removal [phosphorus] :  0.0000 :  True : (0, None)
-                    Solute Removal [struvite] :  1.0000 :  True : (0, None)
-                               Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                    Inlet   Treated   Byproduct
-    Volumetric Flowrate            1.0040    0.99636  0.0018300
-    Mass Concentration H2O         996.02     998.66 5.4661e-08
-    Mass Concentration nitrogen   0.99602    0.17062 5.4645e-08
-    Mass Concentration phosphorus 0.99602    0.17062 5.4645e-08
-    Mass Concentration struvite   0.99602 1.0037e-10     1000.0
-    Mass Concentration foo        0.99602     1.0037 5.4645e-08
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

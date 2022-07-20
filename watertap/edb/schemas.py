@@ -87,7 +87,7 @@ schemas = {
                 "items": {
                     "type": "string",
                     "description": "Valid phase types should start with 'PT.' and then match "
-                    "attributes in idaes.core.phases.PhaseType",
+                    "attributes in idaes.core.base.phases.PhaseType",
                     "examples": [["PT.liquidPhase"]],
                 },
             },

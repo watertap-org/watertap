@@ -15,7 +15,6 @@ Tests for zero-order photothermal membrane model
 """
 import pytest
 
-from io import StringIO
 
 from pyomo.environ import (
     Block,
@@ -28,10 +27,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import PhotothermalMembraneZO
 from watertap.core.wt_database import Database
@@ -148,31 +147,8 @@ class TestPhotothermalMembraneZO:
 
     @pytest.mark.component
     def test_report(self, model):
-        stream = StringIO()
-        model.fs.unit.report(ostream=stream)
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
 
-    Variables: 
-
-    Key                       : Value      : Fixed : Bounds
-                Membrane Area : 4.3200e+05 : False : (0, None)
-    Solute Removal [nitrogen] :     0.0000 :  True : (0, None)
-                   Water Flux :     1.0000 :  True : (0, None)
-               Water Recovery :    0.10000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                  Inlet  Treated  Byproduct
-    Volumetric Flowrate         0.12100 0.013000    0.10800
-    Mass Concentration H2O       991.74   923.08     1000.0
-    Mass Concentration nitrogen  8.2645   76.923 9.2593e-08
-====================================================================================
-"""
-        assert output in stream.getvalue()
+        model.fs.unit.report()
 
 
 def test_costing():

@@ -35,7 +35,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 
