@@ -662,15 +662,16 @@ class BlockInterface:
                             val = self.units_val(val, to_units)
                         var_obj.set_value(val)
                     _log.debug("Exported variable loaded. " + details)
-            else:
-                bdiff.missing = list(load_block_info.variables.keys())
-                bdiff.extra = []
+        else:
+            _log.debug("All variables missing")
+            bdiff.missing = list(load_block_info.variables.keys())
+            bdiff.extra = []
 
-            # save non-empty missing/extra
-            if bdiff.missing:
-                self._var_diff.missing[cur_block_path] = bdiff.missing
-            if bdiff.extra:
-                self._var_diff.extra[cur_block_path] = list(bdiff.extra)
+        # save non-empty missing/extra
+        if bdiff.missing:
+            self._var_diff.missing[cur_block_path] = bdiff.missing
+        if bdiff.extra:
+            self._var_diff.extra[cur_block_path] = list(bdiff.extra)
 
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")

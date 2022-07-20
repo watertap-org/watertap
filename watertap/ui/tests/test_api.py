@@ -205,10 +205,10 @@ def test_flowsheet_interface_as_dict(simple_flowsheet):
     assert "meta" in d
     assert "variables" not in d
 
-    # whole tamale in root block
+    # whole tamale in root block (except category, that is per-var)
     assert len(d["blocks"]) == 1
     root = list(d["blocks"].keys())[0]
-    for v in "variables", "display_name", "description", "category":
+    for v in "variables", "display_name", "description":
         assert v in d["blocks"][root]
 
 
