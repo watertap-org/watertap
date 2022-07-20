@@ -28,8 +28,8 @@ default:
   capital_cost:
     cost_factor: None
     aeration_basin_cost:
-      value: 4e6
-      units: USD_2020/mgd
+      value: 1058.2
+      units: USD_2020/(m^3/day)
     mixer_cost:
       value: 3e4
       units: USD_2020
@@ -68,6 +68,12 @@ default:
       units: USD_2020
     num_of_DO_probes:
       value: 9
+      units: dimensionless
+    nitrate_probe_cost:
+      value: 2e4
+      units: USD_2020
+    num_of_nitrate_probes:
+      value: 3
       units: dimensionless
     ammonia_probe_cost:
       value: 12e3
