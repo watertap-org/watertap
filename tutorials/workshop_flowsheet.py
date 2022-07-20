@@ -90,14 +90,28 @@ def ui_build(ui=None, **kwargs):
     _log.info("ui_build: begin")
     model = build()
     set_operating_conditions(model)
-    initialize_system(model)
+
+    # initialize system
+    model.fs.feed.initialize()
+    propagate_state(model.fs.s01)
+    model.fs.pump.initialize()
+    propagate_state(model.fs.s02)
+    model.fs.RO.initialize()
+    propagate_state(model.fs.s03)
+    propagate_state(model.fs.s04)
+    model.fs.erd.initialize()
+    propagate_state(model.fs.s05)
+    model.fs.costing.initialize()
 
     # initial solution of square problem
-    solve(model)
+    solver = get_solver()
+    results = solver.solve(model, tee=False)
+    assert_optimal_termination(results)
 
     # optimize
-    optimize_set_up(model)
-    optimize(model)
+    pre_optimize(model)
+    solver.solve(model, tee=False)
+    assert_optimal_termination(results)
 
     export_ui_variables(model.fs)
     ui.set_block(model.fs)
@@ -109,47 +123,16 @@ def ui_solve(block=None, **kwargs):
     fs, m = block, block.parent_block()
 
     # optimize
-    optimize_fs(fs)
+    solver = get_solver()
+    results = solver.solve(fs, tee=False)
+    assert_optimal_termination(results)
 
     _log.info("ui_solve: end")
-    return display_ui_output(fs)
-
-
-def main():
-    # build, set, and initialize
-    m = build()
-    set_operating_conditions(m)
-    initialize_system(m)
-
-    # simulate and display
-    solve(m)
-    print("\n***---Simulation results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
-    print(display_ui_output(m))
-
-    # optimize and display
-    optimize_set_up(m)
-    assert_units_consistent(m)
-    optimize(m)
-    print("\n***---Optimization results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
-
-    # change one parameter and see effect
-    m.fs.costing.reverse_osmosis_membrane_cost.fix(60)
-    optimize(m)
-    print("\n***---Parameter change results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
-    print(display_ui_input(m))
-    print(display_ui_output(m))
+    return ui_output(fs)
 
 
 def build():
+    """Build the flowsheet."""
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -231,7 +214,8 @@ def set_operating_conditions(m):
     # state variables
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    # properties (cannot be fixed for initialization routines, must calculate the state variables)
+    # properties (cannot be fixed for initialization routines, must calculate
+    # the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
             ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
@@ -273,40 +257,8 @@ def set_operating_conditions(m):
         )
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
-    if solver is None:
-        solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
-    return results
-
-
-def solve_fs(fs, solver=None, tee=False, check_termination=True):
-    if solver is None:
-        solver = get_solver()
-    results = solver.solve(fs, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
-    return results
-
-
-def initialize_system(m):
-
-    m.fs.feed.initialize()
-    propagate_state(m.fs.s01)
-    m.fs.pump.initialize()
-    propagate_state(m.fs.s02)
-    m.fs.RO.initialize()
-    propagate_state(m.fs.s03)
-    propagate_state(m.fs.s04)
-    m.fs.erd.initialize()
-    propagate_state(m.fs.s05)
-
-    m.fs.costing.initialize()
-
-
-def optimize_set_up(m):
+def pre_optimize(m):
+    """Unfix variables and set constraints for optimization."""
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -360,106 +312,9 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 2)
 
 
-def optimize(m, check_termination=True):
-    # --solve---d
-    return solve(m, check_termination=check_termination)
-
-
-def optimize_fs(fs, **kw):
-    return solve_fs(fs, **kw)
-
-
-def display_system(m):
-    print("---system metrics---")
-    feed_flow_mass = sum(
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
-    )
-    feed_mass_frac_TDS = (
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", "TDS"].value / feed_flow_mass
-    )
-    print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_TDS * 1e6))
-
-    prod_flow_mass = sum(
-        m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
-    )
-    prod_mass_frac_TDS = (
-        m.fs.product.flow_mass_phase_comp[0, "Liq", "TDS"].value / prod_flow_mass
-    )
-    print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_TDS * 1e6))
-
-    print(
-        "Volumetric recovery: %.1f%%"
-        % (value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100)
-    )
-    print(
-        "Water recovery: %.1f%%"
-        % (value(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"]) * 100)
-    )
-    print(
-        "Energy Consumption: %.1f kWh/m3"
-        % value(m.fs.costing.specific_energy_consumption)
-    )
-    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
-
-
-def display_design(m):
-    print("---decision variables---")
-    print("Operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5))
-    print(
-        "Membrane\narea %.1f m2\ninlet Reynolds %.1f, inlet velocity %.1f cm/s"
-        % (
-            m.fs.RO.area.value,
-            m.fs.RO.N_Re[0, 0].value,
-            m.fs.RO.velocity[0, 0].value * 100,
-        )
-    )
-
-    print("---system variables---")
-    print(
-        "Pump\noutlet pressure: %.1f bar\npower %.2f kW"
-        % (
-            m.fs.pump.outlet.pressure[0].value / 1e5,
-            m.fs.pump.work_mechanical[0].value / 1e3,
-        )
-    )
-    print(
-        "Membrane"
-        "\naverage flux: %.1f LMH"
-        "\npressure drop: %.1f bar"
-        "\nmax interfacial conc %.1f ppm"
-        % (
-            value(m.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]) * 3600,
-            m.fs.RO.deltaP[0].value / 1e5,
-            m.fs.RO.feed_side.properties_interface[0, 1]
-            .mass_frac_phase_comp["Liq", "TDS"]
-            .value
-            * 1e6,
-        )
-    )
-
-
-def display_state(m):
-    print("---state---")
-
-    def print_state(s, b):
-        flow_mass = sum(
-            b.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "TDS"]
-        )
-        mass_frac_ppm = b.flow_mass_phase_comp[0, "Liq", "TDS"].value / flow_mass * 1e6
-        pressure_bar = b.pressure[0].value / 1e5
-        print(
-            s
-            + ": %.3f kg/s, %.0f ppm, %.1f bar"
-            % (flow_mass, mass_frac_ppm, pressure_bar)
-        )
-
-    print_state("Feed      ", m.fs.feed.outlet)
-    print_state("Pump out  ", m.fs.pump.outlet)
-    print_state("RO perm   ", m.fs.RO.permeate)
-    print_state("RO reten  ", m.fs.RO.retentate)
-
-
 def export_ui_variables(fs):
+    """Export the variables that will be seen/editable in the UI."""
+
     class Category:
         """Names for categories"""
 
@@ -618,190 +473,7 @@ def export_ui_variables(fs):
     )
 
 
-def display_ui_input(fs):
-    return {
-        "Feed": {
-            "Volumetric flowrate": (
-                round(
-                    value(
-                        units.convert(
-                            fs.feed.properties[0].flow_vol_phase["Liq"],
-                            to_units=units.m**3 / units.hr,
-                        )
-                    ),
-                    2,
-                ),
-                "m3/h",
-            ),
-            "Salinity": (
-                round(
-                    value(
-                        fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"] * 1e6
-                    ),
-                    0,
-                ),
-                "ppm",
-            ),
-            "Temperature": (
-                round(
-                    value(fs.feed.properties[0].temperature),
-                    0,
-                ),
-                "K",
-            ),
-            "Pressure": (
-                round(
-                    value(
-                        units.convert(
-                            fs.feed.properties[0].pressure, to_units=units.bar
-                        )
-                    ),
-                    1,
-                ),
-                "bar",
-            ),
-        },
-        "Treatment specification": {
-            "Recovery": (
-                round(
-                    value(fs.RO.recovery_vol_phase[0, "Liq"]) * 100,
-                    1,
-                ),
-                "%",
-            ),
-            "Maximum product salinity": (
-                round(
-                    value(fs.max_product_salinity) * 1e6,
-                    0,
-                ),
-                "ppm",
-            ),
-            "Maximum allowable pressure": (
-                round(
-                    value(units.convert(fs.max_pressure, to_units=units.bar)),
-                    1,
-                ),
-                "bar",
-            ),
-        },
-        "Performance parameters": {
-            "Pump efficiency": (
-                round(
-                    value(fs.pump.efficiency_pump[0]) * 100,
-                    1,
-                ),
-                "%",
-            ),
-            "ERD efficiency": (
-                round(
-                    value(fs.erd.efficiency_pump[0]) * 100,
-                    1,
-                ),
-                "%",
-            ),
-            "Water permeability coeff": (
-                round(
-                    value(
-                        units.convert(
-                            fs.RO.A_comp[0, "H2O"],
-                            to_units=units.mm / units.hr / units.bar,
-                        )
-                    ),
-                    2,
-                ),
-                "L/(m2-h-bar)",
-            ),
-            "Salt permeability coeff": (
-                round(
-                    value(
-                        units.convert(
-                            fs.RO.B_comp[0, "TDS"], to_units=units.mm / units.hr
-                        )
-                    ),
-                    2,
-                ),
-                "L/(m2-h)",
-            ),
-            "RO channel height": (
-                round(
-                    value(units.convert(fs.RO.channel_height, to_units=units.mm)),
-                    1,
-                ),
-                "mm",
-            ),
-            "RO spacer porosity": (
-                round(
-                    value(fs.RO.spacer_porosity) * 100,
-                    1,
-                ),
-                "%",
-            ),
-        },
-        "Cost parameters": {
-            "Electricity cost": (
-                round(
-                    value(fs.costing.electricity_base_cost),
-                    3,
-                ),
-                "$/kWh",
-            ),
-            "Membrane cost": (
-                round(
-                    value(fs.costing.reverse_osmosis_membrane_cost),
-                    1,
-                ),
-                "$/m2",
-            ),
-            "Pump cost": (
-                round(
-                    value(
-                        units.convert(
-                            fs.costing.high_pressure_pump_cost,
-                            to_units=units.USD_2018 / units.kW,
-                        )
-                    ),
-                    0,
-                ),
-                "$/kW",
-            ),
-            "ERD cost": (
-                round(
-                    value(
-                        units.convert(
-                            fs.costing.erd_pressure_exchanger_cost,
-                            to_units=units.USD_2018 / (units.m**3 / units.hr),
-                        )
-                    ),
-                    0,
-                ),
-                "$/(m3/h)",
-            ),
-            "Load factor": (
-                round(
-                    value(fs.costing.load_factor) * 100,
-                    1,
-                ),
-                "%",
-            ),
-            "Capital annualization factor": (
-                round(
-                    value(fs.costing.factor_capital_annualization) * 100,
-                    1,
-                ),
-                "%/year",
-            ),
-            "Membrane replacement factor": (
-                round(
-                    value(fs.costing.factor_membrane_replacement) * 100,
-                    1,
-                ),
-                "%/year",
-            ),
-        },
-    }
-
-
-def display_ui_output(fs):
+def ui_output(fs):
     return {
         "System metrics": {
             "Recovery": (
@@ -1047,7 +719,3 @@ def display_ui_output(fs):
             ),
         },
     }
-
-
-if __name__ == "__main__":
-    main()
