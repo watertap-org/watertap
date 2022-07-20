@@ -86,7 +86,7 @@ class TestOzoneZO_with_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="TOC must be in solute list for Ozonation " "or Ozone/AOP",
+            match="toc must be in solute list for Ozonation " "or Ozone/AOP",
         ):
             model.fs.unit = OzoneZO(
                 default={"property_package": model.fs.params, "database": model.db}

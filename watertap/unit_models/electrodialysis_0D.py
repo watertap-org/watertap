@@ -12,12 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from asyncio import constants
-from cmath import inf
-from tkinter.messagebox import NO
-from xmlrpc.client import Boolean
-from attr import mutable
-from numpy import Inf, integer
 from pyomo.environ import (
     Block,
     Set,
@@ -52,7 +46,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from sympy import Domain, Integer, Integers
 from idaes.core.util.constants import Constants
 
 __author__ = "Austin Ladshaw, Xiangyu Bi"
@@ -205,7 +198,7 @@ class Electrodialysis0DData(UnitModelBlockData):
 
         self.cell_pair_num = Var(
             initialize=1,
-            domain=NonNegativeIntegers,
+            domain=NonNegativeReals,
             bounds=(1, 10000),
             units=pyunits.dimensionless,
             doc="cell pair number in a stack",
@@ -227,7 +220,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.spacer_thickness = Var(
             initialize=0.0001,
             units=pyunits.meter,
-            doc="The distance between the concecutive aem and cem",
+            doc="The distance between the consecutive aem and cem",
         )
 
         # Material and Operational properties
@@ -243,7 +236,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             self.config.property_package.ion_set
             | self.config.property_package.solute_set,
             initialize=1e-10,
-            bounds=(1e-16, 1e-6),
+            bounds=(0.0, 1e-6),
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="Solute (ionic and neutral) diffusivity in the membrane phase",
         )
@@ -415,24 +408,18 @@ class Electrodialysis0DData(UnitModelBlockData):
                     (
                         0.5
                         * (
-                            self.concentrate_channel.properties_in[
-                                t
-                            ].electrical_conductivity_phase[p]
+                            self.concentrate_channel.properties_in[t].elec_cond_phase[p]
                             + self.concentrate_channel.properties_out[
                                 t
-                            ].electrical_conductivity_phase[p]
+                            ].elec_cond_phase[p]
                         )
                     )
                     ** -1
                     + (
                         0.5
                         * (
-                            self.diluate_channel.properties_in[
-                                t
-                            ].electrical_conductivity_phase[p]
-                            + self.diluate_channel.properties_out[
-                                t
-                            ].electrical_conductivity_phase[p]
+                            self.diluate_channel.properties_in[t].elec_cond_phase[p]
+                            + self.diluate_channel.properties_out[t].elec_cond_phase[p]
                         )
                     )
                     ** -1
@@ -932,8 +919,10 @@ class Electrodialysis0DData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         return {
             "vars": {
-                "Electrical power consumption(Watt)": self.power_electrical[time_point],
-                "Specific electrical power consumption (kWh/m**3)": self.specific_power_electrical[
+                "Total electrical power consumption(Watt)": self.power_electrical[
+                    time_point
+                ],
+                "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
                 "Current efficiency for deionzation": self.current_efficiency[
@@ -943,3 +932,6 @@ class Electrodialysis0DData(UnitModelBlockData):
             "exprs": {},
             "params": {},
         }
+
+    def get_power_electrical(self, time_point=0):
+        return self.power_electrical[time_point]

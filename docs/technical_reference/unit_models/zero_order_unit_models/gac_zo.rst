@@ -1,20 +1,42 @@
-Gac  (ZO)
-=========
+Granular Activated Carbon (ZO)
+==============================
 
 Model Type
 ----------
-This unit model is formulated as a single-input, double-output model form.
+This unit model is formulated as a **single-input, double-output** model form.
 See documentation for :ref:`single-input, double-output Helper Methods<sido_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the f(x) helper function.
-See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
+The constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.
 
 Costing Method
 --------------
-Costing is calculated using the cost_gac method in the zero-order costing package.
+Costing is calculated using the **cost_gac** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+
+Additional Variables
+--------------------
+
+.. csv-table::
+   :header: "Description", "Variable Name", "Units"
+
+   "Empty bed contact time of unit", "empty_bed_contact_time", ":math:`hr`"
+   "Electricity consumption of unit", "electricity", ":math:`kW`"
+   "Parameter for calculating electricity based on empty bed contact time", "electricity_intensity_parameter", ":math:`kW/m^3`"
+   "Electricity intensity with respect to inlet flowrate of unit", "energy_electric_flow_vol_inlet", ":math:`kWh/m^3`"
+   "Replacement rate of activated carbon", "activated_carbon_replacement", ":math:`kg/m^3`"
+   "Demand for activated carbon", "activated_carbon_demand", ":math:`kg/hr`"
+
+Additional Constraints
+----------------------
+
+.. csv-table::
+   :header: "Description", "Constraint Name"
+
+   "Electricity intensity based on empty bed contact time.", "electricity_intensity_constraint"
+   "Constraint for electricity consumption based on feed flowrate.", "electricity_consumption"
+   "Constraint for activated carbon consumption.", "activated_carbon_equation"
 
 .. index::
    pair: watertap.unit_models.zero_order.gac_zo;gac_zo

@@ -19,7 +19,7 @@ default:
       value: 0
       units: dimensionless
     bioconcentrated_phosphorous:
-      value: 1
+      value: 0
       units: dimensionless
     nitrous_oxide:
       value: 1
