@@ -108,8 +108,6 @@ def ui_solve(block=None, **kwargs):
     _log.info("ui_solve: begin")
     fs, m = block, block.parent_block()
 
-    print(f"@@ ui solve fs={type(fs)}, model(m) = {type(m)}")
-
     # optimize
     optimize_fs(fs)
 
