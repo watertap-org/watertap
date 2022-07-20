@@ -18,6 +18,6 @@ from .nanofiltration_ZO import NanofiltrationZO
 from .pressure_exchanger import PressureExchanger
 from .pressure_changer import Pump, EnergyRecoveryDevice
 from .crystallizer import Crystallization
-from .ultraviolet import Ultraviolet0D
+from .uv_aop import Ultraviolet0D
 from .electrodialysis_0D import Electrodialysis0D
 from .electrodialysis_1D import Electrodialysis1D

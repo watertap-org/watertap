@@ -199,14 +199,14 @@ class EvaporatorData(UnitModelBlockData):
         self.area = Var(initialize=1e2, bounds=(1e-1, 1e4), units=pyunits.m**2)
 
         self.delta_temperature_in = Var(
-            initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K
+            initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K
         )
 
         self.delta_temperature_out = Var(
-            initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K
+            initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K
         )
 
-        self.lmtd = Var(initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K)
+        self.lmtd = Var(initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K)
 
         # Add feed_side block
         self.feed_side = Block()
