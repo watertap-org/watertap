@@ -49,6 +49,7 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+__author__ = "Kurban Sitterley"
 
 _log = idaeslog.getLogger(__name__)
 
@@ -57,9 +58,6 @@ class IonExchangeType(Enum):
     anion = auto()
     cation = auto()
     mixed = auto()
-
-
-__author__ = "Kurban Sitterley"
 
 
 @declare_process_block_class("IonExchange0D")
@@ -390,6 +388,13 @@ class IonExchangeODData(UnitModelBlockData):
             units=pyunits.m**3,
             doc="Column volume of one unit",
         )
+
+        # self.number_columns = Var(
+        #     initialize=1,
+        #     domain=range(50),
+        #     units=pyunits.dimensionless,
+        #     doc="Number of columns for process"
+        # )
 
         # ====== Kinetic variables ====== #
 
