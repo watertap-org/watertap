@@ -12,12 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from asyncio import constants
-from cmath import inf
-from tkinter.messagebox import NO
-from xmlrpc.client import Boolean
-from attr import mutable
-from numpy import Inf, integer
 from pyomo.environ import (
     Block,
     Set,
@@ -52,7 +46,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from sympy import Domain, Integer, Integers
 from idaes.core.util.constants import Constants
 
 __author__ = "Austin Ladshaw, Xiangyu Bi"
@@ -243,7 +236,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             self.config.property_package.ion_set
             | self.config.property_package.solute_set,
             initialize=1e-10,
-            bounds=(1e-16, 1e-6),
+            bounds=(0.0, 1e-6),
             units=pyunits.meter**2 * pyunits.second**-1,
             doc="Solute (ionic and neutral) diffusivity in the membrane phase",
         )
@@ -939,3 +932,6 @@ class Electrodialysis0DData(UnitModelBlockData):
             "exprs": {},
             "params": {},
         }
+
+    def get_power_electrical(self, time_point=0):
+        return self.power_electrical[time_point]
