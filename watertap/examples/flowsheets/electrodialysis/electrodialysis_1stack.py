@@ -27,6 +27,7 @@ from pyomo.environ import (
     RangeSet,
     Set,
     check_optimal_termination,
+    assert_optimal_termination,
     units as pyunits,
 )
 from pyomo.network import Arc, SequentialDecomposition
@@ -36,17 +37,18 @@ from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.model_statistics import degrees_of_freedom
 from sympy import Range
-from idaes.models.EDstack_models import Feed, Product, Separator, Mixer
-from idaes.models.EDstack_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Feed, Product, Separator, Mixer
+from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
-from watertap.EDstack_models.electrodialysis_1D import (
+from watertap.unit_models.electrodialysis_1D import (
     Electrodialysis1D,
     
 )
-from watertap.EDstack_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
@@ -56,23 +58,6 @@ from watertap.costing.watertap_costing_package import (
     make_capital_cost_var,
 )
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
-
-
-class ACase(StrEnum):
-    fixed = "fixed"
-    optimize = "optimize"
-    single_optimum = "single_optimum"
-
-
-class BCase(StrEnum):
-    single_optimum = "single_optimum"
-    optimize = "optimize"
-
-
-class ABTradeoff(StrEnum):
-    inequality_constraint = "inequality_constraint"
-    equality_constraint = "equality_constraint"
-    none = "none"
 
 
 def run_electrodialysis(
@@ -132,64 +117,37 @@ def run_electrodialysis(
     return m, res
 
 
-def build(
-    number_of_stacks=1,
-    has_NaCl_solubility_limit=True,
-    #has_calculated_concentration_polarization=True,
-    #has_calculated_ro_pressure_drop=True,
-    finite_elements=20,
-    #B_max=None,
-):
+def build():
     # ---building model---
     m = ConcreteModel()
-
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock()
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(default={"property_package": m.fs.properties})
     m.fs.Separator_in = Separator(
-        default={"property_package": m.fs.properties, "outlet_list": ["F_C", "F_D"]}
+        default={"property_package": m.fs.properties, "outlet_list": ["F_D", "F_C"]}
     )
-
     # Add the pumps
     m.fs.Pump_D = Pump(default={"property_package": m.fs.properties})
     m.fs.Pump_C = Pump(default={"property_package": m.fs.properties})
     
     # Add electrodialysis stacks
-    '''
-    if has_calculated_ro_pressure_drop:
-        pressure_change_type = PressureChangeType.calculated
-    else:
-        pressure_change_type = PressureChangeType.fixed_per_stage
-
-    if has_calculated_concentration_polarization:
-        cp_type = ConcentrationPolarizationType.calculated
-        kf_type = MassTransferCoefficient.calculated
-    else:
-        cp_type = ConcentrationPolarizationType.none
-        kf_type = MassTransferCoefficient.none
-    '''
     m.fs.EDstack = Electrodialysis1D(
         default={
-            
             "property_package": m.fs.properties,
             "operation_mode": "Constant_Voltage",
             "finite_elements": 20,
-            
         },
     )
-
     m.fs.product = Product(default={"property_package": m.fs.properties})
     m.fs.disposal = Product(default={"property_package": m.fs.properties})
-
     # costing
-    m.fs.Pump_C.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
     m.fs.Pump_D.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing}
     )
-
+    m.fs.Pump_C.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
     m.fs.EDstack.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing}
     )
@@ -236,11 +194,11 @@ def set_operating_conditions(m, water_recovery=0.5):
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
-            ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
-            ("mass_mol_phase_comp", ("Liq", "Na_+")): 500,
-            ("mass_mol_phase_comp", ("Liq", "Cl_-")): 500,
+            ("flow_vol_phase", "Liq"): 8.64e-5,  # feed volumetric flow rate [m3/s] assuming 100 cp for now
+            ("conc_mol_phase_comp", ("Liq", "Na_+")): 171,
+            ("conc_mol_phase_comp", ("Liq", "Cl_-")): 171,
         },  # feed molar concentration of Na and Cl ions
-        hold_state=True,  # fixes the calculated component mass flow rates
+        hold_state=True,  
     )
 
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
@@ -248,20 +206,15 @@ def set_operating_conditions(m, water_recovery=0.5):
    
     m.fs.Pump_D.efficiency_pump.fix(0.80)  # pump efficiency [-]
     m.fs.Pump_C.efficiency_pump.fix(0.80)
-    
-
-   
-
-    # mixer, no degrees of freedom
 
     # ED unit
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
     m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
     m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
-    m.fs.EDstack.current_applied.fix(8)
+    m.fs.EDstack.voltage_applied.fix(5)
     m.fs.EDstack.electrodes_resistance.fix(0)
-    m.fs.EDstack.cell_pair_num.fix(10)
+    m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
     m.fs.EDstack.spacer_thickness.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
@@ -283,34 +236,34 @@ def set_operating_conditions(m, water_recovery=0.5):
 
     m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'H2O'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'H2O']
-    )
+    ) / (m.fs.EDstack.cell_pair_num * 2)
     m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'Na_+'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'Na_+']
-    )
+    )  / (m.fs.EDstack.cell_pair_num * 2)
     m.fs.EDstack.inlet_diluate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'Cl_-']
-    )
+    )  / (m.fs.EDstack.cell_pair_num * 2)
 
     m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'H2O'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'H2O']
-    )
+    )  / (m.fs.EDstack.cell_pair_num * 2)
     m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Na_+'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'Na_+']
-    )
+    )  / (m.fs.EDstack.cell_pair_num * 2)
     m.fs.EDstack.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'] = value(
         m.fs.feed.properties[0].flow_mol_phase_comp['Liq', 'Cl_-']
-    )
+    )  / (m.fs.EDstack.cell_pair_num * 2)
 
-    m.fs.unit.inlet_diluate.temperature = value(
+    m.fs.EDstack.inlet_diluate.temperature = value(
         m.fs.feed.properties[0].temperature
     )
-    m.fs.unit.inlet_concentrate.temperature = value(
+    m.fs.EDstack.inlet_concentrate.temperature = value(
         m.fs.feed.properties[0].temperature
     )
-    m.fs.unit.inlet_diluate.pressure = value(
+    m.fs.EDstack.inlet_diluate.pressure = value(
         m.fs.feed.properties[0].pressure
     )
-    m.fs.unit.inlet_concentrate.pressure = value(
+    m.fs.EDstack.inlet_concentrate.pressure = value(
         m.fs.feed.properties[0].pressure
     )
     m.fs.EDstack.initialize(optarg=solver.options)
@@ -354,7 +307,6 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s04)
     propagate_state(m.fs.s05)
     m.fs.EDstack.initialize(optarg=optarg)
-
     m.fs.costing.initialize()
 
 '''
@@ -408,21 +360,33 @@ def optimize(m, solver=None, check_termination=True):
 
 def display_system(m):
     print("---system metrics---")
-    feed_flow_mass = sum(
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
-    )
-    feed_mass_frac_NaCl = (
-        m.fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"].value / feed_flow_mass
-    )
-    print("Feed: %.2f kg/s, %.0f ppm" % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    feed_ion_mass_flow = (
+        sum(
+            m.fs.feed.flow_mass_phase_comp[0, "Liq", "j"] for j in m.fs.properties.ion_set 
+        )
+    ) # in [kg/s]
+        
+    feed_ion_mass_conc = (
+        sum(
+            m.fs.feed.conc_mass_phase_comp[0, "Liq", "j"] for j in m.fs.properties.ion_set 
+        )
+    ) # in [kg/m3]
+    print(f'Feed: flow velocity = {feed_ion_mass_flow} kg/s, total ion mass concentration = {feed_ion_mass_conc} kg/m3')
 
-    prod_flow_mass = sum(
-        m.fs.product.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
-    )
-    prod_mass_frac_NaCl = (
-        m.fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"].value / prod_flow_mass
-    )
-    print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
+    product_ion_mass_flow = (
+        sum(
+            m.fs.product.flow_mass_phase_comp[0, "Liq", "j"] for j in m.fs.properties.ion_set 
+        )
+    ) # in [kg/s]
+        
+    product_ion_mass_conc = (
+        sum(
+            m.fs.product.conc_mass_phase_comp[0, "Liq", "j"] for j in m.fs.properties.ion_set 
+        )
+    ) # in [kg/m3]
+    print(f'Produced water: flow velocity = {feed_ion_mass_flow} kg/s, total ion mass concentration = {feed_ion_mass_conc} kg/m3')
+
+    
 
     print(
         "Volumetric recovery: %.1f%%"
