@@ -7,4 +7,5 @@ Property Models
    NaCl
    seawater
    coagulation
-   activated_sludge_model
+   ASM1
+   ASM2D

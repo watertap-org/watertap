@@ -103,7 +103,11 @@ def build_sido_reactive(self):
     except KeyError:
         raise KeyError(
             f"{self.name} - database provided does not contain a list of "
-            f"reactions for this technology."
+            f"reactions for this technology. "
+            f"Tech type: {self._tech_type}, Process subtype: {self.config.process_subtype}"
+            f"Database Parameters: {dbparams}\n"
+            f"Datbase path: {self.config.database._dbpath}"
+            f"END"
         )
     # Create indexing set for reactions
     self.reaction_set = Set(initialize=rxn_ids)
@@ -114,7 +118,7 @@ def build_sido_reactive(self):
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        bounds=(1e-8, 1.0000001),
+        bounds=(0.0, 1.0000001),
         doc="Mass recovery fraction of water in the treated stream",
     )
     self.removal_frac_mass_solute = Var(

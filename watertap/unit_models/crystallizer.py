@@ -170,14 +170,14 @@ class CrystallizationData(UnitModelBlockData):
         self.crystallization_yield = Var(
             solute_set,
             initialize=0.5,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Crystallizer solids yield",
         )
 
         self.product_volumetric_solids_fraction = Var(
             initialize=0.25,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Volumetric fraction of solids in slurry product (i.e. solids-liquid mixture).",
         )
@@ -435,7 +435,7 @@ class CrystallizationData(UnitModelBlockData):
                 + self.work_mechanical[0]
                 - sum(
                     b.properties_solids[0].flow_mass_phase_comp["Sol", j]
-                    * b.properties_solids[0].dh_crystallization[j]
+                    * b.properties_solids[0].dh_crystallization_mass_comp[j]
                     for j in solute_set
                 )
                 == 0
@@ -475,10 +475,10 @@ class CrystallizationData(UnitModelBlockData):
             dens_cp_avg = self.approach_temperature_heat_exchanger * (
                 b.product_volumetric_solids_fraction
                 * b.properties_solids[0].dens_mass_solute["Sol"]
-                * b.properties_solids[0].cp_solute["Sol"]
+                * b.properties_solids[0].cp_mass_solute["Sol"]
                 + (1 - b.product_volumetric_solids_fraction)
                 * b.properties_out[0].dens_mass_phase["Liq"]
-                * b.properties_out[0].cp_phase["Liq"]
+                * b.properties_out[0].cp_mass_phase["Liq"]
             )
             return b.magma_circulation_flow_vol * dens_cp_avg == pyunits.convert(
                 b.work_mechanical[0], to_units=pyunits.J / pyunits.s

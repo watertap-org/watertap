@@ -3,7 +3,7 @@ Pump Electricity (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a pass-through model form.
+This unit model is formulated as a **pass-through** model form.
 See documentation for :ref:`pass-through Helper Methods<pt_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_pump_electricity method in the zero-order costing package.
+Costing is calculated using the **cost_pump_electricity** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,11 +21,11 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Lift height for pump", "lift_height", "m"
-   "Efficiency of pump", "eta_pump", "None"
-   "Efficiency of motor", "eta_motor", "None"
-   "Electricity for low pressure pump", "electricity", "kW"
-   "Applied pressure", "applied_pressure", "bar"
+   "Lift height for pump", "lift_height", ":math:`m`"
+   "Efficiency of pump", "eta_pump", ":math:`dimensionless`"
+   "Efficiency of motor", "eta_motor", ":math:`dimensionless`"
+   "Electricity for low pressure pump", "electricity", ":math:`kW`"
+   "Applied pressure", "applied_pressure", ":math:`bar`"
 
 Additional Constraints
 ----------------------

@@ -231,7 +231,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=mass_transfer_phase_comp_initialize,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
             doc="Mass transfer to permeate",
@@ -346,8 +346,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
         def over_pressure_ratio(b, t):
             return (
-                b.feed_side.properties_out[t].pressure_osm
-                - b.permeate_side[t, 1.0].pressure_osm
+                b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
+                - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
 
     def initialize_build(
