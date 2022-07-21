@@ -590,3 +590,73 @@ def test_flatten_tree():
     for item in ft:
         key = ".".join(item[0])
         assert key in ft_keys
+
+
+@pytest.mark.unit
+def test_load_from_none():
+    class F:
+        ui = None
+
+    fs_none_ui = F()
+    with pytest.raises(ValueError):
+        api.BlockInterface.load_from(None, fs_none_ui)
+
+
+# For test__get_block_variable_value()
+class B:
+    name = "FakeBlock"
+    oscar = Var(domain=Reals, initialize=500.0, units=units.m)
+    ioscar = Var(["a", "b"], initialize={"a": 1, "b": 2})
+    is_indexed = False
+
+
+@pytest.mark.unit
+def test__get_block_variable_value():
+    b = B()
+    b.oscar.construct()
+    val = api.BlockInterface._get_block_variable_value(b, "oscar")
+    assert val.value == 500.0
+    val = api.BlockInterface._get_block_variable_value(
+        b, "oscar", to_units="km", scale_factor=1.0
+    )
+    assert val.value == 0.5
+    b.ioscar.construct()
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar")
+    assert val.value[0] == 1
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar", indices=["a"])
+    assert val.value == 1
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar", indices=["b"])
+    assert val.value == 2
+
+
+@pytest.mark.unit
+def test_set_display_units():
+    # good units converted
+    ivar = api.model.Variable(display_units="m/s**2")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+    # bad units left alone
+    ivar = api.model.Variable(display_units="_")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "_"
+    # use to_units if no display units
+    ivar = api.model.Variable(display_units="", to_units="m/s**2")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+    # use bvar instead
+    ivar = api.model.Variable()
+    bvar = Var(domain=Reals, initialize=0, units=(units.m / units.s**2))
+    bvar.construct()
+    api.set_display_units(ivar, bvar)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+
+
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
+# @pytest.mark.unit
