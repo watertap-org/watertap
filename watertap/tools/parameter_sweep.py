@@ -872,44 +872,6 @@ def _do_param_sweep(
         elif test_function(model):
             run_successful = _param_sweep_kernel(model, optimize_function, optimize_kwargs, reinitialize_before_sweep,
                 reinitialize_function, reinitialize_kwargs, reinitialize_values)
-            # Forced reinitialization of the flowsheet if enabled
-            # if reinitialize_before_sweep:
-            #     if reinitialize_function is None:
-            #         raise ValueError(
-            #             "Reinitialization function was not specified. The model will not be reinitialized."
-            #         )
-            #     else:
-            #         for v, val in reinitialize_values.items():
-            #             if not v.fixed:
-            #                 v.set_value(val, skip_validation=True)
-            #         reinitialize_function(model, **reinitialize_kwargs)
-            #
-            # try:
-            #     # Simulate/optimize with this set of parameter
-            #     with capture_output():
-            #         results = optimize_function(model, **optimize_kwargs)
-            #     pyo.assert_optimal_termination(results)
-            #
-            # except:
-            #     # run_successful remains false. We try to reinitialize and solve again
-            #     if reinitialize_function is not None:
-            #         for v, val in reinitialize_values.items():
-            #             if not v.fixed:
-            #                 v.set_value(val, skip_validation=True)
-            #         try:
-            #             reinitialize_function(model, **reinitialize_kwargs)
-            #             with capture_output():
-            #                 results = optimize_function(model, **optimize_kwargs)
-            #             pyo.assert_optimal_termination(results)
-            #
-            #         except:
-            #             pass  # run_successful is still False
-            #         else:
-            #             run_successful = True
-            #
-            # else:
-            #     # If the simulation suceeds, report stats
-            #     run_successful = True
 
         # Update the loop based on the reinitialization
         _update_local_output_dict(
