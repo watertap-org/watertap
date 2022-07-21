@@ -770,13 +770,16 @@ def _read_output_h5(filepath):
 
 # ================================================================
 
-def _param_sweep_kernel(model, optimize_function,
+
+def _param_sweep_kernel(
+    model,
+    optimize_function,
     optimize_kwargs,
     reinitialize_before_sweep,
     reinitialize_function,
     reinitialize_kwargs,
-    reinitialize_values
-    ):
+    reinitialize_values,
+):
 
     run_successful = False  # until proven otherwise
 
@@ -821,7 +824,9 @@ def _param_sweep_kernel(model, optimize_function,
 
     return run_successful
 
+
 # ================================================================
+
 
 def _do_param_sweep(
     model,
@@ -866,12 +871,16 @@ def _do_param_sweep(
 
         run_successful = False  # until proven otherwise
 
-        if test_function is None:
-            run_successful = _param_sweep_kernel(model, optimize_function, optimize_kwargs, reinitialize_before_sweep,
-                reinitialize_function, reinitialize_kwargs, reinitialize_values)
-        elif test_function(model):
-            run_successful = _param_sweep_kernel(model, optimize_function, optimize_kwargs, reinitialize_before_sweep,
-                reinitialize_function, reinitialize_kwargs, reinitialize_values)
+        if test_function is None or test_function(model):
+            run_successful = _param_sweep_kernel(
+                model,
+                optimize_function,
+                optimize_kwargs,
+                reinitialize_before_sweep,
+                reinitialize_function,
+                reinitialize_kwargs,
+                reinitialize_values,
+            )
 
         # Update the loop based on the reinitialization
         _update_local_output_dict(

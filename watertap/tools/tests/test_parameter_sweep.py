@@ -1464,30 +1464,20 @@ class TestParallelManager:
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,
-                        "value": np.array(
-                            [np.nan] * 9
-                        ),
+                        "value": np.array([np.nan] * 9),
                     },
                     "output_d": {
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,
                         "value": np.array(
-                            np.array(
-                                [np.nan] * 9
-                            ),
+                            np.array([np.nan] * 9),
                         ),
                     },
-                    "performance": {
-                        "value": np.array(
-                            [np.nan] * 9
-                        )
-                    },
+                    "performance": {"value": np.array([np.nan] * 9)},
                     "objective": {
                         "value": np.array(
-                            np.array(
-                                [np.nan] * 9
-                            ),
+                            np.array([np.nan] * 9),
                         )
                     },
                 },
@@ -1542,8 +1532,10 @@ def _get_rank0_path(comm, tmp_path):
         return tmp_path
     return comm.bcast(tmp_path, root=0)
 
+
 def _good_test_function(m):
     return True
+
 
 def _bad_test_function(m):
     return False
