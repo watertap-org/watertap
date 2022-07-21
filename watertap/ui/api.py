@@ -177,8 +177,6 @@ class BlockInterface:
         block_info = model.Block(**info)
 
         # set optional values from values in self._block
-        if block_info.variables is None:
-            block_info.variables = []
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
@@ -880,7 +878,7 @@ def export_variables(
     return BlockInterface(block, block_info.dict())
 
 
-def set_display_units(ivar, bvar):
+def set_display_units(ivar: model.Variable, bvar: Var):
     """Set the units to display, if not specified explicitly"""
 
     def html_units(u):
