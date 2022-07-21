@@ -1070,6 +1070,9 @@ def parameter_sweep(
                                               Note the parameter sweep model will try to reinitialize the
                                               solve regardless of the option if the run fails.
 
+        test_function (optional): A user-defined function that can cheaply test if a current model
+                                  configuration is solvable without actually reinitializing or solving.
+
         mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
                               If None COMM_WORLD will be used. The default is sufficient for most
                               users.
