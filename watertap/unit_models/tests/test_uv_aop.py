@@ -71,10 +71,10 @@ class TestUltraviolet:
         feed_temperature = (273.15 + 25) * pyunits.K
         uv_intensity = 1 * pyunits.mW / pyunits.cm**2
         exporure_time = 500 * pyunits.s
-        inactivation_rate = 2.8 * pyunits.cm**2 / pyunits.J
-        photolysis_rate_constant = 0.16 * pyunits.min**-1
-        EEO = 0.25 * pyunits.kWh / pyunits.m**3
-        lamp_efficiency = 0.3
+        inactivation_rate = 2.3 * pyunits.cm**2 / pyunits.J
+        reaction_rate_constant = 0 * pyunits.min**-1
+        EEO = 0.0129 * pyunits.kWh / pyunits.m**3
+        lamp_efficiency = 1
         UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
@@ -98,7 +98,7 @@ class TestUltraviolet:
         m.fs.unit.uv_intensity.fix(uv_intensity)
         m.fs.unit.exposure_time.fix(exporure_time)
         m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
-        m.fs.unit.photolysis_rate_constant["Liq", "NDMA"].fix(photolysis_rate_constant)
+        m.fs.unit.reaction_rate_constant["Liq", "NDMA"].fix(reaction_rate_constant)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
@@ -173,7 +173,7 @@ class TestUltraviolet:
         # test statistics
         assert number_variables(m) == 39
         assert number_total_constraints(m) == 25
-        assert number_unused_variables(m) == 0  # vars from property package parameters
+        assert number_unused_variables(m) == 1  # vars for watertap costing package
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
@@ -234,18 +234,20 @@ class TestUltraviolet:
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(3.74635e-5, rel=1e-3) == value(
+        assert pytest.approx(4.8104e-5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(5000, rel=1e-3) == value(m.fs.unit.uv_dose)
-        assert pytest.approx(0.04576, rel=1e-3) == value(m.fs.unit.UVA)
-        assert pytest.approx(1.3333e-4, rel=1e-3) == value(
-            m.fs.unit.reaction_rate_constant["Liq", "NDMA"]
+        assert pytest.approx(500, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)
         )
-        assert pytest.approx(3756015.6, rel=1e-3) == value(
-            m.fs.unit.electricity_demand[0]
+        assert pytest.approx(0.04576, rel=1e-3) == value(m.fs.unit.UVA)
+        assert pytest.approx(2.3e-3, rel=1e-3) == value(
+            m.fs.unit.photolysis_rate_constant["Liq", "NDMA"]
+        )
+        assert pytest.approx(47.76, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
     @pytest.mark.requires_idaes_solver
@@ -267,9 +269,9 @@ class TestUltraviolet:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(987112.52, rel=1e-5) == value(
+        assert pytest.approx(759356.3, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(294331.2456, rel=1e-5) == value(
+        assert pytest.approx(3742.63, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )

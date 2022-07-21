@@ -246,7 +246,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=5e-4,
-            bounds=(1e-18, 100),
+            bounds=(0, 100),
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
             doc="Pseudo-first order rate constant for indirect photolysis of component.",
@@ -431,9 +431,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             t0 = b.flowsheet().time.first()
             return (
                 b.reactor_volume
-                == b.control_volume.properties_in[t0].flow_vol
-                * b.exposure_time
-                / b.num_of_reactors
+                == b.control_volume.properties_in[t0].flow_vol * b.exposure_time
             )
 
         # rate constant
@@ -674,11 +672,9 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.num_of_reactors, 1)
 
         if iscale.get_scaling_factor(self.reactor_volume) is None:
-            sf = (
-                iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_vol)
-                * iscale.get_scaling_factor(self.exposure_time)
-                / iscale.get_scaling_factor(self.num_of_reactors)
-            )
+            sf = iscale.get_scaling_factor(
+                self.control_volume.properties_in[0].flow_vol
+            ) * iscale.get_scaling_factor(self.exposure_time)
             iscale.set_scaling_factor(self.reactor_volume, sf)
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
