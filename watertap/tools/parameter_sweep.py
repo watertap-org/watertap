@@ -869,8 +869,6 @@ def _do_param_sweep(
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
 
-        run_successful = False  # until proven otherwise
-
         if test_function is None or test_function(model):
             run_successful = _param_sweep_kernel(
                 model,
@@ -881,6 +879,8 @@ def _do_param_sweep(
                 reinitialize_kwargs,
                 reinitialize_values,
             )
+        else:
+            run_successful = False
 
         # Update the loop based on the reinitialization
         _update_local_output_dict(
