@@ -15,11 +15,14 @@ ADM1 reaction package.
 
 References:
 
-[1] Henze, M., Grady, C.P.L., Gujer, W., Marais, G.v.R., Matsuo, T.,
-"Activated Sludge Model No. 1", 1987, IAWPRC Task Group on Mathematical Modeling
-for Design and Operation of Biological Wastewater Treatment
-[2] J. Alex, L. Benedetti, J. Copp, K.V. Gernaey, U. Jeppsson, I. Nopens, M.N. Pons,
-J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
+[1] D.J. Batstone, J. Keller, I. Angelidaki, S.V. Kalyuzhnyi, S.G. Pavlostathis,
+A. Rozzi, W.T.M. Sanders, H. Siegrist, V.A. Vavilin,
+The IWA Anaerobic Digestion Model No 1 (ADM1), Water Science and Technology.
+45 (2002) 65–73. https://doi.org/10.2166/wst.2002.0292.
+
+[2] C. Rosén, U. Jeppsson, Aspects on ADM1 Implementation within the BSM2 Framework,
+Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden. (2006) 1–35.
+
 """
 
 # Import Pyomo libraries
