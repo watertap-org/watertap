@@ -671,7 +671,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.UVA, 100)
 
         if iscale.get_scaling_factor(self.num_of_reactors) is None:
-            iscale.set_scaling_factor(self.num_of_reactors, 100)
+            iscale.set_scaling_factor(self.num_of_reactors, 1)
 
         if iscale.get_scaling_factor(self.reactor_volume) is None:
             sf = (

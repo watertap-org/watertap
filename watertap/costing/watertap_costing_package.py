@@ -29,13 +29,13 @@ from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models import Mixer
 
 from watertap.unit_models import (
-    Ultraviolet0D,
     ReverseOsmosis0D,
     ReverseOsmosis1D,
     NanoFiltration0D,
     NanofiltrationZO,
     PressureExchanger,
     Crystallization,
+    Ultraviolet0D,
     Pump,
     EnergyRecoveryDevice,
     Electrodialysis0D,
@@ -457,8 +457,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     def cost_uv_aop(blk, cost_electricity_flow=True):
         """
         UV-AOP costing method
-
-        TODO: describe equations
         """
         cost_uv_aop_bundle(
             blk,
@@ -969,7 +967,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
-    Ultraviolet0D: WaterTAPCostingData.cost_uv_aop,
     Mixer: WaterTAPCostingData.cost_mixer,
     Pump: WaterTAPCostingData.cost_pump,
     EnergyRecoveryDevice: WaterTAPCostingData.cost_energy_recovery_device,
@@ -979,6 +976,7 @@ WaterTAPCostingData.unit_mapping = {
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
+    Ultraviolet0D: WaterTAPCostingData.cost_uv_aop,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
 }
