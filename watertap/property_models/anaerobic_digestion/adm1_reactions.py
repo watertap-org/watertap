@@ -85,6 +85,78 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
 
         self.rate_reaction_idx = pyo.Set(initialize=[f"R{i}" for i in range(1, 20)])
 
+        # TODO: for all carbon and nitrogen content values with "varies" need to revisited; putting 0s for now
+        # Carbon content
+        Ci_dict = {
+            "S_su": 0.0313,
+            "S_aa": 0,  # varies
+            "S_fa": 0.0217,
+            "S_va": 0.0240,
+            "S_bu": 0.0250,
+            "S_pro": 0.0268,
+            "S_ac": 0.0313,
+            "S_h2": 0,
+            "S_ch4": 0.0156,
+            "S_IC": 1,
+            "S_I": 0,  # varies
+            "X_c": 0,  # varies
+            "X_ch": 0.0313,
+            "X_pr": 0,  # varies
+            "X_li": 0.0220,
+            "X_su": 0.0313,
+            "X_aa": 0.0313,
+            "X_fa": 0.0313,
+            "X_c4": 0.0313,
+            "X_pro": 0.0313,
+            "X_ac": 0.0313,
+            "X_h2": 0.0313,
+            "X_I": 0,  # varies
+            "S_an": 0,
+            "S_cat": 0,
+        }
+        self.Ci = pyo.Var(
+            self.state_ref.solute_set,
+            initialize=Ci_dict,
+            units=pyo.units.kmol / pyo.units.kg,
+            domain=pyo.PositiveReals,
+            doc="Carbon content of component, kmole C/kg COD",
+        )
+
+        # Nitrogen content
+        Ni_dict = {
+            "S_su": 0,
+            "S_aa": 0,  # varies
+            "S_fa": 0,
+            "S_va": 0,
+            "S_bu": 0,
+            "S_pro": 0,
+            "S_ac": 0,
+            "S_h2": 0,
+            "S_ch4": 0,
+            "S_IC": 0,
+            "S_I": 1,  # varies
+            "X_c": 0,  # varies
+            "X_ch": 0,
+            "X_pr": 0,  # varies
+            "X_li": 0,
+            "X_su": 0.00625,
+            "X_aa": 0.00625,
+            "X_fa": 0.00625,
+            "X_c4": 0.00625,
+            "X_pro": 0.00625,
+            "X_ac": 0.00625,
+            "X_h2": 0.00625,
+            "X_I": 0,  # varies
+            "S_an": 0,
+            "S_cat": 0,
+        }
+        self.Ni = pyo.Var(
+            self.state_ref.solute_set,
+            initialize=Ni_dict,
+            units=pyo.units.kmol / pyo.units.kg,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen content of component, kmole N/kg COD",
+        )
         # Stoichiometric Parameters (Table 6.1 in Batstone et al., 2002)
         self.f_sI_xc = pyo.Var(
             initialize=0.1,
@@ -705,8 +777,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
         for R in s_ic_rxns:
             self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
-                self.conc_mass_comp_ref[S]
-                * self.rate_reaction_stoichiometry[R, "Liq", S]
+                self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S]
                 for S in self.state_ref.solute_set
                 if S != "S_IC"
             )
