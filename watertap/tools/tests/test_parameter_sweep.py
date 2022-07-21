@@ -847,7 +847,7 @@ class TestParallelManager:
             h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             optimize_kwargs={"relax_feasibility": True},
-            test_function=_good_test_function,
+            probe_function=_good_test_function,
             mpi_comm=comm,
         )
 
@@ -1436,7 +1436,7 @@ class TestParallelManager:
             h5_results_file_name=h5_results_file_name,
             optimize_function=_optimization,
             optimize_kwargs={"relax_feasibility": True},
-            test_function=_bad_test_function,
+            probe_function=_bad_test_function,
             mpi_comm=comm,
         )
 

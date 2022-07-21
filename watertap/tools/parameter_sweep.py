@@ -838,7 +838,7 @@ def _do_param_sweep(
     reinitialize_function,
     reinitialize_kwargs,
     reinitialize_before_sweep,
-    test_function,
+    probe_function,
     comm,
 ):
 
@@ -869,7 +869,7 @@ def _do_param_sweep(
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
 
-        if test_function is None or test_function(model):
+        if probe_function is None or probe_function(model):
             run_successful = _param_sweep_kernel(
                 model,
                 optimize_function,
@@ -1001,7 +1001,7 @@ def parameter_sweep(
     reinitialize_function=None,
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
-    test_function=None,
+    probe_function=None,
     mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
@@ -1070,7 +1070,7 @@ def parameter_sweep(
                                               Note the parameter sweep model will try to reinitialize the
                                               solve regardless of the option if the run fails.
 
-        test_function (optional): A user-defined function that can cheaply test if a current model
+        probe_function (optional): A user-defined function that can cheaply check if a current model
                                   configuration is solvable without actually reinitializing or solving.
 
         mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
@@ -1140,7 +1140,7 @@ def parameter_sweep(
         reinitialize_function,
         reinitialize_kwargs,
         reinitialize_before_sweep,
-        test_function,
+        probe_function,
         comm,
     )
 
