@@ -127,6 +127,7 @@ def recursive_parameter_sweep(
     reinitialize_function=None,
     reinitialize_kwargs=None,
     reinitialize_before_sweep=False,
+    probe_function=None,
     mpi_comm=None,
     debugging_data_dir=None,
     interpolate_nan_outputs=False,
@@ -177,6 +178,7 @@ def recursive_parameter_sweep(
             reinitialize_function,
             reinitialize_kwargs,
             reinitialize_before_sweep,
+            probe_function,
             comm,
         )
 

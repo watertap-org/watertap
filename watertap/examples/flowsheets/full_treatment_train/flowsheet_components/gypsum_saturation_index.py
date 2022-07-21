@@ -150,7 +150,7 @@ def build(m, section="desalination", pretrt_type="NF", **kwargs):
 
         m.fs.desal_saturation.saturation_index = Var(
             initialize=0.5,
-            bounds=(1e-8, 10),
+            bounds=(0.0, 10),
             units=pyunits.dimensionless,
             doc="Gypsum saturation index",
         )
@@ -191,7 +191,7 @@ def build(m, section="desalination", pretrt_type="NF", **kwargs):
 
         m.fs.pretrt_saturation.saturation_index = Var(
             initialize=0.5,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             units=pyunits.dimensionless,
             doc="Gypsum saturation index",
         )

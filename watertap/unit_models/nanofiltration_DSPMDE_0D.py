@@ -486,9 +486,8 @@ class NanofiltrationData(UnitModelBlockData):
                 io_list,
                 initialize=-1e-8,  # TODO: revisit
                 domain=Reals,
-                units=pyunits.V
-                * pyunits.m
-                ** -1,  # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
+                # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
+                units=pyunits.V * pyunits.m**-1,
                 doc="Electric potential gradient of feed-membrane interface",
             )
         if (
@@ -1817,10 +1816,6 @@ class NanofiltrationData(UnitModelBlockData):
             },
             time_point=time_point,
         )
-
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.Nanofiltration_costing(self.costing, **kwargs)
 
     def _get_state_args(
         self, source, mixed_permeate_properties, initialize_guess, state_args
