@@ -92,7 +92,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         # Carbon content
         Ci_dict = {
             "S_su": 0.0313,
-            "S_aa": 0,  # varies
+            "S_aa": 0.03,  # varies
             "S_fa": 0.0217,
             "S_va": 0.0240,
             "S_bu": 0.0250,
@@ -101,10 +101,11 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             "S_h2": 0,
             "S_ch4": 0.0156,
             "S_IC": 1,
-            "S_I": 0,  # varies
-            "X_c": 0,  # varies
+            "S_IN": 0,
+            "S_I": 0.03,  # varies
+            "X_c": 0.02786,  # varies
             "X_ch": 0.0313,
-            "X_pr": 0,  # varies
+            "X_pr": 0.03,  # varies
             "X_li": 0.0220,
             "X_su": 0.0313,
             "X_aa": 0.0313,
@@ -113,12 +114,12 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             "X_pro": 0.0313,
             "X_ac": 0.0313,
             "X_h2": 0.0313,
-            "X_I": 0,  # varies
-            "S_an": 0,
-            "S_cat": 0,
+            "X_I": 0.03,  # varies
+            # "S_an": 0,
+            # "S_cat": 0,
         }
         self.Ci = pyo.Var(
-            self.state_ref.solute_set,
+            Ci_dict.keys(),
             initialize=Ci_dict,
             units=pyo.units.kmol / pyo.units.kg,
             domain=pyo.PositiveReals,
@@ -126,9 +127,14 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         )
 
         # Nitrogen content
+        # Taking values from [2] to avoid mass balance issues
+        mw_n = 14 * pyo.units.kg / pyo.units.kmol
+        # N_bac is nitrogen content
+        N_bac = 0.08 * pyo.units.kg * pyo.units.m**-3 / mw_n
+
         Ni_dict = {
             "S_su": 0,
-            "S_aa": 0,  # varies
+            "S_aa": 0.007,  # varies
             "S_fa": 0,
             "S_va": 0,
             "S_bu": 0,
@@ -137,24 +143,24 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             "S_h2": 0,
             "S_ch4": 0,
             "S_IC": 0,
-            "S_I": 1,  # varies
-            "X_c": 0,  # varies
+            "S_I": 0.06 / mw_n,  # varies
+            "X_c": 0.0376 / mw_n,  # varies
             "X_ch": 0,
             "X_pr": 0,  # varies
             "X_li": 0,
-            "X_su": 0.00625,
-            "X_aa": 0.00625,
-            "X_fa": 0.00625,
-            "X_c4": 0.00625,
-            "X_pro": 0.00625,
-            "X_ac": 0.00625,
-            "X_h2": 0.00625,
+            "X_su": N_bac,
+            "X_aa": N_bac,
+            "X_fa": N_bac,
+            "X_c4": N_bac,
+            "X_pro": N_bac,
+            "X_ac": N_bac,
+            "X_h2": N_bac,
             "X_I": 0,  # varies
-            "S_an": 0,
-            "S_cat": 0,
+            # "S_an": 0,
+            # "S_cat": 0,
         }
         self.Ni = pyo.Var(
-            self.state_ref.solute_set,
+            Ni_dict.keys(),
             initialize=Ni_dict,
             units=pyo.units.kmol / pyo.units.kg,
             domain=pyo.PositiveReals,
@@ -275,7 +281,6 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         # This is the stoichiometric part of the Peterson matrix in dict form.
         # Note that reaction stoichiometry is on a mass basis.
         # See Table 3.1 in Batstone et al., 2002.
-        mw_n = 14 * pyo.units.kg / pyo.units.kmol
 
         # Exclude non-zero stoichiometric coefficients for S_IC initially since they depend on other stoichiometric coefficients.
         self.rate_reaction_stoichiometry = {
