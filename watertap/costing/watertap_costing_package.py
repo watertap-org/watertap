@@ -1042,15 +1042,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.adsorbent_cost
             == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
         )
-        other_process_cost_units = (
-            pyo.units.m**3
-        ) ** -blk.costing_package.gac_other_cost_exp
         blk.other_process_cost_constraint = pyo.Constraint(
             expr=blk.other_process_cost
             == pyo.units.convert(
                 (
                     blk.costing_package.gac_other_cost_coeff
-                    * other_process_cost_units
+                    * ((pyo.units.m**3) ** -blk.costing_package.gac_other_cost_exp)
                     * (
                         (
                             blk.costing_package.gac_num_contactors_op
