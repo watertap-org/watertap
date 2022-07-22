@@ -348,7 +348,7 @@ class ASM1StateBlockData(StateBlockData):
         return self.enthalpy_flow_expression
 
     def get_material_density_terms(self, p, j):
-        self.material_density_expression[j]
+        return self.material_density_expression[j]
 
     def get_energy_density_terms(self, p):
         return self.energy_density_expression
