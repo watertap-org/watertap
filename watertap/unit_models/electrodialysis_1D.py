@@ -515,6 +515,14 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionizaiton",
         )
+        self.water_recovery_mass = Var(
+            self.flowsheet().time,
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="water recovery ratio calculated by mass",
+        )
         # TODO: consider adding more performance as needed.
 
         # -------- Add constraints ---------
@@ -733,6 +741,21 @@ class Electrodialysis1DData(UnitModelBlockData):
                     for j in cation_set
                 )
                 * Constants.faraday_constant
+            )
+        
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Water recovery by mass",
+        )
+        def eq_water_recovery_mass(self, t):
+            return (
+                self.water_recovery_mass[t]
+                * (self.diluate.properties[
+                    t, self.diluate.length_domain.first()
+                ].flow_mass_phase_comp['Liq', 'H2O'] + self.concentrate.properties[
+                    t, self.diluate.length_domain.first()
+                ].flow_mass_phase_comp['Liq', 'H2O'])
+                == self.diluate.properties[t, self.diluate.length_domain.last()].flow_mass_phase_comp['Liq','H2O']
             )
 
     # Intialization routines
@@ -1241,6 +1264,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
+                "Water Recovery by mass": self.water_recovery_mass[time_point]
             },
             "exprs": {},
             "params": {},
