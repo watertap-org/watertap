@@ -599,15 +599,24 @@ class BlockInterface:
             )
         return var_val
 
-    def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
+    def _load(
+        self, load_block_info: Block, cur_block: Optional[Block], path: str = None
+    ):
         """Load the variables in ``load_block_info`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
 
         Called from :meth:`load`.
         """
-        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
         bdiff = BlockDiff()
-        ui = get_block_interface(cur_block)
+        if cur_block is None:
+            # This may occur if whole subtrees were removed
+            ui = None
+            cur_block_path = f"{path}.<missing>"
+        else:
+            cur_block_path = (
+                cur_block.name if path is None else f"{path}.{cur_block.name}"
+            )
+            ui = get_block_interface(cur_block)
         if ui is not None:
             info_vars = ui._block_info.variables
             bdiff.extra = set(info_vars.keys())
@@ -671,6 +680,13 @@ class BlockInterface:
         if bdiff.extra:
             self._var_diff.extra[cur_block_path] = list(bdiff.extra)
 
+        # If current block is None, continue to recurse down
+        # the tree to see what else is missing
+        if cur_block is None:
+            for sb_name, sb_info in load_block_info.blocks.items():
+                sub_block = None
+                self._load(sb_info, sub_block, path=cur_block_path)
+        # Otherwise recurse into the tree to find more things to load
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
             try:
@@ -1145,6 +1161,7 @@ def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]
 
 
 def build_units(x: str = None):
+    """Build a Pyomo unit from a string."""
     if not x:
         _log.info("setting dimensionless unit")
         x = "dimensionless"

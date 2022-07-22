@@ -501,6 +501,11 @@ def test_block_update(simple_flowsheet):
     # too many blocks
     with pytest.raises(ValueError):
         b.update({"blocks": {"a": {}, "b": {}}})
+    # exporting something not there
+    api.export_variables(simple_flowsheet.B.B1, variables=["x"])
+    state = b.dict()
+    del simple_flowsheet.B.B1
+    b.update(state)
 
 
 @pytest.mark.unit
@@ -607,6 +612,7 @@ class B:
     name = "FakeBlock"
     oscar = Var(domain=Reals, initialize=500.0, units=units.m)
     ioscar = Var(["a", "b"], initialize={"a": 1, "b": 2})
+    boscar = Var(domain=Reals, bounds=(-10, 10), initialize=100, units=units.m)
     is_indexed = False
 
 
@@ -619,7 +625,12 @@ def test__get_block_variable_value():
     val = api.BlockInterface._get_block_variable_value(
         b, "oscar", to_units="km", scale_factor=1.0
     )
-    assert val.value == 0.5
+    assert val.value == pytest.approx(0.5)
+    b.boscar.construct()
+    val = api.BlockInterface._get_block_variable_value(
+        b, "boscar", to_units="km", scale_factor=1.0
+    )
+    assert val.value == pytest.approx(0.1)
     b.ioscar.construct()
     val = api.BlockInterface._get_block_variable_value(b, "ioscar")
     assert val.value[0] == 1
@@ -651,9 +662,18 @@ def test_set_display_units():
     assert ivar.display_units == "m/s<sup>2</sup>"
 
 
-# @pytest.mark.unit
-# @pytest.mark.unit
-# @pytest.mark.unit
+@pytest.mark.unit
+def test_build_units():
+    api.build_units()
+    api.build_units("m/s")
+
+
+@pytest.mark.unit
+def test_get_interfaces_badimport():
+    # should just spit out a warning and continue
+    api._get_interfaces("not.a.real.package123456")
+
+
 # @pytest.mark.unit
 # @pytest.mark.unit
 # @pytest.mark.unit
