@@ -503,7 +503,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                 / b.lamp_efficiency
             )
 
-        # TODO: add minimum electricity demand for multiple solutes
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,
