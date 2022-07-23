@@ -600,7 +600,7 @@ class BlockInterface:
         return var_val
 
     def _load(
-        self, load_block_info: Block, cur_block: Optional[Block], path: str = None
+        self, load_block_info: model.Block, cur_block: Optional[Block], path: str = None
     ):
         """Load the variables in ``load_block_info`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
@@ -625,7 +625,7 @@ class BlockInterface:
                 # stop if variable is not known for this block
                 if load_var_name not in info_vars:
                     _log.warn("No matching exported variable found. " + details)
-                    bdiff.missing.append(load_var_info.name)
+                    bdiff.missing.append(load_var_name)
                     continue
                 # set corresponding block variable's value, if (a) not read-only, and
                 # (b) there is a value in the loaded variable
@@ -635,13 +635,14 @@ class BlockInterface:
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
                 else:
-                    var_obj = self.get_block_var(ui.block, load_var_name)
-                    to_units = load_var_info.to_units
-                    sfac = load_var_info.scale_factor
-                    if var_obj is None:
+                    try:
+                        var_obj = self.get_block_var(ui.block, load_var_name)
+                    except AttributeError:
                         raise ValueError(
                             "Exported variable not found in block. " + details
                         )
+                    to_units = load_var_info.to_units
+                    sfac = load_var_info.scale_factor
                     if isinstance(load_var_info.value, model.IndexedValue):
                         # set values for all indexes
                         for i, idx in enumerate(load_var_info.value.index):
@@ -1076,13 +1077,6 @@ class FlowsheetInterface(BlockInterface):
             # add all actions that depend on it to the list
             aff2 = [a for a in all_actions if aff in self._actions_deps[a]]
             affected.extend(aff2)
-
-    def _action_clear_was_run(self, name):
-        _log.warning(
-            "Calling `_action_clear_was_run()` is deprecated, please change "
-            "your code to use the public method `clear_action()`"
-        )
-        self._actions_run.remove(name)
 
     def clear_action(self, name):
         if name in self._actions_run:
