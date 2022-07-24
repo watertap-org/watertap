@@ -30,9 +30,9 @@ def test_suboxicASM():
     assert value(m.fs.feed.properties[0].flow_mass_comp["bod"]) == pytest.approx(
         0.1116, rel=1e-3
     )
-    assert value(
-        m.fs.feed.properties[0].flow_mass_comp["tss"]
-    ) == pytest.approx(0.1195, rel=1e-3)
+    assert value(m.fs.feed.properties[0].flow_mass_comp["tss"]) == pytest.approx(
+        0.1195, rel=1e-3
+    )
     assert value(m.fs.feed.properties[0].flow_mass_comp["tkn"]) == pytest.approx(
         0.01849, rel=1e-3
     )
