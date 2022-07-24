@@ -1245,3 +1245,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             "exprs": {},
             "params": {},
         }
+
+    def get_power_electrical(self, time_point=0):
+        return self.diluate.power_electrical_x[
+            time_point, self.diluate.length_domain.last()
+        ]
