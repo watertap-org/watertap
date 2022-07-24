@@ -199,9 +199,13 @@ def test_costing():
     )
 
     assert isinstance(m.fs.costing.suboxic_activated_sludge_process, Block)
-    # assert isinstance(m.fs.costing.air_flotation.capital_a_parameter, Var)
-    # assert isinstance(m.fs.costing.air_flotation.capital_b_parameter, Var)
-    # assert isinstance(m.fs.costing.air_flotation.reference_state, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.mixer_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.blower_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.MLR_pump_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.RAS_pump_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.automated_valve_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.advanced_predicted_control_cost, Var)
+    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.ammonia_probe_cost, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)

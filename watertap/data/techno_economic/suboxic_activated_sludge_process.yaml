@@ -27,9 +27,6 @@ default:
       constituent_longform: Phosphorus
   capital_cost:
     cost_factor: None
-    aeration_basin_cost:
-      value: 1058.2
-      units: USD_2020/(m^3/day)
     mixer_cost:
       value: 3e4
       units: USD_2020

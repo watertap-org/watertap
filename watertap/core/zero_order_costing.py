@@ -2162,7 +2162,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         # Get costing parameter sub-block for this technology
         (
-            aeration_basin_cost,
             mixer_cost,
             num_of_mixers,
             blower_cost,
@@ -2188,7 +2187,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             parameter_dict,
             blk.unit_model.config.process_subtype,
             [
-                "aeration_basin_cost",
                 "mixer_cost",
                 "num_of_mixers",
                 "blower_cost",
@@ -2223,11 +2221,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Capital cost of unit operation",
         )
 
-        aeration_basin_costing = pyo.units.convert(
-            aeration_basin_cost * blk.unit_model.properties_in[t0].flow_vol,
-            to_units=blk.config.flowsheet_costing_block.base_currency,
-        )
-
         equipment_costing = pyo.units.convert(
             mixer_cost * num_of_mixers
             + blower_cost * num_of_blowers
@@ -2247,7 +2240,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        expr = aeration_basin_costing + equipment_costing + instrumentation_costing
+        expr = equipment_costing + instrumentation_costing
 
         if factor == "TPEC":
             expr *= blk.config.flowsheet_costing_block.TPEC
