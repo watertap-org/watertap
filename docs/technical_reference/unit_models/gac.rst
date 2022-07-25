@@ -244,6 +244,9 @@ Class Documentation
 
 Costing Package
 ---------------
+
+* :mod:`watertap.costing.watertap_costing_package.cost_gac`
+
 Costing Package Parameters
 ++++++++++++++++++++++++++
 
@@ -257,15 +260,15 @@ The following parameters are constructed when applying the GAC costing package:
    "GAC contactor polynomial cost coefficient 0", ":math:`x_0`", "gac_contactor_cost_coeff_0", "10010.9", ":math:`$`"
    "GAC contactor polynomial cost coefficient 1", ":math:`x_1`", "gac_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
    "GAC contactor polynomial cost coefficient 2", ":math:`x_2`", "gac_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
-   "GAC contactor polynomial cost coefficient 3", ":math:`x_3`", "gac_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
+   "GAC contactor polynomial cost coefficient 3", ":math:`x_3`", "gac_contactor_cost_coeff_3", "0.110592", ":math:`$/m^3^3`"
    "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
    "GAC adsorbent exponential cost pre-exponential coefficient", ":math:`y_0`", "gac_adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
    "GAC adsorbent exponential cost parameter coefficient", ":math:`y_1`", "gac_adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
-   "GAC other cost power law coefficient", ":math:`z_0`", "gac_other_cost_coeff", "16660.7", ":math:`$/V^{a_1}`"
+   "GAC other cost power law coefficient", ":math:`z_0`", "gac_other_cost_coeff", "16660.7", ":math:`$/\left( m^3 \right)^{z_1}`"
    "GAC other cost power law exponent", ":math:`z_1`", "gac_other_cost_exp", "0.552207", ":math:`\text{dimensionless}`"
    "Fraction of spent GAC adsorbent that can be regenerated for reuse", ":math:`f_{regen}`", "gac_regen_frac", "0.70", ":math:`\text{dimensionless}`"
    "Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility", ":math:`C_{regen}`", "gac_regen_unit_cost", "4.28352", ":math:`$/kg`"
-   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "gac_makeup_unit_cost", "4.28352", ":math:`$/kg`"
+   "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "gac_makeup_unit_cost", "4.58223", ":math:`$/kg`"
 
 
 Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
@@ -305,10 +308,10 @@ function with respect to the total system contactor volume were regressed using 
 
     .. math::
 
-        C_{cap,C} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right)
-        C_{carbon} = y_0e^{y_1M_{GAC}^{ref}}
-        C_{cap,carbon} = C_{carbon}M_{GAC}
-        C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
+        & C_{cap,C} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
+        & C_{carbon} = y_0e^{y_1M_{GAC}^{ref}} \\\\
+        & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
+        & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
 
 Operating Cost Calculations
 +++++++++++++++++++++++++++
@@ -320,9 +323,9 @@ cost per unit mass, expected to be higher than the initial charge unit cost.
 
     .. math::
 
-        C_{op,tot} = C_{op,regen}+C_{op,makeup}
-        C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC}
-        C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
+        & C_{op,tot} = C_{op,regen}+C_{op,makeup} \\\\
+        & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
+        & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
 
 References
 -----------
