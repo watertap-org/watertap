@@ -243,9 +243,9 @@ Class Documentation
 * :mod:`watertap.unit_models.gac`
 
 Costing Package
--------------------
+---------------
 Costing Package Parameters
-+++++++++++++++++++++++++
+++++++++++++++++++++++++++
 
 The following parameters are constructed when applying the GAC costing package:
 
@@ -311,7 +311,7 @@ function with respect to the total system contactor volume were regressed using 
         C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
 
 Operating Cost Calculations
-+++++++++++++++++++++++++
++++++++++++++++++++++++++++
 
 Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Makeup and backwash
 costs are assumed to be negligible. Since the mass required determined by the rate of replacement is expected to be
