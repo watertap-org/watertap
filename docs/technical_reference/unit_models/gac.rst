@@ -274,7 +274,7 @@ The following variables are constructed when applying the GAC costing package:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
 
-   "Unit contactor(s) capital cost", ":math:`C_{cap,C}`", "contactor_cost", ":math:`$`"
+   "Unit contactor(s) capital cost", ":math:`C_{cap,bed}`", "contactor_cost", ":math:`$`"
    "GAC adsorbent cost per unit mass", ":math:`C_{carbon}`", "adsorbent_unit_cost", ":math:`$/kg`"
    "Unit adsorbent capital cost", ":math:`C_{cap,carbon}`", "adsorbent_cost", ":math:`$`"
    "Unit other process capital cost", ":math:`C_{cap,other}`", "other_process_cost", ":math:`$`"
@@ -289,7 +289,7 @@ Capital costs are determined by the summation of three costing terms. Each term 
 
     .. math::
 
-        C_{cap,tot} = C_{cap,C}+C_{cap,carbon}+C_{cap,other}
+        C_{cap,tot} = C_{cap,bed}+C_{cap,carbon}+C_{cap,other}
 
 Contactor and GAC adsorbent capital costs are estimated using functions and parameters reported in US EPA, 2021. Contactors
 are assumed to be carbon steel pressure vessels with plastic internals and are determined as a polynomial function of
@@ -301,7 +301,7 @@ function with respect to the total system contactor volume were regressed using 
 
     .. math::
 
-        & C_{cap,C} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
+        & C_{cap,bed} = \left( N_{op}+N_{red} \right)\left( x_0+x_1\left( \frac{V}{N_{op}} \right)+x_2\left( \frac{V}{N_{op}} \right)^2+x_3\left( \frac{V}{N_{op}} \right)^3 \right) \\\\
         & C_{carbon} = y_0e^{y_1M_{GAC}^{ref}} \\\\
         & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
         & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
