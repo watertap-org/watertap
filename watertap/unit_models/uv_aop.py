@@ -322,7 +322,19 @@ class Ultraviolet0DData(UnitModelBlockData):
             doc="Electricity demand per component",
         )
 
-        self.electricity_demand_minimum = Var(
+        self.max_phase_electricity_demand = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.solute_set,
+            initialize=1,
+            bounds=(0, None),
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Maximum electricity demand for components with different phases",
+        )
+
+        self.electricity_demand_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.solute_set,
             initialize=1,
@@ -330,7 +342,18 @@ class Ultraviolet0DData(UnitModelBlockData):
             units=units_meta("mass")
             * units_meta("length") ** 2
             * units_meta("time") ** -3,
-            doc="Minimum electricity demand of unit",
+            doc="Electricity demand per component",
+        )
+
+        self.max_component_electricity_demand = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            initialize=1,
+            bounds=(0, None),
+            units=units_meta("mass")
+            * units_meta("length") ** 2
+            * units_meta("time") ** -3,
+            doc="Maximum electricity demand for multiple components",
         )
 
         self.electricity_demand = Var(
@@ -350,7 +373,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             units=units_meta("mass")
             * units_meta("length") ** 2
             * units_meta("time") ** -3,
-            doc="Smoothing term for minimum electricity demand",
+            doc="Smoothing term for maximum electricity demand",
         )
 
         self.electrical_efficiency_phase_comp = Var(
@@ -505,22 +528,58 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
             self.config.property_package.solute_set,
-            doc="Constraints for minimum electricity demand of the UV reactor.",
+            doc="Constraints for calculating maximum electricity demand for different phases.",
         )
-        def eq_min_electricity_demand(b, t, j):
-            if j == b.config.property_package.solute_set.first():
+        def eq_max_phase_electricity_demand(b, t, p, j):
+            if p == b.config.property_package.phase_list.first():
                 return (
-                    b.electricity_demand_minimum[t, j]
-                    == b.electricity_demand_phase_comp[t, "Liq", j]
+                    b.max_phase_electricity_demand[t, p, j]
+                    == b.electricity_demand_phase_comp[t, p, j]
                 )
             else:
-                return b.electricity_demand_minimum[t, j] == (
+                return b.max_phase_electricity_demand[t, p, j] == (
                     smooth_max(
                         b.electricity_demand_phase_comp[
-                            t, "Liq", b.config.property_package.solute_set.prev(j)
+                            t, b.config.property_package.phase_list.prev(p), j
                         ],
-                        b.electricity_demand_phase_comp[t, "Liq", j],
+                        b.electricity_demand_phase_comp[t, p, j],
+                        b.eps_electricity,
+                    )
+                )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Constraints for electricity demand of each component.",
+        )
+        def eq_electricity_demand_comp(b, t, j):
+            return (
+                b.electricity_demand_comp[t, j]
+                == b.max_phase_electricity_demand[
+                    t, b.config.property_package.phase_list.last(), j
+                ]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.solute_set,
+            doc="Constraints for calculating maximum electricity demand for multiple components.",
+        )
+        def eq_max_electricity_demand(b, t, j):
+            if j == b.config.property_package.solute_set.first():
+                return (
+                    b.max_component_electricity_demand[t, j]
+                    == b.electricity_demand_comp[t, j]
+                )
+            else:
+                return b.max_component_electricity_demand[t, j] == (
+                    smooth_max(
+                        b.electricity_demand_comp[
+                            t, b.config.property_package.solute_set.prev(j)
+                        ],
+                        b.electricity_demand_comp[t, j],
                         b.eps_electricity,
                     )
                 )
@@ -532,7 +591,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_electricity_demand(b, t):
             return (
                 b.electricity_demand[t]
-                == b.electricity_demand_minimum[
+                == b.max_component_electricity_demand[
                     t, b.config.property_package.solute_set.last()
                 ]
             )
@@ -702,11 +761,27 @@ class Ultraviolet0DData(UnitModelBlockData):
                 )
                 iscale.set_scaling_factor(v, sf)
 
-        for (t, j), v in self.electricity_demand_minimum.items():
+        for (t, p, j), v in self.max_phase_electricity_demand.items():
+            if iscale.get_scaling_factor(v) is None:
+                p = self.config.property_package.phase_list.first()
+                sf = iscale.get_scaling_factor(
+                    self.electricity_demand_phase_comp[t, p, j], warning=True
+                )
+                iscale.set_scaling_factor(v, sf)
+
+        for (t, j), v in self.electricity_demand_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                p = self.config.property_package.phase_list.last()
+                sf = iscale.get_scaling_factor(
+                    self.max_phase_electricity_demand[t, p, j], warning=True
+                )
+                iscale.set_scaling_factor(v, sf)
+
+        for (t, j), v in self.max_component_electricity_demand.items():
             if iscale.get_scaling_factor(v) is None:
                 j = self.config.property_package.solute_set.first()
                 sf = iscale.get_scaling_factor(
-                    self.electricity_demand_phase_comp[t, "Liq", j], warning=True
+                    self.electricity_demand_comp[t, j], warning=True
                 )
                 iscale.set_scaling_factor(v, sf)
 
@@ -714,7 +789,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 j = self.config.property_package.solute_set.last()
                 sf = iscale.get_scaling_factor(
-                    self.electricity_demand_minimum[t, j], warning=True
+                    self.max_component_electricity_demand[t, j], warning=True
                 )
                 iscale.set_scaling_factor(v, sf)
 
@@ -800,9 +875,19 @@ class Ultraviolet0DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.electricity_demand_phase_comp[t, p, j])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_min_electricity_demand.items():
+        for ind, c in self.eq_max_phase_electricity_demand.items():
+            (t, p, j) = ind
+            sf = iscale.get_scaling_factor(self.max_phase_electricity_demand[t, p, j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_electricity_demand_comp.items():
             (t, j) = ind
-            sf = iscale.get_scaling_factor(self.electricity_demand_minimum[t, j])
+            sf = iscale.get_scaling_factor(self.electricity_demand_comp[t, j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_max_electricity_demand.items():
+            (t, j) = ind
+            sf = iscale.get_scaling_factor(self.max_component_electricity_demand[t, j])
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_electricity_demand.items():

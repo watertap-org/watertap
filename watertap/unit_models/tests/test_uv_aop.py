@@ -171,8 +171,8 @@ class TestUltraviolet:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 39
-        assert number_total_constraints(m) == 25
+        assert number_variables(m) == 41
+        assert number_total_constraints(m) == 27
         assert number_unused_variables(m) == 1  # vars for watertap costing package
 
         # test unit consistency
