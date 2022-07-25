@@ -74,9 +74,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.waste_disposal_cost, 1, 10, nx
         )
     elif case_num == 3:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             0.999,
             nx,
@@ -84,7 +84,7 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
     elif case_num == 4:
         # sweep across membrane properties
         m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0].unfix()
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["water_permeability"] = LinearSample(
             m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
             1,
@@ -92,7 +92,7 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             nx,
         )
         sweep_params["dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             0.999,
             nx,
@@ -145,9 +145,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
         )
     elif case_num == 11:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["NF_dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             1,
             nx,

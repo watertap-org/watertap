@@ -2,7 +2,7 @@ default:
   recovery_frac_mass_H2O:
     value: 0.9999
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
   capital_cost:

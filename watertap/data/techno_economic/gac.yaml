@@ -6,10 +6,10 @@ default: # TODO: confirm any differentiation in removal across subtypes
     value: 0.96
     units: dimensionless
     reference: Heap leaching (gold/copper) case study.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
@@ -43,10 +43,10 @@ pressure_vessel:
     value: 0.96
     units: dimensionless
     reference: Heap leaching (gold/copper) case study.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
@@ -80,10 +80,10 @@ gravity:
     value: 0.96
     units: dimensionless
     reference: Heap leaching (gold/copper) case study.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
