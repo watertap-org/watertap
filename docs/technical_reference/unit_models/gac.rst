@@ -284,8 +284,8 @@ The following variables are constructed when applying the GAC costing package:
 Capital Cost Calculations
 +++++++++++++++++++++++++
 
-Capital costs are determined by the summation of three costing terms each evaluated using their own function considering
-economy of scale.
+Capital costs are determined by the summation of three costing terms. Each term is is calculated by a one parameter
+(different for each term) function considering economy of scale.
 
     .. math::
 
@@ -306,13 +306,16 @@ function with respect to the total system contactor volume were regressed using 
         & C_{cap,carbon} = C_{carbon}M_{GAC} \\\\
         & C_{cap,other} = z_0\left( \left( N_{op}+N_{red} \right)\frac{V}{N_{op}} \right)^{z_1}
 
+Note that given the the ability to alter the parameters in these correlations, GAC adsorbent unit costs (:math:`C_{carbon}`)
+may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
+
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Makeup and backwash
-costs are assumed to be negligible. Since the mass required determined by the rate of replacement is expected to be
-purchased in smaller quantities than the initial charge, the cost for fresh GAC adsorbent for makeup has a separate
-cost per unit mass, expected to be higher than the initial charge unit cost.
+Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy for backwash and booster
+pumps are considered negligible compared to the regeneration costs. Since the replacement adsorbent purchases are expected to be
+purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent
+cost per unit mass variable, expected to be higher than the initial charge unit cost.
 
     .. math::
 
