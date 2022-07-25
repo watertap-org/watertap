@@ -237,15 +237,8 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
    "Surface diffusion coefficient correlation", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
 
-Class Documentation
--------------------
-
-* :mod:`watertap.unit_models.gac`
-
 Costing Package
 ---------------
-
-* :mod:`watertap.costing.watertap_costing_package.cost_gac`
 
 Costing Package Parameters
 ++++++++++++++++++++++++++
@@ -260,7 +253,7 @@ The following parameters are constructed when applying the GAC costing package:
    "GAC contactor polynomial cost coefficient 0", ":math:`x_0`", "gac_contactor_cost_coeff_0", "10010.9", ":math:`$`"
    "GAC contactor polynomial cost coefficient 1", ":math:`x_1`", "gac_contactor_cost_coeff_1", "2204.95", ":math:`$/m^3`"
    "GAC contactor polynomial cost coefficient 2", ":math:`x_2`", "gac_contactor_cost_coeff_2", "-15.9378", ":math:`$/\left( m^3 \right)^2`"
-   "GAC contactor polynomial cost coefficient 3", ":math:`x_3`", "gac_contactor_cost_coeff_3", "0.110592", ":math:`$/m^3^3`"
+   "GAC contactor polynomial cost coefficient 3", ":math:`x_3`", "gac_contactor_cost_coeff_3", "0.110592", ":math:`$/\left( m^3 \right)^3`"
    "Reference maximum value of GAC mass needed for initial charge where economy of scale no longer discounts the unit price", ":math:`M_{GAC}^{ref}`", "bed_mass_gac_max_ref", "18143.7", ":math:`kg`"
    "GAC adsorbent exponential cost pre-exponential coefficient", ":math:`y_0`", "gac_adsorbent_unit_cost_coeff", "4.58342", ":math:`$/kg`"
    "GAC adsorbent exponential cost parameter coefficient", ":math:`y_1`", "gac_adsorbent_unit_cost_exp_coeff ", "-1.25311e-5", ":math:`kg^{-1}`"
@@ -326,6 +319,12 @@ cost per unit mass, expected to be higher than the initial charge unit cost.
         & C_{op,tot} = C_{op,regen}+C_{op,makeup} \\\\
         & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
         & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
+
+Class Documentation
+-------------------
+
+* :mod:`watertap.unit_models.gac`
+* :mod:`watertap.costing.watertap_costing_package.cost_gac`
 
 References
 -----------
