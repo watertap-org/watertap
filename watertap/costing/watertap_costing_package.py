@@ -959,7 +959,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=1e5,
             domain=pyo.NonNegativeReals,
             units=blk.costing_package.base_currency,
-            doc="Unit contactor capital cost",
+            doc="Unit contactor(s) capital cost",
         )
         blk.bed_mass_gac_ref = pyo.Var(
             initialize=4,
