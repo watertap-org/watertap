@@ -972,7 +972,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=2,
             domain=pyo.NonNegativeReals,
             units=blk.costing_package.base_currency * pyo.units.kg**-1,
-            doc="Unit adsorbent unit cost per mass",
+            doc="GAC adsorbent cost per unit mass",
         )
         blk.adsorbent_cost = pyo.Var(
             initialize=1e5,
