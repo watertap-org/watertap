@@ -13,3 +13,21 @@ default: # low pressure pump
     pump_cost:
       value: 94.0
       units: USD_2020/(m^3/hr)
+variable_efficiency_lowpressure:  #< 11bar https://doi.org/10.1590/2318-0331.0217170018
+  lift_height:
+    value: 30.47 # 100 ft
+    units: m
+  eta_pump:
+    value: 0.9
+    units: dimensionless
+  eta_motor:
+    value: 0.9
+    units: dimensionless
+  flow_bep:
+    value: 1
+    unit: m^3/hr
+  capital_cost:
+    cost_factor: None
+    pump_cost:
+      value: 94.0
+      units: USD_2020/(m^3/hr)
