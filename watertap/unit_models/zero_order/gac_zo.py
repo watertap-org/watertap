@@ -56,8 +56,8 @@ class GACZOData(ZeroOrderBaseData):
 
         self.electricity_intensity_parameter = Var(
             units=pyunits.kW / pyunits.m**3,
-            doc="Parameter for calculating electricity base on empty bed "
-            "contacting time",
+            doc="Parameter for calculating electricity based on empty bed "
+            "contact time",
         )
 
         self.energy_electric_flow_vol_inlet = Var(

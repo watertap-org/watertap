@@ -197,7 +197,7 @@ class EvaporatorData(UnitModelBlockData):
             units=pyunits.J * pyunits.s**-1 * pyunits.m**-2 * pyunits.K**-1,
         )
 
-        self.area = Var(initialize=1e2, bounds=(1e-1, 1e4), units=pyunits.m**2)
+        self.area = Var(initialize=1e2, bounds=(1e-1, 1e5), units=pyunits.m**2)
 
         self.delta_temperature_in = Var(
             initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K

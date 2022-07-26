@@ -152,6 +152,12 @@ class TestEvaporationPondZO:
             == data["adj_area_calc_b_parameter"]["value"]
         )
 
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
+
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
         assert degrees_of_freedom(model.fs.unit) == 0

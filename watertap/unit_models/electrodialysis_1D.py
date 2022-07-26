@@ -12,9 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from email.policy import default
-from logging import warning
-from numpy import NAN
 from pyomo.environ import (
     Set,
     Var,
@@ -32,7 +29,6 @@ from pyomo.dae import (
     DerivativeVar,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from sympy import Derivative
 
 # Import Watertap cores
 from watertap.core.util.initialization import check_solve, check_dof
@@ -570,14 +566,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                     + self.membrane_areal_resistance["cem"]
                     + self.spacer_thickness
                     * (
-                        self.concentrate.properties[t, x].electrical_conductivity_phase[
-                            "Liq"
-                        ]
-                        ** -1
-                        + self.diluate.properties[t, x].electrical_conductivity_phase[
-                            "Liq"
-                        ]
-                        ** -1
+                        self.concentrate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                        + self.diluate.properties[t, x].elec_cond_phase["Liq"] ** -1
                     )
                 )
                 * self.cell_pair_num
@@ -955,12 +945,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             ):
                 sf = (
                     iscale.get_scaling_factor(self.membrane_areal_resistance) ** 2
-                    + value(
-                        self.diluate.properties[ind].electrical_conductivity_phase[
-                            "Liq"
-                        ]
-                    )
-                    ** 2
+                    + value(self.diluate.properties[ind].elec_cond_phase["Liq"]) ** 2
                 ) ** 0.5 / float(self.cell_pair_num.value)
                 iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
 
@@ -1070,7 +1055,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1100,7 +1085,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
@@ -1157,7 +1142,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_osm**2 + sf_eleosm**2) ** 0.5
                 )
@@ -1187,7 +1172,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
                     c, (sf_diff**2 + sf_elemig**2) ** 0.5
                 )
