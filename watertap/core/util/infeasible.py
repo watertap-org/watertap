@@ -158,7 +158,7 @@ def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
 
 def _eval_close(obj, val, rel_tol, abs_tol):
     """
-    Helper for evaluting bounds and printing Pyomo variable or constraint.
+    Helper for evaluating bounds and printing Pyomo variable or constraint.
     Prints if the Pyomo object is close to one or both of its bounds.
 
     Args:
