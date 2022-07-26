@@ -576,7 +576,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             else:
                 return b.max_component_electricity_demand[t, j] == (
                     smooth_max(
-                        b.electricity_demand_comp[
+                        b.max_component_electricity_demand[
                             t, b.config.property_package.solute_set.prev(j)
                         ],
                         b.electricity_demand_comp[t, j],
