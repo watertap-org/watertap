@@ -240,8 +240,8 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 Costing Package
 ---------------
 
-Costing Package Parameters
-++++++++++++++++++++++++++
+Costing Package Variables
++++++++++++++++++++++++++
 
 The following parameters are constructed when applying the GAC costing package:
 
