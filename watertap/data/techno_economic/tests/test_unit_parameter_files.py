@@ -107,7 +107,7 @@ def test_unit_parameter_files(tech):
         "well_field",
     ]
 
-    expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
+    expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_comp"]
 
     for k in data.values():
 
@@ -120,7 +120,7 @@ def test_unit_parameter_files(tech):
                 assert k[e]["value"] >= 0
                 assert k[e]["value"] <= 1
             elif tech in siso_full_recovery:
-                if e == "default_removal_frac_mass_solute":
+                if e == "default_removal_frac_mass_comp":
                     assert e in k.keys()
             else:
                 assert e not in k.keys()
@@ -134,8 +134,8 @@ def test_unit_parameter_files(tech):
             assert k[e]["value"] >= 0
 
         # Check for specific removal fractions
-        if "removal_frac_mass_solute" in k.keys():
-            for (j, c_data) in k["removal_frac_mass_solute"].items():
+        if "removal_frac_mass_comp" in k.keys():
+            for (j, c_data) in k["removal_frac_mass_comp"].items():
                 assert "units" in c_data.keys()
                 assert_units_equivalent(c_data["units"], units.dimensionless)
                 assert "value" in c_data.keys()
