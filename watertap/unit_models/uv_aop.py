@@ -13,17 +13,16 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    RangeSet,
     Set,
     Var,
     Param,
     Suffix,
     NonNegativeReals,
     Reference,
+    exp,
+    log10,
     units as pyunits,
 )
-from pyomo.environ import *
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores

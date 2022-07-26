@@ -73,8 +73,8 @@ class TestUltraviolet:
         exporure_time = 500 * pyunits.s
         inactivation_rate = 2.3 * pyunits.cm**2 / pyunits.J
         reaction_rate_constant = 0 * pyunits.min**-1
-        EEO = 0.0129 * pyunits.kWh / pyunits.m**3
-        lamp_efficiency = 1
+        EEO = 0.25 * pyunits.kWh / pyunits.m**3
+        lamp_efficiency = 0.8
         UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
@@ -246,7 +246,7 @@ class TestUltraviolet:
         assert pytest.approx(2.3e-3, rel=1e-3) == value(
             m.fs.unit.photolysis_rate_constant["Liq", "NDMA"]
         )
-        assert pytest.approx(47.76, rel=1e-3) == value(
+        assert pytest.approx(1156.99, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
@@ -264,14 +264,14 @@ class TestUltraviolet:
             },
         )
         m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
 
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(759356.3, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(3742.63, rel=1e-5) == value(
+        assert pytest.approx(977042, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(90664.5, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
+        assert pytest.approx(0.016694, rel=1e-5) == value(m.fs.costing.LCOW)
