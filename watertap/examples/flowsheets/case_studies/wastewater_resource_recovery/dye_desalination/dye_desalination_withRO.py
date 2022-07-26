@@ -493,38 +493,6 @@ def add_costing(m):
 
     # Combine results from costing packages and calculate overall metrics
     @m.Expression()
-    def total_capital_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
-            )
-            + m.fs.ro_costing.total_investment_cost
-        )
-
-    @m.Expression()
-    def total_operating_cost(b):
-        return (
-            pyunits.convert(
-                m.fs.zo_costing.total_fixed_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
-            )
-            + pyunits.convert(
-                m.fs.zo_costing.total_variable_operating_cost,
-                to_units=pyunits.USD_2018 / pyunits.year,
-            )
-            + m.fs.ro_costing.total_operating_cost
-        )
-
-    @m.Expression()
-    def total_externalities(b):
-        return pyunits.convert(
-            m.fs.water_recovery_revenue
-            + m.fs.dye_recovery_revenue
-            - m.fs.brine_disposal_cost,
-            to_units=pyunits.USD_2018 / pyunits.year,
-        )
-
-    @m.Expression()
     def total_capital_cost(b, doc="Total capital cost of the treatment train"):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
@@ -635,7 +603,7 @@ def display_costing(m):
 
     externalities = value(
         pyunits.convert(
-            m.total_externalities, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 
