@@ -104,12 +104,12 @@ class TestEvaporationPondZO:
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 0.0001
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            if j not in data["removal_frac_mass_solute"]:
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            if j not in data["removal_frac_mass_comp"]:
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.air_temperature[0].fixed
         assert (
