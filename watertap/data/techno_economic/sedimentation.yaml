@@ -16,10 +16,10 @@ default:
     reference: '(1) Cost Estimating Manual for Water Treatment Facilities (McGivney/Kawamura),
       (2) Water and Wastewater Engineering: Design Principles and Practice (Mackenzie
       L. Davis)'
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.990826
       units: dimensionless
@@ -42,10 +42,10 @@ phosphorus_capture:    # AMO subtype
   recovery_frac_mass_H2O:
     value: 0.9861     #initial estimate
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.999
       units: dimensionless

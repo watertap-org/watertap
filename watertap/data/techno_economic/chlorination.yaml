@@ -13,10 +13,10 @@ default:
     capital_c_parameter:
       value: 421505
       units: USD_2014
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     total_coliforms_fecal_ecoli:
       value: 0.999148
       units: dimensionless
