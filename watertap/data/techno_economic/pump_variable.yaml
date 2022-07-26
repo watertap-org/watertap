@@ -1,4 +1,4 @@
-default: # low pressure pump
+default:  #< 11bar https://doi.org/10.1590/2318-0331.0217170018
   lift_height:
     value: 30.47 # 100 ft
     units: m
@@ -8,6 +8,9 @@ default: # low pressure pump
   eta_motor:
     value: 0.9
     units: dimensionless
+  flow_bep:
+    value: 1
+    unit: m^3/hr
   capital_cost:
     cost_factor: None
     pump_cost:
