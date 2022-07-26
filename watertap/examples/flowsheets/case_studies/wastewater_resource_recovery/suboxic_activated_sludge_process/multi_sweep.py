@@ -39,19 +39,19 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 
     sweep_params = {}
     if case_num == 1:
-        m.fs.suboxicASM.removal_frac_mass_solute[0, "bod"].unfix()
+        m.fs.suboxicASM.removal_frac_mass_comp[0, "bod"].unfix()
         sweep_params["bod_removal"] = LinearSample(
-            m.fs.suboxicASM.removal_frac_mass_solute[0, "bod"], 0.9363, 0.9904, nx
+            m.fs.suboxicASM.removal_frac_mass_comp[0, "bod"], 0.9363, 0.9904, nx
         )
     elif case_num == 2:
-        m.fs.suboxicASM.removal_frac_mass_solute[0, "tss"].unfix()
+        m.fs.suboxicASM.removal_frac_mass_comp[0, "tss"].unfix()
         sweep_params["tss_removal"] = LinearSample(
-            m.fs.suboxicASM.removal_frac_mass_solute[0, "tss"], 0.9405, 0.9940, nx
+            m.fs.suboxicASM.removal_frac_mass_comp[0, "tss"], 0.9405, 0.9940, nx
         )
     elif case_num == 3:
-        m.fs.suboxicASM.removal_frac_mass_solute[0, "tkn"].unfix()
+        m.fs.suboxicASM.removal_frac_mass_comp[0, "tkn"].unfix()
         sweep_params["tkn_removal"] = LinearSample(
-            m.fs.suboxicASM.removal_frac_mass_solute[0, "tkn"], 0.8846, 0.9615, nx
+            m.fs.suboxicASM.removal_frac_mass_comp[0, "tkn"], 0.8846, 0.9615, nx
         )
     elif case_num == 4:
         m.fs.costing.electricity_cost.unfix()
