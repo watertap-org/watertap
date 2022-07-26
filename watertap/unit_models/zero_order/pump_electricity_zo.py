@@ -116,11 +116,11 @@ class PumpVariableEfficiencyZOData(PumpElectricityZOData):
             self.flowsheet().config.time,
             units=pyunits.dimensionless,
             bounds=(0, 1),
-            doc="Variable operation efficiency",
+            doc="Ratio between the true efficiency and the best efficiency due to variable operation",
         )
 
         @self.Constraint(
-            self.flowsheet.time, doc="Constraint for variable pump flowrate ratio"
+            self.flowsheet().time, doc="Constraint for variable pump flowrate ratio"
         )
         def flow_ratio_constraint(b, t):
             return b.flow_ratio[t] == b.properties[t].flow_vol / pyunits.convert(
@@ -131,13 +131,13 @@ class PumpVariableEfficiencyZOData(PumpElectricityZOData):
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
         )
         def eta_ratio_constraint(b, t):
-            if b.config.process_subtype is "low pressure":
+            if b.config.process_subtype is "variable_lowpressure":
                 # if the flow is too far from the design point, the efficiency is set to 40%
                 if b.flow_ratio[t] < 0.6 or b.flow_ratio[t] > 1.4:
-                    b.eta_ratio[t] = 0.4
+                    return b.eta_ratio[t] == 0.4
                 # otherwise, use the correlation
                 else:
-                    b.eta_ratio[t] = (
+                    return b.eta_ratio[t] == (
                         -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
                     )
             else:
