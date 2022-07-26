@@ -39,19 +39,19 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 
     sweep_params = {}
     if case_num == 1:
-        m.fs.mabr.removal_frac_mass_solute[0, "ammonium_as_nitrogen"].unfix()
+        m.fs.mabr.removal_frac_mass_comp[0, "ammonium_as_nitrogen"].unfix()
         sweep_params["ammonium_removal"] = LinearSample(
-            m.fs.mabr.removal_frac_mass_solute[0, "ammonium_as_nitrogen"], 0.5, 0.9, nx
+            m.fs.mabr.removal_frac_mass_comp[0, "ammonium_as_nitrogen"], 0.5, 0.9, nx
         )
     elif case_num == 2:
-        m.fs.dmbr.removal_frac_mass_solute[0, "nitrate"].unfix()
+        m.fs.dmbr.removal_frac_mass_comp[0, "nitrate"].unfix()
         sweep_params["nitrate_removal"] = LinearSample(
-            m.fs.dmbr.removal_frac_mass_solute[0, "nitrate"], 0.7, 0.95, nx
+            m.fs.dmbr.removal_frac_mass_comp[0, "nitrate"], 0.7, 0.95, nx
         )
     elif case_num == 3:
-        m.fs.dmbr.removal_frac_mass_solute[0, "tss"].unfix()
+        m.fs.dmbr.removal_frac_mass_comp[0, "tss"].unfix()
         sweep_params["tss_removal"] = LinearSample(
-            m.fs.dmbr.removal_frac_mass_solute[0, "tss"], 0.6, 0.95, nx
+            m.fs.dmbr.removal_frac_mass_comp[0, "tss"], 0.6, 0.95, nx
         )
     elif case_num == 4:
         m.fs.costing.electricity_cost.unfix()
