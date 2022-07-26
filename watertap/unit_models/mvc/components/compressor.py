@@ -272,7 +272,7 @@ class CompressorData(UnitModelBlockData):
                 - b.control_volume.properties_in[0].enth_mass_phase["Vap"]
             )
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
