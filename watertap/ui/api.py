@@ -73,17 +73,21 @@ import importlib
 import json
 import logging
 from pathlib import Path
+import re
 from typing import Dict, List, Union, TextIO, Tuple, Generator, Callable, Optional
 
 # third-party
-import pyomo.core
-from pyomo.environ import Block, Var, value
+# from idaes.core.util.units_of_measurement import report_quantity
+# import pyomo.core
+from pyomo.environ import Block, Param, Var, value
+from pyomo.environ import units as pyunits
+from pyomo.environ import as_quantity
+from pyomo.network.port import Port
 import idaes.logger as idaeslog
 from pydantic import BaseModel, ValidationError, DirectoryPath, FilePath
 import yaml
 
 # local
-from watertap.ui import api_util
 from watertap.ui.api_util import open_file_or_stream
 from watertap.ui import api_model as model
 
@@ -120,14 +124,14 @@ def set_block_interface(block, data: Union["BlockInterface", Dict]):
     block.ui = obj
 
 
-def get_block_interface(block: Block) -> Union["BlockInterface", None]:
+def get_block_interface(block: Block):
     """Retrieve attached block interface, if any. Use with :func:`set_block_interface`.
 
     Args:
         block: The block to access.
 
     Return:
-        The interface, or None.
+        Interface
     """
     return getattr(block, "ui", None)
 
@@ -173,12 +177,11 @@ class BlockInterface:
         block_info = model.Block(**info)
 
         # set optional values from values in self._block
-        if block_info.variables is None:
-            block_info.variables = []
         if block_info.display_name == "":
             block_info.display_name = self._block.name
         if block_info.description == "":
-            block_info.description = self._block.doc if self._block.doc else "none"
+            doc = getattr(self._block, "doc", None)
+            block_info.description = doc if doc else "none"
         _log.debug(f"Parsed block info. value={block_info}")
 
         # finish
@@ -257,7 +260,7 @@ class BlockInterface:
         d = self._get_block_interface_tree().dict()
 
         # clean up top-level (don't need block descriptors)
-        for top_level_key in "variables", "display_name", "description", "category":
+        for top_level_key in "variables", "display_name", "description":
             del d[top_level_key]
 
         _log.debug("dict:end. status=ok")
@@ -505,29 +508,90 @@ class BlockInterface:
         return p["val"]
 
     @staticmethod
-    def _get_block_variable_value(block, var_name):
-        block_var = getattr(block, var_name)
+    def get_block_var(block, var_name):
+        """Get the variable from the block.
+
+        Level of indirection around getattr().
+        """
+        try:
+            block_var = getattr(block, var_name)
+        except AttributeError:
+            raise AttributeError(
+                f"Cannot get variable from block. block={block.name}, "
+                f"variable={var_name}"
+            )
+        return block_var
+
+    @classmethod
+    def _get_block_variable_value(
+        cls, block, var_name, indices=None, to_units=None, scale_factor=0
+    ):
+        def uvalue(bv, u=to_units):
+            """Get value of variable 'bvar', converted to units 'u'"""
+            if u:
+                # create new variable with target units, use Pyomo conversion
+                # on set_value() to calculate the correct value
+                new_var = cls.units_val(1, u)
+                new_var.set_value(bv)
+                bval = value(new_var)
+            else:
+                # simply get existing value
+                bval = value(bv)
+            # if scaling is requested add it
+            if scale_factor != 0:
+                bval *= scale_factor
+            return bval
+
+        def ubounds(bv, u=to_units, sfac=scale_factor):
+            """If a Parameter, no bounds, so be defensive.
+            If units, scale bounds to units
+            """
+            lb, ub = getattr(bv, "lb", None), getattr(bv, "ub", None)
+            if u:
+                if lb is not None:
+                    lb = value(cls.units_val(lb, u))
+                if ub is not None:
+                    ub = value(cls.units_val(ub, u))
+            if sfac != 0:
+                if lb is not None:
+                    lb *= sfac
+                if ub is not None:
+                    ub *= sfac
+            return lb, ub
+
+        block_var = cls.get_block_var(block, var_name)
         if block_var.is_indexed():
-            index_list, value_list, bounds_list = [], [], []
-            for var_idx in block_var.index_set():
-                try:
-                    index_list.append(tuple(var_idx))
-                except TypeError:
-                    index_list.append((var_idx,))
-                bvar = block_var[var_idx]
-                value_list.append(value(bvar))
-                bounds_list.append((bvar.lb, bvar.ub))
-            _log.debug(
-                f"add indexed variable. block={block.name},"
-                f"name={var_name},index={index_list},"
-                f"value={value_list}"
-            )
-            var_val = model.IndexedValue(
-                index=index_list, value=value_list, bounds=bounds_list
-            )
+            if indices:
+                # Get just a single scalar value for the selected index
+                idx = tuple(indices)
+                bvar = block_var[idx]
+                var_val = model.ScalarValue(
+                    value=uvalue(bvar),
+                    bounds=ubounds(bvar),
+                )
+            else:
+                # extract values for all indexes
+                index_list, value_list, bounds_list = [], [], []
+                for var_idx in block_var.index_set():
+                    try:
+                        index_list.append(tuple(var_idx))
+                    except TypeError:
+                        index_list.append((var_idx,))
+                    bvar = block_var[var_idx]
+                    value_list.append(uvalue(bvar))
+                    bounds_list.append(ubounds(bvar))
+                _log.debug(
+                    f"add indexed variable. block={block.name},"
+                    f"name={var_name},index={index_list},"
+                    f"value={value_list}"
+                )
+                var_val = model.IndexedValue(
+                    index=index_list, value=value_list, bounds=bounds_list
+                )
         else:
             var_val = model.ScalarValue(
-                value=value(block_var), bounds=(block_var.lb, block_var.ub)
+                value=uvalue(block_var),
+                bounds=ubounds(block_var),
             )
             _log.debug(
                 f"add scalar value. block={block.name},"
@@ -535,20 +599,25 @@ class BlockInterface:
             )
         return var_val
 
-    def _load(self, load_block_info: Block, cur_block: Block, path: str = None):
-        """Load the variables in ``block_data`` into ``cur_block``, then
+    def _load(
+        self, load_block_info: model.Block, cur_block: Optional[Block], path: str = None
+    ):
+        """Load the variables in ``load_block_info`` into ``cur_block``, then
         recurse to do the same with any sub-blocks.
 
         Called from :meth:`load`.
         """
-        cur_block_path = cur_block.name if path is None else f"{path}.{cur_block.name}"
         bdiff = BlockDiff()
-        ui = get_block_interface(cur_block)
-
-        if not ui:
-            bdiff.missing = list(load_block_info.variables.keys())
-            bdiff.extra = []
+        if cur_block is None:
+            # This may occur if whole subtrees were removed
+            ui = None
+            cur_block_path = f"{path}.<missing>"
         else:
+            cur_block_path = (
+                cur_block.name if path is None else f"{path}.{cur_block.name}"
+            )
+            ui = get_block_interface(cur_block)
+        if ui is not None:
             info_vars = ui._block_info.variables
             bdiff.extra = set(info_vars.keys())
             for load_var_name, load_var_info in load_block_info.variables.items():
@@ -556,7 +625,7 @@ class BlockInterface:
                 # stop if variable is not known for this block
                 if load_var_name not in info_vars:
                     _log.warn("No matching exported variable found. " + details)
-                    bdiff.missing.append(load_var_info.name)
+                    bdiff.missing.append(load_var_name)
                     continue
                 # set corresponding block variable's value, if (a) not read-only, and
                 # (b) there is a value in the loaded variable
@@ -566,29 +635,84 @@ class BlockInterface:
                 elif load_var_info.value is None:
                     _log.debug("No value for variable. " + details)
                 else:
-                    var_obj = getattr(ui.block, load_var_name)
-                    if var_obj is None:
+                    try:
+                        var_obj = self.get_block_var(ui.block, load_var_name)
+                    except AttributeError:
                         raise ValueError(
                             "Exported variable not found in block. " + details
                         )
+                    to_units = load_var_info.to_units
+                    sfac = load_var_info.scale_factor
                     if isinstance(load_var_info.value, model.IndexedValue):
+                        # set values for all indexes
                         for i, idx in enumerate(load_var_info.value.index):
                             idx, val = tuple(idx), load_var_info.value.value[i]
+                            if sfac != 0:
+                                val /= sfac
+                            if to_units:
+                                val = self.units_val(val, to_units)
                             var_obj[idx] = val
+                    elif load_var_info.indices:
+                        # set (scalar) value for selected index
+                        val = load_var_info.value.value
+                        idx = tuple(load_var_info.indices)
+                        if sfac != 0:
+                            val /= sfac
+                        if to_units:
+                            val = self.units_val(val, to_units)
+                        var_obj[idx] = val
                     else:
-                        var_obj.set_value(load_var_info.value.value)
+                        # set scalar value
+                        val = load_var_info.value.value
+                        if sfac != 0:
+                            val /= sfac
+                        if to_units:
+                            val = self.units_val(val, to_units)
+                        var_obj.set_value(val)
                     _log.debug("Exported variable loaded. " + details)
+        else:
+            _log.debug("All variables missing")
+            bdiff.missing = list(load_block_info.variables.keys())
+            bdiff.extra = []
 
-            # save non-empty missing/extra
-            if bdiff.missing:
-                self._var_diff.missing[cur_block_path] = bdiff.missing
-            if bdiff.extra:
-                self._var_diff.extra[cur_block_path] = list(bdiff.extra)
+        # save non-empty missing/extra
+        if bdiff.missing:
+            self._var_diff.missing[cur_block_path] = bdiff.missing
+        if bdiff.extra:
+            self._var_diff.extra[cur_block_path] = list(bdiff.extra)
 
+        # If current block is None, continue to recurse down
+        # the tree to see what else is missing
+        if cur_block is None:
+            for sb_name, sb_info in load_block_info.blocks.items():
+                sub_block = None
+                self._load(sb_info, sub_block, path=cur_block_path)
+        # Otherwise recurse into the tree to find more things to load
         for sb_name, sb_info in load_block_info.blocks.items():
             _log.debug(f"Load sub-block. name={sb_name} path={cur_block_path}")
-            sub_block = cur_block.find_component(sb_name)
+            try:
+                # if the name is a number, it is an index not a component
+                sb_idx = float(sb_name)
+                sub_block = cur_block[sb_idx]
+            except ValueError:
+                # otherwise it is a component (we hope)
+                sub_block = cur_block.find_component(sb_name)
             self._load(sb_info, sub_block, path=cur_block_path)
+
+    @staticmethod
+    def units_val(v, units):
+        """Create a Var with the appropriate value and units."""
+        try:
+            iv = Var(name="tmp", units=build_units(units))
+        except Exception as err:
+            _log.error(
+                f"units_val() could not evaluate variable because "
+                f"building units failed. units={units}, message={err}"
+            )
+            raise
+        iv.construct()
+        iv.set_value(v)
+        return iv
 
     def _get_block_interface_tree(self):
         """Get all block interfaces in this block and sub-blocks,
@@ -615,8 +739,13 @@ class BlockInterface:
 
             # add any model sub-blocks to the stack
             if hasattr(block, "component_map"):
-                for sb_name, sb_val in block.component_map(ctype=Block).items():
+                sub_blocks = block.component_map(ctype=[Block, Port])
+                for sb_name, sb_val in sub_blocks.items():
                     stack.insert(0, (path + [sb_name], sb_val))
+            elif block.is_indexed():
+                print(f"@@ Indexed block: {block.name}")
+                for ix in block.index_set():
+                    stack.insert(0, (path + [ix], block[ix]))
 
         return tree
 
@@ -646,7 +775,14 @@ class BlockInterface:
         leaf = ui._block_info.copy()
         leaf.blocks = {}  # forget sub-blocks
         for name, variable in leaf.variables.items():
-            variable.value = self._get_block_variable_value(ui.block, name)
+            val = self._get_block_variable_value(
+                ui.block,
+                name,
+                indices=variable.indices,
+                to_units=variable.to_units,
+                scale_factor=variable.scale_factor,
+            )
+            variable.value = val
             if not variable.display_name:
                 variable.display_name = name
 
@@ -663,7 +799,7 @@ class BlockInterface:
 
 
 def export_variables(
-    block, variables=None, name="", desc="", category=""
+    block, variables=None, name="", desc="", **kwargs
 ) -> BlockInterface:
     """Export variables from the given block, optionally providing metadata
     for the block itself. This method is really a simplified way to
@@ -687,8 +823,14 @@ def export_variables(
             description
                 Description of the variable (default is ``.doc`` of the variable, or nothing)
 
-            units
+            to_units
                 Units for the variable, in a standard string generated by Pyomo units.
+
+            display_units
+                How the units should be displayed (regardless of any conversions)
+
+            scale_units
+                Scaling factor for units (before display)
 
             readonly
                 If False (the default), the variable can be modified in the UI.
@@ -697,8 +839,6 @@ def export_variables(
 
         name: Name to give this block (default=``block.name``)
         desc: Description of the block (default=``block.doc``)
-        category: User-defined category for this block, such as "costing", that
-           can be used by the UI to group things visually. (default="default")
 
     Returns:
         An initialized :class:`BlockInterface` object.
@@ -708,13 +848,13 @@ def export_variables(
     """
 
     def var_check(b, n):
-        info = f"block={b.name},attr={n}"
+        info = f"block={b.name}, attr={n}"
         try:
-            obj = getattr(b, n)
-            if not isinstance(obj, Var):
-                return "not a variable. " + info + f",type={type(obj)}"
-        except AttributeError:
-            return "not found. " + info
+            obj = BlockInterface.get_block_var(b, n)  # getattr(b, n)
+            if not isinstance(obj, Var) and not isinstance(obj, Param):
+                return "not a variable or parameter. " + info + f",type={type(obj)}"
+        except AttributeError as err:
+            return f"{err}: not found. {info}"
 
     var_info_dict = {}
     if variables is not None:
@@ -735,26 +875,50 @@ def export_variables(
                 raise ValueError(
                     f"Expected list of variable names for 'variables': " f"{err}"
                 )
+        # Pre-process each variable
         for name in var_info_dict:
             error = var_check(block, name)
             if error:
                 raise ValueError(error)
             # Fill in gaps in variable
-            bvar = getattr(block, name)
+            bvar = BlockInterface.get_block_var(block, name)  # variable in block
             ivar = var_info_dict[name]
-            ivar.display_name = bvar.local_name
-            units = bvar.get_units()
-            if units is not None:
-                ivar.units = str(units)
-            ivar.description = bvar.doc or ""
+            if not ivar.display_name:
+                ivar.display_name = bvar.local_name
+            set_display_units(ivar, bvar)
+            if not ivar.description:
+                ivar.description = bvar.doc or ""
 
     block_info = model.Block(
-        display_name=name,
-        description=desc,
-        category=category,
-        variables=var_info_dict,
+        display_name=name, description=desc, variables=var_info_dict
     )
     return BlockInterface(block, block_info.dict())
+
+
+def set_display_units(ivar: model.Variable, bvar: Var):
+    """Set the units to display, if not specified explicitly"""
+
+    def html_units(u):
+        h_u = None
+        if isinstance(u, str):
+            try:
+                u = build_units(u)
+            except Exception as err:
+                _log.warning(f"Could not build units: {err}")
+                h_u = u  # do not build it
+        if h_u is None:
+            h_u = f"{as_quantity(u).u:~H}"
+        return h_u
+
+    if ivar.display_units:
+        ivar.display_units = html_units(ivar.display_units)
+    else:
+        if ivar.to_units:
+            ivar.display_units = html_units(ivar.to_units)
+        else:
+            units = bvar.get_units()
+            if units is not None:
+                ivar.display_units = html_units(units)
 
 
 class WorkflowActions:
@@ -768,8 +932,7 @@ class WorkflowActions:
     results = "get-results"
 
     #: Dependencies:
-    #: results `--[depends on]-->` solve `--[depends on]-->` build
-    deps = {build: [], solve: [build], results: [solve]}
+    deps = {build: [], solve: [], results: [solve]}
 
 
 class FlowsheetInterface(BlockInterface):
@@ -786,19 +949,25 @@ class FlowsheetInterface(BlockInterface):
 
         Args:
             info: Options for the :class:`BlockInterface` constructor
+                  If present, the `display_name` is assigned to the
+                  object attribute `name`.
         """
         super().__init__(None, info)
         self._actions = {a: (None, None) for a in self.ACTIONS}
         self._actions_deps = WorkflowActions.deps.copy()
         self._actions_run = set()
+        if info and info.get("display_name", None):
+            self.name = info["display_name"]
+        else:
+            self.name = "Flowsheet"
 
     # Public methods
 
     def update(self, data: Dict):
         super().update(data)
-        # clear the 'solve' action
-        if self._action_was_run(WorkflowActions.solve):
-            self._action_clear_was_run(WorkflowActions.solve)
+        # clear actions
+        for act in self._actions_run.copy():
+            self.clear_action(act)
         _log.debug(f"update:end. status=ok")
 
     def add_action_type(self, action_type: str, deps: List[str] = None):
@@ -904,13 +1073,14 @@ class FlowsheetInterface(BlockInterface):
             aff = affected.pop()
             # if it was run, clear it
             if self._action_was_run(aff):
-                self._action_clear_was_run(aff)
+                self.clear_action(aff)
             # add all actions that depend on it to the list
             aff2 = [a for a in all_actions if aff in self._actions_deps[a]]
             affected.extend(aff2)
 
-    def _action_clear_was_run(self, name):
-        self._actions_run.remove(name)
+    def clear_action(self, name):
+        if name in self._actions_run:
+            self._actions_run.remove(name)
 
 
 def find_flowsheet_interfaces(
@@ -941,9 +1111,15 @@ def _load_config(c) -> Dict:
 
 def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]:
     # import package
+    _log.info(f"Import package: begin. name={package_name}")
     pkg = importlib.import_module(package_name)
+    if pkg is None:
+        raise IOError(f"Import package: failed. name={package_name}")
+    # this formula works for 'real' packages and namespace packages
+    pkg_path = Path(pkg.__path__[0])
+    _log.info(f"Import package: end. name={package_name} file={pkg_path}")
     # use special _ROOT variable if it exists, else package path
-    pkg_path = getattr(pkg, "_ROOT", Path(pkg.__file__).parent)
+    pkg_path = getattr(pkg, "_ROOT", pkg_path)
     # if package is not a directory (e.g. a zip file), give up
     if not pkg_path.is_dir():
         raise IOError(f"Cannot load from package: not a directory. name={package_name}")
@@ -976,6 +1152,23 @@ def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]
         # if found, yield this module and function as a result
         if func is not None:
             yield mod_name, func
+
+
+def build_units(x: str = None):
+    """Build a Pyomo unit from a string."""
+    if not x:
+        _log.info("setting dimensionless unit")
+        x = "dimensionless"
+    s = re.sub(r"([A-Za-z_]+)", r"U.\1", x)  # alphanumeric
+    s = re.sub(r"{U.(.*)}|{([^U].*)}", r"U.\1", s)  # special quoted unit names
+    s = s.replace("U.None", "U.dimensionless")
+    try:
+        u = eval(s, {"U": pyunits})
+    # Syntax/NameError are just general badness, AttributeError is an unknown unit
+    except (SyntaxError, NameError, AttributeError) as err:
+        _log.error(f"while evaluating unit {s}: {err}")
+        raise
+    return u
 
 
 # -----------------------------------------

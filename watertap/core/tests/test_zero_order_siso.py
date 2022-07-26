@@ -67,9 +67,9 @@ class TestSISO:
         m.fs.unit.inlet.flow_mass_comp[0, "C"].fix(30)
 
         m.fs.unit.recovery_frac_mass_H2O.fix(1)
-        m.fs.unit.removal_frac_mass_solute[0, "A"].fix(0.1)
-        m.fs.unit.removal_frac_mass_solute[0, "B"].fix(0.2)
-        m.fs.unit.removal_frac_mass_solute[0, "C"].fix(0.3)
+        m.fs.unit.removal_frac_mass_comp[0, "A"].fix(0.1)
+        m.fs.unit.removal_frac_mass_comp[0, "B"].fix(0.2)
+        m.fs.unit.removal_frac_mass_comp[0, "C"].fix(0.3)
 
         return m
 
@@ -86,7 +86,7 @@ class TestSISO:
             "Treated": model.fs.unit.treated,
         }
         assert model.fs.unit._perf_var_dict == {
-            "Solute Removal": model.fs.unit.removal_frac_mass_solute
+            "Solute Removal": model.fs.unit.removal_frac_mass_comp
         }
 
     @pytest.mark.unit
@@ -98,8 +98,8 @@ class TestSISO:
         assert isinstance(model.fs.unit.treated, Port)
 
         assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
-        assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
-        assert len(model.fs.unit.removal_frac_mass_solute) == 3
+        assert isinstance(model.fs.unit.removal_frac_mass_comp, Var)
+        assert len(model.fs.unit.removal_frac_mass_comp) == 3
 
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert len(model.fs.unit.water_recovery_equation) == 1

@@ -18,10 +18,10 @@ default:
     value: 0.99999
     units: dimensionless
     reference: 
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.99 # todo: other contaminant removal
       units: dimensionless
