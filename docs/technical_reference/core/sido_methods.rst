@@ -40,12 +40,12 @@ Variables
 
 The build_sido method creates the following variables in addition to those created by the `StateBlocks`.
 
-=============================== ========================= ============== =====================================================================
-Variable                        Name                      Indices        Notes
-=============================== ========================= ============== =====================================================================
-:math:`r_{t}`                   recovery_frac_mass_H2O    time           Fraction of mass flow of water in inlet that goes to treated stream.
-:math:`f_{t,j}`                 removal_frac_mass_solute  time, solutes  Fraction of mass flow of each solute that goes to byproduct stream.
-=============================== ========================= ============== =====================================================================
+=============================== ========================= =============== ======================================================================
+Variable                        Name                      Indices         Notes
+=============================== ========================= =============== ======================================================================
+:math:`r_{t}`                   recovery_frac_mass_H2O    time            Fraction of mass flow of water in inlet that goes to treated stream.
+:math:`f_{t,j}`                 removal_frac_mass_comp    time, component Fraction of mass flow of each component that goes to byproduct stream.
+=============================== ========================= =============== ======================================================================
 
 Constraints
 -----------

@@ -40,14 +40,14 @@ Variables
 
 The build_sido_reactive method creates the following variables in addition to those created by the `StateBlocks`.
 
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 Variable                        Name                      Indices         Notes
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 :math:`r_{t}`                   recovery_frac_mass_H2O    time            Fraction of mass flow of water in inlet that goes to treated stream.
-:math:`f_{t,j}`                 removal_frac_mass_solute  time, solutes   Fraction of mass flow of each solute that goes to byproduct stream.
+:math:`f_{t,j}`                 removal_frac_mass_comp    time, component Fraction of mass flow of each component that goes to byproduct stream.
 :math:`X_{t, r}`                reaction_conversion       time, reaction  Fractional conversion of key reactant via reaction r.
 :math:`\xi_{t, r}`              extent_of_reaction        time, reaction  Extent of reaction r in kg/s.
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 
 Parameters
 ----------
