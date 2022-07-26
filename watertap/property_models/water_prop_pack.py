@@ -654,7 +654,7 @@ class WaterStateBlockData(StateBlockData):
 
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 1000),
+            bounds=(273.15, 500),
             domain=NonNegativeReals,
             units=pyunits.K,
             doc="Temperature",
