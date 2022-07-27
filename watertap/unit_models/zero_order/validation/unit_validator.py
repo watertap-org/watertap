@@ -178,7 +178,17 @@ def _initialize_flowsheet(m):
 
 
 def _print_row(name, v1, v2):
-    print(f"\t{name:<25}  {v1:.8e}  {v2:.8e}")
+    try:
+        if len(v2) > 1:
+            raise RuntimeError("Passed non-singular value")
+        else:
+            v2 = list(v2)[0]
+    except:
+        pass
+    try:
+        print(f"\t{name:<25}  {v1:.8e}  {v2:.8e}")
+    except:
+        print(f"\t{name:<25}  {v1}  {v2}")
 
 
 def _run_analysis(m, df, columns):
