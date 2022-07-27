@@ -102,7 +102,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
                     f"Users must provide at least one of these arguments."
                 )
             else:
-                solute_list = comp_set
+                self.config.solute_list = solute_list = comp_set
         elif self.config.database is not None:
             # User provided custom list and database - check that all
             # components are supported
