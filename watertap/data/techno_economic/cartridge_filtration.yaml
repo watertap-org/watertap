@@ -3,10 +3,10 @@ default:
     value: 0.9999
     units: dimensionless
     reference: Defined based on the Carlsbad case study data.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
