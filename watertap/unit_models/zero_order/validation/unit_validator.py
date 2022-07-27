@@ -447,10 +447,13 @@ class ZeroOrderUnitChecker:
         self._columns = [k for k in _column_to_component_map if k in df.columns]
         if not self.config.run_all_samples:
             # down sample to min/max box
+            singular_columns = 0
             for c in self._columns:
                 df = df[(df[c] == df[c].max()) | (df[c] == df[c].min())]
+                if df[c].max() == df[c].min():
+                    singular_columns += 1
             # sanity check
-            assert len(df) == 2 ** len(self._columns)
+            assert len(df) == 2 ** (len(self._columns) - singular_columns)
         df.set_index(self._columns, inplace=True)
 
         self.worst_difference = None
