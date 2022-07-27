@@ -13,7 +13,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     NonNegativeReals,
     exp,
     log10,
