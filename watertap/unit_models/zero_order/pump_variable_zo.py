@@ -40,7 +40,7 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         build_pt(self)
 
-        self.lift_height = Var(units=pyunits.m, doc="Lift height for pump")
+        self.lift_height = Var(self.flowsheet().config.time, units=pyunits.m, doc="Lift height for pump")
 
         self.eta_pump = Var(units=pyunits.dimensionless, doc="Efficiency of pump")
 
