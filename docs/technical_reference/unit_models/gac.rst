@@ -323,11 +323,11 @@ cost per unit mass variable, expected to be higher than the initial charge unit 
         & C_{op,regen} = f_{regen}C_{regen}\dot{m}_{GAC} \\\\
         & C_{op,makeup} = \left( 1-f_{regen} \right)C_{makeup}\dot{m}_{GAC}
 
-Class Documentation
+Code Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
-* :meth:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_gac`
+* :func:`watertap.costing.watertap_costing_package.cost_gac`
 
 References
 -----------
