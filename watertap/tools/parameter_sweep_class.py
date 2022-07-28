@@ -26,7 +26,7 @@ from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 
 from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
@@ -358,7 +358,7 @@ class _ParameterSweepBase(ABC):
                 local_solve_successful = np.fromiter(
                     item, dtype=np.bool, count=len(item)
                 )
-        
+
                 if self.rank == 0:
                     global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
                 else:
@@ -377,6 +377,148 @@ class _ParameterSweepBase(ABC):
 
     # ================================================================
 
+    def _param_sweep_kernel(
+        self,
+        model,
+        optimize_function,
+        optimize_kwargs,
+        reinitialize_before_sweep,
+        reinitialize_function,
+        reinitialize_kwargs,
+        reinitialize_values,
+    ):
+
+        run_successful = False  # until proven otherwise
+
+        # Forced reinitialization of the flowsheet if enabled
+        if reinitialize_before_sweep:
+            if reinitialize_function is None:
+                raise ValueError(
+                    "Reinitialization function was not specified. The model will not be reinitialized."
+                )
+            else:
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
+                reinitialize_function(model, **reinitialize_kwargs)
+
+        try:
+            # Simulate/optimize with this set of parameter
+            with capture_output():
+                results = optimize_function(model, **optimize_kwargs)
+            pyo.assert_optimal_termination(results)
+
+        except:
+            # run_successful remains false. We try to reinitialize and solve again
+            if reinitialize_function is not None:
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
+                try:
+                    reinitialize_function(model, **reinitialize_kwargs)
+                    with capture_output():
+                        results = optimize_function(model, **optimize_kwargs)
+                    pyo.assert_optimal_termination(results)
+
+                except:
+                    pass  # run_successful is still False
+                else:
+                    run_successful = True
+
+        else:
+            # If the simulation suceeds, report stats
+            run_successful = True
+
+        return run_successful
+
+    # ================================================================
+
+    # def _do_param_sweep(
+    #     self,
+    #     model,
+    #     sweep_params,
+    #     outputs,
+    #     local_values,
+    #     optimize_function,
+    #     optimize_kwargs,
+    #     reinitialize_function,
+    #     reinitialize_kwargs,
+    #     reinitialize_before_sweep,
+    # ):
+    #
+    #     # Initialize space to hold results
+    #     local_num_cases = np.shape(local_values)[0]
+    #
+    #     # Create the output skeleton for storing detailed data
+    #     local_output_dict = self._create_local_output_skeleton(
+    #         model, sweep_params, outputs, local_num_cases
+    #     )
+    #
+    #     local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
+    #
+    #     local_solve_successful_list = []
+    #
+    #     # ================================================================
+    #     # Run all optimization cases
+    #     # ================================================================
+    #
+    #     for k in range(local_num_cases):
+    #         # Update the model values with a single combination from the parameter space
+    #         self._update_model_values(model, sweep_params, local_values[k, :])
+    #
+    #         run_successful = False  # until proven otherwise
+    #
+    #         # Forced reinitialization of the flowsheet if enabled
+    #         if reinitialize_before_sweep:
+    #             try:
+    #                 assert reinitialize_function is not None
+    #             except:
+    #                 raise ValueError(
+    #                     "Reinitialization function was not specified. The model will not be reinitialized."
+    #                 )
+    #             else:
+    #                 reinitialize_function(model, **reinitialize_kwargs)
+    #
+    #         try:
+    #             # Simulate/optimize with this set of parameter
+    #             with capture_output():
+    #                 results = optimize_function(model, **optimize_kwargs)
+    #             pyo.assert_optimal_termination(results)
+    #
+    #         except:
+    #             # run_successful remains false. We try to reinitialize and solve again
+    #             if reinitialize_function is not None:
+    #                 try:
+    #                     reinitialize_function(model, **reinitialize_kwargs)
+    #                     with capture_output():
+    #                         results = optimize_function(model, **optimize_kwargs)
+    #                     pyo.assert_optimal_termination(results)
+    #
+    #                 except:
+    #                     pass  # run_successful is still False
+    #                 else:
+    #                     run_successful = True
+    #
+    #         else:
+    #             # If the simulation suceeds, report stats
+    #             run_successful = True
+    #
+    #         # Update the loop based on the reinitialization
+    #         self._update_local_output_dict(
+    #             model,
+    #             sweep_params,
+    #             k,
+    #             local_values[k, :],
+    #             run_successful,
+    #             local_output_dict,
+    #         )
+    #
+    #         local_solve_successful_list.append(run_successful)
+    #
+    #     local_output_dict["solve_successful"] = local_solve_successful_list
+    #
+    #     return local_output_dict
+
     def _do_param_sweep(
         self,
         model,
@@ -388,6 +530,7 @@ class _ParameterSweepBase(ABC):
         reinitialize_function,
         reinitialize_kwargs,
         reinitialize_before_sweep,
+        probe_function,
     ):
 
         # Initialize space to hold results
@@ -402,6 +545,13 @@ class _ParameterSweepBase(ABC):
 
         local_solve_successful_list = []
 
+        if reinitialize_function is not None:
+            reinitialize_values = ComponentMap()
+            for v in model.component_data_objects(pyo.Var):
+                reinitialize_values[v] = v.value
+        else:
+            reinitialize_values = None
+
         # ================================================================
         # Run all optimization cases
         # ================================================================
@@ -410,42 +560,18 @@ class _ParameterSweepBase(ABC):
             # Update the model values with a single combination from the parameter space
             self._update_model_values(model, sweep_params, local_values[k, :])
 
-            run_successful = False  # until proven otherwise
-
-            # Forced reinitialization of the flowsheet if enabled
-            if reinitialize_before_sweep:
-                try:
-                    assert reinitialize_function is not None
-                except:
-                    raise ValueError(
-                        "Reinitialization function was not specified. The model will not be reinitialized."
-                    )
-                else:
-                    reinitialize_function(model, **reinitialize_kwargs)
-
-            try:
-                # Simulate/optimize with this set of parameter
-                with capture_output():
-                    results = optimize_function(model, **optimize_kwargs)
-                pyo.assert_optimal_termination(results)
-
-            except:
-                # run_successful remains false. We try to reinitialize and solve again
-                if reinitialize_function is not None:
-                    try:
-                        reinitialize_function(model, **reinitialize_kwargs)
-                        with capture_output():
-                            results = optimize_function(model, **optimize_kwargs)
-                        pyo.assert_optimal_termination(results)
-
-                    except:
-                        pass  # run_successful is still False
-                    else:
-                        run_successful = True
-
+            if probe_function is None or probe_function(model):
+                run_successful = self._param_sweep_kernel(
+                    model,
+                    optimize_function,
+                    optimize_kwargs,
+                    reinitialize_before_sweep,
+                    reinitialize_function,
+                    reinitialize_kwargs,
+                    reinitialize_values,
+                )
             else:
-                # If the simulation suceeds, report stats
-                run_successful = True
+                run_successful = False
 
             # Update the loop based on the reinitialization
             self._update_local_output_dict(
@@ -571,15 +697,6 @@ class ParameterSweep(_ParameterSweepBase):
         # Initialize the base Class
         _ParameterSweepBase.__init__(self)
 
-        # Initialize the writer
-        # if h5_results_file_name is None and csv_results_file_name is None:
-        #     if self.rank == 0:
-        #         warnings.warn(
-        #             "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-        #         )
-        #     self.write_outputs = False
-        # else:
-        #     self.write_outputs = True
         self.writer = ParameterSweepWriter(
             self.comm,
             csv_results_file_name=csv_results_file_name,
@@ -615,6 +732,7 @@ class ParameterSweep(_ParameterSweepBase):
         reinitialize_function=None,
         reinitialize_kwargs=None,
         reinitialize_before_sweep=False,
+        probe_function=None,
         num_samples=None,
         seed=None,
     ):
@@ -650,6 +768,7 @@ class ParameterSweep(_ParameterSweepBase):
             reinitialize_function,
             reinitialize_kwargs,
             reinitialize_before_sweep,
+            probe_function,
         )
 
         # Aggregate results on Master
@@ -804,6 +923,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         reinitialize_kwargs=None,
         reinitialize_before_sweep=False,
         req_num_samples=None,
+        probe_function=None,
         seed=None,
     ):
 
@@ -850,6 +970,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 reinitialize_function,
                 reinitialize_kwargs,
                 reinitialize_before_sweep,
+                probe_function
             )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
