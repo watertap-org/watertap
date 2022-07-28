@@ -2150,10 +2150,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     def cost_suboxic_asm(blk):
         """
         General method for costing suboxic activated sludge process unit. Capital cost
-        is based on the aeration basin, mixers, blowers, pumps, valves, control system,
-        probes, phosphorus analyzer and air flowmeter.
+        is based on the aeration basin, other equipments including mixers, blowers, MLR pumps,
+        RAS pumps and automated valves, and instrumentation and control system including
+        probes (dissolved oxygen, nitrate and ammonia), phosphorus analyzer and air flowmeter.
         """
         t0 = blk.flowsheet().time.first()
+        flow_in = blk.unit_model.properties_in[t0].flow_vol
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
@@ -2161,52 +2163,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        (
-            mixer_cost,
-            num_of_mixers,
-            blower_cost,
-            num_of_blowers,
-            MLR_pump_cost,
-            num_of_MLR_pumps,
-            RAS_pump_cost,
-            num_of_RAS_pumps,
-            automated_valve_cost,
-            num_of_automated_valves,
-            advanced_predicted_control_cost,
-            DO_probe_cost,
-            num_of_DO_probes,
-            nitrate_probe_cost,
-            num_of_nitrate_probes,
-            ammonia_probe_cost,
-            num_of_ammonia_probes,
-            phosphorus_analyzer_cost,
-            air_flowmeter_cost,
-            num_of_air_flowmeters,
-        ) = _get_tech_parameters(
+        A, B, C = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
             [
-                "mixer_cost",
-                "num_of_mixers",
-                "blower_cost",
-                "num_of_blowers",
-                "MLR_pump_cost",
-                "num_of_MLR_pumps",
-                "RAS_pump_cost",
-                "num_of_RAS_pumps",
-                "automated_valve_cost",
-                "num_of_automated_valves",
-                "advanced_predicted_control_cost",
-                "DO_probe_cost",
-                "num_of_DO_probes",
-                "nitrate_probe_cost",
-                "num_of_nitrate_probes",
-                "ammonia_probe_cost",
-                "num_of_ammonia_probes",
-                "phosphorus_analyzer_cost",
-                "air_flowmeter_cost",
-                "num_of_air_flowmeters",
+                "aeration_basin_cost",
+                "other_equipment_cost",
+                "control_system_cost",
             ],
         )
 
@@ -2221,26 +2185,22 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Capital cost of unit operation",
         )
 
-        equipment_costing = pyo.units.convert(
-            mixer_cost * num_of_mixers
-            + blower_cost * num_of_blowers
-            + MLR_pump_cost * num_of_MLR_pumps
-            + RAS_pump_cost * num_of_RAS_pumps
-            + automated_valve_cost * num_of_automated_valves,
+        aeration_basin_cost = pyo.units.convert(
+            A * flow_in,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        instrumentation_costing = pyo.units.convert(
-            advanced_predicted_control_cost
-            + DO_probe_cost * num_of_DO_probes
-            + nitrate_probe_cost * num_of_nitrate_probes
-            + ammonia_probe_cost * num_of_ammonia_probes
-            + phosphorus_analyzer_cost
-            + air_flowmeter_cost * num_of_air_flowmeters,
+        other_equipment_cost = pyo.units.convert(
+            B * flow_in,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        expr = equipment_costing + instrumentation_costing
+        control_system_cost = pyo.units.convert(
+            C * flow_in,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr = aeration_basin_cost + other_equipment_cost + control_system_cost
 
         if factor == "TPEC":
             expr *= blk.config.flowsheet_costing_block.TPEC

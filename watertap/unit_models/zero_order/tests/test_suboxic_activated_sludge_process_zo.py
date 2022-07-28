@@ -199,52 +199,14 @@ def test_costing():
     )
 
     assert isinstance(m.fs.costing.suboxic_activated_sludge_process, Block)
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.mixer_cost, Var)
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.num_of_mixers, Var)
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.blower_cost, Var)
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.num_of_blowers, Var)
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.MLR_pump_cost, Var)
     assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_MLR_pumps, Var
-    )
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.RAS_pump_cost, Var)
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_RAS_pumps, Var
+        m.fs.costing.suboxic_activated_sludge_process.aeration_basin_cost, Var
     )
     assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.automated_valve_cost, Var
+        m.fs.costing.suboxic_activated_sludge_process.other_equipment_cost, Var
     )
     assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_automated_valves, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.advanced_predicted_control_cost,
-        Var,
-    )
-    assert isinstance(m.fs.costing.suboxic_activated_sludge_process.DO_probe_cost, Var)
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_DO_probes, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.nitrate_probe_cost, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_nitrate_probes, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.ammonia_probe_cost, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_ammonia_probes, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.phosphorus_analyzer_cost, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.air_flowmeter_cost, Var
-    )
-    assert isinstance(
-        m.fs.costing.suboxic_activated_sludge_process.num_of_air_flowmeters, Var
+        m.fs.costing.suboxic_activated_sludge_process.control_system_cost, Var
     )
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
