@@ -24,10 +24,10 @@ default:
     value: 0.9214
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tds:
       value: 0.808696
       units: dimensionless

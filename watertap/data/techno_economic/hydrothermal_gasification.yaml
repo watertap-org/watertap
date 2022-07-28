@@ -5,10 +5,10 @@ default:
   recovery_frac_mass_H2O:
     value: 1      # no water wasting
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     organic_liquid:
       value: 0   # Reactive removal is handled in reaction
       units: dimensionless
