@@ -338,35 +338,45 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.ix_vessel_intercept = pyo.Var(
             initialize=10010.86,
             units=pyo.units.USD_2020,
-            doc="Ion exchange pressure vessel cost equation - intercept. Carbon steel w/ plastic internals",
+            doc="Ion exchange pressure vessel cost equation - intercept, Carbon steel w/ plastic internals",
         )
         self.ix_vessel_A_coeff = pyo.Var(
             initialize=6e-9,
             units=pyo.units.USD_2020 / pyo.units.gal**3,
-            doc="Ion exchange pressure vessel cost equation - A coeff. Carbon steel w/ plastic internals",
+            doc="Ion exchange pressure vessel cost equation - A coeff., Carbon steel w/ plastic internals",
         )
         self.ix_vessel_B_coeff = pyo.Var(
             initialize=-2.284e-4,
             units=pyo.units.USD_2020 / pyo.units.gal**2,
-            doc="Ion exchange pressure vessel cost equation - B coeff. Carbon steel w/ plastic internals",
+            doc="Ion exchange pressure vessel cost equation - B coeff., Carbon steel w/ plastic internals",
         )
         self.ix_vessel_C_coeff = pyo.Var(
             initialize=8.3472,
             units=pyo.units.USD_2020 / pyo.units.gal,
-            doc="Ion exchange pressure vessel cost equation - C coeff. Carbon steel w/ plastic internals",
+            doc="Ion exchange pressure vessel cost equation - C coeff., Carbon steel w/ plastic internals",
         )
-        # Ion exchange pressure vessels costed with power curve:
-        #   ix_bw_tank_cost = A * tank_vol^exponent
+        # Ion exchange pressure vessels costed with 3rd order polynomial:
+        #   ix_pv_cost = A * col_vol^3 + B * col_vol^2 + C * col_vol + intercept
 
         self.ix_backwash_tank_A_coeff = pyo.Var(
-            initialize=697.924,
-            units=pyo.units.USD_2020 / pyo.units.gal,
-            doc="Ion exchange backwash tank cost equation - A coeff. Steel tank",
+            initialize=1e-9,
+            units=pyo.units.USD_2020 / pyo.units.gal**3,
+            doc="Ion exchange backwash tank cost equation - A coeff., Fiberglass tank",
         )
-        self.ix_backwash_tank_exponent = pyo.Var(
-            initialize=0.46128,
+        self.ix_backwash_tank_B_coeff = pyo.Var(
+            initialize=-5.8587e-05,
+            units=pyo.units.USD_2020 / pyo.units.gal**2,
+            doc="Ion exchange backwash tank cost equation - B coeff., Fiberglass tank",
+        )
+        self.ix_backwash_tank_C_coeff = pyo.Var(
+            initialize=2.2911,
+            units=pyo.units.USD_2020 / pyo.units.gal,
+            doc="Ion exchange backwash tank cost equation - C coeff., Fiberglass tank",
+        )
+        self.ix_backwash_tank_intercept = pyo.Var(
+            initialize=4717.255,
             units=pyo.units.dimensionless,
-            doc="Ion exchange backwash tank cost equation - exponent Steel tank",
+            doc="Ion exchange backwash tank cost equation - exponent, Fiberglass tank",
         )
         # Ion exchange regeneration solution tank costed with 2nd order polynomial:
         #   ix_regen_tank_cost = A * tank_vol^2 + B * tank_vol + intercept
@@ -1033,8 +1043,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
         blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_backwash_tank
-            == blk.costing_package.ix_backwash_tank_A_coeff
-            * bw_tank_vol**blk.costing_package.ix_backwash_tank_exponent
+            == blk.costing_package.ix_backwash_tank_intercept
+            + blk.costing_package.ix_backwash_tank_A_coeff * bw_tank_vol**3
+            + blk.costing_package.ix_backwash_tank_B_coeff * bw_tank_vol**2
+            + blk.costing_package.ix_backwash_tank_C_coeff * bw_tank_vol
         )
         blk.capital_cost_regen_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_regen_tank
