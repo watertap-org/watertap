@@ -243,7 +243,7 @@ Costing Method
 Costing Method Variables
 +++++++++++++++++++++++++
 
-The following parameters are constructed when applying the GAC costing method in the watertap_costing_package:
+The following parameters are constructed when applying the GAC costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
@@ -269,7 +269,7 @@ assumption considering vessel sizing and achieving pseudo-steady state.  The num
 (commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
 in the unit model should be interpreted as the sum of the areas across all operating GAC contactors.
 
-The following variables are constructed when applying the GAC costing method:
+The following variables are constructed when applying the GAC costing method in the ``watertap_costing_package``:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
