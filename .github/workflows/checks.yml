@@ -132,10 +132,6 @@ jobs:
       run:
         |
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
-    - name: Run sample tests with new parametrization to show how parametrized tests are run
-      env:
-        _subset_to_show: -k test_pure_water_pH
-      run: pytest $_subset_to_show --verbose
     - name: Test with pytest
       run: |
         pytest
