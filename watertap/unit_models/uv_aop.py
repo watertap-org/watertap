@@ -13,16 +13,17 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
-    Var,
-    Param,
-    Suffix,
     NonNegativeReals,
-    Reference,
+    exp,
+    log10,
+    Param,
+    Var,
+    Set,
+    Suffix,
     units as pyunits,
 )
-from pyomo.environ import *
+
+# from pyomo.environ import *
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -35,12 +36,11 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util.math import smooth_min, smooth_max
 
 _log = idaeslog.getLogger(__name__)
 
