@@ -19,9 +19,9 @@ This is an empirical-performance-based granular activated carbon (GAC) model tha
 Introduction
 ------------
 The implemented model for estimating GAC performance is adapted from a simplified model originally presented in Hand, 1984 and
-further elaborated in Crittenden, 2012. This formulation is denoted as the constant pattern homogeneous surface diffusion model (CPHSDM).
+further elaborated in Crittenden, 2012. This formulation is denoted as the constant-pattern homogeneous surface diffusion model (CPHSDM).
 As a GAC system is operated as a batch process, a mass transfer zone (MTZ) is formed in the bed where a concentration profile, or
-breakthrough curve, developeds as a function of the adsorption properties. This MTZ is bounded by saturated GAC upstream and
+breakthrough curve, develops as a function of the adsorption properties. This MTZ is bounded by saturated GAC upstream and
 fresh GAC downstream. The CPHSDM is valid under the assumption that the shape of the MTZ is constant as it travels through the
 bed and a constant pattern solution (CPS) may be determined. The CPS is calculated through a multistep procedure utilizing common
 dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be
@@ -29,7 +29,7 @@ derived from experimental data of the intended system to produce valid results. 
 found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
 shorter than the minimum length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
 
-The batch operation results of the CPS are converted to approximate steady state results for intuitive use of the model for
+The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model for
 flowsheet purposes. A description of the transformation is provided in Figure 1.
 
 .. figure:: ../../_static/unit_models/gac.png
@@ -237,13 +237,13 @@ if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
    "Surface diffusion coefficient correlation", ":math:`D_s=\left( S\!P\!D\!F\!R \right)\left( \frac{\epsilon_pC_0D_l}{\rho_aq_e\tau_p} \right)`"
 
-Costing Package
+Costing Method
 ---------------
 
-Costing Package Variables
+Costing Method Variables
 +++++++++++++++++++++++++
 
-The following parameters are constructed when applying the GAC costing package:
+The following parameters are constructed when applying the GAC costing method in the watertap_costing_package:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Default Value", "Units"
@@ -269,7 +269,7 @@ assumption considering vessel sizing and achieving pseudo-steady state.  The num
 (commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
 in the unit model should be interpreted as the sum of the areas across all operating GAC contactors.
 
-The following variables are constructed when applying the GAC costing package:
+The following variables are constructed when applying the GAC costing method:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
@@ -294,7 +294,7 @@ Capital costs are determined by the summation of three costing terms. Each term 
 Contactor and GAC adsorbent capital costs are estimated using functions and parameters reported in US EPA, 2021. Contactors
 are assumed to be carbon steel pressure vessels with plastic internals and are determined as a polynomial function of
 individual contactor volume. The unit cost per kilogram of GAC adsorbent needed is calculated using an exponential
-function. A maximum reference mass is imposed in the costing package model to define a best available price where above
+function. A maximum reference mass is imposed in the costing method to define a best available price where above
 this required charge, the price would no longer be discounted. Other process costs (vessels, pipes, instrumentation,
 and controls) included in the US EPA, 2021 model are aggregated into a separate term. The parameters for the power law
 function with respect to the total system contactor volume were regressed using results from the US EPA, 2021 model.
