@@ -26,6 +26,10 @@ _logger.setLevel(logging.DEBUG)
 
 @contextmanager
 def _logging_handler(output_file):
+    """
+    helper for removing the complexity of dealing with loggers for the
+    utility functions in this file
+    """
     if output_file is None:
         _handler = logging.StreamHandler(stream=sys.stdout)
     else:
@@ -43,6 +47,19 @@ def print_infeasible_constraints(
 ):
     """
     print the infeasble constraints in the model
+
+    Args:
+        m : A Pyomo Block or ConcreteModel
+        tol : (optional) absolute feasibility tolerance, default 1e-06
+        print_expressions : (optional) If True, prints the constraint expression
+                            (default: False)
+        print_variables : (optional) If True, prints the constraint variable names
+                          and values (default: False)
+        output_file : (optional) file to write results to. If None (default)
+                      print infeasible variable bounds to the screen.
+
+    Returns:
+        None
     """
     with _logging_handler(output_file) as logger:
         log_infeasible_constraints(
@@ -57,6 +74,15 @@ def print_infeasible_constraints(
 def print_infeasible_bounds(m, tol=1e-6, output_file=None):
     """
     print the infeasible variable bounds in the model
+
+    Args:
+        m : A Pyomo Block or ConcreteModel
+        tol : (optional) absolute feasibility tolerance, default 1e-06
+        output_file : (optional) file to write results to. If None (default)
+                      print infeasible variable bounds to the screen.
+
+    Returns:
+        None
     """
     with _logging_handler(output_file) as logger:
         log_infeasible_bounds(m, tol=tol, logger=logger)
@@ -65,6 +91,16 @@ def print_infeasible_bounds(m, tol=1e-6, output_file=None):
 def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
     """
     print variables close to their bounds
+
+    Args:
+        m : A Pyomo Block or ConcreteModel
+        rel_tol : (optional) relative tolerance for comparing the value
+                   to the bound, default 1e-04
+        abs_tol : (optional) absolute tolerance for comparing the value
+                   to the bound, default 1e-12
+
+    Returns:
+        None
     """
     for var in m.component_data_objects(ctype=Var, descend_into=True):
         if var.fixed:
@@ -79,6 +115,16 @@ def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
 def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
     """
     print constraints close to their bounds
+
+    Args:
+        m : A Pyomo Block or ConcreteModel
+        rel_tol : (optional) relative tolerance for comparing the value
+                   to the bound, default 1e-04
+        abs_tol : (optional) absolute tolerance for comparing the value
+                   to the bound, default 1e-05
+
+    Returns:
+        None
     """
     for con in m.component_data_objects(
         ctype=Constraint, descend_into=True, active=True
@@ -95,12 +141,35 @@ def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
 def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
     """
     Print variables and constraints which are near their bounds
+
+    Args:
+        m : A Pyomo Block or ConcreteModel
+        rel_tol : (optional) relative tolerance for comparing the value
+                   to the bound, default 1e-04
+        abs_tol : (optional) absolute tolerance for comparing the value
+                   to the bound, default 1e-12
+
+    Returns:
+        None
     """
     print_variables_close_to_bounds(m, rel_tol=rel_tol, abs_tol=abs_tol)
     print_constraints_close_to_bounds(m, rel_tol=rel_tol, abs_tol=abs_tol)
 
 
 def _eval_close(obj, val, rel_tol, abs_tol):
+    """
+    Helper for evaluating bounds and printing Pyomo variable or constraint.
+    Prints if the Pyomo object is close to one or both of its bounds.
+
+    Args:
+        obj : Pyomo object (_VarData or _ConstraintData)
+        val : the reference value
+        rel_tol : the relative tolerance for math.isclose
+        abs_tol : the absolute tolerance for math.isclose
+
+    Returns:
+        None
+    """
     lb = value(obj.lb)
     ub = value(obj.ub)
     if (
