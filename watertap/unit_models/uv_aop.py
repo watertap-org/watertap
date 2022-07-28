@@ -22,6 +22,7 @@ from pyomo.environ import (
     Suffix,
     units as pyunits,
 )
+from idaes.core.util.math import smooth_max
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -790,16 +791,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                 )
                 iscale.set_scaling_factor(v, sf)
 
-        for (t, p, j), v in self.control_volume.mass_transfer_term.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(
-                    self.control_volume.properties_in[t].get_material_flow_terms(p, j)
-                )
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                iscale.set_scaling_factor(v, sf)
-
         # TODO: update IDAES control volume to scale mass_transfer and enthalpy_transfer
         for ind, v in self.control_volume.mass_transfer_term.items():
             (t, p, j) = ind
@@ -809,16 +800,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                 )
                 iscale.constraint_scaling_transform(
                     self.control_volume.material_balances[t, j], sf
-                )
-
-        for t, v in self.control_volume.enthalpy_transfer.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(
-                    self.control_volume.properties_in[t].enth_flow
-                )
-                iscale.set_scaling_factor(v, sf)
-                iscale.constraint_scaling_transform(
-                    self.control_volume.enthalpy_balances[t], sf
                 )
 
         # transforming constraints
