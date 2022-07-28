@@ -17,10 +17,10 @@ default: # make_up_mass_balance method in the WT3 cooling_tower.py is used
   recovery_frac_mass_H2O:
     value: 0.25
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.9
       units: dimensionless
