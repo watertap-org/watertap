@@ -327,7 +327,7 @@ Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.gac`
-* :mod:`watertap.costing.watertap_costing_package`
+* :func:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_gac`
 
 References
 -----------
