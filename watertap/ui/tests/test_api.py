@@ -124,9 +124,14 @@ def test_export_variables_simple(simple_flowsheet):
         variables=["x", "y"],
     )
     api.export_variables(simple_flowsheet.B.B2.B21, name="SF B/B2/B21", variables=["x"])
+    api.export_variables(simple_flowsheet.B.B2.B22, name="SF B/B2/B21", variables="x")
     # bad
     with pytest.raises(ValueError):
         api.export_variables(simple_flowsheet.A, variables=["z"])
+    with pytest.raises(ValueError):
+        api.export_variables(simple_flowsheet.A, variables=123)
+    with pytest.raises(ValueError):
+        api.export_variables(simple_flowsheet.A, variables=[1, 2, 3])
 
 
 @pytest.mark.unit
@@ -189,6 +194,37 @@ def test_workflow_actions():
 
 
 @pytest.mark.unit
+def test_flowsheet_interface_actions(simple_flowsheet):
+    f = create_interface(simple_flowsheet)
+
+    def echo(**kwargs):
+        return f"{kwargs} ... {kwargs}"
+
+    # simple action
+    with pytest.raises(KeyError):
+        f.set_action("echo", echo)
+    f.add_action_type("echo")
+    f.set_action("echo", echo)
+    f.run_action("echo")
+    # test duplicate run
+    assert f.run_action("echo") is None
+    # clear
+    f.clear_action("echo")
+    assert f.run_action("echo") is not None
+
+    # clear by update
+    f.run_action("echo")
+    assert f.run_action("echo") is None
+    f.update(f.dict())
+    assert f.run_action("echo") is not None
+
+    # undefined action
+    f.add_action_type("undef")
+    with pytest.raises(ValueError):
+        f.run_action("undef")
+
+
+@pytest.mark.unit
 def test_flowsheet_interface_constructor(simple_flowsheet):
     fsi = api.FlowsheetInterface({})
     fsi.set_block(simple_flowsheet)
@@ -205,10 +241,10 @@ def test_flowsheet_interface_as_dict(simple_flowsheet):
     assert "meta" in d
     assert "variables" not in d
 
-    # whole tamale in root block
+    # whole tamale in root block (except category, that is per-var)
     assert len(d["blocks"]) == 1
     root = list(d["blocks"].keys())[0]
-    for v in "variables", "display_name", "description", "category":
+    for v in "variables", "display_name", "description":
         assert v in d["blocks"][root]
 
 
@@ -502,6 +538,12 @@ def test_block_update(simple_flowsheet):
     with pytest.raises(ValueError):
         b.update({"blocks": {"a": {}, "b": {}}})
 
+    # exporting something not there
+    api.export_variables(simple_flowsheet.B.B1, variables=["x"])
+    state = b.dict()
+    del simple_flowsheet.B.B1
+    b.update(state)
+
 
 @pytest.mark.unit
 def test_get_schema():
@@ -590,3 +632,143 @@ def test_flatten_tree():
     for item in ft:
         key = ".".join(item[0])
         assert key in ft_keys
+
+
+@pytest.mark.unit
+def test_load_from_none():
+    class F:
+        ui = None
+
+    fs_none_ui = F()
+    with pytest.raises(ValueError):
+        api.BlockInterface.load_from(None, fs_none_ui)
+
+
+# For test__get_block_variable_value()
+class B:
+    name = "FakeBlock"
+    oscar = Var(domain=Reals, initialize=500.0, units=units.m)
+    ioscar = Var(["a", "b"], initialize={"a": 1, "b": 2})
+    boscar = Var(domain=Reals, bounds=(-10, 10), initialize=100, units=units.m)
+    is_indexed = False
+
+
+@pytest.mark.unit
+def test__get_block_variable_value():
+    b = B()
+    b.oscar.construct()
+    val = api.BlockInterface._get_block_variable_value(b, "oscar")
+    assert val.value == 500.0
+    val = api.BlockInterface._get_block_variable_value(
+        b, "oscar", to_units="km", scale_factor=1.0
+    )
+    assert val.value == pytest.approx(0.5)
+    b.boscar.construct()
+    val = api.BlockInterface._get_block_variable_value(
+        b, "boscar", to_units="km", scale_factor=1.0
+    )
+    assert val.value == pytest.approx(0.1)
+    b.ioscar.construct()
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar")
+    assert val.value[0] == 1
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar", indices=["a"])
+    assert val.value == 1
+    val = api.BlockInterface._get_block_variable_value(b, "ioscar", indices=["b"])
+    assert val.value == 2
+
+
+@pytest.mark.unit
+def test_set_display_units():
+    # good units converted
+    ivar = api.model.Variable(display_units="m/s**2")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+    # bad units left alone
+    ivar = api.model.Variable(display_units="_")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "_"
+    # use to_units if no display units
+    ivar = api.model.Variable(display_units="", to_units="m/s**2")
+    api.set_display_units(ivar, None)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+    # use bvar instead
+    ivar = api.model.Variable()
+    bvar = Var(domain=Reals, initialize=0, units=(units.m / units.s**2))
+    bvar.construct()
+    api.set_display_units(ivar, bvar)
+    assert ivar.display_units == "m/s<sup>2</sup>"
+
+
+@pytest.mark.unit
+def test_build_units():
+    api.build_units()
+    api.build_units("m/s")
+
+
+@pytest.mark.unit
+def test_get_interfaces_badimport():
+    # should just spit out a warning and continue
+    api._get_interfaces("not.a.real.package123456")
+
+
+@pytest.mark.unit
+def test_blockinterface__load(simple_flowsheet):
+    from watertap.ui import api_model
+
+    fs = create_interface(simple_flowsheet)
+    blockA = simple_flowsheet.A
+
+    apiblock = api_model.Block(display_name="x", description="none")
+    apiblock.variables = {
+        "x": api_model.Variable(
+            display_name="x",
+            display_units="km",
+            to_units="km",
+            scale_factor=1,
+            value=api_model.ScalarValue(value=0, bounds=(None, None)),
+        )
+    }
+
+    # simple
+    fs._var_diff = api.FlowsheetDiff(missing={}, extra={})  # normally done by update()
+    fs._load(apiblock, blockA)
+
+    # add non-matching exported variable (warning)
+    fs._var_diff = api.FlowsheetDiff(missing={}, extra={})  # normally done by update()
+    apiblock.variables["not_there"] = api_model.Variable(
+        value=api_model.ScalarValue(value=0, bounds=(None, None))
+    )
+    fs._load(apiblock, blockA)
+    del apiblock.variables["not_there"]
+
+    # indexed values
+    api.export_variables(simple_flowsheet.A, variables="y")
+    apiblock.variables["y"] = api_model.Variable(
+        display_name="y",
+        display_units="km",
+        scale_factor=1,
+        to_units="km",
+        indices=[0, 1, 2],
+        value=api_model.IndexedValue(
+            index=[[0], [1], [2]], value=[10, 20, 30], bounds=[(None, None)] * 3
+        ),
+    )
+    fs._load(apiblock, blockA)
+
+    # indexed but load scalar for single index
+    apiblock.variables["y"] = api_model.Variable(
+        display_name="y",
+        display_units="km",
+        to_units="km",
+        indices=[0],
+        scale_factor=1,
+        value=api_model.ScalarValue(value=0, bounds=(None, None)),
+    )
+    fs._load(apiblock, blockA)
+
+    # exported variable not found in block (error)
+    # NOTE: put this last -- or add back blockA.x
+    api.export_variables(simple_flowsheet.A, variables="x")
+    del blockA.x
+    with pytest.raises(ValueError):
+        fs._load(apiblock, blockA)
