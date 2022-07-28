@@ -32,7 +32,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=False):
 
     m = electrochemical_nutrient_removal.main()[0]
 
@@ -47,13 +47,16 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
-    output_filename = "sensitivity_" + str(case_num) + ".csv"
+    if save_outputs is False:
+        output_path = None
+    else:
+        output_filename = "sensitivity_" + str(case_num) + ".csv"
 
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
-
+        output_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            output_filename,
+        )
+    # run sweep
     global_results = parameter_sweep(
         m,
         sweep_params,

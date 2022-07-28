@@ -38,7 +38,9 @@ def set_up_sensitivity(m, withRO):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
+def run_analysis(
+    case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True, save_outputs=False
+):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
@@ -175,12 +177,15 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
-    # output csv in the same directory as this sweep file
-    output_filename = "sensitivity_" + str(case_num) + ".csv"
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
+    if save_outputs is False:
+        output_path = None
+    else:
+        # output csv in the same directory as this sweep file
+        output_filename = "sensitivity_" + str(case_num) + ".csv"
+        output_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            output_filename,
+        )
 
     # run sweep
     global_results = parameter_sweep(
@@ -192,8 +197,6 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
-
-    print(global_results)
 
     return global_results, sweep_params, m
 

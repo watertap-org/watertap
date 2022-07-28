@@ -37,7 +37,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True, save_outputs=False):
     case_num = int(case_num)
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
@@ -76,12 +76,15 @@ def run_analysis(case_num=1, nx=5, interpolate_nan_outputs=True):
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
-    output_filename = "sensitivity_case" + str(case_num) + ".csv"
+    if save_outputs is False:
+        output_path = None
+    else:
+        output_filename = "sensitivity_case" + str(case_num) + ".csv"
 
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
+        output_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            output_filename,
+        )
 
     global_results = parameter_sweep(
         m,
