@@ -2,11 +2,11 @@ default: # TODO: confirm any differentiation in removal across subtypes
   energy_electric_flow_vol_inlet:
     value: 0.085618
     units: kWh/m^3
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
     reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
@@ -60,10 +60,10 @@ gravity_basin:
   energy_electric_flow_vol_inlet:
     value: 0.078498
     units: kWh/m^3
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
@@ -117,10 +117,10 @@ fixed bed:
   energy_electric_flow_vol_inlet:
     value: 0.085618
     units: kWh/m^3
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     bod:
       value: 0.90  # adding this arbitrary default since no removal data provided
       units: dimensionless
