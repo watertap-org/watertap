@@ -404,7 +404,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.number_columns = Var(
-            initialize=2,
+            initialize=1,
             domain=range(50),
             units=pyunits.dimensionless,
             doc="Number of columns for ion exchange process",
@@ -1247,9 +1247,13 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.Pe_bed, 1e-3)
 
+        iscale.set_scaling_factor(self.number_columns, 1)
+
         iscale.set_scaling_factor(self.resin_max_capacity, 1)
 
         iscale.set_scaling_factor(self.resin_eq_capacity, 1)
+
+        iscale.set_scaling_factor(self.resin_unused_capacity, 1)
 
         iscale.set_scaling_factor(self.resin_diam, 1e4)
 
@@ -1268,6 +1272,20 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.bed_diam, 1)
 
         iscale.set_scaling_factor(self.bed_depth, 1)
+
+        iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
+
+        iscale.set_scaling_factor(self.bed_expansion_frac_A, 100)
+
+        iscale.set_scaling_factor(self.bed_expansion_frac_B, 10)
+
+        iscale.set_scaling_factor(self.bed_expansion_frac_C, 1000)
+
+        iscale.set_scaling_factor(self.p_drop_A, 10)
+
+        iscale.set_scaling_factor(self.p_drop_B, 10)
+
+        iscale.set_scaling_factor(self.p_drop_C, 1e4)
 
         iscale.set_scaling_factor(self.bed_porosity, 10)
 
@@ -1331,13 +1349,31 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.t_rinse, 1e-2)
 
+        iscale.set_scaling_factor(self.rinse_bv, 1)
+
         iscale.set_scaling_factor(self.main_pump_power, 1e2)
 
         iscale.set_scaling_factor(self.regen_pump_power, 1e2)
 
+        iscale.set_scaling_factor(self.regen_flow_rate, 1)
+
+        iscale.set_scaling_factor(self.regen_dose, 1e-2)
+
+        iscale.set_scaling_factor(self.regen_sg, 1)
+
+        iscale.set_scaling_factor(self.regen_ww, 10)
+
+        iscale.set_scaling_factor(self.service_to_regen_flow_ratio, 1)
+
         iscale.set_scaling_factor(self.bw_pump_power, 1e2)
 
+        iscale.set_scaling_factor(self.bw_rate, 1)
+
+        iscale.set_scaling_factor(self.t_bw, 1e-2)
+
         iscale.set_scaling_factor(self.rinse_pump_power, 1e2)
+
+        iscale.set_scaling_factor(self.pump_efficiency, 1)
 
         # transforming constraints
         for ind, c in self.eq_sep_factor.items():
