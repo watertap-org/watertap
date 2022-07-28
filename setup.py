@@ -78,6 +78,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -86,7 +87,7 @@ setup(
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
     packages=find_namespace_packages(),
-    python_requires=">=3.7, <4",
+    python_requires=">=3.7,<=3.10",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
