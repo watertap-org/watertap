@@ -35,6 +35,7 @@ from .energy_recovery_zo import EnergyRecoveryZO
 from .iron_and_manganese_removal_zo import IronManganeseRemovalZO
 from .landfill_zo import LandfillZO
 from .pump_electricity_zo import PumpElectricityZO
+from .pump_variable_zo import PumpVariableZO
 from .mabr_zo import MABRZO
 from .mbr_zo import MBRZO
 from .media_filtration_zo import MediaFiltrationZO

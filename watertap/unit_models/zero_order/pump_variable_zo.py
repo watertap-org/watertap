@@ -104,14 +104,9 @@ class PumpVariableZOData(ZeroOrderBaseData):
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
         )
         def eta_ratio_constraint(b, t):
-            # if the flow is too far from the design point, the efficiency is set to 40%
-            if b.flow_ratio[t] < 0.6 or b.flow_ratio[t] > 1.4:
-                return b.eta_ratio[t] == 0.4
-            # otherwise, use the correlation
-            else:
-                return b.eta_ratio[t] == (
-                    -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
-                )
+            return b.eta_ratio[t] == max(
+                0.4, -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
+            )
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for actual pump energy consumption"
