@@ -947,12 +947,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_gac(blk):
         """
-        3 equation capital cost estimation for GAC
-            contactor/pressure vessel cost by polynomial with single contactor volume
-            initial charge of GAC adsorbent cost by exponential with GAC mass
-            other process costs calculated power law with total contactor volume
-        Capital costs calculated using required makeup and regenerated GAC adsorbent
-            Energy for backwash and booster pumps considered negligible compared to regeneration costs
+        3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
+        as a function of individual contactor volume; (ii), initial charge of GAC adsorbent cost by exponential as a
+        function of required mass of GAC adsorbent; and (iii), other process costs (vessels, pipes, instrumentation, and
+        controls) calculated by power law as a function of total contactor(s) volume. Operating costs calculated as the
+        required makeup and regeneration of GAC adsorbent. Energy for backwash and booster pumps considered negligible
+        compared to regeneration costs
         """
         make_capital_cost_var(blk)
         blk.contactor_cost = pyo.Var(
