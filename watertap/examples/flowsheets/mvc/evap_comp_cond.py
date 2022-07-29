@@ -212,20 +212,27 @@ def add_costing(m):
 
 
 def set_operating_conditions(m):
+    m_f = 40  # kg/s
+    w_f = 50 * 1e-3  # kg/kg
+    rr = 0.5
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix((1 - w_f) * m_f)
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(w_f * m_f)
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(rr*m_f)
+
     # Feed inlet
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(10)
-    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(0.5)
+    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40) # 10
+    # m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(2) # 0.5
     m.fs.feed.properties[0].temperature.fix(273.15 + 50)
     m.fs.feed.properties[0].pressure.fix(101325)
 
     # evaporator specifications
-    #m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
+    m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
-    m.fs.evaporator.area.fix(400)  # m^2
-    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(5)
+    m.fs.evaporator.area.fix(1000)  # m^2
+    #m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(20) # 5
 
     # compressor
-    m.fs.compressor.pressure_ratio.fix(2)
+    # m.fs.compressor.pressure_ratio.fix(2)
     #m.fs.compressor.control_volume.properties_out[0].temperature = 400
     m.fs.compressor.efficiency.fix(0.8)
 
@@ -372,6 +379,7 @@ def display_results(m):
     print("Condensed vapor temperature:             ", m.fs.condenser.control_volume.properties_out[0].temperature.value)
     print("Condensed vapor pressure:                ", m.fs.condenser.control_volume.properties_out[0].pressure.value)
     print("Compressor work:                         ", m.fs.compressor.control_volume.work[0].value)
+    print("Specific work:                           ", m.fs.compressor.control_volume.work[0].value/m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap','H2O'].value)
     print("Compressor pressure ratio:               ", m.fs.compressor.pressure_ratio.value)
     print("Evaporator area:                         ", m.fs.evaporator.area.value)
     print('Evaporator LMTD:                         ', m.fs.evaporator.lmtd.value)

@@ -251,7 +251,7 @@ class CompressorData(UnitModelBlockData):
 
         @self.Constraint(doc="Isentropic temperature")
         def eq_isentropic_temperature(b):
-            gamma = 1.3  # change to specific heat ratio
+            gamma = 1.33  # change to specific heat ratio
             return b.properties_isentropic_out[
                 0
             ].temperature == b.control_volume.properties_in[

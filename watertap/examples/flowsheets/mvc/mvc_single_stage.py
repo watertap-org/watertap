@@ -117,7 +117,11 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
+    # Set lower bound of approach temperatures
+    m.fs.hx_distillate.delta_temperature_in.setlb(0)
+    m.fs.hx_distillate.delta_temperature_out.setlb(0)
     add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
+
     m.fs.hx_brine = HeatExchanger(
         default={
             "hot_side_name": "hot",
@@ -129,6 +133,9 @@ def build():
         }
     )
     add_pressure_drop_to_hx(m.fs.hx_brine, m.fs.config.time)
+    # Set lower bound of approach temperatures
+    m.fs.hx_brine.delta_temperature_in.setlb(0)
+    m.fs.hx_brine.delta_temperature_out.setlb(0)
 
     m.fs.mixer_feed = Mixer(
         default={
@@ -355,13 +362,13 @@ def set_operating_conditions(m):
 
     # distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_distillate.area.fix(55)
+    m.fs.hx_distillate.area.fix(45)
     m.fs.hx_distillate.cold.deltaP[0].fix(7e3)
     m.fs.hx_distillate.hot.deltaP[0].fix(7e3)
 
     # brine HX
     m.fs.hx_brine.overall_heat_transfer_coefficient.fix(1e3)
-    m.fs.hx_brine.area.fix(31)  # = m.fs.hx_distillate.area.value
+    m.fs.hx_brine.area.fix(45)  # = m.fs.hx_distillate.area.value
     m.fs.hx_brine.cold.deltaP[0].fix(7e3)
     m.fs.hx_brine.hot.deltaP[0].fix(7e3)
 
@@ -370,7 +377,7 @@ def set_operating_conditions(m):
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
     # m.fs.evaporator.area.fix(150)  # m^2
     #m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"] = 5
-    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(4.75)
+    m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(4)
 
     # compressor
     m.fs.compressor.pressure_ratio.fix(2)
