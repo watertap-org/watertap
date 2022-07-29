@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 import os
-import glob
+import tempfile
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_sweep import (
     run_analysis,
 )
@@ -30,20 +30,17 @@ def test_dye_sweep(case_num, tmp_path):
     os.chdir(tmp_path)
     # test every other sweep with RO
     withRO = bool(case_num == 1)
-    save_res = bool(case_num == 1)
+    temp = tempfile.NamedTemporaryFile(delete=False)
+    temp.close()
     results, params, model = run_analysis(
         case_num,
         nx=1,
         interpolate_nan_outputs=False,
         withRO=withRO,
-        save_results=save_res,
+        save_path=temp.name,
     )
+    os.remove(temp.name)
     os.chdir(cwd)
-    if save_res is True:
-        dir_path = os.path.dirname(os.getcwd())
-        csv_files = glob.glob(dir_path + "\*.csv")
-        for g in csv_files:
-            os.remove(g)
     return
 
 
