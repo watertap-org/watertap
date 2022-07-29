@@ -1169,7 +1169,6 @@ class IonExchangeODData(UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
         flags = blk.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1182,7 +1181,7 @@ class IonExchangeODData(UnitModelBlockData):
         # Initialize other state blocks
         # Set state_args from inlet state
         if state_args is None:
-            state_args = {}
+            blk.state_args = state_args = {}
             state_dict = blk.properties_in[
                 blk.flowsheet().config.time.first()
             ].define_port_members()
@@ -1198,7 +1197,7 @@ class IonExchangeODData(UnitModelBlockData):
         for p, j in blk.properties_out.phase_component_set:
             if j == blk.config.target_ion:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+                    state_args["flow_mol_phase_comp"][(p, j)] * 0.1
                 )
 
         blk.properties_out.initialize(
@@ -1213,7 +1212,7 @@ class IonExchangeODData(UnitModelBlockData):
         for p, j in blk.properties_regen.phase_component_set:
             if j == "H2O":
                 state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * blk.t_waste_param.value
+                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
                 )
 
         blk.properties_regen.initialize(
@@ -1222,6 +1221,9 @@ class IonExchangeODData(UnitModelBlockData):
             solver=solver,
             state_args=state_args_regen,
         )
+
+        blk.state_args_out = state_args_out
+        blk.state_args_regen = state_args_regen
 
         init_log.info("Initialization Step 2 Complete.")
         # ---------------------------------------------------------------------
@@ -1376,6 +1378,10 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.pump_efficiency, 1)
 
         # transforming constraints
+        for ind, c in self.eq_vel_inter.items():
+            sf = iscale.get_scaling_factor(self.vel_inter)
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_sep_factor.items():
             sf = iscale.get_scaling_factor(self.separation_factor)
             iscale.constraint_scaling_transform(c, sf)
@@ -1390,6 +1396,14 @@ class IonExchangeODData(UnitModelBlockData):
 
         for ind, c in self.eq_rate_coeff.items():
             sf = iscale.get_scaling_factor(self.rate_coeff[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_regen_flow.items():
+            sf = iscale.get_scaling_factor(self.regen_flow)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_bw_flow.items():
+            sf = iscale.get_scaling_factor(self.bw_flow)
             iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
