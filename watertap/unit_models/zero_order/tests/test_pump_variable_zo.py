@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
+    Expression,
     Param,
     Block,
     value,
@@ -41,7 +42,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 solver = get_solver()
 
 
-class TestPumpElectricityZO:
+class TestPumpVariableZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -78,4 +79,13 @@ class TestPumpElectricityZO:
         assert isinstance(model.fs.unit.applied_pressure_constraint, Constraint)
         assert isinstance(model.fs.unit.flow_bep, Var)
         assert isinstance(model.fs.unit.flow_ratio, Var)
-        assert isinstance(model.fs.unit.flow_ratio_constraint, Constraint)
+        assert isinstance(model.fs.unit.flow_ratio_expr, Expression)
+
+    @pytest.mark.component
+    def test_load_parameters(self, model):
+        data = model.db.get_unit_operation_parameters("pump_variable")
+
+        model.fs.unit.load_parameters_from_database()
+
+        assert model.fs.unit.flow_bep.fixed
+        assert model.fs.unit.flow_bep.value == data["flow_bep"]["value"]

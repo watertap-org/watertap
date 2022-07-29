@@ -14,12 +14,12 @@
 This module contains a zero-order representation of a low pressure pump unit
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var, Expr_if
+from pyomo.environ import Constraint, units as pyunits, Var, Expr_if, value
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, ZeroOrderBaseData
 from idaes.core.util.constants import Constants
-from idaes.core.util.math import smooth_max
+
 
 # Some more information about this module
 __author__ = "Akshay Rao"
@@ -55,8 +55,9 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         self.flow_ratio = Var(
             self.flowsheet().config.time,
+            initialize=1,
             units=pyunits.dimensionless,
-            bounds=(0, 1.4),
+            bounds=(0, None),
             doc="Ratio between instantaneous flowrate and best efficiency point flowrate",
         )
 
@@ -107,11 +108,9 @@ class PumpVariableZOData(ZeroOrderBaseData):
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
         )
         def eta_ratio_constraint(b, t):
-            return b.eta_ratio[t] == Expr_if(
-                0.6 < b.flow_ratio_expr[t] < 1.4,
+            return (
                 b.eta_ratio[t]
-                == -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025,
-                0.4,
+                == -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
             )
 
         @self.Constraint(
@@ -129,6 +128,4 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity
         self._perf_var_dict["Applied Pressure (bar)"] = self.applied_pressure
-        self._perf_var_dict["Net pump efficiency (-)"] = (
-            self.eta_pump * self.eta_motor * self.eta_ratio
-        )
+        self._perf_var_dict["Variable pump efficiency (-)"] = self.eta_ratio
