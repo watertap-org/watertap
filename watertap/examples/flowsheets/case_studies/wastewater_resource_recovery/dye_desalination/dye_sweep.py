@@ -39,7 +39,7 @@ def set_up_sensitivity(m, withRO):
 
 
 def run_analysis(
-    case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True, save_outputs=False
+    case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True, save_results=False
 ):
     # when from the command line
     case_num = int(case_num)
@@ -177,7 +177,7 @@ def run_analysis(
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
-    if save_outputs is False:
+    if save_results is False:
         output_path = None
     else:
         # output csv in the same directory as this sweep file
