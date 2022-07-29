@@ -14,11 +14,12 @@
 This module contains a zero-order representation of a low pressure pump unit
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import Constraint, units as pyunits, Var, Expr_if
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, ZeroOrderBaseData
 from idaes.core.util.constants import Constants
+from idaes.core.util.math import smooth_max
 
 # Some more information about this module
 __author__ = "Akshay Rao"
@@ -40,20 +41,22 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         build_pt(self)
 
-        self.lift_height = Var(self.flowsheet().config.time, units=pyunits.m, doc="Lift height for pump")
+        self.lift_height = Var(units=pyunits.m, doc="Lift height for pump")
 
         self.eta_pump = Var(units=pyunits.dimensionless, doc="Efficiency of pump")
 
         self.eta_motor = Var(units=pyunits.dimensionless, doc="Efficiency of motor")
 
         self.flow_bep = Var(
-            units=pyunits.m**3 / pyunits.s, doc="Best efficiency point flowrate"
+            bounds=(1e-8, None),
+            units=pyunits.m**3 / pyunits.s,
+            doc="Best efficiency point flowrate",
         )
 
         self.flow_ratio = Var(
             self.flowsheet().config.time,
             units=pyunits.dimensionless,
-            bounds=(0, None),
+            bounds=(0, 1.4),
             doc="Ratio between instantaneous flowrate and best efficiency point flowrate",
         )
 
@@ -92,10 +95,10 @@ class PumpVariableZOData(ZeroOrderBaseData):
                 to_units=pyunits.bar,
             )
 
-        @self.Constraint(
+        @self.Expression(
             self.flowsheet().time, doc="Constraint for variable pump flowrate ratio"
         )
-        def flow_ratio_constraint(b, t):
+        def flow_ratio_expr(b, t):
             return b.flow_ratio[t] == b.properties[t].flow_vol / pyunits.convert(
                 b.flow_bep, to_units=pyunits.m**3 / pyunits.s
             )
@@ -104,8 +107,11 @@ class PumpVariableZOData(ZeroOrderBaseData):
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
         )
         def eta_ratio_constraint(b, t):
-            return b.eta_ratio[t] == max(
-                0.4, -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
+            return b.eta_ratio[t] == Expr_if(
+                0.6 < b.flow_ratio_expr[t] < 1.4,
+                b.eta_ratio[t]
+                == -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025,
+                0.4,
             )
 
         @self.Constraint(
