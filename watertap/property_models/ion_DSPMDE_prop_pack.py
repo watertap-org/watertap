@@ -49,7 +49,6 @@ from idaes.core import (
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
-    EnergyBalanceType
 )
 from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
 from idaes.core.base.phases import LiquidPhase, AqueousPhase
