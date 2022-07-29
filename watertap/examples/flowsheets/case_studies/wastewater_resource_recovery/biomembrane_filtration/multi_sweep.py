@@ -31,7 +31,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=False):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=None):
 
     m = biomembrane_filtration.main()[0]
 
@@ -59,23 +59,13 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=F
             m.fs.costing.electricity_cost, 0.05, 0.12, nx
         )
     else:
-        raise ValueError("case_num = %d not recognized." % (case_num))
-
-    if save_outputs is False:
-        output_path = None
-    else:
-        output_filename = "sensitivity_" + str(case_num) + ".csv"
-
-        output_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            output_filename,
-        )
+        raise ValueError("case_num = %d not recognized." % case_num)
 
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=output_path,
+        csv_results_file_name=save_outputs,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
