@@ -1146,15 +1146,11 @@ class DSPMDEStateBlockData(StateBlockData):
         return MaterialBalanceType.componentTotal
 
     # TODO: augment model with energybalance later
-    def default_energy_balance_type(self):
-       return EnergyBalanceType.enthalpyTotal
+    #def default_energy_balance_type(self):
+     #  return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
-
-    def get_enthalpy_flow_terms(self, p):
-        """Create enthalpy flow terms."""
-        return 0 
 
     def define_state_vars(self):
         """Define state vars."""
