@@ -16,19 +16,11 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
     TransformationFactory,
-    NonNegativeReals,
-    RangeSet,
-    Set,
-    check_optimal_termination,
     assert_optimal_termination,
-    units as pyunits,
-    Reference,
 )
 from pyomo.network import Arc
-from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
@@ -36,8 +28,7 @@ from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
 from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
 from sympy import Range
-from idaes.models.unit_models import Feed, Product, Separator, Mixer
-from idaes.models.unit_models.mixer import MomentumMixingType
+from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
