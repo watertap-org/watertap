@@ -101,5 +101,5 @@ class TestPumpVariableZO:
         assert_units_consistent(model.fs.unit)
 
     @pytest.mark.component
-    def test_initialization(self, model):
+    def test_initialize(self, model):
         initialization_tester(model)
