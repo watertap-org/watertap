@@ -89,3 +89,13 @@ class TestPumpVariableZO:
 
         assert model.fs.unit.flow_bep.fixed
         assert model.fs.unit.flow_bep.value == data["flow_bep"]["value"]
+
+    @pytest.mark.component
+    def test_dof(self, model):
+        # fix the pump flowrate to the bep for initialization
+        model.fs.unit.flow_ratio.fix(1)
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_units(self, model):
+        assert_units_consistent(model.fs.unit)

@@ -491,6 +491,7 @@ def add_costing(m):
         doc="Savings from water recovered back to the plant",
     )
 
+    # Combine results from costing packages and calculate overall metrics
     @m.Expression()
     def total_capital_cost(b, doc="Total capital cost of the treatment train"):
         return pyunits.convert(
@@ -602,7 +603,7 @@ def display_costing(m):
 
     externalities = value(
         pyunits.convert(
-            m.total_externalities, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 

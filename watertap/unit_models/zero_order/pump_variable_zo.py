@@ -84,6 +84,7 @@ class PumpVariableZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.lift_height)
         self._fixed_perf_vars.append(self.eta_pump)
         self._fixed_perf_vars.append(self.eta_motor)
+        self._fixed_perf_vars.append(self.flow_bep)
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for pump applied pressure"
