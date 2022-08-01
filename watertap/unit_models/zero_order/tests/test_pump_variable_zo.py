@@ -93,7 +93,6 @@ class TestPumpVariableZO:
     @pytest.mark.component
     def test_dof(self, model):
         # fix the pump flowrate to the bep for initialization
-        # model.fs.unit.flow_ratio.fix(1)
         assert degrees_of_freedom(model.fs.unit) == 0
 
     @pytest.mark.component
@@ -103,3 +102,46 @@ class TestPumpVariableZO:
     @pytest.mark.component
     def test_initialize(self, model):
         initialization_tester(model)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        for j in model.fs.params.component_list:
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.outlet.flow_mass_comp[0, j]
+                )
+            )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert pytest.approx(21.9801, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(1.00699, rel=1e-5) == value(model.fs.unit.eta_ratio[0])
+
+    @pytest.mark.component
+    def test_report(self, model):
+        model.fs.unit.report()
+
+    @pytest.mark.component
+    def test_costing(self, model):
+        model.fs.costing = ZeroOrderCosting()
+        model.fs.unit.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": model.fs.costing}
+        )
+        assert isinstance(model.fs.costing.pump_electricity, Block)
+        assert isinstance(model.fs.costing.pump_electricity.pump_cost, Var)
+        assert isinstance(model.fs.unit.costing.capital_cost, Var)
+        assert isinstance(model.fs.unit.costing.capital_cost_constraint, Constraint)
