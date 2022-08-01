@@ -25,6 +25,7 @@ from idaes.core.base.costing_base import (
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
+from idaes.core.util.math import smooth_min
 
 from idaes.models.unit_models import Mixer
 
@@ -40,6 +41,7 @@ from watertap.unit_models import (
     Electrodialysis0D,
     Electrodialysis1D,
     IonExchange0D,
+    GAC,
 )
 from watertap.unit_models.ion_exchange_0D import IonExchangeType
 
@@ -400,6 +402,90 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=0.05,
             units=pyo.units.year**-1,
             doc="Fraction of ion excange resin replaced per year, 4-5% of bed volume - EPA",
+        )
+        self.gac_num_contactors_op = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
+            doc="Number of GAC contactors in operation in parallel",
+        )
+
+        self.gac_num_contactors_redundant = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
+            doc="Number of off-line redundant GAC contactors in parallel",
+        )
+
+        self.gac_contactor_cost_coeff_0 = pyo.Var(
+            initialize=10010.9,
+            units=pyo.units.USD_2020,
+            doc="GAC contactor polynomial cost coefficient 0",
+        )
+
+        self.gac_contactor_cost_coeff_1 = pyo.Var(
+            initialize=2204.95,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -1,
+            doc="GAC contactor polynomial cost coefficient 1",
+        )
+
+        self.gac_contactor_cost_coeff_2 = pyo.Var(
+            initialize=-15.9378,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -2,
+            doc="GAC contactor polynomial cost coefficient 2",
+        )
+
+        self.gac_contactor_cost_coeff_3 = pyo.Var(
+            initialize=0.110592,
+            units=pyo.units.USD_2020 * (pyo.units.m**3) ** -3,
+            doc="GAC contactor polynomial cost coefficient 3",
+        )
+
+        self.bed_mass_gac_max_ref = pyo.Var(
+            initialize=18143.7,
+            units=pyo.units.kg,
+            doc="Reference maximum value of GAC mass needed for initial charge where "
+            "economy of scale no longer discounts the unit price",
+        )
+
+        self.gac_adsorbent_unit_cost_coeff = pyo.Var(
+            initialize=4.58342,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="GAC adsorbent exponential cost pre-exponential coefficient",
+        )
+
+        self.gac_adsorbent_unit_cost_exp_coeff = pyo.Var(
+            initialize=-1.25311e-5,
+            units=pyo.units.kg**-1,
+            doc="GAC adsorbent exponential cost parameter coefficient",
+        )
+
+        self.gac_other_cost_coeff = pyo.Var(
+            initialize=16660.7,
+            units=pyo.units.USD_2020,
+            doc="GAC other cost power law coefficient",
+        )
+
+        self.gac_other_cost_exp = pyo.Var(
+            initialize=0.552207,
+            units=pyo.units.dimensionless,
+            doc="GAC other cost power law exponent",
+        )
+
+        self.gac_regen_frac = pyo.Var(
+            initialize=0.70,
+            units=pyo.units.dimensionless,
+            doc="Fraction of spent GAC adsorbent that can be regenerated for reuse",
+        )
+
+        self.gac_regen_unit_cost = pyo.Var(
+            initialize=4.28352,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="Unit cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        )
+
+        self.gac_makeup_unit_cost = pyo.Var(
+            initialize=4.58223,
+            units=pyo.units.USD_2020 * pyo.units.kg**-1,
+            doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
         )
 
         # fix the parameters
@@ -1090,6 +1176,176 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.costing_package.cost_flow(electricity_flow, "electricity")
         blk.costing_package.cost_flow(regen_flow, regen_chem)
 
+    def cost_gac(blk):
+        """
+        3 equation capital cost estimation for GAC
+            contactor/pressure vessel cost by polynomial with single contactor volume
+            initial charge of GAC adsorbent cost by exponential with GAC mass
+            other process costs calculated power law with total contactor volume
+        Capital costs calculated using required makeup and regenerated GAC adsorbent
+            Energy for backwash and booster pumps considered negligible compared to regeneration costs
+        """
+        make_capital_cost_var(blk)
+        blk.contactor_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit contactor(s) capital cost",
+        )
+        blk.bed_mass_gac_ref = pyo.Var(
+            initialize=4,
+            domain=pyo.NonNegativeReals,
+            units=pyo.units.kg,
+            doc="Reference value of GAC mass needed for initial charge where "
+            "economy of scale no longer discounts the unit price",
+        )
+        blk.adsorbent_unit_cost = pyo.Var(
+            initialize=2,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency * pyo.units.kg**-1,
+            doc="GAC adsorbent cost per unit mass",
+        )
+        blk.adsorbent_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit adsorbent capital cost",
+        )
+        blk.other_process_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Unit other process capital cost",
+        )
+
+        blk.contactor_cost_constraint = pyo.Constraint(
+            expr=blk.contactor_cost
+            == (
+                blk.costing_package.gac_num_contactors_op
+                + blk.costing_package.gac_num_contactors_redundant
+            )
+            * pyo.units.convert(
+                (
+                    blk.costing_package.gac_contactor_cost_coeff_3
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 3
+                    + blk.costing_package.gac_contactor_cost_coeff_2
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 2
+                    + blk.costing_package.gac_contactor_cost_coeff_1
+                    * (
+                        blk.unit_model.bed_volume
+                        / blk.costing_package.gac_num_contactors_op
+                    )
+                    ** 1
+                    + blk.costing_package.gac_contactor_cost_coeff_0
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+        blk.bed_mass_gac_ref_constraint = pyo.Constraint(
+            expr=blk.bed_mass_gac_ref
+            == smooth_min(
+                blk.costing_package.bed_mass_gac_max_ref / pyo.units.kg,
+                pyo.units.convert(blk.unit_model.bed_mass_gac, to_units=pyo.units.kg)
+                / pyo.units.kg,
+            )
+            * pyo.units.kg
+        )
+        blk.adsorbent_unit_cost_constraint = pyo.Constraint(
+            expr=blk.adsorbent_unit_cost
+            == pyo.units.convert(
+                blk.costing_package.gac_adsorbent_unit_cost_coeff
+                * pyo.exp(
+                    blk.bed_mass_gac_ref
+                    * blk.costing_package.gac_adsorbent_unit_cost_exp_coeff
+                ),
+                to_units=blk.costing_package.base_currency * pyo.units.kg**-1,
+            )
+        )
+        blk.adsorbent_cost_constraint = pyo.Constraint(
+            expr=blk.adsorbent_cost
+            == blk.adsorbent_unit_cost * blk.unit_model.bed_mass_gac
+        )
+        blk.other_process_cost_constraint = pyo.Constraint(
+            expr=blk.other_process_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.gac_other_cost_coeff
+                    * ((pyo.units.m**3) ** -blk.costing_package.gac_other_cost_exp)
+                    * (
+                        (
+                            blk.costing_package.gac_num_contactors_op
+                            + blk.costing_package.gac_num_contactors_redundant
+                        )
+                        * (
+                            blk.unit_model.bed_volume
+                            / blk.costing_package.gac_num_contactors_op
+                        )
+                    )
+                    ** blk.costing_package.gac_other_cost_exp
+                ),
+                to_units=blk.costing_package.base_currency,
+            )
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == blk.contactor_cost + blk.adsorbent_cost + blk.other_process_cost
+        )
+
+        make_fixed_operating_cost_var(blk)
+        blk.gac_regen_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency / blk.costing_package.base_period,
+            doc="Cost to regenerate spent GAC adsorbent by an offsite regeneration facility",
+        )
+        blk.gac_makeup_cost = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency / blk.costing_package.base_period,
+            doc="Cost to makeup spent GAC adsorbent with fresh adsorbent",
+        )
+
+        blk.gac_regen_cost_constraint = pyo.Constraint(
+            expr=blk.gac_regen_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.gac_regen_unit_cost
+                    * (
+                        blk.costing_package.gac_regen_frac
+                        * blk.unit_model.gac_mass_replace_rate
+                    )
+                ),
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+        blk.gac_makeup_cost_constraint = pyo.Constraint(
+            expr=blk.gac_makeup_cost
+            == pyo.units.convert(
+                (
+                    blk.costing_package.gac_makeup_unit_cost
+                    * (
+                        (1 - blk.costing_package.gac_regen_frac)
+                        * blk.unit_model.gac_mass_replace_rate
+                    )
+                ),
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
+            )
+        )
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost == blk.gac_regen_cost + blk.gac_makeup_cost
+        )
+
     def _compute_steam_properties(blk):
         """
         Function for computing saturated steam properties for thermal heating estimation.
@@ -1173,6 +1429,7 @@ WaterTAPCostingData.unit_mapping = {
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
     IonExchange0D: WaterTAPCostingData.cost_ion_exchange,
+    GAC: WaterTAPCostingData.cost_gac,
 }
 
 
