@@ -451,12 +451,12 @@ def export_ui_variables(fs):
                 "display_units": "{USD_2018}/(m**3/hr)",
                 "category": Category.cost,
             },
-            "load_factor": {
-                "display_name": "Load factor",
-                "scale_factor": 100,
-                "display_units": "%",
-                "category": Category.cost,
-            },
+            # "load_factor": {
+            #     "display_name": "Load factor",
+            #     "scale_factor": 100,
+            #     "display_units": "%",
+            #     "category": Category.cost,
+            # },
             "factor_capital_annualization": {
                 "display_name": "Capital annualization factor",
                 "scale_factor": 100,
