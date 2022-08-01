@@ -99,3 +99,7 @@ class TestPumpVariableZO:
     @pytest.mark.component
     def test_units(self, model):
         assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model)
