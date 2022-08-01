@@ -79,7 +79,7 @@ class TestPumpVariableZO:
         assert isinstance(model.fs.unit.applied_pressure_constraint, Constraint)
         assert isinstance(model.fs.unit.flow_bep, Var)
         assert isinstance(model.fs.unit.flow_ratio, Var)
-        assert isinstance(model.fs.unit.flow_ratio_expr, Expression)
+        assert isinstance(model.fs.unit.flow_ratio_eq, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -93,9 +93,13 @@ class TestPumpVariableZO:
     @pytest.mark.component
     def test_dof(self, model):
         # fix the pump flowrate to the bep for initialization
-        model.fs.unit.flow_ratio.fix(1)
+        # model.fs.unit.flow_ratio.fix(1)
         assert degrees_of_freedom(model.fs.unit) == 0
 
     @pytest.mark.component
     def test_units(self, model):
         assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialization(self, model):
+        initialization_tester(model)

@@ -41,14 +41,25 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         build_pt(self)
 
-        self.lift_height = Var(units=pyunits.m, doc="Lift height for pump")
+        self.lift_height = Var(
+            self.flowsheet().config.time, units=pyunits.m, doc="Lift height for pump"
+        )
 
-        self.eta_pump = Var(units=pyunits.dimensionless, doc="Efficiency of pump")
+        self.eta_pump = Var(
+            self.flowsheet().config.time,
+            units=pyunits.dimensionless,
+            doc="Efficiency of pump",
+        )
 
-        self.eta_motor = Var(units=pyunits.dimensionless, doc="Efficiency of motor")
+        self.eta_motor = Var(
+            self.flowsheet().config.time,
+            units=pyunits.dimensionless,
+            doc="Efficiency of motor",
+        )
 
         self.flow_bep = Var(
-            bounds=(1e-8, None),
+            bounds=(0, None),
+            initialize=1,
             units=pyunits.m**3 / pyunits.s,
             doc="Best efficiency point flowrate",
         )
@@ -63,12 +74,14 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         self.eta_ratio = Var(
             self.flowsheet().config.time,
+            initialize=1,
             units=pyunits.dimensionless,
-            bounds=(0, 1),
+            # bounds=(0, 1),
             doc="Ratio between the true efficiency and the best efficiency due to variable operation",
         )
         self.electricity = Var(
             self.flowsheet().config.time,
+            initialize=1,
             units=pyunits.kW,
             bounds=(0, None),
             doc="Electricity for low pressure pump",
@@ -76,6 +89,7 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         self.applied_pressure = Var(
             self.flowsheet().config.time,
+            initialize=1,
             units=pyunits.bar,
             bounds=(0, None),
             doc="Applied pressure",
@@ -91,19 +105,17 @@ class PumpVariableZOData(ZeroOrderBaseData):
         )
         def applied_pressure_constraint(b, t):
             return b.applied_pressure[t] == pyunits.convert(
-                b.lift_height
+                b.lift_height[t]
                 * b.properties[t].dens_mass
                 * Constants.acceleration_gravity,
                 to_units=pyunits.bar,
             )
 
-        @self.Expression(
+        @self.Constraint(
             self.flowsheet().time, doc="Constraint for variable pump flowrate ratio"
         )
-        def flow_ratio_expr(b, t):
-            return b.flow_ratio[t] == b.properties[t].flow_vol / pyunits.convert(
-                b.flow_bep, to_units=pyunits.m**3 / pyunits.s
-            )
+        def flow_ratio_eq(b, t):
+            return b.flow_ratio[t] * b.flow_bep == b.properties[t].flow_vol
 
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
@@ -118,12 +130,13 @@ class PumpVariableZOData(ZeroOrderBaseData):
             self.flowsheet().time, doc="Constraint for actual pump energy consumption"
         )
         def electricity_consumption(b, t):
-            return b.electricity[t] == pyunits.convert(
-                b.lift_height
+            return b.electricity[t] * (
+                b.eta_pump[t] * b.eta_motor[t] * b.eta_ratio[t]
+            ) == pyunits.convert(
+                b.lift_height[t]
                 * b.properties[t].flow_vol
                 * b.properties[t].dens_mass
-                * Constants.acceleration_gravity
-                / (b.eta_pump * b.eta_motor * b.eta_ratio[t]),
+                * Constants.acceleration_gravity,
                 to_units=pyunits.kW,
             )
 

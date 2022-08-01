@@ -9,7 +9,7 @@ default:  #< 11bar https://doi.org/10.1590/2318-0331.0217170018
     value: 0.9
     units: dimensionless
   flow_bep:
-    value: 0.01
+    value: 1
     units: m^3/s
   capital_cost:
     cost_factor: None
