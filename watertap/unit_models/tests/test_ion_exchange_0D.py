@@ -81,29 +81,49 @@ ix_in = {
 target_ion = "Na_+"
 
 
-def ix_scaling(m, sf=1e4):
+def ix_scaling(m, sf=1e4, est_recov=0.95, est_removal=0.99):
     ix = m.fs.unit
+    ions = ix.config.property_package.ion_set
     prop_in = ix.properties_in[0]
     prop_out = ix.properties_out[0]
     prop_regen = ix.properties_regen[0]
-    target_ion = ix.config.target_ion
-    ions = ix.config.property_package.ion_set
-    set_scaling_factor(prop_in.flow_mol_phase_comp["Liq", "H2O"], 10 / sf)
-    set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", "H2O"], 10 / sf)
-    set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", "H2O"], 10)
+    set_scaling_factor(
+        prop_in.flow_mol_phase_comp["Liq", "H2O"],
+        1 / prop_in.flow_mol_phase_comp["Liq", "H2O"].value,
+    )
+    set_scaling_factor(
+        prop_out.flow_mol_phase_comp["Liq", "H2O"],
+        1 / (prop_in.flow_mol_phase_comp["Liq", "H2O"].value * est_recov),
+    )
+    set_scaling_factor(
+        prop_regen.flow_mol_phase_comp["Liq", "H2O"],
+        1 / (prop_in.flow_mol_phase_comp["Liq", "H2O"].value * (1 - est_recov)),
+    )
     for ion in ions:
         set_scaling_factor(
             prop_in.flow_mol_phase_comp["Liq", ion],
             1 / prop_in.flow_mol_phase_comp["Liq", ion].value,
         )
         if ion == target_ion:
-            set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", ion], sf)
+            set_scaling_factor(
+                prop_out.flow_mol_phase_comp["Liq", ion],
+                (
+                    1
+                    / (
+                        prop_in.flow_mol_phase_comp["Liq", ion].value
+                        * (1 - est_removal)
+                    )
+                ),
+            )
             set_scaling_factor(
                 prop_regen.flow_mol_phase_comp["Liq", ion],
-                1 / prop_in.flow_mol_phase_comp["Liq", ion].value,
+                1 / (prop_in.flow_mol_phase_comp["Liq", ion].value * (est_removal)),
             )
         else:
-            set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", ion], 1)
+            set_scaling_factor(
+                prop_out.flow_mol_phase_comp["Liq", ion],
+                1 / (prop_in.flow_mol_phase_comp["Liq", "H2O"].value * est_recov),
+            )
             set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf * 10)
     return m
 
@@ -115,7 +135,7 @@ def test_config():
     m.fs.properties = DSPMDEParameterBlock(default=ix_in)
     m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
     # check unit config arguments
-    assert len(m.fs.unit.config) == 6
+    assert len(m.fs.unit.config) == 7
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -170,6 +190,7 @@ class TestIonExchange:
         ix.regen_dose.fix()
         ix.regen_ww.fix()
         ix.regen_sg.fix()
+        ix.t_regen.fix()
         ix.t_bw.fix()
         ix.bw_rate.fix()
         ix.rinse_bv.fix()
@@ -181,6 +202,8 @@ class TestIonExchange:
         ix.bed_expansion_frac_B.fix()
         ix.bed_expansion_frac_C.fix()
         ix.bed_depth_to_diam_ratio.fix()
+        ix.service_to_regen_flow_ratio.fix()
+        ix.number_columns.fix()
 
         return m
 
@@ -188,7 +211,7 @@ class TestIonExchange:
     def test_config(self, IX_frame):
         m = IX_frame
 
-        assert len(m.fs.unit.config) == 6
+        assert len(m.fs.unit.config) == 7
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -241,6 +264,7 @@ class TestIonExchange:
             "p_drop_C",
             "resin_max_capacity",
             "resin_eq_capacity",
+            "resin_unused_capacity",
             "resin_diam",
             "resin_bulk_dens",
             "resin_particle_dens",
@@ -254,6 +278,7 @@ class TestIonExchange:
             "bed_porosity",
             "col_height",
             "col_vol",
+            "number_columns",
             "partition_ratio",
             "fluid_mass_transfer_coeff",
             "rate_coeff",
@@ -269,13 +294,23 @@ class TestIonExchange:
             "mass_out",
             "vel_bed",
             "vel_inter",
-            "sfr",
+            "holdup",
+            "service_flow_rate",
+            "pressure_drop",
+            "Re",
+            "Sc",
+            "Sh",
+            "Pe_p",
+            "Pe_bed",
+            "c_norm",
+            "regen_flow_rate",
+            "service_to_regen_flow_ratio",
             "regen_dose",
             "regen_sg",
             "regen_density",
             "regen_ww",
             "regen_conc",
-            "regen_bv",
+            "regen_vol_per_bv",
             "regen_flow",
             "t_regen",
             "bw_rate",
@@ -310,9 +345,9 @@ class TestIonExchange:
             assert isinstance(sb, DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 123
+        assert number_variables(m) == 127
         assert number_total_constraints(m) == 86
-        assert number_unused_variables(m) == 13
+        assert number_unused_variables(m) == 14
 
     @pytest.mark.unit
     def test_dof(self, IX_frame):
@@ -372,24 +407,24 @@ class TestIonExchange:
         ix = m.fs.unit
 
         results_dict = {
-            "resin_eq_capacity": 3.45272,
-            "separation_factor": 0.33333333,
-            "bed_vol": 0.416727,
-            "partition_ratio": 111.17771,
-            "fluid_mass_transfer_coeff": 5.3087646e-05,
-            "mass_in": 1011.720811,
-            "mass_out": 4.5296449,
-            "mass_removed": 1007.1911668,
-            "vel_bed": 0.00719895,
-            "sfr": 8.63874,
-            "Re": 6.4790566,
-            "Sc": 751.87969,
-            "Sh": 35.923971,
-            "t_breakthru": 46539.15732,
-            "t_contact": 208.36366,
-            "t_waste": 1683.39085,
-            "t_regen": 281.57252,
-            "t_rinse": 1041.81833,
+            "resin_eq_capacity": 3.4527241421390866,
+            "separation_factor": 0.3333333333333333,
+            "bed_vol": 0.5643058362060249,
+            "partition_ratio": 111.17771737687855,
+            "fluid_mass_transfer_coeff": 4.803356569171306e-05,
+            "mass_in": 1370.008428042168,
+            "mass_out": 6.133759089199108,
+            "mass_removed": 1363.8746689529687,
+            "vel_bed": 0.005316266122917781,
+            "service_flow_rate": 6.379519347501365,
+            "Re": 4.784639510626003,
+            "Sc": 751.8796992481202,
+            "Sh": 32.50391663349005,
+            "t_breakthru": 63020.387689939715,
+            "t_contact": 282.15291810301244,
+            "t_waste": 3810.7645905150625,
+            "t_regen": 1800,
+            "t_rinse": 1410.7645905150623,
         }
 
         for v, val in results_dict.items():
@@ -398,7 +433,3 @@ class TestIonExchange:
                 assert pytest.approx(val, rel=5e-2) == value(var[target_ion])
             else:
                 assert pytest.approx(val, rel=5e-2) == value(var)
-
-    @pytest.mark.unit
-    def test_report(self, IX_frame):
-        IX_frame.fs.unit.report()
