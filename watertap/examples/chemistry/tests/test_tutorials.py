@@ -11,9 +11,11 @@
 #
 ###############################################################################
 """
-    This test is for the tutorials in the ../../tutorials/ directory.
-    For now, it merely checks that the tutorials execute without raising
-    an exception, it does not check for correctness
+This test is for the tutorials in the ../../tutorials/ directory.
+For now, it merely checks that the tutorials execute without raising
+an exception, it does not check for correctness.
+
+- dang 07202022: Made purely advisory for now
 """
 
 import nbformat
@@ -21,6 +23,8 @@ import unittest
 import glob
 import os.path
 from nbconvert.preprocessors import ExecutePreprocessor
+import traceback
+import warnings
 
 _tutorials_dir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "../../..", "..", "tutorials"
@@ -35,9 +39,17 @@ class TestTutorials(unittest.TestCase):
                 with open(notebook_filename) as f:
                     nb = nbformat.read(f, as_version=4)
                 ep = ExecutePreprocessor()
-                ep.preprocess(
-                    nb, {"metadata": {"path": f"{os.path.dirname(notebook_filename)}"}}
-                )
+                try:
+                    ep.preprocess(
+                        nb,
+                        {"metadata": {"path": f"{os.path.dirname(notebook_filename)}"}},
+                    )
+                except Exception:
+                    warnings.warn(
+                        f"Error executing notebook `{notebook_filename}"
+                        f"\n{traceback.format_exc()}"
+                    )
+                    # continue
 
 
 if __name__ == "__main__":

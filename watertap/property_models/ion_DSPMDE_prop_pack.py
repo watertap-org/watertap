@@ -1407,6 +1407,10 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
 
+        for j, v in self.charge_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.charge_comp[j], value(v) ** -1)
+
         for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
@@ -1522,7 +1526,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
                     is None
                 ):
-                    sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                    sf = iscale.get_scaling_factor(
+                        self.conc_mol_phase_comp["Liq", j]
+                    ) * iscale.get_scaling_factor(self.charge_comp[j])
                     iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
 
         # these variables do not typically require user input,
