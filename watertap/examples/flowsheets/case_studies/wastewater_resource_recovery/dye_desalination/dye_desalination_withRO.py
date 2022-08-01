@@ -592,7 +592,6 @@ def display_results(m):
 
 
 def display_costing(m):
-
     print("\n System costing metrics:")
     capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
 
