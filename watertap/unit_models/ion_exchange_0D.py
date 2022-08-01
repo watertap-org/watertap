@@ -450,7 +450,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.t_waste = Var(
-            initialize=12,
+            initialize=1800,
             bounds=(1, None),
             units=pyunits.s,
             doc="Regen + Rinse + Backwash time",
@@ -649,7 +649,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.regen_flow = Var(
-            initialize=2,
+            initialize=0.1,
             units=pyunits.m**3 / pyunits.s,
             doc="Regeneration volumetric flow rate",
         )
@@ -671,7 +671,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.bw_flow = Var(
-            initialize=0.001,
+            initialize=0.1,
             units=pyunits.m**3 / pyunits.s,
             doc="Backwashing volumetric flow rate",
         )
@@ -700,7 +700,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.rinse_flow = Var(
-            initialize=0.001,
+            initialize=0.1,
             units=pyunits.m**3 / pyunits.s,
             doc="Rinse volumetric flow rate",
         )
@@ -710,19 +710,19 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.main_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Main pump power"
+            initialize=0.1, units=pyunits.kW, doc="Main pump power"
         )
 
         self.regen_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Regen pump power"
+            initialize=0.1, units=pyunits.kW, doc="Regen pump power"
         )
 
         self.bw_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Backwash pump power"
+            initialize=0.1, units=pyunits.kW, doc="Backwash pump power"
         )
 
         self.rinse_pump_power = Var(
-            initialize=4e-6, units=pyunits.kW, doc="Rinse pump power"
+            initialize=0.1, units=pyunits.kW, doc="Rinse pump power"
         )
 
         self.pump_efficiency = Var(
