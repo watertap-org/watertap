@@ -144,6 +144,20 @@ class TestPumpVariableZO:
             model.fs.unit.costing.capital_cost
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_expr_if(self, model):
+        test_bep = model.fs.unit.flow_bep / 2  # makes flow_ratio > 2
+        model.fs.unit.flow_bep.fix(test_bep)
+
+        # solve
+        results = solver.solve(model)
+        assert_optimal_termination(results)
+
+        # check if both conditional expressions are correctly evaluated
+        assert pytest.approx(0.4, rel=1e-5) == value(model.fs.unit.eta_ratio[0])
+
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
