@@ -12,10 +12,12 @@
 ###############################################################################
 
 from pyomo.common.config import In
+from pyomo.environ import Var, units as pyunits
 
 # Import IDAES cores
 from idaes.models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
+from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -48,6 +50,84 @@ class PumpIsothermalData(PumpData):
                 self.control_volume.properties_in[0].temperature
             )
             iscale.constraint_scaling_transform(c, sf)
+
+
+@declare_process_block_class("PumpVar")
+class PumpVariableData(PumpData):
+    """
+    Variable efficiency Pump Unit Model Class
+    Uses pump affinity laws for industrial scale centrifugal pumps.
+    Atia et al. (2019) https://doi.org/10.1016/j.desal.2019.07.002
+    """
+
+    def build(self):
+        super().build()
+
+        self.bep_flow = Var(
+            initialize=1.0,
+            doc="Best efficiency point flowrate of the centrifugal pump",
+            units=pyunits.m**3 / pyunits.s,
+        )
+        self.bep_head = Var(
+            initialize=1.0,
+            doc="Best efficiency point head of the centrifugal pump",
+            units=pyunits.m,
+        )
+        self.bep_eta = Var(
+            initialize=0.85,
+            doc="Best efficiency of the centrifugal pump",
+            units=pyunits.dimensionless,
+        )
+        self.head_ratio = Var(
+            self.flowsheet().time,
+            initialize=1.0,
+            doc="Ratio of pump head to best efficiency point head",
+            units=pyunits.dimensionless,
+        )
+        self.flow_ratio = Var(
+            self.flowsheet().time,
+            initialize=1.0,
+            doc="Ratio of pump flowrate to best efficiency point flowrate",
+            units=pyunits.dimensionless,
+        )
+        self.eta_ratio = Var(
+            self.flowsheet().time,
+            initialize=1.0,
+            doc="Pump efficiency change due to variable operation",
+            units=pyunits.dimensionless,
+        )
+
+        if hasattr(self, "efficiency_pump"):
+            self.efficiency_pump.unfix()
+
+        @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
+        def head_ratio_constraint(b, t):
+            return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
+                (
+                    b.control_volume.properties_out[t].pressure
+                    / b.control_volume.properties_out[t].density
+                )
+                - (
+                    b.control_volume.properties_in[t].pressure
+                    / b.control_volume.properties_in[t].density
+                )
+            )
+
+        @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
+        def flow_ratio_constraint(b, t):
+            return b.flow_ratio[t] * b.bep_flow == (
+                b.control_volume.properties_out[t].pressure
+            )
+
+        @self.Constraint(self.flowsheet().time, doc="Pump efficiency ratio")
+        def eta_ratio_constraint(b, t):
+            return b.eta_ratio[t] == (
+                (b.flow_ratio[t] ** 1.5) * (b.head_ratio[t] ** 0.75)
+            )
+
+        @self.Constraint(self.flowsheet().time, doc="Actual pump efficiency")
+        def eta_constraint(b, t):
+            return b.efficiency_pump[t] == (b.eta_bep * b.eta_ratio[t])
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
