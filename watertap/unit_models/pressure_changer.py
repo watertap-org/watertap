@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.common.config import In
-from pyomo.environ import Var, units as pyunits
+from pyomo.environ import Var, units as pyunits, Expr_if
 
 # Import IDAES cores
 from idaes.models.unit_models.pressure_changer import PumpData
@@ -63,6 +63,7 @@ class PumpVariableData(PumpData):
     def build(self):
         super().build()
 
+        # create additional pyomo variables
         self.bep_flow = Var(
             initialize=1.0,
             doc="Best efficiency point flowrate of the centrifugal pump",
@@ -97,9 +98,18 @@ class PumpVariableData(PumpData):
             units=pyunits.dimensionless,
         )
 
-        if hasattr(self, "efficiency_pump"):
-            self.efficiency_pump.unfix()
+        # unfix/remove items from the base class
+        self.efficiency_pump.unfix()
+        self.control_volume.del_component(self.control_volume.enthalpy_balances)
 
+        # add isothermal constraint
+        @self.control_volume.Constraint(
+            self.flowsheet().config.time, doc="Isothermal constraint"
+        )
+        def isothermal_balance(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        # add BEP ratio constraints
         @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
         def head_ratio_constraint(b, t):
             return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
@@ -119,12 +129,27 @@ class PumpVariableData(PumpData):
                 b.control_volume.properties_out[t].pressure
             )
 
-        @self.Constraint(self.flowsheet().time, doc="Pump efficiency ratio")
-        def eta_ratio_constraint(b, t):
-            return b.eta_ratio[t] == (
-                (b.flow_ratio[t] ** 1.5) * (b.head_ratio[t] ** 0.75)
+        # @self.Constraint(self.flowsheet().time, doc="Pump efficiency ratio")
+        # def eta_ratio_constraint(b, t):
+        #     return b.eta_ratio[t] == (
+        #         (b.flow_ratio[t] ** 1.5) * (b.head_ratio[t] ** 0.75)
+        #     )
+
+        @self.Expression(
+            self.flowsheet().time, doc="Expression for variable pump efficiency"
+        )
+        def eta_ratio(b, t):
+            return Expr_if(
+                b.flow_ratio[t] < 0.6,
+                0.4,
+                Expr_if(
+                    b.flow_ratio[t] > 1.4,
+                    0.4,
+                    -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025,
+                ),
             )
 
+        # replace the constant efficiency assumption using eta_ratio
         @self.Constraint(self.flowsheet().time, doc="Actual pump efficiency")
         def eta_constraint(b, t):
             return b.efficiency_pump[t] == (b.eta_bep * b.eta_ratio[t])
