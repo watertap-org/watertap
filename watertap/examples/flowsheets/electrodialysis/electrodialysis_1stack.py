@@ -11,7 +11,6 @@
 #
 ###############################################################################
 
-from xml.etree.ElementInclude import default_loader
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -25,23 +24,14 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.misc import StrEnum
 from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
-from sympy import Range
 from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
-
-
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.core.util.initialization import (
-    assert_no_degrees_of_freedom,
-    assert_degrees_of_freedom,
-)
 from watertap.costing.watertap_costing_package import (
     WaterTAPCosting,
-    make_capital_cost_var,
 )
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 
