@@ -72,13 +72,13 @@ class PumpVariableZOData(ZeroOrderBaseData):
             doc="Ratio between instantaneous flowrate and best efficiency point flowrate",
         )
 
-        self.eta_ratio = Var(
-            self.flowsheet().config.time,
-            initialize=1,
-            units=pyunits.dimensionless,
-            # bounds=(0, 1),
-            doc="Ratio between the true efficiency and the best efficiency due to variable operation",
-        )
+        # self.eta_ratio = Var(
+        #     self.flowsheet().config.time,
+        #     initialize=1,
+        #     units=pyunits.dimensionless,
+        #     # bounds=(0, 1),
+        #     doc="Ratio between the true efficiency and the best efficiency due to variable operation",
+        # )
         self.electricity = Var(
             self.flowsheet().config.time,
             initialize=1,
@@ -117,13 +117,18 @@ class PumpVariableZOData(ZeroOrderBaseData):
         def flow_ratio_eq(b, t):
             return b.flow_ratio[t] * b.flow_bep == b.properties[t].flow_vol
 
-        @self.Constraint(
+        @self.Expression(
             self.flowsheet().time, doc="Constraint for variable pump efficiency"
         )
-        def eta_ratio_constraint(b, t):
-            return (
-                b.eta_ratio[t]
-                == -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025
+        def eta_ratio(b, t):
+            return Expr_if(
+                b.flow_ratio[t] < 0.6,
+                0.4,
+                Expr_if(
+                    b.flow_ratio[t] > 1.4,
+                    0.4,
+                    -0.995 * b.flow_ratio[t] ** 2 + 1.977 * b.flow_ratio[t] + 0.025,
+                ),
             )
 
         @self.Constraint(
@@ -142,4 +147,6 @@ class PumpVariableZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity
         self._perf_var_dict["Applied Pressure (bar)"] = self.applied_pressure
-        self._perf_var_dict["Variable pump efficiency (-)"] = self.eta_ratio
+        # TODO: since eta_ratio is now an expression, can't report through var_dict since expression can't be fixed;
+        # resolve or exclude from report
+        # self._perf_var_dict["Variable pump efficiency (-)"] = self.eta_ratio
