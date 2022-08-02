@@ -1151,6 +1151,7 @@ def _get_interfaces(package_name) -> Generator[Tuple[str, Callable], None, None]
         func = getattr(mod, "flowsheet_interface", None)
         # if found, yield this module and function as a result
         if func is not None:
+            _log.debug(f"Found interface in imported module. name={mod_name}")
             yield mod_name, func
 
 
