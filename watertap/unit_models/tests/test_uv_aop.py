@@ -284,9 +284,6 @@ class TestUltraviolet_with_multiple_comps:
     def UV_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
-
-        # m.fs.properties = props.NDMAParameterBlock()
-
         m.fs.properties = DSPMDEParameterBlock(
             default={
                 "solute_list": ["NDMA", "DCE"],
