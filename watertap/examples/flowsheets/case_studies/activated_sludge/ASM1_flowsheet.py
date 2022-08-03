@@ -39,7 +39,14 @@ import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import CSTR, Feed, Mixer, Separator, PressureChanger, Product
+from idaes.models.unit_models import (
+    CSTR,
+    Feed,
+    Mixer,
+    Separator,
+    PressureChanger,
+    Product,
+)
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -174,7 +181,7 @@ def build_flowsheet():
     m.fs.stream9 = Arc(source=m.fs.SP5.underflow, destination=m.fs.MX6.reactor)
     m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
-    m.fs.stream102= Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
+    m.fs.stream102 = Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
     m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
     m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
