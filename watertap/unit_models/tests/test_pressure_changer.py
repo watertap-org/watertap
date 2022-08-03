@@ -21,7 +21,11 @@ from pyomo.environ import (
     Var,
 )
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.pressure_changer import Pump, PumpVar, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import (
+    Pump,
+    EnergyRecoveryDevice,
+    VariableEfficiency,
+)
 import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.solvers import get_solver
@@ -260,7 +264,7 @@ class TestEnergyRecoveryDevice(TestPumpIsothermal):
         )
 
 
-class TestPumpVariable(TestPumpIsothermal):
+class TestPumpVariable_Flow:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
@@ -268,7 +272,12 @@ class TestPumpVariable(TestPumpIsothermal):
 
         m.fs.properties = props.SeawaterParameterBlock()
 
-        m.fs.unit = PumpVar(default={"property_package": m.fs.properties})
+        m.fs.unit = Pump(
+            default={
+                "property_package": m.fs.properties,
+                "variable_efficiency": VariableEfficiency.flow,
+            }
+        )
         # fully specify system
         feed_flow_mass = 1
         feed_mass_frac_TDS = 0.035
@@ -289,8 +298,9 @@ class TestPumpVariable(TestPumpIsothermal):
         m.fs.unit.outlet.pressure[0].fix(feed_pressure_out)
 
         m.fs.unit.bep_eta.fix(efi_pump)
-        m.fs.unit.bep_flow.fix(feed_flow_mass / 1000)
-        m.fs.unit.bep_head.fix(500)
+
+        flow_vol = m.fs.unit.control_volume.properties_in[0].flow_vol.expr()
+        m.fs.unit.bep_flow.fix(flow_vol)
         return m
 
     @pytest.mark.component
@@ -323,14 +333,4 @@ class TestPumpVariable(TestPumpIsothermal):
     def test_solution(self, Pump_frame):
         m = Pump_frame
 
-        assert pytest.approx(1302.64, rel=1e-5) == value(m.fs.unit.work_mechanical[0])
-        assert pytest.approx(0.3, rel=1e-5) == value(m.fs.unit.efficiency_pump[0])
-
-        assert pytest.approx(0.035, rel=1e-3) == value(
-            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
-                "Liq", "TDS"
-            ]
-        )
-        assert pytest.approx(298.15, rel=1e-5) == value(
-            m.fs.unit.control_volume.properties_out[0].temperature
-        )
+        assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
