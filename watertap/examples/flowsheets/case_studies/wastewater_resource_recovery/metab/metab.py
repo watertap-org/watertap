@@ -61,11 +61,9 @@ def main():
     # m.fs.costing.hydrogen_product_cost.fix(0)
     # m.fs.costing.methane_product_cost.fix(0)
     # m.fs.costing.display()
-    # assert False
 
     results = solve(m)
     assert_optimal_termination(results)
-    # display_costing(m.fs)
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -160,7 +158,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def display_results(fs):
+def display_reports(fs):
     unit_list = ["feed", "metab_hydrogen", "metab_methane"]
     for u in unit_list:
         fs.component(u).report()
@@ -181,7 +179,6 @@ def add_costing(m):
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
 
     # other levelized costs
-    # TODO -resolve discrepancy between sum of cost components and total levelized costs
     m.fs.costing.annual_water_inlet = Expression(
         expr=m.fs.costing.utilization_factor
              * pyunits.convert(
@@ -500,73 +497,6 @@ def add_costing(m):
     m.fs.costing.LCOCR_comp = Expression(m.fs.costing.LC_comp, rule=rule_LCOCR_comp)
 
 
-def display_costing(fs):
-    fs.costing.total_capital_cost.display()
-    fs.costing.total_operating_cost.display()
-    fs.costing.LCOW.display()
-
-    print("\nUnit Capital Costs\n")
-    for u in fs.costing._registered_unit_costing:
-        print(
-            u.name,
-            " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
-        )
-
-    print("\nUtility Costs\n")
-    for f in fs.costing.flow_types:
-        print(
-            f,
-            " :   ",
-            value(
-                pyunits.convert(
-                    fs.costing.aggregate_flow_costs[f],
-                    to_units=pyunits.USD_2018 / pyunits.year,
-                )
-            ),
-        )
-
-    print("")
-    total_capital_cost = value(
-        pyunits.convert(fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
-    )
-    print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
-
-    total_operating_cost = value(
-        pyunits.convert(
-            fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
-        )
-    )
-    print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
-
-    electricity_intensity = value(
-        pyunits.convert(
-            fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
-        )
-    )
-    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
-    LCOW = value(
-        pyunits.convert(
-            fs.costing.LCOW, to_units=fs.costing.base_currency / pyunits.m**3
-        )
-    )
-    print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
-    LCOCR = value(
-        pyunits.convert(
-            fs.costing.LCOCR, to_units=fs.costing.base_currency / pyunits.kg
-        )
-    )
-    print(f"Levelized Cost of COD Removal: {LCOCR:.4f} $/kg")
-    LCOH = value(
-        pyunits.convert(fs.costing.LCOH, to_units=fs.costing.base_currency / pyunits.kg)
-    )
-    print(f"Levelized Cost of Hydrogen: {LCOH:.4f} $/kg")
-    LCOM = value(
-        pyunits.convert(fs.costing.LCOM, to_units=fs.costing.base_currency / pyunits.kg)
-    )
-    print(f"Levelized Cost of Methane: {LCOM:.4f} $/kg")
-
-
 def adjust_default_parameters(m):
     m.fs.metab_hydrogen.hydraulic_retention_time.fix(6)  # default - 12 hours, 0.5x
     m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"].set_value(
@@ -802,9 +732,6 @@ def display_additional_results(m):
     methane_revenue = value(-(m.fs.costing.aggregate_flow_costs['methane_product']))
     print(f"Methane revenue: {methane_revenue:.1f} $/year")
 
-    m.fs.costing.LCOW.pprint()
-    print(value(m.fs.costing.capital_recovery_factor))
-    # print(type(m.fs.costing.LCOW.pprint()))
 
 if __name__ == "__main__":
     m, results = main()
