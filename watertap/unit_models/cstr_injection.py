@@ -13,7 +13,8 @@
 """
 Modified CSTR model which includes terms for injection of species/reactants.
 
-This is copied the standard IDAES CSTR with the addition of mass trasnfer terms.
+This is copied from the standard IDAES CSTR with the addition of mass transfer terms.
+NOTE: This is likely a temporary model until a more detailed model is available.
 """
 
 # Import Pyomo libraries

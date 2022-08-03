@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Thermophysical property package to be used in conjucntion with ASM1 reactions.
+Thermophysical property package to be used in conjunction with ASM1 reactions.
 """
 
 # Import Pyomo libraries

@@ -11,13 +11,14 @@
 # license information.
 #################################################################################
 """
-Example of activated sludge process model using ASM1.
+Example of activated sludge process model based on BSM1 study using ASM1 reactions.
+This process contains 2 anoxic tanks followed by 3 aerobic tanks and a clarifier
+with recycle streams.
 
-
-Unit opeations are modeled as follows:
+Unit operations are modeled as follows:
 
     * Anoixic reactors as standard CSTRs (CSTR)
-    * Aerobic reactors as CSTRs with additioanl injection terms (CSTR_Injection)
+    * Aerobic reactors as CSTRs with additional injection terms (CSTR_Injection)
     * Clarifier as a Separator with split fractions by components
 
 Note that a pressure changer is required in the recycle stream to ensure the
@@ -31,14 +32,14 @@ Based on example from:
 J.P. Steyer and P. Vanrolleghem, "Benchmark Simulation Model no. 1 (BSM1)", 2018
 """
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import CSTR, Feed, Mixer, Separator, PressureChanger
+from idaes.models.unit_models import CSTR, Feed, Mixer, Separator, PressureChanger, Product
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -143,6 +144,17 @@ def build_flowsheet():
             "inlet_list": ["clarifier", "reactor"],
         }
     )
+    # Product Blocks
+    m.fs.Treated = Product(
+        default={
+            "property_package": m.fs.props,
+        }
+    )
+    m.fs.Sludge = Product(
+        default={
+            "property_package": m.fs.props,
+        }
+    )
     # Recycle pressure changer - use a simple isothermal unit for now
     m.fs.P1 = PressureChanger(
         default={
@@ -160,9 +172,9 @@ def build_flowsheet():
     m.fs.stream7 = Arc(source=m.fs.R5.outlet, destination=m.fs.SP5.inlet)
     m.fs.stream8 = Arc(source=m.fs.SP5.overflow, destination=m.fs.CL1.inlet)
     m.fs.stream9 = Arc(source=m.fs.SP5.underflow, destination=m.fs.MX6.reactor)
-    # Stream to effluent product
+    m.fs.stream10 = Arc(source=m.fs.CL1.effluent, destination=m.fs.Treated.inlet)
     m.fs.stream11 = Arc(source=m.fs.CL1.underflow, destination=m.fs.SP6.inlet)
-    # Stream to waste product
+    m.fs.stream102= Arc(source=m.fs.SP6.waste, destination=m.fs.Sludge.inlet)
     m.fs.stream13 = Arc(source=m.fs.SP6.recycle, destination=m.fs.MX6.clarifier)
     m.fs.stream14 = Arc(source=m.fs.MX6.outlet, destination=m.fs.P1.inlet)
     m.fs.stream15 = Arc(source=m.fs.P1.outlet, destination=m.fs.MX1.recycle)
@@ -360,5 +372,3 @@ if __name__ == "__main__":
         time_point=0,
     )
     print(stream_table_dataframe_to_string(stream_table))
-    m.fs.R3.KLa.display()
-    m.fs.R4.KLa.display()
