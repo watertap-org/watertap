@@ -103,19 +103,24 @@ class PumpVariableData(PumpData):
         def isothermal_balance(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
-        # # TODO - add BEP ratio constraints
-        # @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
-        # def head_ratio_constraint(b, t):
-        #     return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
-        #         (
-        #             b.control_volume.properties_out[t].pressure
-        #             / b.control_volume.properties_out[t].density
-        #         )
-        #         - (
-        #             b.control_volume.properties_in[t].pressure
-        #             / b.control_volume.properties_in[t].density
-        #         )
-        #     )
+        # Add BEP ratio constraints
+        @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
+        def head_ratio_constraint(b, t):
+            if b.control_volume.properties_in[t].dens_mass_phase["Liq"] is None:
+                raise Exception(
+                    "Density is not implemented in property package as 'dens_mass_phase'"
+                )
+
+            return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
+                (
+                    b.control_volume.properties_out[t].pressure
+                    / b.control_volume.properties_out[t].dens_mass_phase["Liq"]
+                )
+                - (
+                    b.control_volume.properties_in[t].pressure
+                    / b.control_volume.properties_in[t].dens_mass_phase["Liq"]
+                )
+            )
 
         @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
         def flow_ratio_constraint(b, t):
@@ -175,11 +180,15 @@ class PumpVariableData(PumpData):
             if iscale.get_scaling_factor(self.efficiency_pump[0]) is None:
                 iscale.set_scaling_factor(self.efficiency_pump[0], 1)
 
-        # scale problematic constraints
+        # scale constraints
 
         if hasattr(self, "flow_ratio_constraint"):
             if iscale.get_scaling_factor(self.flow_ratio_constraint[0]) is None:
                 iscale.set_scaling_factor(self.flow_ratio_constraint[0], 1)
+
+        if hasattr(self, "head_ratio_constraint"):
+            if iscale.get_scaling_factor(self.head_ratio_constraint[0]) is None:
+                iscale.set_scaling_factor(self.head_ratio_constraint[0], 1)
 
         if hasattr(self, "eta_constraint"):
             if iscale.get_scaling_factor(self.eta_constraint[0]) is None:

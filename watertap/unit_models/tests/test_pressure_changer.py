@@ -322,6 +322,15 @@ class TestPumpVariable(TestPumpIsothermal):
     @pytest.mark.component
     def test_solution(self, Pump_frame):
         m = Pump_frame
-        assert (
-            True  # TODO - replace with real value test once correlations are finalized
+
+        assert pytest.approx(1302.64, rel=1e-5) == value(m.fs.unit.work_mechanical[0])
+        assert pytest.approx(0.3, rel=1e-5) == value(m.fs.unit.efficiency_pump[0])
+
+        assert pytest.approx(0.035, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "TDS"
+            ]
+        )
+        assert pytest.approx(298.15, rel=1e-5) == value(
+            m.fs.unit.control_volume.properties_out[0].temperature
         )
