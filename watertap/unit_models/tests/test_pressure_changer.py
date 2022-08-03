@@ -35,7 +35,6 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -296,7 +295,6 @@ class TestPumpVariable(TestPumpIsothermal):
 
     @pytest.mark.component
     def test_calculate_scaling(self, Pump_frame):
-        # TODO - replace once scaling factors method is implemented in PumpVar
         m = Pump_frame
         m.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1, index=("Liq", "H2O")
@@ -307,34 +305,18 @@ class TestPumpVariable(TestPumpIsothermal):
 
         calculate_scaling_factors(m)
 
-        if (
-            get_scaling_factor(m.fs.unit.ratioP) is None
-        ):  # if IDAES hasn't specified a scaling factor
-            set_scaling_factor(m.fs.unit.ratioP, 1)
-
-        unscaled_var_list = list(unscaled_variables_generator(m))
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-
-        for var in unscaled_var_list:
-            if get_scaling_factor(var) is None:
-                set_scaling_factor(var, 1)
-
-        if get_scaling_factor(m.fs.unit.efficiency_pump) is None:
+        # if IDAES hasn't specified a scaling factor
+        if get_scaling_factor(m.fs.unit.ratioP) is None:
             set_scaling_factor(m.fs.unit.ratioP, 1)
 
         if get_scaling_factor(m.fs.unit.control_volume.work) is None:
             set_scaling_factor(m.fs.unit.control_volume.work, 1)
 
-        unscaled_var_list = list(unscaled_variables_generator(m))
-
-        for con in unscaled_constraint_list:
-            if get_scaling_factor(con) is None:
-                set_scaling_factor(con, 1)
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-
         # check that all variables and constraints have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
+
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component

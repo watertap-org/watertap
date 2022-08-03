@@ -142,7 +142,48 @@ class PumpVariableData(PumpData):
         def eta_constraint(b, t):
             return b.efficiency_pump[t] == (b.bep_eta * b.eta_ratio[t])
 
-        # TODO - implement calculate_scaling_factors method that inherits from base
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for ind, c in self.control_volume.isothermal_balance.items():
+            sf = iscale.get_scaling_factor(
+                self.control_volume.properties_in[0].temperature
+            )
+            iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "bep_flow"):
+            if iscale.get_scaling_factor(self.bep_flow) is None:
+                iscale.set_scaling_factor(self.bep_flow, 10)
+
+        if hasattr(self, "bep_head"):
+            if iscale.get_scaling_factor(self.bep_head) is None:
+                iscale.set_scaling_factor(self.bep_head, 0.01)
+
+        if hasattr(self, "bep_eta"):
+            if iscale.get_scaling_factor(self.bep_eta) is None:
+                iscale.set_scaling_factor(self.bep_eta, 1)
+
+        if hasattr(self, "flow_ratio"):
+            if iscale.get_scaling_factor(self.flow_ratio) is None:
+                iscale.set_scaling_factor(self.flow_ratio, 1)
+
+        if hasattr(self, "head_ratio"):
+            if iscale.get_scaling_factor(self.head_ratio) is None:
+                iscale.set_scaling_factor(self.head_ratio, 1)
+
+        if hasattr(self, "efficiency_pump"):
+            if iscale.get_scaling_factor(self.efficiency_pump[0]) is None:
+                iscale.set_scaling_factor(self.efficiency_pump[0], 1)
+
+        # scale problematic constraints
+
+        if hasattr(self, "flow_ratio_constraint"):
+            if iscale.get_scaling_factor(self.flow_ratio_constraint[0]) is None:
+                iscale.set_scaling_factor(self.flow_ratio_constraint[0], 1)
+
+        if hasattr(self, "eta_constraint"):
+            if iscale.get_scaling_factor(self.eta_constraint[0]) is None:
+                iscale.set_scaling_factor(self.eta_constraint[0], 1)
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
