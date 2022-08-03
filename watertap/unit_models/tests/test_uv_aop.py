@@ -19,6 +19,7 @@ from pyomo.environ import (
     SolverStatus,
     value,
     Var,
+    log10,
     units as pyunits,
 )
 from pyomo.network import Port
@@ -56,7 +57,7 @@ from watertap.costing import WaterTAPCosting
 solver = get_solver()
 
 
-class TestUltraviolet:
+class TestUV:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
@@ -272,14 +273,241 @@ class TestUltraviolet:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(977042, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(90664.5, rel=1e-5) == value(
+        assert pytest.approx(1560035, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(113330.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.016694, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.01967335, rel=1e-5) == value(m.fs.costing.LCOW)
 
 
-class TestUltraviolet_with_multiple_comps:
+class TestUV_standard:
+    @pytest.fixture(scope="class")
+    def UV_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.NDMAParameterBlock()
+
+        m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
+
+        # Example system for verifying costing
+        feed_flow_mass = 1206.5 * pyunits.kg / pyunits.s
+        feed_mass_frac_NDMA = 74e-9
+        feed_pressure = 101325 * pyunits.Pa
+        feed_temperature = (273.15 + 25) * pyunits.K
+        uv_intensity = 1 * pyunits.mW / pyunits.cm**2
+        exporure_time = 32 * pyunits.s
+        inactivation_rate = 180 * pyunits.cm**2 / pyunits.J
+        reaction_rate_constant = 0 * pyunits.min**-1
+        EEO = 0.01763 * pyunits.kWh / pyunits.m**3
+        lamp_efficiency = 0.8
+        UVT = 0.9
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
+            feed_flow_mass * feed_mass_frac_NDMA
+        )
+
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e4, index=("Liq", "NDMA")
+        )
+
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        # m.fs.unit.uv_dose.fix(uv_dose)
+        m.fs.unit.uv_intensity.fix(uv_intensity)
+        m.fs.unit.exposure_time.fix(exporure_time)
+        m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
+        m.fs.unit.reaction_rate_constant["Liq", "NDMA"].fix(reaction_rate_constant)
+        m.fs.unit.outlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
+        m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
+        m.fs.unit.UVT.fix(UVT)
+        m.fs.unit.num_of_reactors.fix(3)
+        return m
+
+    @pytest.mark.unit
+    def test_config(self, UV_frame):
+        m = UV_frame
+        # check unit config arguments
+        assert len(m.fs.unit.config) == 8
+
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+        assert (
+            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        )
+        assert m.fs.unit.config.property_package is m.fs.properties
+
+    @pytest.mark.unit
+    def test_build(self, UV_frame):
+        m = UV_frame
+
+        # test ports and variables
+        port_lst = ["inlet", "outlet"]
+        port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
+        for port_str in port_lst:
+            assert hasattr(m.fs.unit, port_str)
+            port = getattr(m.fs.unit, port_str)
+            assert len(port.vars) == 3
+            assert isinstance(port, Port)
+            for var_str in port_vars_lst:
+                assert hasattr(port, var_str)
+                var = getattr(port, var_str)
+                assert isinstance(var, Var)
+
+        # test unit objects (including parameters, variables, and constraints)
+        unit_objs_lst = [
+            "uv_dose",
+            "inactivation_rate",
+            "eq_outlet_conc",
+        ]
+        for obj_str in unit_objs_lst:
+            assert hasattr(m.fs.unit, obj_str)
+
+        # test state block objects
+        cv_name = "control_volume"
+        cv_stateblock_lst = ["properties_in", "properties_out"]
+        stateblock_objs_lst = [
+            "flow_mass_phase_comp",
+            "pressure",
+            "temperature",
+            "mass_frac_phase_comp",
+            "conc_mass_phase_comp",
+            "dens_mass_phase",
+            "eq_mass_frac_phase_comp",
+            "eq_conc_mass_phase_comp",
+            "eq_dens_mass_phase",
+        ]
+        # control volume
+        assert hasattr(m.fs.unit, cv_name)
+        cv_blk = getattr(m.fs.unit, cv_name)
+        for blk_str in cv_stateblock_lst:
+            assert hasattr(cv_blk, blk_str)
+            blk = getattr(cv_blk, blk_str)
+            for obj_str in stateblock_objs_lst:
+                assert hasattr(blk[0], obj_str)
+
+        # test statistics
+        assert number_variables(m) == 41
+        assert number_total_constraints(m) == 27
+        assert number_unused_variables(m) == 1  # vars for watertap costing package
+
+        # test unit consistency
+        assert_units_consistent(m.fs.unit)
+
+    @pytest.mark.unit
+    def test_dof(self, UV_frame):
+        m = UV_frame
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, UV_frame):
+        m = UV_frame
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, UV_frame):
+        initialization_tester(UV_frame)
+
+    @pytest.mark.component
+    def test_var_scaling(self, UV_frame):
+        m = UV_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i[0].name, i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, UV_frame):
+        m = UV_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution(self, UV_frame):
+        m = UV_frame
+        assert pytest.approx(1206.5, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+        )
+        assert pytest.approx(4356.4694, rel=1e-3) == value(
+            pyunits.convert(
+                m.fs.unit.control_volume.properties_in[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        assert pytest.approx(8.9281e-05, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                "Liq", "NDMA"
+            ]
+        )
+        assert pytest.approx(32, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)
+        )
+        assert pytest.approx(2.5, rel=1e-3) == value(
+            log10(
+                m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "NDMA"
+                ]
+                / m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "NDMA"
+                ]
+            )
+        )
+        assert pytest.approx(38.7242, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.reactor_volume, to_units=pyunits.m**3)
+        )
+        assert pytest.approx(240, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
+        )
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, UV_frame):
+        m = UV_frame
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyunits.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
+        results = solver.solve(m)
+
+        assert results.solver.termination_condition == TerminationCondition.optimal
+
+        # Check solutions
+        assert pytest.approx(808914.4, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(23524.6, rel=1e-5) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
+        assert pytest.approx(0.0106185, rel=1e-5) == value(m.fs.costing.LCOW)
+
+
+class TestUV_with_multiple_comps:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
@@ -524,10 +752,8 @@ class TestUltraviolet_with_multiple_comps:
         assert results.solver.termination_condition == TerminationCondition.optimal
 
         # Check solutions
-        assert pytest.approx(974110.9, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(90392.5, rel=1e-5) == value(
+        assert pytest.approx(1555355, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(112991, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.016694, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.01967336, rel=1e-5) == value(m.fs.costing.LCOW)
