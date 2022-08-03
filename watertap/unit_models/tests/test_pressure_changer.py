@@ -303,6 +303,23 @@ class TestPumpVariable_Flow:
         m.fs.unit.bep_flow.fix(flow_vol)
         return m
 
+    @pytest.mark.unit
+    def test_build(self, Pump_frame):
+        m = Pump_frame
+
+        # check that IDAES pump model has not changed variable and constraint names
+        var_list = [
+            "bep_flow",
+            "bep_eta",
+            "flow_ratio",
+        ]
+        for v in var_list:
+            assert hasattr(m.fs.unit, v)
+            var = getattr(m.fs.unit, v)
+            assert isinstance(var, Var)
+
+        assert isinstance(m.fs.unit.flow_ratio_constraint, Constraint)
+
     @pytest.mark.component
     def test_calculate_scaling(self, Pump_frame):
         m = Pump_frame
@@ -332,5 +349,12 @@ class TestPumpVariable_Flow:
     @pytest.mark.component
     def test_solution(self, Pump_frame):
         m = Pump_frame
+        initialization_tester(Pump_frame)
+        results = solver.solve(m)
 
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # Check values
         assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
