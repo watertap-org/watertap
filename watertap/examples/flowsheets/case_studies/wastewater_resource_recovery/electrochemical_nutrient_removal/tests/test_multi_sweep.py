@@ -13,6 +13,7 @@
 
 import os
 import pytest
+import tempfile
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
     multi_sweep,
 )
@@ -28,7 +29,13 @@ def test_multi_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     nx = 1
+    temp = tempfile.NamedTemporaryFile(delete=False)
+    temp.close()
     global_results, sweep_params, m = multi_sweep.run_analysis(
-        case_num, nx, interpolate_nan_outputs=False
+        case_num,
+        nx,
+        interpolate_nan_outputs=False,
+        results_path=temp.name,
     )
+    os.remove(temp.name)
     os.chdir(cwd)
