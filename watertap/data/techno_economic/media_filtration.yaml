@@ -20,10 +20,10 @@ default:
     reference: Voutchkov, N. (2018). Desalination Project Cost Estimating and Management.
       Taylor & Francis, a CRC title, part of the Taylor & Francis imprint, a member
       of the Taylor & Francis Group, the academic division of T&F Informa, plc.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
