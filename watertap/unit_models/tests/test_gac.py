@@ -581,10 +581,10 @@ class TestGACSimplified:
         # variable_sensitivity_generator
         import idaes.core.util.scaling as iscale
         from idaes.core.util.math import smooth_min, smooth_max
-        from idaes.core.util.model_statistics import variables_set
+        from idaes.core.util.model_statistics import variables_set, fixed_variables_set
         from pyomo.common.collections import ComponentSet
 
-        def var_sens_generator(blks, active=True, descend_into=True, tol=1e2):
+        def var_sens_generator3(blks, active=True, descend_into=True, tol=1e2):
             var_hist = {}
             for b in blks:
                 for v in b.component_data_objects(
@@ -610,8 +610,65 @@ class TestGACSimplified:
                     yield i, sens
 
         # test
-        sens_var_lst = var_sens_generator(
+        sens_var_lst = var_sens_generator3(
             [gac_frame_simplified, gac_frame_robust, gac_frame_robust_upscale]
         )
+        # for i in sens_var_lst:
+        #    print(i[0], i[1])
+
+        def var_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e2):
+            test_scale = [lb_scale, 1, ub_scale]
+            var_hist = {}
+            for scale in test_scale:
+                temp_blk = blk.clone()
+                # loop through variables and scale inlet molar flow
+                for v in ComponentSet(
+                    temp_blk.component_data_objects(
+                        pyo.Var, active=True, descend_into=True
+                    )
+                ):
+                    if v.fixed and "flow_mol_phase_comp" in v.name:
+                        v.fix(scale * pyo.value(v))
+                        sf = iscale.get_scaling_factor(v)
+                        iscale.set_scaling_factor(v, sf * scale**-1)
+                calculate_scaling_factors(temp_blk)
+                temp_blk.fs.unit.initialize()
+                results = solver.solve(temp_blk)
+                term_cond = results.solver.termination_condition
+                solve_stat = results.solver.status
+                if (
+                    not term_cond == TerminationCondition.optimal
+                    or not solve_stat == SolverStatus.ok
+                ):
+                    print("Failed on solve of", scale, "times nomial scale")
+                    continue
+                # store results for scale to var_hist
+                for vv in ComponentSet(
+                    temp_blk.component_data_objects(
+                        pyo.Var, active=True, descend_into=True
+                    )
+                ):
+                    val = pyo.value(vv, exception=False)
+                    sf = iscale.get_scaling_factor(vv)
+                    if val is None or sf is None:
+                        continue
+                    sv = abs(val * sf)  # scaled value
+                    if vv.name in var_hist.keys():
+                        var_hist[vv.name].append(sv)
+                    else:
+                        var_hist[vv.name] = [sv]
+
+                for i in var_hist.keys():
+                    if max(var_hist[i]) == 0 or min(var_hist[i]) == 0:
+                        continue
+                    sens = max(var_hist[i]) / min(var_hist[i])
+                    if sens > tol:
+                        yield i, sens
+
+        sens_var_lst = var_sens_generator(gac_frame_simplified)
+        for i in sens_var_lst:
+            print(i[0], i[1])
+        print("\n")
+        sens_var_lst = var_sens_generator(gac_frame_robust)
         for i in sens_var_lst:
             print(i[0], i[1])
