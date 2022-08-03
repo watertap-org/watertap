@@ -484,20 +484,22 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
         def eq_outlet_conc(b, t, p, j):
             prop_in = b.control_volume.properties_in[t]
-            prop_out = b.control_volume.properties_out[t]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
-                return prop_out.get_material_flow_terms(
-                    p, j
-                ) == prop_in.get_material_flow_terms(p, j)
+                return b.control_volume.mass_transfer_term[t, p, j] == 0
             elif comp.is_solute():
-                return prop_out.get_material_flow_terms(
-                    p, j
-                ) == prop_in.get_material_flow_terms(p, j) * exp(
-                    pyunits.convert(
-                        -b.uv_dose * b.inactivation_rate[p, j],
-                        to_units=pyunits.dimensionless,
+                return (
+                    prop_in.get_material_flow_terms(p, j)
+                    * (
+                        1
+                        - exp(
+                            pyunits.convert(
+                                -b.uv_dose * b.inactivation_rate[p, j],
+                                to_units=pyunits.dimensionless,
+                            )
+                        )
                     )
+                    == -b.control_volume.mass_transfer_term[t, p, j]
                 )
 
         # electricity
