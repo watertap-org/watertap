@@ -11,16 +11,6 @@
 #
 ###############################################################################
 
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-)
-
-from watertap.unit_models.gac import (
-    GAC,
-    FilmTransferCoefficientType,
-    SurfaceDiffusionCoefficientType,
-)
-
 import pytest
 import pyomo.environ as pyo
 from pyomo.environ import (
@@ -30,19 +20,18 @@ from pyomo.environ import (
     value,
 )
 from pyomo.network import Port
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     MomentumBalanceType,
 )
-
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
@@ -50,8 +39,16 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     badly_scaled_var_generator,
 )
-
 from idaes.core import UnitModelCostingBlock
+
+from watertap.property_models.ion_DSPMDE_prop_pack import (
+    DSPMDEParameterBlock,
+)
+from watertap.unit_models.gac import (
+    GAC,
+    FilmTransferCoefficientType,
+    SurfaceDiffusionCoefficientType,
+)
 from watertap.costing import WaterTAPCosting
 
 __author__ = "Hunter Barber"
@@ -486,3 +483,135 @@ class TestGACSimplified:
         assert value(m.fs.unit.costing.bed_mass_gac_ref) == (
             pytest.approx(value(m.fs.costing.bed_mass_gac_max_ref), 1e-5)
         )
+
+    @pytest.fixture(scope="class")
+    def gac_frame_robust_upscale(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # specs copied over from gac_frame_robust to isolate testing of 100x upscaled flow
+        m.fs.properties = DSPMDEParameterBlock(
+            default={"solute_list": ["TCE"], "mw_data": {"H2O": 18e-3, "TCE": 131.4e-3}}
+        )
+
+        m.fs.unit = GAC(
+            default={
+                "property_package": m.fs.properties,
+                "film_transfer_coefficient_type": "calculated",
+                "surface_diffusion_coefficient_type": "calculated",
+            }
+        )
+
+        # feed specifications
+        m.fs.unit.process_flow.properties_in[0].pressure.fix(
+            101325
+        )  # feed pressure [Pa]
+        m.fs.unit.process_flow.properties_in[0].temperature.fix(
+            273.15 + 25
+        )  # feed temperature [K]
+        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
+            1000 * 824.0736620370348
+        )
+        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
+            1000 * 5.644342973110135e-05
+        )
+        m.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
+        m.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
+
+        m.fs.unit.conc_ratio_replace.fix(0.80)
+        m.fs.unit.freund_k.fix(1062e-6 * (1e6**0.48))
+        m.fs.unit.freund_ninv.fix(0.48)
+        m.fs.unit.ebct.fix(10 * 60)
+        m.fs.unit.bed_voidage.fix(0.44)
+        m.fs.unit.particle_porosity.fix(0.641)
+        m.fs.unit.particle_dens_app.fix(803.4)
+        m.fs.unit.particle_dia.fix(0.001026)
+        m.fs.unit.velocity_sup.fix(5 / 3600)
+        m.fs.unit.molal_volume.fix(9.81e-5)
+        m.fs.unit.tort.fix(1)
+        m.fs.unit.spdfr.fix(1)
+        m.fs.unit.sphericity.fix(1.5)
+        m.fs.unit.a0.fix(0.8)
+        m.fs.unit.a1.fix(0)
+        m.fs.unit.b0.fix(0.023)
+        m.fs.unit.b1.fix(0.793673)
+        m.fs.unit.b2.fix(0.039324)
+        m.fs.unit.b3.fix(0.009326)
+        m.fs.unit.b4.fix(0.08275)
+
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e-5, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "TCE")
+        )
+        calculate_scaling_factors(m)
+
+        return m
+
+    @pytest.mark.component
+    def test_calculate_scaling_robust_upscale(self, gac_frame_robust_upscale):
+        m = gac_frame_robust_upscale
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+    @pytest.mark.component
+    def test_var_scaling_robust_upscale(self, gac_frame_robust_upscale):
+        m = gac_frame_robust_upscale
+        initialization_tester(gac_frame_robust_upscale)
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m, large=1e2, small=1e-2)
+        )
+        for i in badly_scaled_var_lst:
+            i[0].pprint()
+            print(i[0].name, "scaled to", i[1], "\n")
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solution_robust_upscale(self, gac_frame_robust_upscale):
+        m = gac_frame_robust_upscale
+        results = solver.solve(m)
+
+    @pytest.mark.component
+    def test_variable_sensitivity(
+        self, gac_frame_simplified, gac_frame_robust, gac_frame_robust_upscale
+    ):
+
+        # variable_sensitivity_generator
+        import idaes.core.util.scaling as iscale
+        from idaes.core.util.math import smooth_min, smooth_max
+        from idaes.core.util.model_statistics import variables_set
+        from pyomo.common.collections import ComponentSet
+
+        def var_sens_generator(blks, active=True, descend_into=True, tol=1e2):
+            var_hist = {}
+            for b in blks:
+                for v in b.component_data_objects(
+                    pyo.Var, active=active, descend_into=descend_into
+                ):
+                    val = pyo.value(v, exception=False)
+                    if val is None:
+                        continue
+                    sf = iscale.get_scaling_factor(v)
+                    if sf is None:
+                        continue
+                    sv = abs(val * sf)  # scaled value
+                    if v.name in var_hist.keys():
+                        var_hist[v.name].append(val)
+                    else:
+                        var_hist[v.name] = [val]
+
+            for i in var_hist.keys():
+                if max(var_hist[i]) == 0 or min(var_hist[i]) == 0:
+                    continue
+                sens = max(var_hist[i]) / min(var_hist[i])
+                if sens > tol:
+                    yield i, sens
+
+        # test
+        sens_var_lst = var_sens_generator(
+            [gac_frame_simplified, gac_frame_robust, gac_frame_robust_upscale]
+        )
+        for i in sens_var_lst:
+            print(i[0], i[1])

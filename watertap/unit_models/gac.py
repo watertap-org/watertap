@@ -529,7 +529,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.min_ebct = Var(
-            initialize=1000,
+            initialize=500,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -563,7 +563,7 @@ class GACData(UnitModelBlockData):
         )
 
         self.ebct_mtz_replace = Var(
-            initialize=0.9 * 500,
+            initialize=500,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
@@ -1191,7 +1191,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.ebct_mtz_replace, 1e-2)
 
         if iscale.get_scaling_factor(self.length_mtz_replace) is None:
-            iscale.set_scaling_factor(self.length_mtz_replace, 1e-1)
+            iscale.set_scaling_factor(self.length_mtz_replace, 1)
 
         iscale.set_scaling_factor(self.a0, 1)
         iscale.set_scaling_factor(self.a1, 1)
