@@ -17,7 +17,7 @@ with recycle streams.
 
 Unit operations are modeled as follows:
 
-    * Anoixic reactors as standard CSTRs (CSTR)
+    * Anoxic reactors as standard CSTRs (CSTR)
     * Aerobic reactors as CSTRs with additional injection terms (CSTR_Injection)
     * Clarifier as a Separator with split fractions by components
 
