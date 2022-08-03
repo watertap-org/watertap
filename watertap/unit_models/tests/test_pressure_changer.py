@@ -21,7 +21,7 @@ from pyomo.environ import (
     Var,
 )
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.unit_models.pressure_changer import Pump, PumpVar, EnergyRecoveryDevice
 import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.solvers import get_solver
@@ -258,4 +258,88 @@ class TestEnergyRecoveryDevice(TestPumpIsothermal):
         )
         assert pytest.approx(298.15, rel=1e-5) == value(
             m.fs.unit.control_volume.properties_out[0].temperature
+        )
+
+
+class TestPumpVariable(TestPumpIsothermal):
+    @pytest.fixture(scope="class")
+    def Pump_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.SeawaterParameterBlock()
+
+        m.fs.unit = PumpVar(default={"property_package": m.fs.properties})
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_TDS = 0.035
+        feed_pressure_in = 1e5
+        feed_pressure_out = 5e5
+        feed_temperature = 273.15 + 25
+        efi_pump = 0.75
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_TDS
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            feed_flow_mass * feed_mass_frac_TDS
+        )
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure_in)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.outlet.pressure[0].fix(feed_pressure_out)
+
+        m.fs.unit.bep_eta.fix(efi_pump)
+        m.fs.unit.bep_flow.fix(feed_flow_mass / 1000)
+        m.fs.unit.bep_head.fix(500)
+        return m
+
+    @pytest.mark.component
+    def test_calculate_scaling(self, Pump_frame):
+        # TODO - replace once scaling factors method is implemented in PumpVar
+        m = Pump_frame
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+        )
+
+        calculate_scaling_factors(m)
+
+        if (
+            get_scaling_factor(m.fs.unit.ratioP) is None
+        ):  # if IDAES hasn't specified a scaling factor
+            set_scaling_factor(m.fs.unit.ratioP, 1)
+
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+
+        for var in unscaled_var_list:
+            if get_scaling_factor(var) is None:
+                set_scaling_factor(var, 1)
+
+        if get_scaling_factor(m.fs.unit.efficiency_pump) is None:
+            set_scaling_factor(m.fs.unit.ratioP, 1)
+
+        if get_scaling_factor(m.fs.unit.control_volume.work) is None:
+            set_scaling_factor(m.fs.unit.control_volume.work, 1)
+
+        unscaled_var_list = list(unscaled_variables_generator(m))
+
+        for con in unscaled_constraint_list:
+            if get_scaling_factor(con) is None:
+                set_scaling_factor(con, 1)
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+
+        # check that all variables and constraints have scaling factors
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_solution(self, Pump_frame):
+        m = Pump_frame
+        assert (
+            True  # TODO - replace with real value test once correlations are finalized
         )

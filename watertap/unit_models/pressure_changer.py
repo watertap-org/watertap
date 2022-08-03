@@ -91,12 +91,6 @@ class PumpVariableData(PumpData):
             doc="Ratio of pump flowrate to best efficiency point flowrate",
             units=pyunits.dimensionless,
         )
-        self.eta_ratio = Var(
-            self.flowsheet().time,
-            initialize=1.0,
-            doc="Pump efficiency change due to variable operation",
-            units=pyunits.dimensionless,
-        )
 
         # unfix/remove items from the base class
         self.efficiency_pump.unfix()
@@ -109,31 +103,25 @@ class PumpVariableData(PumpData):
         def isothermal_balance(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
-        # add BEP ratio constraints
-        @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
-        def head_ratio_constraint(b, t):
-            return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
-                (
-                    b.control_volume.properties_out[t].pressure
-                    / b.control_volume.properties_out[t].density
-                )
-                - (
-                    b.control_volume.properties_in[t].pressure
-                    / b.control_volume.properties_in[t].density
-                )
-            )
+        # # TODO - add BEP ratio constraints
+        # @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
+        # def head_ratio_constraint(b, t):
+        #     return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
+        #         (
+        #             b.control_volume.properties_out[t].pressure
+        #             / b.control_volume.properties_out[t].density
+        #         )
+        #         - (
+        #             b.control_volume.properties_in[t].pressure
+        #             / b.control_volume.properties_in[t].density
+        #         )
+        #     )
 
         @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
         def flow_ratio_constraint(b, t):
             return b.flow_ratio[t] * b.bep_flow == (
                 b.control_volume.properties_out[t].pressure
             )
-
-        # @self.Constraint(self.flowsheet().time, doc="Pump efficiency ratio")
-        # def eta_ratio_constraint(b, t):
-        #     return b.eta_ratio[t] == (
-        #         (b.flow_ratio[t] ** 1.5) * (b.head_ratio[t] ** 0.75)
-        #     )
 
         @self.Expression(
             self.flowsheet().time, doc="Expression for variable pump efficiency"
@@ -152,7 +140,9 @@ class PumpVariableData(PumpData):
         # replace the constant efficiency assumption using eta_ratio
         @self.Constraint(self.flowsheet().time, doc="Actual pump efficiency")
         def eta_constraint(b, t):
-            return b.efficiency_pump[t] == (b.eta_bep * b.eta_ratio[t])
+            return b.efficiency_pump[t] == (b.bep_eta * b.eta_ratio[t])
+
+        # TODO - implement calculate_scaling_factors method that inherits from base
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
