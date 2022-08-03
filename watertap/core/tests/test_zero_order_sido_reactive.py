@@ -100,7 +100,7 @@ class TestSIDOR:
         }
         assert model.fs.unit._perf_var_dict == {
             "Water Recovery": model.fs.unit.recovery_frac_mass_H2O,
-            "Solute Removal": model.fs.unit.removal_frac_mass_solute,
+            "Solute Removal": model.fs.unit.removal_frac_mass_comp,
             "Reaction Extent": model.fs.unit.extent_of_reaction,
         }
 
@@ -116,8 +116,8 @@ class TestSIDOR:
 
         assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
         assert len(model.fs.unit.recovery_frac_mass_H2O) == 1
-        assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
-        assert len(model.fs.unit.removal_frac_mass_solute) == 3
+        assert isinstance(model.fs.unit.removal_frac_mass_comp, Var)
+        assert len(model.fs.unit.removal_frac_mass_comp) == 3
 
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert len(model.fs.unit.water_recovery_equation) == 1
@@ -169,9 +169,9 @@ class TestSIDOR:
         assert model.fs.unit.reaction_conversion[0, "Rxn2"].value == 0.1
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 0.85
-        assert model.fs.unit.removal_frac_mass_solute[0, "A"].value == 0.5
-        assert model.fs.unit.removal_frac_mass_solute[0, "B"].value == 0.4
-        assert model.fs.unit.removal_frac_mass_solute[0, "C"].value == 0.0
+        assert model.fs.unit.removal_frac_mass_comp[0, "A"].value == 0.5
+        assert model.fs.unit.removal_frac_mass_comp[0, "B"].value == 0.4
+        assert model.fs.unit.removal_frac_mass_comp[0, "C"].value == 0.0
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):

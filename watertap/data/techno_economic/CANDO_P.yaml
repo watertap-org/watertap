@@ -8,10 +8,10 @@ default:
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     phosphates:
       value: 0
       units: dimensionless
