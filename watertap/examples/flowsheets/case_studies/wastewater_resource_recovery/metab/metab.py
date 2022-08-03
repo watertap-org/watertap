@@ -568,44 +568,22 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.metab_hydrogen.costing.DCC_reactor
-                + m.fs.metab_hydrogen.costing.DCC_mixer
-                + m.fs.metab_hydrogen.costing.DCC_bead
-                + m.fs.metab_hydrogen.costing.DCC_membrane
-                + m.fs.metab_hydrogen.costing.DCC_vacuum
-                + m.fs.metab_methane.costing.DCC_reactor
-                + m.fs.metab_methane.costing.DCC_mixer
-                + m.fs.metab_methane.costing.DCC_bead
-                + m.fs.metab_methane.costing.DCC_membrane
-                + m.fs.metab_methane.costing.DCC_vacuum
+                m.fs.metab_hydrogen.costing.capital_cost
+                + m.fs.metab_methane.costing.capital_cost
             )
+            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
-            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
+            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
     )
-    print(f"Normalized direct capital costs: {DCC_normalized:.2f} $/(m3/h)")
+    print(f"Normalized direct capital costs: {DCC_normalized:.2f} $/(m3/day)")
     ICC_normalized = value(
         pyunits.convert(
-            (
-                m.fs.costing.total_capital_cost
-                - (
-                    m.fs.metab_hydrogen.costing.DCC_reactor
-                    + m.fs.metab_hydrogen.costing.DCC_mixer
-                    + m.fs.metab_hydrogen.costing.DCC_bead
-                    + m.fs.metab_hydrogen.costing.DCC_membrane
-                    + m.fs.metab_hydrogen.costing.DCC_vacuum
-                    + m.fs.metab_methane.costing.DCC_reactor
-                    + m.fs.metab_methane.costing.DCC_mixer
-                    + m.fs.metab_methane.costing.DCC_bead
-                    + m.fs.metab_methane.costing.DCC_membrane
-                    + m.fs.metab_methane.costing.DCC_vacuum
-                )
-            )
-            / m.fs.feed.properties[0].flow_vol,
-            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
+            m.fs.costing.total_capital_cost / m.fs.feed.properties[0].flow_vol,
+            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
     )
-    print(f"Normalized indirect capital costs: {ICC_normalized:.2f} $/(m3/h)")
+    print(f"Normalized total capital costs: {ICC_normalized:.2f} $/(m3/day)")
 
     print("----------Operating costs----------")
     FMC_normalized = value(
