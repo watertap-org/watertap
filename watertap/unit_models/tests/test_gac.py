@@ -373,6 +373,11 @@ class TestGACSimplified:
         assert pytest.approx(10.68, rel=1e-3) == value(m.fs.unit.bed_area)
 
     @pytest.mark.component
+    def test_reporting_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+        m.fs.unit.report()
+
+    @pytest.mark.component
     def test_variable_sensitivity_robust(self, gac_frame_robust):
         m = gac_frame_robust
 
@@ -445,7 +450,7 @@ class TestGACSimplified:
                     yield k, sens, max(var_hist[k]), min(var_hist[k])
 
         # test
-        sens_var_lst = var_sens_generator(m)
+        sens_var_lst = list(var_sens_generator(m))
         for i in sens_var_lst:
             print(i)
 

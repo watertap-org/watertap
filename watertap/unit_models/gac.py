@@ -33,6 +33,7 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -1057,8 +1058,22 @@ class GACData(UnitModelBlockData):
 
     # ---------------------------------------------------------------------
 
-    # TODO: def _get_performance_contents(self, time_point=0):
-    # TODO: def _get_stream_table_contents(self, time_point=0):
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        expr_dict = {}
+
+        var_dict["temp"] = self.bed_volume
+
+    # ---------------------------------------------------------------------
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Process Inlet": self.inlet,
+                "Process Outlet": self.outlet,
+                "Adsorbed Contaminant Outlet": self.adsorbed,
+            },
+            time_point=time_point,
+        )
 
     # ---------------------------------------------------------------------
     def calculate_scaling_factors(self):
@@ -1083,22 +1098,22 @@ class GACData(UnitModelBlockData):
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
-            iscale.set_scaling_factor(self.mass_adsorbed, 1e-3)
+            iscale.set_scaling_factor(self.mass_adsorbed, sf_solute * 1e-5)
 
         if iscale.get_scaling_factor(self.mass_adsorbed_saturated) is None:
-            iscale.set_scaling_factor(self.mass_adsorbed_saturated, 1e-3)
+            iscale.set_scaling_factor(self.mass_adsorbed_saturated, sf_solute * 1e-5)
 
         if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, 1e-2)
+            iscale.set_scaling_factor(self.bed_volume, sf_solvent * 1e3)
 
         if iscale.get_scaling_factor(self.bed_area) is None:
-            iscale.set_scaling_factor(self.bed_area, 1e-1)
+            iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
-            iscale.set_scaling_factor(self.bed_mass_gac, 1e-5)
+            iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent)
 
         if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
-            iscale.set_scaling_factor(self.gac_mass_replace_rate, 1e2)
+            iscale.set_scaling_factor(self.gac_mass_replace_rate, sf_solute * 1e-1)
 
         # scaling for gac created variables that are flow magnitude independent
         if iscale.get_scaling_factor(self.freund_k) is None:
