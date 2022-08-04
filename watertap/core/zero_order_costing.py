@@ -59,6 +59,7 @@ from watertap.unit_models.zero_order import (
     SaltPrecipitationZO,
     SedimentationZO,
     StorageTankZO,
+    SuboxicASMZO,
     SurfaceDischargeZO,
     UVZO,
     UVAOPZO,
@@ -2146,6 +2147,73 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def cost_suboxic_asm(blk):
+        """
+        General method for costing suboxic activated sludge process unit. Capital cost
+        is based on the aeration basin, other equipments including mixers, blowers, MLR pumps,
+        RAS pumps and automated valves, and instrumentation and control system including
+        probes (dissolved oxygen, nitrate and ammonia), phosphorus analyzer and air flowmeter.
+        """
+        t0 = blk.flowsheet().time.first()
+        flow_in = blk.unit_model.properties_in[t0].flow_vol
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "aeration_basin_cost",
+                "other_equipment_cost",
+                "control_system_cost",
+            ],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        aeration_basin_cost = pyo.units.convert(
+            A * flow_in,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        other_equipment_cost = pyo.units.convert(
+            B * flow_in,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        control_system_cost = pyo.units.convert(
+            C * flow_in,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr = aeration_basin_cost + other_equipment_cost + control_system_cost
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_surface_discharge(blk):
         """
         General method for costing surface discharge. Capital cost is based on
@@ -3101,6 +3169,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         SaltPrecipitationZO: cost_supercritical_salt_precipitation,
         SedimentationZO: cost_sedimentation,
         StorageTankZO: cost_storage_tank,
+        SuboxicASMZO: cost_suboxic_asm,
         SurfaceDischargeZO: cost_surface_discharge,
         UVZO: cost_uv,
         UVAOPZO: cost_uv_aop,

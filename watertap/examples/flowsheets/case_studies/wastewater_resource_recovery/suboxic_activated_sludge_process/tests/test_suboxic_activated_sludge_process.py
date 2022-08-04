@@ -13,48 +13,48 @@
 
 import pytest
 from pyomo.environ import value, assert_optimal_termination
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration import (
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_activated_sludge_process import (
     main,
 )
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_biomembrane_filtration():
+def test_suboxicASM():
     m, results = main()
 
     assert_optimal_termination(results)
 
     assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
-        115.807, rel=1e-3
+        355.3038, rel=1e-3
     )
     assert value(m.fs.feed.properties[0].flow_mass_comp["bod"]) == pytest.approx(
-        0.01193, rel=1e-3
-    )
-    assert value(
-        m.fs.feed.properties[0].flow_mass_comp["ammonium_as_nitrogen"]
-    ) == pytest.approx(3.01167e-3, rel=1e-3)
-    assert value(m.fs.feed.properties[0].flow_mass_comp["nitrate"]) == pytest.approx(
-        1.50583e-4, rel=1e-3
+        0.1116, rel=1e-3
     )
     assert value(m.fs.feed.properties[0].flow_mass_comp["tss"]) == pytest.approx(
-        0.011583, rel=1e-3
+        0.1195, rel=1e-3
+    )
+    assert value(m.fs.feed.properties[0].flow_mass_comp["tkn"]) == pytest.approx(
+        0.01849, rel=1e-3
+    )
+    assert value(m.fs.feed.properties[0].flow_mass_comp["phosphorus"]) == pytest.approx(
+        0.002133, rel=1e-3
     )
 
     assert value(
-        m.fs.dmbr.properties_treated[0].flow_mass_comp["H2O"]
-    ) == pytest.approx(104.226, rel=1e-3)
+        m.fs.suboxicASM.properties_treated[0].flow_mass_comp["H2O"]
+    ) == pytest.approx(355.3038, rel=1e-3)
     assert value(
-        m.fs.dmbr.properties_treated[0].flow_mass_comp["bod"]
-    ) == pytest.approx(6.562e-3, rel=1e-3)
+        m.fs.suboxicASM.properties_treated[0].flow_mass_comp["bod"]
+    ) == pytest.approx(0.003550, rel=1e-3)
     assert value(
-        m.fs.dmbr.properties_treated[0].flow_mass_comp["ammonium_as_nitrogen"]
-    ) == pytest.approx(9.035e-4, rel=1e-3)
+        m.fs.suboxicASM.properties_treated[0].flow_mass_comp["tss"]
+    ) == pytest.approx(0.001780, rel=1e-3)
     assert value(
-        m.fs.dmbr.properties_treated[0].flow_mass_comp["nitrate"]
-    ) == pytest.approx(3.953e-4, rel=1e-3)
+        m.fs.suboxicASM.properties_treated[0].flow_mass_comp["tkn"]
+    ) == pytest.approx(0.002134, rel=1e-3)
     assert value(
-        m.fs.dmbr.properties_treated[0].flow_mass_comp["tss"]
-    ) == pytest.approx(2.317e-3, rel=1e-3)
+        m.fs.suboxicASM.properties_treated[0].flow_mass_comp["phosphorus"]
+    ) == pytest.approx(0.0003556, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.130545, rel=1e-3)  # in M$/m**3
-    assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.1183, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.27737, rel=1e-3)  # in $/m**3
+    assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.5003, rel=1e-3)
