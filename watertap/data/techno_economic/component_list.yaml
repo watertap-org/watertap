@@ -132,6 +132,8 @@ surfactants:
   consituent_longform: Surfactants
 tds:
   constituent_longform: Total Dissolved Solids (TDS)
+tkn:
+  constituent_longform: Total Kjeldahl Nitrogen (TKN)
 toc:
   constituent_longform: Total Organic Carbon (TOC)
 total_coliforms_fecal_ecoli:
