@@ -629,13 +629,6 @@ class TestGACSimplified:
         return m
 
     @pytest.mark.component
-    def test_calculate_scaling_robust_upscale(self, gac_frame_robust_upscale):
-        m = gac_frame_robust_upscale
-        # check that all variables have scaling factors
-        unscaled_var_list = list(unscaled_variables_generator(m))
-        assert len(unscaled_var_list) == 0
-
-    @pytest.mark.component
     def test_var_scaling_robust_upscale(self, gac_frame_robust_upscale):
         m = gac_frame_robust_upscale
         initialization_tester(gac_frame_robust_upscale)
@@ -646,8 +639,3 @@ class TestGACSimplified:
             i[0].pprint()
             print(i[0].name, "scaled to", i[1], "\n")
         assert badly_scaled_var_lst == []
-
-    @pytest.mark.component
-    def test_solution_robust_upscale(self, gac_frame_robust_upscale):
-        m = gac_frame_robust_upscale
-        results = solver.solve(m)
