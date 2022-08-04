@@ -114,7 +114,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane replacement factor [fraction of membrane replaced/year]",
             units=pyo.units.year**-1,
         )
-        self.factor_uv_replacement = pyo.Var(
+        self.factor_uv_lamp_replacement = pyo.Var(
             initialize=0.3993,
             doc="UV replacement factor [fraction of uv replaced/year]",
             units=pyo.units.year**-1,
@@ -549,7 +549,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             blk,
             blk.costing_package.uv_reactor_cost,
             blk.costing_package.uv_lamp_cost,
-            blk.costing_package.factor_uv_replacement,
+            blk.costing_package.factor_uv_lamp_replacement,
         )
 
         t0 = blk.flowsheet().time.first()
@@ -1359,7 +1359,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     )
 
 
-def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_replacement):
+def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_lamp_replacement):
     """
     Generic function for costing a UV system.
 
@@ -1371,7 +1371,7 @@ def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_replacement):
     make_fixed_operating_cost_var(blk)
     blk.reactor_cost = pyo.Expression(expr=reactor_cost)
     blk.lamp_cost = pyo.Expression(expr=lamp_cost)
-    blk.factor_uv_replacement = pyo.Expression(expr=factor_uv_replacement)
+    blk.factor_uv_lamp_replacement = pyo.Expression(expr=factor_uv_lamp_replacement)
 
     flow_in = pyo.units.convert(
         blk.unit_model.control_volume.properties_in[0].flow_vol,
@@ -1389,5 +1389,5 @@ def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_replacement):
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_uv_replacement * blk.lamp_cost * electricity_demand
+        == blk.factor_uv_lamp_replacement * blk.lamp_cost * electricity_demand
     )

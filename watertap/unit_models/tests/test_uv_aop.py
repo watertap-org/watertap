@@ -206,7 +206,6 @@ class TestUV:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0].name, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -429,7 +428,6 @@ class TestUV_standard:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0].name, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -645,7 +643,7 @@ class TestUV_with_multiple_comps:
         # test statistics
         assert number_variables(m) == 71
         assert number_total_constraints(m) == 44
-        assert number_unused_variables(m) == 13  # vars for watertap costing package
+        assert number_unused_variables(m) == 13
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
@@ -675,7 +673,6 @@ class TestUV_with_multiple_comps:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0].name, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
