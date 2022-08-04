@@ -214,7 +214,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=2.5e-4,
-            bounds=(1e-18, 100),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time") ** 2 * units_meta("mass") ** -1,
             doc="Inactivation rate coefficient with respect to uv dose.",
@@ -224,7 +224,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=2.5e-3,
-            bounds=(1e-18, 100),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
             doc="Overall pseudo-first order rate constant.",
@@ -234,7 +234,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.solute_set,
             initialize=2e-3,
-            bounds=(1e-18, 100),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
             doc="Pseudo-first order rate constant for direct photolysis of component.",
@@ -259,35 +259,35 @@ class Ultraviolet0DData(UnitModelBlockData):
         # Add uv variables
         self.uv_dose = Var(
             initialize=5000,
-            bounds=(1e-18, 10000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -2,
             doc="UV dose.",
         )
         self.uv_intensity = Var(
             initialize=10,
-            bounds=(1e-18, 10000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -3,
             doc="Average intensity of UV light.",
         )
         self.exposure_time = Var(
             initialize=500,
-            bounds=(1e-18, 10000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time"),
             doc="Exposure time of UV light.",
         )
         self.reactor_volume = Var(
             initialize=1,
-            bounds=(1e-18, 10000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
             doc="UV reactor volume.",
         )
         self.num_of_reactors = Var(
             initialize=1,
-            bounds=(0, 10000),
+            bounds=(0, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Number of reactors.",
