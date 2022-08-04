@@ -14,9 +14,7 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
-    TerminationCondition,
-    SolverStatus,
+    assert_optimal_termination,
     value,
     Var,
     log10,
@@ -214,8 +212,7 @@ class TestUV:
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, UV_frame):
@@ -269,7 +266,7 @@ class TestUV:
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
 
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert_optimal_termination(results)
 
         # Check solutions
         assert pytest.approx(1560035, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
@@ -436,8 +433,7 @@ class TestUV_standard:
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, UV_frame):
@@ -493,7 +489,7 @@ class TestUV_standard:
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
 
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert_optimal_termination(results)
 
         # Check solutions
         assert pytest.approx(808914.4, rel=1e-5) == value(
@@ -681,8 +677,7 @@ class TestUV_with_multiple_comps:
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, UV_frame):
@@ -746,7 +741,7 @@ class TestUV_with_multiple_comps:
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
 
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert_optimal_termination(results)
 
         # Check solutions
         assert pytest.approx(1555355, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
