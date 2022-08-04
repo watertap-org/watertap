@@ -117,7 +117,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.factor_uv_lamp_replacement = pyo.Var(
             initialize=0.3993,
             doc="UV replacement factor accounting for lamps, sleeves, ballasts and sensors [fraction of uv replaced/year]",
-
             units=pyo.units.year**-1,
         )
         self.reverse_osmosis_membrane_cost = pyo.Var(
