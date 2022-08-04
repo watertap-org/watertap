@@ -115,7 +115,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.year**-1,
         )
         self.factor_uv_lamp_replacement = pyo.Var(
-            initialize=0.3993,
+            initialize=0.33278,
             doc="UV replacement factor accounting for lamps, sleeves, ballasts and sensors [fraction of uv replaced/year]",
             units=pyo.units.year**-1,
         )
@@ -135,12 +135,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / (pyo.units.meter**2),
         )
         self.uv_reactor_cost = pyo.Var(
-            initialize=57.3859,
+            initialize=172.158,
             doc="UV reactor cost",
             units=self.base_currency / (pyo.units.m**3 / pyo.units.hr),
         )
         self.uv_lamp_cost = pyo.Var(
-            initialize=245.3125,
+            initialize=235.5,
             doc="UV lamps, sleeves, ballasts and sensors cost",
             units=self.base_currency / pyo.units.kW,
         )
@@ -1384,8 +1384,7 @@ def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_lamp_replacement)
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.reactor_cost * flow_in * blk.unit_model.num_of_reactors
-        + blk.lamp_cost * electricity_demand
+        == blk.reactor_cost * flow_in + blk.lamp_cost * electricity_demand
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost

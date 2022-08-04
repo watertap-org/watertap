@@ -66,7 +66,7 @@ class TestUV:
         m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
 
         # fully specify system
-        feed_flow_mass = 2053 * pyunits.kg / pyunits.s
+        feed_flow_mass = 1206.5 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325 * pyunits.Pa
         feed_temperature = (273.15 + 25) * pyunits.K
@@ -104,7 +104,6 @@ class TestUV:
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         m.fs.unit.UVT.fix(UVT)
-        m.fs.unit.num_of_reactors.fix(3)
         return m
 
     @pytest.mark.unit
@@ -172,9 +171,9 @@ class TestUV:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 41
+        assert number_variables(m) == 40
         assert number_total_constraints(m) == 27
-        assert number_unused_variables(m) == 1  # vars for watertap costing package
+        assert number_unused_variables(m) == 0
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
@@ -217,23 +216,23 @@ class TestUV:
     @pytest.mark.component
     def test_solution(self, UV_frame):
         m = UV_frame
-        assert pytest.approx(2052.999848078, rel=1e-3) == value(
+        assert pytest.approx(1206.5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(2.0592, rel=1e-3) == value(
+        assert pytest.approx(1.2101, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_vol
         )
-        assert pytest.approx(1.51922e-4, rel=1e-3) == value(
+        assert pytest.approx(8.9281e-05, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(2053, rel=1e-3) == value(
+        assert pytest.approx(1206.5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "H2O"
             ]
         )
-        assert pytest.approx(4.8104e-5, rel=1e-3) == value(
+        assert pytest.approx(2.8270e-5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
@@ -245,7 +244,7 @@ class TestUV:
         assert pytest.approx(2.3e-3, rel=1e-3) == value(
             m.fs.unit.photolysis_rate_constant["Liq", "NDMA"]
         )
-        assert pytest.approx(1156.99, rel=1e-3) == value(
+        assert pytest.approx(679.93, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
@@ -269,11 +268,13 @@ class TestUV:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1560035, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(113330.7, rel=1e-5) == value(
+        assert pytest.approx(910125.5, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(53286.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.01967335, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.01923547, rel=1e-5) == value(m.fs.costing.LCOW)
 
 
 class TestUV_standard:
@@ -295,7 +296,7 @@ class TestUV_standard:
         exporure_time = 32 * pyunits.s
         inactivation_rate = 180 * pyunits.cm**2 / pyunits.J
         reaction_rate_constant = 0 * pyunits.min**-1
-        EEO = 0.01763 * pyunits.kWh / pyunits.m**3
+        EEO = 0.02204 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.8
         UVT = 0.9
 
@@ -325,7 +326,6 @@ class TestUV_standard:
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         m.fs.unit.UVT.fix(UVT)
-        m.fs.unit.num_of_reactors.fix(3)
         return m
 
     @pytest.mark.unit
@@ -393,9 +393,9 @@ class TestUV_standard:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 41
+        assert number_variables(m) == 40
         assert number_total_constraints(m) == 27
-        assert number_unused_variables(m) == 1  # vars for watertap costing package
+        assert number_unused_variables(m) == 0
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
@@ -468,7 +468,7 @@ class TestUV_standard:
         assert pytest.approx(38.7242, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.reactor_volume, to_units=pyunits.m**3)
         )
-        assert pytest.approx(240, rel=1e-3) == value(
+        assert pytest.approx(300, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
@@ -492,13 +492,11 @@ class TestUV_standard:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(808914.4, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(23524.6, rel=1e-5) == value(
+        assert pytest.approx(820705, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(23529.4, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0106185, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0116620, rel=1e-5) == value(m.fs.costing.LCOW)
 
 
 class TestUV_with_multiple_comps:
@@ -569,7 +567,6 @@ class TestUV_with_multiple_comps:
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "DCE"].fix(EEO_DCE)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
         m.fs.unit.UVT.fix(UVT)
-        m.fs.unit.num_of_reactors.fix(3)
         return m
 
     @pytest.mark.unit
@@ -637,9 +634,9 @@ class TestUV_with_multiple_comps:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 71
+        assert number_variables(m) == 70
         assert number_total_constraints(m) == 44
-        assert number_unused_variables(m) == 13
+        assert number_unused_variables(m) == 12
 
         # test unit consistency
         assert_units_consistent(m.fs.unit)
@@ -744,8 +741,8 @@ class TestUV_with_multiple_comps:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1555355, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(112991, rel=1e-5) == value(
+        assert pytest.approx(1544038, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(90400.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.01967336, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0192355, rel=1e-5) == value(m.fs.costing.LCOW)

@@ -285,13 +285,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             units=units_meta("length") ** 3,
             doc="UV reactor volume.",
         )
-        self.num_of_reactors = Var(
-            initialize=1,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="Number of reactors.",
-        )
         self.UVT = Var(
             initialize=0.9,
             bounds=(0, 1),
@@ -725,9 +718,6 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.UVA) is None:
             iscale.set_scaling_factor(self.UVA, 100)
-
-        if iscale.get_scaling_factor(self.num_of_reactors) is None:
-            iscale.set_scaling_factor(self.num_of_reactors, 1)
 
         if iscale.get_scaling_factor(self.reactor_volume) is None:
             sf = iscale.get_scaling_factor(
