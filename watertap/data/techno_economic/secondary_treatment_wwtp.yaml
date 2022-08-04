@@ -18,10 +18,10 @@ default:  # conventional activated sludge with nitrification; #TODO: add subtype
   recovery_frac_mass_H2O:
     value: 1   # temporary placeholder- value suspected to be relatively close to 1 (i.e., 0.9 - 0.99)
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.94231
       units: dimensionless

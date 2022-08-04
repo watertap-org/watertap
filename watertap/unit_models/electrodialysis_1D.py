@@ -15,17 +15,14 @@
 from pyomo.environ import (
     Set,
     Var,
-    Param,
     Suffix,
     Constraint,
     NonNegativeReals,
     NonNegativeIntegers,
-    Reference,
     value,
     units as pyunits,
 )
 from pyomo.dae import (
-    ContinuousSet,
     DerivativeVar,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -38,16 +35,13 @@ from idaes.core import (
     ControlVolume1DBlock,
     declare_process_block_class,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
-from idaes.core.control_volume1d import DistributedVars
+from idaes.core.base.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver
+from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
