@@ -36,6 +36,7 @@ from watertap.unit_models import (
     NanofiltrationZO,
     PressureExchanger,
     Crystallization,
+    Ultraviolet0D,
     Pump,
     EnergyRecoveryDevice,
     Electrodialysis0D,
@@ -113,6 +114,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Membrane replacement factor [fraction of membrane replaced/year]",
             units=pyo.units.year**-1,
         )
+        self.factor_uv_lamp_replacement = pyo.Var(
+            initialize=0.33278,
+            doc="UV replacement factor accounting for lamps, sleeves, ballasts and sensors [fraction of uv replaced/year]",
+            units=pyo.units.year**-1,
+        )
         self.reverse_osmosis_membrane_cost = pyo.Var(
             initialize=30,
             doc="Membrane cost",
@@ -127,6 +133,16 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             initialize=15,
             doc="Membrane cost",
             units=self.base_currency / (pyo.units.meter**2),
+        )
+        self.uv_reactor_cost = pyo.Var(
+            initialize=172.158,
+            doc="UV reactor cost",
+            units=self.base_currency / (pyo.units.m**3 / pyo.units.hr),
+        )
+        self.uv_lamp_cost = pyo.Var(
+            initialize=235.5,
+            doc="UV lamps, sleeves, ballasts and sensors cost",
+            units=self.base_currency / pyo.units.kW,
         )
         self.high_pressure_pump_cost = pyo.Var(
             initialize=53 / 1e5 * 3600,
@@ -523,6 +539,29 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     # Define costing methods supported by package
+
+    @staticmethod
+    def cost_uv_aop(blk, cost_electricity_flow=True):
+        """
+        UV-AOP costing method
+        """
+        cost_uv_aop_bundle(
+            blk,
+            blk.costing_package.uv_reactor_cost,
+            blk.costing_package.uv_lamp_cost,
+            blk.costing_package.factor_uv_lamp_replacement,
+        )
+
+        t0 = blk.flowsheet().time.first()
+        if cost_electricity_flow:
+            blk.costing_package.cost_flow(
+                pyo.units.convert(
+                    blk.unit_model.electricity_demand[t0],
+                    to_units=pyo.units.kW,
+                ),
+                "electricity",
+            )
+
     @staticmethod
     def cost_nanofiltration(blk):
         """
@@ -947,12 +986,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_gac(blk):
         """
-        3 equation capital cost estimation for GAC
-            contactor/pressure vessel cost by polynomial with single contactor volume
-            initial charge of GAC adsorbent cost by exponential with GAC mass
-            other process costs calculated power law with total contactor volume
-        Capital costs calculated using required makeup and regenerated GAC adsorbent
-            Energy for backwash and booster pumps considered negligible compared to regeneration costs
+        3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
+        as a function of individual contactor volume; (ii), initial charge of GAC adsorbent cost by exponential as a
+        function of required mass of GAC adsorbent; and (iii), other process costs (vessels, pipes, instrumentation, and
+        controls) calculated by power law as a function of total contactor(s) volume. Operating costs calculated as the
+        required makeup and regeneration of GAC adsorbent. Energy for backwash and booster pumps considered negligible
+        compared to regeneration costs
         """
         make_capital_cost_var(blk)
         blk.contactor_cost = pyo.Var(
@@ -1195,6 +1234,7 @@ WaterTAPCostingData.unit_mapping = {
     NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
     NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
     Crystallization: WaterTAPCostingData.cost_crystallizer,
+    Ultraviolet0D: WaterTAPCostingData.cost_uv_aop,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
     GAC: WaterTAPCostingData.cost_gac,
@@ -1316,4 +1356,37 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
+    )
+
+
+def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_uv_lamp_replacement):
+    """
+    Generic function for costing a UV system.
+
+    Args:
+        reactor_cost - The cost of UV reactor in [currency]/[volume]
+        lamp_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
+    """
+    make_capital_cost_var(blk)
+    make_fixed_operating_cost_var(blk)
+    blk.reactor_cost = pyo.Expression(expr=reactor_cost)
+    blk.lamp_cost = pyo.Expression(expr=lamp_cost)
+    blk.factor_uv_lamp_replacement = pyo.Expression(expr=factor_uv_lamp_replacement)
+
+    flow_in = pyo.units.convert(
+        blk.unit_model.control_volume.properties_in[0].flow_vol,
+        to_units=pyo.units.m**3 / pyo.units.hr,
+    )
+
+    electricity_demand = pyo.units.convert(
+        blk.unit_model.electricity_demand[0], to_units=pyo.units.kW
+    )
+
+    blk.capital_cost_constraint = pyo.Constraint(
+        expr=blk.capital_cost
+        == blk.reactor_cost * flow_in + blk.lamp_cost * electricity_demand
+    )
+    blk.fixed_operating_cost_constraint = pyo.Constraint(
+        expr=blk.fixed_operating_cost
+        == blk.factor_uv_lamp_replacement * blk.lamp_cost * electricity_demand
     )
