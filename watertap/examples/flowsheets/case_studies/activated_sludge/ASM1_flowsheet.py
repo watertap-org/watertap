@@ -23,7 +23,7 @@ Unit operations are modeled as follows:
 
 Note that a pressure changer is required in the recycle stream to ensure the
 pressure inside the recycle loop is bounded. As the inlet Mixer uses a pressure
-minimization constraint and there is no pressure drop in the rectors, if pressure
+minimization constraint and there is no pressure drop in the reactors, if pressure
 is not specified at some point within the recycle loop then it becomes unbounded.
 
 Based on example from:
