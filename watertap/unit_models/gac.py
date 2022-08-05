@@ -1093,24 +1093,24 @@ class GACData(UnitModelBlockData):
         for j in self.config.property_package.solute_set:
             iscale.set_scaling_factor(
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
-                100 * sf_solute,
+                10 * sf_solute,
             )
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
-            iscale.set_scaling_factor(self.mass_adsorbed, sf_solute * 1e-5)
+            iscale.set_scaling_factor(self.mass_adsorbed, sf_solute * 1e-6)
 
         if iscale.get_scaling_factor(self.mass_adsorbed_saturated) is None:
-            iscale.set_scaling_factor(self.mass_adsorbed_saturated, sf_solute * 1e-5)
+            iscale.set_scaling_factor(self.mass_adsorbed_saturated, sf_solute * 1e-6)
 
         if iscale.get_scaling_factor(self.bed_volume) is None:
-            iscale.set_scaling_factor(self.bed_volume, sf_solvent * 1e3)
+            iscale.set_scaling_factor(self.bed_volume, sf_solvent * 1e2)
 
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
-            iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent)
+            iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)
 
         if iscale.get_scaling_factor(self.gac_mass_replace_rate) is None:
             iscale.set_scaling_factor(self.gac_mass_replace_rate, sf_solute * 1e-1)
@@ -1129,7 +1129,7 @@ class GACData(UnitModelBlockData):
             iscale.set_scaling_factor(self.bed_voidage, 1e1)
 
         if iscale.get_scaling_factor(self.bed_length) is None:
-            iscale.set_scaling_factor(self.bed_length, 1e-1)
+            iscale.set_scaling_factor(self.bed_length, 1)
 
         if iscale.get_scaling_factor(self.velocity_sup) is None:
             iscale.set_scaling_factor(self.velocity_sup, 1e3)

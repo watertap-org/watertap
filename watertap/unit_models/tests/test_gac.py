@@ -177,12 +177,10 @@ class TestGACSimplified:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize_simplified(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_var_scaling_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -194,7 +192,6 @@ class TestGACSimplified:
             print(i[0].name, "scaled to", i[1], "\n")
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -204,7 +201,6 @@ class TestGACSimplified:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
         m = gac_frame_simplified
@@ -335,12 +331,10 @@ class TestGACSimplified:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize_robust(self, gac_frame_robust):
         initialization_tester(gac_frame_robust)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_var_scaling_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -352,7 +346,6 @@ class TestGACSimplified:
             print(i[0].name, "scaled to", i[1], "\n")
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -362,7 +355,6 @@ class TestGACSimplified:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -443,11 +435,17 @@ class TestGACSimplified:
                     else:
                         var_hist[v.name].append(sv)
 
+            badly_scaled_vars = list(
+                badly_scaled_var_generator(temp_blk, large=1e2, small=1e-2)
+            )
+            for b in badly_scaled_vars:
+                yield "badly scaled variable", b[0].name, b[1]
+
             # loop through variables to select minmax
             for k in var_hist.keys():
                 sens = max(var_hist[k]) / min(var_hist[k])
                 if sens > tol or sens < tol**-1:
-                    yield k, sens, max(var_hist[k]), min(var_hist[k])
+                    yield "high sensitivity of scaled variable", k, sens
 
         # test
         sens_var_lst = list(var_sens_generator(m))
@@ -456,7 +454,6 @@ class TestGACSimplified:
 
         assert sens_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -504,7 +501,6 @@ class TestGACSimplified:
             m.fs.unit.costing.fixed_operating_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_modular_contactors_robust(self, gac_frame_robust):
         m = gac_frame_robust
@@ -537,7 +533,6 @@ class TestGACSimplified:
             m.fs.unit.costing.capital_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_max_gac_ref_robust(self, gac_frame_robust):
         m = gac_frame_robust
