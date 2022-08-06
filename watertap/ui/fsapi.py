@@ -1,12 +1,17 @@
 """
 Simple flowsheet interface API
 """
+
+__author__ = "Dan Gunter"
+
+# stdlib
+from enum import Enum
 from typing import Callable, Optional, Dict, Union
+from uuid import uuid4
+
+# third-party
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
-from uuid import uuid4
-from enum import Enum
-import warnings
 
 
 class ModelExport(BaseModel):
@@ -65,19 +70,24 @@ class FlowsheetExport(BaseModel):
     # set name dynamically from object
     @validator("name")
     def validate_name(cls, v, values):
-        if not v and "obj" in values:
-            v = values["obj"].name
+        if not v:
+            try:
+                v = values["obj"].name
+            except (KeyError, AttributeError):
+                v = "none"
         return v
 
     @validator("description", always=True)
     def validate_description(cls, v, values):
         if v == "":
             # use model 'doc' or if not there just repeat 'name'
-            v = values["obj"].doc or f"{values['name']} flowsheet"
-        return v
-
-    @validator("obj")
-    def validate_model_object(cls, v):
+            try:
+                v = values["obj"].doc
+            except (KeyError, AttributeError):
+                v = None
+            if v is None:
+                # `validate_name` guarantees a value for name
+                v = f"{values['name']} flowsheet"
         return v
 
     def add(self, *args, data=None, **kwargs) -> object:
@@ -102,7 +112,7 @@ class MissingObjectError(Exception):
     def __init__(self, what, where):
         num = len(what)
         plural = "" if num == 1 else "s"
-        things = [f"{m[2]}:{m[1]}" for m in what]
+        things = [f"{m[1]}" for m in what]
         full_message = f"{num} object{plural} not found {where}: {'; '.join(things)}"
         super().__init__(full_message)
 
@@ -194,7 +204,7 @@ class FlowsheetInterface:
             try:
                 dst = self.fs_exp.model_objects[key]
             except KeyError:
-                missing.append((key, src.obj.name, src.name))
+                missing.append((key, src.name))
                 continue
             # set value in this flowsheet
             if dst.is_input and not dst.is_readonly:

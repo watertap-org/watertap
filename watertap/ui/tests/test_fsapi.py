@@ -66,8 +66,7 @@ def flowsheet_interface(exports=True):
     if exports:
         kwargs["do_export"] = export_to_ui
     return fsapi.FlowsheetInterface(
-        name="test",
-        description="test interface",
+        # leave out name and description to test auto-fill
         do_build=build_ro,
         do_solve=solve_ro,
         **kwargs
@@ -77,6 +76,8 @@ def flowsheet_interface(exports=True):
 def test_create_interface():
     fsi = flowsheet_interface(exports=False)
     fsi = flowsheet_interface()
+    fs2 = fsapi.FlowsheetInterface(fs=fsi.fs_exp)
+    assert fs2.fs_exp == fsi.fs_exp
 
 
 def test_build_noexport():
@@ -128,6 +129,8 @@ def test_actions():
     fsi.add_action(fsapi.Actions.solve, fake_solve)
     fsi.build()
     fsi.solve()
+    with pytest.raises(ValueError):
+        fsi.run_action(fsapi.Actions.export)
 
 
 def test_load():
@@ -140,9 +143,16 @@ def test_load():
     # serialize
     data = fsi.dict()
     # modify
-    pprint.pprint(data)
     data["model_objects"][var_key]["value"] = -1000
     # reload
     fsi.load(data)
     # check
     assert fsi.fs_exp.model_objects[var_key].value == -1000
+
+    # this time with a missing thing
+    data = fsi.dict()
+    # add another (fake) one
+    data["model_objects"]["foobar"] = data["model_objects"][var_key].copy()
+    # reload (fake one will be 'missing')
+    with pytest.raises(fsapi.MissingObjectError):
+        fsi.load(data)
