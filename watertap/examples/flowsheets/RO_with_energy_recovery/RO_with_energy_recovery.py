@@ -81,7 +81,7 @@ def main(variable_efficiency=VariableEfficiency.none):
     return m
 
 
-def build(variable_efficiency):
+def build(variable_efficiency=VariableEfficiency.none):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -191,7 +191,11 @@ def build(variable_efficiency):
 
 
 def set_operating_conditions(
-    m, variable_efficiency, water_recovery=0.5, over_pressure=0.3, solver=None
+    m,
+    variable_efficiency=VariableEfficiency.none,
+    water_recovery=0.5,
+    over_pressure=0.3,
+    solver=None,
 ):
 
     if solver is None:
@@ -549,4 +553,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(VariableEfficiency.flow)
+    m = main()

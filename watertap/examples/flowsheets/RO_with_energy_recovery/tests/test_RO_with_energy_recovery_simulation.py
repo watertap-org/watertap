@@ -42,6 +42,8 @@ from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+    VariableEfficiency,
+    main,
     build,
     set_operating_conditions,
     initialize_system,
@@ -349,3 +351,9 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
             2.110, rel=1e-3
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)
+
+    @pytest.mark.component
+    def test_configuration_option(self):
+        m = main(VariableEfficiency.flow)
+
+        assert value(m.fs.P1.efficiency_pump[0]) == pytest.approx(0.8, rel=1e-5)
