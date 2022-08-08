@@ -319,7 +319,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
-        self.water_recovery_mass = Var(
+        self.recovery_mass_H2O = Var(
             self.flowsheet().time,
             initialize=0.5,
             bounds=(0, 1),
@@ -437,7 +437,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             return (
                 self.current[t]
                 * (
-                    surface_resistance_cp * 10  # self.cell_pair_num
+                    surface_resistance_cp * self.cell_pair_num
                     + self.electrodes_resistance
                 )
                 == self.voltage[t] * self.cell_width * self.cell_length
@@ -668,9 +668,9 @@ class Electrodialysis0DData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Water recovery by mass",
         )
-        def eq_water_recovery_mass(self, t):
+        def eq_recovery_mass_H2O(self, t):
             return (
-                self.water_recovery_mass[t]
+                self.recovery_mass_H2O[t]
                 * (
                     self.diluate_channel.properties_in[t].flow_mass_phase_comp[
                         "Liq", "H2O"
@@ -915,7 +915,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     iscale.get_scaling_factor(self.nonelec_flux_out[ind]),
                 ),
             )
-        for ind, c in self.eq_water_recovery_mass.items():
+        for ind, c in self.eq_recovery_mass_H2O.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
@@ -976,7 +976,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                 "Current efficiency for deionzation": self.current_efficiency[
                     time_point
                 ],
-                "Water recovery by mass": self.water_recovery_mass[time_point],
+                "Water recovery by mass": self.recovery_mass_H2O[time_point],
             },
             "exprs": {},
             "params": {},

@@ -509,7 +509,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionizaiton",
         )
-        self.water_recovery_mass = Var(
+        self.recovery_mass_H2O = Var(
             self.flowsheet().time,
             initialize=0.5,
             bounds=(0, 1),
@@ -762,9 +762,9 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Water recovery by mass",
         )
-        def eq_water_recovery_mass(self, t):
+        def eq_recovery_mass_H2O(self, t):
             return (
-                self.water_recovery_mass[t]
+                self.recovery_mass_H2O[t]
                 * (
                     self.diluate.properties[
                         t, self.diluate.length_domain.first()
@@ -1306,7 +1306,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
-                "Water recovery by mass": self.water_recovery_mass[time_point],
+                "Water recovery by mass": self.recovery_mass_H2O[time_point],
             },
             "exprs": {},
             "params": {},

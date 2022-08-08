@@ -299,7 +299,7 @@ def display_model_metrics(m):
 
     pm_table = DataFrame(
         data=[
-            value(m.fs.EDstack.water_recovery_mass[0]),
+            value(m.fs.EDstack.recovery_mass_H2O[0]),
             value(
                 m.fs.EDstack.cell_width
                 * m.fs.EDstack.cell_length
