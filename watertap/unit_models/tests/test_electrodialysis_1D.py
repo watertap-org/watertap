@@ -177,14 +177,14 @@ class TestElectrodialysisVoltageConst:
         # set the inlet stream
         m.fs.unit.inlet_diluate.pressure.fix(101325)
         m.fs.unit.inlet_diluate.temperature.fix(298.15)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.pressure.fix(101325)
         m.fs.unit.inlet_concentrate.temperature.fix(298.15)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
 
         assert degrees_of_freedom(m) == 0
 
@@ -193,13 +193,13 @@ class TestElectrodialysisVoltageConst:
         m = electrodialysis_1d_cell1
         # set default scaling for state vars
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "H2O")
+            "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
@@ -234,22 +234,22 @@ class TestElectrodialysisVoltageConst:
 
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.33e-2, rel=5e-3)
+        ) == pytest.approx(2.328e-1, rel=1e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(3.22e-05, rel=5e-3)
+        ) == pytest.approx(3.223e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(3.22e-05, rel=5e-3)
+        ) == pytest.approx(3.223e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.47e-2, rel=5e-3)
+        ) == pytest.approx(2.472e-1, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.15e-4, rel=5e-3)
+        ) == pytest.approx(1.154e-3, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.15e-4, rel=5e-3)
+        ) == pytest.approx(1.154e-3, rel=5e-3)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell1):
@@ -262,6 +262,9 @@ class TestElectrodialysisVoltageConst:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.197, rel=5e-3)
+        assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
+            0.485, rel=5e-3
+        )
 
     @pytest.mark.component
     def test_costing(self, electrodialysis_1d_cell1):
@@ -422,14 +425,14 @@ class TestElectrodialysisCurrentConst:
         # set the inlet stream
         m.fs.unit.inlet_diluate.pressure.fix(101325)
         m.fs.unit.inlet_diluate.temperature.fix(298.15)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
         m.fs.unit.inlet_concentrate.pressure.fix(101325)
         m.fs.unit.inlet_concentrate.temperature.fix(298.15)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
@@ -437,13 +440,13 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
         # set default scaling for state vars
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "H2O")
+            "flow_mol_phase_comp", 5e1, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
@@ -474,22 +477,22 @@ class TestElectrodialysisCurrentConst:
 
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.30e-2, rel=5e-3)
+        ) == pytest.approx(2.304e-1, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.75e-05, rel=5e-3)
+        ) == pytest.approx(1.754e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.75e-05, rel=5e-3)
+        ) == pytest.approx(1.754e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.50e-2, rel=5e-3)
+        ) == pytest.approx(2.496e-1, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.30e-4, rel=5e-3)
+        ) == pytest.approx(1.301e-3, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.30e-4, rel=5e-3)
+        ) == pytest.approx(1.301e-3, rel=5e-3)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell2):
@@ -502,6 +505,9 @@ class TestElectrodialysisCurrentConst:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.390, rel=5e-3)
+        assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
+            0.480, rel=5e-3
+        )
 
 
 class TestElectrodialysis_withNeutralSPecies:
@@ -632,16 +638,16 @@ class TestElectrodialysis_withNeutralSPecies:
         # set the inlet stream
         m.fs.unit.inlet_diluate.pressure.fix(101325)
         m.fs.unit.inlet_diluate.temperature.fix(298.15)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
-        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-6)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-5)
         m.fs.unit.inlet_concentrate.pressure.fix(101325)
         m.fs.unit.inlet_concentrate.temperature.fix(298.15)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-2)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-5)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-5)
-        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-6)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-5)
         assert degrees_of_freedom(m) == 0
 
     @pytest.mark.component
@@ -649,16 +655,16 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
         # set default scaling for state vars
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "H2O")
+            "flow_mol_phase_comp", 5e1, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Na_+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e5, index=("Liq", "N")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "N")
         )
         # set scaling factors for some vars
         iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
@@ -690,28 +696,28 @@ class TestElectrodialysis_withNeutralSPecies:
 
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.30e-2, rel=5e-3)
+        ) == pytest.approx(2.304e-1, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.75e-05, rel=5e-3)
+        ) == pytest.approx(1.752e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.75e-05, rel=5e-3)
+        ) == pytest.approx(1.752e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.26e-06, rel=5e-3)
+        ) == pytest.approx(7.264e-05, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
-        ) == pytest.approx(2.50e-2, rel=5e-3)
+        ) == pytest.approx(2.496e-1, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
-        ) == pytest.approx(1.30e-4, rel=5e-3)
+        ) == pytest.approx(1.301e-3, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
-        ) == pytest.approx(1.30e-4, rel=5e-3)
+        ) == pytest.approx(1.301e-3, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.50e-06, rel=5e-3)
+        ) == pytest.approx(7.496e-05, rel=5e-3)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell3):
@@ -724,3 +730,6 @@ class TestElectrodialysis_withNeutralSPecies:
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
         ) == pytest.approx(0.376, rel=5e-3)
+        assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
+            0.480, rel=5e-3
+        )

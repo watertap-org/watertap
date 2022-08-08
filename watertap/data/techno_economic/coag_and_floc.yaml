@@ -4,7 +4,7 @@ default:
     units: dimensionless
     reference: Based on costs for Aluminum Sulfate (Liquid Alum Feed) from Cost Estimating
       Manual for Water Treatment Facilities (McGivney/Kawamura)
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
   alum_dose:
