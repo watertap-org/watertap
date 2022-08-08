@@ -65,18 +65,18 @@ def main(variable_efficiency=VariableEfficiency.none):
 
     # simulate and display
     solve(m, solver=solver)
-    print("\n***---Simulation results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
+    # print("\n***---Simulation results---***")
+    # display_system(m)
+    # display_design(m)
+    # display_state(m)
 
     # optimize and display
     optimize_set_up(m)
     optimize(m, solver=solver)
-    print("\n***---Optimization results---***")
-    display_system(m)
-    display_design(m)
-    display_state(m)
+    # print("\n***---Optimization results---***")
+    # display_system(m)
+    # display_design(m)
+    # display_state(m)
 
     return m
 
