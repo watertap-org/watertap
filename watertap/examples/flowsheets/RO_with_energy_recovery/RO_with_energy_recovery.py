@@ -14,7 +14,6 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     Constraint,
-    Expression,
     Objective,
     Param,
     TransformationFactory,
@@ -27,6 +26,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
+from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
@@ -45,13 +45,22 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
 
-def main():
+class VariableEfficiency(StrEnum):
+    none = "none"
+    flow = "flow"
+    flow_head = "flow_head"
+
+
+def main(variable_efficiency=VariableEfficiency.none):
     # set up solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build()
-    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
+    m = build(variable_efficiency)
+    set_operating_conditions(
+        m, variable_efficiency, water_recovery=0.5, over_pressure=0.3, solver=solver
+    )
+
     initialize_system(m, solver=solver)
 
     # simulate and display
@@ -69,8 +78,10 @@ def main():
     display_design(m)
     display_state(m)
 
+    return m
 
-def build():
+
+def build(variable_efficiency):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -82,9 +93,27 @@ def build():
     m.fs.S1 = Separator(
         default={"property_package": m.fs.properties, "outlet_list": ["P1", "PXR"]}
     )
-    m.fs.P1 = Pump(default={"property_package": m.fs.properties})
+
+    if variable_efficiency is VariableEfficiency.none:
+        m.fs.P1 = Pump(default={"property_package": m.fs.properties})
+        m.fs.P2 = Pump(default={"property_package": m.fs.properties})
+    elif variable_efficiency is VariableEfficiency.flow:
+        m.fs.P1 = Pump(
+            default={
+                "property_package": m.fs.properties,
+                "variable_efficiency": VariableEfficiency.flow,
+            }
+        )
+        m.fs.P2 = Pump(
+            default={
+                "property_package": m.fs.properties,
+                "variable_efficiency": VariableEfficiency.flow,
+            }
+        )
+    else:
+        raise NotImplementedError("Variable efficiency type not recognized")
+
     m.fs.PXR = PressureExchanger(default={"property_package": m.fs.properties})
-    m.fs.P2 = Pump(default={"property_package": m.fs.properties})
     m.fs.M1 = Mixer(
         default={
             "property_package": m.fs.properties,
@@ -161,7 +190,10 @@ def build():
     return m
 
 
-def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=None):
+def set_operating_conditions(
+    m, variable_efficiency, water_recovery=0.5, over_pressure=0.3, solver=None
+):
+
     if solver is None:
         solver = get_solver()
 
@@ -181,8 +213,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
 
-    # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # system operating pressure / pump outlet pressure
     operating_pressure = calculate_operating_pressure(
         feed_state_block=m.fs.feed.properties[0],
         over_pressure=over_pressure,
@@ -192,13 +223,29 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
+    default_efficiency = 0.8
+    if variable_efficiency is VariableEfficiency.none:
+        # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
+        m.fs.P1.efficiency_pump.fix(default_efficiency)  # pump efficiency [-]
+
+        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
+        m.fs.P2.efficiency_pump.fix(default_efficiency)
+
+    elif variable_efficiency is VariableEfficiency.flow:
+        # fix efficiency
+        m.fs.P1.bep_eta.fix(default_efficiency)
+        m.fs.P2.bep_eta.fix(default_efficiency)
+
+        # fix the flow ratio to 1 for initialization
+        # m.fs.P1.bep_flow.fix(m.fs.P1.control_volume.properties_out[0].flow_vol)
+        # m.fs.P2.bep_flow.fix(m.fs.P2.control_volume.properties_out[0].flow_vol)
+        m.fs.P1.flow_ratio[0].fix(1)
+        m.fs.P2.flow_ratio[0].fix(1)
+
     # pressure exchanger
     m.fs.PXR.efficiency_pressure_exchanger.fix(
         0.95
     )  # pressure exchanger efficiency [-]
-
-    # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-    m.fs.P2.efficiency_pump.fix(0.80)
 
     # mixer, no degrees of freedom
 
@@ -502,4 +549,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    main()
+    m = main(VariableEfficiency.flow)
