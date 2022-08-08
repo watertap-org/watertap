@@ -129,38 +129,6 @@ class TestElectrodialysisVoltageConst:
         assert m.fs.EDstack.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
 
-        # test all essential params and vars are built
-        assert isinstance(m.fs.EDstack.membrane_set, Set)
-        assert isinstance(m.fs.EDstack.cell_pair_num, Var)
-        assert isinstance(m.fs.EDstack.cell_width, Var)
-        assert isinstance(m.fs.EDstack.cell_length, Var)
-        assert isinstance(m.fs.EDstack.spacer_thickness, Var)
-        assert isinstance(m.fs.EDstack.membrane_thickness, Var)
-        assert isinstance(m.fs.EDstack.solute_diffusivity_membrane, Var)
-        assert isinstance(m.fs.EDstack.ion_trans_number_membrane, Var)
-        assert isinstance(m.fs.EDstack.water_trans_number_membrane, Var)
-        assert isinstance(m.fs.EDstack.water_permeability_membrane, Var)
-        assert isinstance(m.fs.EDstack.membrane_areal_resistance, Var)
-        assert isinstance(m.fs.EDstack.current_applied, Var)
-        assert isinstance(m.fs.EDstack.current_density_x, Var)
-        assert isinstance(m.fs.EDstack.voltage_applied, Var)
-        assert isinstance(m.fs.EDstack.voltage_x, Var)
-        assert isinstance(m.fs.EDstack.current_utilization, Var)
-        assert isinstance(m.fs.EDstack.diluate.power_electrical_x, Var)
-        assert isinstance(m.fs.EDstack.specific_power_electrical, Var)
-        assert isinstance(m.fs.EDstack.current_efficiency_x, Var)
-
-        assert isinstance(m.fs.EDstack.eq_get_total_areal_resistance_x, Constraint)
-        assert isinstance(m.fs.EDstack.eq_get_current_density, Constraint)
-        assert isinstance(m.fs.EDstack.eq_get_voltage_x, Constraint)
-        assert isinstance(m.fs.EDstack.eq_mass_transfer_term_diluate, Constraint)
-        assert isinstance(m.fs.EDstack.eq_mass_transfer_term_concentrate, Constraint)
-        assert isinstance(m.fs.EDstack.eq_power_electrical, Constraint)
-        assert isinstance(m.fs.EDstack.eq_specific_power_electrical, Constraint)
-        assert isinstance(m.fs.EDstack.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.EDstack.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.EDstack.eq_isothermal_concentrate, Constraint)
-
     @pytest.mark.component
     def test_specific_operating_conditions(self, electrodialysis_1D1stack):
         m = electrodialysis_1D1stack
@@ -260,3 +228,7 @@ class TestElectrodialysisVoltageConst:
             1.435, abs=0.001
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.25, abs=0.01)
+
+    @pytest.mark.unit
+    def test_main_fun(self, electrodialysis_1D1stack):
+        edfs.main()

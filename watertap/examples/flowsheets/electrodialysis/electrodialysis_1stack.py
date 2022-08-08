@@ -29,6 +29,7 @@ from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
+from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import (
     WaterTAPCosting,
@@ -75,7 +76,7 @@ def build():
             "property_package": m.fs.properties,
             "outlet_list": ["inlet_diluate", "inlet_concentrate"],
         }
-    )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlects of the ED stack.
+    )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlets of the ED stack.
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
@@ -88,7 +89,7 @@ def build():
     m.fs.product = Product(default={"property_package": m.fs.properties})
     m.fs.disposal = Product(default={"property_package": m.fs.properties})
 
-    # Build extra properties as needed
+    # Touching needed variables for initialization and displaying results
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.separator.inlet_diluate_state[0].conc_mass_phase_comp[...]
     m.fs.separator.inlet_concentrate_state[0].conc_mass_phase_comp[...]
@@ -183,14 +184,8 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
 
-    # check degrees of freedom
-    if degrees_of_freedom(m) != 0:
-        raise RuntimeError(
-            "The set_operating_conditions function resulted in {} "
-            "degrees of freedom rather than 0. This error suggests "
-            "that too many or not enough variables are fixed for a "
-            "simulation.".format(degrees_of_freedom(m))
-        )
+    # check zero degrees of freedom
+    check_dof(m)
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -244,7 +239,11 @@ def optimize_system(m, solver=None):
     # Set a treatment goal
     # Example here is to reach a final product water containing NaCl < 1 g/L (from a 10 g/L feed)
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] <= 0.393
+        expr=(
+            m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"]
+            + m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Cl_-"]
+        )
+        <= 1
     )
     iscale.constraint_scaling_transform(
         m.fs.eq_product_quality, 1e2
