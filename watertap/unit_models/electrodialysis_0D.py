@@ -319,6 +319,14 @@ class Electrodialysis0DData(UnitModelBlockData):
             units=pyunits.kW * pyunits.hour * pyunits.meter**-3,
             doc="Diluate-volume-flow-rate-specific electrical power consumption",
         )
+        self.recovery_mass_H2O = Var(
+            self.flowsheet().time,
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="water recovery ratio calculated by mass",
+        )
         # TODO: consider adding more performance as needed.
 
         # Fluxes Vars for constructing mass transfer terms
@@ -561,12 +569,18 @@ class Electrodialysis0DData(UnitModelBlockData):
             doc="Mass transfer term for the diluate channel",
         )
         def eq_mass_transfer_term_diluate(self, t, p, j):
-            return self.diluate_channel.mass_transfer_term[t, p, j] == -0.5 * (
-                self.elec_migration_flux_in[t, p, j]
-                + self.elec_migration_flux_out[t, p, j]
-                + self.nonelec_flux_in[t, p, j]
-                + self.nonelec_flux_out[t, p, j]
-            ) * (self.cell_width * self.cell_length)
+            return (
+                self.diluate_channel.mass_transfer_term[t, p, j]
+                == -0.5
+                * (
+                    self.elec_migration_flux_in[t, p, j]
+                    + self.elec_migration_flux_out[t, p, j]
+                    + self.nonelec_flux_in[t, p, j]
+                    + self.nonelec_flux_out[t, p, j]
+                )
+                * (self.cell_width * self.cell_length)
+                * self.cell_pair_num
+            )
 
         # Add constraints for mass transfer terms (concentrate_channel)
         @self.Constraint(
@@ -576,12 +590,18 @@ class Electrodialysis0DData(UnitModelBlockData):
             doc="Mass transfer term for the concentrate channel",
         )
         def eq_mass_transfer_term_concentrate(self, t, p, j):
-            return self.concentrate_channel.mass_transfer_term[t, p, j] == 0.5 * (
-                self.elec_migration_flux_in[t, p, j]
-                + self.elec_migration_flux_out[t, p, j]
-                + self.nonelec_flux_in[t, p, j]
-                + self.nonelec_flux_out[t, p, j]
-            ) * (self.cell_width * self.cell_length)
+            return (
+                self.concentrate_channel.mass_transfer_term[t, p, j]
+                == 0.5
+                * (
+                    self.elec_migration_flux_in[t, p, j]
+                    + self.elec_migration_flux_out[t, p, j]
+                    + self.nonelec_flux_in[t, p, j]
+                    + self.nonelec_flux_out[t, p, j]
+                )
+                * (self.cell_width * self.cell_length)
+                * self.cell_pair_num
+            )
 
         # Add isothermal condition
         @self.Constraint(
@@ -622,7 +642,6 @@ class Electrodialysis0DData(UnitModelBlockData):
                     pyunits.watt * pyunits.second * pyunits.meter**-3,
                 )
                 * self.diluate_channel.properties_out[t].flow_vol_phase["Liq"]
-                * self.cell_pair_num
                 == self.current[t] * self.voltage[t]
             )
 
@@ -632,7 +651,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         )
         def eq_current_efficiency(self, t):
             return (
-                self.current_efficiency[t] * self.current[t]
+                self.current_efficiency[t] * self.current[t] * self.cell_pair_num
                 == sum(
                     self.diluate_channel.properties_in[t].flow_mol_phase_comp["Liq", j]
                     * self.config.property_package.charge_comp[j]
@@ -643,6 +662,26 @@ class Electrodialysis0DData(UnitModelBlockData):
                     for j in self.config.property_package.cation_set
                 )
                 * Constants.faraday_constant
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Water recovery by mass",
+        )
+        def eq_recovery_mass_H2O(self, t):
+            return (
+                self.recovery_mass_H2O[t]
+                * (
+                    self.diluate_channel.properties_in[t].flow_mass_phase_comp[
+                        "Liq", "H2O"
+                    ]
+                    + self.concentrate_channel.properties_in[t].flow_mass_phase_comp[
+                        "Liq", "H2O"
+                    ]
+                )
+                == self.diluate_channel.properties_out[t].flow_mass_phase_comp[
+                    "Liq", "H2O"
+                ]
             )
 
     # initialize method
@@ -876,6 +915,15 @@ class Electrodialysis0DData(UnitModelBlockData):
                     iscale.get_scaling_factor(self.nonelec_flux_out[ind]),
                 ),
             )
+        for ind, c in self.eq_recovery_mass_H2O.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.diluate_channel.properties_out[ind].flow_mass_phase_comp[
+                        "Liq", "H2O"
+                    ]
+                ),
+            )
 
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
@@ -928,6 +976,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                 "Current efficiency for deionzation": self.current_efficiency[
                     time_point
                 ],
+                "Water recovery by mass": self.recovery_mass_H2O[time_point],
             },
             "exprs": {},
             "params": {},
