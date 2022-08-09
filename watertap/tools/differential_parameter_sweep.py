@@ -170,7 +170,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         return global_output_dict
 
     def _collect_local_inputs(self, local_results_dict):
-        
+
         num_local_samples = len(local_results_dict["solve_successful"])
         local_inputs = np.zeros(
             (num_local_samples, len(local_results_dict["sweep_params"])), dtype=np.float64
@@ -315,7 +315,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         sweep_params,
         differential_sweep_specs,
         outputs=None,
-        optimize_function=None, # self._default_optimize,
+        optimize_function=None,
         optimize_kwargs=None,
         reinitialize_function=None,
         reinitialize_kwargs=None,
@@ -375,7 +375,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         global_save_data = self.writer.save_results(sweep_params, local_values, global_input_arr, local_results_dict,
             global_results_dict, global_results_arr)
 
-        return global_save_data
+        return global_results_dict, global_save_data
 
 
 if __name__ == '__main__':
