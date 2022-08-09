@@ -26,7 +26,7 @@ from idaes.core import (
     MaterialBalanceType,
     MomentumBalanceType,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -54,6 +54,7 @@ from watertap.costing import WaterTAPCosting
 __author__ = "Hunter Barber"
 
 solver = get_solver()
+print(get_solver().__class__)
 
 
 # -----------------------------------------------------------------------------
@@ -180,11 +181,12 @@ class TestGACSimplified:
         initialization_tester(gac_frame_simplified)
 
     @pytest.mark.component
-    def test_var_scaling_simplified(self, gac_frame_simplified):
+    def test_var_scaling_init_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2)
         )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -195,6 +197,15 @@ class TestGACSimplified:
         # Check for optimal solution
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_var_scaling_solve_simplified(self, gac_frame_simplified):
+        ms = gac_frame_simplified
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(ms, large=1e2, small=1e-2)
+        )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.component
     def test_solution_simplified(self, gac_frame_simplified):
@@ -335,11 +346,12 @@ class TestGACRobust:
         initialization_tester(gac_frame_robust)
 
     @pytest.mark.component
-    def test_var_scaling_robust(self, gac_frame_robust):
+    def test_var_scaling_init_robust(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2)
         )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -350,6 +362,15 @@ class TestGACRobust:
         # Check for optimal solution
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_var_scaling_solve_robust(self, gac_frame_robust):
+        mr = gac_frame_robust
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(mr, large=1e2, small=1e-2)
+        )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
@@ -569,7 +590,7 @@ class TestGACMulti:
         assert degrees_of_freedom(mm) == 0
 
     @pytest.mark.unit
-    def test_scaling_multi(self, gac_frame_multi):
+    def test_calculate_scaling_multi(self, gac_frame_multi):
         mm = gac_frame_multi
 
         mm.fs.properties.set_default_scaling(
@@ -587,9 +608,13 @@ class TestGACMulti:
         unscaled_var_list = list(unscaled_variables_generator(mm))
         assert len(unscaled_var_list) == 0
 
+    @pytest.mark.unit
+    def test_var_scaling_init_multi(self, gac_frame_multi):
+        mm = gac_frame_multi
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2)
         )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -600,6 +625,15 @@ class TestGACMulti:
         # Check for optimal solution
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.unit
+    def test_var_scaling_solve_multi(self, gac_frame_multi):
+        mm = gac_frame_multi
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(mm, large=1e2, small=1e-2)
+        )
+        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.component
     def test_solution_multi(self, gac_frame_multi):
