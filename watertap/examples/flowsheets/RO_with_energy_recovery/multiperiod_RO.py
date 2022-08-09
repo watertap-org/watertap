@@ -24,17 +24,15 @@ Path: models/fossil_case/ultra_supercritical_plant/storage/multiperiod_integrate
 
 __author__ = "Akshay Rao"
 
-import os
 from pyomo.environ import (
     NonNegativeReals,
     ConcreteModel,
-    Constraint,
     Var,
-    value,
     units as pyunits,
 )
 
-import RO_with_energy_recovery as swro
+import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as swro
+from watertap.unit_models.pressure_changer import VariableEfficiency
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
@@ -48,13 +46,13 @@ def create_base_model():
     max_flowrate = 1.5  # kg/s
     min_flowrate = 0.5  # kg/s
 
-    print("Creating RO flowsheet and MP concrete model...\n")
+    print("\nCreating RO flowsheet and MP concrete model...")
 
     # call main to create and initialize model with flow-type variable efficiency
     m = ConcreteModel()
-    m.ro_mp = swro.main(swro.VariableEfficiency.flow)
+    m.ro_mp = swro.main(VariableEfficiency.flow)
 
-    print("\nUnfixing design variables and setting bounds...")
+    print("\nFixing system design variables and setting bounds...")
 
     # fix plant design variables
     m.ro_mp.fs.RO.area.fix(115)
@@ -79,7 +77,7 @@ def create_base_model():
     )
     m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
 
-    print("\nFixing system design variables\nDOF: ", degrees_of_freedom(m))
+    print("\nUnfixing operational variables...")
 
     # unfix operational variables - water recovery and feed flow rate
     m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
@@ -94,11 +92,6 @@ def create_base_model():
     )
     m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setlb(
         min_flowrate
-    )
-
-    print(
-        "\nUnfixing operational variables and setting bounds\nDegrees of freedom per MP time step: ",
-        degrees_of_freedom(m),
     )
 
     return m

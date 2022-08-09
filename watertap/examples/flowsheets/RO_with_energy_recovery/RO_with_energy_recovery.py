@@ -40,7 +40,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
     PressureChangeType,
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models.pressure_changer import Pump, VariableEfficiency
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
@@ -94,24 +94,18 @@ def build(variable_efficiency=VariableEfficiency.none):
         default={"property_package": m.fs.properties, "outlet_list": ["P1", "PXR"]}
     )
 
-    if variable_efficiency is VariableEfficiency.none:
-        m.fs.P1 = Pump(default={"property_package": m.fs.properties})
-        m.fs.P2 = Pump(default={"property_package": m.fs.properties})
-    elif variable_efficiency is VariableEfficiency.flow:
-        m.fs.P1 = Pump(
-            default={
-                "property_package": m.fs.properties,
-                "variable_efficiency": VariableEfficiency.flow,
-            }
-        )
-        m.fs.P2 = Pump(
-            default={
-                "property_package": m.fs.properties,
-                "variable_efficiency": VariableEfficiency.flow,
-            }
-        )
-    else:
-        raise NotImplementedError("Variable efficiency type not recognized")
+    m.fs.P1 = Pump(
+        default={
+            "property_package": m.fs.properties,
+            "variable_efficiency": variable_efficiency,
+        }
+    )
+    m.fs.P2 = Pump(
+        default={
+            "property_package": m.fs.properties,
+            "variable_efficiency": variable_efficiency,
+        }
+    )
 
     m.fs.PXR = PressureExchanger(default={"property_package": m.fs.properties})
     m.fs.M1 = Mixer(
