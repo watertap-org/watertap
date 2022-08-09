@@ -18,6 +18,7 @@ from pyomo.environ import (
     TerminationCondition,
     SolverStatus,
     value,
+    check_optimal_termination,
 )
 from pyomo.network import Port
 
@@ -368,91 +369,6 @@ class TestGACSimplified:
     def test_reporting_robust(self, gac_frame_robust):
         m = gac_frame_robust
         m.fs.unit.report()
-
-    @pytest.mark.component
-    def test_variable_sensitivity_robust(self, gac_frame_robust):
-        m = gac_frame_robust
-
-        import idaes.core.util.scaling as iscale
-        from pyomo.common.collections import ComponentSet
-
-        def var_sens_generator(
-            blk,
-            lb_scale=1e-1,
-            ub_scale=1e3,
-            tol=1e2,
-            zero=1e-10,
-        ):
-            test_scale = [lb_scale, ub_scale]
-            var_hist = {}
-            for scale in test_scale:
-                temp_blk = blk.clone()
-                # loop through variables and scale previously fixed inlet flow
-                for vt, vm in temp_blk.component_data_iterindex(
-                    ctype=pyo.Var, active=True, descend_into=True
-                ):
-                    iscale.unset_scaling_factor(
-                        vm
-                    )  # remove prior sf which are reestablished on init
-                    if (
-                        temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1])
-                        is not None
-                        and "flow" in vt[0]
-                        and vm.fixed
-                    ):
-                        dsf = temp_blk.fs.properties.get_default_scaling(
-                            vt[0], index=vt[1]
-                        )
-                        temp_blk.fs.properties.set_default_scaling(
-                            vt[0], dsf * scale**-1, index=vt[1]
-                        )
-                        vm.fix(vm * scale)
-                calculate_scaling_factors(temp_blk)
-                temp_blk.fs.unit.initialize(outlvl=idaes.logger.ERROR)
-                results = solver.solve(temp_blk)
-                if (
-                    results.solver.termination_condition
-                    is not TerminationCondition.optimal
-                    or results.solver.status is not SolverStatus.ok
-                ):
-                    print("Failed run on", scale, "scale")
-
-                # store results for scale to var_hist
-                for v in ComponentSet(
-                    temp_blk.component_data_objects(
-                        pyo.Var, active=True, descend_into=True
-                    )
-                ):
-                    val = pyo.value(v, exception=False)
-                    if val is None:
-                        continue
-                    sf = iscale.get_scaling_factor(v, default=1)
-                    sv = abs(val * sf)  # scaled value
-                    if sv < zero:
-                        continue
-                    if v.name not in var_hist.keys():
-                        var_hist[v.name] = [sv]
-                    else:
-                        var_hist[v.name].append(sv)
-
-            badly_scaled_vars = list(
-                badly_scaled_var_generator(temp_blk, large=1e2, small=1e-2)
-            )
-            for b in badly_scaled_vars:
-                yield "badly scaled variable", b[0].name, b[1]
-
-            # loop through variables to select minmax
-            for k in var_hist.keys():
-                sens = max(var_hist[k]) / min(var_hist[k])
-                if sens > tol or sens < tol**-1:
-                    yield "high sensitivity of scaled variable", k, sens
-
-        # test
-        sens_var_lst = list(var_sens_generator(m))
-        for i in sens_var_lst:
-            print(i)
-
-        assert sens_var_lst == []
 
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
