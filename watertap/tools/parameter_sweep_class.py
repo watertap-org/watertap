@@ -312,9 +312,6 @@ class _ParameterSweepBase(ABC):
                     if "_pyo_obj" in subval:
                         del subval["_pyo_obj"]
 
-        # if self.num_procs == 1:
-        #     global_output_dict = local_output_dict
-        # else:  # pragma: no cover
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
@@ -337,7 +334,7 @@ class _ParameterSweepBase(ABC):
             global_output_dict = local_output_dict
 
         # Finally collect the values
-        for key, item in local_output_dict.items():  # This probably doesnt work
+        for key, item in local_output_dict.items():
             if key != "solve_successful":
                 for subkey, subitem in item.items():
                     self.comm.Gatherv(
@@ -783,7 +780,7 @@ class ParameterSweep(_ParameterSweepBase):
         global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
             global_results_dict, global_results_arr)
 
-        return global_save_data
+        return global_save_data, global_results_dict
 
 class RecursiveParameterSweep(_ParameterSweepBase):
 

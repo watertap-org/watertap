@@ -14,11 +14,11 @@ from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 
 from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.sampling_types import (SamplingType, LinearSample)
+from watertap.tools.sampling_types import * # (SamplingType, LinearSample)
 from watertap.tools.parameter_sweep_class import (_ParameterSweepBase, ParameterSweep)
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -29,65 +29,65 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         debugging_data_dir = None,
         interpolate_nan_outputs = False,
         guarantee_solves=False,
+        num_diff_samples=1,
         *args,
         **kwargs,
     ):
 
-    # Initialize the base Class
-    _ParameterSweepBase.__init__(self)
+        # Initialize the base Class
+        _ParameterSweepBase.__init__(self)
 
-    if guarantee_solves:
-        raise NotImplementedError
+        if guarantee_solves:
+            raise NotImplementedError
 
-    self.writer = ParameterSweepWriter(
-        self.comm,
-        csv_results_file_name=csv_results_file_name,
-        h5_results_file_name=h5_results_file_name,
-        debugging_data_dir=debugging_data_dir,
-        interpolate_nan_outputs=interpolate_nan_outputs
-    )
+        self.num_diff_samples = num_diff_samples
 
-    def _process_sweep_params(self, sweep_params):
-        pass
+        self.writer = ParameterSweepWriter(
+            self.comm,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=debugging_data_dir,
+            interpolate_nan_outputs=interpolate_nan_outputs
+        )
 
     def _create_differential_sweep_params(self, local_values, differential_sweep_specs):
 
         # Assume that we have local values and example differential sweep_info
-        local_values = np.array([4.0e-12, 3.5e-8, 0.95])
-        differential_sweep_info = {
-            # "n_differential_samples" = same across everything
-            "A_comp" : { "diff_mode" : sum/product ,
-                         "diff_sample_type": Anything of the Sampling types,
-                         "relative_lb" : For linear/geometric sampling,
-                         "relative_ub" : For linear/geometric sampling,
-                         "relative_std_dev" : For normal sampling
-                        },
-            "B_comp" : {},
-            "Spacer_porosity"  : {},
-        }
+        # local_values = np.array([4.0e-12, 3.5e-8, 0.95])
+        # differential_sweep_info = {
+        #     # "n_differential_samples" = same across everything
+        #     "A_comp" : { "diff_mode" : sum/product ,
+        #                  "diff_sample_type": Anything of the Sampling types,
+        #                  "relative_lb" : For linear/geometric sampling,
+        #                  "relative_ub" : For linear/geometric sampling,
+        #                  "relative_std_dev" : For normal sampling
+        #                 },
+        #     "B_comp" : {},
+        #     "Spacer_porosity"  : {},
+        # }
 
         diff_sweep_param = {}
         ctr = 0
-        for param, specs in differential_sweep_info.items():
+        for param, specs in differential_sweep_specs.items():
             nominal_val  = local_values[ctr]
             pyomo_object = specs['pyomo_object']
             if specs["diff_sample_type"] == NormalSample:
                 std_dev = specs["relative_std_dev"]
-                diff_sweep_param[param] = NormalSample(nominal_val, std_dev)
+                diff_sweep_param[param] = NormalSample(pyomo_object, nominal_val, std_dev)
             else:
                 relative_lb = specs["relative_lb"]
                 relative_ub = specs["relative_ub"]
-                if specs["diff_mode"] = "sum":
+                if specs["diff_mode"] == "sum":
                     lb = nominal_val * (1 - relative_lb)
                     ub = nominal_val * (1 + relative_lb)
-                elif specs["diff_mode"] = "product":
+                elif specs["diff_mode"] == "product":
                     lb = nominal_val * relative_lb
                     ub = nominal_val * relative_ub
                 else:
                     raise NotImplementedError
                 diff_sweep_param[param] = specs["diff_sample_type"](pyomo_object, lb, ub)
 
-        return diff_sweep_param_dict
+        return diff_sweep_param
 
     def _append_differential_results(self, local_output_dict, diff_results_dict):
 
@@ -100,11 +100,125 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     for subkey, subitem in item.items():
                         local_output_dict[key][subkey]["value"] = np.concatenate((local_output_dict[key][subkey]["value"], subitem["value"]))
 
+    def _create_global_output(self, local_output_dict):
+        # Before we can create the global dictionary, we need to delete the pyomo
+        # object contained within the dictionary
+        for key, val in local_output_dict.items():
+            if key != "solve_successful":
+                for subval in val.values():
+                    if "_pyo_obj" in subval:
+                        del subval["_pyo_obj"]
+
+        # We make the assumption that the parameter sweep is running the same
+        # flowsheet num_samples number of times, i.e., the structure of the
+        # local_output_dict remains the same across all mpi_ranks
+        local_num_cases = len(local_output_dict["solve_successful"])
+
+        # Gather the size of the value array on each MPI rank
+        sample_split_arr = self.comm.allgather(local_num_cases)
+        num_total_samples = sum(sample_split_arr)
+
+        # Create the global value array on rank 0
+        if self.rank == 0:
+            global_output_dict = copy.deepcopy(local_output_dict)
+            # Create a global value array of inputs in the dictionary
+            for key, item in global_output_dict.items():
+                if key != "solve_successful":
+                    for subkey, subitem in item.items():
+                        subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
+
+        else:
+            global_output_dict = local_output_dict
+
+        # Finally collect the values
+        for key, item in local_output_dict.items():
+            if key != "solve_successful":
+                for subkey, subitem in item.items():
+                    self.comm.Gatherv(
+                        sendbuf=subitem["value"],
+                        recvbuf=(
+                            global_output_dict[key][subkey]["value"],
+                            sample_split_arr,
+                        ),
+                        root=0,
+                    )
+
+                    # Trim to the exact number
+                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
+                        subkey
+                    ]["value"]
+
+            elif key == "solve_successful":
+                local_solve_successful = np.fromiter(
+                    item, dtype=np.bool, count=len(item)
+                )
+
+                if self.rank == 0:
+                    global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
+                else:
+                    global_solve_successful = None
+
+                self.comm.Gatherv(
+                    sendbuf=local_solve_successful,
+                    recvbuf=(global_solve_successful, sample_split_arr),
+                    root=0,
+                )
+
+                if self.rank == 0:
+                    global_output_dict[key] = global_solve_successful
+
+        return global_output_dict
+
+    def _collect_local_inputs(self, local_results_dict):
+        
+        num_local_samples = len(local_results_dict["solve_successful"])
+        local_inputs = np.zeros(
+            (num_local_samples, len(local_results_dict["sweep_params"])), dtype=np.float64
+        )
+
+        for i, (key, item) in enumerate(local_results_dict["sweep_params"].items()):
+            local_inputs[:, i] = item["value"]
+
+        return local_inputs
+
+    def _aggregate_input_arr(self, global_results_dict, num_global_samples):
+
+        global_values = np.zeros(
+            (num_global_samples, len(global_results_dict["sweep_params"])), dtype=np.float64
+        )
+
+        if self.rank == 0:
+            for i, (key, item) in enumerate(global_results_dict["sweep_params"].items()):
+                global_values[:, i] = item["value"]
+
+        if self.num_procs > 1:  # pragma: no cover
+            self.comm.Bcast(global_values, root=0)
+
+        return global_values
+
+    def _aggregate_results(self, local_output_dict):
+
+        num_local_samples = len(local_output_dict["solve_successful"])
+
+        # Create the global results dictionary
+        global_results_dict = self._create_global_output(local_output_dict)
+
+        # Broadcast the number of global samples to all ranks
+        num_global_samples = len(global_results_dict["solve_successful"])
+        num_global_samples = self.comm.bcast(num_global_samples, root=0)
+
+        global_results_arr = self._aggregate_results_arr(global_results_dict, num_global_samples)
+        global_input_values = self._aggregate_input_arr(global_results_dict, num_global_samples)
+
+        return global_results_dict, global_results_arr, global_input_values, num_global_samples
+
+
 
     def _do_param_sweep(
         self,
         model,
         sweep_params,
+        differential_sweep_specs,
         outputs,
         local_values,
         optimize_function,
@@ -119,11 +233,11 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         local_num_cases = np.shape(local_values)[0]
 
         # Create the output skeleton for storing detailed data
-        local_output_dict = _create_local_output_skeleton(
+        local_output_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, local_num_cases
         )
 
-        local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
+        # local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
 
         local_solve_successful_list = []
 
@@ -144,7 +258,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
             # Step 1 : Run baseline/nominal case
             # Update the model values with a single combination from the parameter space
-            _update_model_values(model, sweep_params, local_values[k, :])
+            self._update_model_values(model, sweep_params, local_values[k, :])
 
             if probe_function is None or probe_function(model):
                 run_successful = self._param_sweep_kernel(
@@ -174,16 +288,9 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             # Step 2: Run differential case
             # self.diff_ps_dict[counter] = ParamweterSweep()
             diff_sweep_param_dict = self._create_differential_sweep_params(local_values[k,:], differential_sweep_specs)
-            diff_ps = ParameterSweep(model, diff_sweep_param_dict, outputs=outputs
-                optimize_function=optimize_function, # self._default_optimize,
-                optimize_kwargs=optimize_kwargs,
-                reinitialize_function=reinitialize_function,
-                reinitialize_kwargs=None,
-                reinitialize_before_sweep=reinitialize_before_sweep,
-                num_samples=self.num_diff_samples,
-                seed=seed,
-                )
-            _ , diff_output_dict[k] = diff_ps.parameter_sweep(model, diff_sweep_param_dict,
+            diff_ps = ParameterSweep()
+
+            _ , differential_sweep_output_dict[k] = diff_ps.parameter_sweep(model, diff_sweep_param_dict,
                 outputs=outputs,
                 optimize_function=optimize_function, # self._default_optimize,
                 optimize_kwargs=optimize_kwargs,
@@ -191,13 +298,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 reinitialize_kwargs=None,
                 reinitialize_before_sweep=reinitialize_before_sweep,
                 num_samples=self.num_diff_samples,
-                seed=seed,
+                seed=self.seed,
                 )
 
         local_output_dict["solve_successful"] = local_solve_successful_list
 
         # Now append the outputs of the differential solves
-        _append_differential_results(local_output_dict, diff_output_dict)
+        self._append_differential_results(local_output_dict, differential_sweep_output_dict)
 
         return local_output_dict
 
@@ -206,21 +313,24 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         self,
         model,
         sweep_params,
+        differential_sweep_specs,
         outputs=None,
         optimize_function=None, # self._default_optimize,
         optimize_kwargs=None,
         reinitialize_function=None,
         reinitialize_kwargs=None,
         reinitialize_before_sweep=False,
+        probe_function=None,
         num_samples=None,
         seed=None,
     ):
 
         # Create a base sweep_params
-        sweep_params_base, sampling_type = self._process_sweep_params(sweep_params)
+        sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
         # Set the seed before sampling
-        np.random.seed(seed)
+        self.seed = seed
+        np.random.seed(self.seed)
 
         # Enumerate/Sample the parameter space
         global_values = self._build_combinations(sweep_params, sampling_type, num_samples)
@@ -244,6 +354,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         local_results_dict = self._do_param_sweep(
             model,
             sweep_params,
+            differential_sweep_specs,
             outputs,
             local_values,
             optimize_function,
@@ -251,76 +362,76 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             reinitialize_function,
             reinitialize_kwargs,
             reinitialize_before_sweep,
+            probe_function,
         )
+
+        # re-writing local_values
+        local_values = self._collect_local_inputs(local_results_dict)
 
         # Aggregate results on Master
-        global_results_dict, global_results_arr = self._aggregate_local_results(
-            global_values,
-            local_results_dict,
-            num_samples,
-            local_num_cases
-        )
+        global_results_dict, global_results_arr, global_input_arr, num_global_samples = self._aggregate_results(local_results_dict)
 
         # Save to file
-        global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
+        global_save_data = self.writer.save_results(sweep_params, local_values, global_input_arr, local_results_dict,
             global_results_dict, global_results_arr)
 
         return global_save_data
 
 
 if __name__ == '__main__':
+    pass
 
-    sweep_params = {}
-    sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-    sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-    sweep_params["Spacer_porosity"] = LatinHypercubeSample(
-        m.fs.RO.spacer_porosity, 0.95, 0.99
-    )
-
-    # # TODO: We need to define what this dictionary looks like
-    # differntial_params = {}
-    # differntial_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-    # differntial_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-    # differntial_params["Spacer_porosity"] = LatinHypercubeSample(
+    # sweep_params = {}
+    # sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+    # sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+    # sweep_params["Spacer_porosity"] = LatinHypercubeSample(
     #     m.fs.RO.spacer_porosity, 0.95, 0.99
     # )
-
-
-
-    sweep_params_new = {}
-    sweep_params_new['base'] = sweep_params
-    sweep_params_new['differential'] = differntial_params
-
-
-    """ Kinshuk
-    Differential sampling type -> how do we modify
-    Attributes:
-        Diff_mode = Add to the base value, multiply to the base value
-        differential_sweep_info['value']['sample']= NormalSample(0.99,1.01,3) #product
-        differential_sweep_info['value']['sample']= NormalSample(-1e-12,1e-12,3) #sum
-    """
-
-    """ Alex
-    if Diff_mode=='sum':
-        local_dif_values[i]=local_values[i]+differential_sweep_info['value']['sample']
-    if Diff_mode=='product':
-        local_dif_values[i]=local_values[i]*differential_sweep_info['value']['sample']
-
-    """
-
-    """ Kinshuk
-    if Diff_mode=='sum':
-        local_dif_values[i]=local_values[i]+differential_sweep_info['value']['sample']
-
-    """
-    differential_sweep_info = {
-        "n_differential_samples" = same across everything
-        "A_comp" : { "diff_mode" : sum/product ,
-                     "diff_sample_type": Anything of the Sampling types,
-                     "relative_lb" : For linear/geometric sampling,
-                     "relative_ub" : For linear/geometric sampling,
-                     "relative_std_dev" : For normal sampling
-                    },
-        "B_comp" : {},
-        "Spacer_porosity"  : {},
-    }
+    #
+    # # # TODO: We need to define what this dictionary looks like
+    # # differntial_params = {}
+    # # differntial_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+    # # differntial_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+    # # differntial_params["Spacer_porosity"] = LatinHypercubeSample(
+    # #     m.fs.RO.spacer_porosity, 0.95, 0.99
+    # # )
+    #
+    #
+    #
+    # sweep_params_new = {}
+    # sweep_params_new['base'] = sweep_params
+    # sweep_params_new['differential'] = differntial_params
+    #
+    #
+    # """ Kinshuk
+    # Differential sampling type -> how do we modify
+    # Attributes:
+    #     Diff_mode = Add to the base value, multiply to the base value
+    #     differential_sweep_info['value']['sample']= NormalSample(0.99,1.01,3) #product
+    #     differential_sweep_info['value']['sample']= NormalSample(-1e-12,1e-12,3) #sum
+    # """
+    #
+    # """ Alex
+    # if Diff_mode=='sum':
+    #     local_dif_values[i]=local_values[i]+differential_sweep_info['value']['sample']
+    # if Diff_mode=='product':
+    #     local_dif_values[i]=local_values[i]*differential_sweep_info['value']['sample']
+    #
+    # """
+    #
+    # """ Kinshuk
+    # if Diff_mode=='sum':
+    #     local_dif_values[i]=local_values[i]+differential_sweep_info['value']['sample']
+    #
+    # """
+    # differential_sweep_info = {
+    #     "n_differential_samples" = same across everything
+    #     "A_comp" : { "diff_mode" : sum/product ,
+    #                  "diff_sample_type": Anything of the Sampling types,
+    #                  "relative_lb" : For linear/geometric sampling,
+    #                  "relative_ub" : For linear/geometric sampling,
+    #                  "relative_std_dev" : For normal sampling
+    #                 },
+    #     "B_comp" : {},
+    #     "Spacer_porosity"  : {},
+    # }
