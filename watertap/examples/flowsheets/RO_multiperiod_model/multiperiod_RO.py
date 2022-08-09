@@ -57,14 +57,10 @@ def create_base_model():
     m.ro_mp.fs.RO.area.fix(115)
 
     # fix bep flowrate instead of flow ratio for pumps 1 and 2
-    m.ro_mp.fs.P1.bep_flow.fix(
-        m.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol()
-    )
+    m.ro_mp.fs.P1.bep_flow.fix(m.ro_mp.fs.P1.bep_flow())
     m.ro_mp.fs.P1.flow_ratio[0].unfix()
 
-    m.ro_mp.fs.P2.bep_flow.fix(
-        m.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol()
-    )
+    m.ro_mp.fs.P2.bep_flow.fix(m.ro_mp.fs.P2.bep_flow())
     m.ro_mp.fs.P2.flow_ratio[0].unfix()
 
     # fix the mass fraction of nacl instead of the mass flow rate
@@ -104,7 +100,7 @@ def create_swro_mp_block():
 
     time_step = 3600  # seconds (1 hr)
     ramp_frac = 0.1  # fraction of time_step used for ramping
-    ramping_rate = 0.7  # bar/s
+    ramping_rate = 0.7e5  # Pa/s
 
     # Add coupling variables
     b1.previous_pressure = Var(
