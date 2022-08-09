@@ -148,7 +148,6 @@ class TestGACSimplified:
             port = getattr(ms.fs.unit, port_str)
             assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
-        # print(unused_variables_set(ms))
 
         # test statistics
         assert number_variables(ms) == 77
@@ -304,7 +303,6 @@ class TestGACRobust:
             port = getattr(mr.fs.unit, port_str)
             assert len(port.vars) == 3  # number of state variables for property package
             assert isinstance(port, Port)
-        # print(unused_variables_set(mr))
 
         # test statistics
         assert number_variables(mr) == 84
@@ -592,19 +590,6 @@ class TestGACMulti:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2)
         )
-
-        import idaes.core.util.scaling as iscale
-
-        for i in badly_scaled_var_lst:
-            i[0].pprint()
-            print(
-                i[0].name,
-                "scaled to",
-                i[1],
-                "with sf",
-                iscale.get_scaling_factor(i[0]),
-                "\n",
-            )
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
