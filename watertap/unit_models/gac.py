@@ -1041,7 +1041,7 @@ class GACData(UnitModelBlockData):
                 )
                 state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
             else:
-                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
+                state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-20
 
         blk.adsorbed_contam.initialize(
             outlvl=outlvl,
@@ -1110,8 +1110,8 @@ class GACData(UnitModelBlockData):
             if j not in self.config.target_species:
                 iscale.set_scaling_factor(
                     self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
-                    1e10 * sf_solute,
-                )  # ensure significantly lower concentration of zero flow components
+                    1e20,
+                )  # ensure lower concentration of zero flow components by 4 orders of magnitude
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
