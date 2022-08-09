@@ -173,6 +173,14 @@ class GACData(UnitModelBlockData):
         **SurfaceDiffusionCoefficientType.calculated** - calculates surface diffusion coefficient}""",
         ),
     )
+    CONFIG.declare(
+        "target_species",
+        ConfigValue(
+            default=None,
+            domain=set,
+            description="Species target for adsorption, currently only supports single species",
+        ),
+    )
 
     # ---------------------------------------------------------------------
     def build(self):
@@ -183,6 +191,13 @@ class GACData(UnitModelBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         # get default units from property package
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        component_set = self.config.property_package.component_list
+        solute_set = self.config.property_package.solute_set
+        if self.config.target_species is None and len(solute_set) == 1:
+            self.config.target_species = solute_set
+        target_species = self.config.target_species
+        inert_species = component_set - self.config.target_species
 
         # build control volume
         self.process_flow = ControlVolume0DBlock(
@@ -270,10 +285,6 @@ class GACData(UnitModelBlockData):
             units=units_meta("mass") * units_meta("length") ** -3,
             doc="Water density",
         )
-
-        # ---------------------------------------------------------------------
-        # variable declaration
-        # TODO: Add model capacity for multiple solutes
 
         # ---------------------------------------------------------------------
         # Freundlich isotherm parameters and adsorption
@@ -642,7 +653,7 @@ class GACData(UnitModelBlockData):
         # TODO: Add support mole or mass based property packs
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            target_species,
             doc="Mass transfer term for solutes",
         )
         def eq_mass_transfer_solute(b, t, j):
@@ -654,7 +665,7 @@ class GACData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solvent_set,
+            inert_species,
             doc="No mass transfer of solvents",
         )
         def eq_mass_transfer_solvent(b, t, j):
@@ -673,7 +684,7 @@ class GACData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            target_species,
             doc="Equilibrium concentration",
         )
         def eq_equil_conc(b, t, j):
@@ -687,7 +698,7 @@ class GACData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            target_species,
             doc="Solute distribution parameter",
         )
         def eq_dg(b, t, j):
@@ -786,7 +797,7 @@ class GACData(UnitModelBlockData):
             return b.bed_length == b.velocity_sup * b.ebct
 
         @self.Constraint(
-            self.config.property_package.solute_set,
+            target_species,
             doc="Total mass adsorbed in the elapsed time",
         )
         def eq_mass_absorbed(b, j):
@@ -951,7 +962,7 @@ class GACData(UnitModelBlockData):
             )
 
             @self.Constraint(
-                self.config.property_package.solute_set,
+                target_species,
                 doc="Solute distribution parameter",
             )
             def eq_surface_diffusion_coefficient_calculated(b, j):
@@ -1006,13 +1017,7 @@ class GACData(UnitModelBlockData):
         # specify conditions to solve at a feasible point during initialization
         # necessary to invert user provided scaling factor due to
         # low values creating infeasible initialization conditions
-        for j in blk.config.property_package.solute_set:
-            temp_scale = iscale.get_scaling_factor(
-                blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
-            )
-            state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
-
-        for j in blk.config.property_package.solvent_set:
+        for j in blk.config.property_package.component_list:
             temp_scale = iscale.get_scaling_factor(
                 blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
             )
@@ -1029,8 +1034,14 @@ class GACData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize adsorbed_contam port
-        for j in blk.config.property_package.solvent_set:
-            state_args["flow_mol_phase_comp"][("Liq", j)] = 1e-8
+        for j in blk.config.property_package.component_list:
+            if j == blk.config.target_species:
+                temp_scale = iscale.get_scaling_factor(
+                    blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+                )
+                state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
+            else:
+                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
 
         blk.adsorbed_contam.initialize(
             outlvl=outlvl,
@@ -1080,7 +1091,7 @@ class GACData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # scale based on molar flow traditionally provided by user for building flowsheets
-        for j in self.config.property_package.solute_set:
+        for j in self.config.target_species:
             sf_solute = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
             )
@@ -1090,11 +1101,17 @@ class GACData(UnitModelBlockData):
             )
 
         # overwrite default scaling for state block variables
-        for j in self.config.property_package.solute_set:
+        for j in self.config.target_species:
             iscale.set_scaling_factor(
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
+        for j in self.config.property_package.component_list:
+            if j not in self.config.target_species:
+                iscale.set_scaling_factor(
+                    self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
+                    1e10 * sf_solute,
+                )  # ensure significantly lower concentration of zero flow components
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
