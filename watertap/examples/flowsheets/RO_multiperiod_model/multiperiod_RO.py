@@ -31,11 +31,10 @@ from pyomo.environ import (
     units as pyunits,
 )
 
+from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
+
 import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as swro
 from watertap.unit_models.pressure_changer import VariableEfficiency
-
-# from idaes.core.util.model_statistics import degrees_of_freedom, fixed_variables_set
-from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 
 
 def create_base_model():

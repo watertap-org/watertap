@@ -21,12 +21,12 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.network import Arc
+
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
@@ -43,12 +43,6 @@ from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, VariableEfficiency
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
-
-
-class VariableEfficiency(StrEnum):
-    none = "none"
-    flow = "flow"
-    flow_head = "flow_head"
 
 
 def main(variable_efficiency=VariableEfficiency.none):
