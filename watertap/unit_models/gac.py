@@ -1111,7 +1111,7 @@ class GACData(UnitModelBlockData):
                 iscale.set_scaling_factor(
                     self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
                     1e20,
-                )  # ensure lower concentration of zero flow components by 4 orders of magnitude
+                )  # ensure lower concentration of zero flow components to match init val, below zero tol
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
