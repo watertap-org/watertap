@@ -616,6 +616,7 @@ class TestGACMulti:
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
+        mm.fs.unit.report()
 
     @pytest.mark.component
     def test_solve_multi(self, gac_frame_multi):

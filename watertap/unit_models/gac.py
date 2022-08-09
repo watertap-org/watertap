@@ -1106,12 +1106,12 @@ class GACData(UnitModelBlockData):
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
-        """for j in self.config.property_package.component_list:
+        for j in self.config.property_package.component_list:
             if j not in self.config.target_species:
                 iscale.set_scaling_factor(
                     self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
-                    None,
-                )"""  # ensure lower concentration of zero flow components to match init val, below zero tol
+                    1e-12,
+                )  # ensure lower concentration of zero flow components to match init val, below zero tol
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
