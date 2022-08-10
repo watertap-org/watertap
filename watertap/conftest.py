@@ -72,3 +72,32 @@ def pytest_addoption(parser: Parser):
         default=False,
         dest="edb_no_mock",
     )
+
+
+@contextlib.contextmanager
+def _convert_to_exceptions(warnings=None, deprecation_messages=None):
+    """
+    Create a context within which warnings and/or deprecation messages are converted to exceptions.
+    """
+
+    import idaes
+
+    with idaes.temporary_config_ctx():
+        if warnings:
+            idaes.cfg.warning_to_exception = True
+        if deprecation_messages:
+            idaes.cfg.deprecation_to_exception = True
+        idaes.reconfig()
+        yield
+        # TODO any cleanup needed?
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_deprecations_cause_failure() -> None:
+    """
+    Ensure deprecation messages raised during testing cause failures.
+
+    Not sure if this will be active when test modules are being imported, though.
+    """
+    with _convert_to_exceptions(deprecation_messages=True):
+        yield
