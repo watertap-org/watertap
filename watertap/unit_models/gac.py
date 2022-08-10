@@ -179,6 +179,13 @@ class GACData(UnitModelBlockData):
             default=None,
             domain=set,
             description="Species target for adsorption, currently only supports single species",
+            doc="""Indicate which component in the property package's component list is the target species
+        for adsorption by the GAC system, currently the model supports a single species
+        **default** - None.
+        **Valid values:** {
+        if the property package solute set only contains one item (two component, one solute, one solvent/water),
+        the model will accept the single solute as the target species, for multi-solute systems a string of
+        the component id must be provided.}""",
         ),
     )
 
@@ -663,13 +670,9 @@ class GACData(UnitModelBlockData):
                 t, "Liq", j
             ]
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            inert_species,
-            doc="No mass transfer of solvents",
-        )
-        def eq_mass_transfer_solvent(b, t, j):
-            return b.process_flow.mass_transfer_term[t, "Liq", j] == 0
+        # no mass transfer of inert species
+        for j in inert_species:
+            self.process_flow.mass_transfer_term[:, "Liq", j].fix(0)
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -1193,12 +1196,26 @@ class GACData(UnitModelBlockData):
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
+
         for j in self.config.property_package.component_list:
             if j not in self.config.target_species:
                 iscale.set_scaling_factor(
                     self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
-                    1e-12,
+                    1e12,
                 )  # ensure lower concentration of zero flow components, below zero tol
+                #  checks for other state block property objects
+                if self.adsorbed_contam[0].is_property_constructed(
+                    "flow_mass_phase_comp"
+                ):
+                    iscale.set_scaling_factor(
+                        self.adsorbed_contam[0].flow_mass_phase_comp["Liq", j],
+                        1e12,
+                    )  # ensure lower concentration of zero flow components, below zero tol
+        if self.adsorbed_contam[0].is_property_constructed("flow_vol_phase"):
+            iscale.set_scaling_factor(
+                self.adsorbed_contam[0].flow_vol_phase["Liq"],
+                1e4 * sf_solute,
+            )
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:

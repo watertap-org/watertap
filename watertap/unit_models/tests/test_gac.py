@@ -54,7 +54,6 @@ from watertap.costing import WaterTAPCosting
 __author__ = "Hunter Barber"
 
 solver = get_solver()
-print(get_solver().__class__)
 
 
 # -----------------------------------------------------------------------------
@@ -152,7 +151,7 @@ class TestGACSimplified:
 
         # test statistics
         assert number_variables(ms) == 77
-        assert number_total_constraints(ms) == 45
+        assert number_total_constraints(ms) == 44
         assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -184,11 +183,12 @@ class TestGACSimplified:
     def test_var_scaling_init_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(ms, large=1e2, small=1e-2)
+            badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
@@ -202,7 +202,7 @@ class TestGACSimplified:
     def test_var_scaling_solve_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(ms, large=1e2, small=1e-2)
+            badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
@@ -252,6 +252,9 @@ class TestGACRobust:
         )
         mr.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mr.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
+        # test construction of other variables in .report()
+        mr.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
+        mr.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
         mr.fs.unit.conc_ratio_replace.fix(0.80)
@@ -316,8 +319,8 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 84
-        assert number_total_constraints(mr) == 50
+        assert number_variables(mr) == 88
+        assert number_total_constraints(mr) == 53
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -349,11 +352,12 @@ class TestGACRobust:
     def test_var_scaling_init_robust(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mr, large=1e2, small=1e-2)
+            badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -367,7 +371,7 @@ class TestGACRobust:
     def test_var_scaling_solve_robust(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mr, large=1e2, small=1e-2)
+            badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
@@ -386,6 +390,7 @@ class TestGACRobust:
         mr = gac_frame_robust
         mr.fs.unit.report()
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -433,6 +438,7 @@ class TestGACRobust:
             mr.fs.unit.costing.fixed_operating_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_modular_contactors_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -465,6 +471,7 @@ class TestGACRobust:
             mr.fs.unit.costing.capital_cost
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_max_gac_ref_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -552,6 +559,9 @@ class TestGACMulti:
         )
         mm.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mm.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
+        # test construction of other variables in .report()
+        mm.fs.unit.process_flow.properties_out[0].flow_vol_phase["Liq"]
+        mm.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
         mm.fs.unit.conc_ratio_replace.fix(0.80)
@@ -612,12 +622,12 @@ class TestGACMulti:
     def test_var_scaling_init_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mm, large=1e2, small=1e-2)
+            badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
-        mm.fs.unit.report()
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_multi(self, gac_frame_multi):
         mm = gac_frame_multi
@@ -631,7 +641,7 @@ class TestGACMulti:
     def test_var_scaling_solve_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mm, large=1e2, small=1e-2)
+            badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
         )
         [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
@@ -649,7 +659,3 @@ class TestGACMulti:
     def test_reporting_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
-
-        from idaes.core.util.model_statistics import unfixed_variables_set
-
-        # [print(i) for i in list(unfixed_variables_set(mm))]
