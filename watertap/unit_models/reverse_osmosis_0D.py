@@ -164,15 +164,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         solute_set = self.config.property_package.solute_set
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
-            self.dP_dx = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=-5e4,
-                bounds=(-2e5, -1e3),
-                domain=NegativeReals,
-                units=units_meta("pressure") * units_meta("length") ** -1,
-                doc="Pressure drop per unit length of feed channel at inlet and outlet",
-            )
+            pass
         elif (
             self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
         ):
@@ -195,26 +187,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                 domain=NonNegativeReals,
                 units=units_meta("length"),
                 doc="Effective membrane length",
-            )
-            # not optional in 1DRO
-            self.width = Var(
-                initialize=1,
-                bounds=(0.1, 5e2),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Effective feed-channel width",
-            )
-
-        if (
-            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-            or self.config.pressure_change_type == PressureChangeType.calculated
-        ):
-            self.area_cross = Var(
-                initialize=1e-3 * 1 * 0.95,
-                bounds=(0, 1e3),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 2,
-                doc="Cross sectional area",
             )
 
         super()._make_performance()
@@ -277,15 +249,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                 == -b.feed_side.mass_transfer_term[t, p, j]
             )
 
-        # Non-existent in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
-        )
-        def eq_connect_enthalpy_transfer(b, t):
-            return (
-                b.mixed_permeate[t].get_enthalpy_flow_terms("Liq")
-                == -b.feed_side.enthalpy_transfer[t]
-            )
 
         # # Permeate-side stateblocks
         # Not in 1DRO

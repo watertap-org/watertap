@@ -368,34 +368,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         )
 
         """ Unit model variables"""
-        self.A_comp = Var(
-            self.flowsheet().config.time,
-            solvent_set,
-            initialize=1e-12,
-            bounds=(1e-18, 1e-6),
-            domain=NonNegativeReals,
-            units=units_meta("length")
-            * units_meta("pressure") ** -1
-            * units_meta("time") ** -1,
-            doc="Solvent permeability coeff.",
-        )
-
-        self.B_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1e-8,
-            bounds=(1e-11, 1e-5),
-            domain=NonNegativeReals,
-            units=units_meta("length") * units_meta("time") ** -1,
-            doc="Solute permeability coeff.",
-        )
-
-        # TODO: add water density to NaCl prop model and remove here (or use IDAES version)
-        self.dens_solvent = Param(
-            initialize=1000,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="Pure water density",
-        )
 
         self.area = Var(
             initialize=10,
@@ -436,145 +408,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             doc="Observed solute rejection",
         )
 
-        self.flux_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
-            if j in solvent_set
-            else (1e-8, 1e-3),
-            units=units_meta("mass")
-            * units_meta("length") ** -2
-            * units_meta("time") ** -1,
-            doc="Mass flux across membrane at inlet and outlet",
-        )
-
-        if (
-            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-        ) or self.config.pressure_change_type == PressureChangeType.calculated:
-
-            self.channel_height = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Feed-channel height",
-            )
-
-            self.dh = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Hydraulic diameter of feed channel",
-            )
-
-            self.spacer_porosity = Var(
-                initialize=0.95,
-                bounds=(0.1, 0.99),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Feed-channel spacer porosity",
-            )
-
-        if (
-            self.config.concentration_polarization_type
-            == ConcentrationPolarizationType.calculated
-        ):
-            self.Kf = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                solute_set,
-                initialize=5e-5,
-                bounds=(1e-6, 1e-3),
-                domain=NonNegativeReals,
-                units=units_meta("length") * units_meta("time") ** -1,
-                doc="Mass transfer coefficient in feed channel",
-            )
-        if (
-            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-            or self.config.pressure_change_type == PressureChangeType.calculated
-        ):
-            self.N_Re = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=5e2,
-                bounds=(10, 5e3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Reynolds number in feed channel",
-            )
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
-            self.N_Sc = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=5e2,
-                bounds=(1e2, 2e3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Schmidt number in feed channel",
-            )
-            self.N_Sh = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=1e2,
-                bounds=(1, 3e2),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Sherwood number in feed channel",
-            )
-
-        if self.config.pressure_change_type == PressureChangeType.calculated:
-            self.velocity = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=0.5,
-                bounds=(1e-2, 5),
-                domain=NonNegativeReals,
-                units=units_meta("length") / units_meta("time"),
-                doc="Crossflow velocity in feed channel",
-            )
-            self.friction_factor_darcy = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=0.5,
-                bounds=(1e-2, 5),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Darcy friction factor in feed channel",
-            )
-
-        if (
-            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-            or self.config.pressure_change_type == PressureChangeType.calculated
-        ):
-
-            @self.Constraint(
-                doc="Hydraulic diameter"
-            )  # eqn. 17 in Schock & Miquel, 1987
-            def eq_dh(b):
-                return b.dh == 4 * b.spacer_porosity / (
-                    2 / b.channel_height
-                    + (1 - b.spacer_porosity) * 8 / b.channel_height
-                )
-
-        if (
-            self.config.concentration_polarization_type
-            == ConcentrationPolarizationType.fixed
-        ):
-            self.cp_modulus = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                solute_set,
-                initialize=1.1,
-                bounds=(0.9, 3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Concentration polarization modulus",
-            )
-
         # ==========================================================================
         # Volumetric Recovery rate
         @self.Constraint(self.flowsheet().config.time)
@@ -599,74 +432,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 == b.mixed_permeate[t].flow_mass_phase_comp["Liq", j]
             )
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Solvent and solute mass flux",
-        )
-        def eq_flux_mass(b, t, x, p, j):
-            prop_feed = b.feed_side.properties[t, x]
-            prop_perm = b.permeate_side[t, x]
-            interface = b.feed_side.properties_interface[t, x]
-            comp = self.config.property_package.get_component(j)
-            if comp.is_solvent():
-                return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
-                    t, j
-                ] * b.dens_solvent * (
-                    (prop_feed.pressure - prop_perm.pressure)
-                    - (
-                        interface.pressure_osm_phase[p]
-                        - prop_perm.pressure_osm_phase[p]
-                    )
-                )
-            elif comp.is_solute():
-                return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
-                    interface.conc_mass_phase_comp[p, j]
-                    - prop_perm.conc_mass_phase_comp[p, j]
-                )
-
-        # # ==========================================================================
-        # Concentration polarization
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            solute_set,
-            doc="Concentration polarization",
-        )
-        def eq_concentration_polarization(b, t, x, j):
-            bulk = b.properties[t, x]
-            interface = b.properties_interface[t, x]
-            if (
-                self.config.concentration_polarization_type
-                == ConcentrationPolarizationType.none
-            ):
-                return (
-                    interface.conc_mass_phase_comp["Liq", j]
-                    == bulk.conc_mass_phase_comp["Liq", j]
-                )
-            elif (
-                self.config.concentration_polarization_type
-                == ConcentrationPolarizationType.fixed
-            ):
-                return (
-                    interface.conc_mass_phase_comp["Liq", j]
-                    == bulk.conc_mass_phase_comp["Liq", j] * self.cp_modulus[t, x, j]
-                )
-            elif (
-                self.config.concentration_polarization_type
-                == ConcentrationPolarizationType.calculated
-            ):
-                jw = self.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
-                js = self.flux_mass_phase_comp[t, x, "Liq", j]
-                return interface.conc_mass_phase_comp[
-                    "Liq", j
-                ] == bulk.conc_mass_phase_comp["Liq", j] * exp(
-                    jw / self.Kf[t, x, j]
-                ) - js / jw * (
-                    exp(jw / self.Kf[t, x, j]) - 1
-                )
 
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
@@ -692,16 +457,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 == b.mixed_permeate[t].temperature
             )
 
-        # ==========================================================================
-        # isobaric conditions across permeate channel and at permeate outlet
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isobaric assumption for permeate out",
-        )
-        def eq_permeate_outlet_isobaric(b, t, x):
-            return b.permeate_side[t, x].pressure == b.mixed_permeate[t].pressure
-
         # rejection
         @self.Constraint(self.flowsheet().config.time, solute_set)
         def eq_rejection_phase_comp(b, t, j):
@@ -720,113 +475,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             def eq_area(b):
                 return b.area == b.length * b.width
 
-        # # ==========================================================================
-        # Constraints active when MassTransferCoefficient.calculated
-        # Mass transfer coefficient calculation
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.difference_elements,
-                solute_set,
-                doc="Mass transfer coefficient in feed channel",
-            )
-            def eq_Kf(b, t, x, j):
-                bulk = b.feed_side.properties[t, x]
-                return (
-                    b.Kf[t, x, j] * b.dh
-                    == bulk.diffus_phase_comp[
-                        "Liq", j
-                    ]  # TODO: add diff coefficient to SW prop and consider multi-components
-                    * b.N_Sh[t, x]
-                )
-
-            @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
-            )
-            def eq_N_Sh(b, t, x):
-                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
-
-            @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
-            )
-            def eq_N_Sc(b, t, x):
-                bulk = b.feed_side.properties[t, x]
-                # # TODO: This needs to be revisted. Diffusion is now by component, but
-                #   not H2O and this var should also be by component, but the implementation
-                #   is not immediately clear.
-                return (
-                    b.N_Sc[t, x]
-                    * bulk.dens_mass_phase["Liq"]
-                    * bulk.diffus_phase_comp["Liq", bulk.params.component_list.last()]
-                    == bulk.visc_d_phase["Liq"]
-                )
-
-        if (
-            self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-            or self.config.pressure_change_type == PressureChangeType.calculated
-        ):
-
-            @self.Constraint(doc="Cross-sectional area")
-            def eq_area_cross(b):
-                return b.area_cross == b.channel_height * b.width * b.spacer_porosity
-
-            @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="Reynolds number"
-            )
-            def eq_N_Re(b, t, x):
-                bulk = b.feed_side.properties[t, x]
-                return (
-                    b.N_Re[t, x] * b.area_cross * bulk.visc_d_phase["Liq"]
-                    == sum(
-                        bulk.flow_mass_phase_comp["Liq", j]
-                        for j in b.config.property_package.component_list
-                    )
-                    * b.dh
-                )
-
-        if self.config.pressure_change_type == PressureChangeType.calculated:
-            ## ==========================================================================
-            # Crossflow velocity
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Crossflow velocity constraint",
-            )
-            def eq_velocity(b, t, x):
-                return (
-                    b.velocity[t, x] * b.area_cross
-                    == b.feed_side.properties[t, x].flow_vol_phase["Liq"]
-                )
-
-            ## ==========================================================================
-            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
-            # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Darcy friction factor constraint",
-            )
-            def eq_friction_factor_darcy(b, t, x):
-                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
-
-            ## ==========================================================================
-            # Pressure change per unit length due to friction
-            # -1/2*f/dh*density*velocity^2
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="pressure change per unit length due to friction",
-            )
-            def eq_dP_dx(b, t, x):
-                bulk = b.feed_side.properties[t, x]
-                return (
-                    b.dP_dx[t, x] * b.dh
-                    == -0.5
-                    * b.friction_factor_darcy[t, x]
-                    * b.feed_side.properties[t, x].dens_mass_phase["Liq"]
-                    * b.velocity[t, x] ** 2
-                )
 
         # ==========================================================================
         # Bulk and interface connections on the feed-side
@@ -841,15 +489,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 b.properties_interface[t, x].temperature
                 == b.properties[t, x].temperature
             )
-
-        # PRESSURE
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            doc="Pressure at interface",
-        )
-        def eq_equal_pressure_interface(b, t, x):
-            return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
 
         # VOLUMETRIC FLOWRATE
         @self.feed_side.Constraint(
