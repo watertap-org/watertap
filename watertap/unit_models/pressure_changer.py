@@ -60,14 +60,14 @@ class PumpIsothermalData(PumpData):
         # ---------------------------------------
         # Isothermal pump set up
         # ---------------------------------------
-        if hasattr(self.control_volume.enthalpy_balances):
+        if hasattr(self.control_volume, "enthalpy_balances"):
             self.control_volume.del_component(self.control_volume.enthalpy_balances)
 
-            @self.control_volume.Constraint(
-                self.flowsheet().config.time, doc="Isothermal constraint"
-            )
-            def isothermal_balance(b, t):
-                return b.properties_in[t].temperature == b.properties_out[t].temperature
+        @self.control_volume.Constraint(
+            self.flowsheet().config.time, doc="Isothermal constraint"
+        )
+        def isothermal_balance(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # ---------------------------------------
         # Variable efficiency pump set-up
