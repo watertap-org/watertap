@@ -15,8 +15,8 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-plt.rc("font", size=16)
-plt.rc("axes", titlesize=16)
+plt.rc("font", size=20)
+plt.rc("axes", titlesize=20)
 
 
 from pyomo.environ import (
@@ -149,13 +149,13 @@ def visualize_results(t_blocks, lmp):
     )
     pump1_flow = np.array(
         [
-            blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol()
+            blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
             for blk in t_blocks
         ]
     )
     pump2_flow = np.array(
         [
-            blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol()
+            blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
             for blk in t_blocks
         ]
     )

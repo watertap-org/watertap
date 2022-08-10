@@ -49,7 +49,7 @@ def create_base_model():
 
     # call main to create and initialize model with flow-type variable efficiency
     m = ConcreteModel()
-    m.ro_mp = swro.main(VariableEfficiency.flow)
+    m.ro_mp = swro.main(variable_efficiency=VariableEfficiency.flow)
 
     print("\nFixing system design variables and setting bounds...")
 
@@ -57,11 +57,14 @@ def create_base_model():
     m.ro_mp.fs.RO.area.fix(115)
 
     # fix bep flowrate instead of flow ratio for pumps 1 and 2
-    m.ro_mp.fs.P1.bep_flow.fix(m.ro_mp.fs.P1.bep_flow())
     m.ro_mp.fs.P1.flow_ratio[0].unfix()
-
-    m.ro_mp.fs.P2.bep_flow.fix(m.ro_mp.fs.P2.bep_flow())
     m.ro_mp.fs.P2.flow_ratio[0].unfix()
+    m.ro_mp.fs.P1.bep_flow.fix(
+        m.ro_mp.fs.P1.control_volume.properties_in[0].flow_vol_phase["Liq"]()
+    )
+    m.ro_mp.fs.P2.bep_flow.fix(
+        m.ro_mp.fs.P2.control_volume.properties_in[0].flow_vol_phase["Liq"]()
+    )
 
     # fix the mass fraction of nacl instead of the mass flow rate
     mass_frac_nacl = (

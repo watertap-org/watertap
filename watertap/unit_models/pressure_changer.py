@@ -101,7 +101,7 @@ class PumpIsothermalData(PumpData):
             @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
             def flow_ratio_constraint(b, t):
                 return b.flow_ratio[t] * b.bep_flow == (
-                    b.control_volume.properties_out[t].flow_vol.expr()
+                    b.control_volume.properties_out[t].flow_vol_phase["Liq"]
                 )
 
         if self.config.variable_efficiency is VariableEfficiency.flow:

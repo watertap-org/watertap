@@ -171,6 +171,10 @@ def build(variable_efficiency=VariableEfficiency.none):
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
     m.fs.S1.mixed_state[0].mass_frac_phase_comp
     m.fs.S1.PXR_state[0].flow_vol_phase["Liq"]
+    m.fs.P1.control_volume.properties_out[0].flow_vol
+    m.fs.P1.control_volume.properties_in[0].flow_vol
+    m.fs.P2.control_volume.properties_out[0].flow_vol
+    m.fs.P2.control_volume.properties_in[0].flow_vol
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -229,8 +233,6 @@ def set_operating_conditions(
         m.fs.P2.bep_eta.fix(default_efficiency)
 
         # fix the flow ratio to 1 for initialization
-        # m.fs.P1.bep_flow.fix(m.fs.P1.control_volume.properties_out[0].flow_vol)
-        # m.fs.P2.bep_flow.fix(m.fs.P2.control_volume.properties_out[0].flow_vol)
         m.fs.P1.flow_ratio[0].fix(1)
         m.fs.P2.flow_ratio[0].fix(1)
 
@@ -541,4 +543,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main()
+    m = main(variable_efficiency=VariableEfficiency.flow)
