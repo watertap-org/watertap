@@ -366,4 +366,4 @@ class TestPumpVariable_Flow(TestPumpIsothermal):
         # Test sub-optimal bep flow case
         m.fs.unit.bep_flow.fix(default_flow_vol * 0.8)
         results = solver.solve(m)
-        assert pytest.approx(0.885111, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
+        assert pytest.approx(0.9345625, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
