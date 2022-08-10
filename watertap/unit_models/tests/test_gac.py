@@ -649,3 +649,7 @@ class TestGACMulti:
     def test_reporting_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
+
+        from idaes.core.util.model_statistics import unfixed_variables_set
+
+        # [print(i) for i in list(unfixed_variables_set(mm))]

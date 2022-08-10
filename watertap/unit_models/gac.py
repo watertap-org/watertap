@@ -368,7 +368,7 @@ class GACData(UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("mass"),
-            doc="Mass of raw GAC in the adsorber bed",
+            doc="Mass of fresh GAC in the adsorber bed",
         )
 
         self.velocity_sup = Var(
@@ -1071,9 +1071,96 @@ class GACData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        expr_dict = {}
 
-        var_dict["temp"] = self.bed_volume
+        # unit model variables
+        var_dict["Freundlich isotherm k parameter"] = self.freund_k
+        var_dict["Freundlich isotherm 1/n parameter"] = self.freund_ninv
+        var_dict[
+            "Equilibrium concentration of adsorbed phase with liquid phase"
+        ] = self.equil_conc
+        var_dict[
+            "Mass of contaminant absorbed at the time of replacement"
+        ] = self.mass_adsorbed
+        var_dict["Adsorber bed void fraction"] = self.bed_voidage
+        var_dict["Adsorber bed volume"] = self.bed_volume
+        var_dict["Adsorber bed area"] = self.bed_area
+        var_dict["Adsorber bed length"] = self.bed_length
+        var_dict["Mass of fresh GAC in the adsorber bed"] = self.bed_mass_gac
+        var_dict["Superficial velocity"] = self.velocity_sup
+        var_dict["Interstitial velocity"] = self.velocity_int
+        var_dict["GAC particle porosity or void fraction"] = self.particle_porosity
+        var_dict["GAC particle diameter"] = self.particle_dia
+        var_dict[
+            "Steady state average effluent to inlet concentration ratio"
+        ] = self.conc_ratio_avg
+        var_dict[
+            "Effluent to inlet concentration ratio at time of bed replacement"
+        ] = self.conc_ratio_replace
+        var_dict[
+            "Approximate GAC saturation in the adsorber bed at time of replacement"
+        ] = self.gac_saturation_replace
+        var_dict["Empty bed contact time"] = self.ebct
+        var_dict[
+            "Elapsed time between GAC replacement in adsorber bed in operation"
+        ] = self.elap_time
+        var_dict[
+            "GAC usage and required replacement/regeneration rate"
+        ] = self.gac_mass_replace_rate
+        var_dict["Liquid phase film transfer coefficient"] = self.kf
+        var_dict["Surface diffusion coefficient"] = self.ds
+        var_dict["Solute distribution parameter"] = self.dg
+        if hasattr(self, "diffus_liq"):
+            var_dict["Molecular diffusion coefficient"] = self.diffus_liq
+        if hasattr(self, "molal_volume"):
+            var_dict["Molal volume"] = self.molal_volume
+
+        phase_comp_prop_dict = {
+            "flow_mol_phase_comp": "Molar flow rate",
+            "flow_mass_phase_comp": "Mass flow rate",
+            "conc_mol_phase_comp": "Molar concentration",
+            "conc_mass_phase_comp": "Mass concentration",
+        }
+        for prop_name, prop_str in phase_comp_prop_dict.items():
+            for j in self.config.property_package.component_list:
+                if self.process_flow.properties_in[time_point].is_property_constructed(
+                    prop_name
+                ):
+                    var_dict[f"{prop_str} of {j} @ process feed inlet"] = getattr(
+                        self.process_flow.properties_in[time_point], prop_name
+                    )["Liq", j]
+                if self.process_flow.properties_out[time_point].is_property_constructed(
+                    prop_name
+                ):
+                    var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
+                        self.process_flow.properties_out[time_point], prop_name
+                    )["Liq", j]
+                if self.adsorbed_contam[time_point].is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
+                        self.adsorbed_contam[time_point], prop_name
+                    )["Liq", j]
+
+        phase_prop_dict = {
+            "flow_vol_phase": "Volumetric flow rate",
+        }
+        for prop_name, prop_str in phase_prop_dict.items():
+            if self.process_flow.properties_in[time_point].is_property_constructed(
+                prop_name
+            ):
+                var_dict[f"{prop_str} @ process feed inlet"] = getattr(
+                    self.process_flow.properties_in[time_point], prop_name
+                )["Liq"]
+            if self.process_flow.properties_out[time_point].is_property_constructed(
+                prop_name
+            ):
+                var_dict[f"{prop_str} @ process feed outlet"] = getattr(
+                    self.process_flow.properties_out[time_point], prop_name
+                )["Liq"]
+            if self.adsorbed_contam[time_point].is_property_constructed(prop_name):
+                var_dict[f"{prop_str} @ process feed outlet"] = getattr(
+                    self.adsorbed_contam[time_point], prop_name
+                )["Liq"]
+
+        return {"vars": var_dict}
 
     # ---------------------------------------------------------------------
     def _get_stream_table_contents(self, time_point=0):
@@ -1111,7 +1198,7 @@ class GACData(UnitModelBlockData):
                 iscale.set_scaling_factor(
                     self.adsorbed_contam[0].flow_mol_phase_comp["Liq", j],
                     1e-12,
-                )  # ensure lower concentration of zero flow components to match init val, below zero tol
+                )  # ensure lower concentration of zero flow components, below zero tol
 
         # scaling for gac created variables that are flow magnitude dependent
         if iscale.get_scaling_factor(self.mass_adsorbed) is None:
