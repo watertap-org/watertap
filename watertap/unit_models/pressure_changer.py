@@ -60,14 +60,14 @@ class PumpIsothermalData(PumpData):
         # ---------------------------------------
         # Isothermal pump set up
         # ---------------------------------------
+        if hasattr(self.control_volume.enthalpy_balances):
+            self.control_volume.del_component(self.control_volume.enthalpy_balances)
 
-        self.control_volume.del_component(self.control_volume.enthalpy_balances)
-
-        @self.control_volume.Constraint(
-            self.flowsheet().config.time, doc="Isothermal constraint"
-        )
-        def isothermal_balance(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
+            @self.control_volume.Constraint(
+                self.flowsheet().config.time, doc="Isothermal constraint"
+            )
+            def isothermal_balance(b, t):
+                return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # ---------------------------------------
         # Variable efficiency pump set-up
@@ -125,37 +125,8 @@ class PumpIsothermalData(PumpData):
             raise ValueError(
                 "Config option 'VariableEfficiency.flow_head' is not fully implemented yet"
             )
-            # TODO - Implement pump efficiency expression based on flow and head
-            # self.bep_head = Var(
-            #     initialize=1.0,
-            #     doc="Best efficiency point head of the centrifugal pump",
-            #     units=pyunits.m,
-            # )
-            #
-            # self.head_ratio = Var(
-            #     self.flowsheet().time,
-            #     initialize=1.0,
-            #     doc="Ratio of pump head to best efficiency point head",
-            #     units=pyunits.dimensionless,
-            # )
-            #
-            # @self.Constraint(self.flowsheet().time, doc="Pump head ratio")
-            # def head_ratio_constraint(b, t):
-            #     if b.control_volume.properties_in[t].dens_mass_phase["Liq"] is None:
-            #         raise Exception(
-            #             "Density is not implemented in property package as 'dens_mass_phase'"
-            #         )
-            #
-            #     return b.head_ratio[t] * b.bep_head * Constants.acceleration_gravity == (
-            #             (
-            #                     b.control_volume.properties_out[t].pressure
-            #                     / b.control_volume.properties_out[t].dens_mass_phase["Liq"]
-            #             )
-            #             - (
-            #                     b.control_volume.properties_in[t].pressure
-            #                     / b.control_volume.properties_in[t].dens_mass_phase["Liq"]
-            #             )
-            #     )
+            # TODO - Implement pump efficiency expression based on flow and head (bep_head, head_ratio)
+
         if self.config.variable_efficiency is not VariableEfficiency.none:
             # replace the constant efficiency assumption using eta_ratio
             # must be done after the eta_ratio expression is created.
@@ -188,10 +159,6 @@ class PumpIsothermalData(PumpData):
             if iscale.get_scaling_factor(self.flow_ratio) is None:
                 iscale.set_scaling_factor(self.flow_ratio, 1)
 
-        if hasattr(self, "head_ratio"):
-            if iscale.get_scaling_factor(self.head_ratio) is None:
-                iscale.set_scaling_factor(self.head_ratio, 1)
-
         if hasattr(self, "efficiency_pump"):
             if iscale.get_scaling_factor(self.efficiency_pump[0]) is None:
                 iscale.set_scaling_factor(self.efficiency_pump[0], 1)
@@ -201,10 +168,6 @@ class PumpIsothermalData(PumpData):
         if hasattr(self, "flow_ratio_constraint"):
             if iscale.get_scaling_factor(self.flow_ratio_constraint[0]) is None:
                 iscale.set_scaling_factor(self.flow_ratio_constraint[0], 1)
-
-        if hasattr(self, "head_ratio_constraint"):
-            if iscale.get_scaling_factor(self.head_ratio_constraint[0]) is None:
-                iscale.set_scaling_factor(self.head_ratio_constraint[0], 1)
 
         if hasattr(self, "eta_constraint"):
             if iscale.get_scaling_factor(self.eta_constraint[0]) is None:
