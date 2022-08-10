@@ -82,7 +82,7 @@ class PumpIsothermalData(PumpData):
             )
 
             self.bep_eta = Var(
-                initialize=self.efficiency_pump[0].value,
+                initialize=0.8,
                 doc="Best efficiency of the centrifugal pump",
                 units=pyunits.dimensionless,
             )
@@ -93,9 +93,6 @@ class PumpIsothermalData(PumpData):
                 doc="Ratio of pump flowrate to best efficiency point flowrate",
                 units=pyunits.dimensionless,
             )
-
-            # unfix the default efficiency from the base class
-            self.efficiency_pump.unfix()
 
             # add constraints
             @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
