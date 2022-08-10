@@ -87,9 +87,6 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
 
         @self.Constraint(self.flowsheet().config.time, doc="Air flow rate constraint")
         def air_flow_rate_constraint(b, t):
-            # q_in = pyunits.convert(
-            #     b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
-            # )
             return b.air_flow_rate[t] == b.air_water_ratio[t] * b.flow_basis[t]
 
         @self.Constraint(
