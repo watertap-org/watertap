@@ -16,10 +16,10 @@ default:
     reference: '(1) Cost Estimating Manual for Water Treatment Facilities (McGivney/Kawamura),
       (2) Water and Wastewater Engineering: Design Principles and Practice (Mackenzie
       L. Davis)'
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.990826
       units: dimensionless
@@ -32,20 +32,20 @@ phosphorus_capture:    # AMO subtype
     value: 0.0
     units: kWh/m^3
   capital_cost:
-    cost_factor: TPEC
-    capital_a_parameter:  # kept from default
-      value: 13572
-      units: USD_2007
-    capital_b_parameter:  # kept from default
-      value: 0.3182
-      units: dimensionless
+    cost_factor: None
+    unit_capex:
+      value: 0.39
+      units: USD_2020/(L/day)
+    unit_opex:
+      value: 22.84
+      units: USD_2020/m^3
   recovery_frac_mass_H2O:
     value: 0.9861     #initial estimate
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.999
       units: dimensionless
