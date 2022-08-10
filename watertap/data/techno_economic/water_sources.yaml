@@ -159,20 +159,6 @@ brackish_high:
   pH:
     max: 7.6
     min: 7.6
-testing:
-  metadata: For unit validation
-  solutes:
-    tds:
-      constituent_longform: Total Dissolved Solids (TDS)
-      value: 1
-      units: kg/m^3
-    toc:
-      constituent_longform: Total Organic Carbon (TOC)
-      value: 1
-      units: kg/m^3
-  default_flow:
-    value: 1
-    units: m^3/s
 municipal:
   metadata: Based on hrsd case study
   solutes:
