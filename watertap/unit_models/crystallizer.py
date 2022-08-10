@@ -170,14 +170,14 @@ class CrystallizationData(UnitModelBlockData):
         self.crystallization_yield = Var(
             solute_set,
             initialize=0.5,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Crystallizer solids yield",
         )
 
         self.product_volumetric_solids_fraction = Var(
             initialize=0.25,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Volumetric fraction of solids in slurry product (i.e. solids-liquid mixture).",
         )
