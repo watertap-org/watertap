@@ -119,7 +119,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             # "S_cat": 0,
         }
         self.Ci = pyo.Var(
-            Ci_dict.keys(),
+            self.state_ref.solute_set,
             initialize=Ci_dict,
             units=pyo.units.kmol / pyo.units.kg,
             domain=pyo.PositiveReals,
