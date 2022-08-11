@@ -151,7 +151,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             doc="""
            Options to account for solution density.
 
-           **default** - ``DensityCalculation.seawater``
+           **default** - ``DensityCalculation.constant``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
