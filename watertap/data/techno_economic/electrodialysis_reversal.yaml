@@ -1,7 +1,4 @@
 default:
-  energy_electric_flow_vol_inlet:
-    value: 0.0
-    units: kWh/m^3
   elec_coeff_1:
     value: 0.2534
     units: kWh/m^3
