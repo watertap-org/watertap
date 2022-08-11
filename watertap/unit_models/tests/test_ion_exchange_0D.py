@@ -41,7 +41,7 @@ from watertap.property_models.ion_DSPMDE_prop_pack import (
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
 from watertap.core.util.initialization import check_dof
 
-from idaes.core.util import get_solver
+from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -126,21 +126,6 @@ def ix_scaling(m, sf=1e4, est_recov=0.95, est_removal=0.99):
             )
             set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf * 10)
     return m
-
-
-@pytest.mark.unit
-def test_config():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = DSPMDEParameterBlock(default=ix_in)
-    m.fs.unit = IonExchange0D(default={"property_package": m.fs.properties})
-    # check unit config arguments
-    assert len(m.fs.unit.config) == 7
-
-    assert not m.fs.unit.config.dynamic
-    assert not m.fs.unit.config.has_holdup
-
-    assert m.fs.unit.config.property_package is m.fs.properties
 
 
 class TestIonExchange:
@@ -407,24 +392,24 @@ class TestIonExchange:
         ix = m.fs.unit
 
         results_dict = {
-            "resin_eq_capacity": 3.4527241421390866,
-            "separation_factor": 0.3333333333333333,
-            "bed_vol": 0.5643058362060249,
-            "partition_ratio": 111.17771737687855,
-            "fluid_mass_transfer_coeff": 4.803356569171306e-05,
-            "mass_in": 1370.008428042168,
-            "mass_out": 6.133759089199108,
-            "mass_removed": 1363.8746689529687,
-            "vel_bed": 0.005316266122917781,
-            "service_flow_rate": 6.379519347501365,
-            "Re": 4.784639510626003,
-            "Sc": 751.8796992481202,
-            "Sh": 32.50391663349005,
-            "t_breakthru": 63020.387689939715,
-            "t_contact": 282.15291810301244,
-            "t_waste": 3810.7645905150625,
+            "resin_eq_capacity": 3.452,
+            "separation_factor": 0.3333333,
+            "bed_vol": 0.564305,
+            "partition_ratio": 111.1777,
+            "fluid_mass_transfer_coeff": 4.80335e-05,
+            "mass_in": 1370.0084,
+            "mass_out": 6.1337,
+            "mass_removed": 1363.87467,
+            "vel_bed": 0.00531,
+            "service_flow_rate": 6.37951,
+            "Re": 4.7846,
+            "Sc": 751.8796,
+            "Sh": 32.503915,
+            "t_breakthru": 63020.38768,
+            "t_contact": 282.15294,
+            "t_waste": 3810.764,
             "t_regen": 1800,
-            "t_rinse": 1410.7645905150623,
+            "t_rinse": 1410.7645,
         }
 
         for v, val in results_dict.items():
