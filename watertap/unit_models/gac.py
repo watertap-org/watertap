@@ -266,7 +266,7 @@ class GACData(UnitModelBlockData):
         # Add ports
         self.add_inlet_port(name="inlet", block=self.process_flow)
         self.add_outlet_port(name="outlet", block=self.process_flow)
-        self.add_port(name="adsorbed", block=self.adsorbed_contam)
+        self.add_outlet_port(name="adsorbed", block=self.adsorbed_contam)
 
         # ---------------------------------------------------------------------
         # parameter declaration
