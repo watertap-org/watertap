@@ -10,7 +10,6 @@
 # 'https://github.com/watertap-org/watertap/'
 #
 ###############################################################################
-import idaes.logger
 import pytest
 import pyomo.environ as pyo
 from pyomo.environ import (
@@ -133,8 +132,6 @@ class TestGACSimplified:
         )
 
         assert ms.fs.unit.config.property_package is ms.fs.properties
-
-        # only designed for single solute and single solvent (water) *dated*
         assert len(ms.fs.unit.config.property_package.solute_set) == 1
         assert len(ms.fs.unit.config.property_package.solvent_set) == 1
 
@@ -250,6 +247,7 @@ class TestGACRobust:
         mr.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
             5.644342973110135e-05
         )
+        # touch variables relevant to design, may be fixed as opposed to ftpx in flowsheets
         mr.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mr.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
@@ -302,8 +300,6 @@ class TestGACRobust:
         )
 
         assert mr.fs.unit.config.property_package is mr.fs.properties
-
-        # only designed for single solute and single solvent (water)
         assert len(mr.fs.unit.config.property_package.solute_set) == 1
         assert len(mr.fs.unit.config.property_package.solvent_set) == 1
 
@@ -512,6 +508,7 @@ class TestGACMulti:
         mm = ConcreteModel()
         mm.fs = FlowsheetBlock(default={"dynamic": False})
 
+        # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
         mm.fs.properties = DSPMDEParameterBlock(
             default={
                 "solute_list": ["TCE", "BGSOL", "BGCAT", "BGAN"],
@@ -526,6 +523,7 @@ class TestGACMulti:
             }
         )
 
+        # testing target_species arg
         mm.fs.unit = GAC(
             default={
                 "property_package": mm.fs.properties,
@@ -557,6 +555,7 @@ class TestGACMulti:
         mm.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "BGAN"].fix(
             1e-05
         )
+        # touch variables relevant to design, may be fixed as opposed to ftpx in flowsheets
         mm.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mm.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
@@ -590,9 +589,8 @@ class TestGACMulti:
     @pytest.mark.unit
     def test_config_multi(self, gac_frame_multi):
         mm = gac_frame_multi
-        # check unit config arguments
 
-        # only designed for single solute and single solvent (water)
+        # checking non-unity solute set and nonzero ion set handling
         assert len(mm.fs.unit.config.property_package.solute_set) == 2
         assert len(mm.fs.unit.config.property_package.solvent_set) == 1
         assert len(mm.fs.unit.config.property_package.ion_set) == 2

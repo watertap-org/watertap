@@ -199,8 +199,10 @@ class GACData(UnitModelBlockData):
         # get default units from property package
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # separate target species to be adsorbed and other species considered inert
         component_set = self.config.property_package.component_list
         solute_set = self.config.property_package.solute_set
+        # apply target species automatically if arg left to default and only one viable option exists
         if self.config.target_species is None and len(solute_set) == 1:
             self.config.target_species = solute_set
         target_species = self.config.target_species
@@ -294,13 +296,12 @@ class GACData(UnitModelBlockData):
         )
 
         # ---------------------------------------------------------------------
-        # Freundlich isotherm parameters and adsorption
+        # Freundlich isotherm parameters and adsorption variables
         self.freund_k = Var(
             initialize=10,
             bounds=(0, 1000),
             domain=NonNegativeReals,
-            # TODO: Add warning for unit specification of this variable
-            units=pyunits.dimensionless,  # ((units_meta("length") ** 3) * units_meta("mass") ** -1) ** freund_ninv,
+            units=pyunits.dimensionless,  # dynamic with freund_ninv, ((length ** 3) * (mass ** -1)) ** freund_ninv,
             doc="Freundlich isotherm k parameter, must be provided in base [L3/M] units",
         )
 
@@ -866,7 +867,7 @@ class GACData(UnitModelBlockData):
                 doc="Molecular diffusion coefficient",
             )
 
-            # TODO: Determine whether the LeBas method can be implemented
+            # TODO: Determine whether the LeBas method can be implemented or embed in prop pack
             self.molal_volume = Var(
                 initialize=1e-5,
                 bounds=(0, None),
@@ -905,7 +906,7 @@ class GACData(UnitModelBlockData):
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Reynolds number, Re < 2e4",  # TODO check N_Re formulation
+                doc="Reynolds number, Re < 2e4",  # TODO check N_Re formulation for packed beds
             )
 
             self.N_Sc = Var(
@@ -1044,7 +1045,9 @@ class GACData(UnitModelBlockData):
                 )
                 state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
             else:
-                state_args["flow_mol_phase_comp"][("Liq", j)] = 0
+                state_args["flow_mol_phase_comp"][
+                    ("Liq", j)
+                ] = 0  # all non-adsorbed species initialized to 0
 
         blk.adsorbed_contam.initialize(
             outlvl=outlvl,
@@ -1058,7 +1061,7 @@ class GACData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            # occasionally it might be worth retrying a solve
+            # occasionally worth retrying solve
             if not check_optimal_termination(res):
                 init_log.warning("Trouble solving GAC unit model, trying one more time")
                 res = opt.solve(blk, tee=slc.tee)
@@ -1117,6 +1120,7 @@ class GACData(UnitModelBlockData):
         if hasattr(self, "molal_volume"):
             var_dict["Molal volume"] = self.molal_volume
 
+        # loop throuhg desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
             "flow_mol_phase_comp": "Molar flow rate",
             "flow_mass_phase_comp": "Mass flow rate",
@@ -1142,6 +1146,7 @@ class GACData(UnitModelBlockData):
                         self.adsorbed_contam[time_point], prop_name
                     )["Liq", j]
 
+        # loop throuhg desired state block properties indexed by [phase]
         phase_prop_dict = {
             "flow_vol_phase": "Volumetric flow rate",
         }
@@ -1196,7 +1201,6 @@ class GACData(UnitModelBlockData):
                 self.process_flow.properties_out[0].flow_mol_phase_comp["Liq", j],
                 10 * sf_solute,
             )
-
         for j in self.config.property_package.component_list:
             if j not in self.config.target_species:
                 iscale.set_scaling_factor(
