@@ -247,7 +247,7 @@ class TestGACRobust:
         mr.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
             5.644342973110135e-05
         )
-        # touch variables relevant to design, may be fixed as opposed to ftpx in flowsheets
+        # touch variables relevant to design, may be fixed as opposed to ftp in flowsheets
         mr.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mr.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
@@ -555,7 +555,7 @@ class TestGACMulti:
         mm.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "BGAN"].fix(
             1e-05
         )
-        # touch variables relevant to design, may be fixed as opposed to ftpx in flowsheets
+        # touch variables relevant to design, may be fixed as opposed to ftp in flowsheets
         mm.fs.unit.process_flow.properties_in[0].flow_vol_phase["Liq"]
         mm.fs.unit.process_flow.properties_in[0].conc_mass_phase_comp
         # test construction of other variables in .report()
