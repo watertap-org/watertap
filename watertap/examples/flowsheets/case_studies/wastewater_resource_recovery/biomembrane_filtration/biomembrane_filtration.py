@@ -218,55 +218,6 @@ def initialize_costing(m):
     m.fs.costing.initialize()
 
 
-# def display_costing(m):
-#     m.fs.costing.total_capital_cost.display()
-#     m.fs.costing.total_operating_cost.display()
-#     m.fs.costing.LCOW.display()
-#
-#     print("\nUnit Capital Costs\n")
-#     for u in m.fs.costing._registered_unit_costing:
-#         print(
-#             u.name,
-#             " :   ",
-#             value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
-#         )
-#
-#     print("\nUtility Costs\n")
-#     for f in m.fs.costing.flow_types:
-#         print(
-#             f,
-#             " :   ",
-#             value(
-#                 pyunits.convert(
-#                     m.fs.costing.aggregate_flow_costs[f],
-#                     to_units=pyunits.USD_2018 / pyunits.year,
-#                 )
-#             ),
-#         )
-#
-#     print("")
-#     total_capital_cost = value(
-#         pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
-#     )
-#     print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
-#     total_operating_cost = value(
-#         pyunits.convert(
-#             m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
-#         )
-#     )
-#     print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
-#     electricity_intensity = value(
-#         pyunits.convert(
-#             m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
-#         )
-#     )
-#     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
-#     LCOW = value(
-#         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
-#     )
-#     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
-
-
 def display_metrics_results(m):
     print("----------Levelized costs----------")
     LCOT = value(
