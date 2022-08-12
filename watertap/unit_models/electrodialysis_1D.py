@@ -12,6 +12,8 @@
 ###############################################################################
 
 # Import Pyomo libraries
+from attr import mutable
+from numpy import log
 from pyomo.environ import (
     Set,
     Var,
@@ -364,7 +366,9 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.membrane_set = Set(
             initialize=["cem", "aem"]
         )  #   cem = Cation-Exchange Membrane aem = Anion-Exchange Membrane
-
+        self.electrode_side = Set(
+            initialize=["cathode_left", "anode_right"]   
+        )
         # To require H2O must be in the component
         if "H2O" not in component_set:
             raise ConfigurationError(
@@ -470,6 +474,36 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="Current density accross the membrane as a function of the normalized length",
         )
 
+        self.current_dens_lim_x = Var(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            initialize=1,
+            bounds=(0, 1000),
+            units=pyunits.amp * pyunits.meter**-2,
+            doc="Limiting Current Density accross the membrane as a function of the normalized length",
+        )
+        self.conc_mem_surf_mol = Var(
+            self.membrane_set,
+            self.electrode_side,
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            self.self.config.property_package.ion_set
+            | self.config.property_package.solute_set,
+            initialize=500,
+            bounds = (0, 1e10),
+            units=pyunits.mol * pyunits.meter**-3,
+            doc="membane surface concentration of components",
+        )
+        self.potential_nonohm_membrane_x = Var(
+            self.membrane_set,
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            initialize=0.01, #to reinspect
+            bounds = (0, 110),
+            units=pyunits.volt,
+            doc="membane surface concentration of components",
+        )
+
         self.voltage_applied = Var(
             self.flowsheet().time,
             initialize=100,
@@ -554,6 +588,49 @@ class Electrodialysis1DData(UnitModelBlockData):
                         t, self.diluate.length_domain.first()
                     ].temperature
                     == self.concentrate.properties[t, x].temperature
+                )
+        @self.Constraint(
+            self.membrane_set,
+            self.electrode_side,
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            self.self.config.property_package.ion_set
+            | self.config.property_package.solute_set,
+            doc="Establish relationship between interfacial concentration polarization ratio and current density",
+        )
+        def eq_conc_polarization_ratio(self, mem, side, t, x, p, j):
+            if (mem == 'cem' and side == 'cathode_left') or (mem == 'aem' and side == 'anode_rigth'):
+                return self.conc_mem_surf_mol[mem,side,t,x,j] / self.concentrate.properties[t,x].conc_mol_phase_comp[p,j] ==(
+                    1 + self.current_density_x[t, x]/self.current_dens_lim_x[t, x]
+                )
+            else:
+                return self.conc_mem_surf_mol[mem,side,t,x,j] / self.diluate.properties[t,x].conc_mol_phase_comp[p,j] ==(
+                    1 - self.current_density_x[t, x]/self.current_dens_lim_x[t, x]
+                )
+
+        @self.Constraint(
+            self.membrane_set,
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            doc="Calculate the total non-ohmic potential across an iem; this takes account of diffusion and Donnan Potentials",
+        )
+        def eq_potential_nonohm_membrane(self, mem, t, x):
+            if (mem == 'cem'):
+                return self.potential_nonohm_membrane['cem',t, x] == (
+                    Constants.gas_constant * self.diluate.properties[t, x].temperature / Constants.faraday_constant 
+                    * (sum(self.ion_trans_number_membrane('cem',j) / self.self.config.property_package.charge_comp[j] for j in cation_set) 
+                    - sum(self.ion_trans_number_membrane('cem',j) / self.self.config.property_package.charge_comp[j] for j in anion_set))
+                    * log(sum(self.conc_mem_surf_mol('cem','anode_right',t, x, j) for j in ion_set)/ 
+                    sum(self.conc_mem_surf_mol('cem','cathode_left',t, x, j) for j in ion_set))
+                ) # Note: the log argument is taken as *total ion concentration* while in the original equation as *electrolyte concentration*
+                 # This is mathematically valid as the ratio eliminate the difference and electro-neutrality stands. 
+            else: 
+                return self.potential_nonohm_membrane['aem',t, x] == (
+                    -Constants.gas_constant * self.diluate.properties[t, x].temperature / Constants.faraday_constant 
+                    * (sum(self.ion_trans_number_membrane('aem',j) / self.self.config.property_package.charge_comp[j] for j in cation_set) 
+                    - sum(self.ion_trans_number_membrane('aem',j) / self.self.config.property_package.charge_comp[j] for j in anion_set))
+                    * log(sum(self.conc_mem_surf_mol('aem','anode_right',t, x, j) for j in ion_set)/ 
+                    sum(self.conc_mem_surf_mol('aem','cathode_left',t, x, j) for j in ion_set))
                 )
 
         @self.Constraint(
