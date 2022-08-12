@@ -750,7 +750,7 @@ class TestUV_detailed:
         m.fs.unit = Ultraviolet0D(
             default={
                 "property_package": m.fs.properties,
-                "uv_dose_type": "calculated",
+                "uv_dose_type": UVDoseType.calculated,
             }
         )
 
