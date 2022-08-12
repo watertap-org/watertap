@@ -446,28 +446,28 @@ class Ultraviolet0DData(UnitModelBlockData):
                 doc="UV transmittance.",
             )
             self.A_coeff = Var(
-                initialize=2.15138466202152,
+                initialize=2.15138,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="UV dose delivery model coefficient A.",
             )
             self.B_coeff = Var(
-                initialize=10.2071744508813,
+                initialize=10.2072,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="UV dose delivery model coefficient B.",
             )
             self.C_coeff = Var(
-                initialize=0.696709253161921,
+                initialize=0.696709,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="UV dose delivery model coefficient C.",
             )
             self.D_coeff = Var(
-                initialize=1.09563014019707,
+                initialize=1.09563,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
