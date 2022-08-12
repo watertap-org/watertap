@@ -213,14 +213,6 @@ def visualize_results(t_blocks, lmp):
     plt.show()
 
 
-def compare_to_baseline(lmp):
-    mean_price = np.mean(lmp)
-    m1 = swro.main()
-    m1.fs.costing.electricity_cost.fix(mean_price)
-    swro.solve(m1)
-    return m1, m1.fs.costing.LCOW()
-
-
 if __name__ == "__main__":
     start_main = datetime.now()
 
@@ -228,12 +220,9 @@ if __name__ == "__main__":
 
     total_time = datetime.now() - start_main
 
-    m1, baseline_LCOW = compare_to_baseline(lmp)
-
     print(
         "\n---------------------\n",
         "Optimized LCOW: {}".format(round(m.obj(), 3)),
-        "Avg. Price LCOW: {}".format(round(baseline_LCOW)),
         "\n---------------------\n",
     )
 
