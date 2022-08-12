@@ -27,7 +27,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.uv_aop import Ultraviolet0D
+from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
 import watertap.property_models.NDMA_prop_pack as props
 from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
