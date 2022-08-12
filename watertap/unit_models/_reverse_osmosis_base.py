@@ -37,6 +37,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
+from watertap.core.membrane_channel_base import validate_membrane_config_args
+
 _log = idaeslog.getLogger(__name__)
 
 
@@ -304,241 +306,53 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 )
             )
 
-        if (
-            self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
-            and self.config.has_pressure_change is False
-        ):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'has_pressure_change' cannot be False "
-                "while 'pressure_change_type' is set to {}.\n\n"
-                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
-                "'has_pressure_change' must be set to True".format(
-                    self.config.pressure_change_type
-                )
-            )
+        validate_membrane_config_args(self)
 
-        if (
-            self.config.concentration_polarization_type
-            == ConcentrationPolarizationType.calculated
-            and self.config.mass_transfer_coefficient == MassTransferCoefficient.none
-        ):
-            raise ConfigurationError(
-                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
-                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
-                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
-                "ConcentrationPolarizationType.none"
-            )
+        self._add_membrane_channel()
 
-        if (
-            self.config.concentration_polarization_type
-            != ConcentrationPolarizationType.calculated
-            and self.config.mass_transfer_coefficient != MassTransferCoefficient.none
-        ):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'mass_transfer_coefficient' cannot be set to {} "
-                "while 'concentration_polarization_type' is set to {}.\n\n"
-                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
-                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated".format(
-                    self.config.mass_transfer_coefficient,
-                    self.config.concentration_polarization_type,
-                )
-            )
+        self.membrane_channel.add_geometry()
+
+        self.membrane_channel.add_state_blocks(has_phase_equilibrium=False)
+
+        self.membrane_channel.add_material_balances(
+            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        )
+
+        self.membrane_channel.add_energy_balances(
+            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
+        )
+
+        self.membrane_channel.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            pressure_change_type=self.config.pressure_change_type,
+            has_pressure_change=self.config.has_pressure_change,
+        )
+
+        self.membrane_channel.add_mass_transfer()
+
+        self.membrane_channel.add_isothermal_conditions()
+
+        self.membrane_channel.add_volumetric_flowrate_balance()
+
+        self.membrane_channel.add_flux_balance()
+
+        self.membrane_channel.add_concentration_polarization(
+            concentration_polarization_type=self.config.concentration_polarization_type,
+            mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+        )
+
+        self.membrane_channel.add_recovery_vol_phase()
+
+        self.membrane_channel.add_expressions()
+
+        self.membrane_channel.apply_transformation()
+
+        # Add Ports
+        self.add_inlet_port(name="inlet", block=self.membrane_channel)
+        self.add_outlet_port(name="retentate", block=self.membrane_channel)
+        self.add_port(name="permeate", block=self.membrane_channel.mixed_permeate)
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-    def _make_performance(self):
-
-        # For permeate-specific scaling in calculate_scaling_factors
-        self._permeate_scaled_properties = ComponentSet()
-
-        solvent_set = self.config.property_package.solvent_set
-        solute_set = self.config.property_package.solute_set
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        self.nfe = Param(
-            initialize=(len(self.difference_elements)),
-            units=pyunits.dimensionless,
-            doc="Number of finite elements",
-        )
-
-        """ Unit model variables"""
-
-        self.area = Var(
-            initialize=10,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length") ** 2,
-            doc="Membrane area",
-        )
-
-        self.recovery_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
-            if j in solvent_set
-            else (1e-5, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc="Mass-based component recovery",
-        )
-
-        self.recovery_vol_phase = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            initialize=0.4,
-            bounds=(1e-2, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc="Volumetric recovery rate",
-        )
-
-        self.rejection_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            solute_set,
-            initialize=0.9,
-            bounds=(1e-2, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc="Observed solute rejection",
-        )
-
-        # ==========================================================================
-        # Volumetric Recovery rate
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_recovery_vol_phase(b, t):
-            return (
-                b.recovery_vol_phase[t, "Liq"]
-                == b.mixed_permeate[t].flow_vol_phase["Liq"]
-                / b.feed_side.properties[t, self.first_element].flow_vol_phase["Liq"]
-            )
-
-        # ==========================================================================
-        # Mass-based Component Recovery rate
-        @self.Constraint(
-            self.flowsheet().config.time, self.config.property_package.component_list
-        )
-        def eq_recovery_mass_phase_comp(b, t, j):
-            return (
-                b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
-                    "Liq", j
-                ]
-                == b.mixed_permeate[t].flow_mass_phase_comp["Liq", j]
-            )
-
-
-        # # ==========================================================================
-        # Feed and permeate-side isothermal conditions
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isothermal assumption for permeate",
-        )
-        def eq_permeate_isothermal(b, t, x):
-            return (
-                b.feed_side.properties[t, x].temperature
-                == b.permeate_side[t, x].temperature
-            )
-
-        # ==========================================================================
-        # isothermal conditions at permeate outlet
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for permeate out"
-        )
-        def eq_permeate_outlet_isothermal(b, t):
-            return (
-                b.feed_side.properties[t, b.length_domain.last()].temperature
-                == b.mixed_permeate[t].temperature
-            )
-
-        # rejection
-        @self.Constraint(self.flowsheet().config.time, solute_set)
-        def eq_rejection_phase_comp(b, t, j):
-            return b.rejection_phase_comp[t, "Liq", j] == 1 - (
-                b.mixed_permeate[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties[t, self.first_element].conc_mass_phase_comp[
-                    "Liq", j
-                ]
-            )
-
-        # ==========================================================================
-        # Membrane area equation
-        if hasattr(self, "length") or hasattr(self, "width"):
-
-            @self.Constraint(doc="Membrane area")
-            def eq_area(b):
-                return b.area == b.length * b.width
-
-
-        # ==========================================================================
-        # Bulk and interface connections on the feed-side
-        # TEMPERATURE
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            doc="Temperature at interface",
-        )
-        def eq_equal_temp_interface(b, t, x):
-            return (
-                b.properties_interface[t, x].temperature
-                == b.properties[t, x].temperature
-            )
-
-        # VOLUMETRIC FLOWRATE
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            doc="Volumetric flow at interface of inlet",
-        )
-        def eq_equal_flow_vol_interface(b, t, x):
-            return (
-                b.properties_interface[t, x].flow_vol_phase["Liq"]
-                == b.properties[t, x].flow_vol_phase["Liq"]
-            )
-
-        @self.Expression(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Average flux expression",
-        )
-        def flux_mass_phase_comp_avg(b, t, p, j):
-            return (
-                sum(
-                    b.flux_mass_phase_comp[t, x, p, j] for x in self.difference_elements
-                )
-                / self.nfe
-            )
-
-    def _add_expressions(self):
-        """
-        Generate expressions for additional results desired for full report
-        """
-
-        solute_set = self.config.property_package.solute_set
-        if hasattr(self, "N_Re"):
-
-            @self.Expression(
-                self.flowsheet().config.time, doc="Average Reynolds Number expression"
-            )
-            def N_Re_avg(b, t):
-                return sum(b.N_Re[t, x] for x in self.length_domain) / self.nfe
-
-        if hasattr(self, "Kf"):
-
-            @self.Expression(
-                self.flowsheet().config.time,
-                solute_set,
-                doc="Average mass transfer coefficient expression",
-            )
-            def Kf_avg(b, t, j):
-                return sum(b.Kf[t, x, j] for x in self.difference_elements) / self.nfe
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -692,130 +506,6 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             "interface": state_args_interface,
         }
 
-    def _get_performance_contents(self, time_point=0):
-        x_in = self.first_element
-        x_interface_in = self.difference_elements.first()
-        x_out = self.length_domain.last()
-        feed_inlet = self.feed_side.properties[time_point, x_in]
-        feed_outlet = self.feed_side.properties[time_point, x_out]
-        interface_inlet = self.feed_side.properties_interface[
-            time_point, x_interface_in
-        ]
-        interface_outlet = self.feed_side.properties_interface[time_point, x_out]
-        permeate = self.mixed_permeate[time_point]
-        var_dict = {}
-        expr_dict = {}
-        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[
-            time_point, "Liq"
-        ]
-        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[
-            time_point, "Liq", "H2O"
-        ]
-        var_dict["Membrane Area"] = self.area
-        if hasattr(self, "length") and self.config.has_full_reporting:
-            var_dict["Membrane Length"] = self.length
-        if hasattr(self, "width") and self.config.has_full_reporting:
-            var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP") and self.config.has_full_reporting:
-            var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "N_Re") and self.config.has_full_reporting:
-            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
-            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity") and self.config.has_full_reporting:
-            var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
-            var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
-        for j in self.config.property_package.solute_set:
-            if (
-                interface_inlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Membrane-Interface "
-                ] = interface_inlet.conc_mass_phase_comp["Liq", j]
-            if (
-                interface_outlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Membrane-Interface "
-                ] = interface_outlet.conc_mass_phase_comp["Liq", j]
-            if (
-                feed_inlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
-                var_dict[
-                    f"{j} Concentration @Inlet,Bulk"
-                ] = feed_inlet.conc_mass_phase_comp["Liq", j]
-            if (
-                feed_outlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
-                var_dict[
-                    f"{j} Concentration @Outlet,Bulk"
-                ] = feed_outlet.conc_mass_phase_comp["Liq", j]
-            if (
-                permeate.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
-                var_dict[f"{j} Permeate Concentration"] = permeate.conc_mass_phase_comp[
-                    "Liq", j
-                ]
-        if (
-            interface_outlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict[
-                "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm_phase["Liq"]
-        if (
-            feed_outlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase[
-                "Liq"
-            ]
-        if (
-            interface_inlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict[
-                "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm_phase["Liq"]
-        if (
-            feed_inlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase[
-                "Liq"
-            ]
-        if (
-            feed_inlet.is_property_constructed("flow_vol_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict["Volumetric Flowrate @Inlet"] = feed_inlet.flow_vol_phase["Liq"]
-        if (
-            feed_outlet.is_property_constructed("flow_vol_phase")
-            and self.config.has_full_reporting
-        ):
-            var_dict["Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
-        if hasattr(self, "dh") and self.config.has_full_reporting:
-            var_dict["Hydraulic Diameter"] = self.dh
-
-        if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
-            )
-            expr_dict["Average Reynolds Number"] = self.N_Re_avg[time_point]
-            for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
-                )
-                expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                    self.Kf_avg[time_point, j] * 3.6e6
-                )
-
-        # TODO: add more vars
-        return {"vars": var_dict, "exprs": expr_dict}
 
     # permeate properties need to rescale solute values by 100
     def _rescale_permeate_variable(self, var, factor=100):

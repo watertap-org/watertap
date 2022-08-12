@@ -134,6 +134,22 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             )
             self.config.transformation_scheme = "BACKWARD"
 
+    def _add_membrane_channel(self):
+        # Build 1D Membrane Channel
+        self.membrane_channel = MembraneChannel1D(
+            default={
+                "dynamic": self.config.dynamic,
+                "has_holdup": self.config.has_holdup,
+                "area_definition": self.config.area_definition,
+                "property_package": self.config.property_package,
+                "property_package_args": self.config.property_package_args,
+                "transformation_method": self.config.transformation_method,
+                "transformation_scheme": self.config.transformation_scheme,
+                "finite_elements": self.config.finite_elements,
+                "collocation_points": self.config.collocation_points,
+            }
+        )
+
     def build(self):
         """
         Build 1D RO model (pre-DAE transformation).
@@ -150,259 +166,11 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Check configuration errors
         self._process_config()
 
-        # Build 1D Control volume for feed side
-        self.feed_side = feed_side = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": self.config.area_definition,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
-        )
-
-        # Add geometry to feed side
-        feed_side.add_geometry()
-        # Add state blocks to feed side
-        feed_side.add_state_blocks(has_phase_equilibrium=False)
-        # Populate feed side
-        feed_side.add_material_balances(
-            balance_type=self.config.material_balance_type, has_mass_transfer=True
-        )
-        feed_side.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change,
-        )
-        # Apply transformation to feed side
-        feed_side.apply_transformation()
-        add_object_reference(self, "length_domain", self.feed_side.length_domain)
-        self.first_element = self.length_domain.first()
-        self.difference_elements = Set(
-            ordered=True,
-            initialize=(x for x in self.length_domain if x != self.first_element),
-        )
-
-        # Add inlet/outlet ports for feed side
-        self.add_inlet_port(name="inlet", block=feed_side)
-        self.add_outlet_port(name="retentate", block=feed_side)
-        # Make indexed stateblock and separate stateblock for permeate-side and permeate outlet, respectively.
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # these blocks are not inlets
-        self.permeate_side = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Material properties of permeate along permeate channel",
-            default=tmp_dict,
-        )
-        self.mixed_permeate = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of mixed permeate exiting the module",
-            default=tmp_dict,
-        )
-
-        # Membrane interface: indexed state block
-        self.feed_side.properties_interface = (
-            self.config.property_package.state_block_class(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Material properties of feed-side membrane interface",
-                default=tmp_dict,
-            )
-        )
-
-        # Add port to mixed_permeate
-        self.add_port(name="permeate", block=self.mixed_permeate)
-
         # ==========================================================================
         """ Add references to control volume geometry."""
         add_object_reference(self, "length", feed_side.length)
         add_object_reference(self, "area_cross", feed_side.area)
 
-        # Add reference to pressure drop for feed side only
-        if (
-            self.config.has_pressure_change is True
-            and self.config.momentum_balance_type != MomentumBalanceType.none
-        ):
-            add_object_reference(self, "dP_dx", feed_side.deltaP)
-
-        self._make_performance()
-
-        self._add_expressions()
-
-    def _make_performance(self):
-        """
-        Variables and constraints for unit model.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-
-        solvent_set = self.config.property_package.solvent_set
-        solute_set = self.config.property_package.solute_set
-
-        # Units
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        # ==========================================================================
-
-        self.width = Var(
-            initialize=1,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Membrane width",
-        )
-
-        super()._make_performance()
-
-        # mass transfer
-        def mass_transfer_phase_comp_initialize(b, t, x, p, j):
-            return value(
-                self.feed_side.properties[t, x].get_material_flow_terms("Liq", j)
-                * self.recovery_mass_phase_comp[t, "Liq", j]
-            )
-
-        self.mass_transfer_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=mass_transfer_phase_comp_initialize,
-            bounds=(0.0, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta("mass")
-            * units_meta("time") ** -1
-            * units_meta("length") ** -1,
-            doc="Mass transfer to permeate",
-        )
-
-        if self.config.has_pressure_change:
-            self.deltaP = Var(
-                self.flowsheet().config.time,
-                initialize=-1e5,
-                bounds=(-1e6, 0),
-                domain=NegativeReals,
-                units=units_meta("pressure"),
-                doc="Pressure drop across unit",
-            )
-
-        # ==========================================================================
-        # Mass transfer term equation
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer term",
-        )
-        def eq_mass_transfer_term(b, t, x, p, j):
-            return (
-                b.mass_transfer_phase_comp[t, x, p, j]
-                == -b.feed_side.mass_transfer_term[t, x, p, j]
-            )
-
-        # ==========================================================================
-        # Mass flux = feed mass transfer equation
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer term",
-        )
-        def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            return (
-                b.flux_mass_phase_comp[t, x, p, j] * b.width
-                == -b.feed_side.mass_transfer_term[t, x, p, j]
-            )
-
-        # ==========================================================================
-        # Mass flux equations (Jw and Js)
-
-        # ==========================================================================
-        # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Permeate mass flow rates exiting unit",
-        )
-        def eq_permeate_production(b, t, p, j):
-            return b.mixed_permeate[t].get_material_flow_terms(p, j) == sum(
-                b.permeate_side[t, x].get_material_flow_terms(p, j)
-                for x in b.difference_elements
-            )
-
-        # ==========================================================================
-        # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer from feed to permeate",
-        )
-        def eq_connect_mass_transfer(b, t, x, p, j):
-            return (
-                b.permeate_side[t, x].get_material_flow_terms(p, j)
-                == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe
-            )
-
-        ## ==========================================================================
-        # Pressure drop
-        if (
-            self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
-            or self.config.pressure_change_type == PressureChangeType.calculated
-        ):
-
-            @self.Constraint(
-                self.flowsheet().config.time, doc="Pressure drop across unit"
-            )
-            def eq_pressure_drop(b, t):
-                return b.deltaP[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-                )
-
-        if (
-            self.config.pressure_change_type == PressureChangeType.fixed_per_stage
-            and self.config.has_pressure_change
-        ):
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.length_domain,
-                doc="Fixed pressure drop across unit",
-            )
-            def eq_pressure_drop(b, t, x):
-                return b.deltaP[t] == b.length * b.dP_dx[t, x]
-
-        ## ==========================================================================
-        # Feed-side isothermal conditions
-        # NOTE: this could go on the feed_side block, but that seems to hurt initialization
-        #       in the tests for this unit
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            doc="Isothermal assumption for feed channel",
-        )
-        def eq_feed_isothermal(b, t, x):
-            return (
-                b.feed_side.properties[t, b.first_element].temperature
-                == b.feed_side.properties[t, x].temperature
-            )
 
     def initialize_build(
         blk,

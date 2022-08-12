@@ -11,7 +11,17 @@
 #
 ###############################################################################
 
-from pyomo.common.config import Bool, ConfigBlock, In
+from enum import Enum, auto
+
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.environ import (
+    Param,
+    NegativeReals,
+    NonNegativeReals,
+    Var,
+    exp,
+    units as pyunits,
+)
 
 from idaes.core import (
     FlowDirection,
@@ -56,9 +66,9 @@ class PressureChangeType(Enum):
     calculated = auto()
 
 
-CONFIG = ConfigBlock()
+CONFIG_Template = ConfigBlock()
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "material_balance_type",
     ConfigValue(
         default=useDefault,
@@ -77,7 +87,7 @@ balance type
     ),
 )
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "energy_balance_type",
     ConfigValue(
         default=useDefault,
@@ -96,7 +106,7 @@ balance type
     ),
 )
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "momentum_balance_type",
     ConfigValue(
         default=useDefault,
@@ -113,7 +123,7 @@ CONFIG.declare(
     ),
 )
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "concentration_polarization_type",
     ConfigValue(
         default=useDefault,
@@ -134,7 +144,7 @@ CONFIG.declare(
     ),
 )
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "mass_transfer_coefficient",
     ConfigValue(
         default=useDefault,
@@ -155,7 +165,7 @@ CONFIG.declare(
     ),
 )
 
-CONFIG.declare(
+CONFIG_Template.declare(
     "has_pressure_change",
     ConfigValue(
         default=useDefault,
@@ -170,33 +180,99 @@ constructed,
     ),
 )
 
-   CONFIG.declare(
-       "pressure_change_type",
-       ConfigValue(
-           default=useDefault,
-           domain=In(PressureChangeType),
-           description="Pressure change term construction flag",
-           doc="""
-       Indicates what type of pressure change calculation will be made. To use any of the
-       ``pressure_change_type`` options to account for pressure drop, the configuration keyword
-       ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure
-       change, it should be negative to represent pressure drop.
+CONFIG_Template.declare(
+    "pressure_change_type",
+    ConfigValue(
+        default=useDefault,
+        domain=In(PressureChangeType),
+        description="Pressure change term construction flag",
+        doc="""
+    Indicates what type of pressure change calculation will be made. To use any of the
+    ``pressure_change_type`` options to account for pressure drop, the configuration keyword
+    ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure
+    change, it should be negative to represent pressure drop.
 
-       **default** - useDefault
+    **default** - useDefault
 
 
-   .. csv-table::
-       :header: "Configuration Options", "Description"
+.. csv-table::
+    :header: "Configuration Options", "Description"
 
-       "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
-       "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
-       "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+    "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
+    "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+    "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
 
 """,
     ),
 )
 
 class MembraneChannelMixin:
+
+    def add_mass_transfer(self):
+        raise NotImplementedError()
+
+    def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
+        raise NotImplementedError()
+
+    def _add_pressure_change_equation(self):
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Total Pressure drop across channel"
+        )
+        def eq_pressure_change(b, t):
+            return b.pressure_change_total[t] == sum(
+                b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+            )
+
+    def _add_recovery_rejection(self,**kwrags):
+
+        solvent_set = self.config.property_package.solvent_set
+        solute_set = self.config.property_package.solute_set
+
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
+            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
+            if j in solvent_set
+            else (1e-5, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc="Mass-based component recovery",
+        )
+
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solute_set,
+            initialize=0.9,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc="Observed solute rejection",
+        )
+
+        # ==========================================================================
+        # Mass-based Component Recovery rate
+        @self.Constraint(
+            self.flowsheet().config.time, self.config.property_package.component_list
+        )
+        def eq_recovery_mass_phase_comp(b, t, j):
+            return (
+                b.recovery_mass_phase_comp[t, "Liq", j]
+                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", j
+                ]
+                == b.mixed_permeate[t].flow_mass_phase_comp["Liq", j]
+            )
+
+        # rejection
+        @self.Constraint(self.flowsheet().config.time, solute_set)
+        def eq_rejection_phase_comp(b, t, j):
+            return b.rejection_phase_comp[t, "Liq", j] == 1 - (
+                b.mixed_permeate[t].conc_mass_phase_comp["Liq", j]
+                / b.feed_side.properties[t, self.first_element].conc_mass_phase_comp[
+                    "Liq", j
+                ]
+            )
 
     def add_total_pressure_balances(
         self,
@@ -210,13 +286,82 @@ class MembraneChannelMixin:
 
         self._add_membrane_pressure_balances()
 
+        if has_pressure_change:
+            units_meta = self.config.property_package.get_metadata().get_derived_units
+            self.pressure_change_total = Var(
+                self.flowsheet().config.time,
+                initialize=-1e5,
+                bounds=(-1e6, 0),
+                domain=NegativeReals,
+                units=units_meta("pressure"),
+                doc="Pressure drop across unit",
+            )
+            self._add_pressure_change(pressure_change_type=pressure_change_type)
+
         if pressure_change_type == PressureChangeType.calculated:
             self._add_calculated_pressure_change()
+
+    def add_isothermal_conditions(self):
+
+        # # ==========================================================================
+        # Feed and permeate-side isothermal conditions
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Isothermal assumption for permeate",
+        )
+        def eq_permeate_isothermal(b, t, x):
+            return (
+                b.properties[t, x].temperature
+                == b.permeate_side[t, x].temperature
+            )
+
+        # ==========================================================================
+        # Bulk and interface connections on the feed-side
+        # TEMPERATURE
+        @self.feed_side.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Temperature at interface",
+        )
+        def eq_equal_temp_interface(b, t, x):
+            return (
+                b.properties[t, x].temperature
+                == b.properties_interface[t, x].temperature
+            )
+
+        # ==========================================================================
+        # isothermal conditions at permeate outlet
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Isothermal assumption for permeate out"
+        )
+        def eq_permeate_outlet_isothermal(b, t):
+            return (
+                b.properties[t, b.length_domain.last()].temperature
+                == b.mixed_permeate[t].temperature
+            )
+
+
+    def add_volumetric_flowrate_balance(self):
+        # VOLUMETRIC FLOWRATE
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            doc="Volumetric flow at interface of inlet",
+        )
+        def eq_equal_flow_vol_interface(b, t, x):
+            return (
+                b.properties_interface[t, x].flow_vol_phase["Liq"]
+                == b.properties[t, x].flow_vol_phase["Liq"]
+            )
+
 
     def add_flux_balance(self):
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.A_comp = Var(
             self.flowsheet().config.time,
@@ -291,6 +436,20 @@ class MembraneChannelMixin:
                     - prop_perm.conc_mass_phase_comp[p, j]
                 )
 
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="Average flux expression",
+        )
+        def flux_mass_phase_comp_avg(b, t, p, j):
+            return (
+                sum(
+                    b.flux_mass_phase_comp[t, x, p, j] for x in self.difference_elements
+                )
+                / self.nfe
+            )
+
         return self.eq_flux_mass
 
     def add_concentration_polarization(
@@ -298,6 +457,10 @@ class MembraneChannelMixin:
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
     ):
+
+        solute_set = self.config.property_package.solute_set
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
         if concentration_polarization_type == ConcentrationPolarizationType.none:
             @self.Constraint(
                self.flowsheet().config.time,
@@ -376,6 +539,66 @@ class MembraneChannelMixin:
             
         return self.eq_concentration_polarization
 
+    def add_recovery_vol_phase(self):
+
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.4,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc="Volumetric recovery rate",
+        )
+
+        # ==========================================================================
+        # Volumetric Recovery rate
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_recovery_vol_phase(b, t):
+            return (
+                b.recovery_vol_phase[t, "Liq"]
+                == b.mixed_permeate[t].flow_vol_phase["Liq"]
+                / b.properties[t, self.first_element].flow_vol_phase["Liq"]
+            )
+
+    def add_expressions(self):
+        """
+        Generate expressions for additional results desired for full report
+        """
+
+        if hasattr(self, "N_Re"):
+
+            @self.Expression(
+                self.flowsheet().config.time, doc="Average Reynolds Number expression"
+            )
+            def N_Re_avg(b, t):
+                return sum(b.N_Re[t, x] for x in self.length_domain) / self.nfe
+
+        if hasattr(self, "K"):
+
+            @self.Expression(
+                self.flowsheet().config.time,
+                self.config.property_package.solute_set,
+                doc="Average mass transfer coefficient expression",
+            )
+            def K_avg(b, t, j):
+                return sum(b.K[t, x, j] for x in self.difference_elements) / self.nfe
+
+    def _add_area_total(self):
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.area_total = Var(
+            initialize=10,
+            bounds=(1e-1, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta("length") ** 2,
+            doc="Total Membrane Channel area",
+        )
+
+    def _add_area_total_equation(self):
+        # ==========================================================================
+        # Membrane area equation
+        @self.Constraint(doc="Total Membrane area")
+        def eq_area_total(b):
+            return b.area_total == b.length * b.width
 
     ## should be called by add concentration polarization
     def _add_calculated_mass_transfer_coefficient(self):
@@ -403,7 +626,7 @@ class MembraneChannelMixin:
         @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
-            solute_set,
+            self.config.property_package.solute_set,
             doc="Mass transfer coefficient in membrane channel",
         )
         def eq_K(b, t, x, j):
@@ -437,8 +660,14 @@ class MembraneChannelMixin:
         return self.eq_K
 
     def _add_calculated_pressure_change_mass_transfer_components(self):
+        # NOTE: This function could be called by either
+        # `_add_calculated_pressure_change` *and/or* 
+        # `_add_calculated_mass_transfer_coefficient`.
+        # Therefore, we add this simple gaurd against it being called twice.
         if hasattr(self, "channel_height"):
             return
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.channel_height = Var(
             initialize=1e-3,
@@ -562,6 +791,8 @@ class MembraneChannelMixin:
     def _add_calculated_pressure_change(self):
         self._add_calculated_pressure_change_mass_transfer_components()
 
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
         self.velocity = Var(
             self.flowsheet().config.time,
             self.length_domain,
@@ -616,59 +847,184 @@ class MembraneChannelMixin:
             self.length_domain,
             doc="pressure change per unit length due to friction",
         )
-        def eq_deltaP(b, t, x):
+        def eq_dP_dx(b, t, x):
             return (
-                b.deltaP[t, x] * b.dh
+                b.dP_dx[t, x] * b.dh
                 == -0.5
                 * b.friction_factor_darcy[t, x]
                 * b.properties[t, x].dens_mass_phase["Liq"]
                 * b.velocity[t, x] ** 2
             )
 
-
-    def _validate_membrane_config_args(self):
-
+    def _get_performance_contents(self, time_point=0):
+        x_in = self.first_element
+        x_interface_in = self.difference_elements.first()
+        x_out = self.length_domain.last()
+        feed_inlet = self.properties[time_point, x_in]
+        feed_outlet = self.properties[time_point, x_out]
+        interface_inlet = self.properties_interface[
+            time_point, x_interface_in
+        ]
+        interface_outlet = self.properties_interface[time_point, x_out]
+        permeate = self.mixed_permeate[time_point]
+        var_dict = {}
+        expr_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[
+            time_point, "Liq"
+        ]
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[
+            time_point, "Liq", "H2O"
+        ]
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "length") and self.config.has_full_reporting:
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width") and self.config.has_full_reporting:
+            var_dict["Membrane Width"] = self.width
+        if hasattr(self, "deltaP") and self.config.has_full_reporting:
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "N_Re") and self.config.has_full_reporting:
+            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
+            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
+        if hasattr(self, "velocity") and self.config.has_full_reporting:
+            var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
+            var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
+        for j in self.config.property_package.solute_set:
+            if (
+                interface_inlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Concentration @Inlet,Membrane-Interface "
+                ] = interface_inlet.conc_mass_phase_comp["Liq", j]
+            if (
+                interface_outlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Concentration @Outlet,Membrane-Interface "
+                ] = interface_outlet.conc_mass_phase_comp["Liq", j]
+            if (
+                feed_inlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Concentration @Inlet,Bulk"
+                ] = feed_inlet.conc_mass_phase_comp["Liq", j]
+            if (
+                feed_outlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Concentration @Outlet,Bulk"
+                ] = feed_outlet.conc_mass_phase_comp["Liq", j]
+            if (
+                permeate.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[f"{j} Permeate Concentration"] = permeate.conc_mass_phase_comp[
+                    "Liq", j
+                ]
         if (
-            self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
-            and self.config.has_pressure_change is False
+            interface_outlet.is_property_constructed("pressure_osm_phase")
+            and self.config.has_full_reporting
         ):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'has_pressure_change' cannot be False "
-                "while 'pressure_change_type' is set to {}.\n\n"
-                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
-                "'has_pressure_change' must be set to True".format(
-                    self.config.pressure_change_type
+            var_dict[
+                "Osmotic Pressure @Outlet,Membrane-Interface "
+            ] = interface_outlet.pressure_osm_phase["Liq"]
+        if (
+            feed_outlet.is_property_constructed("pressure_osm_phase")
+            and self.config.has_full_reporting
+        ):
+            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase[
+                "Liq"
+            ]
+        if (
+            interface_inlet.is_property_constructed("pressure_osm_phase")
+            and self.config.has_full_reporting
+        ):
+            var_dict[
+                "Osmotic Pressure @Inlet,Membrane-Interface"
+            ] = interface_inlet.pressure_osm_phase["Liq"]
+        if (
+            feed_inlet.is_property_constructed("pressure_osm_phase")
+            and self.config.has_full_reporting
+        ):
+            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase[
+                "Liq"
+            ]
+        if (
+            feed_inlet.is_property_constructed("flow_vol_phase")
+            and self.config.has_full_reporting
+        ):
+            var_dict["Volumetric Flowrate @Inlet"] = feed_inlet.flow_vol_phase["Liq"]
+        if (
+            feed_outlet.is_property_constructed("flow_vol_phase")
+            and self.config.has_full_reporting
+        ):
+            var_dict["Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
+        if hasattr(self, "dh") and self.config.has_full_reporting:
+            var_dict["Hydraulic Diameter"] = self.dh
+
+        if self.config.has_full_reporting:
+            expr_dict["Average Solvent Flux (LMH)"] = (
+                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
+            )
+            expr_dict["Average Reynolds Number"] = self.N_Re_avg[time_point]
+            for j in self.config.property_package.solute_set:
+                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
+                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
                 )
-            )
-
-        if (
-            self.config.concentration_polarization_type
-            == ConcentrationPolarizationType.calculated
-            and self.config.mass_transfer_coefficient == MassTransferCoefficient.none
-        ):
-            raise ConfigurationError(
-                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
-                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
-                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
-                "ConcentrationPolarizationType.none"
-            )
-
-        if (
-            self.config.concentration_polarization_type
-            != ConcentrationPolarizationType.calculated
-            and self.config.mass_transfer_coefficient != MassTransferCoefficient.none
-        ):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'mass_transfer_coefficient' cannot be set to {} "
-                "while 'concentration_polarization_type' is set to {}.\n\n"
-                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
-                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated".format(
-                    self.config.mass_transfer_coefficient,
-                    self.config.concentration_polarization_type,
+                expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
+                    self.Kf_avg[time_point, j] * 3.6e6
                 )
+
+        # TODO: add more vars
+        return {"vars": var_dict, "exprs": expr_dict}
+
+# helper for validating configuration arguments for this CV
+def validate_membrane_config_args(unit):
+
+    if (
+        unit.config.pressure_change_type is not PressureChangeType.fixed_per_stage
+        and unit.config.has_pressure_change is False
+    ):
+        raise ConfigurationError(
+            "\nConflict between configuration options:\n"
+            "'has_pressure_change' cannot be False "
+            "while 'pressure_change_type' is set to {}.\n\n"
+            "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
+            "'has_pressure_change' must be set to True".format(
+                unit.config.pressure_change_type
             )
+        )
+
+    if (
+        unit.config.concentration_polarization_type
+        == ConcentrationPolarizationType.calculated
+        and unit.config.mass_transfer_coefficient == MassTransferCoefficient.none
+    ):
+        raise ConfigurationError(
+            "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+            "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
+            "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
+            "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
+            "MassTransferCoefficient.calculated "
+            "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
+            "ConcentrationPolarizationType.none"
+        )
+
+    if (
+        unit.config.concentration_polarization_type
+        != ConcentrationPolarizationType.calculated
+        and unit.config.mass_transfer_coefficient != MassTransferCoefficient.none
+    ):
+        raise ConfigurationError(
+            "\nConflict between configuration options:\n"
+            "'mass_transfer_coefficient' cannot be set to {} "
+            "while 'concentration_polarization_type' is set to {}.\n\n"
+            "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+            "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated".format(
+                unit.config.mass_transfer_coefficient,
+                unit.config.concentration_polarization_type,
+            )
+        )
