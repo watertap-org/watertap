@@ -47,8 +47,9 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
     initialize_system,
     solve,
     add_costing,
-    display_costing,
-    display_results,
+    display_reports,
+    display_metrics_results,
+    display_additional_results,
 )
 
 
@@ -147,5 +148,6 @@ class TestMetabFlowsheet:
     def test_display(self, system_frame):
         m = system_frame
 
-        display_results(m.fs)
-        display_costing(m.fs)
+        display_reports(m.fs)
+        display_metrics_results(m)
+        display_additional_results(m)
