@@ -53,7 +53,7 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    display_results(m)
+    # display_reports(m)
 
     add_costing(m)
     initialize_costing(m)
@@ -61,7 +61,10 @@ def main():
     assert_units_consistent(m)
 
     results = solve(m)
-    display_costing(m)
+    assert_optimal_termination(results)
+
+    display_metrics_results(m)
+    display_additional_results(m)
 
     return m, results
 
@@ -159,7 +162,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def display_results(m):
+def display_reports(m):
     unit_list = ["feed", "pump", "mabr", "dmbr"]
     for u in unit_list:
         m.fs.component(u).report()
@@ -181,58 +184,88 @@ def add_costing(m):
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product_H2O.properties[0].flow_vol)
 
+    # other levelized costs
+    m.fs.costing.annual_water_inlet = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.annual_water_production = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.product_H2O.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.total_annualized_cost = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_water_inlet),
+        doc="Levelized Cost of Treatment",
+    )
+
 
 def initialize_costing(m):
     m.fs.costing.initialize()
 
 
-def display_costing(m):
-    m.fs.costing.total_capital_cost.display()
-    m.fs.costing.total_operating_cost.display()
-    m.fs.costing.LCOW.display()
+# def display_costing(m):
+#     m.fs.costing.total_capital_cost.display()
+#     m.fs.costing.total_operating_cost.display()
+#     m.fs.costing.LCOW.display()
+#
+#     print("\nUnit Capital Costs\n")
+#     for u in m.fs.costing._registered_unit_costing:
+#         print(
+#             u.name,
+#             " :   ",
+#             value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+#         )
+#
+#     print("\nUtility Costs\n")
+#     for f in m.fs.costing.flow_types:
+#         print(
+#             f,
+#             " :   ",
+#             value(
+#                 pyunits.convert(
+#                     m.fs.costing.aggregate_flow_costs[f],
+#                     to_units=pyunits.USD_2018 / pyunits.year,
+#                 )
+#             ),
+#         )
+#
+#     print("")
+#     total_capital_cost = value(
+#         pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+#     )
+#     print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
+#     total_operating_cost = value(
+#         pyunits.convert(
+#             m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+#         )
+#     )
+#     print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
+#     electricity_intensity = value(
+#         pyunits.convert(
+#             m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+#         )
+#     )
+#     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
+#     LCOW = value(
+#         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+#     )
+#     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
 
-    print("\nUnit Capital Costs\n")
-    for u in m.fs.costing._registered_unit_costing:
-        print(
-            u.name,
-            " :   ",
-            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
-        )
-
-    print("\nUtility Costs\n")
-    for f in m.fs.costing.flow_types:
-        print(
-            f,
-            " :   ",
-            value(
-                pyunits.convert(
-                    m.fs.costing.aggregate_flow_costs[f],
-                    to_units=pyunits.USD_2018 / pyunits.year,
-                )
-            ),
-        )
-
-    print("")
-    total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
-    )
-    print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
-    total_operating_cost = value(
-        pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
-        )
-    )
-    print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
-    electricity_intensity = value(
-        pyunits.convert(
-            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
-        )
-    )
-    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
-    LCOW = value(
-        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
-    )
-    print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
 
 def display_metrics_results(m):
     print("----------Levelized costs----------")
@@ -248,31 +281,14 @@ def display_metrics_results(m):
         )
     )
     print(f"Levelized Cost of Water: {LCOW:.2f} $/m3 of product")
-    LCOH = value(
-        pyunits.convert(
-            m.fs.costing.LCOH, to_units=m.fs.costing.base_currency / pyunits.kg
-        )
-    )
-    print(f"Levelized Cost of Hydrogen: {LCOH:.2f} $/kg")
-    LCOM = value(
-        pyunits.convert(
-            m.fs.costing.LCOM, to_units=m.fs.costing.base_currency / pyunits.kg
-        )
-    )
-    print(f"Levelized Cost of Methane: {LCOM:.2f} $/kg")
-    LCOCR = value(
-        pyunits.convert(
-            m.fs.costing.LCOCR, to_units=m.fs.costing.base_currency / pyunits.kg
-        )
-    )
-    print(f"Levelized Cost of COD Removal: {LCOCR:.2f} $/kg")
 
     print("----------Capital costs----------")
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.metab_hydrogen.costing.capital_cost
-                + m.fs.metab_methane.costing.capital_cost
+                m.fs.mabr.costing.capital_cost
+                + m.fs.dmbr.costing.capital_cost
+                + m.fs.pump.costing.capital_cost
             )
             / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
@@ -312,62 +328,45 @@ def display_metrics_results(m):
         )
     )
     print(f"Normalized electricity cost: {EC_normalized:.2f} $/m3 of feed")
-    HC_normalized = value(
-        pyunits.convert(
-            m.fs.costing.aggregate_flow_costs["heat"] / m.fs.costing.annual_water_inlet,
-            to_units=m.fs.costing.base_currency / pyunits.m**3,
-        )
-    )
-    print(f"Normalized heating cost: {HC_normalized:.2f} $/m3 of feed")
-
-    print("----------Revenue----------")
-    H2R_normalized = value(
-        pyunits.convert(
-            -m.fs.costing.aggregate_flow_costs["hydrogen_product"]
-            / m.fs.costing.annual_water_inlet,
-            to_units=m.fs.costing.base_currency / pyunits.m**3,
-        )
-    )
-    print(f"Normalized hydrogen revenue: {H2R_normalized:.2f} $/m3 of feed")
-    CH4R_normalized = value(
-        pyunits.convert(
-            -m.fs.costing.aggregate_flow_costs["methane_product"]
-            / m.fs.costing.annual_water_inlet,
-            to_units=m.fs.costing.base_currency / pyunits.m**3,
-        )
-    )
-    print(f"Normalized methane revenue: {CH4R_normalized:.2f} $/m3 of feed")
 
     print("----------Performance metrics----------")
     volumetric_recovery = value(
         m.fs.product_H2O.properties[0].flow_vol / m.fs.feed.properties[0].flow_vol
     )
     print(f"Water recovery: {volumetric_recovery:.3f} m3 of product/m3 of feed")
-    CODR_normalized = value(
+    BODR_normalized = value(
         pyunits.convert(
             1
-            - m.fs.product_H2O.properties[0].flow_mass_comp["cod"]
-            / m.fs.feed.properties[0].flow_mass_comp["cod"],
+            - m.fs.product_H2O.properties[0].flow_mass_comp["bod"]
+            / m.fs.feed.properties[0].flow_mass_comp["bod"],
             to_units=pyunits.dimensionless,
         )
     )
-    print(f"COD removal: {CODR_normalized:.4f} dimensionless")
-    H2P_normalized = value(
+    print(f"BOD removal: {BODR_normalized:.4f} dimensionless")
+    TSSR_normalized = value(
         pyunits.convert(
-            m.fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"]
-            / m.fs.feed.properties[0].flow_vol,
-            to_units=pyunits.kg / pyunits.m**3,
+            1
+            - m.fs.product_H2O.properties[0].flow_mass_comp["tss"]
+            / m.fs.feed.properties[0].flow_mass_comp["tss"],
+            to_units=pyunits.dimensionless,
         )
     )
-    print(f"Normalized hydrogen production: {H2P_normalized:.4f} kg/m3")
-    CH4P_normalized = value(
+    print(f"TSS removal: {TSSR_normalized:.4f} dimensionless")
+    NR_normalized = value(
         pyunits.convert(
-            m.fs.product_methane.properties[0].flow_mass_comp["methane"]
-            / m.fs.feed.properties[0].flow_vol,
-            to_units=pyunits.kg / pyunits.m**3,
+            1
+            - (
+                m.fs.product_H2O.properties[0].flow_mass_comp["ammonium_as_nitrogen"]
+                + m.fs.product_H2O.properties[0].flow_mass_comp["nitrate"]
+            )
+            / (
+                m.fs.feed.properties[0].flow_mass_comp["ammonium_as_nitrogen"]
+                + m.fs.feed.properties[0].flow_mass_comp["nitrate"]
+            ),
+            to_units=pyunits.dimensionless,
         )
     )
-    print(f"Normalized methane production: {CH4P_normalized:.4f} kg/m3")
+    print(f"Total N removal: {NR_normalized:.4f} dimensionless")
 
     print("----------Energy intensity----------")
     SEC = value(
@@ -377,13 +376,6 @@ def display_metrics_results(m):
         )
     )
     print(f"Specific electricity consumption: {SEC:.3f} kWh/m3 of feed")
-    STC = value(
-        pyunits.convert(
-            m.fs.costing.aggregate_flow_heat / m.fs.feed.properties[0].flow_vol,
-            to_units=pyunits.MJ / pyunits.m**3,
-        )
-    )
-    print(f"Specific thermal consumption: {STC:.3f} MJ/m3 of feed")
 
 
 def display_additional_results(m):
@@ -395,35 +387,40 @@ def display_additional_results(m):
         )
     )
     print(f"H2O outlet flow: {product_H2O_flow:.2f} m3/h")
-    product_H2O_COD = value(
+    product_H2O_BOD = value(
         pyunits.convert(
-            m.fs.product_H2O.properties[0].conc_mass_comp["cod"],
+            m.fs.product_H2O.properties[0].conc_mass_comp["bod"],
             to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"H2O outlet COD conc: {product_H2O_COD:.2f} g/L")
-    product_H2_flow = value(
+    print(f"H2O outlet BOD conc: {product_H2O_BOD:.2f} g/L")
+    product_H2O_TSS = value(
         pyunits.convert(
-            m.fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"],
-            to_units=pyunits.kg / pyunits.hr,
+            m.fs.product_H2O.properties[0].conc_mass_comp["tss"],
+            to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"H2 outlet flow: {product_H2_flow:.4f} kg/h")
-    product_CH4_flow = value(
+    print(f"H2O outlet TSS conc: {product_H2O_TSS:.2f} g/L")
+    product_H2O_total_nitrogen = value(
         pyunits.convert(
-            m.fs.product_methane.properties[0].flow_mass_comp["methane"],
-            to_units=pyunits.kg / pyunits.hr,
+            (
+                m.fs.product_H2O.properties[0].conc_mass_comp["ammonium_as_nitrogen"]
+                + m.fs.product_H2O.properties[0].conc_mass_comp["nitrate"]
+            ),
+            to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"CH4 outlet flow: {product_CH4_flow:.3f} kg/h")
+    print(f"H2O outlet total nitrogen conc: {product_H2O_total_nitrogen:.2f} g/L")
 
     print("----------Capital costs----------")
     total_capital_costs = value(m.fs.costing.total_capital_cost) / 1e6
     print(f"Total capital costs: {total_capital_costs:.1f} $M")
-    hydrogen_capital_costs = value(m.fs.metab_hydrogen.costing.capital_cost) / 1e6
-    print(f"Hydrogen capital costs: {hydrogen_capital_costs:.2f} $M")
-    methane_capital_costs = value(m.fs.metab_methane.costing.capital_cost) / 1e6
-    print(f"Methane capital costs: {methane_capital_costs:.1f} $M")
+    mabr_capital_costs = value(m.fs.mabr.costing.capital_cost) / 1e6
+    print(f"MABR capital costs: {mabr_capital_costs:.2f} $M")
+    dmbr_capital_costs = value(m.fs.dmbr.costing.capital_cost) / 1e6
+    print(f"DMBR capital costs: {dmbr_capital_costs:.1f} $M")
+    pump_capital_costs = value(m.fs.pump.costing.capital_cost) / 1e6
+    print(f"Pump capital costs: {pump_capital_costs:.1f} $M")
 
     print("----------Operating costs----------")
     total_operating_costs = value(m.fs.costing.total_operating_cost) / 1e6
@@ -434,21 +431,7 @@ def display_additional_results(m):
         value(m.fs.costing.aggregate_flow_costs["electricity"]) / 1e3
     )
     print(f"Electricity operating costs: {electricity_operating_costs:.1f} $k/year")
-    heating_operating_costs = value(m.fs.costing.aggregate_flow_costs["heat"]) / 1e3
-    print(f"Heating operating costs: {heating_operating_costs:.1f} $k/year")
 
-    print("----------Revenue----------")
-    total_revenue = value(
-        -(
-            m.fs.costing.aggregate_flow_costs["hydrogen_product"]
-            + m.fs.costing.aggregate_flow_costs["methane_product"]
-        )
-    )
-    print(f"Total revenue: {total_revenue:.1f} $/year")
-    hydrogen_revenue = value(-(m.fs.costing.aggregate_flow_costs["hydrogen_product"]))
-    print(f"Hydrogen revenue: {hydrogen_revenue:.1f} $/year")
-    methane_revenue = value(-(m.fs.costing.aggregate_flow_costs["methane_product"]))
-    print(f"Methane revenue: {methane_revenue:.1f} $/year")
 
 if __name__ == "__main__":
     m, results = main()
