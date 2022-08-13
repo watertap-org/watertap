@@ -18,7 +18,7 @@ import watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO as mpro
 solver = get_solver()
 
 
-class TestMPFlowsheet:
+class TestMPmodel:
     @pytest.fixture(scope="class")
     def mp_model(self):
         m = mpro.create_multiperiod_swro_model(n_time_points=2)

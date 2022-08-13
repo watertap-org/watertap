@@ -27,12 +27,26 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-import idaes.core.util.model_statistics as mod_stats
 
-import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as swro
 from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
     create_multiperiod_swro_model,
 )
+
+
+def main(ndays, data_path):
+    # number of time steps
+    n_steps = int(ndays * 24)
+
+    # get data
+    data = _get_lmp(n_steps, data_path)
+
+    mp_swro = build_flowsheet(n_steps, data)
+
+    m, t_blocks = set_objective(mp_swro, data)
+
+    m, _ = solve(m)
+
+    return m, t_blocks, data
 
 
 def _get_lmp(time_steps, data_path):
@@ -49,28 +63,15 @@ def _get_lmp(time_steps, data_path):
     return lmp_data[:time_steps]
 
 
-def run_pricetaker_analysis(
-    ndays=1, nweeks=1, data_path="dagget_CA_LMP_hourly_2015.csv"
-):
-
-    # number of time steps
-    n_steps = int(nweeks * ndays * 24)
-
-    # get data
-    lmp = _get_lmp(n_steps, data_path)
+def build_flowsheet(n_steps, data):
 
     # create mp model
-    start_init = datetime.now()
     mp_swro = create_multiperiod_swro_model(n_time_points=n_steps)
-    init_time = datetime.now() - start_init
 
-    print(
-        "\n---------------------\n",
-        "Initialization time: ",
-        init_time,
-        "\n---------------------\n",
-    )
+    return mp_swro
 
+
+def set_objective(mp_swro, lmp):
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
@@ -102,9 +103,6 @@ def run_pricetaker_analysis(
         # deactivate each block-level objective function
         blk_swro.fs.objective.deactivate()
 
-    # check if all other objective functions are deactivated
-    assert mod_stats.number_activated_objectives(m) == 0
-
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
         expr=sum([blk.weighted_LCOW for blk in t_blocks])
@@ -115,38 +113,31 @@ def run_pricetaker_analysis(
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
     t_blocks[0].ro_mp.previous_pressure.fix(55e5)
 
+    return m, t_blocks
+
+
+def solve(m):
     # solve
     opt = SolverFactory("ipopt")
+    results = opt.solve(m, tee=True)
 
-    start_solve = datetime.now()
-    opt.solve(m, tee=True)
-    opt_time = datetime.now() - start_solve
-
-    print(
-        "\n---------------------\n",
-        "Total optimization run time: ",
-        opt_time,
-        "\n---------------------\n",
-    )
-
-    return m, t_blocks, lmp
+    return m, results
 
 
-def visualize_results(t_blocks, lmp):
-    n = len(t_blocks)
-    time_step = np.array(range(n))
+def visualize_results(t_blocks, data):
+    time_step = np.array(range(len(t_blocks)))
     recovery = np.array(
         [
             blk.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].value
             for blk in t_blocks
         ]
     )
-    flux_h2o = np.array(
-        [
-            blk.ro_mp.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]()
-            for blk in t_blocks
-        ]
-    )
+    # flux_h2o = np.array(
+    #     [
+    #         blk.ro_mp.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]()
+    #         for blk in t_blocks
+    #     ]
+    # )
     pump1_flow = np.array(
         [
             blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
@@ -176,11 +167,11 @@ def visualize_results(t_blocks, lmp):
     fig, ax = plt.subplots(3, 2)
     fig.suptitle(
         "SWRO MultiPeriod optimization results: {} hours\nLCOW: {} $/m3".format(
-            n, round(m.obj(), 2)
+            len(t_blocks), round(m.obj(), 2)
         )
     )
 
-    ax[0, 0].plot(time_step, lmp)
+    ax[0, 0].plot(time_step, data)
     ax[0, 0].set_xlabel("Time [hr]")
     ax[0, 0].set_ylabel("Electricity price [$/kWh]")
 
@@ -214,23 +205,5 @@ def visualize_results(t_blocks, lmp):
 
 
 if __name__ == "__main__":
-    start_main = datetime.now()
-
-    m, t_blocks, lmp = run_pricetaker_analysis()
-
-    total_time = datetime.now() - start_main
-
-    print(
-        "\n---------------------\n",
-        "Optimized LCOW: {}".format(round(m.obj(), 3)),
-        "\n---------------------\n",
-    )
-
-    visualize_results(t_blocks, lmp)
-
-    print(
-        "\n---------------------\n",
-        "Total program run time: ",
-        total_time,
-        "\n---------------------\n",
-    )
+    m, t_blocks, data = main(0.085, data_path="dagget_CA_LMP_hourly_2015.csv")
+    visualize_results(t_blocks, data)
