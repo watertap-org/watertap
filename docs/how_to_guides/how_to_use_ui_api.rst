@@ -45,9 +45,13 @@ In some Python module, define the function ``export_to_ui``, which will look
 similar to this::
 
    def export_to_ui():
-       return FlowsheetInterface(do_export=export_variables, do_build=build_flowsheet,
-           do_solve=solve_flowsheet)
+       return FlowsheetInterface(
+           do_build=build_flowsheet,
+           do_export=export_variables,
+           do_solve=solve_flowsheet,
+           name="My Flowsheet")
 
+See :class:`FlowsheetInterface` for details on the arguments.
 
 User Interface Developers
 --------------------------
@@ -69,9 +73,9 @@ Note that when the functions are invoked, the returned interface will not have
 created the flowsheet and exported the variables until the ``build`` method is invoked::
 
     first_module = list(results.keys())[0]
-    flowsheet = results[first_module]()
+    interface = results[first_module]
     # at this point the name and description of the flowsheet are available
-    flowsheet.build()
+    interface.build()
     # at this point the flowsheet is built and all variables exported
 
 

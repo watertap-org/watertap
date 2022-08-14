@@ -18,7 +18,8 @@ import idaes.logger as idaeslog
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
 
-#: Forward-reference to a FlowsheetInterface type, used in ``FlowsheetInterface.find()``
+#: Forward-reference to a FlowsheetInterface type, used in
+#: :meth:`FlowsheetInterface.find`
 FSI = TypeVar("FSI", bound="FlowsheetInterface")
 
 
