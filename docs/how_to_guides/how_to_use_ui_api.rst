@@ -69,8 +69,7 @@ that, when called, will create the flowsheet interface::
 
    results = fsapi.FlowsheetInterface.find("watertap")
 
-Note that when the functions are invoked, the returned interface will not have
-created the flowsheet and exported the variables until the ``build`` method is invoked::
+Note that the returned interface will not create the flowsheet object and export the variables until the ``build`` method is invoked::
 
     first_module = list(results.keys())[0]
     interface = results[first_module]
@@ -91,7 +90,6 @@ Use the ``dict()`` method to serialize the flowsheet::
 
     data = flowsheet.dict()
 
-
 .. image:: /_static/menu-icon.png
     :height: 22px
     :align: left
@@ -101,8 +99,7 @@ Use the ``dict()`` method to serialize the flowsheet::
 Load a serialized flowsheet
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Use the ``load()`` method to load values from a serialized flowsheet.
-This will raise a ``MissingObjectError`` if any of the incoming values are not found in
-the target flowsheet::
+This will raise a ``MissingObjectError`` if any of the incoming values are not found in the target flowsheet::
 
    try:
        flowsheet.load(data)
