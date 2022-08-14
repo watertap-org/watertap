@@ -125,6 +125,7 @@ class MissingObjectError(Exception):
         plural = "" if num == 1 else "s"
         things = [f"{m[1]}" for m in what]
         super().__init__(f"{num} object{plural} not found {where}: {'; '.join(things)}")
+        self.missing = what
 
 
 class Actions(str, Enum):
@@ -139,15 +140,7 @@ class Actions(str, Enum):
 
 
 class FlowsheetInterface:
-    """The flowsheet interface.
-
-    Any attribute starting with 'do_' is an action.
-    The two special actions are `do_build` and `do_solve`.
-    For example::
-
-        fsi = FlowsheetInterface()
-
-    """
+    """Interface between users, UI developers, and flowsheet models."""
 
     #: Function to look for in modules. See :meth:`find`.
     UI_HOOK = "export_to_ui"

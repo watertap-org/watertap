@@ -17,6 +17,10 @@ def build_flowsheet():
     return model.fs
 
 
+def solve_flowsheet(flowsheet=None):
+    return flowsheet.solve()
+
+
 def example_flowsheet():
     """Example flowsheet from the IDAES tutorial."""
     # Import Pyomo libraries
