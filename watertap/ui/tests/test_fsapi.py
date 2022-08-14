@@ -1,7 +1,7 @@
 """
 Tests for fsapi module
 """
-import pprint
+import logging
 
 import pytest
 
@@ -14,9 +14,13 @@ from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
 from watertap.ui import fsapi
 
 
+_log = logging.getLogger("idaes.watertap.ui.fsapi")
+_log.setLevel(logging.DEBUG)
+
+
 def build_ro(erd_type=None):
     model = RO.build_flowsheet(erd_type=erd_type)
-    return model
+    return model.fs
 
 
 def solve_ro(flowsheet=None):
@@ -73,6 +77,7 @@ def flowsheet_interface(exports=True):
     )
 
 
+@pytest.mark.unit
 def test_create_interface():
     fsi = flowsheet_interface(exports=False)
     fsi = flowsheet_interface()
@@ -80,12 +85,14 @@ def test_create_interface():
     assert fs2.fs_exp == fsi.fs_exp
 
 
+@pytest.mark.unit
 def test_build_noexport():
     fsi = flowsheet_interface(exports=False)
     with pytest.raises(KeyError):
         fsi.build(erd_type="pressure_exchanger")
 
 
+@pytest.mark.unit
 def test_build():
     fsi = flowsheet_interface()
     fsi.build(erd_type="pressure_exchanger")
@@ -95,6 +102,7 @@ def test_build():
     assert len(data["model_objects"]) == 1
 
 
+@pytest.mark.unit
 def test_actions():
     fsi = flowsheet_interface()
     built = False
@@ -133,6 +141,7 @@ def test_actions():
         fsi.run_action(fsapi.Actions.export)
 
 
+@pytest.mark.unit
 def test_load():
     fsi = flowsheet_interface()
     fsi.build(erd_type="pressure_exchanger")
@@ -156,3 +165,19 @@ def test_load():
     # reload (fake one will be 'missing')
     with pytest.raises(fsapi.MissingObjectError):
         fsi.load(data)
+
+
+@pytest.mark.unit
+def test_find_smoke():
+    fsapi.FlowsheetInterface.find("watertap")
+
+
+@pytest.mark.component
+def test_find():
+    result = fsapi.FlowsheetInterface.find("examples.ui")
+    assert len(result) == 1  # expect only 1 module
+    func = list(result.values())[0]  # get the module function
+    interface = func()  # invoke the function to get the interface object
+    interface.build()  # make sure the module exported properly
+    with pytest.raises(KeyError):
+        interface.solve()

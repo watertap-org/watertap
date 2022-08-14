@@ -6,12 +6,23 @@ __author__ = "Dan Gunter"
 
 # stdlib
 from enum import Enum
-from typing import Callable, Optional, Dict, Union
+from glob import glob
+import importlib
+from pathlib import Path
+import re
+from typing import Callable, Optional, Dict, Union, TypeVar
 from uuid import uuid4
 
 # third-party
+import idaes.logger as idaeslog
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
+
+# Forward-reference to a FlowsheetInterface type
+FSI = TypeVar("FSI", bound="FlowsheetInterface")
+
+
+_log = idaeslog.getLogger(__name__)
 
 
 class ModelExport(BaseModel):
@@ -113,13 +124,13 @@ class MissingObjectError(Exception):
         num = len(what)
         plural = "" if num == 1 else "s"
         things = [f"{m[1]}" for m in what]
-        full_message = f"{num} object{plural} not found {where}: {'; '.join(things)}"
-        super().__init__(full_message)
+        super().__init__(f"{num} object{plural} not found {where}: {'; '.join(things)}")
 
 
 class Actions(str, Enum):
-    """Known actions that can be run. Actions that users should not
-    run directly are prefixed with an underscore.
+    """Known actions that can be run.
+    Actions that users should not run directly (unless they know what they are
+    doing) are prefixed with an underscore.
     """
 
     build = "build"
@@ -137,6 +148,9 @@ class FlowsheetInterface:
         fsi = FlowsheetInterface()
 
     """
+
+    #: Function to look for in modules. See :meth:`find`.
+    UI_HOOK = "export_to_ui"
 
     def __init__(
         self,
@@ -267,3 +281,57 @@ class FlowsheetInterface:
                 f"name begins with an underscore"
             )
         return func(**kwargs)
+
+    @classmethod
+    def find(cls, package: str) -> Dict[str, Callable[[], FSI]]:
+        """Find all modules with a flowsheet interface in a given package.
+
+        Args:
+            package: Dotted package name, e.g. "watertap" or "my.package"
+
+        Returns:
+            Dict mapping module names to the flowsheet interface function
+
+        Raises:
+            ImportError: if package cannot be imported
+            IOError: If package directory cannot be found
+        """
+        pkg = importlib.import_module(package)
+
+        # Get a directory for the package, dealing with some failure modes
+
+        try:
+            pkg_path = Path(pkg.__file__).parent
+        except TypeError:  # missing __init__.py perhaps
+            raise IOError(
+                f"Cannot find package '{package}' directory, possibly "
+                f"missing an '__init__.py' file"
+            )
+        if not pkg_path.is_dir():
+            raise IOError(
+                f"Cannot load from package '{package}': "
+                f"path '{pkg_path}' not a directory"
+            )
+
+        # Find modules and import
+
+        skip_expr = re.compile(r"_test|test_|__")
+        result = {}
+
+        for python_file in pkg_path.glob("**/*.py"):
+            _log.debug(f"FlowsheetInterface.find: importing file '{python_file}'")
+            if skip_expr.search(str(python_file)):
+                continue
+            relative_path = python_file.relative_to(pkg_path)
+            dotted_name = relative_path.as_posix()[:-3].replace("/", ".")
+            module_name = package + "." + dotted_name
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as err:  # assume the import could do bad things
+                _log.warning("Import of file '{python_file}' failed: {err}")
+                continue
+            func = getattr(module, cls.UI_HOOK, None)
+            if func:
+                result[module_name] = func
+
+        return result
