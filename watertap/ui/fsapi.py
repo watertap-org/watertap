@@ -18,7 +18,7 @@ import idaes.logger as idaeslog
 from pydantic import BaseModel, validator, Field
 import pyomo.environ as pyo
 
-# Forward-reference to a FlowsheetInterface type
+#: Forward-reference to a FlowsheetInterface type, used in ``FlowsheetInterface.find()``
 FSI = TypeVar("FSI", bound="FlowsheetInterface")
 
 
@@ -148,11 +148,27 @@ class FlowsheetInterface:
     def __init__(
         self,
         fs: FlowsheetExport = None,
-        do_export: Callable = None,
         do_build: Callable = None,
+        do_export: Callable = None,
         do_solve: Callable = None,
         **kwargs,
     ):
+        """Constructor.
+
+        Args:
+            fs: An existing wrapper to a flowsheet object. If this is not provided,
+                then one will be constructed by passing the keyword arguments to
+                the built-in pydantic ``parse_obj()`` method
+                of :class:`FlowsheetExport`.
+            do_build: Function to call to build the flowsheet. It should build the
+                flowsheet model and return the `FlowsheetBlock`, which is typically
+                the `fs` attribute of the model object.
+            do_export: Function to call to export variables after the model is built.
+                This will be called automatically by :meth:`build()`.
+            do_solve: Function to solve the model. It should return the result
+                that the solver itself returns
+            **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
+        """
         if fs is None:
             self.fs_exp = FlowsheetExport.parse_obj(kwargs)
         else:
@@ -276,14 +292,17 @@ class FlowsheetInterface:
         return func(**kwargs)
 
     @classmethod
-    def find(cls, package: str) -> Dict[str, Callable[[], FSI]]:
+    def find(cls, package: str) -> Dict[str, FSI]:
         """Find all modules with a flowsheet interface in a given package.
+        Having a flowhseet interface means simply that there is a function
+        whose name matches the contents of :attr:`FlowsheetInterface.UI_HOOK`.
+        This function should build and return a :class:`FlowsheetInterface` object.
 
         Args:
             package: Dotted package name, e.g. "watertap" or "my.package"
 
         Returns:
-            Dict mapping module names to the flowsheet interface function
+            Dict mapping module names to FlowsheetInterface objects
 
         Raises:
             ImportError: if package cannot be imported
@@ -321,10 +340,15 @@ class FlowsheetInterface:
             try:
                 module = importlib.import_module(module_name)
             except Exception as err:  # assume the import could do bad things
-                _log.warning("Import of file '{python_file}' failed: {err}")
+                _log.warning(f"Import of file '{python_file}' failed: {err}")
                 continue
             func = getattr(module, cls.UI_HOOK, None)
             if func:
-                result[module_name] = func
-
+                try:
+                    result[module_name] = func()
+                except Exception as err:  # If the function blows up
+                    _log.error(
+                        f"Could not get FlowsheetInterface for module "
+                        f"'{python_file}': {err}"
+                    )
         return result

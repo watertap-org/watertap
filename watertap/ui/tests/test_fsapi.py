@@ -175,9 +175,8 @@ def test_find_smoke():
 @pytest.mark.component
 def test_find():
     result = fsapi.FlowsheetInterface.find("examples.ui")
-    assert len(result) == 1  # expect only 1 module
-    func = list(result.values())[0]  # get the module function
-    interface = func()  # invoke the function to get the interface object
+    assert len(result) == 1  # expect only 1 module (1 was bad)
+    interface = list(result.values())[0]  # get the module function
     interface.build()  # make sure the module exported properly
     with pytest.raises(KeyError):
         interface.solve()
