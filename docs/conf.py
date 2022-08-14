@@ -108,7 +108,8 @@ panels_add_bootstrap_css = False
 
 
 def run_apidoc(*args):
-    # NOTE the env var must be set before importing apidoc, or the options will have no effect
+    # NOTE the env var must be set before importing apidoc, or the options
+    # will have no effect
     os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
     from sphinx.ext import apidoc
 
@@ -116,8 +117,16 @@ def run_apidoc(*args):
     apidoc.main(args)
 
 
+def skip(app, what, name, obj, would_skip, options):
+    """Do not skip constructors!"""
+    if name == "__init__":
+        return False
+    return would_skip
+
+
 def setup(app):
     if os.environ.get("SKIP_APIDOC", False):
         print("Skipping apidoc")
     else:
         app.connect("builder-inited", run_apidoc)
+    app.connect("autodoc-skip-member", skip)
