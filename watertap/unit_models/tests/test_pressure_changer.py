@@ -20,14 +20,9 @@ from pyomo.environ import (
     Constraint,
     Var,
 )
-from idaes.core import FlowsheetBlock
-from watertap.unit_models.pressure_changer import (
-    Pump,
-    EnergyRecoveryDevice,
-    VariableEfficiency,
-)
-import watertap.property_models.seawater_prop_pack as props
+from pyomo.util.check_units import assert_units_consistent
 
+from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -37,6 +32,13 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     get_scaling_factor,
     set_scaling_factor,
+)
+
+import watertap.property_models.seawater_prop_pack as props
+from watertap.unit_models.pressure_changer import (
+    Pump,
+    EnergyRecoveryDevice,
+    VariableEfficiency,
 )
 
 # -----------------------------------------------------------------------------
@@ -299,8 +301,9 @@ class TestPumpVariable_Flow:
 
         m.fs.unit.bep_eta.fix(efi_pump)
 
-        flow_vol = m.fs.unit.control_volume.properties_in[0].flow_vol.expr()
-        m.fs.unit.bep_flow.fix(flow_vol)
+        m.fs.unit.flow_ratio.fix(1)
+        # flow_vol = m.fs.unit.control_volume.properties_in[0].flow_vol.expr()
+        # m.fs.unit.bep_flow.fix(flow_vol)
         return m
 
     @pytest.mark.unit
@@ -363,7 +366,7 @@ class TestPumpVariable_Flow:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_conservation(self, Pump_frame):
         m = Pump_frame
         b = m.fs.unit.control_volume
@@ -387,6 +390,10 @@ class TestPumpVariable_Flow:
                 <= 1e-6
             )
 
+    @pytest.mark.unit
+    def test_units(self, Pump_frame):
+        assert_units_consistent(Pump_frame)
+
     @pytest.mark.component
     def test_solution(self, Pump_frame):
         m = Pump_frame
@@ -395,6 +402,7 @@ class TestPumpVariable_Flow:
         assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
 
         # Test low bep flow case
+        m.fs.unit.flow_ratio.unfix()
         m.fs.unit.bep_flow.fix(default_flow_vol / 2)
         results = solver.solve(m)
         assert pytest.approx(0.4, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
