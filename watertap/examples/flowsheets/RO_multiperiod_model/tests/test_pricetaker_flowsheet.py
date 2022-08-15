@@ -27,12 +27,12 @@ class TestMPflowsheet:
         sample_path = "dagget_CA_LMP_hourly_2015.csv"
         sample_data = pt._get_lmp(2, sample_path)
 
-        m = pt.build_flowsheet(2, sample_data)
+        m = pt.build_flowsheet(2)
         m, t_blocks = pt.set_objective(m, sample_data)
 
         return m, t_blocks, sample_data
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_set_objective(self, frame):
         m, t_blocks, lmp = frame
 
@@ -52,14 +52,14 @@ class TestMPflowsheet:
             t_blocks[0].ro_mp.previous_pressure
         )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_solve(self, frame):
         m, t_blocks, lmp = frame
         m, results = pt.solve(m)
         assert results.solver.status == "ok"
         assert results.solver.termination_condition == "optimal"
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_visualize(self, frame):
         m, t_blocks, lmp = frame
         pt.visualize_results(m, t_blocks, lmp)

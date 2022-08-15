@@ -12,12 +12,8 @@
 ###############################################################################
 
 import numpy as np
-from datetime import datetime
+import sys
 import matplotlib.pyplot as plt
-
-plt.rc("font", size=20)
-plt.rc("axes", titlesize=20)
-
 
 from pyomo.environ import (
     Param,
@@ -27,20 +23,23 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-
 from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
     create_multiperiod_swro_model,
 )
 
 
-def main(ndays, data_path):
-    # number of time steps
+def main(
+    ndays,
+    data_path="watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv",
+):
+
+    # number of time steps assuming 1 hour as the base time
     n_steps = int(ndays * 24)
 
     # get data
     data = _get_lmp(n_steps, data_path)
 
-    mp_swro = build_flowsheet(n_steps, data)
+    mp_swro = build_flowsheet(n_steps)
 
     m, t_blocks = set_objective(mp_swro, data)
 
@@ -63,7 +62,7 @@ def _get_lmp(time_steps, data_path):
     return lmp_data[:time_steps]
 
 
-def build_flowsheet(n_steps, data):
+def build_flowsheet(n_steps):
 
     # create mp model
     mp_swro = create_multiperiod_swro_model(n_time_points=n_steps)
@@ -195,5 +194,5 @@ def visualize_results(m, t_blocks, data):
 
 
 if __name__ == "__main__":
-    m, t_blocks, data = main(0.085, data_path="dagget_CA_LMP_hourly_2015.csv")
+    m, t_blocks, data = main(*sys.argv[1:])
     visualize_results(m, t_blocks, data)
