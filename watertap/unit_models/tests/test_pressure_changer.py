@@ -264,7 +264,7 @@ class TestEnergyRecoveryDevice(TestPumpIsothermal):
         )
 
 
-class TestPumpVariable_Flow:
+class TestPumpVariable_Flow(TestPumpIsothermal):
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
@@ -349,12 +349,21 @@ class TestPumpVariable_Flow:
     @pytest.mark.component
     def test_solution(self, Pump_frame):
         m = Pump_frame
-        initialization_tester(Pump_frame)
-        results = solver.solve(m)
 
-        # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
-        # Check values
+        default_flow_vol = m.fs.unit.bep_flow()
         assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
+
+        # Test low bep flow case
+        m.fs.unit.bep_flow.fix(default_flow_vol / 2)
+        results = solver.solve(m)
+        assert pytest.approx(0.4, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
+
+        # Test high bep flow case
+        m.fs.unit.bep_flow.fix(default_flow_vol * 2)
+        results = solver.solve(m)
+        assert pytest.approx(0.4, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
+
+        # Test sub-optimal bep flow case
+        m.fs.unit.bep_flow.fix(default_flow_vol * 0.8)
+        results = solver.solve(m)
+        assert pytest.approx(0.9345625, rel=1e-5) == value(m.fs.unit.eta_ratio[0])
