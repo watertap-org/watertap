@@ -3,7 +3,7 @@ Ozone  (ZO)
 
 Model Type
 ----------
-This unit model is formulated as a single-input, single-output model form.
+This unit model is formulated as a **single-input, single-output** model form.
 See documentation for :ref:`single-input, single-output Helper Methods<siso_methods>`.
 
 Electricity Consumption
@@ -12,7 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the cost_ozonation method in the zero-order costing package.
+Costing is calculated using the **cost_ozonation** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 Additional Variables
@@ -21,13 +21,13 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Ozone contact time", "contact_time", "min"
-   "CT value for ozone contactor", "concentration_time", "mg*min/l"
-   "Ozone mass transfer efficiency", "mass_transfer_efficiency", "None"
-   "Specific energy consumption for ozone generation", "specific_energy_coeff", "kWh/lb"
-   "Mass flow rate of ozone", "ozone_flow_mass", "lb/hr"
-   "Ozone consumption", "ozone_consumption", "mg/l"
-   "Ozone generation power demand", "electricity", "kW"
+   "Ozone contact time", "contact_time", ":math:`min`"
+   "CT value for ozone contactor", "concentration_time", ":math:`mg*min/l`"
+   "Ozone mass transfer efficiency", "mass_transfer_efficiency", ":math:`dimensionless`"
+   "Specific energy consumption for ozone generation", "specific_energy_coeff", ":math:`kWh/lb`"
+   "Mass flow rate of ozone", "ozone_flow_mass", ":math:`lb/hr`"
+   "Ozone consumption", "ozone_consumption", ":math:`mg/l`"
+   "Ozone generation power demand", "electricity", ":math:`kW`"
 
 Additional Constraints
 ----------------------

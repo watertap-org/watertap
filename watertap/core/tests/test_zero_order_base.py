@@ -232,18 +232,18 @@ class TestZOBase:
 
         model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
         model.fs.unit.set_param_from_data(
-            model.fs.unit.removal_frac_mass_solute[0, "A"],
-            {"removal_frac_mass_solute": {"A": {"value": 0.42, "units": "m^3/m^3"}}},
+            model.fs.unit.removal_frac_mass_comp[0, "A"],
+            {"removal_frac_mass_comp": {"A": {"value": 0.42, "units": "m^3/m^3"}}},
             index="A",
         )
 
-        assert model.fs.unit.removal_frac_mass_solute[0, "A"].value == 0.42
-        assert model.fs.unit.removal_frac_mass_solute[0, "A"].fixed
+        assert model.fs.unit.removal_frac_mass_comp[0, "A"].value == 0.42
+        assert model.fs.unit.removal_frac_mass_comp[0, "A"].fixed
 
     @pytest.mark.unit
     def test_set_param_from_data_indexed_no_entry(self, model):
@@ -254,19 +254,19 @@ class TestZOBase:
 
         model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
         with pytest.raises(
             KeyError,
             match="fs.unit - database provided does not "
-            "contain an entry for removal_frac_mass_solute with "
+            "contain an entry for removal_frac_mass_comp with "
             "index A for technology.",
         ):
             model.fs.unit.set_param_from_data(
-                model.fs.unit.removal_frac_mass_solute[0, "A"],
-                {"removal_frac_mass_solute": {}},
+                model.fs.unit.removal_frac_mass_comp[0, "A"],
+                {"removal_frac_mass_comp": {}},
                 index="A",
             )
 
@@ -281,7 +281,7 @@ class TestZOBase:
 
         model.fs.unit.test = Var()
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
@@ -304,22 +304,22 @@ class TestZOBase:
 
         model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
         model.fs.unit.set_param_from_data(
-            model.fs.unit.removal_frac_mass_solute[0, "A"],
+            model.fs.unit.removal_frac_mass_comp[0, "A"],
             {
-                "removal_frac_mass_solute": {"A": {"value": 0.42, "units": "m^3/m^3"}},
-                "default_removal_frac_mass_solute": {"value": 0.70, "units": "kg/kg"},
+                "removal_frac_mass_comp": {"A": {"value": 0.42, "units": "m^3/m^3"}},
+                "default_removal_frac_mass_comp": {"value": 0.70, "units": "kg/kg"},
             },
             index="D",
             use_default_removal=True,
         )
 
-        assert model.fs.unit.removal_frac_mass_solute[0, "A"].value == 0.70
-        assert model.fs.unit.removal_frac_mass_solute[0, "A"].fixed
+        assert model.fs.unit.removal_frac_mass_comp[0, "A"].value == 0.70
+        assert model.fs.unit.removal_frac_mass_comp[0, "A"].fixed
 
     @pytest.mark.unit
     def test_set_param_from_data_indexed_use_default_undefined(self, model):
@@ -330,24 +330,20 @@ class TestZOBase:
 
         model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
         with pytest.raises(
             KeyError,
             match="fs.unit - database provided does not "
-            "contain an entry for removal_frac_mass_solute with "
+            "contain an entry for removal_frac_mass_comp with "
             "index D for technology and no default removal was "
             "specified.",
         ):
             model.fs.unit.set_param_from_data(
-                model.fs.unit.removal_frac_mass_solute[0, "A"],
-                {
-                    "removal_frac_mass_solute": {
-                        "A": {"value": 0.42, "units": "m^3/m^3"}
-                    }
-                },
+                model.fs.unit.removal_frac_mass_comp[0, "A"],
+                {"removal_frac_mass_comp": {"A": {"value": 0.42, "units": "m^3/m^3"}}},
                 index="D",
                 use_default_removal=True,
             )
@@ -361,15 +357,15 @@ class TestZOBase:
 
         model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
 
-        model.fs.unit.removal_frac_mass_solute = Var(
+        model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
         )
 
         model.fs.unit.set_param_from_data(
-            model.fs.unit.removal_frac_mass_solute[0, "A"],
+            model.fs.unit.removal_frac_mass_comp[0, "A"],
             {
-                "removal_frac_mass_solute": {"A": {"value": 0.42, "units": "m^3/m^3"}},
-                "default_removal_frac_mass_solute": {"value": 0.70, "units": "kg/kg"},
+                "removal_frac_mass_comp": {"A": {"value": 0.42, "units": "m^3/m^3"}},
+                "default_removal_frac_mass_comp": {"value": 0.70, "units": "kg/kg"},
             },
             index="D",
             use_default_removal=True,
@@ -377,7 +373,7 @@ class TestZOBase:
 
         model.fs.unit._perf_var_dict[
             "Solute Removal"
-        ] = model.fs.unit.removal_frac_mass_solute
+        ] = model.fs.unit.removal_frac_mass_comp
 
         model.fs.unit.time_indexed_performance_var = Var(
             model.fs.time, doc="test variable"
@@ -396,9 +392,9 @@ class TestZOBase:
 
         expected = {
             "vars": {
-                "Solute Removal [A]": model.fs.unit.removal_frac_mass_solute[0, "A"],
-                "Solute Removal [B]": model.fs.unit.removal_frac_mass_solute[0, "B"],
-                "Solute Removal [C]": model.fs.unit.removal_frac_mass_solute[0, "C"],
+                "Solute Removal [A]": model.fs.unit.removal_frac_mass_comp[0, "A"],
+                "Solute Removal [B]": model.fs.unit.removal_frac_mass_comp[0, "B"],
+                "Solute Removal [C]": model.fs.unit.removal_frac_mass_comp[0, "C"],
                 "Test Variable 1": model.fs.unit.time_indexed_performance_var[0],
                 "Test Variable 2": model.fs.unit.nonindexed_performance_var,
             }

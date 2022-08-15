@@ -80,6 +80,7 @@ from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
 from .surface_discharge_zo import SurfaceDischargeZO
 
+
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
@@ -92,6 +93,8 @@ from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .hydrothermal_gasification_zo import HTGZO
 from .metab_zo import MetabZO
+from .microbial_battery_zo import MicrobialBatteryZO
 from .photothermal_membrane_zo import PhotothermalMembraneZO
+from .suboxic_activated_sludge_process_zo import SuboxicASMZO
 from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .vfa_recovery_zo import VFARecoveryZO

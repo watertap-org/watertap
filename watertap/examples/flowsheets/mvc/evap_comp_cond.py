@@ -210,11 +210,10 @@ def add_costing(m):
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
 
-
 def set_operating_conditions(m):
     m_f = 40  # kg/s
     w_f = 50 * 1e-3  # kg/kg
-    rr = 0.5
+    rr = 0.25
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix((1 - w_f) * m_f)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(w_f * m_f)
     m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(rr*m_f)
@@ -226,18 +225,36 @@ def set_operating_conditions(m):
     m.fs.feed.properties[0].pressure.fix(101325)
 
     # evaporator specifications
-    m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
+    #m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
     m.fs.evaporator.area.fix(1000)  # m^2
     #m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(20) # 5
 
     # compressor
-    # m.fs.compressor.pressure_ratio.fix(2)
+    m.fs.compressor.pressure_ratio.fix(1.5)
     #m.fs.compressor.control_volume.properties_out[0].temperature = 400
     m.fs.compressor.efficiency.fix(0.8)
 
     # Fix 0 TDS
     m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq','TDS'].fix(1e-5)
+
+    # rescale based on mass flow rate
+    sf = 10 ** -(math.log10(m.fs.feed.properties[0].flow_mass_phase_comp['Liq','H2O'].value))
+    m.fs.properties_feed.set_default_scaling(
+        "flow_mass_phase_comp", sf, index=("Liq", "H2O")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", sf, index=("Vap", "H2O")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", sf, index=("Liq", "H2O")
+    )
+
+    sf = 10 ** -(math.log10(m.fs.feed.properties[0].flow_mass_phase_comp['Liq','TDS'].value))
+    m.fs.properties_feed.set_default_scaling(
+        "flow_mass_phase_comp", sf, index=("Liq", "TDS")
+    )
+    iscale.calculate_scaling_factors(m)
 
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))

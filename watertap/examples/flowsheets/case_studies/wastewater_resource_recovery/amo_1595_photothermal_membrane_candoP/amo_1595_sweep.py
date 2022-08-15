@@ -31,7 +31,7 @@ def set_up_sensitivity(m):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_outputs=None):
     m = amo_1595.main()[0]
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
     sweep_params = {}
@@ -39,25 +39,20 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
     if case_num == 1:
         sweep_params["bcp_cost"] = LinearSample(m.fs.costing.bcp_cost, 0.1, 1, nx)
     elif case_num == 2:
-        sweep_params["water_cost"] = LinearSample(m.fs.costing.bcp_cost, 0, 2, nx)
+        sweep_params["water_cost"] = LinearSample(m.fs.costing.water_cost, 0, 2, nx)
     elif case_num == 3:
         sweep_params["nitrous_oxide_cost"] = LinearSample(
-            m.fs.costing.bcp_cost, 0, 5, nx
+            m.fs.costing.nitrous_oxide_cost, 0, 5, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 
-    output_filename = "sensitivity_" + str(case_num) + ".csv"
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
-
+    # run sweep
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=output_path,
+        csv_results_file_name=save_outputs,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,

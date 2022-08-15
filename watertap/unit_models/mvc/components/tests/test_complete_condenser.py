@@ -62,6 +62,18 @@ def test_complete_condense():
     assert distillate_blk.flow_mass_phase_comp["Liq", "H2O"].value == pytest.approx(
         1.0000, rel=1e-3
     )
+<<<<<<< HEAD
     assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
     assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
     assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)
+=======
+    assert pytest.approx(0.0, abs=1e-10) == value(
+        m.fs.unit.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
+    )
+    assert pytest.approx(5.0e4, rel=1e-4) == value(m.fs.unit.outlet.pressure[0])
+
+    m.fs.unit.report()
+
+    perf_dict = m.fs.unit._get_performance_contents()
+    assert perf_dict == {"vars": {"Heat duty": m.fs.unit.control_volume.heat[0]}}
+>>>>>>> 3070bdaa62b7e34ede6087582b06dc34c6c50d1b
