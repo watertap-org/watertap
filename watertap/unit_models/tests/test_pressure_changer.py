@@ -300,10 +300,7 @@ class TestPumpVariable_Flow:
         m.fs.unit.outlet.pressure[0].fix(feed_pressure_out)
 
         m.fs.unit.bep_eta.fix(efi_pump)
-
         m.fs.unit.flow_ratio.fix(1)
-        # flow_vol = m.fs.unit.control_volume.properties_in[0].flow_vol.expr()
-        # m.fs.unit.bep_flow.fix(flow_vol)
         return m
 
     @pytest.mark.unit
