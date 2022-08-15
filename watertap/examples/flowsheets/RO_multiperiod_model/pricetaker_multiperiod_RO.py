@@ -124,7 +124,7 @@ def solve(m):
     return m, results
 
 
-def visualize_results(t_blocks, data):
+def visualize_results(m, t_blocks, data):
     time_step = np.array(range(len(t_blocks)))
     recovery = np.array(
         [
@@ -132,12 +132,7 @@ def visualize_results(t_blocks, data):
             for blk in t_blocks
         ]
     )
-    # flux_h2o = np.array(
-    #     [
-    #         blk.ro_mp.fs.RO.flux_mass_phase_comp_avg[0, "Liq", "H2O"]()
-    #         for blk in t_blocks
-    #     ]
-    # )
+
     pump1_flow = np.array(
         [
             blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
@@ -175,9 +170,6 @@ def visualize_results(t_blocks, data):
     ax[0, 0].set_xlabel("Time [hr]")
     ax[0, 0].set_ylabel("Electricity price [$/kWh]")
 
-    # ax[1,0].plot(time_step, flux_h2o*3600)
-    # ax[1,0].set_xlabel("Time [hr]")
-    # ax[1,0].set_ylabel("Water Flux [L/m2/hr]")
     ax[1, 0].plot(time_step, pump1_flow * 3600, label="P1")
     ax[1, 0].plot(time_step, pump2_flow * 3600, label="P2")
     ax[1, 0].set_xlabel("Time [hr]")
@@ -201,9 +193,7 @@ def visualize_results(t_blocks, data):
     ax[2, 1].set_xlabel("Time [hr]")
     ax[2, 1].set_ylabel("RO Inlet Pressure [bar]")
 
-    plt.show()
-
 
 if __name__ == "__main__":
     m, t_blocks, data = main(0.085, data_path="dagget_CA_LMP_hourly_2015.csv")
-    visualize_results(t_blocks, data)
+    visualize_results(m, t_blocks, data)

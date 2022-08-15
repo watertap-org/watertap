@@ -27,18 +27,21 @@ class TestMPflowsheet:
         sample_path = "dagget_CA_LMP_hourly_2015.csv"
         sample_data = pt._get_lmp(2, sample_path)
 
-        # run model for 2 hours
-        m, t_blocks, lmp = pt.build_flowsheet(2, sample_data)
-        return m, t_blocks, lmp
+        m = pt.build_flowsheet(2, sample_data)
+        m, t_blocks = pt.set_objective(m, sample_data)
 
-    @pytest.mark.unit
+        return m, t_blocks, sample_data
+
+    @pytest.mark.component
     def test_set_objective(self, frame):
         m, t_blocks, lmp = frame
 
-        m, t_blocks = pt.set_objective(m, lmp)
-
-        # check if block-level objectives were deactivated
+        # check if block-level objectives are properly set
         assert mod_stats.number_activated_objectives(m) == 1
+        assert m.obj.is_expression_type()
+        assert t_blocks[0].weighted_LCOW.is_expression_type()
+        assert t_blocks[0].water_prod.is_expression_type()
+        assert t_blocks[0].energy_consumption.is_expression_type()
 
         # check if there are 2 blocks (1 for each timestep)
         assert len(t_blocks) == 2
@@ -49,24 +52,24 @@ class TestMPflowsheet:
             t_blocks[0].ro_mp.previous_pressure
         )
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, frame):
-        m, _, _ = frame
+        m, t_blocks, lmp = frame
         m, results = pt.solve(m)
         assert results.solver.status == "ok"
         assert results.solver.termination_condition == "optimal"
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_visualize(self, frame):
         m, t_blocks, lmp = frame
-        pt.visualize_results(t_blocks, lmp)
+        pt.visualize_results(m, t_blocks, lmp)
 
         assert plt.fignum_exists(1)
         plt.close("all")
 
         assert pytest.approx(0.33453, rel=1e-3) == m.obj()
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_full_dataset(self):
         # bring in full set of sample data
         sample_path = "dagget_CA_LMP_hourly_2015.csv"
