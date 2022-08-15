@@ -49,6 +49,7 @@ from idaes.core import (
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
+    EnergyBalanceType,
 )
 from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
 from idaes.core.base.phases import LiquidPhase, AqueousPhase
@@ -1144,9 +1145,8 @@ class DSPMDEStateBlockData(StateBlockData):
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
 
-    # TODO: augment model with energybalance later
-    # def default_energy_balance_type(self):
-    #     return EnergyBalanceType.enthalpyTotal
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.none
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar

@@ -32,7 +32,9 @@ class PumpIsothermalData(PumpData):
     def build(self):
         super().build()
 
-        self.control_volume.del_component(self.control_volume.enthalpy_balances)
+        if hasattr(self.control_volume, "enthalpy_balances"):
+            self.control_volume.del_component(self.control_volume.enthalpy_balances)
+        # self.control_volume.del_component(self.control_volume.enthalpy_balances)
 
         @self.control_volume.Constraint(
             self.flowsheet().config.time, doc="Isothermal constraint"
