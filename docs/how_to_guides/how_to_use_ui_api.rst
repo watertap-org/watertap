@@ -105,5 +105,6 @@ This will raise a ``MissingObjectError`` if any of the incoming values are not f
        flowsheet.load(data)
    except fsapi.MissingObjectError as err:
        print(f"Error loading data: {err}")
-       # the list of names missing objects is in 'err.missing'
-
+       # print contents of list of missing items (key and variable name)
+       for item in err.missing:
+           print(f"Missing item: key={item.key}, name={item.name}")
