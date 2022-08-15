@@ -5,6 +5,7 @@ Simple flowsheet interface API
 __author__ = "Dan Gunter"
 
 # stdlib
+from collections import namedtuple
 from enum import Enum
 from glob import glob
 import importlib
@@ -91,14 +92,10 @@ class FlowsheetExport(BaseModel):
 
     @validator("description", always=True)
     def validate_description(cls, v, values):
-        if v == "":
-            # use model 'doc' or if not there just repeat 'name'
+        if not v:
             try:
                 v = values["obj"].doc
             except (KeyError, AttributeError):
-                v = None
-            if v is None:
-                # `validate_name` guarantees a value for name
                 v = f"{values['name']} flowsheet"
         return v
 
@@ -120,15 +117,6 @@ class FlowsheetExport(BaseModel):
         return obj
 
 
-class MissingObjectError(Exception):
-    def __init__(self, what, where):
-        num = len(what)
-        plural = "" if num == 1 else "s"
-        things = [f"{m[1]}" for m in what]
-        super().__init__(f"{num} object{plural} not found {where}: {'; '.join(things)}")
-        self.missing = what
-
-
 class Actions(str, Enum):
     """Known actions that can be run.
     Actions that users should not run directly (unless they know what they are
@@ -145,6 +133,30 @@ class FlowsheetInterface:
 
     #: Function to look for in modules. See :meth:`find`.
     UI_HOOK = "export_to_ui"
+
+    #: Type of item in list ``MissingObjectError.missing``.
+    #: ``key`` is the unique key assigned to the variable,
+    #: ``name`` is the variable name in the flowsheet
+    MissingObject = namedtuple("MissingObject", "key name")
+
+    class MissingObjectError(Exception):
+        """Error returned if data in `load` refers to a variable not found in the
+        target object.
+
+        Use the `.missing` attribute of the error object to get the list  of
+        MissingObjects.
+        """
+
+        def __init__(self, missing):
+            num = len(missing)
+            plural = "" if num == 1 else "s"
+            things = [f"{m[1]}" for m in missing]
+            super().__init__(
+                f"{num} object{plural} not found in the model: {', '.join(things)}"
+            )
+            self.missing = [
+                FlowsheetInterface.MissingObject(key=m[0], name=m[1]) for m in missing
+            ]
 
     def __init__(
         self,
@@ -235,7 +247,7 @@ class FlowsheetInterface:
                 dst.obj.value = dst.value = src.value
 
         if missing:
-            raise MissingObjectError(missing, "in the model")
+            raise self.MissingObjectError(missing)
 
     def add_action(self, action_name: str, action_func: Callable):
         """Add an action for the flowsheet.
