@@ -12,7 +12,6 @@
 ###############################################################################
 import os
 from pyomo.environ import (
-    Constraint,
     ConcreteModel,
     Block,
     Expression,
@@ -26,15 +25,19 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from idaes.generic_models.unit_models.translator import Translator
-from idaes.generic_models.costing import UnitModelCostingBlock
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.models.unit_models import (
+    Mixer,
+    Separator,
+    Product,
+    Feed,
+    Translator,
+    MomentumMixingType,
+)
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
@@ -679,18 +682,22 @@ def display_costing(m):
         )
     )
 
-    # TODO - replace with breakdown of NF and WWT operating costs
-    nf_opex = (
-        17203.011108806746  # from "NF-only" analysis in USD_2020 (dye_desalination.py)
+    # this model only considers the energy cost contribution to operating cost
+    wwtp_opex = value(
+        m.fs.pretreatment.wwtp.energy_electric_flow_vol_inlet
+        * m.fs.zo_costing.electricity_cost
+        * m.fs.zo_costing.utilization_factor
+        * pyunits.convert(m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / pyunits.year)
     )
-    wwtp_opex = (
+
+    nf_opex = (
         value(
             pyunits.convert(
                 m.fs.zo_costing.total_operating_cost,
                 to_units=pyunits.USD_2020 / pyunits.year,
             )
         )
-        - nf_opex
+        - wwtp_opex
     )
 
     ro_opex = value(
