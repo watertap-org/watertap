@@ -24,7 +24,7 @@ solver = get_solver()
 class TestMPflowsheet:
     @pytest.fixture(scope="class")
     def frame(self):
-        sample_path = "dagget_CA_LMP_hourly_2015.csv"
+        sample_path = "watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv"
         sample_data = pt._get_lmp(2, sample_path)
 
         m = pt.build_flowsheet(2)
@@ -72,6 +72,6 @@ class TestMPflowsheet:
     @pytest.mark.component
     def test_full_dataset(self):
         # bring in full set of sample data
-        sample_path = "dagget_CA_LMP_hourly_2015.csv"
+        sample_path = "watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv"
         sample_data = pt._get_lmp(-1, sample_path)
         assert len(sample_data) == 8759
