@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Var, units as pyunits, Expr_if
+from pyomo.environ import Var, units as pyunits, Expr_if, value
 
 from enum import Enum, auto
 
@@ -97,8 +97,8 @@ class PumpIsothermalData(PumpData):
             # add constraints
             @self.Constraint(self.flowsheet().time, doc="Pump flow ratio")
             def flow_ratio_constraint(b, t):
-                return b.flow_ratio[t] * b.bep_flow == (
-                    b.control_volume.properties_out[t].flow_vol.expr()
+                return b.flow_ratio[t] * b.bep_flow == value(
+                    b.control_volume.properties_out[t].flow_vol
                 )
 
         if self.config.variable_efficiency is VariableEfficiency.flow:
@@ -119,10 +119,12 @@ class PumpIsothermalData(PumpData):
                 )
 
         elif self.config.variable_efficiency is VariableEfficiency.flow_head:
-            raise ValueError(
+            raise NotImplementedError(
                 "Config option 'VariableEfficiency.flow_head' is not fully implemented yet"
             )
             # TODO - Implement pump efficiency expression based on flow and head (bep_head, head_ratio)
+        else:
+            pass
 
         if self.config.variable_efficiency is not VariableEfficiency.none:
             # replace the constant efficiency assumption using eta_ratio

@@ -264,7 +264,7 @@ class TestEnergyRecoveryDevice(TestPumpIsothermal):
         )
 
 
-class TestPumpVariable_Flow(TestPumpIsothermal):
+class TestPumpVariable_Flow:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
@@ -320,7 +320,7 @@ class TestPumpVariable_Flow(TestPumpIsothermal):
 
         assert isinstance(m.fs.unit.flow_ratio_constraint, Constraint)
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_calculate_scaling(self, Pump_frame):
         m = Pump_frame
         m.fs.properties.set_default_scaling(
@@ -345,6 +345,47 @@ class TestPumpVariable_Flow(TestPumpIsothermal):
 
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.unit
+    def test_dof(self, Pump_frame):
+        m = Pump_frame
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, Pump_frame):
+        initialization_tester(Pump_frame)
+
+    @pytest.mark.component
+    def test_solve(self, Pump_frame):
+        results = solver.solve(Pump_frame)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_conservation(self, Pump_frame):
+        m = Pump_frame
+        b = m.fs.unit.control_volume
+        comp_lst = ["TDS", "H2O"]
+
+        for t in m.fs.config.time:
+            # mass balance
+            for j in comp_lst:
+                assert (
+                    abs(
+                        value(
+                            b.properties_in[t].flow_mass_phase_comp["Liq", j]
+                            - b.properties_out[t].flow_mass_phase_comp["Liq", j]
+                        )
+                    )
+                    <= 1e-6
+                )
+            # energy balance
+            assert (
+                abs(value(b.properties_in[t].enth_flow - b.properties_out[t].enth_flow))
+                <= 1e-6
+            )
 
     @pytest.mark.component
     def test_solution(self, Pump_frame):
