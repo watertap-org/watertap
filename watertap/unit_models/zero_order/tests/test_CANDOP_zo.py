@@ -90,12 +90,12 @@ class TestCANDOPZO:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            if j not in data["removal_frac_mass_solute"].keys():
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            if j not in data["removal_frac_mass_comp"].keys():
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.electricity_intensity_N.fixed
         assert (
@@ -146,26 +146,23 @@ class TestCANDOPZO:
         assert pytest.approx(0.1205, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(2.074689, rel=1e-5) == value(
+        assert pytest.approx(2.061856, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
         )
-        assert pytest.approx(2.074689, rel=1e-5) == value(
+        assert pytest.approx(2.061856, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
         )
-        assert (
-            value(
-                model.fs.unit.properties_treated[0].conc_mass_comp[
-                    "bioconcentrated_phosphorous"
-                ]
-            )
-            < 1e-6
+        assert pytest.approx(6.185567, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp[
+                "bioconcentrated_phosphorous"
+            ]
         )
         assert (
             value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrous_oxide"])
             < 1e-6
         )
 
-        assert pytest.approx(0.0015, rel=1e-2) == value(
+        assert pytest.approx(0.00075, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
         assert (
@@ -176,12 +173,15 @@ class TestCANDOPZO:
             value(model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"])
             < 1e-6
         )
-        assert pytest.approx(500, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "bioconcentrated_phosphorous"
-            ]
+        assert (
+            value(
+                model.fs.unit.properties_byproduct[0].conc_mass_comp[
+                    "bioconcentrated_phosphorous"
+                ]
+            )
+            < 1e-6
         )
-        assert pytest.approx(500, rel=1e-5) == value(
+        assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrous_oxide"]
         )
 

@@ -18,30 +18,14 @@ default:
     value: 0.99
     units: dimensionless
     reference: Defined based on the Kern County case study data.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless
       constituent_longform: Nonvolatile TOC
-    tds:
-      value: 0.9
-      units: dimensionless
-      constituent_longform: Total Dissolved Solids (TDS)
-    chloride:
-      value: 0.95
-      units: dimensionless
-      constituent_longform: Chloride
-    electrical_conductivity:
-      value: 0.95
-      units: dimensionless
-      constituent_longform: Electrical_Conductivity
-    sodium:
-      value: 0.95
-      units: dimensionless
-      constituent_longform: Sodium, Dissolved
     tss:
       value: 0.97
       units: dimensionless

@@ -38,7 +38,9 @@ def set_up_sensitivity(m, withRO):
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
+def run_analysis(
+    case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True, save_path=None
+):
     # when from the command line
     case_num = int(case_num)
     nx = int(nx)
@@ -74,9 +76,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.waste_disposal_cost, 1, 10, nx
         )
     elif case_num == 3:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             0.999,
             nx,
@@ -84,7 +86,7 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
     elif case_num == 4:
         # sweep across membrane properties
         m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0].unfix()
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["water_permeability"] = LinearSample(
             m.fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
             1,
@@ -92,7 +94,7 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             nx,
         )
         sweep_params["dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             0.999,
             nx,
@@ -113,9 +115,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.waste_disposal_cost, 0, 10, nx
         )
     elif case_num == 7:
-        m.fs.feed.flow_vol.unfix()
-        sweep_params["feed_flow"] = LinearSample(
-            m.fs.feed.flow_vol, 0.01 / 3600, 120 / 3600, nx
+        m.fs.zo_costing.electricity_cost.unfix()
+        sweep_params["electricity_cost"] = LinearSample(
+            m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
         )
     elif case_num == 8:
         m.fs.zo_costing.recovered_water_cost.unfix()
@@ -145,9 +147,9 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
             m.fs.zo_costing.electricity_cost, 0.0, 0.25, nx
         )
     elif case_num == 11:
-        m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"].unfix()
+        m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"].unfix()
         sweep_params["NF_dye_removal"] = LinearSample(
-            m.fs.dye_separation.nanofiltration.removal_frac_mass_solute[0, "dye"],
+            m.fs.dye_separation.nanofiltration.removal_frac_mass_comp[0, "dye"],
             0.2,
             1,
             nx,
@@ -156,28 +158,35 @@ def run_analysis(case_num=4, nx=11, interpolate_nan_outputs=True, withRO=True):
         sweep_params["RO_permeability"] = LinearSample(
             m.fs.desalination.RO.A_comp, 1e-12, 1e-11, nx
         )
+    elif case_num == 12:
+        desal = m.fs.desalination
+        desal.RO.recovery_vol_phase[0, "Liq"].unfix()
+        desal.RO.velocity[0, 0].unfix()
+
+        desal.P2.control_volume.properties_out[0].pressure.unfix()
+        desal.P2.control_volume.properties_out[0].pressure.setub(8300000)
+        desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
+
+        desal.RO.area.unfix()
+        desal.RO.area.setub(5000)
+        desal.RO.area.setlb(50)
+
+        sweep_params["RO_recovery"] = LinearSample(
+            m.fs.desalination.RO.recovery_vol_phase[0, "Liq"], 0.1, 0.75, nx
+        )
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
-
-    # output csv in the same directory as this sweep file
-    output_filename = "sensitivity_" + str(case_num) + ".csv"
-    output_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        output_filename,
-    )
 
     # run sweep
     global_results = parameter_sweep(
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=output_path,
+        csv_results_file_name=save_path,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
-
-    print(global_results)
 
     return global_results, sweep_params, m
 

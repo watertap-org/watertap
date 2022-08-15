@@ -3,10 +3,10 @@ default:
     value: 0.95
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nitrate:
       value: 0.95
       units: dimensionless
@@ -18,10 +18,10 @@ default:
     tss:
       value: 0.95
       units: dimensionless
-      constituent_longform: Total Suspended Solids (TSS))
+      constituent_longform: Total Suspended Solids (TSS)
   capital_cost:
     basis: flow_mass
-    cost_factor: TPEC
+    cost_factor: None
     reference_state:
       value: 1577255
       units: kg/hr

@@ -12,6 +12,7 @@
 ###############################################################################
 import pytest
 import os
+import tempfile
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_sweep import (
     run_analysis,
 )
@@ -19,7 +20,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_
 # test the first 7 case studies that can be run with or without RO
 pytest_parameterize_NF = list(range(1, 8))
 # then test case studies 9-11 that can only run with RO
-pytest_parameterize_RO = list(range(8, 12))
+pytest_parameterize_RO = list(range(8, 13))
 
 
 @pytest.mark.parametrize("case_num", pytest_parameterize_NF)
@@ -28,8 +29,17 @@ def test_dye_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     # test every other sweep with RO
-    withRO = bool(case_num % 2)
-    run_analysis(case_num, nx=1, interpolate_nan_outputs=False, withRO=withRO)
+    withRO = bool(case_num == 1)
+    temp = tempfile.NamedTemporaryFile(delete=False)
+    temp.close()
+    results, params, model = run_analysis(
+        case_num,
+        nx=1,
+        interpolate_nan_outputs=False,
+        withRO=withRO,
+        save_path=temp.name,
+    )
+    os.remove(temp.name)
     os.chdir(cwd)
     return
 

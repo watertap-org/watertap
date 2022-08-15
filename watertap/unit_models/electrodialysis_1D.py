@@ -12,27 +12,20 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from email.policy import default
-from logging import warning
-from numpy import NAN
 from pyomo.environ import (
     Set,
     Var,
-    Param,
     Suffix,
     Constraint,
     NonNegativeReals,
     NonNegativeIntegers,
-    Reference,
     value,
     units as pyunits,
 )
 from pyomo.dae import (
-    ContinuousSet,
     DerivativeVar,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from sympy import Derivative
 
 # Import Watertap cores
 from watertap.core.util.initialization import check_solve, check_dof
@@ -42,16 +35,13 @@ from idaes.core import (
     ControlVolume1DBlock,
     declare_process_block_class,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
-from idaes.core.control_volume1d import DistributedVars
+from idaes.core.base.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver
+from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
@@ -519,6 +509,14 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="The overall current efficiency for deionizaiton",
         )
+        self.recovery_mass_H2O = Var(
+            self.flowsheet().time,
+            initialize=0.5,
+            bounds=(0, 1),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="water recovery ratio calculated by mass",
+        )
         # TODO: consider adding more performance as needed.
 
         # -------- Add constraints ---------
@@ -570,14 +568,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                     + self.membrane_areal_resistance["cem"]
                     + self.spacer_thickness
                     * (
-                        self.concentrate.properties[t, x].electrical_conductivity_phase[
-                            "Liq"
-                        ]
-                        ** -1
-                        + self.diluate.properties[t, x].electrical_conductivity_phase[
-                            "Liq"
-                        ]
-                        ** -1
+                        self.concentrate.properties[t, x].elec_cond_phase["Liq"] ** -1
+                        + self.diluate.properties[t, x].elec_cond_phase["Liq"] ** -1
                     )
                 )
                 * self.cell_pair_num
@@ -623,56 +615,77 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_mass_transfer_term_diluate(self, t, x, p, j):
 
             if j == "H2O":
-                return self.diluate.mass_transfer_term[
-                    t, x, p, j
-                ] == -self.cell_width * (
-                    self.water_trans_number_membrane["cem"]
-                    + self.water_trans_number_membrane["aem"]
-                ) * (
-                    self.current_density_x[t, x] / Constants.faraday_constant
-                ) - self.cell_width * self.diluate.properties[
-                    0, self.diluate.length_domain.first()
-                ].dens_mass_solvent / self.config.property_package.mw_comp[
-                    j
-                ] * (
-                    self.water_permeability_membrane["cem"]
-                    + self.water_permeability_membrane["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].pressure_osm_phase[p]
-                    - self.diluate.properties[t, x].pressure_osm_phase[p]
+                return (
+                    self.diluate.mass_transfer_term[t, x, p, j]
+                    == (
+                        -self.cell_width
+                        * (
+                            self.water_trans_number_membrane["cem"]
+                            + self.water_trans_number_membrane["aem"]
+                        )
+                        * (self.current_density_x[t, x] / Constants.faraday_constant)
+                        - self.cell_width
+                        * self.diluate.properties[
+                            0, self.diluate.length_domain.first()
+                        ].dens_mass_solvent
+                        / self.config.property_package.mw_comp[j]
+                        * (
+                            self.water_permeability_membrane["cem"]
+                            + self.water_permeability_membrane["aem"]
+                        )
+                        * (
+                            self.concentrate.properties[t, x].pressure_osm_phase[p]
+                            - self.diluate.properties[t, x].pressure_osm_phase[p]
+                        )
+                    )
+                    * self.cell_pair_num
                 )
             elif j in self.config.property_package.ion_set:
 
-                return self.diluate.mass_transfer_term[
-                    t, x, p, j
-                ] == -self.cell_width * (
-                    self.ion_trans_number_membrane["cem", j]
-                    - self.ion_trans_number_membrane["aem", j]
-                ) * (
-                    self.current_utilization * self.current_density_x[t, x]
-                ) / (
-                    self.config.property_package.charge_comp[j]
-                    * Constants.faraday_constant
-                ) + self.cell_width * (
-                    self.solute_diffusivity_membrane["cem", j]
-                    / self.membrane_thickness["cem"]
-                    + self.solute_diffusivity_membrane["aem", j]
-                    / self.membrane_thickness["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
-                    - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
+                return (
+                    self.diluate.mass_transfer_term[t, x, p, j]
+                    == (
+                        -self.cell_width
+                        * (
+                            self.ion_trans_number_membrane["cem", j]
+                            - self.ion_trans_number_membrane["aem", j]
+                        )
+                        * (self.current_utilization * self.current_density_x[t, x])
+                        / (
+                            self.config.property_package.charge_comp[j]
+                            * Constants.faraday_constant
+                        )
+                        + self.cell_width
+                        * (
+                            self.solute_diffusivity_membrane["cem", j]
+                            / self.membrane_thickness["cem"]
+                            + self.solute_diffusivity_membrane["aem", j]
+                            / self.membrane_thickness["aem"]
+                        )
+                        * (
+                            self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
+                            - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
+                        )
+                    )
+                    * self.cell_pair_num
                 )
             else:
-                return self.diluate.mass_transfer_term[
-                    t, x, p, j
-                ] == self.cell_width * (
-                    self.solute_diffusivity_membrane["cem", j]
-                    / self.membrane_thickness["cem"]
-                    + self.solute_diffusivity_membrane["aem", j]
-                    / self.membrane_thickness["aem"]
-                ) * (
-                    self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
-                    - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
+                return (
+                    self.diluate.mass_transfer_term[t, x, p, j]
+                    == (
+                        self.cell_width
+                        * (
+                            self.solute_diffusivity_membrane["cem", j]
+                            / self.membrane_thickness["cem"]
+                            + self.solute_diffusivity_membrane["aem", j]
+                            / self.membrane_thickness["aem"]
+                        )
+                        * (
+                            self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
+                            - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
+                        )
+                    )
+                    * self.cell_pair_num
                 )
 
         # Mass Transfer for the Concentrate
@@ -721,7 +734,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                 * self.diluate.properties[
                     t, self.diluate.length_domain.last()
                 ].flow_vol_phase["Liq"]
-                * self.cell_pair_num
                 == self.diluate.power_electrical_x[t, self.diluate.length_domain.last()]
             )
 
@@ -737,12 +749,33 @@ class Electrodialysis1DData(UnitModelBlockData):
                 self.current_efficiency_x[t, x]
                 * self.current_density_x[t, x]
                 * self.cell_width
+                * self.cell_pair_num
                 == -sum(
                     self.diluate.mass_transfer_term[t, x, p, j]
                     * self.config.property_package.charge_comp[j]
                     for j in cation_set
                 )
                 * Constants.faraday_constant
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Water recovery by mass",
+        )
+        def eq_recovery_mass_H2O(self, t):
+            return (
+                self.recovery_mass_H2O[t]
+                * (
+                    self.diluate.properties[
+                        t, self.diluate.length_domain.first()
+                    ].flow_mass_phase_comp["Liq", "H2O"]
+                    + self.concentrate.properties[
+                        t, self.diluate.length_domain.first()
+                    ].flow_mass_phase_comp["Liq", "H2O"]
+                )
+                == self.diluate.properties[
+                    t, self.diluate.length_domain.last()
+                ].flow_mass_phase_comp["Liq", "H2O"]
             )
 
     # Intialization routines
@@ -914,6 +947,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.cell_width, 1)
         if iscale.get_scaling_factor(self.cell_length, warning=True) is None:
             iscale.set_scaling_factor(self.cell_length, 1)
+        if iscale.get_scaling_factor(self.cell_pair_num, warning=True) is None:
+            iscale.set_scaling_factor(self.cell_pair_num, 0.1)
         if iscale.get_scaling_factor(self.membrane_thickness, warning=True) is None:
             iscale.set_scaling_factor(self.membrane_thickness, 1e4)
 
@@ -955,13 +990,18 @@ class Electrodialysis1DData(UnitModelBlockData):
             ):
                 sf = (
                     iscale.get_scaling_factor(self.membrane_areal_resistance) ** 2
-                    + value(
-                        self.diluate.properties[ind].electrical_conductivity_phase[
-                            "Liq"
-                        ]
+                    + iscale.get_scaling_factor(self.spacer_thickness) ** 2
+                    * (
+                        iscale.get_scaling_factor(
+                            self.diluate.properties[ind].elec_cond_phase["Liq"]
+                        )
+                        ** -2
+                        + iscale.get_scaling_factor(
+                            self.concentrate.properties[ind].elec_cond_phase["Liq"]
+                        )
+                        ** -2
                     )
-                    ** 2
-                ) ** 0.5 / float(self.cell_pair_num.value)
+                ) ** 0.5 * iscale.get_scaling_factor(self.cell_pair_num)
                 iscale.set_scaling_factor(self.total_areal_resistance_x[ind], sf)
 
         for ind in self.current_density_x:
@@ -1019,7 +1059,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                             0, self.diluate.length_domain.last()
                         ].flow_vol_phase["Liq"]
                     )
-                    / float(self.cell_pair_num.value)
+                    * iscale.get_scaling_factor(self.cell_pair_num)
                 )
                 ** -1,
             )
@@ -1070,9 +1110,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
-                    c, (sf_osm**2 + sf_eleosm**2) ** 0.5
+                    c,
+                    (sf_osm**2 + sf_eleosm**2) ** 0.5
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
             elif ind[3] in self.config.property_package.ion_set:
                 sf_diff = (
@@ -1100,9 +1142,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
-                    c, (sf_diff**2 + sf_elemig**2) ** 0.5
+                    c,
+                    (sf_diff**2 + sf_elemig**2) ** 0.5
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
             else:
                 iscale.constraint_scaling_transform(
@@ -1129,7 +1173,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                             ** 2
                         )
                         ** 0.5
-                    ),
+                    )
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
         for ind, c in self.eq_mass_transfer_term_concentrate.items():
             if ind[3] == "H2O":
@@ -1157,9 +1202,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     ** 0.5
                 )
-                sf_eleosm = Constants.faraday_constant
+                sf_eleosm = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
-                    c, (sf_osm**2 + sf_eleosm**2) ** 0.5
+                    c,
+                    (sf_osm**2 + sf_eleosm**2) ** 0.5
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
             elif ind[3] in self.config.property_package.ion_set:
                 sf_diff = (
@@ -1187,9 +1234,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** 0.5
                     )
                 )
-                sf_elemig = Constants.faraday_constant
+                sf_elemig = value(Constants.faraday_constant)
                 iscale.constraint_scaling_transform(
-                    c, (sf_diff**2 + sf_elemig**2) ** 0.5
+                    c,
+                    (sf_diff**2 + sf_elemig**2) ** 0.5
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
             else:
                 iscale.constraint_scaling_transform(
@@ -1216,7 +1265,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                             ** 2
                         )
                         ** 0.5
-                    ),
+                    )
+                    * iscale.get_scaling_factor(self.cell_pair_num),
                 )
         for ind, c in self.eq_power_electrical.items():
             iscale.constraint_scaling_transform(
@@ -1256,7 +1306,13 @@ class Electrodialysis1DData(UnitModelBlockData):
                 "Specific electrical power consumption (kW*h/m**3)": self.specific_power_electrical[
                     time_point
                 ],
+                "Water recovery by mass": self.recovery_mass_H2O[time_point],
             },
             "exprs": {},
             "params": {},
         }
+
+    def get_power_electrical(self, time_point=0):
+        return self.diluate.power_electrical_x[
+            time_point, self.diluate.length_domain.last()
+        ]

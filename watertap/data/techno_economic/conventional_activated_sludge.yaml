@@ -19,10 +19,10 @@ default:
     value: 0.9999
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.5
       units: dimensionless
@@ -46,7 +46,7 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E. Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E. Coli)
 
 cas_nitrification:
   energy_electric_flow_vol_inlet:
@@ -69,10 +69,10 @@ cas_nitrification:
     value: 0.9999
     units: dimensionless
     reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.5
       units: dimensionless
@@ -96,7 +96,7 @@ cas_nitrification:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E. Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E. Coli)
 
 cas_denitrification:
   energy_electric_flow_vol_inlet:
@@ -119,10 +119,10 @@ cas_denitrification:
     value: 0.9999
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.5
       units: dimensionless
@@ -150,4 +150,4 @@ cas_denitrification:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E. Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E. Coli)

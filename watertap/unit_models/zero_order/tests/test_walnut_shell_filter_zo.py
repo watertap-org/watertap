@@ -51,10 +51,6 @@ class TestWalnutShellFilterZO_w_default_removal:
             default={
                 "solute_list": [
                     "nonvolatile_toc",
-                    "tds",
-                    "chloride",
-                    "electrical_conductivity",
-                    "sodium",
                     "tss",
                     "foo",
                 ]
@@ -67,10 +63,6 @@ class TestWalnutShellFilterZO_w_default_removal:
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "nonvolatile_toc"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "chloride"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "electrical_conductivity"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "sodium"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
@@ -96,12 +88,12 @@ class TestWalnutShellFilterZO_w_default_removal:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert (
@@ -134,80 +126,40 @@ class TestWalnutShellFilterZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(1.007, rel=1e-5) == value(
+        assert pytest.approx(1.003, rel=1e-5) == value(
             model.fs.unit.properties_in[0].flow_vol
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["electrical_conductivity"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(0.993049, rel=1e-5) == value(
+        assert pytest.approx(0.997008, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.99208, rel=1e-5) == value(
+        assert pytest.approx(0.991829, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(0.80639, rel=1e-5) == value(
+        assert pytest.approx(0.806589, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(0.1007983, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp[
-                "electrical_conductivity"
-            ]
-        )
-        assert pytest.approx(0.050399, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(0.0302395, rel=1e-5) == value(
+        assert pytest.approx(0.030247, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(1.007983, rel=1e-5) == value(
+        assert pytest.approx(1.008237, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(0.01492, rel=1e-5) == value(
+        assert pytest.approx(0.01117, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(13.4048, rel=1e-5) == value(
+        assert pytest.approx(17.90510, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]
         )
-        assert pytest.approx(60.322, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["chloride"]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "electrical_conductivity"
-            ]
-        )
-        assert pytest.approx(63.673, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["sodium"]
-        )
-        assert pytest.approx(65.013, rel=1e-5) == value(
+        assert pytest.approx(86.83974, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(6.7024e-07, rel=1e-5) == value(
+        assert pytest.approx(8.952551e-07, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(1.007 * 0 * 3600, abs=1e-5) == value(

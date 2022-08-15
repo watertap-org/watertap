@@ -235,7 +235,7 @@ class NanoFiltrationData(UnitModelBlockData):
         self.sigma = Var(
             self.flowsheet().config.time,
             initialize=0.5,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Reflection coefficient",
@@ -252,7 +252,7 @@ class NanoFiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-12, 1e6),
+            bounds=(0.0, 1e6),
             units=units_meta("mass")
             * units_meta("length") ** -2
             * units_meta("time") ** -1,
@@ -263,7 +263,7 @@ class NanoFiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-12, 1e6),
+            bounds=(0.0, 1e6),
             units=units_meta("mass")
             * units_meta("length") ** -2
             * units_meta("time") ** -1,
@@ -274,7 +274,7 @@ class NanoFiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.solute_list,
             initialize=1e-3,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("length") ** -3,
             doc="Average solute concentration at feed inlet",
@@ -284,14 +284,14 @@ class NanoFiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.solute_list,
             initialize=1e-3,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("length") ** -3,
             doc="Average solute concentration at feed outlet",
         )
         self.area = Var(
             initialize=1,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
             doc="Membrane area",
@@ -352,7 +352,7 @@ class NanoFiltrationData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass") * units_meta("time") ** -1,
             doc="Mass transfer to permeate",
@@ -409,7 +409,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j] * (
@@ -438,7 +442,11 @@ class NanoFiltrationData(UnitModelBlockData):
                     t, j
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
-                    - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)
+                    - b.sigma[t]
+                    * (
+                        prop_feed.pressure_osm_phase[p]
+                        - prop_perm.pressure_osm_phase[p]
+                    )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j] * (
@@ -598,10 +606,6 @@ class NanoFiltrationData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
-
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.NanoFiltration_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

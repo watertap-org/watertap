@@ -86,7 +86,7 @@ class TestOzoneZO_with_default_removal:
         )
         with pytest.raises(
             ConfigurationError,
-            match="TOC must be in solute list for Ozonation " "or Ozone/AOP",
+            match="toc must be in solute list for Ozonation " "or Ozone/AOP",
         ):
             model.fs.unit = OzoneZO(
                 default={"property_package": model.fs.params, "database": model.db}
@@ -114,12 +114,12 @@ class TestOzoneZO_with_default_removal:
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 1
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            if j not in data["removal_frac_mass_solute"]:
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            if j not in data["removal_frac_mass_comp"]:
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.contact_time[0].fixed
         assert model.fs.unit.contact_time[0].value == data["contact_time"]["value"]
@@ -242,12 +242,12 @@ class TestOzoneZO_w_o_default_removal:
         model.fs.unit.load_parameters_from_database()
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 1
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            if j not in data["removal_frac_mass_solute"]:
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            if j not in data["removal_frac_mass_comp"]:
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.contact_time[0].fixed
         assert model.fs.unit.contact_time[0].value == data["contact_time"]["value"]

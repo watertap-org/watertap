@@ -26,10 +26,10 @@ default:  #default aop is for hydrogen peroxide
     value: 1
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     cryptosporidium:
       value: 0.294787
       units: dimensionless
@@ -49,7 +49,7 @@ default:  #default aop is for hydrogen peroxide
     total_coliforms_fecal_ecoli:
       value: 0.997225
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E.Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
     viruses_enteric:
       value: 0.997225
       units: dimensionless
@@ -97,10 +97,10 @@ hydrogen_peroxide:
     value: 1
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     cryptosporidium:
       value: 0.294787
       units: dimensionless
@@ -120,7 +120,7 @@ hydrogen_peroxide:
     total_coliforms_fecal_ecoli:
       value: 0.997225
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E.Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
     viruses_enteric:
       value: 0.997225
       units: dimensionless
