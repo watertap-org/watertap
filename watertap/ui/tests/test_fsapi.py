@@ -73,7 +73,7 @@ def flowsheet_interface(exports=True):
         # leave out name and description to test auto-fill
         do_build=build_ro,
         do_solve=solve_ro,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -163,8 +163,15 @@ def test_load():
     # add another (fake) one
     data["model_objects"]["foobar"] = data["model_objects"][var_key].copy()
     # reload (fake one will be 'missing')
-    with pytest.raises(fsapi.MissingObjectError):
+    try:
         fsi.load(data)
+    except fsapi.FlowsheetInterface.MissingObjectError as err:
+        for item in err.missing:
+            print(f"Missing item: key={item.key}, name={item.name}")
+        assert len(err.missing) == 1
+        assert err.missing[0].key == "foobar"
+    else:
+        assert False, "Expected a MissingObjectError"
 
 
 @pytest.mark.unit
