@@ -11,16 +11,24 @@
 #
 ###############################################################################
 
-from .reverse_osmosis_0D import ReverseOsmosis0D
-from .reverse_osmosis_1D import ReverseOsmosis1D
-from .nanofiltration_0D import NanoFiltration0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
-from .pressure_exchanger import PressureExchanger
-from .ion_exchange_0D import IonExchange0D
-from .pressure_changer import Pump, EnergyRecoveryDevice
-from .crystallizer import Crystallization
-from .uv_aop import Ultraviolet0D
-from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import Electrodialysis1D
-from .gac import GAC
+import os
+import pytest
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process import (
+    multi_sweep,
+)
+
+sweep_list = []
+for case_num in [1, 2, 3, 4]:
+    sweep_list.append(case_num)
+
+
+@pytest.mark.parametrize("case_num", sweep_list)
+@pytest.mark.integration
+def test_multi_sweep(case_num, tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    nx = 2
+    global_results, sweep_params, m = multi_sweep.run_analysis(
+        case_num, nx, interpolate_nan_outputs=False
+    )
+    os.chdir(cwd)
