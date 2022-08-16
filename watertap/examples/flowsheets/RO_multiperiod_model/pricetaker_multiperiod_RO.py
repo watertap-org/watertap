@@ -12,7 +12,7 @@
 ###############################################################################
 
 import numpy as np
-import sys
+import sys, os
 import matplotlib.pyplot as plt
 
 from pyomo.environ import (
@@ -29,10 +29,12 @@ from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
 
 
 def main(
-    ndays,
-    data_path="watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv",
+    ndays=0.1,
+    filename="dagget_CA_LMP_hourly_2015.csv",
 ):
-
+    file_path = os.path.realpath(__file__)
+    base_path = os.path.dirname(file_path)
+    data_path = os.path.join(base_path, filename)
     # number of time steps assuming 1 hour as the base time
     n_steps = int(ndays * 24)
 

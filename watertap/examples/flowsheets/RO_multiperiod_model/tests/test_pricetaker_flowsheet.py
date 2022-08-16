@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+import os
 import matplotlib.pyplot as plt
 from pyomo.environ import value
 
@@ -24,7 +25,9 @@ solver = get_solver()
 class TestMPflowsheet:
     @pytest.fixture(scope="class")
     def frame(self):
-        sample_path = "watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv"
+        base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        data_path = "dagget_CA_LMP_hourly_2015.csv"
+        sample_path = os.path.join(base_path, data_path)
         sample_data = pt._get_lmp(2, sample_path)
 
         m = pt.build_flowsheet(2)
@@ -72,6 +75,9 @@ class TestMPflowsheet:
     @pytest.mark.component
     def test_full_dataset(self):
         # bring in full set of sample data
-        sample_path = "watertap\\examples\\flowsheets\\RO_multiperiod_model\\dagget_CA_LMP_hourly_2015.csv"
+        base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        data_path = "dagget_CA_LMP_hourly_2015.csv"
+        sample_path = os.path.join(base_path, data_path)
+
         sample_data = pt._get_lmp(-1, sample_path)
         assert len(sample_data) == 8759
