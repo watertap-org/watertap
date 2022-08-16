@@ -83,6 +83,20 @@ class DensityCalculation(Enum):
         auto()
     )  # Laliberte correlation using apparent density #TODO add this later with reference
 
+class ElectricalMobilityCalculation(Enum):
+    none = auto()
+    EinsteinRelation =  auto()
+class EquivalentConductivityCalculation(Enum):
+    none = auto()
+    ElectricalMobility = auto()
+class TransportNumberCalculation(Enum):
+    none = auto()
+    ElectricalMobility = auto()
+    EquivalentConductivity = auto()
+class PhaseConductivityCalculation(Enum):
+    ElectricalMobility = auto()
+    EquivalentConductivity = auto()
+
 
 @declare_process_block_class("DSPMDEParameterBlock")
 class DSPMDEParameterData(PhysicalParameterBlock):
@@ -120,6 +134,15 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         "electrical_mobility_data",
         ConfigValue(default={}, domain=dict, description="Ion electrical mobility"),
     )
+    CONFIG.declare(
+        "transport_number_data",
+        ConfigValue(default={}, domain=NonNegativeReals, description="transport number of ions in the liquid phase"),
+    )
+    CONFIG.declare(
+        "equiv_conductivity_data",
+        ConfigValue(default={}, domain=NonNegativeReals, description="Equivalent conductivity of ions in the liquid phase"),
+    )
+
     CONFIG.declare(
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
     )
@@ -159,6 +182,85 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "electrical_mobility_calculation",
+        ConfigValue(
+            default=ElectricalMobilityCalculation.none,
+            domain=In(ElectricalMobilityCalculation),
+            description="Electrical mobility calculation flag",
+            doc="""
+           Options to account for ion electrical mobility.
+
+           **default** - ``ElectricalMobilityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``ElectricalMobilityCalculation.none``", "User_defined via the electrical_mobility_data configuration"
+           "``ElectricalMobilityCalculation.EinsteinRelation``", "Calculated from the diffusivity_data by the Einstein Relation"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "transport_number_calculation",
+        ConfigValue(
+            default=TransportNumberCalculation.ElectricalMobility,
+            domain=In(TransportNumberCalculation),
+            description="Ion transport number calculation flag",
+            doc="""
+           Options to account for ion transport number in the solution.
+
+           **default** - ``TransportNumberCalculation.ElectricalMobility``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``TransportNumberCalculation.none``", "User_defined via the trans_num_data configuration"
+           "``TransportNumberCalculation.ElectricalMobility``", "Calculated from the electrical_mobility_data"
+           "``TransportNumberCalculation.EquivalentConductivity``", "Calculated from the equivalent_conductivity_data"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "equivalent_conductivity_calculation",
+        ConfigValue(
+            default=EquivalentConductivityCalculation.none,
+            domain=In(EquivalentConductivityCalculation),
+            description="Ion equivalent conductivity calculation flag",
+            doc="""
+           Options to account for ion transport number in the solution.
+
+           **default** - ``EquivalentConductivityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``EquivalentConductivityCalculation.none``", "User_defined via the equiv_conductivity_data configuration"
+           "``EquivalentConductivityCalculation.ElectricalMobility``", "Calculated from the electrical_mobility_data"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "phase_conductivity_calculation",
+        ConfigValue(
+            default=PhaseConductivityCalculation.ElectricalMobility,
+            domain=In(PhaseConductivityCalculation),
+            description="Total phase electrical conductivity calculation flag",
+            doc="""
+           Options to account for phase electrical conductivity.
+
+           **default** - ``PhaseConductivityCalculation.ElectricalMobility``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+           "``PhaseConductivityCalculation.ElectricalMobility``", "Calculated from the electrical_mobility_data"
+           "``PhaseConductivityCalculation.EquivalentConductivity``", "Calculated from the equivalent_conductivity_data"
        """,
         ),
     )
@@ -264,6 +366,24 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             initialize=self.config.electrical_mobility_data,
             units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
             doc="Ion electrical mobility",
+        )
+        self.trans_num_phase_comp = Param(
+            self.phase_list,
+            self.ion_set | self.solute_set,
+            mutable=True,
+            default=0.5,  
+            initialize=0.5,
+            units=pyunits.dimensionless,
+            doc="Ion transport number in the liquid phase",
+        )
+        self.equiv_conductivity_phase_comp = Param(
+            self.phase_list,
+            self.ion_set | self.solute_set,
+            mutable=True,
+            default=0.5,  
+            initialize=0.5,
+            units=pyunits.dimensionless,
+            doc="Ion equivalent conductivity in the liquid phase",
         )
         # Ion charge
         self.charge_comp = Param(
@@ -394,6 +514,8 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
                 "electrical_mobility_comp": {"method": "_electrical_mobility_comp"},
+                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"}
+                "equiv_conductivity_phase_comp": {"method": "_equiv_conductivity_phase_comp"}
                 "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
@@ -1061,9 +1183,17 @@ class DSPMDEStateBlockData(StateBlockData):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
     def _electrical_mobility_comp(self):
-        add_object_reference(
-            self, "electrical_mobility_comp", self.params.electrical_mobility_comp
-        )
+        if self.params.config.electrical_mobility_calculation == ElectricalMobilityCalculation.none:
+            add_object_reference(
+                self, "electrical_mobility_comp", self.params.electrical_mobility_comp
+            )
+        else:
+            self.electrical_mobility_comp = Var(
+            self.ion_set | self.solute_set,
+            initialize=5.19e-8,  # default as Na+
+            units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+            doc="Ion electrical mobility",
+            )
 
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
@@ -1184,6 +1314,40 @@ class DSPMDEStateBlockData(StateBlockData):
             )
 
         self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
+"electrical_mobility_comp": {"method": "_electrical_mobility_comp"},
+                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"}
+                "equiv_conductivity_phase_comp": {"method": "_equiv_conductivity_phase_comp"}
+
+    def _trans_num_phase_comp(self):
+        if self.params.config.transport_number_calculation == TransportNumberCalculation.none:
+            add_object_reference(
+                self, "trans_num_phase_comp", self.params.transport_number_data
+            )
+        else:
+            self.trans_num_phase_comp = Var(
+                self.phase_list,
+                self.ion_set | self.solute_set,
+                initialize=0.5,
+                units=pyunits.dimensionless,
+                doc="Ion transport number in the liquid phase",
+                )
+
+            def rule_trans_num_phase_comp(b):
+                if self.params.config.transport_number_calculation == TransportNumberCalculation.ElectricalMobility:
+                    return b.elec_cond_phase["Liq"] == sum(
+                    Constants.faraday_constant
+                    * abs(b.charge_comp[j])
+                    * b.electrical_mobility_comp[j]
+                    * b.conc_mol_phase_comp["Liq", j]
+                    for j in self.params.ion_set 
+                )
+                else: 
+                    return b.elec_cond_phase["Liq"] == sum(
+                    b.equiv_conductivity_phase_comp["Liq",j]
+                    for j in self.params.ion_set 
+                )
+
+            self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
 
     def _elec_cond_phase(self):
         self.elec_cond_phase = Var(
@@ -1194,13 +1358,19 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_elec_cond_phase(b):
-            return b.elec_cond_phase["Liq"] == sum(
+            if self.params.config.phase_conductivity_calculation == PhaseConductivityCalculation.ElectricalMobility:
+                return b.elec_cond_phase["Liq"] == sum(
                 Constants.faraday_constant
                 * abs(b.charge_comp[j])
                 * b.electrical_mobility_comp[j]
                 * b.conc_mol_phase_comp["Liq", j]
-                for j in self.params.ion_set | self.params.solute_set
-            )  # maybe revisit for other emprical calculation or non-ideal situation
+                for j in self.params.ion_set 
+            )
+            else: 
+                return b.elec_cond_phase["Liq"] == sum(
+                b.equiv_conductivity_phase_comp["Liq",j]
+                for j in self.params.ion_set 
+            )
 
         self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
 
