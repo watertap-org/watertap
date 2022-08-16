@@ -61,155 +61,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Start test class
-class TestGACSimplified:
-    @pytest.fixture(scope="class")
-    def gac_frame_simplified(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-
-        m.fs.properties = DSPMDEParameterBlock(
-            default={"solute_list": ["DCE"], "mw_data": {"H2O": 18e-3, "DCE": 98.96e-3}}
-        )
-
-        m.fs.unit = GAC(
-            default={
-                "property_package": m.fs.properties,
-                "film_transfer_coefficient_type": "fixed",
-                "surface_diffusion_coefficient_type": "fixed",
-            }
-        )
-
-        # feed specifications
-        m.fs.unit.process_flow.properties_in[0].pressure.fix(
-            101325
-        )  # feed pressure [Pa]
-        m.fs.unit.process_flow.properties_in[0].temperature.fix(
-            273.15 + 25
-        )  # feed temperature [K]
-        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
-            55555.55426666667
-        )
-        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "DCE"].fix(
-            0.0002344381568310428
-        )
-
-        # trial problem from Hand, 1984 for removal of trace DCE
-        m.fs.unit.conc_ratio_replace.fix(0.50)
-        m.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
-        m.fs.unit.freund_ninv.fix(0.8316)
-        m.fs.unit.ebct.fix(300)  # seconds
-        m.fs.unit.bed_voidage.fix(0.449)
-        m.fs.unit.bed_length.fix(6)  # assumed
-        m.fs.unit.particle_porosity.fix(0.5)
-        m.fs.unit.particle_dens_app.fix(722)
-        m.fs.unit.particle_dia.fix(0.00106)
-        m.fs.unit.kf.fix(3.29e-5)
-        m.fs.unit.ds.fix(1.77e-13)
-        m.fs.unit.a0.fix(3.68421)
-        m.fs.unit.a1.fix(13.1579)
-        m.fs.unit.b0.fix(0.784576)
-        m.fs.unit.b1.fix(0.239663)
-        m.fs.unit.b2.fix(0.484422)
-        m.fs.unit.b3.fix(0.003206)
-        m.fs.unit.b4.fix(0.134987)
-
-        return m
-
-    @pytest.mark.unit
-    def test_config_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-        # check unit config arguments
-        assert len(m.fs.unit.config) == 8
-
-        assert not m.fs.unit.config.dynamic
-        assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
-        assert (
-            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
-        )
-        assert (
-            m.fs.unit.config.film_transfer_coefficient_type
-            == FilmTransferCoefficientType.fixed
-        )
-        assert (
-            m.fs.unit.config.surface_diffusion_coefficient_type
-            == SurfaceDiffusionCoefficientType.fixed
-        )
-
-        assert m.fs.unit.config.property_package is m.fs.properties
-
-        # only designed for single solute and single solvent (water)
-        assert len(m.fs.unit.config.property_package.solute_set) == 1
-        assert len(m.fs.unit.config.property_package.solvent_set) == 1
-
-    @pytest.mark.unit
-    def test_build_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-
-        # test ports
-        port_lst = ["inlet", "outlet", "adsorbed"]
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert (
-                len(port.vars) == 3
-            )  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
-
-        # test statistics
-        assert number_variables(m) == 77
-        assert number_total_constraints(m) == 45
-        assert number_unused_variables(m) == 10  # dens parameters from properties
-
-    @pytest.mark.unit
-    def test_dof_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-        assert degrees_of_freedom(m) == 0
-
-    @pytest.mark.unit
-    def test_calculate_scaling_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e-4, index=("Liq", "H2O")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
-        )
-        calculate_scaling_factors(m)
-
-        # check that all variables have scaling factors
-        unscaled_var_list = list(unscaled_variables_generator(m))
-        assert len(unscaled_var_list) == 0
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_initialize_simplified(self, gac_frame_simplified):
-        initialization_tester(gac_frame_simplified)
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_var_scaling_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        assert badly_scaled_var_lst == []
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_solve_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-        results = solver.solve(m)
-
-        # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_solution_simplified(self, gac_frame_simplified):
-        m = gac_frame_simplified
-        # test within 3 days of data pulled from graph in Hand, 1984
-        assert pytest.approx(30, rel=1e-1) == value(m.fs.unit.elap_time) / 24 / 3600
-
+class TestGACRobust:
     @pytest.fixture(scope="class")
     def gac_frame_robust(self):
         m = ConcreteModel()
@@ -307,8 +159,6 @@ class TestGACSimplified:
             )  # number of state variables for NaCl property package
             assert isinstance(port, Port)
 
-        print(unused_variables_set(m))
-
         # test statistics
         assert number_variables(m) == 84
         assert number_total_constraints(m) == 50
@@ -319,8 +169,8 @@ class TestGACSimplified:
         m = gac_frame_robust
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.unit
-    def test_calculate_scaling_robust(self, gac_frame_robust):
+    @pytest.mark.component
+    def test_variable_sensitivity_robust(self, gac_frame_robust):
         m = gac_frame_robust
 
         m.fs.properties.set_default_scaling(
@@ -329,6 +179,25 @@ class TestGACSimplified:
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e5, index=("Liq", "TCE")
         )
+
+        from watertap.core.util.scaling import variable_sens_generator
+
+        print(m.ctype)
+        print(m.fs.ctype)
+        print(m.fs.model())
+        # test
+        sens_var_lst = list(
+            variable_sens_generator(m.fs.unit.process_flow.properties_in[0])
+        )
+        for i in sens_var_lst:
+            print(i)
+
+        assert sens_var_lst == []
+
+    @pytest.mark.unit
+    def test_calculate_scaling_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
@@ -366,128 +235,3 @@ class TestGACSimplified:
         assert pytest.approx(1.139, rel=1e-3) == value(m.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(m.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-3) == value(m.fs.unit.bed_area)
-
-    @pytest.mark.component
-    def test_variable_sensitivity_robust(self, gac_frame_robust):
-        m = gac_frame_robust
-
-        from watertap.core.util.scaling import variable_sens_generator
-
-        # test
-        sens_var_lst = list(variable_sens_generator(m))
-        for i in sens_var_lst:
-            print(i)
-
-        assert sens_var_lst == []
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing_robust(self, gac_frame_robust):
-        m = gac_frame_robust
-
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
-        m.fs.costing.cost_process()
-        results = solver.solve(m)
-
-        # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
-        # Check for known cost solution of default twin alternating contactors
-        assert value(m.fs.costing.gac_num_contactors_op) == 1
-        assert value(m.fs.costing.gac_num_contactors_redundant) == 1
-        assert pytest.approx(56900.93523, rel=1e-5) == value(
-            m.fs.unit.costing.contactor_cost
-        )
-        assert pytest.approx(4.359114384, rel=1e-5) == value(
-            m.fs.unit.costing.adsorbent_unit_cost
-        )
-        assert pytest.approx(17454.52868, rel=1e-5) == value(
-            m.fs.unit.costing.adsorbent_cost
-        )
-        assert pytest.approx(81692.69369, rel=1e-5) == value(
-            m.fs.unit.costing.other_process_cost
-        )
-        assert pytest.approx(156048.1576, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(13535.92023, rel=1e-5) == value(
-            m.fs.unit.costing.gac_makeup_cost
-        )
-        assert pytest.approx(29524.89977, rel=1e-5) == value(
-            m.fs.unit.costing.gac_regen_cost
-        )
-        assert pytest.approx(43060.81999, rel=1e-5) == value(
-            m.fs.unit.costing.fixed_operating_cost
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing_modular_contactors_robust(self, gac_frame_robust):
-        m = gac_frame_robust
-
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
-        m.fs.costing.cost_process()
-
-        m.fs.costing.gac_num_contactors_op.fix(4)
-        m.fs.costing.gac_num_contactors_redundant.fix(2)
-
-        results = solver.solve(m)
-
-        # Check for known cost solution when changing volume scale of vessels in parallel
-        assert value(m.fs.costing.gac_num_contactors_op) == 4
-        assert value(m.fs.costing.gac_num_contactors_redundant) == 2
-        assert pytest.approx(89035.16691, rel=1e-5) == value(
-            m.fs.unit.costing.contactor_cost
-        )
-        assert pytest.approx(69693.33132, rel=1e-5) == value(
-            m.fs.unit.costing.other_process_cost
-        )
-        assert pytest.approx(176183.0269, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing_max_gac_ref_robust(self, gac_frame_robust):
-        m = gac_frame_robust
-
-        # scale flow up 10x
-        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
-            10 * 824.0736620370348
-        )
-        m.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "TCE"].fix(
-            10 * 5.644342973110135e-05
-        )
-
-        m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyo.units.USD_2020
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
-        m.fs.costing.cost_process()
-        # not necessarily an optimum solution because poor scaling but just checking the conditional
-        results = solver.solve(m)
-
-        # Check for bed_mass_gac_cost_ref to be overwritten if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
-        assert value(m.fs.unit.bed_mass_gac) > value(m.fs.costing.bed_mass_gac_max_ref)
-        assert value(m.fs.unit.costing.bed_mass_gac_ref) == (
-            pytest.approx(value(m.fs.costing.bed_mass_gac_max_ref), 1e-5)
-        )
