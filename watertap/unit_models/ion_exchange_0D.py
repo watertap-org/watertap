@@ -180,7 +180,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.distributor_h = Param(
-            initialize=1.5, units=pyunits.m, doc="Distributor height"  # Perry's
+            initialize=1.0, units=pyunits.m, doc="Distributor height"  # Perry's
         )
 
         # Liquid holdup correlation
@@ -361,20 +361,20 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_vol = Var(
             initialize=2,
-            bounds=(0.1, 75),
+            # bounds=(0.1, 75),
             units=pyunits.m**3,
             doc="Bed volume of one unit",
         )
 
         self.bed_diam = Var(
             initialize=0.4,
-            bounds=(0.01, 4),  # DOW
+            bounds=(0.1, None),  # EPA-WBS
             units=pyunits.m,
             doc="Bed diameter",
         )
 
         self.bed_depth = Var(
-            initialize=4, bounds=(0.1, 12), units=pyunits.m, doc="Bed depth"
+            initialize=1, bounds=(0.1, 2), units=pyunits.m, doc="Bed depth"
         )
 
         self.bed_area = Var(
@@ -392,7 +392,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.col_height = Var(
             initialize=2,
-            bounds=(0.6, 12),
+            # bounds=(0.6, 4),
             units=pyunits.m,
             doc="Column height",
         )
@@ -627,7 +627,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.regen_density = Var(
             initialize=1000,
             units=pyunits.kg / pyunits.m**3,
-            bounds=(990, 2000),
+            # bounds=(990, 2000),
             doc="Density of regen solution [kg soln/kg regenerant]",
         )
 
@@ -656,7 +656,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.t_regen = Var(
             initialize=1800,
-            bounds=(1200, 2400),
+            # bounds=(1200, 2400),
             units=pyunits.s,
             doc="Regeneration time",
         )
@@ -666,7 +666,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.bw_rate = Var(
             initialize=5,
             units=pyunits.m / pyunits.hour,
-            bounds=(4.5, 6.5),
+            # bounds=(4.5, 6.5),
             doc="Backwash loading rate [m/hr]",
         )
 
@@ -682,7 +682,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_expansion_frac = Var(
             initialize=0.5,
-            bounds=(0.4, 1.2),
+            # bounds=(0.4, 1.2),
             units=pyunits.dimensionless,
             doc="Fraction of bed depth increase during backwashing",
         )
@@ -695,7 +695,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.rinse_bv = Var(
             initialize=5,
-            bounds=(2, 10),
+            # bounds=(2, 10),
             doc="Number of bed volumes for rinse step",
         )
 
@@ -855,9 +855,9 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_bed_vol(b):
             return self.bed_vol == self.bed_area * self.bed_depth
 
-        @self.Constraint(doc="Bed depth to bed diameter ratio")
-        def eq_bed_depth_to_diam_ratio(b):
-            return b.bed_depth / b.bed_diam >= b.bed_depth_to_diam_ratio
+        # @self.Constraint(doc="Bed depth to bed diameter ratio")
+        # def eq_bed_depth_to_diam_ratio(b):
+        #     return b.bed_depth / b.bed_diam >= b.bed_depth_to_diam_ratio
 
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
