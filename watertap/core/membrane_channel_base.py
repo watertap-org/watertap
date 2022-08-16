@@ -11,14 +11,17 @@
 #
 ###############################################################################
 
+from copy import deepcopy
 from enum import Enum, auto
 
+from pyomo.common.collections import ComponentSet
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 from pyomo.environ import (
     Param,
     NegativeReals,
     NonNegativeReals,
     Var,
+    check_optimal_termination,
     exp,
     units as pyunits,
 )
@@ -30,7 +33,12 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
+from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
+import idaes.logger as idaeslog
 
 
 class ConcentrationPolarizationType(Enum):
@@ -53,6 +61,7 @@ class MassTransferCoefficient(Enum):
     none = auto()
     fixed = auto()
     calculated = auto()
+    # TODO: add option for users to define their own relationship?
 
 
 class PressureChangeType(Enum):
@@ -67,6 +76,57 @@ class PressureChangeType(Enum):
 
 
 CONFIG_Template = ConfigBlock()
+
+CONFIG_Template.declare(
+    "dynamic",
+    ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not.
+**default** = False. Membrane units do not yet support dynamic
+behavior.""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "has_holdup",
+    ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Indicates whether holdup terms should be constructed or not.
+**default** - False. Membrane units do not have defined volume, thus
+this must be False.""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "property_package",
+    ConfigValue(
+        default=useDefault,
+        domain=is_physical_parameter_block,
+        description="Property package to use for control volume",
+        doc="""Property parameter object used to define property calculations,
+**default** - useDefault.
+**Valid values:** {
+**useDefault** - use default package from parent model or flowsheet,
+**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "property_package_args",
+    ConfigBlock(
+        implicit=True,
+        description="Arguments to use for constructing property packages",
+        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+and used when constructing these.
+**default** - None.
+**Valid values:** {
+see property package for documentation.}""",
+    ),
+)
 
 CONFIG_Template.declare(
     "material_balance_type",
@@ -258,7 +318,7 @@ class MembraneChannelMixin:
         def eq_recovery_mass_phase_comp(b, t, j):
             return (
                 b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
+                * b.properties[t, b.first_element].flow_mass_phase_comp[
                     "Liq", j
                 ]
                 == b.mixed_permeate[t].flow_mass_phase_comp["Liq", j]
@@ -269,7 +329,7 @@ class MembraneChannelMixin:
         def eq_rejection_phase_comp(b, t, j):
             return b.rejection_phase_comp[t, "Liq", j] == 1 - (
                 b.mixed_permeate[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties[t, self.first_element].conc_mass_phase_comp[
+                / b.properties[t, self.first_element].conc_mass_phase_comp[
                     "Liq", j
                 ]
             )
@@ -319,7 +379,7 @@ class MembraneChannelMixin:
         # ==========================================================================
         # Bulk and interface connections on the feed-side
         # TEMPERATURE
-        @self.feed_side.Constraint(
+        @self.Constraint(
             self.flowsheet().config.time,
             self.difference_elements,
             doc="Temperature at interface",
@@ -646,7 +706,7 @@ class MembraneChannelMixin:
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
         )
         def eq_N_Sc(b, t, x):
-            bulk = b.feed_side.properties[t, x]
+            bulk = b.properties[t, x]
             # # TODO: This needs to be revisted. Diffusion is now by component, but
             #   not H2O and this var should also be by component, but the implementation
             #   is not immediately clear.
@@ -730,20 +790,15 @@ class MembraneChannelMixin:
             )
 
     def _add_interface_blocks(
-        self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
+        self, has_phase_equilibrium=None
     ):
         """
         This method constructs the interface state blocks for the
         control volume.
 
         Args:
-            information_flow: a FlowDirection Enum indicating whether
-                               information flows from inlet-to-outlet or
-                               outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
-            package_arguments: dict-like object of arguments to be passed to
-                                state blocks as construction arguments
         Returns:
             None
         """
@@ -855,6 +910,248 @@ class MembraneChannelMixin:
                 * b.properties[t, x].dens_mass_phase["Liq"]
                 * b.velocity[t, x] ** 2
             )
+
+
+    def _get_state_args(
+        self, initialize_guess, state_args
+    ):
+        """
+        Arguments:
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package).
+        """
+
+        source = self.properties[
+            self.flowsheet().config.time.first(), self.first_element
+        ]
+        mixed_permeate_properties = self.mixed_permeate[self.flowsheet().config.time.first()]
+
+        # assumptions
+        if initialize_guess is None:
+            initialize_guess = {}
+        if "deltaP" not in initialize_guess:
+            initialize_guess["deltaP"] = -1e4
+        if "solvent_recovery" not in initialize_guess:
+            initialize_guess["solvent_recovery"] = 0.5
+        if "solute_recovery" not in initialize_guess:
+            initialize_guess["solute_recovery"] = 0.01
+        if "cp_modulus" not in initialize_guess:
+            if (
+                self.config.concentration_polarization_type
+                != ConcentrationPolarizationType.none
+            ):
+                initialize_guess["cp_modulus"] = 1.1
+            else:
+                initialize_guess["cp_modulus"] = 1
+
+        if state_args is None:
+            state_args = {}
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        if "flow_mass_phase_comp" not in state_args.keys():
+            raise ConfigurationError(
+                f"{self.__class__.__name__} initialization routine expects "
+                "flow_mass_phase_comp as a state variable. Check "
+                "that the property package supports this state "
+                "variable or that the state_args provided to the "
+                "initialize call includes this state variable"
+            )
+
+        # slightly modify initial values for other state blocks
+        state_args_retentate = deepcopy(state_args)
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_retentate["pressure"] += initialize_guess["deltaP"]
+        state_args_permeate["pressure"] = mixed_permeate_properties.pressure.value
+        for j in self.config.property_package.solvent_set:
+            state_args_retentate["flow_mass_phase_comp"][("Liq", j)] *= (
+                1 - initialize_guess["solvent_recovery"]
+            )
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solvent_recovery"
+            ]
+        for j in self.config.property_package.solute_set:
+            state_args_retentate["flow_mass_phase_comp"][("Liq", j)] *= (
+                1 - initialize_guess["solute_recovery"]
+            )
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solute_recovery"
+            ]
+
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
+
+        for j in self.config.property_package.solute_set:
+            state_args_interface_in["flow_mass_phase_comp"][
+                ("Liq", j)
+            ] *= initialize_guess["cp_modulus"]
+            state_args_interface_out["flow_mass_phase_comp"][
+                ("Liq", j)
+            ] *= initialize_guess["cp_modulus"]
+
+        # TODO: I think this is what we'd like to do, but IDAES needs to be changed
+        state_args_interface = {}
+        for t in self.flowsheet().config.time:
+            for x in self.length_domain:
+                assert 0.0 <= x <= 1.0
+                state_args_tx = {}
+                for k in state_args_interface_in:
+                    if isinstance(state_args_interface_in[k], dict):
+                        if k not in state_args_tx:
+                            state_args_tx[k] = {}
+                        for index in state_args_interface_in[k]:
+                            state_args_tx[k][index] = (
+                                1.0 - x
+                            ) * state_args_interface_in[k][
+                                index
+                            ] + x * state_args_interface_out[
+                                k
+                            ][
+                                index
+                            ]
+                    else:
+                        state_args_tx[k] = (1.0 - x) * state_args_interface_in[
+                            k
+                        ] + x * state_args_interface_out[k]
+                state_args_interface[t, x] = state_args_tx
+
+        x = 0.5
+        state_args_tx = {}
+        for k in state_args_interface_in:
+            if isinstance(state_args_interface_in[k], dict):
+                if k not in state_args_tx:
+                    state_args_tx[k] = {}
+                for index in state_args_interface_in[k]:
+                    state_args_tx[k][index] = (1.0 - x) * state_args_interface_in[k][
+                        index
+                    ] + x * state_args_interface_out[k][index]
+            else:
+                state_args_tx[k] = (1.0 - x) * state_args_interface_in[
+                    k
+                ] + x * state_args_interface_out[k]
+        state_args_interface = state_args_tx
+
+        return {
+            "feed_side": state_args,
+            "retentate": state_args_retentate,
+            "permeate": state_args_permeate,
+            "interface": state_args_interface,
+        }
+
+    def initialize(
+        self, 
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        optarg=None,
+        solver=None,
+        hold_state=True,
+        initialize_guess=None,
+    ):
+        """
+        Initialization routine for the membrane channel control volume
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output log level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+            hold_state : flag indicating whether the initialization routine
+                     should unfix any state variables fixed during
+                     initialization, **default** - True. **Valid values:**
+                     **True** - states variables are not unfixed, and a dict of
+                     returned containing flags for which states were fixed
+                     during initialization, **False** - state variables are
+                     unfixed after initialization by calling the release_state
+                     method.
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                     and cp_modulus. These guesses offset the initial values
+                     for the retentate, permeate, and membrane interface
+                     state blocks from the inlet feed
+                     (default =
+                     {'deltaP': -1e4,
+                     'solvent_recovery': 0.5,
+                     'solute_recovery': 0.01,
+                     'cp_modulus': 1.1})
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization.
+        """
+        if optarg is None:
+            optarg = {}
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        # Get inlet state if not provided
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="membrane_channel")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="membrane_channel")
+
+        state_args = self._get_state_args(initialize_guess, state_args)
+
+        # intialize self.properties
+        source_flags = super().initialize(state_args=state_args["feed_side"], outlvl=outlvl, optarg=optarg, solver=solver, hold_state=True)
+
+        self.properties_interface.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args["interface"],
+        )
+
+        self.permeate_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args["permeate"],
+        )
+
+        self.mixed_permeate.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args["permeate"],
+        )
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    "Trouble solving ReverseOsmosis1D unit model, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
+        if not check_optimal_termination(res):
+            raise InitializationError("Membrane channel {self.name} failed to initailize")
+
+        init_log.info("Initialization Complete")
+
+        self.release_state(source_flags, outlvl)
+    
+
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.first_element
@@ -975,11 +1272,139 @@ class MembraneChannelMixin:
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
                 )
                 expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                    self.Kf_avg[time_point, j] * 3.6e6
+                    self.K_avg[time_point, j] * 3.6e6
                 )
 
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
+
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # these variables should have user input, if not there will be a warning
+        if iscale.get_scaling_factor(self.area) is None:
+            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
+            iscale.set_scaling_factor(self.area, sf)
+
+        if iscale.get_scaling_factor(self.A_comp) is None:
+            iscale.set_scaling_factor(self.A_comp, 1e12)
+
+        if iscale.get_scaling_factor(self.B_comp) is None:
+            iscale.set_scaling_factor(self.B_comp, 1e8)
+
+        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.config.property_package.solvent_set:
+                sf = 1
+            elif j in self.config.property_package.solute_set:
+                sf = 100
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+
+        for v in self.rejection_phase_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "channel_height"):
+            if iscale.get_scaling_factor(self.channel_height) is None:
+                iscale.set_scaling_factor(self.channel_height, 1e3)
+
+        if hasattr(self, "spacer_porosity"):
+            if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                iscale.set_scaling_factor(self.spacer_porosity, 1)
+
+        if hasattr(self, "dh"):
+            if iscale.get_scaling_factor(self.dh) is None:
+                iscale.set_scaling_factor(self.dh, 1e3)
+
+        if hasattr(self, "K"):
+            for v in self.K.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e4)
+
+        if hasattr(self, "N_Re"):
+            for t, x in self.N_Re.keys():
+                if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
+
+        if hasattr(self, "N_Sc"):
+            for t, x in self.N_Sc.keys():
+                if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
+
+        if hasattr(self, "N_Sh"):
+            for t, x in self.N_Sh.keys():
+                if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
+
+        if hasattr(self, "velocity"):
+            for v in self.velocity.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "friction_factor_darcy"):
+            for v in self.friction_factor_darcy.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "cp_modulus"):
+            for v in self.cp_modulus.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        # for self._rescale_permeate_variable
+        self._permeate_scaled_properties = ComponentSet()
+
+        for sb in (self.permeate_side, self.mixed_permeate):
+            for blk in sb.values():
+                for j in self.config.property_package.solute_set:
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp["Liq", j])
+                    if blk.is_property_constructed("mass_frac_phase_comp"):
+                        self._rescale_permeate_variable(
+                            blk.mass_frac_phase_comp["Liq", j]
+                        )
+                    if blk.is_property_constructed("conc_mass_phase_comp"):
+                        self._rescale_permeate_variable(
+                            blk.conc_mass_phase_comp["Liq", j]
+                        )
+                    if blk.is_property_constructed("mole_frac_phase_comp"):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed("molality_phase_comp"):
+                        self._rescale_permeate_variable(
+                            blk.molality_phase_comp["Liq", j]
+                        )
+                if blk.is_property_constructed("pressure_osm_phase"):
+                    self._rescale_permeate_variable(blk.pressure_osm_phase["Liq"])
+
+        for (t, x, p, j), v in self.flux_mass_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():  # scaling based on solvent flux equation
+                    sf = (
+                        iscale.get_scaling_factor(self.A_comp[t, j])
+                        * iscale.get_scaling_factor(self.dens_solvent)
+                        * iscale.get_scaling_factor(
+                            self.properties[t, x].pressure
+                        )
+                    )
+                    iscale.set_scaling_factor(v, sf)
+                elif comp.is_solute():  # scaling based on solute flux equation
+                    sf = iscale.get_scaling_factor(
+                        self.B_comp[t, j]
+                    ) * iscale.get_scaling_factor(
+                        self.properties[t, x].conc_mass_phase_comp[p, j]
+                    )
+                    iscale.set_scaling_factor(v, sf)
+
 
 # helper for validating configuration arguments for this CV
 def validate_membrane_config_args(unit):

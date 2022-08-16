@@ -10,6 +10,7 @@ from idaes.core import (declare_process_block_class,
     EnergyBalanceType,
     FlowDirection,
     )
+from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
@@ -40,8 +41,6 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
                                outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
-            package_arguments: dict-like object of arguments to be passed to
-                                state blocks as construction arguments
         Returns:
             None
         """
@@ -65,7 +64,7 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
             },
         )
 
-        self._add_interface_blocks(information_flow, has_phase_equilibrium)
+        self._add_interface_blocks(has_phase_equilibrium)
 
     def add_mass_transfer(self):
         self._add_recovery_rejection()
@@ -264,3 +263,41 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
             self._add_pressure_change_equation()
+
+    def calculate_scaling_factors(self):
+        # setting scaling factors for variables
+        # will not override if the user does provide the scaling factor
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(
+                self.properties_in[0].dens_mass_phase["Liq"]
+            )
+            iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        super().calculate_scaling_factors()
+
+        for (t, p, j), v in self.mass_transfer_phase_comp.items():
+            sf = iscale.get_scaling_factor(
+                self.properties_in[t].get_material_flow_terms(p, j)
+            )
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.mass_transfer_term[t, p, j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "area_cross"):
+            if iscale.get_scaling_factor(self.area_cross) is None:
+                iscale.set_scaling_factor(self.area_cross, 100)
+
+        if hasattr(self, "length"):
+            if iscale.get_scaling_factor(self.length) is None:
+                iscale.set_scaling_factor(self.length, 1)
+
+        if hasattr(self, "width"):
+            if iscale.get_scaling_factor(self.width) is None:
+                iscale.set_scaling_factor(self.width, 1)
+
+        if hasattr(self, "dP_dx"):
+            for v in self.dP_dx.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)

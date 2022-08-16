@@ -11,6 +11,9 @@
 #
 ###############################################################################
 
+from .membrane_channel_base import ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
+from .membrane_channel0d import MembraneChannel0D
+from .membrane_channel1d import MembraneChannel1D
 from .wt_database import Database
 from .zero_order_base import ZeroOrderBaseData
 from .zero_order_properties import WaterParameterBlock, WaterStateBlock

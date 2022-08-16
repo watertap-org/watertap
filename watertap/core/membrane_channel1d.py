@@ -1,4 +1,5 @@
 
+from pyomo.common.config import Bool, ConfigValue, In
 from pyomo.environ import (
     NonNegativeReals,
     Param,
@@ -7,11 +8,70 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from idaes.core import declare_process_block_class, FlowDirection
+from idaes.core import declare_process_block_class, DistributedVars, FlowDirection, useDefault
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
+from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
-from watertap.core.membrane_channel_base import MembraneChannelMixin, PressureChangeType
+from watertap.core.membrane_channel_base import MembraneChannelMixin, PressureChangeType, CONFIG_Template as Base_CONFIG_Template
 
+CONFIG_Template = Base_CONFIG_Template.CONFIG()
+
+CONFIG_Template.declare(
+    "area_definition",
+    ConfigValue(
+        default=DistributedVars.uniform,
+        domain=In(DistributedVars),
+        description="Argument for defining form of area variable",
+        doc="""Argument defining whether area variable should be spatially
+variant or not. **default** - DistributedVars.uniform.
+**Valid values:** {
+DistributedVars.uniform - area does not vary across spatial domain,
+DistributedVars.variant - area can vary over the domain and is indexed
+by time and space.}""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "transformation_method",
+    ConfigValue(
+        default=useDefault,
+        description="Discretization method to use for DAE transformation",
+        doc="""Discretization method to use for DAE transformation. See Pyomo
+documentation for supported transformations.""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "transformation_scheme",
+    ConfigValue(
+        default=useDefault,
+        description="Discretization scheme to use for DAE transformation",
+        doc="""Discretization scheme to use when transforming domain. See
+Pyomo documentation for supported schemes.""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "finite_elements",
+    ConfigValue(
+        default=20,
+        domain=int,
+        description="Number of finite elements in length domain",
+        doc="""Number of finite elements to use when discretizing length 
+        domain (default=20)""",
+    ),
+)
+
+CONFIG_Template.declare(
+    "collocation_points",
+    ConfigValue(
+        default=5,
+        domain=int,
+        description="Number of collocation points per finite element",
+        doc="""Number of collocation points to use per finite element when
+        discretizing length domain (default=5)""",
+    ),
+)
 
 @declare_process_block_class("MembraneChannel1D")
 class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin):
@@ -67,7 +127,7 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
             doc="Number of finite elements",
         )
 
-        self._add_interface_blocks(information_flow, has_phase_equilibrium)
+        self._add_interface_blocks(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self,**kwrags):
         # make this a no-op for MC1D
@@ -80,7 +140,7 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
 
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
             return value(
-                self.feed_side.properties[t, x].get_material_flow_terms("Liq", j)
+                self.properties[t, x].get_material_flow_terms("Liq", j)
                 * self.recovery_mass_phase_comp[t, "Liq", j]
             )
 
@@ -110,7 +170,7 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
         def eq_mass_transfer_term(b, t, x, p, j):
             return (
                 b.mass_transfer_phase_comp[t, x, p, j]
-                == -b.feed_side.mass_transfer_term[t, x, p, j]
+                == -b.mass_transfer_term[t, x, p, j]
             )
 
         # ==========================================================================
@@ -140,7 +200,7 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
             return (
                 b.flux_mass_phase_comp[t, x, p, j] * b.width
-                == -b.feed_side.mass_transfer_term[t, x, p, j]
+                == -b.mass_transfer_term[t, x, p, j]
             )
 
         # ==========================================================================
@@ -188,3 +248,53 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
                 )
         else:
             self._add_pressure_change_equation()
+
+    def calculate_scaling_factors(self):
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(
+                self.properties[0, 0].dens_mass_phase["Liq"]
+            )
+            iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        super().calculate_scaling_factors()
+
+        # these variables should have user input, if not there will be a warning
+        if iscale.get_scaling_factor(self.width) is None:
+            sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
+            iscale.set_scaling_factor(self.width, sf)
+
+        if iscale.get_scaling_factor(self.length) is None:
+            sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
+            iscale.set_scaling_factor(self.length, sf)
+
+        # setting scaling factors for variables
+
+        # will not override if the user provides the scaling factor
+        ## default of 1 set by ControlVolume1D
+        if iscale.get_scaling_factor(self.area_cross) == 1:
+            iscale.set_scaling_factor(self.area_cross, 100)
+
+        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
+            sf = (
+                iscale.get_scaling_factor(
+                    self.properties[t, x].get_material_flow_terms(p, j)
+                )
+                / iscale.get_scaling_factor(self.length)
+            ) * value(self.nfe)
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.mass_transfer_term[t, x, p, j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "deltaP"):
+            for v in self.deltaP.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, "dP_dx"):
+            for v in self.pressure_dx.values():
+                iscale.set_scaling_factor(v, 1e-5)
+        else:
+            for v in self.pressure_dx.values():
+                iscale.set_scaling_factor(v, 1e5)
