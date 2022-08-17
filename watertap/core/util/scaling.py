@@ -49,6 +49,8 @@ def variable_sens_generator(
 
     """
 
+    print(list(blk.component_data_objects(active=True, descend_into=False)))
+
     # TODO: handle multiple inlet ports
     var_hist = {}
     for scale in [lb_scale, ub_scale]:
@@ -57,7 +59,6 @@ def variable_sens_generator(
         for vt, vm in temp_blk.component_data_iterindex(
             ctype=pyo.Var, active=True, descend_into=True
         ):
-            print(vt[0], vt[1])
             unset_scaling_factor(vm)  # remove prior sf which are reestablished on init
             if (
                     temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1]) is not None
@@ -72,7 +73,7 @@ def variable_sens_generator(
         calculate_scaling_factors(
             temp_blk
         )  # recalculate scaling factors that were removed
-        temp_blk.unit.initialize(
+        temp_blk.fs.unit.initialize(
             outlvl=idaes.logger.ERROR
         )  # reinitialize model and supress logger
         results = solver.solve(temp_blk)  # resolve model copy

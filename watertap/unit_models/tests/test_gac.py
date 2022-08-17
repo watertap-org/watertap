@@ -182,9 +182,6 @@ class TestGACRobust:
 
         from watertap.core.util.scaling import variable_sens_generator
 
-        print(m.ctype)
-        print(m.fs.ctype)
-        print(m.fs.model())
         # test
         sens_var_lst = list(
             variable_sens_generator(m)
