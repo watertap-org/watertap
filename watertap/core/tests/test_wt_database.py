@@ -82,7 +82,7 @@ class TestDatabase:
 
         # Check for a few expected keys to check what we got back looks right
         assert "default" in data
-        assert "removal_frac_mass_solute" in data["default"]
+        assert "removal_frac_mass_comp" in data["default"]
         assert "energy_electric_flow_vol_inlet" in data["default"]
         assert "recovery_frac_mass_H2O" in data["default"]
 
@@ -101,7 +101,7 @@ class TestDatabase:
         assert data == db._cached_files["nanofiltration"]["default"]
 
         # Check for a few expected keys to check what we got back looks right
-        assert "removal_frac_mass_solute" in data
+        assert "removal_frac_mass_comp" in data
         assert "energy_electric_flow_vol_inlet" in data
         assert "recovery_frac_mass_H2O" in data
 

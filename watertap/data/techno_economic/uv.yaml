@@ -13,10 +13,10 @@ default:
     uv_capital_d_parameter:
       value: -12779.106944244096766283
       units: USD_2014
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     eeq:
       value: 0.054565
       units: dimensionless

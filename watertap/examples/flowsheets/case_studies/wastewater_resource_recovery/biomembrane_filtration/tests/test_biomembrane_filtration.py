@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biom
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_municipal_treatment():
+def test_biomembrane_filtration():
     m, results = main()
 
     assert_optimal_termination(results)
