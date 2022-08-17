@@ -216,7 +216,7 @@ class TestElectrodialysisVoltageConst:
         ) == pytest.approx(18.074, rel=1e-3)
 
         assert value(m.fs.EDstack.recovery_mass_H2O[0]) == pytest.approx(
-            0.483, rel=1e-3
+            0.483, rel=5e-3
         )
         assert value(
             m.fs.EDstack.cell_width
