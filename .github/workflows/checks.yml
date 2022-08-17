@@ -119,7 +119,7 @@ jobs:
         bash -c 'grep "SKIPPED" "$_pytest_output_to_inspect" ; test $? -eq 1'
         echo '::endgroup::'
     - name: Require EDB tests to connect to MongoDB if server is set up
-      # if: matrix.mongodb_server
+      if: matrix.mongodb_server
       run:
         |
         # --pyargs watertap is needed to be able to define the CLI options in watertap/conftest.py
