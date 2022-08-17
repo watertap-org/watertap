@@ -26,7 +26,7 @@ from pyomo.environ import (
 
 from idaes.core import declare_process_block_class
 from idaes.core.util.misc import add_object_reference
-from watertap.core import MembraneChannel0D
+from watertap.core import MembraneChannel0D, ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
 from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData
 import idaes.logger as idaeslog
 

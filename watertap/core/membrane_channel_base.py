@@ -15,7 +15,7 @@ from copy import deepcopy
 from enum import Enum, auto
 
 from pyomo.common.collections import ComponentSet
-from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import (
     Param,
     NegativeReals,
@@ -75,7 +75,7 @@ class PressureChangeType(Enum):
     calculated = auto()
 
 
-CONFIG_Template = ConfigBlock()
+CONFIG_Template = ConfigDict()
 
 CONFIG_Template.declare(
     "dynamic",
@@ -117,10 +117,10 @@ CONFIG_Template.declare(
 
 CONFIG_Template.declare(
     "property_package_args",
-    ConfigBlock(
+    ConfigDict(
         implicit=True,
         description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+        doc="""A ConfigDict with arguments to be passed to a property block(s)
 and used when constructing these.
 **default** - None.
 **Valid values:** {
@@ -131,7 +131,7 @@ see property package for documentation.}""",
 CONFIG_Template.declare(
     "material_balance_type",
     ConfigValue(
-        default=useDefault,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
@@ -150,7 +150,7 @@ balance type
 CONFIG_Template.declare(
     "energy_balance_type",
     ConfigValue(
-        default=useDefault,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed.
@@ -169,11 +169,11 @@ balance type
 CONFIG_Template.declare(
     "momentum_balance_type",
     ConfigValue(
-        default=useDefault,
+        default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
         doc="""Indicates what type of momentum balance should be constructed,
-**default** - useDefault.
+**default** - MomentumBalanceType.pressureTotal.
 **Valid values:** {
 **MomentumBalanceType.none** - exclude momentum balances,
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
@@ -186,13 +186,13 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "concentration_polarization_type",
     ConfigValue(
-        default=useDefault,
+        default=ConcentrationPolarizationType.calculated,
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
         doc="""
         Options to account for concentration polarization.
 
-        **default** - useDefault
+        **default** - ``ConcentrationPolarizationType.calculated``
 
     .. csv-table::
         :header: "Configuration Options", "Description"
@@ -207,13 +207,13 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "mass_transfer_coefficient",
     ConfigValue(
-        default=useDefault,
+        default=MassTransferCoefficient.calculated,
         domain=In(MassTransferCoefficient),
         description="Mass transfer coefficient in RO feed channel",
         doc="""
         Options to account for mass transfer coefficient.
 
-        **default** - useDefault
+        **default** - ``MassTransferCoefficient.calculated``
 
     .. csv-table::
         :header: "Configuration Options", "Description"
@@ -228,12 +228,12 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "has_pressure_change",
     ConfigValue(
-        default=useDefault,
+        default=False,
         domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
-**default** - useDefault.
+**default** - False.
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}""",
@@ -243,7 +243,7 @@ constructed,
 CONFIG_Template.declare(
     "pressure_change_type",
     ConfigValue(
-        default=useDefault,
+        default=PressureChangeType.fixed_per_stage,
         domain=In(PressureChangeType),
         description="Pressure change term construction flag",
         doc="""
@@ -252,8 +252,7 @@ CONFIG_Template.declare(
     ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure
     change, it should be negative to represent pressure drop.
 
-    **default** - useDefault
-
+    **default** - ``PressureChangeType.fixed_per_stage`` 
 
 .. csv-table::
     :header: "Configuration Options", "Description"
@@ -347,15 +346,6 @@ class MembraneChannelMixin:
         self._add_membrane_pressure_balances()
 
         if has_pressure_change:
-            units_meta = self.config.property_package.get_metadata().get_derived_units
-            self.pressure_change_total = Var(
-                self.flowsheet().config.time,
-                initialize=-1e5,
-                bounds=(-1e6, 0),
-                domain=NegativeReals,
-                units=units_meta("pressure"),
-                doc="Pressure drop across unit",
-            )
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
@@ -1172,108 +1162,74 @@ class MembraneChannelMixin:
         var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[
             time_point, "Liq", "H2O"
         ]
-        var_dict["Membrane Area"] = self.area
-        if hasattr(self, "length") and self.config.has_full_reporting:
+        var_dict["Membrane Area"] = self.area_total
+        if hasattr(self, "length"):
             var_dict["Membrane Length"] = self.length
-        if hasattr(self, "width") and self.config.has_full_reporting:
+        if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP") and self.config.has_full_reporting:
-            var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "N_Re") and self.config.has_full_reporting:
+        if hasattr(self, "pressure_change_total"):
+            var_dict["Pressure Change"] = self.pressure_change_total[time_point]
+        if hasattr(self, "N_Re"):
             var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
             var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity") and self.config.has_full_reporting:
+        if hasattr(self, "velocity"):
             var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
             var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
         for j in self.config.property_package.solute_set:
-            if (
-                interface_inlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
+            if interface_inlet.is_property_constructed("conc_mass_phase_comp"):
                 var_dict[
                     f"{j} Concentration @Inlet,Membrane-Interface "
                 ] = interface_inlet.conc_mass_phase_comp["Liq", j]
-            if (
-                interface_outlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
+            if interface_outlet.is_property_constructed("conc_mass_phase_comp"):
                 var_dict[
                     f"{j} Concentration @Outlet,Membrane-Interface "
                 ] = interface_outlet.conc_mass_phase_comp["Liq", j]
-            if (
-                feed_inlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
+            if feed_inlet.is_property_constructed("conc_mass_phase_comp"):
                 var_dict[
                     f"{j} Concentration @Inlet,Bulk"
                 ] = feed_inlet.conc_mass_phase_comp["Liq", j]
-            if (
-                feed_outlet.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
+            if feed_outlet.is_property_constructed("conc_mass_phase_comp"):
                 var_dict[
                     f"{j} Concentration @Outlet,Bulk"
                 ] = feed_outlet.conc_mass_phase_comp["Liq", j]
-            if (
-                permeate.is_property_constructed("conc_mass_phase_comp")
-                and self.config.has_full_reporting
-            ):
+            if permeate.is_property_constructed("conc_mass_phase_comp"):
                 var_dict[f"{j} Permeate Concentration"] = permeate.conc_mass_phase_comp[
                     "Liq", j
                 ]
-        if (
-            interface_outlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
+        if interface_outlet.is_property_constructed("pressure_osm_phase"):
             var_dict[
                 "Osmotic Pressure @Outlet,Membrane-Interface "
             ] = interface_outlet.pressure_osm_phase["Liq"]
-        if (
-            feed_outlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
+        if feed_outlet.is_property_constructed("pressure_osm_phase"):
             var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase[
                 "Liq"
             ]
-        if (
-            interface_inlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
+        if interface_inlet.is_property_constructed("pressure_osm_phase"):
             var_dict[
                 "Osmotic Pressure @Inlet,Membrane-Interface"
             ] = interface_inlet.pressure_osm_phase["Liq"]
-        if (
-            feed_inlet.is_property_constructed("pressure_osm_phase")
-            and self.config.has_full_reporting
-        ):
+        if feed_inlet.is_property_constructed("pressure_osm_phase"):
             var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase[
                 "Liq"
             ]
-        if (
-            feed_inlet.is_property_constructed("flow_vol_phase")
-            and self.config.has_full_reporting
-        ):
+        if feed_inlet.is_property_constructed("flow_vol_phase"):
             var_dict["Volumetric Flowrate @Inlet"] = feed_inlet.flow_vol_phase["Liq"]
-        if (
-            feed_outlet.is_property_constructed("flow_vol_phase")
-            and self.config.has_full_reporting
-        ):
+        if feed_outlet.is_property_constructed("flow_vol_phase"):
             var_dict["Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
-        if hasattr(self, "dh") and self.config.has_full_reporting:
+        if hasattr(self, "dh"):
             var_dict["Hydraulic Diameter"] = self.dh
 
-        if self.config.has_full_reporting:
-            expr_dict["Average Solvent Flux (LMH)"] = (
-                self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
+        expr_dict["Average Solvent Flux (LMH)"] = (
+            self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
+        )
+        expr_dict["Average Reynolds Number"] = self.N_Re_avg[time_point]
+        for j in self.config.property_package.solute_set:
+            expr_dict[f"{j} Average Solute Flux (GMH)"] = (
+                self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
             )
-            expr_dict["Average Reynolds Number"] = self.N_Re_avg[time_point]
-            for j in self.config.property_package.solute_set:
-                expr_dict[f"{j} Average Solute Flux (GMH)"] = (
-                    self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
-                )
-                expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                    self.K_avg[time_point, j] * 3.6e6
-                )
+            expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
+                self.K_avg[time_point, j] * 3.6e6
+            )
 
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
@@ -1289,9 +1245,9 @@ class MembraneChannelMixin:
         super().calculate_scaling_factors()
 
         # these variables should have user input, if not there will be a warning
-        if iscale.get_scaling_factor(self.area) is None:
-            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
-            iscale.set_scaling_factor(self.area, sf)
+        if iscale.get_scaling_factor(self.area_total) is None:
+            sf = iscale.get_scaling_factor(self.area_total, default=10, warning=True)
+            iscale.set_scaling_factor(self.area_total, sf)
 
         if iscale.get_scaling_factor(self.A_comp) is None:
             iscale.set_scaling_factor(self.A_comp, 1e12)

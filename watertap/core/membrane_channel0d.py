@@ -2,9 +2,11 @@
 from pyomo.environ import (
     NonNegativeReals,
     NegativeReals,
+    Param,
     Set,
     Var,
     value,
+    units as pyunits,
 )
 from idaes.core import (declare_process_block_class,
     EnergyBalanceType,
@@ -19,10 +21,7 @@ from watertap.core.membrane_channel_base import (
 
 
 @declare_process_block_class("MembraneChannel0D")
-class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin):
-
-    def build(self):
-        super().build()
+class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData):
 
     # overwrite CV0D `add_geometry`
     def add_geometry(self):
@@ -49,6 +48,13 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
         self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
         add_object_reference(self, "difference_elements", self.length_domain)
         self.first_element = self.length_domain.first()
+
+        self.nfe = Param(
+            initialize=(len(self.difference_elements)),
+            units=pyunits.dimensionless,
+            doc="Number of finite elements",
+        )
+
         add_object_reference(
             self,
             "properties",
@@ -148,9 +154,9 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
     def add_total_enthalpy_balances(self,**kwargs):
         eb = super().add_total_enthalpy_balances(**kwargs)
 
-        if self._constructed_material_balance_type not in (EnergyBalanceType.enthalpyTotal, EnergyBalanceType.none):
+        if self._constructed_energy_balance_type not in (EnergyBalanceType.enthalpyTotal, EnergyBalanceType.none):
             raise BalanceTypeNotSupportedError(
-                "{self.name} OD membrane channels do not support {self._constructed_material_balance_type}")
+                f"{self.name} OD membrane channels do not support {self._constructed_material_balance_type}")
 
         if kwargs.get("has_enthalpy_transfer", False) and eb is not None:
             # Non-existent in MembraneChannel1D 
@@ -191,16 +197,12 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
     def apply_transformation(self):
         pass
 
-    def _add_calculated_pressure_change_mass_transfer_components(self):
-        # NOTE: This function could be called by either
-        # `_add_calculated_pressure_change` *and/or* 
-        # `_add_calculated_mass_transfer_coefficient`.
-        # Therefore, we add this simple gaurd against it being called twice.
-        if hasattr(self, "channel_height"):
+
+    def _add_length(self):
+        if hasattr(self, "length"):
             return
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
-
         # comes from ControlVolume1D in 1DRO
         self.length = Var(
             initialize=10,
@@ -209,6 +211,18 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
             units=units_meta("length"),
             doc="Effective membrane length",
         )
+
+    def _add_calculated_pressure_change_mass_transfer_components(self):
+        # NOTE: This function could be called by either
+        # `_add_calculated_pressure_change` *and/or* 
+        # `_add_calculated_mass_transfer_coefficient`.
+        # Therefore, we add this simple gaurd against it being called twice.
+        if hasattr(self, "channel_height"):
+            return
+
+        self._add_length()
+        
+        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # not optional in 1DRO
         self.width = Var(
@@ -233,7 +247,13 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
         super()._add_calculated_pressure_change_mass_transfer_components()
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
+        add_object_reference(self, "pressure_change_total", self.deltaP)
 
+        if pressure_change_type == PressureChangeType.fixed_per_stage:
+            return
+
+
+        self._add_length()
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         if pressure_change_type == PressureChangeType.fixed_per_unit_length:
@@ -252,7 +272,7 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
             def eq_pressure_change(b, t):
                 return b.pressure_change_total[t] == b.dP_dx[t] * b.length
 
-        else:
+        elif pressure_change_type == PressureChangeType.calculated:
             self.dP_dx= Var(
                 self.flowsheet().config.time,
                 self.length_domain,
@@ -263,6 +283,8 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
             self._add_pressure_change_equation()
+        else:
+            raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
 
     def calculate_scaling_factors(self):
         # setting scaling factors for variables
@@ -285,9 +307,9 @@ class MembraneChannel0DBlockData(ControlVolume0DBlockData, MembraneChannelMixin)
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "area_cross"):
-            if iscale.get_scaling_factor(self.area_cross) is None:
-                iscale.set_scaling_factor(self.area_cross, 100)
+        if hasattr(self, "area"):
+            if iscale.get_scaling_factor(self.area) is None:
+                iscale.set_scaling_factor(self.area, 100)
 
         if hasattr(self, "length"):
             if iscale.get_scaling_factor(self.length) is None:

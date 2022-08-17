@@ -37,7 +37,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
     Reverse Osmosis base class
     """
 
-    CONFIG = CONFIG_Template.CONFIG() 
+    CONFIG = CONFIG_Template() 
 
     def build(self):
         """
@@ -85,13 +85,13 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             has_pressure_change=self.config.has_pressure_change,
         )
 
-        self.membrane_channel.add_mass_transfer()
-
         self.membrane_channel.add_isothermal_conditions()
 
         self.membrane_channel.add_volumetric_flowrate_balance()
 
         self.membrane_channel.add_flux_balance()
+
+        self.membrane_channel.add_mass_transfer()
 
         self.membrane_channel.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,

@@ -14,7 +14,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from watertap.core.membrane_channel_base import MembraneChannelMixin, PressureChangeType, CONFIG_Template as Base_CONFIG_Template
 
-CONFIG_Template = Base_CONFIG_Template.CONFIG()
+CONFIG_Template = Base_CONFIG_Template()
 
 CONFIG_Template.declare(
     "area_definition",
@@ -74,10 +74,7 @@ CONFIG_Template.declare(
 )
 
 @declare_process_block_class("MembraneChannel1D")
-class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin):
-
-    def build(self):
-        super().build()
+class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
 
     def add_geometry(self,**kwargs):
         super().add_geometry(**kwargs)
@@ -238,16 +235,21 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.pressure_change_total = Var(
+            self.flowsheet().config.time,
+            initialize=-1e5,
+            bounds=(-1e6, 0),
+            domain=NegativeReals,
+            units=units_meta("pressure"),
+            doc="Pressure drop across unit",
+        )
         if pressure_change_type in (PressureChangeType.fixed_per_unit_length, PressureChangeType.calculated):
-            @self.Constraint(
-                self.flowsheet().config.time, doc="Total Pressure drop across channel"
-            )
-            def eq_pressure_change(b, t):
-                return b.pressure_change_total[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-                )
-        else:
             self._add_pressure_change_equation()
+        elif pressure_change_type == PressureChangeType.fixed_per_stage:
+            return
+        else:
+            raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
 
     def calculate_scaling_factors(self):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
@@ -271,8 +273,8 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
 
         # will not override if the user provides the scaling factor
         ## default of 1 set by ControlVolume1D
-        if iscale.get_scaling_factor(self.area_cross) == 1:
-            iscale.set_scaling_factor(self.area_cross, 100)
+        if iscale.get_scaling_factor(self.area) == 1:
+            iscale.set_scaling_factor(self.area, 100)
 
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
             sf = (
@@ -287,8 +289,8 @@ class MembraneChannel0DBlockData(ControlVolume1DBlockData, MembraneChannelMixin)
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "deltaP"):
-            for v in self.deltaP.values():
+        if hasattr(self, "pressure_change_total"):
+            for v in self.pressure_change_total.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
 

@@ -44,7 +44,7 @@ _log = idaeslog.getLogger(__name__)
 class ReverseOsmosis1DData(ReverseOsmosisBaseData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
 
-    CONFIG = CONFIG_Template.CONFIG()
+    CONFIG = CONFIG_Template()
 
     def _process_config(self):
         if self.config.transformation_method is useDefault:
