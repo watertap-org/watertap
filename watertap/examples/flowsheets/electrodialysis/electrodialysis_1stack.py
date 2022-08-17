@@ -242,7 +242,7 @@ def optimize_system(m, solver=None):
         expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] <= 0.393
     )
     iscale.constraint_scaling_transform(
-        m.fs.eq_product_quality, 1e1
+        m.fs.eq_product_quality, 4.5e1
     )  # scaling constraint
 
     print("---report model statistics---\n ", report_statistics(m.fs))
