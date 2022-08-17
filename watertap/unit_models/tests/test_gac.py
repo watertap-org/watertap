@@ -187,7 +187,7 @@ class TestGACRobust:
         print(m.fs.model())
         # test
         sens_var_lst = list(
-            variable_sens_generator(m.fs.unit.process_flow.properties_in[0])
+            variable_sens_generator(m)
         )
         for i in sens_var_lst:
             print(i)

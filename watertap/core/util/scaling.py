@@ -38,7 +38,7 @@ __author__ = "Hunter Barber"
 
 # TODO: handle user specified varibles as arg (ex/ m.fs.ro.area)
 def variable_sens_generator(
-    inlet_port, lb_scale=1e-1, ub_scale=1e3, tol=1e2, zero=1e-10
+    blk, lb_scale=1e-1, ub_scale=1e3, tol=1e2, zero=1e-10
 ):
     """
 
@@ -50,41 +50,32 @@ def variable_sens_generator(
     """
 
     # TODO: handle multiple inlet ports
-    fs = inlet_port.flowsheet()
-    print(inlet_port)
-    print(fs)
-    print(fs.parent_block())
-
     var_hist = {}
     for scale in [lb_scale, ub_scale]:
-        temp_fs = (
-            fs.clone()
-        )  # clone flowsheet for loop of lower bound scale and upper bound scale
+        temp_blk = blk.clone()  # clone flowsheet for loop of lower bound scale and upper bound scale
         # loop through variables and scale previously fixed inlet flow
-        print(temp_fs.inlet_port)
-        for vt, vm in temp_fs.component_data_iterindex(
+        for vt, vm in temp_blk.component_data_iterindex(
             ctype=pyo.Var, active=True, descend_into=True
         ):
-            unset_scaling_factor(
-                vm
-            )  # remove prior sf which are reestablished on init, reapplied on
+            print(vt[0], vt[1])
+            unset_scaling_factor(vm)  # remove prior sf which are reestablished on init
             if (
-                temp_fs.properties.get_default_scaling(vt[0], index=vt[1]) is not None
-                and "flow" in vt[0]
-                and vm.fixed
+                    temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1]) is not None
+                    and "flow" in vt[0]
+                    and vm.fixed
             ):
-                dsf = temp_fs.properties.get_default_scaling(vt[0], index=vt[1])
-                temp_fs.properties.set_default_scaling(
-                    vt[0], dsf * scale**-1, index=vt[1]
+                dsf = temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1])
+                temp_blk.fs.properties.set_default_scaling(
+                    vt[0], dsf * scale ** -1, index=vt[1]
                 )
                 vm.fix(vm * scale)
         calculate_scaling_factors(
-            temp_fs
+            temp_blk
         )  # recalculate scaling factors that were removed
-        temp_fs.unit.initialize(
+        temp_blk.unit.initialize(
             outlvl=idaes.logger.ERROR
         )  # reinitialize model and supress logger
-        results = solver.solve(temp_fs)  # resolve model copy
+        results = solver.solve(temp_blk)  # resolve model copy
         if not check_optimal_termination(results):
             print(
                 "Failed run on", scale, "scale"
@@ -92,7 +83,7 @@ def variable_sens_generator(
 
         # store results for scale to var_hist for current model copy
         for v in ComponentSet(
-            temp_fs.component_data_objects(pyo.Var, active=True, descend_into=True)
+            temp_blk.component_data_objects(pyo.Var, active=True, descend_into=True)
         ):
             val = pyo.value(v, exception=False)
             if val is None:
@@ -109,7 +100,7 @@ def variable_sens_generator(
 
         # check variable scaling wrt process flow scale
         badly_scaled_vars = list(
-            badly_scaled_var_generator(temp_fs, large=1e2, small=1e-2)
+            badly_scaled_var_generator(temp_blk, large=1e2, small=1e-2)
         )
         for b in badly_scaled_vars:
             yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
