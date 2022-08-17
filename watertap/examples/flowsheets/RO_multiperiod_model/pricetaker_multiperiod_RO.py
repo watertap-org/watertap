@@ -21,6 +21,7 @@ from pyomo.environ import (
     Objective,
     SolverFactory,
     units as pyunits,
+    Var,
 )
 
 from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
@@ -65,24 +66,38 @@ def _get_lmp(time_steps, data_path):
 
 
 def build_flowsheet(n_steps):
-
     # create mp model
     mp_swro = create_multiperiod_swro_model(n_time_points=n_steps)
 
     return mp_swro
 
 
-def set_objective(mp_swro, lmp):
+def set_objective(mp_swro, lmp, carbontax=3.5):
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
 
+    # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
         blk_swro = blk.ro_mp
-        blk.lmp_signal = Param(default=0, mutable=True)
+
+        # set price and carbon signals as parameters
+        blk.lmp_signal = Param(
+            default=lmp[count],
+            mutable=True,
+            units=blk_swro.fs.costing.base_currency / pyunits.kWh,
+        )
+        blk.carbon_intensity = Param(
+            default=100, mutable=True, units=pyunits.kg / pyunits.MWh
+        )
+        blk.carbon_tax = Param(
+            default=carbontax,
+            mutable=True,
+            units=blk_swro.fs.costing.base_currency / pyunits.kg,
+        )
 
         # set the electricity_price in each flowsheet
-        blk_swro.fs.costing.electricity_cost = lmp[count]
+        blk_swro.fs.costing.electricity_cost.fix(blk.lmp_signal)
 
         # combine/place flowsheet level cost metrics on each time block
         blk.weighted_LCOW = Expression(
@@ -98,7 +113,19 @@ def set_objective(mp_swro, lmp):
             * pyunits.convert(
                 blk_swro.fs.costing.annual_water_production,
                 to_units=pyunits.m**3 / pyunits.hour,
-            )
+            ),
+            doc="Energy consumption per timestep ",
+        )
+        blk.carbon_emission = Expression(
+            expr=blk.energy_consumption
+            * pyunits.convert(blk.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
+            doc="Equivalent carbon emissions per timestep ",
+        )
+        blk.annual_carbon_cost = Expression(
+            expr=blk.carbon_tax
+            * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.year)
+            * (blk_swro.fs.costing.base_currency / pyunits.kg),
+            doc="Annual cost associated with carbon emissions, to be used in the objective",
         )
 
         # deactivate each block-level objective function
@@ -106,9 +133,12 @@ def set_objective(mp_swro, lmp):
 
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
-        expr=sum([blk.weighted_LCOW for blk in t_blocks])
+        expr=(
+            sum([blk.weighted_LCOW for blk in t_blocks])
+            + sum([blk.annual_carbon_cost for blk in t_blocks])
+        )
         / sum([blk.water_prod for blk in t_blocks]),
-        doc="Annual permeate flow-weighted average LCOW",
+        doc="Flow-integrated average cost and carbon tax on an annual basis",
     )
 
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
