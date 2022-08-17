@@ -10,13 +10,12 @@ import watertap.examples.flowsheets.uvaop.sim_uv_aop as uvaop
 
 def set_up_sensitivity(m):
     outputs = {}
-    optimize_kwargs = {"check_termination": False}
+    optimize_kwargs = {"check_termination": True}
     opt_function = uvaop.solve
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
     # outputs["Total_Cost"] = m.fs.costing.total_annualized_cost
-    # outputs["LCODS"] = m.fs.costing.LCODS
 
     return outputs, optimize_kwargs, opt_function
 
@@ -33,8 +32,8 @@ def run_analysis(case_num, nx, interpolate_nan_outputs=True):
         sweep_params["EEO"] = LinearSample(m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"], 0.1, 5, nx)
 
     elif case_num == 2:
-        m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].unfix()
-        sweep_params["EEO"] = LinearSample(m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"], 0.1, 5, nx)
+        m.fs.unit.uv_intensity.unfix()
+        sweep_params["uv_intensity"] = LinearSample(m.fs.unit.uv_intensity, 0.5, 2, nx)
 
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))

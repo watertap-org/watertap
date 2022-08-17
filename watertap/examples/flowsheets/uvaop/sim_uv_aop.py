@@ -49,7 +49,7 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    display_results(m)
+    # display_results(m)
 
     add_costing(m)
     initialize_costing(m)
@@ -181,18 +181,18 @@ def display_costing(m):
             value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)),
         )
 
-    print("\nUtility Costs\n")
-    for f in m.fs.costing.flow_types:
-        print(
-            f,
-            " :   ",
-            value(
-                pyunits.convert(
-                    m.fs.costing.aggregate_flow_costs[f],
-                    to_units=pyunits.USD_2020 / pyunits.year,
-                )
-            ),
-        )
+    # print("\nUtility Costs\n")
+    # for f in m.fs.costing.flow_types:
+    #     print(
+    #         f,
+    #         " :   ",
+    #         value(
+    #             pyunits.convert(
+    #                 m.fs.costing.aggregate_flow_costs[f],
+    #                 to_units=pyunits.USD_2020 / pyunits.year,
+    #             )
+    #         ),
+    #     )
 
     print("")
     total_capital_cost = value(
