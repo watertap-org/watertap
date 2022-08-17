@@ -196,7 +196,7 @@ def test_costing(subtype):
     if subtype == "default":
         assert pytest.approx(43.5627, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
     if subtype == "landfill_zld":
-        assert pytest.approx(20.09155, rel=1e-5) == value(
+        assert pytest.approx(22.79898, rel=1e-5) == value(
             m.fs.unit.costing.capital_cost
         )
 
