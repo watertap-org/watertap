@@ -391,12 +391,14 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                doc="CP Modulus Calculation",
             )   
             def eq_cp_modulus(b, t, x, j):
-                jw = self.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
-                js = self.flux_mass_phase_comp[t, x, "Liq", j]
-                return self.feed_side.cp_modulus[t,x,j] == exp(
-                    jw / self.feed_side.K[t, x, j]
+                jw = b.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
+                js = b.flux_mass_phase_comp[t, x, "Liq", j]
+                return b.feed_side.properties_interface[t,x].conc_mass_phase_comp[
+                    "Liq", j
+                ] == b.feed_side.properties[t,x].conc_mass_phase_comp["Liq", j] * exp(
+                    jw / self.Kf[t, x, j]
                 ) - js / jw * (
-                    exp(jw / self.feed_side.K[t, x, j]) - 1
+                    exp(jw / self.Kf[t, x, j]) - 1
                 )
 
         return self.eq_flux_mass

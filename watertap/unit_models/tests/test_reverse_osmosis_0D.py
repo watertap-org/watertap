@@ -21,6 +21,7 @@ from pyomo.environ import (
     Constraint,
     assert_optimal_termination,
 )
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
@@ -495,9 +496,12 @@ class TestReverseOsmosis:
         m.fs.unit.Kf[0, 1.0, "NaCl"].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 125
-        assert number_total_constraints(m) == 96
+        assert number_variables(m) == 127
+        assert number_total_constraints(m) == 98
         assert number_unused_variables(m) == 7  # vars from property package parameters
+
+        # Test units
+        #assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -614,9 +618,12 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 141
-        assert number_total_constraints(m) == 111
+        assert number_variables(m) == 143
+        assert number_total_constraints(m) == 113
         assert number_unused_variables(m) == 0  # vars from property package parameters
+
+        # Test units
+        #assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -727,9 +734,12 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 147
-        assert number_total_constraints(m) == 118
+        assert number_variables(m) == 149
+        assert number_total_constraints(m) == 120
         assert number_unused_variables(m) == 0  # vars from property package parameters
+
+        # Test units
+        #assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -849,9 +859,12 @@ class TestReverseOsmosis:
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 142
-        assert number_total_constraints(m) == 112
+        assert number_variables(m) == 144
+        assert number_total_constraints(m) == 114
         assert number_unused_variables(m) == 0
+
+        # Test units
+        #assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
