@@ -804,7 +804,6 @@ class MembraneChannelMixin:
             "control_volume": state_args_cv,
         }
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
