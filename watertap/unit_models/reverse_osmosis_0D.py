@@ -72,8 +72,10 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             self.feed_side.add_geometry(include_length_and_width=False)
             self._add_area(include_constraint=False)
 
+    def _add_deltaP(self):
+        add_object_reference(self, "deltaP", self.feed_side.deltaP)
+
     def _add_mass_transfer(self):
-        _add_object_reference_if_exists(self, "deltaP", self.feed_side, "deltaP")
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 

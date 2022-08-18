@@ -93,34 +93,36 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         add_object_reference(self, "width", self.feed_side.width)
         self._add_area(include_constraint=True)
 
+    def _add_deltaP(self):
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.deltaP = Var(
+            self.flowsheet().config.time,
+            initialize=-1e5,
+            bounds=(-1e6, 0),
+            domain=NegativeReals,
+            units=units_meta("pressure"),
+            doc="Pressure drop across unit",
+        )
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Fixed pressure drop across unit",
+            )
+            def eq_pressure_drop(b, t, x):
+                return b.deltaP[t] == b.length * b.dP_dx[t, x]
+        else:
+            @self.Constraint(
+                self.flowsheet().config.time, doc="pressure change"
+            )
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == sum(
+                b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+            ) 
+
     def _add_mass_transfer(self):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
-        if self.config.has_pressure_change:
-            self.deltaP = Var(
-                self.flowsheet().config.time,
-                initialize=-1e5,
-                bounds=(-1e6, 0),
-                domain=NegativeReals,
-                units=units_meta("pressure"),
-                doc="Pressure drop across unit",
-            )
-            if self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
-                @self.Constraint(
-                    self.flowsheet().config.time,
-                    self.length_domain,
-                    doc="Fixed pressure drop across unit",
-                )
-                def eq_pressure_drop(b, t, x):
-                    return b.deltaP[t] == b.length * b.dP_dx[t, x]
-            else:
-                @self.Constraint(
-                    self.flowsheet().config.time, doc="pressure change"
-                )
-                def eq_pressure_change(b, t):
-                    return b.deltaP[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-                ) 
 
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
             return value(

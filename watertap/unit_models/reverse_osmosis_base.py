@@ -262,9 +262,14 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             )
 
         self._add_flux_balance()
+        if self.config.has_pressure_change:
+            self._add_deltaP()
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+    def _add_deltaP(self):
+        raise NotImplementedError()
 
     def _add_mass_transfer(self):
         raise NotImplementedError()
