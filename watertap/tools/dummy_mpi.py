@@ -12,6 +12,7 @@
 ###############################################################################
 import numpy as np
 
+
 class DummyMPI:
     @staticmethod
     def Get_rank():

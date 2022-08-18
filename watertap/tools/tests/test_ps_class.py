@@ -1432,12 +1432,14 @@ def _get_rank0_path(comm, tmp_path):
         return tmp_path
     return comm.bcast(tmp_path, root=0)
 
+
 def _good_test_function(m):
     return True
 
 
 def _bad_test_function(m):
     return False
+
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
 

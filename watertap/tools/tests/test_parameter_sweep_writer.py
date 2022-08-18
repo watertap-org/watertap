@@ -20,10 +20,14 @@ import warnings, copy
 from pyomo.environ import value
 from watertap.tools.parameter_sweep_class import *
 from watertap.tools.parameter_sweep_writer import *
-from watertap.tools.tests.test_ps_class import (_get_rank0_path,
-    _read_output_h5, _assert_dictionary_correctness)
+from watertap.tools.tests.test_ps_class import (
+    _get_rank0_path,
+    _read_output_h5,
+    _assert_dictionary_correctness,
+)
 
 # ------------------------------------------------------------------------------
+
 
 class TestParallelWriterManager:
     @pytest.fixture(scope="class")
@@ -62,8 +66,8 @@ class TestParallelWriterManager:
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
+            interpolate_nan_outputs=True,
+        )
 
         global_values = np.array(
             [
@@ -84,7 +88,9 @@ class TestParallelWriterManager:
             np.newaxis
         ].T
 
-        global_results_clean = ps_writer._interp_nan_values(global_values, global_results)
+        global_results_clean = ps_writer._interp_nan_values(
+            global_values, global_results
+        )
 
         assert np.shape(global_results_clean)[1] == np.shape(global_results)[1]
         assert np.shape(global_results_clean)[0] == np.shape(global_results)[0]
@@ -104,9 +110,8 @@ class TestParallelWriterManager:
             csv_results_file_name=None,
             h5_results_file_name=h5_fname,
             debugging_data_dir=None,
-            interpolate_nan_outputs=True
-            )
-
+            interpolate_nan_outputs=True,
+        )
 
         input_dict = {
             "outputs": {
@@ -169,6 +174,6 @@ class TestParallelWriterManager:
         reference_dict["sweep_params"]["fs.input[a]"]["upper bound"] = np.finfo("d").max
 
         ps_writer._write_output_to_h5(input_dict, os.path.join(tmp_path, h5_fname))
-        
+
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)

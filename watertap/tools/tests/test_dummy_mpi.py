@@ -15,6 +15,7 @@ import pytest
 import numpy as np
 from watertap.tools.dummy_mpi import DummyMPI
 
+
 @pytest.mark.integration
 def test_dummy_mpi():
     comm = DummyMPI()

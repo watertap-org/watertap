@@ -26,8 +26,8 @@ from abc import ABC
 
 _log = idaeslog.getLogger(__name__)
 
-class ParameterSweepReader(ABC):
 
+class ParameterSweepReader(ABC):
     def __init__(self):
         pass
 
@@ -56,7 +56,6 @@ class ParameterSweepReader(ABC):
             raise ValueError("Could not open file %s" % (yaml_filename))
 
         return input_dict
-
 
     def get_sweep_params_from_yaml(self, m, yaml_filename):
         """Creates a dictionary of swept model parameters specified via yaml file
@@ -95,7 +94,6 @@ class ParameterSweepReader(ABC):
 
         input_dict = self._yaml_to_dict(yaml_filename)
         return self._dict_to_params(m, input_dict)
-
 
     @staticmethod
     def _dict_to_params(m, input_dict):
@@ -149,7 +147,9 @@ class ParameterSweepReader(ABC):
                 )
 
             elif values["type"] == "NormalSample":
-                sweep_params[param] = NormalSample(component, values["mean"], values["std"])
+                sweep_params[param] = NormalSample(
+                    component, values["mean"], values["std"]
+                )
 
             elif values["type"] == "LatinHypercubeSample":
                 sweep_params[param] = LatinHypercubeSample(
@@ -163,7 +163,6 @@ class ParameterSweepReader(ABC):
         _log.debug(f"Property: {key}")
         _log.debug(f"New Value: {default_value:.6e}, Old Value: {component.value:.6e}")
         component.value = default_value
-
 
     def set_defaults_from_yaml(self, m, yaml_filename, verbose=False):
         """Sets default model values using values stored in a yaml file

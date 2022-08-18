@@ -57,14 +57,16 @@ np.set_printoptions(linewidth=200)
 #     def __init__(self):
 #         pass
 
-class ParameterSweepWriter(ABC):
 
-    def __init__(self,
+class ParameterSweepWriter(ABC):
+    def __init__(
+        self,
         comm,
         csv_results_file_name=None,
         h5_results_file_name=None,
-        debugging_data_dir = None,
-        interpolate_nan_outputs = False):
+        debugging_data_dir=None,
+        interpolate_nan_outputs=False,
+    ):
 
         self.comm = comm
         self.rank = self.comm.Get_rank()
@@ -127,9 +129,9 @@ class ParameterSweepWriter(ABC):
             # Interpolate to get a value for nan points where possible
             for k in range(n_outs):
                 y0 = global_results[mask, k]
-                yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
-                    -1
-                )
+                yi = griddata(
+                    x0, y0, global_values, method="linear", rescale=True
+                ).reshape(-1)
                 global_results_clean[~mask, k] = yi[~mask]
 
         else:
@@ -154,14 +156,23 @@ class ParameterSweepWriter(ABC):
 
     # ================================================================
 
-    def save_results(self, sweep_params, local_values, global_values, local_results_dict,
-        global_results_dict, global_results_arr):
+    def save_results(
+        self,
+        sweep_params,
+        local_values,
+        global_values,
+        local_results_dict,
+        global_results_dict,
+        global_results_arr,
+    ):
 
         if self.rank == 0:
             if self.debugging_data_dir is not None:
                 os.makedirs(self.debugging_data_dir, exist_ok=True)
             if self.h5_results_file_name is not None:
-                pathlib.Path(self.h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
+                pathlib.Path(self.h5_results_file_name).parent.mkdir(
+                    parents=True, exist_ok=True
+                )
             if self.csv_results_file_name is not None:
                 pathlib.Path(self.csv_results_file_name).parent.mkdir(
                     parents=True, exist_ok=True

@@ -94,6 +94,7 @@ class LinearSample(FixedSample):
 
 # ================================================================
 
+
 class GeomSample(FixedSample):
     def sample(self, num_samples):
         return np.geomspace(
@@ -125,6 +126,7 @@ class ReverseGeomSample(FixedSample):
 
 
 # ================================================================
+
 
 class UniformSample(RandomSample):
     def sample(self, num_samples):

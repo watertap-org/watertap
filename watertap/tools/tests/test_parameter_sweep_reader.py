@@ -24,6 +24,7 @@ from watertap.tools.parameter_sweep_reader import ParameterSweepReader
 # Imports for conditional fails
 from idaes.config import bin_directory as idaes_bin_directory
 
+
 class TestInputParser:
     @pytest.fixture(scope="class")
     def model(self):
