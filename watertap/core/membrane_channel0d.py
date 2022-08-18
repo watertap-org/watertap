@@ -25,7 +25,6 @@ from idaes.core import (
     EnergyBalanceType,
     FlowDirection,
 )
-from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
@@ -213,8 +212,6 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         """
         if optarg is None:
             optarg = {}
-        # Create solver
-        opt = get_solver(solver, optarg)
 
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
@@ -225,7 +222,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         # intialize self.properties
         source_flags = self.properties_in.initialize(
             state_args=state_args["feed_side"],
-            outlvl=idaeslog.ERROR,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,

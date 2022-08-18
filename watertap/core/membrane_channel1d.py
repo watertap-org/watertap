@@ -29,7 +29,6 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
-from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
@@ -243,8 +242,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         """
         if optarg is None:
             optarg = {}
-        # Create solver
-        opt = get_solver(solver, optarg)
 
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
