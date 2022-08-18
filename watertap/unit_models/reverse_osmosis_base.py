@@ -268,7 +268,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
     def _add_mass_transfer(self):
         raise NotImplementedError()
 
-    def _add_area(self):
+    def _add_area(self, include_constraint=True):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.area = Var(
@@ -279,28 +279,13 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             doc="Total Membrane area",
         )
 
-    def _add_length_and_width(self):
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.length = Var(
-                initialize=10,
-                bounds=(0.1, 5e2),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Effective membrane length",
-            )
+        if include_constraint:
+            # Membrane area equation
+            @self.Constraint(doc="Total Membrane area")
+            def eq_area(b):
+                return b.area == b.length * b.width
 
-        self.width = Var(
-            initialize=1,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Membrane width",
-        )
 
-        # Membrane area equation
-        @self.Constraint(doc="Total Membrane area")
-        def eq_area(b):
-            return b.area == b.length * b.width
 
     def _add_flux_balance(self):
 

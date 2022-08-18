@@ -88,11 +88,9 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
                 "collocation_points": self.config.collocation_points,
             }
         )
-
-        self._add_area()
-        self._add_length_and_width()
-
-        self.feed_side.add_geometry(length_var=self.length, width_var=self.width)
+        add_object_reference(self, "length", self.feed_side.length)
+        add_object_reference(self, "width", self.feed_side.width)
+        self._add_area(include_constraint=True)
 
 
     def build(self):

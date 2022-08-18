@@ -271,18 +271,6 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
-    def _add_reference(self, name, var):
-        if not isinstance(var, (Var, Param, Expression)):
-            raise ConfigurationError(
-                f"{self.name} var must be a Pyomo Var, Param or "
-                "Expression."
-            )
-        elif var.is_indexed():
-            raise ConfigurationError(
-                f"{self.name} var must be a scalar (unindexed) " "component."
-            )
-        add_object_reference(self, name, var)
-
     def _add_pressure_change_equation(self):
         @self.Constraint(
             self.flowsheet().config.time, doc="Total Pressure drop across channel"
