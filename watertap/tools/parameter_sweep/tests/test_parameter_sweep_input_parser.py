@@ -19,7 +19,7 @@ import yaml
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep_input_parser import (
+from watertap.tools.parameter_sweep.parameter_sweep_input_parser import (
     _yaml_to_dict,
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,

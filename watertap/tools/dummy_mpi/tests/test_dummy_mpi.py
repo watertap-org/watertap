@@ -13,7 +13,7 @@
 
 import pytest
 import numpy as np
-from watertap.tools.dummy_mpi import DummyMPI
+from watertap.tools.parameter_sweep.dummy_mpi import DummyMPI
 
 
 @pytest.mark.integration

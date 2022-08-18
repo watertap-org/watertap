@@ -8,10 +8,10 @@ import warnings
 
 from pyomo.environ import value
 
-from watertap.tools.sampling_types import *
-from watertap.tools.parameter_sweep_class import ParameterSweep
-from watertap.tools.parameter_sweep_writer import *
-from watertap.tools.dummy_mpi import DummyMPI
+from watertap.tools.parameter_sweep.sampling_types import *
+from watertap.tools.parameter_sweep.parameter_sweep_class import ParameterSweep
+from watertap.tools.parameter_sweep.parameter_sweep_writer import *
+from watertap.tools.parameter_sweep.dummy_mpi import DummyMPI
 
 # -----------------------------------------------------------------------------
 
