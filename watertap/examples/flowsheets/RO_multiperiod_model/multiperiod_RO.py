@@ -22,7 +22,7 @@ Repository link: https://github.com/gmlc-dispatches/dispatches
 Path: models/fossil_case/ultra_supercritical_plant/storage/multiperiod_integrated_storage_usc.py
 """
 
-__author__ = "Akshay Rao"
+__author__ = "Akshay Rao, Adam Atia"
 
 from pyomo.environ import NonNegativeReals, ConcreteModel, Var, units as pyunits, value
 
@@ -33,12 +33,6 @@ from watertap.unit_models.pressure_changer import VariableEfficiency
 
 
 def create_base_model(mode):
-    # bounds to operational variables
-    max_recovery = 0.7  # dimensionless
-    min_recovery = 0.3  # dimensionless
-
-    max_flowrate = 2  # kg/s
-    min_flowrate = 0.5  # kg/s
 
     print("\nCreating RO flowsheet and MP concrete model...")
 
@@ -76,16 +70,6 @@ def create_base_model(mode):
         m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
         m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
 
-        # set variable bounds
-        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setub(max_recovery)
-        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setlb(min_recovery)
-
-        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setub(
-            max_flowrate
-        )
-        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setlb(
-            min_flowrate
-        )
     else:
         pass
 
@@ -108,7 +92,7 @@ def create_swro_mp_block(mode="flexible"):
     # Add coupling variables
     b1.previous_pressure = Var(
         domain=NonNegativeReals,
-        units=pyunits.bar,
+        units=pyunits.Pa,
         bounds=(10e5, 80e5),
         doc="Applied pressure at the previous time step",
     )

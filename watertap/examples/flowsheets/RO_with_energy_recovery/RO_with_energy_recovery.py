@@ -437,9 +437,9 @@ def optimize_set_up(m):
     #     default=1.0 / 3600.0, mutable=True
     # )  # minimum water flux [kg/m2-s]
 
-    m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
-        value(m.fs.product_salinity)
-    )
+    # m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
+    #     value(m.fs.product_salinity)
+    # )
     m.fs.water_flux = Constraint(
         expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= 0
     )
