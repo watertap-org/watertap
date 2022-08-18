@@ -93,21 +93,6 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         add_object_reference(self, "width", self.feed_side.width)
         self._add_area(include_constraint=True)
 
-
-    def build(self):
-        """
-        Build 1D RO model (pre-DAE transformation).
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call UnitModel.build to setup dynamics
-        super().build()
-
-
     def _add_mass_transfer(self):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units

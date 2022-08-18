@@ -93,7 +93,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
                 - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
 
-        # Non-existent in MembraneChannel1D 
+        # not in 1DRO
         @self.Constraint(
             self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
         )
