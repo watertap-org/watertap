@@ -87,7 +87,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         validate_membrane_config_args(self)
 
-        self._add_feed_side_membrane_channel()
+        self._add_feed_side_membrane_channel_and_geometery()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 
@@ -388,17 +388,17 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                self.flowsheet().config.time,
                self.difference_elements,
                solute_set,
-               doc="CP Modulus Calculation",
+               doc="Concentration polarization",
             )   
-            def eq_cp_modulus(b, t, x, j):
+            def eq_concentration_polarization(b, t, x, j):
                 jw = b.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
                 js = b.flux_mass_phase_comp[t, x, "Liq", j]
                 return b.feed_side.properties_interface[t,x].conc_mass_phase_comp[
                     "Liq", j
                 ] == b.feed_side.properties[t,x].conc_mass_phase_comp["Liq", j] * exp(
-                    jw / self.Kf[t, x, j]
+                    jw / self.feed_side.K[t, x, j]
                 ) - js / jw * (
-                    exp(jw / self.Kf[t, x, j]) - 1
+                    exp(jw / self.feed_side.K[t, x, j]) - 1
                 )
 
         return self.eq_flux_mass

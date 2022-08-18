@@ -70,7 +70,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             )
             self.config.transformation_scheme = "BACKWARD"
 
-    def _add_feed_side_membrane_channel(self):
+    def _add_feed_side_membrane_channel_and_geometery(self):
         # Check configuration errors
         self._process_config()
 
@@ -88,6 +88,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
                 "collocation_points": self.config.collocation_points,
             }
         )
+        self.feed_side.add_geometry()
         add_object_reference(self, "length", self.feed_side.length)
         add_object_reference(self, "width", self.feed_side.width)
         self._add_area(include_constraint=True)
