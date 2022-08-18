@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from watertap.tools.parameter_sweep import (
+from watertap.tools.parameter_sweep.parameter_sweep import (
     LinearSample,
     GeomSample,
     ReverseGeomSample,

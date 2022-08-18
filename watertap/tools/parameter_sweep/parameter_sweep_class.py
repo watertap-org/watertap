@@ -29,9 +29,9 @@ from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 
-from watertap.tools.dummy_mpi import DummyMPI
-from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.sampling_types import SamplingType, LinearSample
+from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
+from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
+from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
 np.set_printoptions(linewidth=200)
 

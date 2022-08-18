@@ -27,7 +27,7 @@ from watertap.tools.parameter_sweep.tests.test_ps_class import (
     _get_rank0_path,
     _assert_dictionary_correctness,
 )
-from watertap.tools.dummy_mpi import DummyMPI
+from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
 
 # -----------------------------------------------------------------------------
 

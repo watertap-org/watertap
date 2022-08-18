@@ -14,7 +14,7 @@ import numpy as np
 import warnings
 import pprint
 from enum import Enum
-from watertap.tools.parameter_sweep import (
+from watertap.tools.parameter_sweep.parameter_sweep import (
     _aggregate_results_arr,
     _build_combinations,
     _create_local_output_skeleton,

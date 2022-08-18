@@ -38,11 +38,11 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     LatinHypercubeSample,
 )
 
-from watertap.tools.recursive_parameter_sweep import (
+from watertap.tools.parameter_sweep.recursive_parameter_sweep import (
     _aggregate_filtered_input_arr,
     recursive_parameter_sweep,
 )
-from watertap.tools.tests.test_parameter_sweep import (
+from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,
     _assert_h5_csv_agreement,
