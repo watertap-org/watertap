@@ -68,34 +68,15 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
 
-def flowsheet_interface():
-    from watertap.ui.api import FlowsheetInterface, WorkflowActions
-
-    fsi = FlowsheetInterface(
-        {
-            "display_name": "Seawater RO Desalination (ERD=pressure exchanger)",
-            "description": "Seawater reverse osmosis desalination",
-        }
-    )
-    fsi.set_action(
-        WorkflowActions.build, build_flowsheet, erd_type="pressure_exchanger"
-    )
-    fsi.set_action(WorkflowActions.solve, solve_flowsheet)
-    # note: don't have any flowsheet block yet, will get that in build_flowsheet()
-    return fsi
-
-
-def build_flowsheet(ui=None, erd_type=None, **kw):
+def build_flowsheet(erd_type=None):
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
-    if ui:
-        ui.set_block(m.fs)
     return m
 
 
-def solve_flowsheet(block=None, **kwargs):
-    m = block.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
+def solve_flowsheet(flowsheet=None):
+    m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
     solve(m)
