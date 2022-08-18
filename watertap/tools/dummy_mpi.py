@@ -31,6 +31,10 @@ class DummyMPI:
         pass
 
     @staticmethod
+    def bcast(array, root=0):
+        return array
+
+    @staticmethod
     def allgather(value):
         return [value]
 

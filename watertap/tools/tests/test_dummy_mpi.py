@@ -25,6 +25,7 @@ def test_dummy_mpi():
     n_arr = 3
     dummy_array1 = np.arange(n_arr)
     comm.Bcast(dummy_array1)
+    returned_array = comm.bcast(dummy_array1)
     returned_list = comm.allgather(dummy_array1)
     recvbuf = (np.zeros(n_arr), [n_arr])
     comm.Gatherv(sendbuf=dummy_array1, recvbuf=recvbuf, root=0)
@@ -32,5 +33,6 @@ def test_dummy_mpi():
     assert isinstance(comm, DummyMPI)
     assert rank == 0
     assert size == 1
+    assert returned_array is dummy_array1
     assert returned_list == [dummy_array1]
     assert (recvbuf[0] == dummy_array1).all
