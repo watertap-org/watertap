@@ -2,6 +2,7 @@
 from pyomo.common.config import Bool, ConfigValue, In
 from pyomo.environ import (
     NonNegativeReals,
+    NegativeReals,
     Param,
     Set,
     Var,
@@ -73,24 +74,46 @@ CONFIG_Template.declare(
     ),
 )
 
-@declare_process_block_class("MembraneChannel1D")
-class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
 
-    def add_geometry(self,**kwargs):
-        super().add_geometry(**kwargs)
 
-        units_meta = self.config.property_package.get_metadata().get_derived_units
+@declare_process_block_class("MembraneChannel1DBlock")
+class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
 
-        self.width = Var(
-            initialize=1,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Membrane width",
-        )
+    def add_geometry(self, length_var, width_var,
+            flow_direction=FlowDirection.forward, **kwargs):
+        """
+        Method to create spatial domain and volume Var in ControlVolume.
 
-        self._add_area_total()
-        self._add_area_total_equation()
+        Args:
+            length_var - external variable to use for the length of
+                         the spatial domain. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
+            width_var - external variable to use for the width of
+                         the spatial domain. If a variable is provided, a
+                         reference will be made to this in place of the width 
+                         Var.
+            flow_direction - argument indicating direction of material flow
+                            relative to length domain. Valid values:
+                                - FlowDirection.forward (default), flow goes
+                                  from 0 to 1.
+                                - FlowDirection.backward, flow goes from 1 to 0
+            length_domain - (optional) a ContinuousSet to use as the length
+                            domain for the ControlVolume. If not provided, a
+                            new ContinuousSet will be created (default=None).
+                            ContinuousSet should be normalized to run between
+                            0 and 1.
+            length_domain_set - (optional) list of point to use to initialize
+                            a new ContinuousSet if length_domain is not
+                            provided (default = [0.0, 1.0]).
+
+        Returns:
+            None
+        """
+        super().add_geometry(length_var=length_var, flow_direction=flow_direction, **kwargs)
+            
+        # ControlVolume1D.add_geometry will add length reference
+        self._add_reference("width", width_var)
 
 
     def add_state_blocks(
@@ -124,97 +147,11 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             doc="Number of finite elements",
         )
 
-        self._add_interface_blocks(has_phase_equilibrium)
+        self._add_interface_stateblock(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self,**kwrags):
         # make this a no-op for MC1D
         return None
-
-    def add_mass_transfer(self):
-        self._add_recovery_rejection()
-        
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        def mass_transfer_phase_comp_initialize(b, t, x, p, j):
-            return value(
-                self.properties[t, x].get_material_flow_terms("Liq", j)
-                * self.recovery_mass_phase_comp[t, "Liq", j]
-            )
-
-        self.mass_transfer_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=mass_transfer_phase_comp_initialize,
-            bounds=(0.0, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta("mass")
-            * units_meta("time") ** -1
-            * units_meta("length") ** -1,
-            doc="Mass transfer to permeate",
-        )
-
-        # ==========================================================================
-        # Mass transfer term equation
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer term",
-        )
-        def eq_mass_transfer_term(b, t, x, p, j):
-            return (
-                b.mass_transfer_phase_comp[t, x, p, j]
-                == -b.mass_transfer_term[t, x, p, j]
-            )
-
-        # ==========================================================================
-        # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer from feed to permeate",
-        )
-        def eq_connect_mass_transfer(b, t, x, p, j):
-            return (
-                b.permeate_side[t, x].get_material_flow_terms(p, j)
-                == -b.mass_transfer_term[t, x, p, j] * b.length / b.nfe
-            )
-
-        # ==========================================================================
-        # Mass flux = feed mass transfer equation
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.difference_elements,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Mass transfer term",
-        )
-        def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            return (
-                b.flux_mass_phase_comp[t, x, p, j] * b.width
-                == -b.mass_transfer_term[t, x, p, j]
-            )
-
-        # ==========================================================================
-        # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            doc="Permeate mass flow rates exiting unit",
-        )
-        def eq_permeate_production(b, t, p, j):
-            return b.mixed_permeate[t].get_material_flow_terms(p, j) == sum(
-                b.permeate_side[t, x].get_material_flow_terms(p, j)
-                for x in b.difference_elements
-            )
-
 
     def add_isothermal_conditions(self, **kwargs):
 
@@ -252,22 +189,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
 
     def calculate_scaling_factors(self):
-        if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(
-                self.properties[0, 0].dens_mass_phase["Liq"]
-            )
-            iscale.set_scaling_factor(self.dens_solvent, sf)
-
         super().calculate_scaling_factors()
-
-        # these variables should have user input, if not there will be a warning
-        if iscale.get_scaling_factor(self.width) is None:
-            sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
-            iscale.set_scaling_factor(self.width, sf)
-
-        if iscale.get_scaling_factor(self.length) is None:
-            sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
-            iscale.set_scaling_factor(self.length, sf)
 
         # setting scaling factors for variables
 
@@ -275,19 +197,6 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         ## default of 1 set by ControlVolume1D
         if iscale.get_scaling_factor(self.area) == 1:
             iscale.set_scaling_factor(self.area, 100)
-
-        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
-            sf = (
-                iscale.get_scaling_factor(
-                    self.properties[t, x].get_material_flow_terms(p, j)
-                )
-                / iscale.get_scaling_factor(self.length)
-            ) * value(self.nfe)
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, sf)
-            v = self.mass_transfer_term[t, x, p, j]
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "pressure_change_total"):
             for v in self.pressure_change_total.values():
