@@ -160,18 +160,18 @@ class PumpIsothermalData(PumpData):
                 iscale.set_scaling_factor(self.flow_ratio, 1)
 
         if hasattr(self, "efficiency_pump"):
-            if iscale.get_scaling_factor(self.efficiency_pump[0]) is None:
-                iscale.set_scaling_factor(self.efficiency_pump[0], 1)
+            if iscale.get_scaling_factor(self.efficiency_pump) is None:
+                iscale.set_scaling_factor(self.efficiency_pump, 1)
 
         # scale constraints
 
         if hasattr(self, "flow_ratio_constraint"):
-            if iscale.get_scaling_factor(self.flow_ratio_constraint[0]) is None:
-                iscale.set_scaling_factor(self.flow_ratio_constraint[0], 1)
+            if iscale.get_scaling_factor(self.flow_ratio_constraint) is None:
+                iscale.set_scaling_factor(self.flow_ratio_constraint, 1)
 
         if hasattr(self, "eta_constraint"):
-            if iscale.get_scaling_factor(self.eta_constraint[0]) is None:
-                iscale.set_scaling_factor(self.eta_constraint[0], 1)
+            if iscale.get_scaling_factor(self.eta_constraint) is None:
+                iscale.set_scaling_factor(self.eta_constraint, 1)
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
