@@ -31,9 +31,18 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 
-from watertap.core import MembraneChannel1DBlock, ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
+from watertap.core import (
+    MembraneChannel1DBlock,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from watertap.core.membrane_channel1d import CONFIG_Template
-from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting, _add_object_reference_if_exists
+from watertap.unit_models.reverse_osmosis_base import (
+    ReverseOsmosisBaseData,
+    _add_has_full_reporting,
+    _add_object_reference_if_exists,
+)
 
 __author__ = "Adam Atia"
 
@@ -104,6 +113,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             doc="Pressure drop across unit",
         )
         if self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
+
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.length_domain,
@@ -111,14 +121,14 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             )
             def eq_pressure_drop(b, t, x):
                 return b.deltaP[t] == b.length * b.dP_dx[t, x]
+
         else:
-            @self.Constraint(
-                self.flowsheet().config.time, doc="pressure change"
-            )
+
+            @self.Constraint(self.flowsheet().config.time, doc="pressure change")
             def eq_pressure_change(b, t):
                 return b.deltaP[t] == sum(
-                b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-            ) 
+                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+                )
 
     def _add_mass_transfer(self):
 

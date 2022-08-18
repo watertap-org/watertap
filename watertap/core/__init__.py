@@ -11,7 +11,11 @@
 #
 ###############################################################################
 
-from .membrane_channel_base import ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
+from .membrane_channel_base import (
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from .membrane_channel0d import MembraneChannel0DBlock
 from .membrane_channel1d import MembraneChannel1DBlock
 from .wt_database import Database

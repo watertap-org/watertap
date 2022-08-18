@@ -48,6 +48,7 @@ class ConcentrationPolarizationType(Enum):
     fixed: concentration polarization modulus is a user specified value
     calculated: calculate concentration polarization (concentration at membrane interface)
     """
+
     none = auto()
     fixed = auto()
     calculated = auto()
@@ -59,6 +60,7 @@ class MassTransferCoefficient(Enum):
     fixed: mass transfer coefficient is a user specified value
     calculated: mass transfer coefficient is calculated
     """
+
     none = auto()
     fixed = auto()
     calculated = auto()
@@ -71,6 +73,7 @@ class PressureChangeType(Enum):
     fixed_per_unit_length: pressure drop per unit length across membrane channel is a user-specified value
     calculated: pressure drop across membrane channel is calculated
     """
+
     fixed_per_stage = auto()
     fixed_per_unit_length = auto()
     calculated = auto()
@@ -266,8 +269,8 @@ CONFIG_Template.declare(
     ),
 )
 
-class MembraneChannelMixin:
 
+class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
@@ -275,11 +278,11 @@ class MembraneChannelMixin:
         self,
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
-        custom_term=None
+        custom_term=None,
     ):
         super().add_total_pressure_balances(
-            has_pressure_change=has_pressure_change,
-            custom_term=custom_term)
+            has_pressure_change=has_pressure_change, custom_term=custom_term
+        )
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -334,21 +337,28 @@ class MembraneChannelMixin:
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         if concentration_polarization_type == ConcentrationPolarizationType.none:
+
             @self.Constraint(
-               self.flowsheet().config.time,
-               self.length_domain,
-               solute_set,
-               doc="Concentration polarization",
-            )   
+                self.flowsheet().config.time,
+                self.length_domain,
+                solute_set,
+                doc="Concentration polarization",
+            )
             def eq_concentration_polarization(b, t, x, j):
                 return (
-                    b.properties_interface[t,x].conc_mass_phase_comp["Liq", j]
-                    == b.properties[t,x].conc_mass_phase_comp["Liq", j]
+                    b.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
+                    == b.properties[t, x].conc_mass_phase_comp["Liq", j]
                 )
+
             return
 
-        if concentration_polarization_type not in (ConcentrationPolarizationType.fixed, ConcentrationPolarizationType.calculated):
-            raise ConfigurationError(f"Unrecognized concentration_polarization_type {concentration_polarization_type}")
+        if concentration_polarization_type not in (
+            ConcentrationPolarizationType.fixed,
+            ConcentrationPolarizationType.calculated,
+        ):
+            raise ConfigurationError(
+                f"Unrecognized concentration_polarization_type {concentration_polarization_type}"
+            )
 
         self.cp_modulus = Var(
             self.flowsheet().config.time,
@@ -362,15 +372,16 @@ class MembraneChannelMixin:
         )
 
         @self.Constraint(
-           self.flowsheet().config.time,
-           self.length_domain,
-           solute_set,
-           doc="Concentration polarization",
-        )   
+            self.flowsheet().config.time,
+            self.length_domain,
+            solute_set,
+            doc="Concentration polarization",
+        )
         def eq_concentration_polarization(b, t, x, j):
             return (
-                self.properties_interface[t,x].conc_mass_phase_comp["Liq", j]
-                == self.properties[t,x].conc_mass_phase_comp["Liq", j] * self.cp_modulus[t, x, j]
+                self.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
+                == self.properties[t, x].conc_mass_phase_comp["Liq", j]
+                * self.cp_modulus[t, x, j]
             )
 
         if concentration_polarization_type == ConcentrationPolarizationType.calculated:
@@ -378,7 +389,7 @@ class MembraneChannelMixin:
                 raise ConfigurationError()
 
             # NOTE: calculated concentration polarization is relegated
-            #       to the unit model as it depends on flux 
+            #       to the unit model as it depends on flux
 
             # mass_transfer_coefficient is either calculated or fixed
             self.K = Var(
@@ -396,7 +407,6 @@ class MembraneChannelMixin:
                 self._add_calculated_mass_transfer_coefficient()
 
         return self.eq_concentration_polarization
-
 
     def add_expressions(self):
         """
@@ -473,7 +483,9 @@ class MembraneChannelMixin:
             return (
                 b.N_Sc[t, x]
                 * b.properties[t, x].dens_mass_phase["Liq"]
-                * b.properties[t, x].diffus_phase_comp["Liq", b.properties[t, x].params.component_list.last()]
+                * b.properties[t, x].diffus_phase_comp[
+                    "Liq", b.properties[t, x].params.component_list.last()
+                ]
                 == b.properties[t, x].visc_d_phase["Liq"]
             )
 
@@ -481,14 +493,16 @@ class MembraneChannelMixin:
 
     def _add_calculated_pressure_change_mass_transfer_components(self):
         # NOTE: This function could be called by either
-        # `_add_calculated_pressure_change` *and/or* 
+        # `_add_calculated_pressure_change` *and/or*
         # `_add_calculated_mass_transfer_coefficient`.
         # Therefore, we add this simple gaurd against it being called twice.
         if hasattr(self, "channel_height"):
             return
 
         if not hasattr(self, "width"):
-            raise ConfigurationError(f"Due to either a calculated mass transfer coefficient or a calculated pressure change, a ``width`` variable needs to be supplied to `add_geometry` for this MembraneChannel")
+            raise ConfigurationError(
+                f"Due to either a calculated mass transfer coefficient or a calculated pressure change, a ``width`` variable needs to be supplied to `add_geometry` for this MembraneChannel"
+            )
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
@@ -525,7 +539,7 @@ class MembraneChannelMixin:
             units=pyunits.dimensionless,
             doc="membrane-channel spacer porosity",
         )
-        
+
         self.N_Re = Var(
             self.flowsheet().config.time,
             self.length_domain,
@@ -536,13 +550,10 @@ class MembraneChannelMixin:
             doc="Reynolds number in membrane channel",
         )
 
-        @self.Constraint(
-            doc="Hydraulic diameter"
-        )  # eqn. 17 in Schock & Miquel, 1987
+        @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
         def eq_dh(b):
             return b.dh == 4 * b.spacer_porosity / (
-                2 / b.channel_height
-                + (1 - b.spacer_porosity) * 8 / b.channel_height
+                2 / b.channel_height + (1 - b.spacer_porosity) * 8 / b.channel_height
             )
 
         @self.Constraint(doc="Cross-sectional area")
@@ -562,9 +573,7 @@ class MembraneChannelMixin:
                 * b.dh
             )
 
-    def _add_interface_stateblock(
-        self, has_phase_equilibrium=None
-    ):
+    def _add_interface_stateblock(self, has_phase_equilibrium=None):
         """
         This method constructs the interface state blocks for the
         control volume.
@@ -621,10 +630,7 @@ class MembraneChannelMixin:
             doc="Crossflow velocity constraint",
         )
         def eq_velocity(b, t, x):
-            return (
-                b.velocity[t, x] * b.area
-                == b.properties[t, x].flow_vol_phase["Liq"]
-            )
+            return b.velocity[t, x] * b.area == b.properties[t, x].flow_vol_phase["Liq"]
 
         ## ==========================================================================
         # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
@@ -654,10 +660,7 @@ class MembraneChannelMixin:
                 * b.velocity[t, x] ** 2
             )
 
-
-    def _get_state_args(
-        self, initialize_guess, state_args
-    ):
+    def _get_state_args(self, initialize_guess, state_args):
         """
         Arguments:
             initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
@@ -792,9 +795,9 @@ class MembraneChannelMixin:
                         index
                     ] + x * state_args_retentate[k][index]
             else:
-                state_args_cv[k] = (1.0 - x) * state_args[
+                state_args_cv[k] = (1.0 - x) * state_args[k] + x * state_args_retentate[
                     k
-                ] + x * state_args_retentate[k]
+                ]
         state_args_interface = state_args_tx
 
         return {
@@ -805,7 +808,7 @@ class MembraneChannelMixin:
         }
 
     def initialize(
-        self, 
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         optarg=None,
@@ -860,7 +863,13 @@ class MembraneChannelMixin:
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
-        source_flags = super().initialize(state_args=state_args["control_volume"], outlvl=outlvl, optarg=optarg, solver=solver, hold_state=True)
+        source_flags = super().initialize(
+            state_args=state_args["control_volume"],
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+        )
 
         self.properties_interface.initialize(
             outlvl=outlvl,
@@ -878,12 +887,14 @@ class MembraneChannelMixin:
                 )
                 res = opt.solve(self, tee=slc.tee)
         if not check_optimal_termination(res):
-            raise InitializationError("Membrane channel {self.name} failed to initailize")
+            raise InitializationError(
+                "Membrane channel {self.name} failed to initailize"
+            )
 
         init_log.info("Initialization Complete")
 
         if hold_state:
-            return source_flags 
+            return source_flags
         else:
             self.release_state(source_flags, outlvl)
 

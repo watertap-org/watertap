@@ -501,7 +501,7 @@ class TestReverseOsmosis:
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
         # Test units
-        #assert_units_consistent(m.fs.unit)
+        # assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -623,7 +623,7 @@ class TestReverseOsmosis:
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # Test units
-        #assert_units_consistent(m.fs.unit)
+        # assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -646,7 +646,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # test initialization
-        initialization_tester(m) 
+        initialization_tester(m)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -739,7 +739,7 @@ class TestReverseOsmosis:
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # Test units
-        #assert_units_consistent(m.fs.unit)
+        # assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -864,7 +864,7 @@ class TestReverseOsmosis:
         assert number_unused_variables(m) == 0
 
         # Test units
-        #assert_units_consistent(m.fs.unit)
+        # assert_units_consistent(m.fs.unit)
 
         # test degrees of freedom
         assert degrees_of_freedom(m) == 0

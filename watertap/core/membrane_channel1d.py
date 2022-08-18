@@ -22,11 +22,20 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from idaes.core import declare_process_block_class, DistributedVars, FlowDirection, useDefault
+from idaes.core import (
+    declare_process_block_class,
+    DistributedVars,
+    FlowDirection,
+    useDefault,
+)
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
-from watertap.core.membrane_channel_base import MembraneChannelMixin, PressureChangeType, CONFIG_Template as Base_CONFIG_Template
+from watertap.core.membrane_channel_base import (
+    MembraneChannelMixin,
+    PressureChangeType,
+    CONFIG_Template as Base_CONFIG_Template,
+)
 
 CONFIG_Template = Base_CONFIG_Template()
 
@@ -88,10 +97,8 @@ CONFIG_Template.declare(
 )
 
 
-
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
-
     def apply_transformation(self, *args, **kwargs):
         super().apply_transformation(*args, **kwargs)
         self.first_element = self.length_domain.first()
@@ -104,7 +111,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             units=pyunits.dimensionless,
             doc="Number of finite elements",
         )
-
 
     def add_geometry(self, flow_direction=FlowDirection.forward, **kwargs):
         """
@@ -129,7 +135,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             None
         """
         super().add_geometry(flow_direction=flow_direction, **kwargs)
-            
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
         self.width = Var(
             initialize=1,
@@ -138,7 +144,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             units=units_meta("length"),
             doc="Membrane width",
         )
-
 
     def add_state_blocks(
         self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
@@ -163,7 +168,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
 
         self._add_interface_stateblock(has_phase_equilibrium)
 
-    def add_total_enthalpy_balances(self,**kwrags):
+    def add_total_enthalpy_balances(self, **kwrags):
         # make this a no-op for MC1D
         return None
 

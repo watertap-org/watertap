@@ -309,13 +309,13 @@ class TestReverseOsmosis:
             "eq_rejection_phase_comp": Constraint,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         # check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
@@ -335,9 +335,9 @@ class TestReverseOsmosis:
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        #assert number_variables(m) == 245
-        #assert number_total_constraints(m) == 200
-        #assert number_unused_variables(m) == 22
+        # assert number_variables(m) == 245
+        # assert number_total_constraints(m) == 200
+        # assert number_unused_variables(m) == 22
 
     @pytest.mark.integration
     def test_units(self, RO_frame):
@@ -522,22 +522,22 @@ class TestReverseOsmosis:
             "eq_permeate_outlet_isobaric": Constraint,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 205
-        #assert number_total_constraints(m) == 162
-        #assert number_unused_variables(m) == 29
+        # assert number_variables(m) == 205
+        # assert number_total_constraints(m) == 162
+        # assert number_unused_variables(m) == 29
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -563,8 +563,8 @@ class TestReverseOsmosis:
         initialization_tester(m)
 
         # Test variable scaling
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         # Solve
         results = solver.solve(m)
@@ -696,22 +696,22 @@ class TestReverseOsmosis:
             "eq_permeate_outlet_isobaric": Constraint,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 209
-        #assert number_total_constraints(m) == 162
-        #assert number_unused_variables(m) == 30
+        # assert number_variables(m) == 209
+        # assert number_total_constraints(m) == 162
+        # assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -733,8 +733,8 @@ class TestReverseOsmosis:
         # Test initialization
         initialization_tester(m)
         # Check for poorly scaled variables
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         # Solve
         results = solver.solve(m)
@@ -868,22 +868,22 @@ class TestReverseOsmosis:
             "Kf_avg": Expression,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 209
-        #assert number_total_constraints(m) == 162
-        #assert number_unused_variables(m) == 30
+        # assert number_variables(m) == 209
+        # assert number_total_constraints(m) == 162
+        # assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -902,8 +902,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -1049,22 +1049,22 @@ class TestReverseOsmosis:
             "Kf_avg": Expression,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 232
-        #assert number_total_constraints(m) == 187
-        #assert number_unused_variables(m) == 22
+        # assert number_variables(m) == 232
+        # assert number_total_constraints(m) == 187
+        # assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
@@ -1085,8 +1085,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -1237,22 +1237,22 @@ class TestReverseOsmosis:
             "Kf_avg": Expression,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 237
-        #assert number_total_constraints(m) == 188
-        #assert number_unused_variables(m) == 23
+        # assert number_variables(m) == 237
+        # assert number_total_constraints(m) == 188
+        # assert number_unused_variables(m) == 23
 
         assert_units_consistent(m.fs.unit)
 
@@ -1273,8 +1273,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -1426,22 +1426,22 @@ class TestReverseOsmosis:
             "Kf_avg": Expression,
             "flux_mass_phase_comp_avg": Expression,
         }
-        #for (obj_str, obj_type) in unit_objs_type_dict.items():
+        # for (obj_str, obj_type) in unit_objs_type_dict.items():
         #    obj = getattr(m.fs.unit, obj_str)
         #    assert isinstance(obj, obj_type)
         ## check that all added unit objects are tested
-        #for obj in m.fs.unit.component_objects(
+        # for obj in m.fs.unit.component_objects(
         #    [Param, Var, Expression, Constraint], descend_into=False
-        #):
+        # ):
         #    obj_str = obj.local_name
         #    if obj_str[0] == "_":
         #        continue  # do not test hidden references
         #    assert obj_str in unit_objs_type_dict
 
         # test statistics
-        #assert number_variables(m) == 237
-        #assert number_total_constraints(m) == 191
-        #assert number_unused_variables(m) == 22
+        # assert number_variables(m) == 237
+        # assert number_total_constraints(m) == 191
+        # assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
@@ -1462,8 +1462,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        #badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        #assert badly_scaled_var_lst == []
+        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        # assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 

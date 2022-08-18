@@ -27,9 +27,18 @@ from pyomo.environ import (
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
-from watertap.core import MembraneChannel0DBlock, ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
+from watertap.core import (
+    MembraneChannel0DBlock,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 from watertap.core.membrane_channel0d import CONFIG_Template
-from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting, _add_object_reference_if_exists
+from watertap.unit_models.reverse_osmosis_base import (
+    ReverseOsmosisBaseData,
+    _add_has_full_reporting,
+    _add_object_reference_if_exists,
+)
 import idaes.logger as idaeslog
 
 
@@ -45,7 +54,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
     - single liquid phase only
     """
 
-    CONFIG = CONFIG_Template() 
+    CONFIG = CONFIG_Template()
 
     _add_has_full_reporting(CONFIG)
 
@@ -59,7 +68,6 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
                 "property_package_args": self.config.property_package_args,
             }
         )
-
 
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated

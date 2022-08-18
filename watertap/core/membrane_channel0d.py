@@ -20,16 +20,20 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from idaes.core import (declare_process_block_class,
+from idaes.core import (
+    declare_process_block_class,
     EnergyBalanceType,
     FlowDirection,
-    )
+)
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
 from watertap.core.membrane_channel_base import (
-    MembraneChannelMixin, PressureChangeType, CONFIG_Template)
+    MembraneChannelMixin,
+    PressureChangeType,
+    CONFIG_Template,
+)
 
 
 @declare_process_block_class("MembraneChannel0DBlock")
@@ -51,12 +55,12 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         if include_length_and_width:
             units_meta = self.config.property_package.get_metadata().get_derived_units
             self.length = Var(
-                 initialize=10,
-                 bounds=(0.1, 5e2),
-                 domain=NonNegativeReals,
-                 units=units_meta("length"),
-                 doc="Effective membrane length",
-                )
+                initialize=10,
+                bounds=(0.1, 5e2),
+                domain=NonNegativeReals,
+                units=units_meta("length"),
+                doc="Effective membrane length",
+            )
             self.width = Var(
                 initialize=1,
                 bounds=(1e-1, 1e3),
@@ -129,6 +133,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="pressure drop per unit length across channel",
             )
+
             @self.Constraint(
                 self.flowsheet().config.time, doc="pressure change due to friction"
             )
@@ -136,7 +141,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 return b.deltaP[t] == b.dP_dx[t] * b.length
 
         elif pressure_change_type == PressureChangeType.calculated:
-            self.dP_dx= Var(
+            self.dP_dx = Var(
                 self.flowsheet().config.time,
                 self.length_domain,
                 initialize=-5e4,
@@ -145,6 +150,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
+
             @self.Constraint(
                 self.flowsheet().config.time, doc="Total Pressure drop across channel"
             )
@@ -152,8 +158,11 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 return b.deltaP[t] == sum(
                     b.dP_dx[t, x] * b.length / b.nfe for x in b.length_domain
                 )
+
         else:
-            raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
+            raise ConfigurationError(
+                f"Unrecognized pressure_change_type {pressure_change_type}"
+            )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

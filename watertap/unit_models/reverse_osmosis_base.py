@@ -33,7 +33,11 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
-from watertap.core.membrane_channel_base import validate_membrane_config_args, CONFIG_Template, ConcentrationPolarizationType
+from watertap.core.membrane_channel_base import (
+    validate_membrane_config_args,
+    CONFIG_Template,
+    ConcentrationPolarizationType,
+)
 
 
 def _add_has_full_reporting(config_obj):
@@ -52,9 +56,11 @@ def _add_has_full_reporting(config_obj):
         ),
     )
 
-def _add_object_reference_if_exists( dest_block, dest_name, source_block, source_name ):
+
+def _add_object_reference_if_exists(dest_block, dest_name, source_block, source_name):
     if hasattr(source_block, source_name):
         add_object_reference(dest_block, dest_name, getattr(source_block, source_name))
+
 
 class ReverseOsmosisBaseData(UnitModelBlockData):
     """
@@ -119,25 +125,35 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         self.feed_side.add_expressions()
 
         add_object_reference(self, "length_domain", self.feed_side.length_domain)
-        add_object_reference(self, "difference_elements", self.feed_side.difference_elements)
+        add_object_reference(
+            self, "difference_elements", self.feed_side.difference_elements
+        )
         add_object_reference(self, "first_element", self.feed_side.first_element)
         add_object_reference(self, "nfe", self.feed_side.nfe)
 
         _add_object_reference_if_exists(self, "dP_dx", self.feed_side, "dP_dx")
         _add_object_reference_if_exists(self, "area_cross", self.feed_side, "area")
 
-        _add_object_reference_if_exists(self, "cp_modulus", self.feed_side, "cp_modulus")
+        _add_object_reference_if_exists(
+            self, "cp_modulus", self.feed_side, "cp_modulus"
+        )
         _add_object_reference_if_exists(self, "Kf", self.feed_side, "K")
         _add_object_reference_if_exists(self, "Kf_avg", self.feed_side, "K_avg")
-        _add_object_reference_if_exists(self, "channel_height", self.feed_side, "channel_height")
+        _add_object_reference_if_exists(
+            self, "channel_height", self.feed_side, "channel_height"
+        )
         _add_object_reference_if_exists(self, "dh", self.feed_side, "dh")
-        _add_object_reference_if_exists(self, "spacer_porosity", self.feed_side, "spacer_porosity")
+        _add_object_reference_if_exists(
+            self, "spacer_porosity", self.feed_side, "spacer_porosity"
+        )
         _add_object_reference_if_exists(self, "N_Re", self.feed_side, "N_Re")
         _add_object_reference_if_exists(self, "N_Re_avg", self.feed_side, "N_Re_avg")
         _add_object_reference_if_exists(self, "N_Sc", self.feed_side, "N_Sc")
         _add_object_reference_if_exists(self, "N_Sh", self.feed_side, "N_Sh")
         _add_object_reference_if_exists(self, "velocity", self.feed_side, "velocity")
-        _add_object_reference_if_exists(self, "friction_factor_darcy", self.feed_side, "friction_factor_darcy")
+        _add_object_reference_if_exists(
+            self, "friction_factor_darcy", self.feed_side, "friction_factor_darcy"
+        )
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -291,8 +307,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             def eq_area(b):
                 return b.area == b.length * b.width
 
-
-
     def _add_flux_balance(self):
 
         solvent_set = self.config.property_package.solvent_set
@@ -390,18 +404,19 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             self.config.concentration_polarization_type
             == ConcentrationPolarizationType.calculated
         ):
+
             @self.Constraint(
-               self.flowsheet().config.time,
-               self.length_domain,
-               solute_set,
-               doc="Concentration polarization",
-            )   
+                self.flowsheet().config.time,
+                self.length_domain,
+                solute_set,
+                doc="Concentration polarization",
+            )
             def eq_concentration_polarization(b, t, x, j):
                 jw = b.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
                 js = b.flux_mass_phase_comp[t, x, "Liq", j]
-                return b.feed_side.properties_interface[t,x].conc_mass_phase_comp[
+                return b.feed_side.properties_interface[t, x].conc_mass_phase_comp[
                     "Liq", j
-                ] == b.feed_side.properties[t,x].conc_mass_phase_comp["Liq", j] * exp(
+                ] == b.feed_side.properties[t, x].conc_mass_phase_comp["Liq", j] * exp(
                     jw / self.feed_side.K[t, x, j]
                 ) - js / jw * (
                     exp(jw / self.feed_side.K[t, x, j]) - 1
@@ -409,9 +424,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         return self.eq_flux_mass
 
-    def _get_state_args(
-        self, initialize_guess, state_args
-    ):
+    def _get_state_args(self, initialize_guess, state_args):
         """
         Arguments:
             initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
@@ -432,7 +445,9 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         source = self.feed_side.properties[
             self.flowsheet().config.time.first(), self.first_element
         ]
-        mixed_permeate_properties = self.mixed_permeate[self.flowsheet().config.time.first()]
+        mixed_permeate_properties = self.mixed_permeate[
+            self.flowsheet().config.time.first()
+        ]
 
         # assumptions
         if initialize_guess is None:
@@ -514,7 +529,13 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             None
         """
 
-        source_flags = self.feed_side.initialize(state_args=state_args, outlvl=outlvl, optarg=optarg, solver=solver, initialize_guess=initialize_guess) 
+        source_flags = self.feed_side.initialize(
+            state_args=state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            initialize_guess=initialize_guess,
+        )
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
@@ -551,7 +572,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         # release inlet state
         self.feed_side.release_state(source_flags, outlvl)
-
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -687,7 +707,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
-
 
     # permeate properties need to rescale solute values by 100
     def _rescale_permeate_variable(self, var, factor=100):
