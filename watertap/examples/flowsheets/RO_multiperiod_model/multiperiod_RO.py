@@ -24,12 +24,7 @@ Path: models/fossil_case/ultra_supercritical_plant/storage/multiperiod_integrate
 
 __author__ = "Akshay Rao"
 
-from pyomo.environ import (
-    NonNegativeReals,
-    ConcreteModel,
-    Var,
-    units as pyunits,
-)
+from pyomo.environ import NonNegativeReals, ConcreteModel, Var, units as pyunits, value
 
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 
@@ -37,12 +32,12 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.unit_models.pressure_changer import VariableEfficiency
 
 
-def create_base_model():
+def create_base_model(mode):
     # bounds to operational variables
     max_recovery = 0.7  # dimensionless
     min_recovery = 0.3  # dimensionless
 
-    max_flowrate = 1.5  # kg/s
+    max_flowrate = 2  # kg/s
     min_flowrate = 0.5  # kg/s
 
     print("\nCreating RO flowsheet and MP concrete model...")
@@ -56,16 +51,6 @@ def create_base_model():
     # fix plant design variables
     m.ro_mp.fs.RO.area.fix(115)
 
-    # fix bep flowrate instead of flow ratio for pumps 1 and 2
-    m.ro_mp.fs.P1.flow_ratio[0].unfix()
-    m.ro_mp.fs.P2.flow_ratio[0].unfix()
-    m.ro_mp.fs.P1.bep_flow.fix(
-        m.ro_mp.fs.P1.control_volume.properties_in[0].flow_vol_phase["Liq"]()
-    )
-    m.ro_mp.fs.P2.bep_flow.fix(
-        m.ro_mp.fs.P2.control_volume.properties_in[0].flow_vol_phase["Liq"]()
-    )
-
     # fix the mass fraction of nacl instead of the mass flow rate
     mass_frac_nacl = (
         m.ro_mp.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].value
@@ -75,35 +60,50 @@ def create_base_model():
     )
     m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
 
-    print("\nUnfixing operational variables...")
+    if mode == "flexible":
+        print("\nUnfixing operational variables...")
+        # fix the best efficiency point of each pump
+        bep_flow_val1 = value(m.ro_mp.fs.P1.bep_flow)
+        m.ro_mp.fs.P1.bep_flow.fix(bep_flow_val1)
+        bep_flow_val2 = value(m.ro_mp.fs.P2.bep_flow)
+        m.ro_mp.fs.P2.bep_flow.fix(bep_flow_val2)
 
-    # unfix operational variables - water recovery and feed flow rate
-    m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
-    m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+        # unfix the flow ratio
+        m.ro_mp.fs.P1.flow_ratio.unfix()
+        m.ro_mp.fs.P2.flow_ratio.unfix()
 
-    # set variable bounds
-    m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setub(max_recovery)
-    m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setlb(min_recovery)
+        # unfix operational variables - water recovery and feed flow rate
+        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
+        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
 
-    m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setub(
-        max_flowrate
-    )
-    m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setlb(
-        min_flowrate
-    )
+        # set variable bounds
+        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setub(max_recovery)
+        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].setlb(min_recovery)
+
+        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setub(
+            max_flowrate
+        )
+        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].setlb(
+            min_flowrate
+        )
+    else:
+        pass
 
     return m
 
 
-def create_swro_mp_block():
+def create_swro_mp_block(mode="flexible"):
     print(">>> Creating model and initialization for each time period")
 
-    m = create_base_model()
+    m = create_base_model(mode)
     b1 = m.ro_mp
 
     time_step = 3600  # seconds (1 hr)
     ramp_frac = 0.1  # fraction of time_step used for ramping
-    ramping_rate = 0.7e5  # Pa/s
+    if mode == "flexible":
+        ramping_rate = 0.7e5  # Pa/s
+    else:
+        ramping_rate = 0  # Pa/s
 
     # Add coupling variables
     b1.previous_pressure = Var(
@@ -159,7 +159,8 @@ def create_multiperiod_swro_model(n_time_points=4):
     """
     multiperiod_swro = MultiPeriodModel(
         n_time_points,
-        lambda: create_swro_mp_block(),
+        # lambda: create_swro_mp_block(mode="fixed"),
+        lambda: create_swro_mp_block(mode="flexible"),
         get_swro_link_variable_pairs,
         get_swro_periodic_variable_pairs,
     )

@@ -30,8 +30,8 @@ from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
 
 
 def main(
-    ndays=0.1,
-    filename="dagget_CA_LMP_hourly_2015.csv",
+    ndays=1,
+    filename="pricesignals_GOLETA_6_N200_20220601.csv",
 ):
     file_path = os.path.realpath(__file__)
     base_path = os.path.dirname(file_path)
@@ -40,15 +40,15 @@ def main(
     n_steps = int(ndays * 24)
 
     # get data
-    data = _get_lmp(n_steps, data_path)
+    lmp, co2i = _get_lmp(n_steps, data_path)
 
     mp_swro = build_flowsheet(n_steps)
 
-    m, t_blocks = set_objective(mp_swro, data)
+    m, t_blocks = set_objective(mp_swro, lmp, co2i)
 
     m, _ = solve(m)
 
-    return m, t_blocks, data
+    return m, t_blocks, [lmp, co2i]
 
 
 def _get_lmp(time_steps, data_path):
@@ -59,10 +59,12 @@ def _get_lmp(time_steps, data_path):
     :return: reshaped data
     """
     # read data into array from file
-    lmp_data = np.genfromtxt(data_path, delimiter=",")
+    data = np.genfromtxt(data_path, delimiter=",")
+    lmp = data[:time_steps, 0]
+    co2i = data[:time_steps, 1]
 
     # index only the desired number of timesteps
-    return lmp_data[:time_steps]
+    return lmp, co2i
 
 
 def build_flowsheet(n_steps):
@@ -72,10 +74,11 @@ def build_flowsheet(n_steps):
     return mp_swro
 
 
-def set_objective(mp_swro, lmp, carbontax=3.5):
+def set_objective(mp_swro, lmp, co2i, carbontax=0):
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
+    avg_yield = 14000 * pyunits.m**3 / pyunits.year
 
     # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
@@ -88,7 +91,7 @@ def set_objective(mp_swro, lmp, carbontax=3.5):
             units=blk_swro.fs.costing.base_currency / pyunits.kWh,
         )
         blk.carbon_intensity = Param(
-            default=100, mutable=True, units=pyunits.kg / pyunits.MWh
+            default=co2i[count], mutable=True, units=pyunits.kg / pyunits.MWh
         )
         blk.carbon_tax = Param(
             default=carbontax,
@@ -135,11 +138,15 @@ def set_objective(mp_swro, lmp, carbontax=3.5):
     m.obj = Objective(
         expr=(
             sum([blk.weighted_LCOW for blk in t_blocks])
-            + sum([blk.annual_carbon_cost for blk in t_blocks])
+            # + sum([blk.annual_carbon_cost for blk in t_blocks])
         )
         / sum([blk.water_prod for blk in t_blocks]),
         doc="Flow-integrated average cost and carbon tax on an annual basis",
     )
+
+    # @m.Constraint
+    # def average_flux(b,doc="fixes average flux across all timesteps"):
+    #     return sum([blk.water_prod for blk in t_blocks]) == len(b.blocks) * avg_yield
 
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
     t_blocks[0].ro_mp.previous_pressure.fix(55e5)
@@ -196,15 +203,18 @@ def visualize_results(m, t_blocks, data):
             len(t_blocks), round(m.obj(), 2)
         )
     )
-
-    ax[0, 0].plot(time_step, data)
+    # ax2 = ax[0, 0].twinx()
+    ax[0, 0].plot(time_step, data[0][:], color="black", label="LMP")
+    # ax2.plot(time_step, data[1][:], color="forestgreen",label="CO2i")
     ax[0, 0].set_xlabel("Time [hr]")
-    ax[0, 0].set_ylabel("Electricity price [$/kWh]")
+    ax[0, 0].set_ylabel("Electricity price [$/kWh]", color="black")
+    # ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
 
-    ax[1, 0].plot(time_step, pump1_flow * 3600, label="P1")
-    ax[1, 0].plot(time_step, pump2_flow * 3600, label="P2")
+    ax[1, 0].plot(time_step, pump1_flow * 3600, label="Main RO pump")
+    ax[1, 0].plot(time_step, pump2_flow * 3600, label="Booster pump")
     ax[1, 0].set_xlabel("Time [hr]")
     ax[1, 0].set_ylabel("Pump flowrate [m3/hr]")
+    ax[1, 0].legend()
 
     ax[2, 0].plot(time_step, recovery * 100)
     ax[2, 0].set_xlabel("Time [hr]")
@@ -214,8 +224,8 @@ def visualize_results(m, t_blocks, data):
     ax[0, 1].set_xlabel("Time [hr]")
     ax[0, 1].set_ylabel("Net Power [kWh]")
 
-    ax[1, 1].plot(time_step, pump1_efficiency * 100, label="P1")
-    ax[1, 1].plot(time_step, pump2_efficiency * 100, label="P2")
+    ax[1, 1].plot(time_step, pump1_efficiency * 100, label="Main RO pump")
+    ax[1, 1].plot(time_step, pump2_efficiency * 100, label="Booster pump")
     ax[1, 1].set_xlabel("Time [hr]")
     ax[1, 1].set_ylabel("Pump efficiency [%]")
     ax[1, 1].legend()
