@@ -155,23 +155,24 @@ class PumpIsothermalData(PumpData):
             if iscale.get_scaling_factor(self.bep_eta) is None:
                 iscale.set_scaling_factor(self.bep_eta, 1)
 
-        if hasattr(self, "flow_ratio"):
-            if iscale.get_scaling_factor(self.flow_ratio) is None:
-                iscale.set_scaling_factor(self.flow_ratio, 1)
+        for t in self.flowsheet().time:
+            if hasattr(self, "flow_ratio"):
+                if iscale.get_scaling_factor(self.flow_ratio[t]) is None:
+                    iscale.set_scaling_factor(self.flow_ratio[t], 1)
 
-        if hasattr(self, "efficiency_pump"):
-            if iscale.get_scaling_factor(self.efficiency_pump) is None:
-                iscale.set_scaling_factor(self.efficiency_pump, 1)
+            if hasattr(self, "efficiency_pump"):
+                if iscale.get_scaling_factor(self.efficiency_pump[t]) is None:
+                    iscale.set_scaling_factor(self.efficiency_pump[t], 1)
 
-        # scale constraints
+            # scale constraints
 
-        if hasattr(self, "flow_ratio_constraint"):
-            if iscale.get_scaling_factor(self.flow_ratio_constraint) is None:
-                iscale.set_scaling_factor(self.flow_ratio_constraint, 1)
+            if hasattr(self, "flow_ratio_constraint"):
+                if iscale.get_scaling_factor(self.flow_ratio_constraint[t]) is None:
+                    iscale.set_scaling_factor(self.flow_ratio_constraint[t], 1)
 
-        if hasattr(self, "eta_constraint"):
-            if iscale.get_scaling_factor(self.eta_constraint) is None:
-                iscale.set_scaling_factor(self.eta_constraint, 1)
+            if hasattr(self, "eta_constraint"):
+                if iscale.get_scaling_factor(self.eta_constraint[t]) is None:
+                    iscale.set_scaling_factor(self.eta_constraint[t], 1)
 
 
 @declare_process_block_class("EnergyRecoveryDevice")
