@@ -33,7 +33,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import MembraneChannel1DBlock, ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
 from watertap.core.membrane_channel1d import CONFIG_Template
-from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting
+from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting, _add_object_reference_if_exists
 
 __author__ = "Adam Atia"
 
@@ -96,6 +96,31 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
     def _add_mass_transfer(self):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
+        if self.config.has_pressure_change:
+            self.deltaP = Var(
+                self.flowsheet().config.time,
+                initialize=-1e5,
+                bounds=(-1e6, 0),
+                domain=NegativeReals,
+                units=units_meta("pressure"),
+                doc="Pressure drop across unit",
+            )
+            if self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
+                @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Fixed pressure drop across unit",
+                )
+                def eq_pressure_drop(b, t, x):
+                    return b.deltaP[t] == b.length * b.dP_dx[t, x]
+            else:
+                @self.Constraint(
+                    self.flowsheet().config.time, doc="pressure change"
+                )
+                def eq_pressure_change(b, t):
+                    return b.deltaP[t] == sum(
+                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+                ) 
 
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
             return value(
@@ -121,7 +146,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Mass transfer term equation
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer term",
@@ -136,7 +161,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer from feed to permeate",
@@ -151,7 +176,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Mass flux = feed mass transfer equation
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer term",
@@ -207,3 +232,8 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             v = self.feed_side.mass_transfer_term[t, x, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "deltaP"):
+            for v in self.deltaP.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)

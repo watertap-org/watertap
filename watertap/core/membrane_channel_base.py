@@ -271,15 +271,6 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
-    def _add_pressure_change_equation(self):
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Total Pressure drop across channel"
-        )
-        def eq_pressure_change(b, t):
-            return b.pressure_change_total[t] == sum(
-                b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
-            )
-
     def add_total_pressure_balances(
         self,
         has_pressure_change=True,
@@ -292,7 +283,7 @@ class MembraneChannelMixin:
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             doc="Pressure at interface",
         )
         def eq_equal_pressure_interface(b, t, x):
@@ -311,7 +302,7 @@ class MembraneChannelMixin:
         # TEMPERATURE
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             doc="Temperature at interface",
         )
         def eq_equal_temp_interface(b, t, x):
@@ -324,7 +315,7 @@ class MembraneChannelMixin:
         # VOLUMETRIC FLOWRATE
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             doc="Volumetric flow at interface of inlet",
         )
         def eq_equal_flow_vol_interface(b, t, x):
@@ -345,7 +336,7 @@ class MembraneChannelMixin:
         if concentration_polarization_type == ConcentrationPolarizationType.none:
             @self.Constraint(
                self.flowsheet().config.time,
-               self.difference_elements,
+               self.length_domain,
                solute_set,
                doc="Concentration polarization",
             )   
@@ -372,7 +363,7 @@ class MembraneChannelMixin:
 
         @self.Constraint(
            self.flowsheet().config.time,
-           self.difference_elements,
+           self.length_domain,
            solute_set,
            doc="Concentration polarization",
         )   
@@ -455,7 +446,7 @@ class MembraneChannelMixin:
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             self.config.property_package.solute_set,
             doc="Mass transfer coefficient in membrane channel",
         )
@@ -476,7 +467,6 @@ class MembraneChannelMixin:
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
         )
         def eq_N_Sc(b, t, x):
-            bulk = b.properties[t, x]
             # # TODO: This needs to be revisted. Diffusion is now by component, but
             #   not H2O and this var should also be by component, but the implementation
             #   is not immediately clear.

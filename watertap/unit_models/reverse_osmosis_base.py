@@ -114,25 +114,26 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
         )
 
-        self.feed_side.add_expressions()
-
         self.feed_side.apply_transformation()
+
+        self.feed_side.add_expressions()
 
         add_object_reference(self, "length_domain", self.feed_side.length_domain)
         add_object_reference(self, "difference_elements", self.feed_side.difference_elements)
         add_object_reference(self, "first_element", self.feed_side.first_element)
         add_object_reference(self, "nfe", self.feed_side.nfe)
 
-        _add_object_reference_if_exists(self, "deltaP", self.feed_side, "pressure_change_total")
         _add_object_reference_if_exists(self, "dP_dx", self.feed_side, "dP_dx")
         _add_object_reference_if_exists(self, "area_cross", self.feed_side, "area")
 
         _add_object_reference_if_exists(self, "cp_modulus", self.feed_side, "cp_modulus")
         _add_object_reference_if_exists(self, "Kf", self.feed_side, "K")
+        _add_object_reference_if_exists(self, "Kf_avg", self.feed_side, "K_avg")
         _add_object_reference_if_exists(self, "channel_height", self.feed_side, "channel_height")
         _add_object_reference_if_exists(self, "dh", self.feed_side, "dh")
         _add_object_reference_if_exists(self, "spacer_porosity", self.feed_side, "spacer_porosity")
         _add_object_reference_if_exists(self, "N_Re", self.feed_side, "N_Re")
+        _add_object_reference_if_exists(self, "N_Re_avg", self.feed_side, "N_Re_avg")
         _add_object_reference_if_exists(self, "N_Sc", self.feed_side, "N_Sc")
         _add_object_reference_if_exists(self, "N_Sh", self.feed_side, "N_Sh")
         _add_object_reference_if_exists(self, "velocity", self.feed_side, "velocity")
@@ -340,7 +341,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Solvent and solute mass flux",
@@ -386,7 +387,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         ):
             @self.Constraint(
                self.flowsheet().config.time,
-               self.difference_elements,
+               self.length_domain,
                solute_set,
                doc="Concentration polarization",
             )   

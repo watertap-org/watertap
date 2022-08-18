@@ -29,7 +29,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from watertap.core import MembraneChannel0DBlock, ConcentrationPolarizationType, MassTransferCoefficient, PressureChangeType
 from watertap.core.membrane_channel0d import CONFIG_Template
-from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting
+from watertap.unit_models.reverse_osmosis_base import ReverseOsmosisBaseData, _add_has_full_reporting, _add_object_reference_if_exists
 import idaes.logger as idaeslog
 
 
@@ -73,6 +73,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             self._add_area(include_constraint=False)
 
     def _add_mass_transfer(self):
+        _add_object_reference_if_exists(self, "deltaP", self.feed_side, "deltaP")
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # not in 1DRO

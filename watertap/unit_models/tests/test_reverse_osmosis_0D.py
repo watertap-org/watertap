@@ -95,7 +95,7 @@ def test_option_has_pressure_change():
         default={"property_package": m.fs.properties, "has_pressure_change": True}
     )
 
-    assert isinstance(m.fs.unit.feed_side.pressure_change_total, Var)
+    assert isinstance(m.fs.unit.feed_side.deltaP, Var)
     assert isinstance(m.fs.unit.deltaP, Var)
 
 

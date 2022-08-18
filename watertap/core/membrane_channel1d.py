@@ -1,6 +1,19 @@
+###############################################################################
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#
+###############################################################################
 
 from pyomo.common.config import Bool, ConfigValue, In
 from pyomo.environ import (
+    Constraint,
     NonNegativeReals,
     NegativeReals,
     Param,
@@ -79,6 +92,20 @@ CONFIG_Template.declare(
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
 
+    def apply_transformation(self, *args, **kwargs):
+        super().apply_transformation(*args, **kwargs)
+        self.first_element = self.length_domain.first()
+        self.difference_elements = Set(
+            ordered=True,
+            initialize=(x for x in self.length_domain if x != self.first_element),
+        )
+        self.nfe = Param(
+            initialize=(len(self.difference_elements)),
+            units=pyunits.dimensionless,
+            doc="Number of finite elements",
+        )
+
+
     def add_geometry(self, flow_direction=FlowDirection.forward, **kwargs):
         """
         Method to create spatial domain and volume Var in ControlVolume.
@@ -133,16 +160,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         """
         super().add_state_blocks(information_flow, has_phase_equilibrium)
         self.first_element = self.length_domain.first()
-        self.difference_elements = Set(
-            ordered=True,
-            initialize=(x for x in self.length_domain if x != self.first_element),
-        )
-
-        self.nfe = Param(
-            initialize=(len(self.difference_elements)),
-            units=pyunits.dimensionless,
-            doc="Number of finite elements",
-        )
 
         self._add_interface_stateblock(has_phase_equilibrium)
 
@@ -158,32 +175,19 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         # Feed-side isothermal conditions
         @self.Constraint(
             self.flowsheet().config.time,
-            self.difference_elements,
+            self.length_domain,
             doc="Isothermal assumption for feed channel",
         )
         def eq_feed_isothermal(b, t, x):
+            if x == b.length_domain.first():
+                return Constraint.Skip
             return (
-                b.properties[t, b.first_element].temperature
+                b.properties[t, b.length_domain.first()].temperature
                 == b.properties[t, x].temperature
             )
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.pressure_change_total = Var(
-            self.flowsheet().config.time,
-            initialize=-1e5,
-            bounds=(-1e6, 0),
-            domain=NegativeReals,
-            units=units_meta("pressure"),
-            doc="Pressure drop across unit",
-        )
-        if pressure_change_type in (PressureChangeType.fixed_per_unit_length, PressureChangeType.calculated):
-            self._add_pressure_change_equation()
-        elif pressure_change_type == PressureChangeType.fixed_per_stage:
-            return
-        else:
-            raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

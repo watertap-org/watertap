@@ -1,3 +1,15 @@
+###############################################################################
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/watertap-org/watertap/"
+#
+###############################################################################
 
 from pyomo.environ import (
     NonNegativeReals,
@@ -102,8 +114,6 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         pass
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
-        add_object_reference(self, "pressure_change_total", self.deltaP)
-
         if pressure_change_type == PressureChangeType.fixed_per_stage:
             return
 
@@ -123,7 +133,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 self.flowsheet().config.time, doc="pressure change due to friction"
             )
             def eq_pressure_change(b, t):
-                return b.pressure_change_total[t] == b.dP_dx[t] * b.length
+                return b.deltaP[t] == b.dP_dx[t] * b.length
 
         elif pressure_change_type == PressureChangeType.calculated:
             self.dP_dx= Var(
@@ -135,7 +145,13 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="Pressure drop per unit length of channel at inlet and outlet",
             )
-            self._add_pressure_change_equation()
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Total Pressure drop across channel"
+            )
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == sum(
+                    b.dP_dx[t, x] * b.length / b.nfe for x in b.length_domain
+                )
         else:
             raise ConfigurationError(f"Unrecognized pressure_change_type {pressure_change_type}")
 
