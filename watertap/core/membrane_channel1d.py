@@ -29,8 +29,11 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
+from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
+import idaes.logger as idaeslog
+
 from watertap.core.membrane_channel_base import (
     MembraneChannelMixin,
     PressureChangeType,
@@ -193,6 +196,84 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
+
+    def initialize(
+        self,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        optarg=None,
+        solver=None,
+        hold_state=True,
+        initialize_guess=None,
+    ):
+        """
+        Initialization routine for the membrane channel control volume
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output log level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+            hold_state : flag indicating whether the initialization routine
+                     should unfix any state variables fixed during
+                     initialization, **default** - True. **Valid values:**
+                     **True** - states variables are not unfixed, and a dict of
+                     returned containing flags for which states were fixed
+                     during initialization, **False** - state variables are
+                     unfixed after initialization by calling the release_state
+                     method.
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                     and cp_modulus. These guesses offset the initial values
+                     for the retentate, permeate, and membrane interface
+                     state blocks from the inlet feed
+                     (default =
+                     {'deltaP': -1e4,
+                     'solvent_recovery': 0.5,
+                     'solute_recovery': 0.01,
+                     'cp_modulus': 1.1})
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization.
+        """
+        if optarg is None:
+            optarg = {}
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        # Get inlet state if not provided
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="control_volume")
+
+        state_args = self._get_state_args(initialize_guess, state_args)
+
+        # intialize self.properties
+        source_flags = super().initialize(
+            state_args=state_args["control_volume"],
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+        )
+
+        self.properties_interface.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args["interface"],
+        )
+
+        init_log.info("Initialization Complete")
+
+        if hold_state:
+            return source_flags
+        else:
+            self.release_state(source_flags, outlvl)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
