@@ -22,6 +22,7 @@ from pyomo.environ import ConcreteModel
 
 import idaes.logger
 from idaes.core import MaterialFlowBasis
+from idaes.core.util.model_statistics import fixed_variables_generator
 from idaes.core.solvers import get_solver
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
@@ -36,7 +37,7 @@ solver = get_solver()
 __author__ = "Hunter Barber"
 
 
-# TODO: handle user specified varibles as arg (ex/ m.fs.ro.area)
+# TODO: handle user specified variables as arg (ex/ m.fs.ro.area)
 def variable_sens_generator(
     blk, lb_scale=1e-1, ub_scale=1e3, tol=1e2, zero=1e-10
 ):
@@ -48,8 +49,43 @@ def variable_sens_generator(
     Returns:
 
     """
+    '''
+    for var1 in blk.component_data_objects(active=True, descend_into=False):
+        print(var1)
+        for var2 in var1.component_data_objects(ctype=pyo.Block, active=True, descend_into=False):
+            print(var2, var2.ctype)
+            for var3 in var2.component_data_objects(active=True, descend_into=False):
+                print(var3, var3.ctype)
+    '''
 
-    print(list(blk.component_data_objects(active=True, descend_into=False)))
+    print(blk.fs.properties.default_scaling_factor)
+    for tup_key, dsf in blk.fs.properties.default_scaling_factor.items():
+        if "flow" in tup_key[0]:
+            print(tup_key, dsf)
+
+    temp_blk = blk.clone()
+    for var in temp_blk.component_data_objects(
+            ctype=pyo.Var, active=True, sort=False, descend_into=True, descent_order=None
+    ):
+        unset_scaling_factor(var)
+        if hasattr(var, "default_scaling_factor"):
+            print("$$$$$$$$$$$$$", var)
+        print(var, get_scaling_factor(var))
+
+    '''
+    for var1 in blk.component_data_objects(ctype=None, active=None, sort=False, descend_into=True, descent_order=None):
+        print(var1, var1.ctype, type(var1), var1.__class__.__name__)
+    '''
+    '''
+    for varP in blk.component_data_objects(ctype=Port, active=True, descend_into=True):
+        print(varP)
+        varPdict = varP.vars
+        print(varPdict)
+        for varP2 in varPdict.keys():
+            print(varP2, varPdict[varP2])
+    '''
+
+    assert False
 
     # TODO: handle multiple inlet ports
     var_hist = {}
