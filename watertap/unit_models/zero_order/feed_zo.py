@@ -28,7 +28,6 @@ from idaes.core import declare_process_block_class
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
-from watertap.ui.api import export_variables
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -86,13 +85,6 @@ class FeedZOData(FeedData):
 
         self.conc_mass_constraint = Constraint(
             self.flowsheet().time, comp_list, rule=rule_C
-        )
-        # For the UI
-        export_variables(
-            self,
-            name="Feed Z0",
-            desc="Zero-Order feed block",
-            variables=["flow_vol", "conc_mass_comp"],
         )
 
     def load_feed_data_from_database(self, overwrite=False):
