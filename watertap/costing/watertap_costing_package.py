@@ -1102,7 +1102,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         make_capital_cost_var(blk)
         make_fixed_operating_cost_var(blk)
         # Conversions to use units from cost equations in reference
-        col_vol_gal = pyo.units.convert(blk.unit_model.col_vol, to_units=pyo.units.gal)
+        col_vol_gal = pyo.units.convert(
+            blk.unit_model.col_vol_per, to_units=pyo.units.gal
+        )
         bed_vol_ft3 = pyo.units.convert(
             blk.unit_model.bed_vol, to_units=pyo.units.ft**3
         )
@@ -1145,11 +1147,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         if ix_type == IonExchangeType.cation:
             resin_cost = blk.costing_package.cation_exchange_resin_cost
-            regen_chem = "HCl"  # TODO: add way to have other regen chemicals
+            blk.unit_model.regen_chem = (
+                regen_chem
+            ) = "HCl"  # TODO: add way to have other regen chemicals
 
         elif ix_type == IonExchangeType.anion:
             resin_cost = blk.costing_package.anion_exchange_resin_cost
-            regen_chem = "NaOH"
+            blk.unit_model.regen_chem = regen_chem = "NaOH"
 
         elif ix_type == IonExchangeType.mixed:
             raise ConfigurationError(
@@ -1182,12 +1186,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == (
-                (blk.capital_cost_vessel + blk.capital_cost_resin)
-                * (blk.unit_model.number_columns + 1)
+                (blk.capital_cost_vessel * (blk.unit_model.number_columns + 1))
+                + blk.capital_cost_resin
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
             )
-            * TIC  # +1 column for regeneration time
+            * TIC
         )
 
         blk.fixed_operating_cost_constraint = pyo.Constraint(
@@ -1198,7 +1202,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     * blk.costing_package.ix_annual_resin_replacement_factor
                     * resin_cost
                 )
-                * (blk.unit_model.number_columns + 1)
             )
         )
 

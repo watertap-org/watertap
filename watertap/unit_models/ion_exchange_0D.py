@@ -180,7 +180,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.distributor_h = Param(
-            initialize=1.0, units=pyunits.m, doc="Distributor height"  # Perry's
+            initialize=0.5, units=pyunits.m, doc="Distributor height"  # Perry's
         )
 
         # Liquid holdup correlation
@@ -231,14 +231,9 @@ class IonExchangeODData(UnitModelBlockData):
             initialize=0.33, units=pyunits.dimensionless, doc="Sherwood equation exp"
         )
 
-        self.t_waste_param = Param(
-            initialize=0.01,
-            units=pyunits.dimensionless,
-            doc="Ratio of breakthru to waste time",
-        )
-
         self.bed_depth_to_diam_ratio = Var(
-            initialize=2.5,
+            initialize=5,
+            bounds=(3, 1e4),
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -366,13 +361,6 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Bed volume of one unit",
         )
 
-        self.bed_diam = Var(
-            initialize=0.4,
-            bounds=(0.1, None),  # EPA-WBS
-            units=pyunits.m,
-            doc="Bed diameter",
-        )
-
         self.bed_depth = Var(
             initialize=1, bounds=(0.1, 2), units=pyunits.m, doc="Bed depth"
         )
@@ -392,12 +380,25 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.col_height = Var(
             initialize=2,
-            # bounds=(0.6, 4),
+            bounds=(0.1, 4.5),  # EPA-WBS
             units=pyunits.m,
             doc="Column height",
         )
 
-        self.col_vol = Var(
+        self.col_diam = Var(
+            initialize=2,
+            bounds=(0.01, 4.5),  # EPA-WBS
+            units=pyunits.m,
+            doc="Bed diameter",
+        )
+
+        self.col_vol_tot = Var(
+            initialize=10,
+            units=pyunits.m**3,
+            doc="Column volume needed",
+        )
+
+        self.col_vol_per = Var(
             initialize=10,
             units=pyunits.m**3,
             doc="Column volume of one unit",
@@ -405,7 +406,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.number_columns = Var(
             initialize=1,
-            domain=range(50),
+            bounds=(1, None),
             units=pyunits.dimensionless,
             doc="Number of columns for ion exchange process",
         )
@@ -519,8 +520,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.vel_inter = Var(
-            initialize=0.0173,
-            bounds=(0, 0.07),
+            initialize=0.01,
             units=pyunits.m / pyunits.s,
             doc="Interstitial velocity",
         )
@@ -571,7 +571,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.Pe_p = Var(
             initialize=0.1,
-            bounds=(0.01, 0.8),
+            # bounds=(0.01, 0.8),
             units=pyunits.dimensionless,
             doc="Peclet particle number",
         )
@@ -627,8 +627,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.regen_density = Var(
             initialize=1000,
             units=pyunits.kg / pyunits.m**3,
-            # bounds=(990, 2000),
-            doc="Density of regen solution [kg soln/kg regenerant]",
+            doc="Density of regen solution [kg soln/m3 regenerant]",  # TODO: double check units
         )
 
         self.regen_ww = Var(
@@ -650,13 +649,13 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.regen_flow = Var(
             initialize=0.1,
+            bounds=(0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Regeneration volumetric flow rate",
         )
 
         self.t_regen = Var(
             initialize=1800,
-            # bounds=(1200, 2400),
             units=pyunits.s,
             doc="Regeneration time",
         )
@@ -666,12 +665,13 @@ class IonExchangeODData(UnitModelBlockData):
         self.bw_rate = Var(
             initialize=5,
             units=pyunits.m / pyunits.hour,
-            # bounds=(4.5, 6.5),
+            bounds=(4.5, 6.5),
             doc="Backwash loading rate [m/hr]",
         )
 
         self.bw_flow = Var(
             initialize=0.1,
+            bounds=(0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Backwashing volumetric flow rate",
         )
@@ -682,20 +682,23 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_expansion_frac = Var(
             initialize=0.5,
-            # bounds=(0.4, 1.2),
+            bounds=(0.4, 1.2),
             units=pyunits.dimensionless,
             doc="Fraction of bed depth increase during backwashing",
         )
 
         self.bed_expansion_h = Var(
-            initialize=0.5, units=pyunits.m, doc="Bed depth increase during backwashing"
+            initialize=0.5,
+            units=pyunits.m,
+            bounds=(0, None),
+            doc="Bed depth increase during backwashing",
         )
 
         # # ====== Rinse ====== #
 
         self.rinse_bv = Var(
             initialize=5,
-            # bounds=(2, 10),
+            bounds=(2, 10),
             doc="Number of bed volumes for rinse step",
         )
 
@@ -847,17 +850,9 @@ class IonExchangeODData(UnitModelBlockData):
                 / b.bed_vol
             )
 
-        @self.Constraint(doc="Bed area calculation")
-        def eq_bed_area(b):
-            return b.bed_area == Constants.pi * (b.bed_diam / 2) ** 2
-
         @self.Constraint(doc="Bed volume calculation")
         def eq_bed_vol(b):
-            return self.bed_vol == self.bed_area * self.bed_depth
-
-        # @self.Constraint(doc="Bed depth to bed diameter ratio")
-        # def eq_bed_depth_to_diam_ratio(b):
-        #     return b.bed_depth / b.bed_diam >= b.bed_depth_to_diam_ratio
+            return b.bed_vol == b.bed_area * b.bed_depth
 
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
@@ -868,7 +863,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Column vol")
         def eq_col_vol(b):
-            return b.col_vol == b.col_height * b.bed_area
+            return b.col_vol_tot == b.col_height * (b.bed_vol / b.bed_depth)
 
         # =========== KINETICS ===========
         @self.Constraint(ion_set, doc="Fluid mass transfer coeff")
@@ -1145,6 +1140,28 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_temp_conservation(b):
             return b.properties_in[0].temperature == b.properties_out[0].temperature
 
+        @self.Constraint()
+        def eq_col_vol_tot(b):
+            return b.col_vol_tot == b.number_columns * b.col_vol_per
+
+        @self.Constraint()
+        def eq_col_vol_per(b):
+            return (
+                Constants.pi * (b.col_diam / 2) ** 2 * b.col_height
+                == Constants.pi
+                * ((b.col_height / b.bed_depth_to_diam_ratio) / 2) ** 2
+                * b.col_height
+            )
+
+        @self.Constraint()
+        def eq_col_vol_per2(b):
+            return (
+                b.col_vol_per
+                == Constants.pi
+                * ((b.col_height / b.bed_depth_to_diam_ratio) / 2) ** 2
+                * b.col_height
+            )
+
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
@@ -1197,7 +1214,7 @@ class IonExchangeODData(UnitModelBlockData):
         for p, j in blk.properties_out.phase_component_set:
             if j == blk.config.target_ion:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 0.1
+                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
                 )
 
         blk.properties_out.initialize(
@@ -1212,7 +1229,7 @@ class IonExchangeODData(UnitModelBlockData):
         for p, j in blk.properties_regen.phase_component_set:
             if j == "H2O":
                 state_args_regen["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+                    state_args["flow_mol_phase_comp"][(p, j)] * 0.1
                 )
 
         blk.properties_regen.initialize(
@@ -1271,11 +1288,9 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.bed_vol, 1)
 
-        iscale.set_scaling_factor(self.bed_diam, 1)
-
         iscale.set_scaling_factor(self.bed_depth, 1)
 
-        iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 1)
+        iscale.set_scaling_factor(self.bed_depth_to_diam_ratio, 0.1)
 
         iscale.set_scaling_factor(self.bed_expansion_frac_A, 100)
 
@@ -1293,7 +1308,11 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.col_height, 1)
 
-        iscale.set_scaling_factor(self.col_vol, 1)
+        iscale.set_scaling_factor(self.col_vol_tot, 1)
+
+        iscale.set_scaling_factor(self.col_vol_per, 1)
+
+        iscale.set_scaling_factor(self.col_diam, 1)
 
         iscale.set_scaling_factor(self.holdup, 1e-2)
 
