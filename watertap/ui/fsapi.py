@@ -175,11 +175,11 @@ class FlowsheetInterface:
                 of :class:`FlowsheetExport`.
             do_build: Function to call to build the flowsheet. It should build the
                 flowsheet model and return the `FlowsheetBlock`, which is typically
-                the `fs` attribute of the model object.
+                the `fs` attribute of the model object. **Required**
             do_export: Function to call to export variables after the model is built.
-                This will be called automatically by :meth:`build()`.
+                This will be called automatically by :meth:`build()`. **Required**
             do_solve: Function to solve the model. It should return the result
-                that the solver itself returns
+                that the solver itself returns. **Required**
             **kwargs: See `fs` arg. If the `fs` arg *is* provided, these are ignored.
         """
         if fs is None:
@@ -189,10 +189,16 @@ class FlowsheetInterface:
         self._actions = {}
         if do_export:
             self.add_action(Actions.export, do_export)
+        else:
+            raise ValueError("'do_export' argument is required")
         if do_build:
             self.add_action(Actions.build, do_build)
+        else:
+            raise ValueError("'do_build' argument is required")
         if do_solve:
             self.add_action(Actions.solve, do_solve)
+        else:
+            raise ValueError("'do_solve' argument is required")
 
     def build(self, **kwargs):
         """Build flowsheet
@@ -275,6 +281,11 @@ class FlowsheetInterface:
                 # run_action will refuse to call the export action directly
                 self.get_action(Actions.export)(exports=self.fs_exp)
                 result = None
+            elif self.fs_exp.obj is None:
+                raise RuntimeError(
+                    f"Cannot run any flowsheet action (except "
+                    f"'{Actions.build}') before flowsheet is built"
+                )
             else:
                 result = action_func(flowsheet=self.fs_exp.obj, **kwargs)
             return result

@@ -2,7 +2,9 @@ from watertap.ui.fsapi import FlowsheetInterface
 
 
 def export_to_ui():
-    return FlowsheetInterface(do_export=export_variables, do_build=build_flowsheet)
+    return FlowsheetInterface(
+        do_export=export_variables, do_build=build_flowsheet, do_solve=solve_flowsheet
+    )
 
 
 def export_variables(flowsheet=None, exports=None):
