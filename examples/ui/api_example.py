@@ -1,16 +1,20 @@
 from watertap.ui.fsapi import FlowsheetInterface
+from idaes.core.solvers import get_solver
 
 
 def export_to_ui():
     return FlowsheetInterface(
-        do_export=export_variables, do_build=build_flowsheet, do_solve=solve_flowsheet
+        name="foo",
+        do_export=export_variables,
+        do_build=build_flowsheet,
+        do_solve=solve_flowsheet,
     )
 
 
 def export_variables(flowsheet=None, exports=None):
     for n in 1, 2:
         t = getattr(flowsheet, f"Tank{n}")
-        exports.add(obj=t.inlet.flow_vol[0], name="Tank {n} inlet flowrate")
+        exports.add(obj=t.inlet.flow_vol[0], name=f"Tank {n} inlet flowrate")
     # ..etc..
 
 
@@ -20,7 +24,9 @@ def build_flowsheet():
 
 
 def solve_flowsheet(flowsheet=None):
-    return flowsheet.solve()
+    solver = get_solver()
+    # results = solver.solve(flowsheet)
+    return {}
 
 
 def example_flowsheet():
@@ -94,7 +100,9 @@ def example_flowsheet():
     m.fs.Tank2.volume.fix(1.0)
     m.fs.Tank2.heat_duty.fix(0.0)
 
-    # # Initialize Units
+    return m
+
+    # Initialize Units
     # m.fs.Tank1.initialize()
     # m.fs.Tank2.initialize(state_args={
     #         "flow_vol": 1.0,
@@ -105,5 +113,4 @@ def example_flowsheet():
     #                           "Ethanol": 0.0},
     #         "temperature": 303.15,
     #         "pressure": 101325.0})
-
-    return m
+    #
