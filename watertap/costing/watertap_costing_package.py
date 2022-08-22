@@ -41,8 +41,10 @@ from watertap.unit_models import (
     EnergyRecoveryDevice,
     Electrodialysis0D,
     Electrodialysis1D,
+    IonExchange0D,
     GAC,
 )
+from watertap.unit_models.ion_exchange_0D import IonExchangeType
 
 
 class ROType(StrEnum):
@@ -218,6 +220,34 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.dimensionless,
         )
 
+        self.hcl_cost = pyo.Param(
+            mutable=True,
+            initialize=0.17,
+            doc="HCl cost",  # for 37% sol'n - CatCost v 1.0.4
+            units=pyo.units.USD_2020 / pyo.units.kg,
+        )
+
+        self.hcl_purity = pyo.Param(
+            mutable=True,
+            initialize=0.37,
+            doc="HCl purity",
+            units=pyo.units.dimensionless,
+        )
+
+        self.naoh_cost = pyo.Param(
+            mutable=True,
+            initialize=0.59,
+            doc="NaOH cost",  # for 30% sol'n - iDST
+            units=pyo.units.USD_2020 / pyo.units.kg,
+        )
+
+        self.naoh_purity = pyo.Param(
+            mutable=True,
+            initialize=0.30,
+            doc="NaOH purity",
+            units=pyo.units.dimensionless,
+        )
+
         self.electrodialysis_cem_membrane_cost = pyo.Var(
             initialize=43,
             doc="Cost of CEM membrane used in Electrodialysis ($/CEM/area)",
@@ -310,6 +340,85 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Crystallizer pump head height -  assumed, unvalidated",
         )
 
+        self.anion_exchange_resin_cost = pyo.Var(
+            initialize=205,
+            units=pyo.units.USD_2020 / pyo.units.ft**3,
+            doc="Anion exchange resin cost per cubic ft. Assumes strong base polystyrenic gel-type Type II. From EPA-WBS cost model.",
+        )
+        self.cation_exchange_resin_cost = pyo.Var(
+            initialize=153,
+            units=pyo.units.USD_2020 / pyo.units.ft**3,
+            doc="Cation exchange resin cost per cubic ft. Assumes strong acid polystyrenic gel-type. From EPA-WBS cost model.",
+        )
+        # Ion exchange pressure vessels costed with 3rd order polynomial:
+        #   ix_pv_cost = A * col_vol^3 + B * col_vol^2 + C * col_vol + intercept
+
+        self.ix_vessel_intercept = pyo.Var(
+            initialize=10010.86,
+            units=pyo.units.USD_2020,
+            doc="Ion exchange pressure vessel cost equation - intercept, Carbon steel w/ plastic internals",
+        )
+        self.ix_vessel_A_coeff = pyo.Var(
+            initialize=6e-9,
+            units=pyo.units.USD_2020 / pyo.units.gal**3,
+            doc="Ion exchange pressure vessel cost equation - A coeff., Carbon steel w/ plastic internals",
+        )
+        self.ix_vessel_B_coeff = pyo.Var(
+            initialize=-2.284e-4,
+            units=pyo.units.USD_2020 / pyo.units.gal**2,
+            doc="Ion exchange pressure vessel cost equation - B coeff., Carbon steel w/ plastic internals",
+        )
+        self.ix_vessel_C_coeff = pyo.Var(
+            initialize=8.3472,
+            units=pyo.units.USD_2020 / pyo.units.gal,
+            doc="Ion exchange pressure vessel cost equation - C coeff., Carbon steel w/ plastic internals",
+        )
+        # Ion exchange pressure vessels costed with 3rd order polynomial:
+        #   ix_pv_cost = A * col_vol^3 + B * col_vol^2 + C * col_vol + intercept
+
+        self.ix_backwash_tank_A_coeff = pyo.Var(
+            initialize=1e-9,
+            units=pyo.units.USD_2020 / pyo.units.gal**3,
+            doc="Ion exchange backwash tank cost equation - A coeff., Fiberglass tank",
+        )
+        self.ix_backwash_tank_B_coeff = pyo.Var(
+            initialize=-5.8587e-05,
+            units=pyo.units.USD_2020 / pyo.units.gal**2,
+            doc="Ion exchange backwash tank cost equation - B coeff., Fiberglass tank",
+        )
+        self.ix_backwash_tank_C_coeff = pyo.Var(
+            initialize=2.2911,
+            units=pyo.units.USD_2020 / pyo.units.gal,
+            doc="Ion exchange backwash tank cost equation - C coeff., Fiberglass tank",
+        )
+        self.ix_backwash_tank_intercept = pyo.Var(
+            initialize=4717.255,
+            units=pyo.units.dimensionless,
+            doc="Ion exchange backwash tank cost equation - exponent, Fiberglass tank",
+        )
+        # Ion exchange regeneration solution tank costed with 2nd order polynomial:
+        #   ix_regen_tank_cost = A * tank_vol^2 + B * tank_vol + intercept
+
+        self.ix_regen_tank_intercept = pyo.Var(
+            initialize=4408.327,
+            units=pyo.units.USD_2020 / pyo.units.gal,
+            doc="Ion exchange regen tank cost equation - C coeff. Stainless steel",
+        )
+        self.ix_regen_tank_A_coeff = pyo.Var(
+            initialize=-3.258e-5,
+            units=pyo.units.USD_2020 / pyo.units.gal**2,
+            doc="Ion exchange regen tank cost equation - A coeff. Stainless steel",
+        )
+        self.ix_regen_tank_B_coeff = pyo.Var(
+            initialize=3.846,
+            units=pyo.units.USD_2020 / pyo.units.gal,
+            doc="Ion exchange regen tank cost equation - B coeff. Stainless steel",
+        )
+        self.ix_annual_resin_replacement_factor = pyo.Var(
+            initialize=0.05,
+            units=pyo.units.year**-1,
+            doc="Fraction of ion excange resin replaced per year, 4-5% of bed volume - EPA",
+        )
         self.gac_num_contactors_op = pyo.Var(
             initialize=1,
             units=pyo.units.dimensionless,
@@ -403,6 +512,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["electricity"] = self.electricity_base_cost
         self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
         self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
+        self.defined_flows["HCl"] = self.hcl_cost / self.hcl_purity
+        self.defined_flows["NaOH"] = self.naoh_cost / self.naoh_purity
         self.defined_flows["steam"] = self.steam_unit_cost
 
     def build_process_costs(self):
@@ -984,6 +1095,129 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
+    def cost_ion_exchange(blk):
+        """
+        Volume-based capital cost for Ion Exchange
+        """
+        make_capital_cost_var(blk)
+        make_fixed_operating_cost_var(blk)
+        # Conversions to use units from cost equations in reference
+        col_vol_gal = pyo.units.convert(
+            blk.unit_model.col_vol_per, to_units=pyo.units.gal
+        )
+        bed_vol_ft3 = pyo.units.convert(
+            blk.unit_model.bed_vol, to_units=pyo.units.ft**3
+        )
+        bw_tank_vol = pyo.units.convert(
+            (
+                blk.unit_model.bw_flow * blk.unit_model.t_bw
+                + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
+            ),
+            to_units=pyo.units.gal,
+        )
+        regen_tank_vol = pyo.units.convert(
+            (blk.unit_model.regen_flow * blk.unit_model.t_regen), to_units=pyo.units.gal
+        )
+        ix_type = blk.unit_model.config.ion_exchange_type
+        TIC = 1.65
+        blk.capital_cost_vessel = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for one vessel",
+        )
+        blk.capital_cost_resin = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for resin for one vessel",
+        )
+        blk.capital_cost_regen_tank = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for regeneration solution tank",
+        )
+        blk.capital_cost_backwash_tank = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Capital cost for backwash + rinse solution tank",
+        )
+
+        if ix_type == IonExchangeType.cation:
+            resin_cost = blk.costing_package.cation_exchange_resin_cost
+            blk.unit_model.regen_chem = (
+                regen_chem
+            ) = "HCl"  # TODO: add way to have other regen chemicals
+
+        elif ix_type == IonExchangeType.anion:
+            resin_cost = blk.costing_package.anion_exchange_resin_cost
+            blk.unit_model.regen_chem = regen_chem = "NaOH"
+
+        elif ix_type == IonExchangeType.mixed:
+            raise ConfigurationError(
+                "Resin costing for IonExchangeType.mixed has not been implemented yet."
+            )
+
+        blk.capital_cost_vessel_constraint = pyo.Constraint(
+            expr=blk.capital_cost_vessel
+            == blk.costing_package.ix_vessel_intercept
+            + blk.costing_package.ix_vessel_A_coeff * col_vol_gal**3
+            + blk.costing_package.ix_vessel_B_coeff * col_vol_gal**2
+            + blk.costing_package.ix_vessel_C_coeff * col_vol_gal
+        )
+        blk.capital_cost_resin_constraint = pyo.Constraint(
+            expr=blk.capital_cost_resin == resin_cost * bed_vol_ft3
+        )
+        blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
+            expr=blk.capital_cost_backwash_tank
+            == blk.costing_package.ix_backwash_tank_intercept
+            + blk.costing_package.ix_backwash_tank_A_coeff * bw_tank_vol**3
+            + blk.costing_package.ix_backwash_tank_B_coeff * bw_tank_vol**2
+            + blk.costing_package.ix_backwash_tank_C_coeff * bw_tank_vol
+        )
+        blk.capital_cost_regen_tank_constraint = pyo.Constraint(
+            expr=blk.capital_cost_regen_tank
+            == blk.costing_package.ix_regen_tank_intercept
+            + blk.costing_package.ix_regen_tank_A_coeff * regen_tank_vol**2
+            + blk.costing_package.ix_regen_tank_B_coeff * regen_tank_vol
+        )
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost
+            == (
+                (blk.capital_cost_vessel * (blk.unit_model.number_columns + 1))
+                + blk.capital_cost_resin
+                + blk.capital_cost_backwash_tank
+                + blk.capital_cost_regen_tank
+            )
+            * TIC
+        )
+
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == (
+                (
+                    bed_vol_ft3
+                    * blk.costing_package.ix_annual_resin_replacement_factor
+                    * resin_cost
+                )
+            )
+        )
+
+        regen_flow = (blk.unit_model.regen_dose * blk.unit_model.bed_vol) / (
+            blk.unit_model.t_breakthru + blk.unit_model.t_waste
+        )
+        electricity_flow = (
+            blk.unit_model.main_pump_power
+            + blk.unit_model.regen_pump_power
+            + blk.unit_model.bw_pump_power
+            + blk.unit_model.rinse_pump_power
+        )
+
+        blk.costing_package.cost_flow(electricity_flow, "electricity")
+        blk.costing_package.cost_flow(regen_flow, regen_chem)
+
     def cost_gac(blk):
         """
         3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
@@ -1237,6 +1471,7 @@ WaterTAPCostingData.unit_mapping = {
     Ultraviolet0D: WaterTAPCostingData.cost_uv_aop,
     Electrodialysis0D: WaterTAPCostingData.cost_electrodialysis,
     Electrodialysis1D: WaterTAPCostingData.cost_electrodialysis,
+    IonExchange0D: WaterTAPCostingData.cost_ion_exchange,
     GAC: WaterTAPCostingData.cost_gac,
 }
 
