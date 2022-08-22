@@ -86,12 +86,12 @@ class TestIronManganeseRemovalZO_w_default_removal:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.air_water_ratio[0].fixed
         assert (
