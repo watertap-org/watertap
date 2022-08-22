@@ -1120,7 +1120,7 @@ class GACData(UnitModelBlockData):
         if hasattr(self, "molal_volume"):
             var_dict["Molal volume"] = self.molal_volume
 
-        # loop throuhg desired state block properties indexed by [phase, comp]
+        # loop through desired state block properties indexed by [phase, comp]
         phase_comp_prop_dict = {
             "flow_mol_phase_comp": "Molar flow rate",
             "flow_mass_phase_comp": "Mass flow rate",
@@ -1146,7 +1146,7 @@ class GACData(UnitModelBlockData):
                         self.adsorbed_contam[time_point], prop_name
                     )["Liq", j]
 
-        # loop throuhg desired state block properties indexed by [phase]
+        # loop through desired state block properties indexed by [phase]
         phase_prop_dict = {
             "flow_vol_phase": "Volumetric flow rate",
         }
