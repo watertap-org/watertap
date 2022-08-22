@@ -259,7 +259,6 @@ class TestIonExchange:
             "bed_area",
             "bed_porosity",
             "col_height",
-            "col_vol_tot",
             "col_vol_per",
             "col_diam",
             "number_columns",
@@ -329,8 +328,8 @@ class TestIonExchange:
             assert isinstance(sb, DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 128
-        assert number_total_constraints(m) == 87
+        assert number_variables(m) == 127
+        assert number_total_constraints(m) == 86
         assert number_unused_variables(m) == 13
 
     @pytest.mark.unit
@@ -410,7 +409,6 @@ class TestIonExchange:
             "bed_area": 1.0042709889388097,
             "bed_porosity": 0.5,
             "col_height": 3.6239033378675525,
-            "col_vol_tot": 3.639380988939035,
             "col_vol_per": 0.9098452472347588,
             "col_diam": 0.5653931235757997,
             "number_columns": 4,
