@@ -18,6 +18,7 @@ import pyomo.environ as pyo
 from pyomo.environ import check_optimal_termination
 from pyomo.common.collections import ComponentSet
 from pyomo.network import Port
+from pyomo.environ import Block
 from pyomo.environ import ConcreteModel
 
 import idaes.logger
@@ -50,28 +51,30 @@ def variable_sens_generator(
 
     """
     '''
-    for var1 in blk.component_data_objects(active=True, descend_into=False):
-        print(var1)
-        for var2 in var1.component_data_objects(ctype=pyo.Block, active=True, descend_into=False):
-            print(var2, var2.ctype)
-            for var3 in var2.component_data_objects(active=True, descend_into=False):
-                print(var3, var3.ctype)
+    var_hist = {}
+    for scale in [lb_scale, ub_scale]:
+
+        # clone 'm' model with all existing specifications
+        temp_blk = blk.clone()
+
+        # unset all scaling factors in the cloned model
+        for var in temp_blk.component_data_objects(
+                ctype=pyo.Var, active=True, sort=False, descend_into=True, descent_order=None
+        ):
+            unset_scaling_factor(var)
+
+        # unset all scaling factors in the cloned model
+        for tup_key, dsf in temp_blk.fs.properties.default_scaling_factor.items():
+            if "flow" in tup_key[0]:
+                # get default scaling factor from original model
+                print(temp_blk.fs.properties.default_scaling_factor)
+                dsf = blk.fs.properties.get_default_scaling(tup_key[0], index=tup_key[1])
+                print(tup_key, dsf)
+                # scale default scaling factor in temp model for resolve at new scale
+                temp_blk.fs.properties.set_default_scaling(tup_key[0],  dsf * scale ** -1, index=tup_key[1])
+
+        print(temp_blk.fs.properties.default_scaling_factor)
     '''
-
-    print(blk.fs.properties.default_scaling_factor)
-    for tup_key, dsf in blk.fs.properties.default_scaling_factor.items():
-        if "flow" in tup_key[0]:
-            print(tup_key, dsf)
-
-    temp_blk = blk.clone()
-    for var in temp_blk.component_data_objects(
-            ctype=pyo.Var, active=True, sort=False, descend_into=True, descent_order=None
-    ):
-        unset_scaling_factor(var)
-        if hasattr(var, "default_scaling_factor"):
-            print("$$$$$$$$$$$$$", var)
-        print(var, get_scaling_factor(var))
-
     '''
     for var1 in blk.component_data_objects(ctype=None, active=None, sort=False, descend_into=True, descent_order=None):
         print(var1, var1.ctype, type(var1), var1.__class__.__name__)
@@ -85,38 +88,50 @@ def variable_sens_generator(
             print(varP2, varPdict[varP2])
     '''
 
-    assert False
-
     # TODO: handle multiple inlet ports
+
     var_hist = {}
+
     for scale in [lb_scale, ub_scale]:
-        temp_blk = blk.clone()  # clone flowsheet for loop of lower bound scale and upper bound scale
-        # loop through variables and scale previously fixed inlet flow
-        for vt, vm in temp_blk.component_data_iterindex(
+
+        temp_blk = blk.clone()  # clone flowsheet to resolve at conditions supplied in scale
+
+        # loop through all vars to wipe previous sf and reset dsf considering new scale
+        for (var_name, var_index), var_obj in temp_blk.component_data_iterindex(
             ctype=pyo.Var, active=True, descend_into=True
         ):
-            unset_scaling_factor(vm)  # remove prior sf which are reestablished on init
+
+            unset_scaling_factor(var_obj)  # remove prior sf which are reestablished on init
+
+            # if the flow term has a default scaling factor and is fixed, as standard by flowsheets
             if (
-                    temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1]) is not None
-                    and "flow" in vt[0]
-                    and vm.fixed
+                    blk.fs.properties.get_default_scaling(var_name, index=var_index) is not None
+                    and "flow" in var_name
+                    and var_obj.fixed
             ):
-                dsf = temp_blk.fs.properties.get_default_scaling(vt[0], index=vt[1])
-                temp_blk.fs.properties.set_default_scaling(
-                    vt[0], dsf * scale ** -1, index=vt[1]
-                )
-                vm.fix(vm * scale)
-        calculate_scaling_factors(
-            temp_blk
-        )  # recalculate scaling factors that were removed
-        temp_blk.fs.unit.initialize(
-            outlvl=idaes.logger.ERROR
-        )  # reinitialize model and supress logger
-        results = solver.solve(temp_blk)  # resolve model copy
+
+                # overwrite old dsf with one considering the new scale
+                dsf = blk.fs.properties.get_default_scaling(var_name, index=var_index)
+                temp_blk.fs.properties.set_default_scaling(var_name, dsf * scale ** -1, index=var_index)
+
+                # overwrite the fixed variable value
+                var_obj.fix(var_obj * scale)
+
+        # resolve the model at the new scale
+        calculate_scaling_factors(temp_blk)
+        temp_blk.fs.unit.initialize(outlvl=idaes.logger.ERROR)
+        results = solver.solve(temp_blk)
+
+        # ensure model solves wrt new scale
         if not check_optimal_termination(results):
-            print(
-                "Failed run on", scale, "scale"
-            )  # make sure results are feasible for model copy
+            yield "Failed run on", scale, "scale"
+            break
+
+        # check variable scaling wrt process flow scale
+        for b in list(
+            badly_scaled_var_generator(temp_blk, large=tol, small=tol ** -1)
+        ):
+            yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
 
         # store results for scale to var_hist for current model copy
         for v in ComponentSet(
@@ -135,18 +150,12 @@ def variable_sens_generator(
             else:
                 var_hist[v.name].append(sv)
 
-        # check variable scaling wrt process flow scale
-        badly_scaled_vars = list(
-            badly_scaled_var_generator(temp_blk, large=1e2, small=1e-2)
-        )
-        for b in badly_scaled_vars:
-            yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
 
     # loop through  store in var_hist to determine change in scaled variable
-    for k in var_hist.keys():
-        sens = max(var_hist[k]) / min(var_hist[k])
+    for var_key, var_svs in var_hist.items():
+        sens = var_svs[0] / var_svs[1]
         if sens > tol or sens < tol**-1:
-            yield "high sensitivity of scaled variable", k, sens
+            yield "high sensitivity of scaled variable", var_key, sens
 
     """ 
     print(blk.fs.unit.process_flow.properties_in[0])
