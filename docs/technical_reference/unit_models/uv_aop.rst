@@ -84,7 +84,7 @@ the user must specify. The table below gives an outline of these.
 
 **However, users may later unfix certain variables for optimization purposes.**
 
-When setting the configuration options to calculate the uv dose, the 'uv_dose' variable is no longer specified with either 'uv_intensity' and 'exposure_time' specified.
+When setting the configuration options to calculate the UV dose, the 'uv_dose' variable is no longer specified with either 'uv_intensity' and 'exposure_time' specified.
 Additionally, there are 7 newly introduced variables must be fixed. This is a net result of 13 degrees of freedom. Newly utilized variables that must be fixed include:
 
 .. csv-table::
