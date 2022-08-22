@@ -1189,13 +1189,13 @@ class GACData(UnitModelBlockData):
         for j in self.config.target_species:
             sf_solute = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
-                default=1e4,    # default based on typical concentration for treatment
+                default=1e4,  # default based on typical concentration for treatment
                 warning=True,
             )
         for j in self.config.property_package.solvent_set:
             sf_solvent = iscale.get_scaling_factor(
                 self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j],
-                default=1e-3,    # default based on typical concentration for treatment
+                default=1e-3,  # default based on typical concentration for treatment
                 warning=True,
             )
 
