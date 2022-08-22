@@ -84,8 +84,7 @@ the user must specify. The table below gives an outline of these.
 
 **However, users may later unfix certain variables for optimization purposes.**
 
-When setting the configuration options to calculate the UV dose, the 'uv_dose' variable is no longer specified with either 'uv_intensity' and 'exposure_time' specified.
-Additionally, there are 7 newly introduced variables must be fixed. This is a net result of 13 degrees of freedom. Newly utilized variables that must be fixed include:
+When setting the `uv_dose_type` configuration option to `UVDoseType.calculated`, there are 7 newly introduced variables must be fixed. This is a net result of 13 degrees of freedom. Newly utilized variables that must be fixed include:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -114,7 +113,7 @@ Equations and Relationships
    "Electricity demand", ":math:`E = \max_j E_j`"
    "UV absorbance", ":math:`UVA = -\log_{10}(UVT)`"
 
-if ``uv_dose_type`` is set to ``calculated``:
+if ``uv_dose_type`` is set to ``UVDoseType.calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"

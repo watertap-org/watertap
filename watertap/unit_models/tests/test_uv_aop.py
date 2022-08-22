@@ -815,6 +815,7 @@ class TestUV_detailed:
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
         assert m.fs.unit.config.property_package is m.fs.properties
+        assert m.fs.unit.config.uv_dose_type is UVDoseType.calculated
 
     @pytest.mark.unit
     def test_build(self, UV_frame):
@@ -898,7 +899,6 @@ class TestUV_detailed:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
