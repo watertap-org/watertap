@@ -14,11 +14,11 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.environ import (
     ConcreteModel,
-    TerminationCondition,
-    SolverStatus,
+    check_optimal_termination,
     value,
 )
 from pyomo.network import Port
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -139,6 +139,9 @@ class TestGACSimplified:
     def test_build_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
+        # test units
+        assert assert_units_consistent(ms) is None
+
         # test ports
         port_lst = ["inlet", "outlet", "adsorbed"]
         for port_str in port_lst:
@@ -182,7 +185,6 @@ class TestGACSimplified:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
@@ -192,8 +194,7 @@ class TestGACSimplified:
         results = solver.solve(ms)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     def test_var_scaling_solve_simplified(self, gac_frame_simplified):
@@ -201,7 +202,6 @@ class TestGACSimplified:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -307,6 +307,9 @@ class TestGACRobust:
     def test_build_robust(self, gac_frame_robust):
         mr = gac_frame_robust
 
+        # test units
+        assert assert_units_consistent(mr) is None
+
         # test ports
         port_lst = ["inlet", "outlet", "adsorbed"]
         for port_str in port_lst:
@@ -350,7 +353,6 @@ class TestGACRobust:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
@@ -360,8 +362,7 @@ class TestGACRobust:
         results = solver.solve(mr)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     def test_var_scaling_solve_robust(self, gac_frame_robust):
@@ -369,7 +370,6 @@ class TestGACRobust:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -403,8 +403,7 @@ class TestGACRobust:
         results = solver.solve(mr)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
         # Check for known cost solution of default twin alternating contactors
         assert value(mr.fs.costing.gac_num_contactors_op) == 1
@@ -622,7 +621,6 @@ class TestGACMulti:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.requires_idaes_solver
@@ -632,8 +630,7 @@ class TestGACMulti:
         results = solver.solve(mm)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.unit
     def test_var_scaling_solve_multi(self, gac_frame_multi):
@@ -641,7 +638,6 @@ class TestGACMulti:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
         )
-        [print(i[0].name, i[0].value, i[1]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
