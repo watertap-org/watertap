@@ -356,7 +356,6 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_vol = Var(
             initialize=2,
-            # bounds=(0.1, 75),
             units=pyunits.m**3,
             doc="Bed volume of one unit",
         )
@@ -392,16 +391,10 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Bed diameter",
         )
 
-        self.col_vol_tot = Var(
-            initialize=10,
-            units=pyunits.m**3,
-            doc="Column volume needed",
-        )
-
         self.col_vol_per = Var(
             initialize=10,
             units=pyunits.m**3,
-            doc="Column volume of one unit",
+            doc="Column volume",
         )
 
         self.number_columns = Var(
@@ -510,7 +503,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Effluent mass of ion",
         )
 
-        # # ====== Hydrodynamic variables ====== #
+        # ====== Hydrodynamic variables ====== #
 
         self.vel_bed = Var(
             initialize=0.0086,
@@ -546,7 +539,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Pressure drop across column",  # max pressure drop is 25 psi, MWH
         )
 
-        # # ====== Dimensionless variables ====== #
+        # ====== Dimensionless variables ====== #
 
         self.Re = Var(
             initialize=4.3,
@@ -594,7 +587,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Dimensionless concentration",
         )
 
-        # # ====== Regeneration ====== #
+        # ====== Regeneration ====== #
 
         self.regen_flow_rate = Var(
             initialize=5,
@@ -660,7 +653,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Regeneration time",
         )
 
-        # # ====== Backwashing ====== #
+        # ====== Backwashing ====== #
 
         self.bw_rate = Var(
             initialize=5,
@@ -694,7 +687,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Bed depth increase during backwashing",
         )
 
-        # # ====== Rinse ====== #
+        # ====== Rinse ====== #
 
         self.rinse_bv = Var(
             initialize=5,
@@ -764,7 +757,6 @@ class IonExchangeODData(UnitModelBlockData):
         self.add_port(name="outlet", block=self.properties_out)
         self.add_port(name="waste", block=self.properties_regen)
 
-        # Add constraints
         # =========== EQUILIBRIUM ===========
 
         @self.Constraint(
@@ -801,6 +793,14 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(doc="Contact time")
         def eq_t_contact(b):
             return b.t_contact == b.bed_depth / b.vel_inter
+
+        @self.Constraint()
+        def eq_press_conservation(b):
+            return b.properties_in[0].pressure == b.properties_out[0].pressure
+
+        @self.Constraint()
+        def eq_temp_conservation(b):
+            return b.properties_in[0].temperature == b.properties_out[0].temperature
 
         @self.Constraint(doc="Flow through bed constraint")
         def eq_bed_flow(b):
@@ -839,6 +839,8 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_Pe_p(b):
             return b.Pe_p == b.Pe_p_A * b.Re**b.Pe_p_exp
 
+        # =========== RESIN & COLUMN ===========
+
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
             prop_in = b.properties_in[0]
@@ -861,9 +863,21 @@ class IonExchangeODData(UnitModelBlockData):
                 == b.bed_depth + b.distributor_h + b.underdrain_h + b.bed_expansion_h
             )
 
-        @self.Constraint(doc="Column vol")
-        def eq_col_vol(b):
-            return b.col_vol_tot == b.col_height * (b.bed_vol / b.bed_depth)
+        @self.Constraint(doc="Total column volume required")
+        def eq_col_vol_tot(b):
+            return b.number_columns * b.col_vol_per == b.col_height * (
+                b.bed_vol / b.bed_depth
+            )
+
+        @self.Constraint(doc="Column diameter calculation")
+        def eq_col_diam_ratio(b):
+            return (b.col_diam / 2) ** 2 == (
+                (b.col_height / b.bed_depth_to_diam_ratio) / 2
+            ) ** 2
+
+        @self.Constraint(doc="Column volume calculation")
+        def eq_col_vol_per(b):
+            return b.col_vol_per == Constants.pi * (b.col_diam / 2) ** 2 * b.col_height
 
         # =========== KINETICS ===========
         @self.Constraint(ion_set, doc="Fluid mass transfer coeff")
@@ -1132,36 +1146,6 @@ class IonExchangeODData(UnitModelBlockData):
                 * b.bed_depth
             )  # for 20C;
 
-        @self.Constraint()
-        def eq_press_conservation(b):
-            return b.properties_in[0].pressure == b.properties_out[0].pressure
-
-        @self.Constraint()
-        def eq_temp_conservation(b):
-            return b.properties_in[0].temperature == b.properties_out[0].temperature
-
-        @self.Constraint()
-        def eq_col_vol_tot(b):
-            return b.col_vol_tot == b.number_columns * b.col_vol_per
-
-        @self.Constraint()
-        def eq_col_vol_per(b):
-            return (
-                Constants.pi * (b.col_diam / 2) ** 2 * b.col_height
-                == Constants.pi
-                * ((b.col_height / b.bed_depth_to_diam_ratio) / 2) ** 2
-                * b.col_height
-            )
-
-        @self.Constraint()
-        def eq_col_vol_per2(b):
-            return (
-                b.col_vol_per
-                == Constants.pi
-                * ((b.col_height / b.bed_depth_to_diam_ratio) / 2) ** 2
-                * b.col_height
-            )
-
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
@@ -1307,8 +1291,6 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.bed_porosity, 10)
 
         iscale.set_scaling_factor(self.col_height, 1)
-
-        iscale.set_scaling_factor(self.col_vol_tot, 1)
 
         iscale.set_scaling_factor(self.col_vol_per, 1)
 
