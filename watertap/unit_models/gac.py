@@ -1146,7 +1146,7 @@ class GACData(UnitModelBlockData):
                         self.adsorbed_contam[time_point], prop_name
                     )["Liq", j]
 
-        # loop throuhg desired state block properties indexed by [phase]
+        # loop through desired state block properties indexed by [phase]
         phase_prop_dict = {
             "flow_vol_phase": "Volumetric flow rate",
         }
