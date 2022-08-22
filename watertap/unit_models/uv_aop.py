@@ -181,7 +181,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             domain=In(UVDoseType),
             description="Surface diffusion coefficient",
             doc="""Indicates whether the uv dose will be calculated or fixed by the user
-        **default** - FilmTransferCoefficientType.fixed.
+        **default** - UVDoseType.fixed.
         **Valid values:** {
         **UVDoseType.fixed** - user specifies uv dose,
         **UVDoseType.calculated** - calculates uv dose based on the lamp power and UV transmittance}""",
