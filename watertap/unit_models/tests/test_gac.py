@@ -386,6 +386,19 @@ class TestGACRobust:
         mr = gac_frame_robust
         mr.fs.unit.report()
 
+    @pytest.mark.component
+    def test_variable_sensitivity_robust(self, gac_frame_robust):
+        m = gac_frame_robust
+
+        from watertap.core.util.scaling import variable_sens_generator
+
+        # test
+        sens_var_lst = list(variable_sens_generator(m))
+        for i in sens_var_lst:
+            print(i)
+
+        assert sens_var_lst == []
+
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
