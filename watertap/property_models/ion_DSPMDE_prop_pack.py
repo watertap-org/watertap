@@ -1534,14 +1534,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
                     is None
                 ):
-                    if self.is_property_constructed("charge_comp"):
-                        sf = iscale.get_scaling_factor(
-                            self.conc_mol_phase_comp["Liq", j]
-                        ) * iscale.get_scaling_factor(self.charge_comp[j])
-                    else:
-                        sf = iscale.get_scaling_factor(
-                            self.conc_mol_phase_comp["Liq", j]
-                        )
+                    sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
                     iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
 
         # these variables do not typically require user input,
