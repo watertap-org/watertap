@@ -145,11 +145,13 @@ class PumpIsothermalData(PumpData):
 
         if hasattr(self, "bep_flow"):
             if iscale.get_scaling_factor(self.bep_flow) is None:
-                iscale.set_scaling_factor(self.bep_flow, 10)
+                sf = value(self.bep_flow) ** -1
+                iscale.set_scaling_factor(self.bep_flow, sf)
 
         if hasattr(self, "bep_head"):
             if iscale.get_scaling_factor(self.bep_head) is None:
-                iscale.set_scaling_factor(self.bep_head, 0.01)
+                sf = value(self.bep_head) ** -1
+                iscale.set_scaling_factor(self.bep_head, sf)
 
         if hasattr(self, "bep_eta"):
             if iscale.get_scaling_factor(self.bep_eta) is None:
