@@ -349,12 +349,13 @@ class TestIonExchange:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    # @pytest.mark.requires_idaes_solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_frame):
         m = IX_frame
         initialization_tester(m)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame):
         m = IX_frame
@@ -364,6 +365,7 @@ class TestIonExchange:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame):
         m = IX_frame
@@ -380,42 +382,90 @@ class TestIonExchange:
 
         assert abs(value(flow_mass_inlet - flow_mass_out - flow_mass_waste)) <= 1e-6
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame):
         m = IX_frame
         ix = m.fs.unit
 
         results_dict = {
+            "bed_depth_to_diam_ratio": 6.409528497531505,
+            "bed_expansion_frac_A": -0.0123,
+            "bed_expansion_frac_B": 0.102,
+            "bed_expansion_frac_C": -0.00135,
+            "p_drop_A": 0.609,
+            "p_drop_B": 0.173,
+            "p_drop_C": 0.000828,
+            "resin_max_capacity": 5,
             "resin_eq_capacity": 3.452724142139907,
+            "resin_unused_capacity": 1.5472758578600931,
+            "resin_diam": 0.0009,
+            "resin_bulk_dens": 0.7,
+            "resin_particle_dens": 1.4,
+            "selectivity": 3,
             "separation_factor": 0.33333333333333304,
+            "resin_surf_per_vol": 3333.333333333333,
             "bed_vol": 1.8000000000001537,
-            "bed_depth": 1.792345170757359,
-            "partition_ratio": 241.69068996276124,
-            "fluid_mass_transfer_coeff": 3.671987345548717e-05,
-            "rate_coeff": 0.00017485654026422467,
-            "mass_in": 4359.4324190056495,
-            "mass_out": 8.999999908993056,
-            "mass_removed": 4350.432419096656,
-            "vel_bed": 0.004978736585437118,
-            "vel_inter": 0.009957473170876306,
-            "service_flow_rate": 10,
-            "Re": 4.480862926893026,
-            "Sc": 1086.956521739223,
-            "Sh": 35.921615336889616,
-            "col_diam": 0.5653930831884962,
-            "col_vol_tot": 3.6393808454643657,
-            "col_vol_per": 0.9098452113660914,
+            "bed_depth": 1.7923449146948685,
+            "bed_area": 1.0042709889388097,
+            "bed_porosity": 0.5,
+            "col_height": 3.6239033378675525,
+            "col_vol_tot": 3.639380988939035,
+            "col_vol_per": 0.9098452472347588,
+            "col_diam": 0.5653931235757997,
             "number_columns": 4,
-            "t_breakthru": 87188.64838478691,
-            "t_contact": 179.99999999996228,
+            "partition_ratio": 241.69068996277628,
+            "fluid_mass_transfer_coeff": 3.671987172431823e-05,
+            "rate_coeff": 0.00017485653202056306,
+            "t_breakthru": 87188.64838479235,
+            "t_contact": 179.99999999996223,
             "t_waste": 3299.9999999998113,
+            "num_transfer_units": 44.06384606918178,
+            "HTU": 0.04067608877992275,
+            "dimensionless_time": 1,
+            "lh": 0,
+            "mass_in": 4359.43241900565,
+            "mass_removed": 4350.432419096656,
+            "mass_out": 8.999999908993942,
+            "vel_bed": 0.004978735874152422,
+            "vel_inter": 0.009957471748306914,
+            "holdup": 103.03054826749205,
+            "service_flow_rate": 10,
+            "pressure_drop": 7.125918389442932,
+            "Re": 4.480862286736799,
+            "Sc": 1086.956521739223,
+            "Sh": 35.92161364335478,
+            "Pe_p": 0.10271256403411379,
+            "Pe_bed": 204.5514909131226,
+            "c_norm": 0.4265491485381429,
+            "regen_flow_rate": 3.3333333333333335,
+            "service_to_regen_flow_ratio": 3,
+            "regen_dose": 600,
+            "regen_sg": 1.2,
+            "regen_density": 1199.9999999998977,
+            "regen_ww": 0.37,
+            "regen_conc": 443.9999999999621,
+            "regen_vol_per_bv": 2.4324324324328477,
+            "regen_flow": 0.002252252252252637,
             "t_regen": 1800,
-            "t_rinse": 899.9999999998113,
+            "bw_rate": 5,
+            "bw_flow": 0.001394820817970569,
+            "t_bw": 600,
+            "bed_expansion_frac": 0.46395000000000003,
+            "bed_expansion_h": 0.8315584231726842,
+            "rinse_bv": 5,
+            "rinse_flow": 0.005000000000000437,
+            "t_rinse": 899.9999999998112,
+            "main_pump_power": 0.30715053632060213,
+            "regen_pump_power": 0.1660273169300693,
+            "bw_pump_power": 0.08568399246216128,
+            "rinse_pump_power": 0.30715053632060274,
+            "pump_efficiency": 0.8,
         }
 
         for v, val in results_dict.items():
             var = getattr(ix, v)
             if var.is_indexed():
-                assert pytest.approx(val, rel=5e-2) == value(var[target_ion])
+                assert pytest.approx(val, rel=1e-3) == value(var[target_ion])
             else:
-                assert pytest.approx(val, rel=5e-2) == value(var)
+                assert pytest.approx(val, rel=1e-3) == value(var)
