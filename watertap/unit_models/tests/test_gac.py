@@ -394,8 +394,6 @@ class TestGACRobust:
 
         # test
         sens_var_lst = list(variable_sens_generator(m))
-        for i in sens_var_lst:
-            print(i)
 
         assert sens_var_lst == []
 
