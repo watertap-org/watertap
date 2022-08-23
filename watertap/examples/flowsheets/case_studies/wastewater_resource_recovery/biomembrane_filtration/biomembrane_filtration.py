@@ -95,7 +95,13 @@ def build():
             "database": m.db,
         },
     )
-    m.fs.pump = PumpElectricityZO(
+    m.fs.P1 = PumpElectricityZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+        },
+    )
+    m.fs.P2 = PumpElectricityZO(
         default={
             "property_package": m.fs.prop,
             "database": m.db,
@@ -105,10 +111,11 @@ def build():
     m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
-    m.fs.s02 = Arc(source=m.fs.pump.outlet, destination=m.fs.mabr.inlet)
-    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.dmbr.inlet)
-    m.fs.s04 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
+    m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.mabr.inlet)
+    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.P2.inlet)
+    m.fs.s04 = Arc(source=m.fs.P2.outlet, destination=m.fs.dmbr.inlet)
+    m.fs.s05 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -137,7 +144,11 @@ def set_operating_conditions(m):
     solve(m.fs.feed)
 
     # pump
-    m.fs.pump.load_parameters_from_database(use_default_removal=True)
+    m.fs.P1.load_parameters_from_database(use_default_removal=True)
+    m.fs.P1.lift_height.fix(1)
+
+    m.fs.P2.load_parameters_from_database(use_default_removal=True)
+    m.fs.P2.lift_height.fix(1)
 
     # mabr
     m.fs.mabr.load_parameters_from_database(use_default_removal=True)
@@ -163,7 +174,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_reports(m):
-    unit_list = ["feed", "pump", "mabr", "dmbr"]
+    unit_list = ["feed", "P1", "mabr", "P2", "dmbr"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -178,7 +189,8 @@ def add_costing(m):
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
     m.fs.mabr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.dmbr.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.P2.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
@@ -225,13 +237,13 @@ def display_metrics_results(m):
             m.fs.costing.LCOT, to_units=m.fs.costing.base_currency / pyunits.m**3
         )
     )
-    print(f"Levelized Cost of Treatment: {LCOT:.2f} $/m3 of feed")
+    print(f"Levelized Cost of Treatment: {LCOT:.4f} $/m3 of feed")
     LCOW = value(
         pyunits.convert(
             m.fs.costing.LCOW, to_units=m.fs.costing.base_currency / pyunits.m**3
         )
     )
-    print(f"Levelized Cost of Water: {LCOW:.2f} $/m3 of product")
+    print(f"Levelized Cost of Water: {LCOW:.4f} $/m3 of product")
 
     print("----------Capital costs----------")
     DCC_normalized = value(
@@ -239,21 +251,22 @@ def display_metrics_results(m):
             (
                 m.fs.mabr.costing.capital_cost
                 + m.fs.dmbr.costing.capital_cost
-                + m.fs.pump.costing.capital_cost
+                + m.fs.P1.costing.capital_cost
+                + m.fs.P2.costing.capital_cost
             )
             / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
     )
-    print(f"Normalized direct capital costs: {DCC_normalized:.2f} $/(m3/day)")
+    print(f"Normalized direct capital costs: {DCC_normalized:.4f} $/(m3/day)")
     ICC_normalized = value(
         pyunits.convert(
             m.fs.costing.total_capital_cost / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
     )
-    print(f"Normalized total capital costs: {ICC_normalized:.2f} $/(m3/day)")
+    print(f"Normalized total capital costs: {ICC_normalized:.4f} $/(m3/day)")
 
     print("----------Operating costs----------")
     FMC_normalized = value(
@@ -262,7 +275,7 @@ def display_metrics_results(m):
             to_units=1 / pyunits.a,
         )
     )
-    print(f"Normalized maintenance costs: {FMC_normalized:.3f} 1/year")
+    print(f"Normalized maintenance costs: {FMC_normalized:.4f} 1/year")
     BRC_normalized = value(
         pyunits.convert(
             m.fs.costing.aggregate_fixed_operating_cost
@@ -270,7 +283,7 @@ def display_metrics_results(m):
             to_units=1 / pyunits.a,
         )
     )
-    print(f"Normalized bead replacement cost: {BRC_normalized:.3f} 1/year")
+    print(f"Normalized bead replacement cost: {BRC_normalized:.4f} 1/year")
     EC_normalized = value(
         pyunits.convert(
             m.fs.costing.aggregate_flow_costs["electricity"]
@@ -278,13 +291,13 @@ def display_metrics_results(m):
             to_units=m.fs.costing.base_currency / pyunits.m**3,
         )
     )
-    print(f"Normalized electricity cost: {EC_normalized:.2f} $/m3 of feed")
+    print(f"Normalized electricity cost: {EC_normalized:.4f} $/m3 of feed")
 
     print("----------Performance metrics----------")
     volumetric_recovery = value(
         m.fs.product_H2O.properties[0].flow_vol / m.fs.feed.properties[0].flow_vol
     )
-    print(f"Water recovery: {volumetric_recovery:.3f} m3 of product/m3 of feed")
+    print(f"Water recovery: {volumetric_recovery:.4f} m3 of product/m3 of feed")
     BODR_normalized = value(
         pyunits.convert(
             1
@@ -326,7 +339,7 @@ def display_metrics_results(m):
             to_units=pyunits.kWh / pyunits.m**3,
         )
     )
-    print(f"Specific electricity consumption: {SEC:.3f} kWh/m3 of feed")
+    print(f"Specific electricity consumption: {SEC:.4f} kWh/m3 of feed")
 
 
 def display_additional_results(m):
@@ -337,21 +350,21 @@ def display_additional_results(m):
             to_units=pyunits.m**3 / pyunits.hr,
         )
     )
-    print(f"H2O outlet flow: {product_H2O_flow:.2f} m3/h")
+    print(f"H2O outlet flow: {product_H2O_flow:.4f} m3/h")
     product_H2O_BOD = value(
         pyunits.convert(
             m.fs.product_H2O.properties[0].conc_mass_comp["bod"],
             to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"H2O outlet BOD conc: {product_H2O_BOD:.2f} g/L")
+    print(f"H2O outlet BOD conc: {product_H2O_BOD:.4f} g/L")
     product_H2O_TSS = value(
         pyunits.convert(
             m.fs.product_H2O.properties[0].conc_mass_comp["tss"],
             to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"H2O outlet TSS conc: {product_H2O_TSS:.2f} g/L")
+    print(f"H2O outlet TSS conc: {product_H2O_TSS:.4f} g/L")
     product_H2O_total_nitrogen = value(
         pyunits.convert(
             (
@@ -361,27 +374,29 @@ def display_additional_results(m):
             to_units=pyunits.g / pyunits.L,
         )
     )
-    print(f"H2O outlet total nitrogen conc: {product_H2O_total_nitrogen:.2f} g/L")
+    print(f"H2O outlet total nitrogen conc: {product_H2O_total_nitrogen:.4f} g/L")
 
     print("----------Capital costs----------")
     total_capital_costs = value(m.fs.costing.total_capital_cost) / 1e6
-    print(f"Total capital costs: {total_capital_costs:.1f} $M")
+    print(f"Total capital costs: {total_capital_costs:.4f} $M")
     mabr_capital_costs = value(m.fs.mabr.costing.capital_cost) / 1e6
-    print(f"MABR capital costs: {mabr_capital_costs:.2f} $M")
+    print(f"MABR capital costs: {mabr_capital_costs:.4f} $M")
     dmbr_capital_costs = value(m.fs.dmbr.costing.capital_cost) / 1e6
-    print(f"DMBR capital costs: {dmbr_capital_costs:.1f} $M")
-    pump_capital_costs = value(m.fs.pump.costing.capital_cost) / 1e6
-    print(f"Pump capital costs: {pump_capital_costs:.1f} $M")
+    print(f"DMBR capital costs: {dmbr_capital_costs:.4f} $M")
+    pump_capital_costs = (
+        value(m.fs.P1.costing.capital_cost + m.fs.P2.costing.capital_cost) / 1e6
+    )
+    print(f"Pump capital costs: {pump_capital_costs:.4f} $M")
 
     print("----------Operating costs----------")
     total_operating_costs = value(m.fs.costing.total_operating_cost) / 1e6
-    print(f"Total operating costs: {total_operating_costs:.1f} $M/year")
+    print(f"Total operating costs: {total_operating_costs:.4f} $M/year")
     fixed_operating_costs = value(m.fs.costing.total_fixed_operating_cost) / 1e6
-    print(f"Fixed operating costs: {fixed_operating_costs:.1f} $M/year")
+    print(f"Fixed operating costs: {fixed_operating_costs:.4f} $M/year")
     electricity_operating_costs = (
         value(m.fs.costing.aggregate_flow_costs["electricity"]) / 1e3
     )
-    print(f"Electricity operating costs: {electricity_operating_costs:.1f} $k/year")
+    print(f"Electricity operating costs: {electricity_operating_costs:.4f} $k/year")
 
 
 if __name__ == "__main__":
