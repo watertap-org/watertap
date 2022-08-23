@@ -16,8 +16,9 @@ defaults:
     shell: bash -l {0}
 
 env:
-  # needed for colorized output to be shown in GHA logs
-  PYTEST_ADDOPTS: "--color=yes"
+  # --color=yes needed for colorized output to be shown in GHA logs
+  # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
+  PYTEST_ADDOPTS: "--color=yes --pyargs watertap"
 
 jobs:
 
@@ -119,12 +120,10 @@ jobs:
         bash -c 'grep "SKIPPED" "$_pytest_output_to_inspect" ; test $? -eq 1'
         echo '::endgroup::'
     - name: Require EDB tests to connect to MongoDB if server is set up
-      # if: matrix.mongodb_server
+      if: matrix.mongodb_server
       run:
         |
-        # --pyargs watertap is needed to be able to define the CLI options in watertap/conftest.py
-        # 
-        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --pyargs watertap --edb-no-mock" >> $GITHUB_ENV
+        echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --edb-no-mock" >> $GITHUB_ENV
     - name: Test EDB client
       run: pytest -k test_edb_client
     - name: Add coverage report pytest options
