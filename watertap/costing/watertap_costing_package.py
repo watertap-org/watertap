@@ -400,10 +400,44 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             var.fix()
 
         # Define standard material flows and costs
-        self.defined_flows["electricity"] = self.electricity_base_cost
-        self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
-        self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
-        self.defined_flows["steam"] = self.steam_unit_cost
+        # The WaterTAP costing package creates flows
+        # in a lazy fashion, the first time `cost_flow`
+        # is called for a flow. The `available_flows`
+        # are all the flows which can be costed with
+        # the WaterTAP costing package.
+        self.available_flows = {}
+        self.available_flows["electricity"] = self.electricity_base_cost
+        self.available_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
+        self.available_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
+        self.available_flows["steam"] = self.steam_unit_cost
+
+    def cost_flow(self, flow_expr, flow_type):
+        """
+        This method registers a given flow component (Var or expression) for
+        costing. All flows are required to be bounded to be non-negative (i.e.
+        a lower bound equal to or greater than 0).
+
+        Args:
+            flow_expr: Pyomo Var or expression that represents a material flow
+                that should be included in the process costing. Units are
+                expected to be on a per time basis.
+            flow_type: string identifying the material this flow represents.
+                This string must be available to the FlowsheetCostingBlock
+                as a known flow type.
+
+        Raises:
+            ValueError if flow_type is not recognized.
+            TypeError if flow_expr is an indexed Var.
+        """
+        if flow_type not in self.available_flows:
+            raise ValueError(
+                f"{flow_type} is not a recognized flow type. Please check "
+                "your spelling and that the flow type has been available to"
+                " the FlowsheetCostingBlock."
+            )
+        if flow_type not in self.flow_types:
+            self.register_flow_type(flow_type, self.available_flows[flow_type])
+        super().cost_flow(flow_expr, flow_type)
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
