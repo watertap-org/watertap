@@ -113,7 +113,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         self.feed_side.add_isothermal_conditions()
 
-        self.feed_side.add_volumetric_flowrate_balance()
+        self.feed_side.add_extensive_flow_to_interface()
 
         self.feed_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,

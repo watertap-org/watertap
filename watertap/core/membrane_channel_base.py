@@ -311,7 +311,7 @@ class MembraneChannelMixin:
                 == b.properties_interface[t, x].temperature
             )
 
-    def add_volumetric_flowrate_balance(self):
+    def add_extensive_flow_to_interface(self):
         # VOLUMETRIC FLOWRATE
         @self.Constraint(
             self.flowsheet().config.time,
