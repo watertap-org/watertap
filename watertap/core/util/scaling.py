@@ -34,13 +34,13 @@ __author__ = "Hunter Barber"
 def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-10):
     """
     Generator which varies the magnitude of inlet flow(s) to some lower and upper specification
-        of a square and solved flowsheet. Scaling factors are cleared and default scaling factors
-        are adjusted to account for the new flow magnitude and again propagated through the variables
-        on initialization. The model is resolved and tested for: (i) are any variables poorly scaled
-        at different process scales, (ii) are any scaled variables with static scaling factors
-        proportional the process flow and therefore candidate for implementing dynamic scaling factors,
-        (iii) do any variables touch their bounds between process scales not explicitly tested in other
-        test frames, leading to non-optimal solves.
+        for a square and solved flowsheet. Previous scaling factors in the model are cleared and default
+        scaling factors are adjusted to account for the new flow magnitude and again propagated through
+        the variables on initialization. The model is re-solved and tested for: (i) are any variables
+        poorly scaled at different process scales, (ii) are any scaled variables with static scaling
+        factors proportional the process flow and therefore candidate for implementing dynamic scaling
+        factors, (iii) do any variables touch their bounds between process scales that were not
+        explicitly tested in other test frames, leading to non-optimal solves.
 
     Keyword Arguments:
         blk : pyomo ConcreteModel block which holds the flowsheet to be tested
@@ -55,7 +55,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             zero are okay, and not reported (default = 1e-10)
 
     Yields:
-        string denoting what step on failure, variable name as string,
+        string denoting what step failed, variable name as string,
             sensitivity of sv between lower and upper solutions
     """
 
@@ -114,7 +114,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
 
         # store results for sv to sv_hist dict for current model copy
-        # TODO: Can this be done to eliminate the need for sv_hist dict
+        # TODO: Can this be moved to eliminate the need for the sv_hist dict
         for v in ComponentSet(
             temp_blk.component_data_objects(pyo.Var, active=True, descend_into=True)
         ):
@@ -135,7 +135,8 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
                 sv_hist[v.name].append(sv)
 
     # loop through svs store in sv_hist to determine change in scaled variable
-    # TODO: Can the objects of the original blk be output, as opposed to variable name strings
+    # TODO: Can the objects of the original blk be output, as opposed to variable
+    #   name strings taken from the temp_blk
     for var_key, var_sv in sv_hist.items():
 
         # get order of magnitude difference (sensitivity)
