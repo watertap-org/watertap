@@ -72,12 +72,12 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            self.feed_side.add_geometry(include_length_and_width=True)
+            self.feed_side.add_geometry(has_length_and_width=True)
             add_object_reference(self, "length", self.feed_side.length)
             add_object_reference(self, "width", self.feed_side.width)
             self._add_area(include_constraint=True)
         else:
-            self.feed_side.add_geometry(include_length_and_width=False)
+            self.feed_side.add_geometry(has_length_and_width=False)
             self._add_area(include_constraint=False)
 
     def _add_deltaP(self):

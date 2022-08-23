@@ -240,8 +240,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        if optarg is None:
-            optarg = {}
 
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
