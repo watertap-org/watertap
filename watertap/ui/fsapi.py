@@ -81,13 +81,15 @@ class FlowsheetExport(BaseModel):
     model_objects: Dict[str, ModelExport] = {}
 
     # set name dynamically from object
-    @validator("name")
+    @validator("name", always=True)
     def validate_name(cls, v, values):
         if not v:
             try:
                 v = values["obj"].name
             except (KeyError, AttributeError):
-                v = "none"
+                pass
+            if not v:
+                v = "default"
         return v
 
     @validator("description", always=True)
