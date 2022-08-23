@@ -187,18 +187,17 @@ class FlowsheetInterface:
         else:
             self.fs_exp = fs
         self._actions = {}
-        if do_export:
-            self.add_action(Actions.export, do_export)
-        else:
-            raise ValueError("'do_export' argument is required")
-        if do_build:
-            self.add_action(Actions.build, do_build)
-        else:
-            raise ValueError("'do_build' argument is required")
-        if do_solve:
-            self.add_action(Actions.solve, do_solve)
-        else:
-            raise ValueError("'do_solve' argument is required")
+        for arg, name in (
+            (do_export, "export"),
+            (do_build, "build"),
+            (do_solve, "solve"),
+        ):
+            if arg:
+                if not callable(arg):
+                    raise TypeError(f"'do_{name}' argument must be callable")
+                self.add_action(getattr(Actions, name), arg)
+            else:
+                raise ValueError(f"'do_{name}' argument is required")
 
     def build(self, **kwargs):
         """Build flowsheet

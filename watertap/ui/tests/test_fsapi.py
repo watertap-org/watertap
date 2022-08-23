@@ -192,3 +192,22 @@ def test_find():
     interface = list(result.values())[0]  # get the module function
     interface.build()  # make sure the module exported properly
     interface.solve()
+
+
+@pytest.mark.unit
+def test_require_methods():
+    fsi = flowsheet_interface()
+    methods = ("do_export", "do_build", "do_solve")
+    kwargs = {m: noop for m in methods}
+    # make one method 'bad' at a time
+    for meth in methods:
+        # missing
+        badkw = kwargs.copy()
+        del badkw[meth]
+        with pytest.raises(ValueError):
+            _ = fsapi.FlowsheetInterface(fsi, **badkw)
+        # not callable
+        badkw = kwargs.copy()
+        badkw[meth] = 1
+        with pytest.raises(TypeError):
+            _ = fsapi.FlowsheetInterface(fsi, **badkw)
