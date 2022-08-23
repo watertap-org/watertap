@@ -174,28 +174,19 @@ class TestGACRobust:
 
         m = gac_frame_robust
 
-        from idaes.core.util.model_statistics import variables_set
-        from idaes.core.util.scaling import (
-            calculate_scaling_factors,
-            badly_scaled_var_generator,
-            get_scaling_factor,
-            unset_scaling_factor,
-            )
-        for var in variables_set(m):
-            print("---1---", var, get_scaling_factor(var))
-
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e-2, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e5, index=("Liq", "TCE")
         )
+
         calculate_scaling_factors(m)
+
         # test
         from watertap.core.util.scaling import variable_sens_generator
-        sens_var_lst = list(
-            variable_sens_generator(m)
-        )
+
+        sens_var_lst = list(variable_sens_generator(m))
         for i in sens_var_lst:
             print(i)
 
