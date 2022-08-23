@@ -264,68 +264,8 @@ class TestReverseOsmosis:
             )  # number of state variables for NaCl property package
             assert isinstance(port, Port)
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "deltaP": Var,
-            "cp_modulus": Var,
-            "mass_transfer_phase_comp": Var,
-            "flux_mass_phase_comp_avg": Expression,
-            "over_pressure_ratio": Expression,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_connect_enthalpy_transfer": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_mass_frac_permeate": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "eq_flow_vol_permeate": Constraint,
-            "nfe": Param,
-        }
-        for (obj_str, obj_type) in unit_objs_type_dict.items():
-            obj = getattr(m.fs.unit, obj_str)
-            assert isinstance(obj, obj_type)
-        # check that all added unit objects are tested
-        for obj in m.fs.unit.component_objects(
-            [Param, Var, Expression, Constraint], descend_into=False
-        ):
-            obj_str = obj.local_name
-            if obj_str[0] == "_":
-                continue  # do not test hidden references
-            assert obj_str in unit_objs_type_dict
-
         # test feed-side control volume and associated stateblocks
         assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
-        cv_stateblock_lst = [
-            "properties_in",
-            "properties_out",
-            "properties_interface",
-        ]
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-        # test objects added to control volume
-        cv_objs_type_dict = {
-            "eq_concentration_polarization": Constraint,
-            "eq_equal_temp_interface": Constraint,
-            "eq_equal_pressure_interface": Constraint,
-            "eq_equal_flow_vol_interface": Constraint,
-        }
-        for (obj_str, obj_type) in cv_objs_type_dict.items():
-            obj = getattr(m.fs.unit.feed_side, obj_str)
-            assert isinstance(obj, obj_type)
 
         # test statistics
         assert number_variables(m) == 125

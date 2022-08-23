@@ -269,58 +269,6 @@ class TestReverseOsmosis:
             # number of state variables for NaCl property package
             assert len(port.vars) == 3
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "Kf": Var,
-            "channel_height": Var,
-            "spacer_porosity": Var,
-            "dh": Var,
-            "N_Re": Var,
-            "N_Sc": Var,
-            "N_Sh": Var,
-            "dP_dx": Var,
-            "deltaP": Var,
-            "velocity": Var,
-            "friction_factor_darcy": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        # check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
-
         # test feed-side control volume and associated stateblocks
         assert isinstance(m.fs.unit.feed_side, MembraneChannel1DBlock)
         cv_stateblock_lst = ["properties"]
@@ -492,48 +440,6 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
-
         # test statistics
         # assert number_variables(m) == 205
         # assert number_total_constraints(m) == 162
@@ -665,49 +571,6 @@ class TestReverseOsmosis:
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
         m.fs.unit.cp_modulus.fix(1.1)
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "cp_modulus": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
-
         # test statistics
         # assert number_variables(m) == 209
         # assert number_total_constraints(m) == 162
@@ -836,50 +699,6 @@ class TestReverseOsmosis:
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
         m.fs.unit.Kf.fix(2e-5)
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "Kf": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "Kf_avg": Expression,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
-
         # test statistics
         # assert number_variables(m) == 209
         # assert number_total_constraints(m) == 162
@@ -1003,63 +822,6 @@ class TestReverseOsmosis:
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
-
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "Kf": Var,
-            "channel_height": Var,
-            "spacer_porosity": Var,
-            "dh": Var,
-            "N_Re": Var,
-            "N_Sc": Var,
-            "N_Sh": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "eq_Kf": Constraint,
-            "eq_N_Re": Constraint,
-            "eq_N_Sc": Constraint,
-            "eq_N_Sh": Constraint,
-            "eq_area_cross": Constraint,
-            "eq_dh": Constraint,
-            "N_Re_avg": Expression,
-            "Kf_avg": Expression,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
 
         # test statistics
         # assert number_variables(m) == 232
@@ -1189,66 +951,6 @@ class TestReverseOsmosis:
         m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.dP_dx.fix(-0.1e5)
 
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "Kf": Var,
-            "channel_height": Var,
-            "spacer_porosity": Var,
-            "dh": Var,
-            "N_Re": Var,
-            "N_Sc": Var,
-            "N_Sh": Var,
-            "dP_dx": Var,
-            "deltaP": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "eq_Kf": Constraint,
-            "eq_N_Re": Constraint,
-            "eq_N_Sc": Constraint,
-            "eq_N_Sh": Constraint,
-            "eq_area_cross": Constraint,
-            "eq_dh": Constraint,
-            "eq_pressure_drop": Constraint,
-            "N_Re_avg": Expression,
-            "Kf_avg": Expression,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
-
         # test statistics
         # assert number_variables(m) == 237
         # assert number_total_constraints(m) == 188
@@ -1377,66 +1079,6 @@ class TestReverseOsmosis:
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.deltaP.fix(-62435.6)
-
-        # test pyomo objects on unit
-        unit_objs_type_dict = {
-            "dens_solvent": Param,
-            "A_comp": Var,
-            "B_comp": Var,
-            "flux_mass_phase_comp": Var,
-            "area": Var,
-            "area_cross": Var,
-            "width": Var,
-            "length": Var,
-            "recovery_vol_phase": Var,
-            "recovery_mass_phase_comp": Var,
-            "rejection_phase_comp": Var,
-            "Kf": Var,
-            "channel_height": Var,
-            "spacer_porosity": Var,
-            "dh": Var,
-            "N_Re": Var,
-            "N_Sc": Var,
-            "N_Sh": Var,
-            "dP_dx": Var,
-            "deltaP": Var,
-            "mass_transfer_phase_comp": Var,
-            "nfe": Param,
-            "eq_mass_transfer_term": Constraint,
-            "eq_permeate_production": Constraint,
-            "eq_flux_mass": Constraint,
-            "eq_connect_mass_transfer": Constraint,
-            "eq_feed_isothermal": Constraint,
-            "eq_permeate_isothermal": Constraint,
-            "eq_recovery_vol_phase": Constraint,
-            "eq_recovery_mass_phase_comp": Constraint,
-            "eq_rejection_phase_comp": Constraint,
-            "eq_area": Constraint,
-            "eq_mass_flux_equal_mass_transfer": Constraint,
-            "eq_permeate_outlet_isothermal": Constraint,
-            "eq_permeate_outlet_isobaric": Constraint,
-            "eq_Kf": Constraint,
-            "eq_N_Re": Constraint,
-            "eq_N_Sc": Constraint,
-            "eq_N_Sh": Constraint,
-            "eq_area_cross": Constraint,
-            "eq_dh": Constraint,
-            "eq_pressure_drop": Constraint,
-            "N_Re_avg": Expression,
-            "Kf_avg": Expression,
-            "flux_mass_phase_comp_avg": Expression,
-        }
-        # for (obj_str, obj_type) in unit_objs_type_dict.items():
-        #    obj = getattr(m.fs.unit, obj_str)
-        #    assert isinstance(obj, obj_type)
-        ## check that all added unit objects are tested
-        # for obj in m.fs.unit.component_objects(
-        #    [Param, Var, Expression, Constraint], descend_into=False
-        # ):
-        #    obj_str = obj.local_name
-        #    if obj_str[0] == "_":
-        #        continue  # do not test hidden references
-        #    assert obj_str in unit_objs_type_dict
 
         # test statistics
         # assert number_variables(m) == 237
