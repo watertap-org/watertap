@@ -357,8 +357,9 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 65
-    assert number_total_constraints(m) == 47
+    assert number_variables(m) == 76
+    assert number_total_constraints(m) == 58
+    [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
 
 
@@ -389,6 +390,7 @@ def test_default_scaling(model3):
         ("dens_mass_phase", "Liq"): 1e-3,
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
+        ("visc_k_phase", "Liq"): 1e6,
     }
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
