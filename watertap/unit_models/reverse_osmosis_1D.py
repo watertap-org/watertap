@@ -88,7 +88,6 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
-                "area_definition": self.config.area_definition,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,
                 "transformation_method": self.config.transformation_method,
