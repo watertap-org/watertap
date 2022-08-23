@@ -79,11 +79,11 @@ Pyomo documentation for supported schemes.""",
 CONFIG_Template.declare(
     "finite_elements",
     ConfigValue(
-        default=20,
+        default=10,
         domain=int,
         description="Number of finite elements in length domain",
         doc="""Number of finite elements to use when discretizing length 
-        domain (default=20)""",
+        domain (default=10)""",
     ),
 )
 
