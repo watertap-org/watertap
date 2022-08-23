@@ -24,7 +24,15 @@ Path: models/fossil_case/ultra_supercritical_plant/storage/multiperiod_integrate
 
 __author__ = "Akshay Rao, Adam Atia"
 
-from pyomo.environ import NonNegativeReals, ConcreteModel, Var, units as pyunits, value
+from pyomo.environ import (
+    NonNegativeReals,
+    ConcreteModel,
+    Var,
+    units as pyunits,
+    value,
+    Param,
+    Constraint,
+)
 
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 
@@ -38,52 +46,19 @@ def create_base_model(mode):
 
     # call main to create and initialize model with flow-type variable efficiency
     m = ConcreteModel()
-    m.ro_mp = swro.main(variable_efficiency=VariableEfficiency.flow)
-
-    print("\nFixing system design variables and setting bounds...")
-
-    # fix plant design variables
-    m.ro_mp.fs.RO.area.fix(115)
-
-    # fix the mass fraction of nacl instead of the mass flow rate
-    mass_frac_nacl = (
-        m.ro_mp.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].value
-    )
-    m.ro_mp.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"].fix(
-        mass_frac_nacl
-    )
-    m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-
-    if mode == "flexible":
-        print("\nUnfixing operational variables...")
-        # fix the best efficiency point of each pump
-        bep_flow_val1 = value(m.ro_mp.fs.P1.bep_flow)
-        m.ro_mp.fs.P1.bep_flow.fix(bep_flow_val1)
-        bep_flow_val2 = value(m.ro_mp.fs.P2.bep_flow)
-        m.ro_mp.fs.P2.bep_flow.fix(bep_flow_val2)
-
-        # unfix the flow ratio
-        m.ro_mp.fs.P1.flow_ratio.unfix()
-        m.ro_mp.fs.P2.flow_ratio.unfix()
-
-        # unfix operational variables - water recovery and feed flow rate
-        m.ro_mp.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].unfix()
-        m.ro_mp.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-
-    else:
-        pass
-
+    m.ro_mp = swro.build(variable_efficiency=VariableEfficiency.flow)
+    swro.set_operating_conditions(m.ro_mp, variable_efficiency=VariableEfficiency.flow)
+    swro.initialize_system(m.ro_mp, skipRO=False)
     return m
 
 
 def create_swro_mp_block(mode="flexible"):
-    print(">>> Creating model and initialization for each time period")
+    print(">>> Creating model for each time period")
 
     m = create_base_model(mode)
     b1 = m.ro_mp
 
-    time_step = 3600  # seconds (1 hr)
-    ramp_frac = 0.1  # fraction of time_step used for ramping
+    ramp_time = 60  # seconds (0.5 min)
     if mode == "flexible":
         ramping_rate = 0.7e5  # Pa/s
     else:
@@ -100,14 +75,14 @@ def create_swro_mp_block(mode="flexible"):
     @b1.Constraint(doc="Pressure ramping down constraint")
     def constraint_ramp_down(b):
         return (
-            b.previous_pressure - time_step * ramping_rate * ramp_frac
+            b.previous_pressure - ramp_time * ramping_rate
             <= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
     @b1.Constraint(doc="Pressure ramping up constraint")
     def constraint_ramp_up(b):
         return (
-            b.previous_pressure + time_step * ramping_rate * ramp_frac
+            b.previous_pressure + ramp_time * ramping_rate
             >= b.fs.P1.control_volume.properties_out[0].pressure
         )
 

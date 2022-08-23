@@ -264,7 +264,7 @@ def set_operating_conditions(
         m.fs.P1.control_volume.properties_out[0].pressure
     )
     m.fs.RO.area.fix(50)  # guess area for RO initialization
-    m.fs.RO.initialize(optarg=solver.options)
+    # m.fs.RO.initialize(optarg=solver.options)
 
     # unfix guessed area, and fix water recovery
     m.fs.RO.area.unfix()
@@ -337,13 +337,16 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     return results
 
 
-def initialize_system(m, solver=None):
+def initialize_system(m, solver=None, skipRO=False):
     if solver is None:
         solver = get_solver()
     optarg = solver.options
 
-    # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg)
+    if skipRO is False:
+        # ---initialize RO---
+        m.fs.RO.initialize(optarg=optarg)
+    else:
+        pass
 
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
@@ -430,31 +433,11 @@ def optimize_set_up(m):
     m.fs.RO.area.setub(150)
 
     # additional specifications
-    m.fs.product_salinity = Param(
-        default=500e-6, mutable=True
-    )  # product NaCl mass fraction [-]
-    # m.fs.minimum_water_flux = Param(
-    #     default=1.0 / 3600.0, mutable=True
-    # )  # minimum water flux [kg/m2-s]
+    m.fs.product_salinity = Param(default=500e-6, mutable=True)
 
-    # m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
-    #     value(m.fs.product_salinity)
-    # )
     m.fs.water_flux = Constraint(
         expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= 0
     )
-
-    # # additional constraints
-    # m.fs.eq_product_quality = Constraint(
-    #     expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
-    #     <= m.fs.product_salinity
-    # )
-    # iscale.constraint_scaling_transform(
-    #     m.fs.eq_product_quality, 1e3
-    # )  # scaling constraint
-    # m.fs.eq_minimum_water_flux = Constraint(
-    #     expr=m.fs.RO.flux_mass_phase_comp_avg[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
-    # )
 
     # ---checking model---
     assert_degrees_of_freedom(m, 1)

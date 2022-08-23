@@ -23,11 +23,15 @@ from pyomo.environ import (
     units as pyunits,
     Var,
     value,
+    ComponentMap,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util import model_statistics as stats
 from watertap.examples.flowsheets.RO_multiperiod_model.multiperiod_RO import (
     create_multiperiod_swro_model,
 )
+import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as swro
+import watertap.core.util.infeasible as infeas
 
 
 def main(
@@ -50,6 +54,8 @@ def main(
     lmp, co2i = _get_lmp(n_steps, data_path, carbon_cost)
 
     mp_swro = build_flowsheet(n_steps)
+
+    initialize_system(mp_swro)
 
     m, t_blocks = set_objective(mp_swro, lmp, co2i)
 
@@ -86,11 +92,48 @@ def build_flowsheet(n_steps):
     return mp_swro
 
 
+def initialize_system(m):
+    print(f"\n----- Initializing Base Model -----")
+    # fully initialize a base model
+    base_model = swro.main(swro.VariableEfficiency.flow)
+    # create a copy of the base model
+    reinitialize_values = ComponentMap()
+    for v in base_model.component_data_objects(Var):
+        reinitialize_values[v] = v.value
+
+    # loop through each time step block and set values
+    t_blocks = m.get_active_process_blocks()
+
+    for count, blk in enumerate(t_blocks):
+        print(f"\n----- Initializing MultiPeriod Time Step {count} -----")
+        blk_swro = blk.ro_mp
+        for v, val in reinitialize_values.items():
+            blk_swro.find_component(v).set_value(val, skip_validation=True)
+
+        # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
+        blk_swro.fs.P1.flow_ratio[0].unfix()
+        v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
+        blk_swro.fs.P1.bep_flow.fix(v1)
+
+        blk_swro.fs.P2.flow_ratio[0].unfix()
+        v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
+        blk_swro.fs.P2.bep_flow.fix(v2)
+
+        # unfix RO control volume operational variables
+        blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
+        blk_swro.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
+
+        # unfix feed flow rate and fix concentration instead
+        blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+        blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+        blk_swro.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(0.035)
+
+
 def set_objective(mp_swro, lmp, co2i, carbontax=0):
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
-
+    daily_water_production = 38 * pyunits.m**3 / pyunits.day
     # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
         blk_swro = blk.ro_mp
@@ -115,7 +158,10 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
 
         # combine/place flowsheet level cost metrics on each time block
         blk.water_prod = Expression(
-            expr=blk_swro.fs.costing.annual_water_production,
+            expr=pyunits.convert(
+                blk_swro.fs.costing.annual_water_production,
+                to_units=pyunits.m**3 / pyunits.hour,
+            ),
             doc="annual water production",
         )
         blk.weighted_permeate_quality = Expression(
@@ -126,15 +172,11 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
 
         blk.weighted_LCOW = Expression(
             expr=blk_swro.fs.costing.LCOW * blk.water_prod,
-            doc="annual flow weighted LCOW",
+            doc="hourly cost [$/hr]",
         )
         blk.energy_consumption = Expression(
-            expr=blk_swro.fs.costing.specific_energy_consumption
-            * pyunits.convert(
-                blk.water_prod,
-                to_units=pyunits.m**3 / pyunits.hour,
-            ),
-            doc="Energy consumption per timestep ",
+            expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
+            doc="Energy consumption per timestep kWh/hr",
         )
         blk.carbon_emission = Expression(
             expr=blk.energy_consumption
@@ -143,22 +185,26 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         )
         blk.annual_carbon_cost = Expression(
             expr=blk.carbon_tax
-            * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.year)
-            * (blk_swro.fs.costing.base_currency / pyunits.kg),
-            doc="Annual cost associated with carbon emissions, to be used in the objective",
+            * (blk_swro.fs.costing.base_currency / pyunits.kg)
+            * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.hour),
+            doc="Hourly cost associated with carbon emissions $/hr",
         )
 
-        # deactivate each block-level objective function
-        blk_swro.fs.objective.deactivate()
-
+    m.LCOW = Expression(
+        expr=sum([blk.weighted_LCOW for blk in t_blocks])
+        / sum([blk.water_prod for blk in t_blocks]),
+        doc="Daily, flow-normalized cost of water",
+    )
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
-        expr=(
-            sum([blk.weighted_LCOW for blk in t_blocks])
-            + sum([blk.annual_carbon_cost for blk in t_blocks])
-        )
-        / sum([blk.water_prod for blk in t_blocks]),
-        doc="Flow-integrated average cost and carbon tax on an annual basis",
+        expr=sum([blk.weighted_LCOW for blk in t_blocks]),
+        doc="Daily cost to produce water",
+    )
+
+    m.permeate_yield = Constraint(
+        expr=abs(sum([blk.water_prod for blk in t_blocks]) / daily_water_production - 1)
+        <= 1e-3,
+        doc="The water production over the day is fixed within a tolerance",
     )
 
     m.permeate_quality_ub = Constraint(
@@ -171,10 +217,10 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
 
     m.permeate_quality_lb = Constraint(
         expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
-        doc="Flow-averaged permeate quality must be less than 500 ppm",
+        doc="Flow-averaged permeate quality must be greater than 0 ppm",
     )
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
-    t_blocks[0].ro_mp.previous_pressure.fix(55e5)
+    t_blocks[0].ro_mp.previous_pressure.fix(50e5)
 
     return m, t_blocks
 
@@ -188,7 +234,7 @@ def solve(m):
 
 def visualize_results(m, t_blocks, data):
     time_step = np.array(range(len(t_blocks)))
-    LCOW = value(m.obj)
+    LCOW = value(m.LCOW)
     qual = 1e6 * value(
         sum([blk.weighted_permeate_quality for blk in t_blocks])
         / sum([blk.water_prod for blk in t_blocks])
