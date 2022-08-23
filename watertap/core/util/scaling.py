@@ -11,11 +11,10 @@
 #
 ###############################################################################
 """
-This module contains utility functions for model statistics of WaterTAP models.
+This module contains utility functions for testing the scaling of WaterTAP models.
 """
 
 import pyomo.environ as pyo
-from pyomo.environ import check_optimal_termination
 from pyomo.common.collections import ComponentSet
 
 import idaes.logger
@@ -106,7 +105,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
         results = solver.solve(temp_blk)
 
         # ensure model solves wrt new scale
-        if not check_optimal_termination(results):
+        if not pyo.check_optimal_termination(results):
             yield "Failed run on", scale, "scale"
             break
 
