@@ -23,7 +23,9 @@ from .gha_divider import get_test_cases_subset
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
-_test_cases = list(range(1, 6))
+# TODO: consider changing back to 6
+# so we run 1 - 5 as opposed to 1 - 3
+_test_cases = list(range(1, 4))
 
 # comment out this line if you want to run the entire baseline
 _test_cases = get_test_cases_subset(_test_cases)
