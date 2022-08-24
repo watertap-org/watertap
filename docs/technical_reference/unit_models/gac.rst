@@ -1,12 +1,8 @@
 Granular Activated Carbon (GAC)
 ===============================
-.. note::
-
-    The GAC model is an ongoing project and subject to change, as is this documentation.
-
-This is an empirical-performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:
+This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:
    * supports a single liquid phase only
-   * supports a single solute and single solvent (water) only
+   * supports adsorption of a single solute species only while other species are considered inert
    * supports steady-state only
    * assumes isothermal conditions
    * model performance is independent of a gravity-fed or pressurized GAC unit, therefore assumes isobaric conditions
@@ -62,7 +58,7 @@ Additionally, the following 9 variables are traditionally fixed:
    * the target dimensionless concentration *or* the dimensionless concentration at the time of replacement
    * empty bed contact time
    * bed voidage
-   * superficial velocity
+   * superficial velocity *or* bed length
    * GAC particle porosity
    * GAC particle apparent density *or* GAC particle solid density
    * GAC particle diameter
@@ -94,14 +90,19 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'Solute']*"
+   "Components", ":math:`j`", "['H2O', 'Solute', 'Background solutes/ions]*"
 
-\*Solute is provided in the imported property model.
+\*Adsorbed "Solute" provided in the ``target_species`` argument of the unit model.
+\*"Background solutes/ions" are provided in the imported property model.
 
 .. _GAC_variables:
 
 Variables
 ----------
+Supporting only a single solute, variables concerning the adsorption of a species are respective to the target species
+although not explicitly indexed. All other species are inert from a mass balance perspective, but effects of background
+species to the adsorption of the target species may be modeled by adjusting the Freundlich isotherm parameters and other
+variables in the model.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
