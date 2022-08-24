@@ -603,10 +603,17 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Ratio of service flow rate to regeneration flow rate",
         )
 
+        self.regen_recycle = Var(
+            initialize=1,
+            bounds=(1, None),
+            units=pyunits.dimensionless,
+            doc="Number of cycles the regenerant can be reused before disposal",
+        )
+
         self.regen_dose = Var(
             initialize=600,
             units=pyunits.kg / pyunits.m**3,
-            bounds=(35, 700),  # Perry's
+            bounds=(0, None),  # Perry's
             doc="Regenerant dose required for regeneration per volume of resin [kg regenerant/m3 resin]",
         )
 
@@ -1004,9 +1011,9 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_ss_waste(b, j):
             prop_in = b.properties_in[0]
             prop_regen = b.properties_regen[0]
-            return prop_regen.conc_equiv_phase_comp["Liq", j] == b.mass_removed[j] / (
-                prop_in.flow_vol_phase["Liq"] * b.t_waste
-            )
+            return prop_regen.conc_equiv_phase_comp["Liq", j] == (
+                b.mass_removed[j] * b.regen_recycle
+            ) / (prop_in.flow_vol_phase["Liq"] * b.t_waste)
 
         @self.Constraint(doc="Column holdup")
         def eq_holdup(b):

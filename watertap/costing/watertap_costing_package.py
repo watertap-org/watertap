@@ -1205,9 +1205,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        regen_flow = (blk.unit_model.regen_dose * blk.unit_model.bed_vol) / (
-            blk.unit_model.t_breakthru + blk.unit_model.t_waste
-        )
+        regen_flow = (
+            (blk.unit_model.regen_dose * blk.unit_model.bed_vol)
+            / (blk.unit_model.t_breakthru + blk.unit_model.t_waste)
+        ) / blk.unit_model.regen_recycle
         electricity_flow = (
             blk.unit_model.main_pump_power
             + blk.unit_model.regen_pump_power
