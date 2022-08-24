@@ -56,9 +56,6 @@ def main(erd_type="pressure_exchanger"):
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    # simulate and display
-    # solve(m, solver=solver)
-
     # optimize and display
     optimize_set_up(m)
     solve(m, solver=solver)
@@ -228,26 +225,14 @@ def set_operating_conditions(
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # operating_pressure = calculate_operating_pressure(
-    #     feed_state_block=m.fs.feed.properties[0],
-    #     over_pressure=over_pressure,
-    #     water_recovery=water_recovery,
-    #     NaCl_passage=0.01,
-    #     solver=solver,
-    # )
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(56e5)
-    if m.erd_type == "pressure_exchanger":
-        # pressure exchanger
-        m.fs.PXR.efficiency_pressure_exchanger.fix(
-            0.95
-        )  # pressure exchanger efficiency [-]
-
-        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-        m.fs.P2.efficiency_pump.fix(0.80)
-
-    elif m.erd_type == "pump_as_turbine":
-        m.fs.ERD.efficiency_pump.fix(0.95)
-        m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
+    operating_pressure = calculate_operating_pressure(
+        feed_state_block=m.fs.feed.properties[0],
+        over_pressure=over_pressure,
+        water_recovery=water_recovery,
+        NaCl_passage=0.01,
+        solver=solver,
+    )
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # mixer, no degrees of freedom
 
@@ -271,11 +256,20 @@ def set_operating_conditions(
     m.fs.RO.feed_side.properties_in[0].pressure = value(
         m.fs.P1.control_volume.properties_out[0].pressure
     )
-    # m.fs.RO.area.fix(50)  # guess area for RO initialization
-    # m.fs.RO.initialize(optarg=solver.options)
-    #
-    # # unfix guessed area, and fix water recovery
-    # m.fs.RO.area.unfix()
+    if m.erd_type == "pressure_exchanger":
+        # pressure exchanger
+        m.fs.PXR.efficiency_pressure_exchanger.fix(
+            0.95
+        )  # pressure exchanger efficiency [-]
+
+        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
+        m.fs.P2.efficiency_pump.fix(0.80)
+        m.fs.RO.initialize(optarg=solver.options)
+
+    elif m.erd_type == "pump_as_turbine":
+        m.fs.ERD.efficiency_pump.fix(0.95)
+        m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
+
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
 
     # check degrees of freedom
@@ -425,7 +419,6 @@ def initialize_system(m, solver=None):
         propagate_state(m.fs.s01)
         m.fs.P1.initialize(optarg=optarg)
         propagate_state(m.fs.s02)
-        # m.fs.RO.initialize(optarg=optarg)
 
     else:
         pass
@@ -451,6 +444,7 @@ def optimize_set_up(m):
         pass
 
     # RO
+    m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(150)
 
