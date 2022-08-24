@@ -128,7 +128,7 @@ def _build_flowsheet(unit_model_class, process_subtype, water_source):
 
 _column_to_component_map = {
     "recovery": ("fs.unit.recovery_frac_mass_H2O[0]", pyunits.dimensionless),
-    "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.mg / pyunits.L),
+    "tds": ("fs.feed.conc_mass_comp[0.0, tds]", pyunits.g / pyunits.L),
     "toc": ("fs.feed.conc_mass_comp[0.0, toc]", pyunits.mg / pyunits.L),
     "alum_dose": ("fs.unit.alum_dose[0]", pyunits.mg / pyunits.L),
     "polymer_dose": ("fs.unit.polymer_dose[0]", pyunits.mg / pyunits.L),
@@ -469,7 +469,7 @@ class ZeroOrderUnitChecker:
 
         self.infeasible_points = _run_analysis(self.model, df, self._columns)
         max_abs_diff = -1.0
-        max_diff = -float('inf')
+        max_diff = -float("inf")
         max_name = None
         arg_max = None
         for wt3_k, wt_k in _WT3_stone.items():
@@ -494,7 +494,7 @@ class ZeroOrderUnitChecker:
         max_index = df.index[arg_max] if len(self._columns) > 1 else [df.index[arg_max]]
         for name, val in zip(self._columns, max_index):
             msg += f"{name}={val:.4f}{_column_to_component_map[name][1]} "
-        print("\n"+msg)
+        print("\n" + msg)
         print("\nAll relative differences:")
         cols = [col for col in df.columns if "relative_diff" in col]
         print(df[cols])
