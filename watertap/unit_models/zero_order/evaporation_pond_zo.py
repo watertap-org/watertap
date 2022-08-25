@@ -15,8 +15,7 @@ This module contains a zero-order representation of an evaporation pond unit
 model.
 """
 
-from pyomo.environ import units as pyunits, Var, Constraint, Reference, value, sqrt
-from pyomo.common.config import ConfigValue, In
+from pyomo.environ import units as pyunits, Var, Constraint, Reference, value
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
