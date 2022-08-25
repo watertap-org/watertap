@@ -77,19 +77,25 @@ def flowsheet_interface(exports=True):
     )
 
 
+def noop(*args, **kwargs):
+    return
+
+
 @pytest.mark.unit
 def test_create_interface():
-    fsi = flowsheet_interface(exports=False)
+    with pytest.raises(ValueError):
+        _ = flowsheet_interface(exports=False)
     fsi = flowsheet_interface()
-    fs2 = fsapi.FlowsheetInterface(fs=fsi.fs_exp)
+    fs2 = fsapi.FlowsheetInterface(
+        fs=fsi.fs_exp, do_build=noop, do_export=noop, do_solve=noop
+    )
     assert fs2.fs_exp == fsi.fs_exp
 
 
 @pytest.mark.unit
 def test_build_noexport():
-    fsi = flowsheet_interface(exports=False)
-    with pytest.raises(KeyError):
-        fsi.build(erd_type="pressure_exchanger")
+    with pytest.raises(ValueError):
+        flowsheet_interface(exports=False)
 
 
 @pytest.mark.unit
@@ -185,5 +191,23 @@ def test_find():
     assert len(result) == 1  # expect only 1 module (1 was bad)
     interface = list(result.values())[0]  # get the module function
     interface.build()  # make sure the module exported properly
-    with pytest.raises(KeyError):
-        interface.solve()
+    interface.solve()
+
+
+@pytest.mark.unit
+def test_require_methods():
+    fsi = flowsheet_interface()
+    methods = ("do_export", "do_build", "do_solve")
+    kwargs = {m: noop for m in methods}
+    # make one method 'bad' at a time
+    for meth in methods:
+        # missing
+        badkw = kwargs.copy()
+        del badkw[meth]
+        with pytest.raises(ValueError):
+            _ = fsapi.FlowsheetInterface(fsi, **badkw)
+        # not callable
+        badkw = kwargs.copy()
+        badkw[meth] = 1
+        with pytest.raises(TypeError):
+            _ = fsapi.FlowsheetInterface(fsi, **badkw)
