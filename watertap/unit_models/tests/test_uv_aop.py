@@ -902,7 +902,6 @@ class TestUV_detailed:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i[0]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
