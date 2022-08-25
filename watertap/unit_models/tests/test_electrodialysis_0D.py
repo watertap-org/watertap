@@ -274,17 +274,18 @@ class TestElectrodialysisVoltageConst:
         #       and not be here after everything else (see next test)
         m.fs.costing = WaterTAPCosting()
 
-        # Set costing var
-        m.fs.costing.electrodialysis_aem_membrane_cost.set_value(45)
-        m.fs.costing.electrodialysis_cem_membrane_cost.set_value(41)
-        m.fs.costing.factor_electrodialysis_membrane_housing_replacement.set_value(0.2)
-
         m.fs.unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
                 "costing_method_arguments": {},
             },
         )
+
+        # Set costing var
+        m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
+        m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
+        m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
+
         m.fs.costing.cost_process()
 
         assert_units_consistent(m)
