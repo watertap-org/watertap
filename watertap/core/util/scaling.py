@@ -110,7 +110,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             break
 
         # check variable scaling wrt new scale
-        for b in list(badly_scaled_var_generator(temp_blk)):
+        for b in list(badly_scaled_var_generator(temp_blk, zero=zero)):
             yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
 
         # store results for sv to sv_hist dict for current model copy
