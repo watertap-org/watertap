@@ -755,6 +755,9 @@ class TestUV_detailed:
         )
 
         # Example system for verifying costing
+        # Example parameters are from data UVCAT-v11-Chapter-9-Examples.xls with
+        # LPHO lamp type and no dose pacing. UV System Cost Analysis Tool (UVCAT):
+        # https://www.nyserda.ny.gov/About/Publications/Research-and-Development-Technical-Reports/Water-and-Wastewater-Technical-Reports/Optimization-of-UV-Disinfection
         feed_flow_mass = 1026.5 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325 * pyunits.Pa
@@ -779,7 +782,7 @@ class TestUV_detailed:
             "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e5, index=("Liq", "NDMA")
+            "flow_mass_phase_comp", 1e6, index=("Liq", "NDMA")
         )
 
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
@@ -792,12 +795,12 @@ class TestUV_detailed:
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
 
         # UV dose specifications
-        m.fs.unit.A_coeff.fix(2.15138466202152)
-        m.fs.unit.B_coeff.fix(10.2071744508813)
-        m.fs.unit.C_coeff.fix(0.696709253161921)
-        m.fs.unit.D_coeff.fix(1.09563014019707)
-        m.fs.unit.relative_lamp_output.fix(12)
-        m.fs.unit.num_of_banks.fix(2)
+        m.fs.unit.A_coeff.fix(2.49874660356544)
+        m.fs.unit.B_coeff.fix(9.19999598497674)
+        m.fs.unit.C_coeff.fix(0.782147006905514)
+        m.fs.unit.D_coeff.fix(0.948675398855577)
+        m.fs.unit.relative_lamp_output.fix(1)
+        m.fs.unit.num_of_banks.fix(8)
         m.fs.unit.UVT.fix(UVT)
         return m
 
@@ -899,6 +902,7 @@ class TestUV_detailed:
     def test_var_scaling(self, UV_frame):
         m = UV_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i[0]) for i in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -926,10 +930,10 @@ class TestUV_detailed:
                 "Liq", "NDMA"
             ]
         )
-        assert pytest.approx(44.8959, rel=1e-3) == value(
+        assert pytest.approx(52.3852, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)
         )
-        assert pytest.approx(3.5097, rel=1e-3) == value(
+        assert pytest.approx(4.0951, rel=1e-3) == value(
             log10(
                 m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                     "Liq", "NDMA"
@@ -939,10 +943,7 @@ class TestUV_detailed:
                 ]
             )
         )
-        assert pytest.approx(46.2244, rel=1e-3) == value(
-            pyunits.convert(m.fs.unit.reactor_volume, to_units=pyunits.m**3)
-        )
-        assert pytest.approx(421.153, rel=1e-3) == value(
+        assert pytest.approx(491.407, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
@@ -966,8 +967,8 @@ class TestUV_detailed:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(849181, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(33005.6, rel=1e-5) == value(
+        assert pytest.approx(865726, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(38511.4, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0165417, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0181887, rel=1e-5) == value(m.fs.costing.LCOW)

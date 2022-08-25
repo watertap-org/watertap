@@ -787,7 +787,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.lamp_efficiency) is None:
-            iscale.set_scaling_factor(self.lamp_efficiency, 10)
+            iscale.set_scaling_factor(self.lamp_efficiency, 1)
 
         if hasattr(self, "UVT"):
             if iscale.get_scaling_factor(self.UVT) is None:
