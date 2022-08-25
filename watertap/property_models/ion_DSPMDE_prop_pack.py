@@ -347,33 +347,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity",
         )
-        # Ion electrical mobility
-        self.elec_mobility_phase_comp = Param(
-            self.phase_list,
-            self.ion_set | self.solute_set,
-            mutable=True,
-            default=5.19e-8,  # default as Na+
-            initialize=self.config.elec_mobility_data,
-            units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
-            doc="Ion electrical mobility",
-        )
-        self.trans_num_phase_comp = Param(
-            self.phase_list,
-            self.ion_set | self.solute_set,
-            mutable=True,
-            default=0.5,
-            initialize=self.config.trans_num_data,
-            units=pyunits.dimensionless,
-            doc="Ion transport number in the liquid phase",
-        )
-        self.equiv_conductivity_phase = Param(
-            self.phase_list,
-            mutable=True,
-            default=0.5,
-            initialize=self.config.equiv_conductivity_phase_data,
-            units=pyunits.meter**2 * pyunits.ohm**-1 * pyunits.mol**-1,
-            doc="Total equivalent electrical conductivity of the liquid phase",
-        )
+
         # Ion charge
         self.charge_comp = Param(
             self.ion_set | self.solute_set,
@@ -650,27 +624,17 @@ class _DSPMDEStateBlock(StateBlock):
                         self[k].flow_mol_phase_comp["Liq", j]
                         * abs(self[k].params.charge_comp[j])
                     )
-                if self[k].is_property_constructed("elec_mobility_phase_comp"):
+                if (
+                    self[k].is_property_constructed("elec_mobility_phase_comp")
+                    and self[k].params.config.equiv_conductivity_calculation
+                    == ElectricalMobilityCalculation.EinsteinRelation
+                ):
 
                     self[k].elec_mobility_phase_comp["Liq", j].set_value(
                         self[k].diffus_phase_comp["Liq", j]
                         * abs(self[k].charge_comp[j])
                         * Constants.faraday_constant
                         / (Constants.gas_constant * self[k].temperature)
-                    )
-
-                if self[k].is_property_constructed("trans_num_phase_comp"):
-
-                    self[k].trans_num_phase_comp["Liq", j].set_value(
-                        abs(self[k].charge_comp[j])
-                        * self[k].elec_mobility_phase_comp["Liq", j]
-                        * self[k].conc_mol_phase_comp["Liq", j]
-                        / sum(
-                            abs(self[k].charge_comp[j])
-                            * self[k].elec_mobility_phase_comp["Liq", j]
-                            * self[k].conc_mol_phase_comp["Liq", j]
-                            for j in self[k].params.ion_set
-                        )
                     )
 
             # Vars not indexed or indexed only by phase
@@ -705,8 +669,12 @@ class _DSPMDEStateBlock(StateBlock):
                     * Constants.gas_constant
                     * self[k].temperature
                 )
-            if self[k].is_property_constructed("equiv_conductivity_phase"):
 
+            if (
+                self[k].is_property_constructed("equiv_conductivity_phase")
+                and self[k].params.config.equiv_conductivity_calculation
+                == EquivalentConductivityCalculation.ElectricalMobility
+            ):
                 self[k].equiv_conductivity_phase["Liq"].set_value(
                     sum(
                         Constants.faraday_constant
@@ -1209,67 +1177,66 @@ class DSPMDEStateBlockData(StateBlockData):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
     def _elec_mobility_phase_comp(self):
-        if (
-            self.params.config.elec_mobility_calculation
-            == ElectricalMobilityCalculation.none
-        ):
-            if len(self.params.config.elec_mobility_data) == 0:
-                raise ConfigurationError(
-                    """ 
-                    The **elec_mobility_data** configuration is not providing ion electrical mobility data for
-                    {} to build the `elec_mobility_phase_comp` variable and related essential variables. 
-                    Please instance this configuration or alternatively use an **elec_mobility_calculation** 
-                    method to contruct the demanded variable(s))""".format(
-                        self.name
+        self.elec_mobility_phase_comp = Var(
+            self.params.phase_list,
+            self.params.ion_set | self.params.solute_set,
+            initialize=5.19e-8,  # default as Na+
+            units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+            doc="Ion electrical mobility",
+        )
+
+        def rule_elec_mobility_phase_comp(b, j):
+            if (
+                self.params.config.elec_mobility_calculation
+                == ElectricalMobilityCalculation.none
+            ):
+                if j not in self.params.config.elec_mobility_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing **elec_mobility_data** to build the `elec_mobility_phase_comp` 
+                        and/or its related essential variables for {} in {}. 
+                        Please instance this configuration or alternatively use an **elec_mobility_calculation** 
+                        method to contruct the demanded variable(s))""".format(
+                            j, self.name
+                        )
                     )
-                )
-            else:
-                add_object_reference(
-                    self,
-                    "elec_mobility_phase_comp",
-                    self.params.elec_mobility_phase_comp,
-                )
-        else:
-            if len(self.params.config.diffusivity_data) == 0:
-                raise ConfigurationError(
-                    """
-                    Missing valid **diffusivity_data** for {} using **ElectricalMobilityCalculation.EisteinRelation** 
-                    to compute the ion electrical mobility data. 
-                    Please provide valid **diffusivity_data** or 
-                    use other **ElectricalMobilityCalculation** configurations. """.format(
-                        self.name
+                else:
+                    return (
+                        b.elec_mobility_phase_comp["Liq", j]
+                        == self.params.config.elec_mobility_data["Liq", j]
                     )
-                )
             else:
-                if len(self.params.config.elec_mobility_data) != 0:
-                    _log.warning(
+                if j not in self.params.config.diffusivity_data.keys():
+                    raise ConfigurationError(
                         """
-                        The provided **elec_mobility_data** will be overritten 
-                        by the calculated data because the EisteinRelation 
-                        method is selected."""
+                        Missing valid **diffusivity_data** for using **ElectricalMobilityCalculation.EisteinRelation** 
+                        to compute the `elec_mobility_phase_comp` for {} in {} . 
+                        Please provide valid **diffusivity_data** or 
+                        use other **ElectricalMobilityCalculation** configurations. """.format(
+                            j, self.name
+                        )
                     )
+                else:
+                    if j in self.params.config.elec_mobility_data.keys():
+                        _log.warning(
+                            """
+                            The provided **elec_mobility_data** of {} will be overritten 
+                            by the calculated data for {} because the EisteinRelation 
+                            method is selected.""".format(
+                                j, self.name
+                            )
+                        )
 
-                self.elec_mobility_phase_comp = Var(
-                    self.params.phase_list,
-                    self.params.ion_set | self.params.solute_set,
-                    initialize=5.19e-8,  # default as Na+
-                    units=pyunits.meter**2
-                    * pyunits.volt**-1
-                    * pyunits.second**-1,
-                    doc="Ion electrical mobility",
-                )
-
-                def rule_elec_mobility_phase_comp(b, j):
                     return b.elec_mobility_phase_comp["Liq", j] == b.diffus_phase_comp[
                         "Liq", j
                     ] * abs(b.charge_comp[j]) * Constants.faraday_constant / (
                         Constants.gas_constant * b.temperature
                     )
 
-                self.eq_elec_mobility_phase_comp = Constraint(
-                    self.params.ion_set | self.params.solute_set,
-                    rule=rule_elec_mobility_phase_comp,
-                )
+        self.eq_elec_mobility_phase_comp = Constraint(
+            self.params.ion_set | self.params.solute_set,
+            rule=rule_elec_mobility_phase_comp,
+        )
 
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
@@ -1399,38 +1366,35 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="Ion transport number in the liquid phase",
         )
-        if self.params.config.trans_num_calculation == TransportNumberCalculation.none:
-            if len(self.params.config.trans_num_data) == 0:
-                raise ConfigurationError(
-                    """ 
-                    The **trans_num_data** configuration is not providing valid 
-                    ion transport number data for {} to build the `trans_num_phase_comp` variable 
-                    and related essential variables. 
-                    Please instance this configuration or alternatively use an **trans_num_calculation** 
-                    method to contruct the demanded variable(s))""".format(
-                        self.name
-                    )
-                )
-            else:
 
-                def rule_trans_num_phase_comp(b, j):
+        def rule_trans_num_phase_comp(b, j):
+            if (
+                self.params.config.trans_num_calculation
+                == TransportNumberCalculation.none
+            ):
+                if ("Liq", j) not in self.params.config.trans_num_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing valid **trans_num_data** to build the `trans_num_phase_comp` for {} in {}.  
+                        Please instance this configuration or alternatively use an **trans_num_calculation** 
+                        method to contruct the demanded variable(s))""".format(
+                            j, self.name
+                        )
+                    )
+                else:
                     return (
                         b.trans_num_phase_comp["Liq", j]
                         == self.params.config.trans_num_data["Liq", j]
                     )
-
-                # add_object_reference(
-                #   self, "trans_num_phase_comp", self.params.trans_num_phase_comp
-                # )
-        else:
-            if len(self.params.config.trans_num_data) != 0:
-                _log.warning(
-                    """
-                    The provided **trans_num_data** will be overritten by the calculated data because the 
-                    **TransportNumberCalculation** is set as **ElectricalMobility**."""
-                )
-
-            def rule_trans_num_phase_comp(b, j):
+            else:
+                if ("Liq", j) in self.params.config.trans_num_data.keys():
+                    _log.warning(
+                        """
+                        The provided **trans_num_data** of {} will be overritten by the calculated data for {}
+                        because the **TransportNumberCalculation** is set as **ElectricalMobility**.""".format(
+                            j, self.name
+                        )
+                    )
                 return b.trans_num_phase_comp["Liq", j] == abs(
                     b.charge_comp[j]
                 ) * b.elec_mobility_phase_comp["Liq", j] * b.conc_mol_phase_comp[
@@ -1448,51 +1412,50 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
     def _equiv_conductivity_phase(self):
-        if (
-            self.params.config.equiv_conductivity_calculation
-            == EquivalentConductivityCalculation.none
-        ):
-            if len(self.params.config.equiv_conductivity_phase_data) == 0:
-                raise ConfigurationError(
-                    """ 
-                    The **equiv_conductivity_phase_data** configuration is not providing valid data for
-                    for {} to build the `equiv_condunctivity_phase` variable and related essential variables. 
-                    Please instance this configuration or alternatively use an **equiv_conductivity_calculation** 
-                    method to contruct the demanded variable(s))""".format(
-                        self.name
-                    )
-                )
-            elif len(self.params.config.solute_list) > 2:
-                _log.warning(
-                    """ 
-                    Cautions should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
-                    Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
-                    the phase equivalent conductivity using the `EquivalentConductivityCalculation.ElectricalMobility` method 
-                    is recommended."""
-                )
-                add_object_reference(
-                    self,
-                    "equiv_conductivity_phase",
-                    self.params.equiv_conductivity_phase,
-                )
-            add_object_reference(
-                self, "equiv_conductivity_phase", self.params.equiv_conductivity_phase
-            )
-        else:
-            if len(self.params.config.equiv_conductivity_phase_data) != 0:
-                _log.warning(
-                    """
-                    The provided **equiv_conductivity_phase_data** will be overritten by the calculated data because the 
-                    **EquivalentConductivityCalculation** is set as **ElectricalMobility**."""
-                )
-            self.equiv_conductivity_phase = Var(
-                self.phase_list,
-                initialize=0.5,
-                units=pyunits.meter**2 * pyunits.ohm**-1 * pyunits.mol**-1,
-                doc="Total equivalent electrical conducitivty of the liquid phase",
-            )
+        self.equiv_conductivity_phase = Var(
+            self.params.phase_list,
+            initialize=0.5,
+            units=pyunits.meter**2 * pyunits.ohm**-1 * pyunits.mol**-1,
+            doc="Total equivalent electrical conducitivty of the liquid phase",
+        )
 
-            def rule_equiv_conductivity_phase(b):
+        def rule_equiv_conductivity_phase(b):
+            if (
+                self.params.config.equiv_conductivity_calculation
+                == EquivalentConductivityCalculation.none
+            ):
+                if "Liq" not in self.params.config.equiv_conductivity_phase_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing valid **equiv_conductivity_phase_data** to build 
+                        the `equiv_condunctivity_phase` variable and related essential variables for {}. 
+                        Please instance this configuration or alternatively use an **equiv_conductivity_calculation** 
+                        method to contruct the demanded variable(s))""".format(
+                            self.name
+                        )
+                    )
+                else:
+                    if len(self.params.ion_set) > 2:
+                        _log.warning(
+                            """ 
+                            Cautions should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
+                            Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
+                            the phase equivalent conductivity using the `EquivalentConductivityCalculation.ElectricalMobility` method 
+                            is recommended."""
+                        )
+                    return (
+                        b.equiv_conductivity_phase["Liq"]
+                        == self.params.config.equiv_conductivity_phase_data["Liq"]
+                    )
+            else:
+                if len(self.params.config.equiv_conductivity_phase_data) != 0:
+                    _log.warning(
+                        """
+                        The provided **equiv_conductivity_phase_data** will be overritten by the calculated data for {} because the 
+                        **EquivalentConductivityCalculation** is set as **ElectricalMobility**.""".format(
+                            self.name
+                        )
+                    )
                 return b.equiv_conductivity_phase["Liq"] == sum(
                     Constants.faraday_constant
                     * abs(b.charge_comp[j])
@@ -1504,9 +1467,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     for j in self.params.cation_set
                 )
 
-            self.eq_equiv_conductivity_phase = Constraint(
-                rule=rule_equiv_conductivity_phase
-            )
+        self.eq_equiv_conductivity_phase = Constraint(
+            rule=rule_equiv_conductivity_phase
+        )
 
     def _elec_cond_phase(self):
         self.elec_cond_phase = Var(
