@@ -83,12 +83,12 @@ class TestGACSimplified:
         m_gac.fs.unit.process_flow.properties_in[0].temperature.fix(
             273.15 + 25
         )  # feed temperature [K]
-        m_gac.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "H2O"].fix(
-            55555.55426666667
-        )
-        m_gac.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp["Liq", "DCE"].fix(
-            0.0002344381568310428
-        )
+        m_gac.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+            "Liq", "H2O"
+        ].fix(55555.55426666667)
+        m_gac.fs.unit.process_flow.properties_in[0].flow_mol_phase_comp[
+            "Liq", "DCE"
+        ].fix(0.0002344381568310428)
 
         # trial problem from Hand, 1984 for removal of trace DCE
         m_gac.fs.unit.conc_ratio_replace.fix(0.50)
