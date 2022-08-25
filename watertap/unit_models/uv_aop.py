@@ -474,7 +474,7 @@ class Ultraviolet0DData(UnitModelBlockData):
                 doc="UV dose delivery model coefficient D.",
             )
             self.relative_lamp_output = Var(
-                initialize=12,
+                initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
