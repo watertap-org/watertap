@@ -80,8 +80,8 @@ def main(erd_type=ERDtype.pressure_exchanger):
 def build(erd_type=ERDtype.pressure_exchanger):
     # flowsheet set up
     m = ConcreteModel()
-    m.fs.erd_type = erd_type
     m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 

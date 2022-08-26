@@ -24,6 +24,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     set_operating_conditions,
     initialize_system,
     solve,
+    optimize,
 )
 
 from watertap.tools.parameter_sweep_input_parser import (
@@ -100,7 +101,7 @@ def run_parameter_sweep(
         outputs,
         csv_results_file_name=csv_results_file_name,
         h5_results_file_name=h5_results_file_name,
-        optimize_function=solve,
+        optimize_function=optimize,
         optimize_kwargs={"solver": solver, "check_termination": False},
         num_samples=num_samples,
         seed=seed,

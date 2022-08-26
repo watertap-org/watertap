@@ -47,9 +47,11 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     initialize_system,
     solve,
     optimize_set_up,
+    optimize,
     display_system,
     display_state,
     display_design,
+    ERDtype,
 )
 
 
@@ -335,7 +337,7 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
         m = system_frame
 
         optimize_set_up(m)
-        solve(m, solver=solver)
+        optimize(m, solver=solver)
 
         # check decision variables
         assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(5.708e6, rel=1e-3)
@@ -353,7 +355,7 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
 class TestROwithTurbine:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(erd_type="pump_as_turbine")
+        m = build(erd_type=ERDtype.pump_as_turbine)
 
         return m
 
