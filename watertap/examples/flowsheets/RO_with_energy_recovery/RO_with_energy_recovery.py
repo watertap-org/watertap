@@ -472,6 +472,11 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 1)
 
 
+def optimize(m, solver=None, check_termination=True):
+    # --solve---
+    return solve(m, solver=solver, check_termination=check_termination)
+
+
 def display_system(m):
     print("---system metrics---")
     feed_flow_mass = sum(
