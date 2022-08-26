@@ -84,7 +84,7 @@ the user must specify. The table below gives an outline of these.
 
 **However, users may later unfix certain variables for optimization purposes.**
 
-When setting the `uv_dose_type` configuration option to `UVDoseType.calculated`, there are 7 newly introduced variables must be fixed. This is a net result of 13 degrees of freedom. Newly utilized variables that must be fixed include:
+When setting the `uv_dose_type` configuration option to `UVDoseType.calculated`, there are 7 additional variables that must be fixed. This leads to a total of 13 degrees of freedom. Additional variables that must be fixed include:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
