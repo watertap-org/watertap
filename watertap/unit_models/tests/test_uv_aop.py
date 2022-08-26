@@ -763,7 +763,6 @@ class TestUV_detailed:
         feed_pressure = 101325 * pyunits.Pa
         feed_temperature = (273.15 + 25) * pyunits.K
         uv_intensity = 1 * pyunits.mW / pyunits.cm**2
-        # exporure_time = 32 * pyunits.s
         inactivation_rate = 180 * pyunits.cm**2 / pyunits.J
         reaction_rate_constant = 0 * pyunits.min**-1
         EEO = 0.0259 * pyunits.kWh / pyunits.m**3
