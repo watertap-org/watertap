@@ -118,7 +118,7 @@ if ``uv_dose_type`` is set to ``UVDoseType.calculated``:
 .. csv-table::
    :header: "Description", "Equation"
 
-   "UV dose", ":math:`D = 10^A \cdot (-\log_{10}(UVT))^(-B \cdot \log_{10}(UVT)) \cdot (\frac{S}{S_0} / F_{in})^C \cdot N_{bank}^D`"
+   "UV dose", ":math:`D = 10^A \cdot (-\log_{10}(UVT))^{(-B \cdot \log_{10}(UVT))} \cdot (\frac{S}{S_0} / F_{in})^C \cdot N_{bank}^D`"
 
 Class Documentation
 -------------------
