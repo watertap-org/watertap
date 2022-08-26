@@ -57,7 +57,8 @@ The UV system includes the state variables from the associated property package,
 
 Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
 the UV AOP model has at least an additional 6 degrees of freedom that
-the user must specify. The table below gives an outline of these.
+the user must specify when `uv_dose_type` configuration option to `UVDoseType.fixed`.
+The table below gives an outline of these.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
@@ -99,6 +100,7 @@ When setting the `uv_dose_type` configuration option to `UVDoseType.calculated`,
 
 Equations and Relationships
 ---------------------------
+if ``uv_dose_type`` is set to default ``UVDoseType.fixed``:
 
 .. csv-table::
    :header: "Description", "Equation"
@@ -111,9 +113,8 @@ Equations and Relationships
    "Electricity demand of each component with phase", ":math:`E_{p, j} = EE/O_{p, j} \cdot F_{in} \cdot \log_{10}(M_{p, j, in} / M_{p, j, out}) / \eta`"
    "Electricity demand of each component", ":math:`E_j = \max_p E_{p, j}`"
    "Electricity demand", ":math:`E = \max_j E_j`"
-   "UV absorbance", ":math:`UVA = -\log_{10}(UVT)`"
 
-if ``uv_dose_type`` is set to ``UVDoseType.calculated``:
+if ``uv_dose_type`` is set to ``UVDoseType.calculated``, there is one additional equation:
 
 .. csv-table::
    :header: "Description", "Equation"
