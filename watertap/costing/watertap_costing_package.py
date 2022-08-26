@@ -1235,7 +1235,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     blk.costing_package.gac.makeup_unit_cost
                     * (
                         (1 - blk.costing_package.gac.regen_frac)
-                        * blk.unit_model.gac.mass_replace_rate
+                        * blk.unit_model.gac_mass_replace_rate
                     )
                 ),
                 to_units=blk.costing_package.base_currency
