@@ -57,7 +57,7 @@ The UV system includes the state variables from the associated property package,
 
 Aside from the inlet feed state variables (i.e., temperature, pressure, component mass flowrates),
 the UV AOP model has at least an additional 6 degrees of freedom that
-the user must specify when `uv_dose_type` configuration option to `UVDoseType.fixed`.
+the user must specify when the `uv_dose_type` configuration option is set to `UVDoseType.fixed`.
 The table below gives an outline of these.
 
 .. csv-table::
