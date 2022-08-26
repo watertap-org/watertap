@@ -20,6 +20,7 @@ Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 #  -add viscosity as func of temp and concentration
 
 # Import Python libraries
+from sysconfig import is_python_build
 import idaes.logger as idaeslog
 
 from enum import Enum, auto
@@ -237,7 +238,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
     CONFIG.declare(
         "equiv_conductivity_calculation",
         ConfigValue(
-            default=EquivalentConductivityCalculation.none,
+            default=EquivalentConductivityCalculation.ElectricalMobility,
             domain=In(EquivalentConductivityCalculation),
             description="Ion equivalent conductivity calculation flag",
             doc="""
@@ -1190,7 +1191,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 self.params.config.elec_mobility_calculation
                 == ElectricalMobilityCalculation.none
             ):
-                if j not in self.params.config.elec_mobility_data.keys():
+                if ("Liq", j) not in self.params.config.elec_mobility_data.keys():
                     raise ConfigurationError(
                         """ 
                         Missing **elec_mobility_data** to build the `elec_mobility_phase_comp` 
@@ -1206,7 +1207,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         == self.params.config.elec_mobility_data["Liq", j]
                     )
             else:
-                if j not in self.params.config.diffusivity_data.keys():
+                if ("Liq", j) not in self.params.config.diffusivity_data.keys():
                     raise ConfigurationError(
                         """
                         Missing valid **diffusivity_data** for using **ElectricalMobilityCalculation.EisteinRelation** 
@@ -1217,7 +1218,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         )
                     )
                 else:
-                    if j in self.params.config.elec_mobility_data.keys():
+                    if ("Liq", j) in self.params.config.elec_mobility_data.keys():
                         _log.warning(
                             """
                             The provided **elec_mobility_data** of {} will be overritten 
@@ -1661,7 +1662,8 @@ class DSPMDEStateBlockData(StateBlockData):
         # for the following variables: pressure,
         # temperature, dens_mass, visc_d_phase, diffus_phase_comp
 
-        # these variables should have user input
+        # the following variables should have users' input of scaling factors;
+        # missing input triggers a warning
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
             sf = iscale.get_scaling_factor(
                 self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=True
@@ -1685,19 +1687,19 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
                     iscale.set_scaling_factor(self.flow_equiv_phase_comp["Liq", j], sf)
 
-        # scaling factors for parameters
+        # The following variables and parameters have computed scalling factors;
+        # Users do not have to input scaling factors but, if they do, their value
+        # will override.
         for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
-
         for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
-
-        for ind, v in self.elec_mobility_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.elec_mobility_phase_comp[ind], 1e8)
-
+                if ind in self.params.config.diffusivity_data.keys():
+                    sf = self.params.config.diffusivity_data[ind] ** -1
+                else:
+                    sf = 1e10
+                iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-3)
@@ -1808,29 +1810,84 @@ class DSPMDEStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
                     iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
 
-        # these variables do not typically require user input,
-        # will not override if the user does provide the scaling factor
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
-                sf = 1e-3 * min(
-                    iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-                    for j in self.params.ion_set | self.params.solute_set
+                sf = (
+                    1e-3
+                    * sum(
+                        iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                        ** 2
+                        for j in self.params.ion_set | self.params.solute_set
+                    )
+                    ** 0.5
                 )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
+        if self.is_property_constructed("elec_mobility_phase_comp"):
+            for ind, v in self.elec_mobility_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if (
+                        self.params.config.elec_mobility_calculation
+                        == ElectricalMobilityCalculation.EinsteinRelation
+                    ):
+                        sf = iscale.get_scaling_factor(self.diffus_phase_comp[ind]) / 40
+                    else:
+                        sf = self.params.config.elec_mobility_data[ind] ** -1
+                    iscale.set_scaling_factor(self.elec_mobility_phase_comp[ind], sf)
+
+        if self.is_property_constructed("trans_num_phase_comp"):
+            for ind, v in self.trans_num_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.trans_num_phase_comp[ind], 10)
+        if self.is_property_constructed("equiv_conductivity_phase"):
+            for ind, v in self.equiv_conductivity_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if (
+                        self.params.config.equiv_conductivity_calculation
+                        == EquivalentConductivityCalculation.ElectricalMobility
+                    ):
+                        sf = (
+                            1e-6
+                            * sum(
+                                iscale.get_scaling_factor(
+                                    self.elec_mobility_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                * iscale.get_scaling_factor(
+                                    self.conc_mol_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                for j in self.params.ion_set
+                            )
+                            ** 0.5
+                            / sum(
+                                iscale.get_scaling_factor(
+                                    self.conc_mol_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                for j in self.params.cation_set
+                            )
+                            ** 0.5
+                        )
+                    else:
+                        sf = self.params.config.equiv_conductivity_phase_data[ind] ** -1
+                    iscale.set_scaling_factor(self.equiv_conductivity_phase[ind], sf)
+
         if self.is_property_constructed("elec_cond_phase"):
             if iscale.get_scaling_factor(self.elec_cond_phase) is None:
-                sf = 1e-4 * min(
-                    (
-                        0.5
-                        * iscale.get_scaling_factor(
-                            self.elec_mobility_phase_comp["Liq", j]
+                for ind, v in self.elec_cond_phase.items():
+                    sf = (
+                        iscale.get_scaling_factor(self.equiv_conductivity_phase[ind])
+                        * sum(
+                            iscale.get_scaling_factor(
+                                self.conc_mol_phase_comp["Liq", j]
+                            )
+                            ** 2
+                            for j in self.params.cation_set
                         )
-                        * iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                        ** 0.5
                     )
-                    for j in self.params.ion_set | self.params.solute_set
-                )
-                iscale.set_scaling_factor(self.elec_cond_phase, sf)
+                    iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1895,6 +1952,7 @@ class DSPMDEStateBlockData(StateBlockData):
             "pressure_osm_phase",
             "flow_vol_phase",
             "dens_mass_phase",
+            "equiv_conductivity_phase",
             "elec_cond_phase",
             "visc_k_phase",
         ]:
@@ -1915,6 +1973,8 @@ class DSPMDEStateBlockData(StateBlockData):
             "conc_equiv_phase_comp",
             "act_coeff_phase_comp",
             "molality_phase_comp",
+            "elec_mobility_phase_comp",
+            "trans_num_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
