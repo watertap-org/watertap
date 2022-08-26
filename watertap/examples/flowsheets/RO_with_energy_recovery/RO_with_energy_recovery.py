@@ -71,7 +71,7 @@ def main(erd_type="pressure_exchanger"):
     return m
 
 
-def build(erd_type):
+def build(erd_type="pressure_exchanger"):
     # flowsheet set up
     m = ConcreteModel()
     m.erd_type = erd_type
