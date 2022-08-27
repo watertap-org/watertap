@@ -53,6 +53,14 @@ class ERDtype(StrEnum):
     pump_as_turbine = "pump_as_turbine"
 
 
+def erd_type_not_found(erd_type):
+    raise NotImplementedError(
+        "erd_type was {}, but can only "
+        "be pressure_exchanger or pump_as_turbine"
+        "".format(erd_type.value)
+    )
+
+
 def main(erd_type=ERDtype.pressure_exchanger):
     # set up solver
     solver = get_solver()
@@ -142,11 +150,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
             default={"flowsheet_costing_block": m.fs.costing}
         )
     else:
-        raise NotImplementedError(
-            "erd_type was {}, but can only "
-            "be pressure_exchanger or pump_as_turbine"
-            "".format(erd_type)
-        )
+        erd_type_not_found(erd_type)
 
     # process costing and add system level metrics
     m.fs.costing.cost_process()
@@ -178,7 +182,8 @@ def build(erd_type=ERDtype.pressure_exchanger):
         m.fs.s05 = Arc(source=m.fs.ERD.outlet, destination=m.fs.disposal.inlet)
     else:
         # this case should be caught in the previous conditional
-        pass
+        erd_type_not_found(erd_type)
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -202,7 +207,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
     elif erd_type == ERDtype.pump_as_turbine:
         iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
     else:
-        pass
+        erd_type_not_found(erd_type)
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -219,8 +224,6 @@ def set_operating_conditions(
 
     if solver is None:
         solver = get_solver()
-    else:
-        pass
 
     # ---specifications---
     # feed
@@ -281,7 +284,7 @@ def set_operating_conditions(
         m.fs.ERD.efficiency_pump.fix(0.95)
         m.fs.ERD.control_volume.properties_out[0].pressure.fix(101325)
     else:
-        pass
+        erd_type_not_found(m.fs.erd_type)
 
     m.fs.RO.initialize(optarg=solver.options)
 
@@ -373,7 +376,7 @@ def initialize_system(m, solver=None):
         initialize_pump_as_turbine(m, optarg)
 
     else:
-        pass
+        erd_type_not_found(m.fs.erd_type)
 
     m.fs.costing.initialize()
 
@@ -463,6 +466,7 @@ def optimize_set_up(m):
         m.fs.P2.control_volume.properties_out[0].pressure.setub(80e5)
         m.fs.P2.deltaP.setlb(0)
     else:
+        # no additional optimization needed for pump_as_turbine configuration
         pass
 
     # RO
@@ -564,7 +568,7 @@ def display_design(m):
             )
         )
     else:
-        pass
+        erd_type_not_found(m.fs.erd_type)
 
 
 def display_state(m):

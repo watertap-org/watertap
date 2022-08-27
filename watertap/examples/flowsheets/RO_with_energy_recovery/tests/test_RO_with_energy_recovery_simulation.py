@@ -414,3 +414,8 @@ class TestROwithTurbine:
             fs.costing.specific_energy_consumption
         )
         assert pytest.approx(0.54814, rel=1e-5) == value(fs.costing.LCOW)
+
+    @pytest.mark.component
+    def test_config_error(self, system_frame):
+        with pytest.raises(Exception):
+            build(erd_type="not_a_configuration")
