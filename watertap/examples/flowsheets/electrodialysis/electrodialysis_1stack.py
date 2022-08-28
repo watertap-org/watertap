@@ -65,7 +65,7 @@ def build():
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-        "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+        "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
     m.fs.properties = DSPMDEParameterBlock(default=ion_dict)

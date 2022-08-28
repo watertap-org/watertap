@@ -625,6 +625,8 @@ class _DSPMDEStateBlock(StateBlock):
                         self[k].flow_mol_phase_comp["Liq", j]
                         * abs(self[k].params.charge_comp[j])
                     )
+            # Vars indexed by ion_set
+            for j in self[k].params.ion_set:
                 if (
                     self[k].is_property_constructed("elec_mobility_phase_comp")
                     and self[k].params.config.equiv_conductivity_calculation
@@ -1180,7 +1182,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def _elec_mobility_phase_comp(self):
         self.elec_mobility_phase_comp = Var(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.ion_set,
             initialize=5.19e-8,  # default as Na+
             units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
             doc="Ion electrical mobility",
@@ -1205,6 +1207,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     return (
                         b.elec_mobility_phase_comp["Liq", j]
                         == self.params.config.elec_mobility_data["Liq", j]
+                        * pyunits.meter**2
+                        * pyunits.volt**-1
+                        * pyunits.second**-1
                     )
             else:
                 if ("Liq", j) not in self.params.config.diffusivity_data.keys():
@@ -1235,7 +1240,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     )
 
         self.eq_elec_mobility_phase_comp = Constraint(
-            self.params.ion_set | self.params.solute_set,
+            self.params.ion_set,
             rule=rule_elec_mobility_phase_comp,
         )
 
@@ -1362,7 +1367,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def _trans_num_phase_comp(self):
         self.trans_num_phase_comp = Var(
             self.params.phase_list,
-            self.params.ion_set | self.params.solute_set,
+            self.params.ion_set,
             initialize=0.5,
             units=pyunits.dimensionless,
             doc="Ion transport number in the liquid phase",
@@ -1408,7 +1413,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
 
         self.eq_trans_num_phase_comp = Constraint(
-            self.params.ion_set | self.params.solute_set,
+            self.params.ion_set,
             rule=rule_trans_num_phase_comp,
         )
 
@@ -1447,6 +1452,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     return (
                         b.equiv_conductivity_phase["Liq"]
                         == self.params.config.equiv_conductivity_phase_data["Liq"]
+                        * pyunits.meter**2
+                        * pyunits.ohm**-1
+                        * pyunits.mol**-1
                     )
             else:
                 if len(self.params.config.equiv_conductivity_phase_data) != 0:
@@ -1847,7 +1855,8 @@ class DSPMDEStateBlockData(StateBlockData):
                         == EquivalentConductivityCalculation.ElectricalMobility
                     ):
                         sf = (
-                            1e-6
+                            1
+                            / 96485
                             * sum(
                                 iscale.get_scaling_factor(
                                     self.elec_mobility_phase_comp["Liq", j]
