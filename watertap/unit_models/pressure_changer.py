@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Var, units as pyunits, Expr_if
+from pyomo.environ import Var, units as pyunits, Expr_if, value
 
 from enum import Enum, auto
 
@@ -99,7 +99,6 @@ class PumpIsothermalData(PumpData):
             def flow_ratio_constraint(b, t):
                 return b.flow_ratio[t] * b.bep_flow == (
                     b.control_volume.properties_out[t].flow_vol_phase["Liq"]
-                )
 
         if self.config.variable_efficiency is VariableEfficiency.flow:
 
@@ -119,10 +118,12 @@ class PumpIsothermalData(PumpData):
                 )
 
         elif self.config.variable_efficiency is VariableEfficiency.flow_head:
-            raise ValueError(
+            raise NotImplementedError(
                 "Config option 'VariableEfficiency.flow_head' is not fully implemented yet"
             )
             # TODO - Implement pump efficiency expression based on flow and head (bep_head, head_ratio)
+        else:
+            pass
 
         if self.config.variable_efficiency is not VariableEfficiency.none:
             # replace the constant efficiency assumption using eta_ratio
@@ -142,33 +143,36 @@ class PumpIsothermalData(PumpData):
 
         if hasattr(self, "bep_flow"):
             if iscale.get_scaling_factor(self.bep_flow) is None:
-                iscale.set_scaling_factor(self.bep_flow, 10)
+                sf = value(self.bep_flow) ** -1
+                iscale.set_scaling_factor(self.bep_flow, sf)
 
         if hasattr(self, "bep_head"):
             if iscale.get_scaling_factor(self.bep_head) is None:
-                iscale.set_scaling_factor(self.bep_head, 0.01)
+                sf = value(self.bep_head) ** -1
+                iscale.set_scaling_factor(self.bep_head, sf)
 
         if hasattr(self, "bep_eta"):
             if iscale.get_scaling_factor(self.bep_eta) is None:
                 iscale.set_scaling_factor(self.bep_eta, 1)
 
-        if hasattr(self, "flow_ratio"):
-            if iscale.get_scaling_factor(self.flow_ratio) is None:
-                iscale.set_scaling_factor(self.flow_ratio, 1)
+        for t in self.flowsheet().time:
+            if hasattr(self, "flow_ratio"):
+                if iscale.get_scaling_factor(self.flow_ratio[t]) is None:
+                    iscale.set_scaling_factor(self.flow_ratio[t], 1)
 
-        if hasattr(self, "efficiency_pump"):
-            if iscale.get_scaling_factor(self.efficiency_pump[0]) is None:
-                iscale.set_scaling_factor(self.efficiency_pump[0], 1)
+            if hasattr(self, "efficiency_pump"):
+                if iscale.get_scaling_factor(self.efficiency_pump[t]) is None:
+                    iscale.set_scaling_factor(self.efficiency_pump[t], 1)
 
-        # scale constraints
+            # scale constraints
 
-        if hasattr(self, "flow_ratio_constraint"):
-            if iscale.get_scaling_factor(self.flow_ratio_constraint[0]) is None:
-                iscale.set_scaling_factor(self.flow_ratio_constraint[0], 1)
+            if hasattr(self, "flow_ratio_constraint"):
+                if iscale.get_scaling_factor(self.flow_ratio_constraint[t]) is None:
+                    iscale.set_scaling_factor(self.flow_ratio_constraint[t], 1)
 
-        if hasattr(self, "eta_constraint"):
-            if iscale.get_scaling_factor(self.eta_constraint[0]) is None:
-                iscale.set_scaling_factor(self.eta_constraint[0], 1)
+            if hasattr(self, "eta_constraint"):
+                if iscale.get_scaling_factor(self.eta_constraint[t]) is None:
+                    iscale.set_scaling_factor(self.eta_constraint[t], 1)
 
 
 @declare_process_block_class("EnergyRecoveryDevice")

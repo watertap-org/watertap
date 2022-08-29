@@ -31,7 +31,7 @@ default:
     units: dimensionless
   capital_cost:
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TPEC
     reference_state:
       value: 1
       units: m^3/hr
