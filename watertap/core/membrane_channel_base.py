@@ -339,9 +339,9 @@ class MembraneChannelMixin:
                 self.flowsheet().config.time,
                 self.length_domain,
                 solute_set,
-                doc="Concentration polarization",
+                doc="Unit concentration polarization modulus",
             )
-            def eq_concentration_polarization(b, t, x, j):
+            def eq_cp_modulus(b, t, x, j):
                 return (
                     b.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
                     == b.properties[t, x].conc_mass_phase_comp["Liq", j]
@@ -362,7 +362,7 @@ class MembraneChannelMixin:
             self.length_domain,
             solute_set,
             initialize=1.1,
-            bounds=(0.9, 3),
+            bounds=(0.1, 3),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Concentration polarization modulus",
@@ -372,9 +372,9 @@ class MembraneChannelMixin:
             self.flowsheet().config.time,
             self.length_domain,
             solute_set,
-            doc="Concentration polarization",
+            doc="Concentration polarization modulus",
         )
-        def eq_concentration_polarization(b, t, x, j):
+        def eq_cp_modulus(b, t, x, j):
             return (
                 self.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
                 == self.properties[t, x].conc_mass_phase_comp["Liq", j]
@@ -384,9 +384,6 @@ class MembraneChannelMixin:
         if concentration_polarization_type == ConcentrationPolarizationType.calculated:
             if mass_transfer_coefficient == MassTransferCoefficient.none:
                 raise ConfigurationError()
-
-            # NOTE: calculated concentration polarization is relegated
-            #       to the unit model as it depends on flux
 
             # mass_transfer_coefficient is either calculated or fixed
             self.K = Var(
