@@ -282,17 +282,18 @@ def set_operating_conditions(
         # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
         m.fs.P1.efficiency_pump.fix(default_efficiency)  # pump efficiency [-]
 
-        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-        m.fs.P2.efficiency_pump.fix(default_efficiency)
+        if m.fs.erd_type is ERDtype.pressure_exchanger:
+            # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
+            m.fs.P2.efficiency_pump.fix(default_efficiency)
 
     elif variable_efficiency is VariableEfficiency.flow:
-        # fix efficiency
+        # fix pump 1 efficiency and flow ratio
         m.fs.P1.bep_eta.fix(default_efficiency)
-        m.fs.P2.bep_eta.fix(default_efficiency)
-
-        # fix the flow ratio to 1 for initialization
         m.fs.P1.flow_ratio[0].fix(1)
-        m.fs.P2.flow_ratio[0].fix(1)
+
+        if m.fs.erd_type is ERDtype.pressure_exchanger:
+            m.fs.P2.bep_eta.fix(default_efficiency)
+            m.fs.P2.flow_ratio[0].fix(1)
 
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -316,12 +317,8 @@ def set_operating_conditions(
     )
 
     if m.fs.erd_type == ERDtype.pressure_exchanger:
-        # pressure exchanger
-        m.fs.PXR.efficiency_pressure_exchanger.fix(
-            0.95
-        )  # pressure exchanger efficiency [-]
-        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-        m.fs.P2.efficiency_pump.fix(0.80)
+        # pressure exchanger efficiency
+        m.fs.PXR.efficiency_pressure_exchanger.fix(0.95)
 
     elif m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
