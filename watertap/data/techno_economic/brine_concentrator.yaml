@@ -185,11 +185,11 @@ crystallizer:
     units: L/mg*kWh/m^3
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
   elec_coeff_3:
-    value: 9.47
+    value: -9.47
     units: kWh/m^3
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
   elec_coeff_4:
-    value: 8.63E-4
+    value: -8.63E-4
     units: kWh/m^6*hr
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
   recovery_frac_mass_H2O:
