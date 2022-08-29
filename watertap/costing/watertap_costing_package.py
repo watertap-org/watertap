@@ -1320,7 +1320,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         blk.costing_package.cost_flow(electricity_flow, "electricity")
-        blk.costing_package.cost_flow(regen_flow, blk.unit_mdoel.regen_chem)
+        blk.costing_package.cost_flow(regen_flow, blk.unit_model.regen_chem)
 
     def cost_gac(blk):
         """
