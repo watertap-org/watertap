@@ -239,7 +239,7 @@ def optimize_system(m, solver=None):
     # Set a treatment goal
     # Example here is to reach a final product water containing NaCl = 1 g/L (from a 10 g/L feed)
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] == 0.393 
+        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] == 0.393
     )
     iscale.constraint_scaling_transform(
         m.fs.eq_product_quality, 1
