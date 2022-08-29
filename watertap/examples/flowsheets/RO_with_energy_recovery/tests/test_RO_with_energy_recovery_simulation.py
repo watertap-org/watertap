@@ -413,7 +413,7 @@ class TestROwithTurbine:
         assert pytest.approx(2.42916, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
         )
-        assert pytest.approx(0.242916, rel=1e-3) == value(
+        assert pytest.approx(1.15385, rel=1e-3) == value(
             fs.costing.specific_electrical_carbon_intensity
         )
         assert pytest.approx(0.54814, rel=1e-5) == value(fs.costing.LCOW)

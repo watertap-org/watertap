@@ -119,7 +119,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
-            initialize=0.1,
+            initialize=0.475,
             doc="Grid carbon intensity [kgCO2_eq/kWh]",
             units=pyo.units.kg / pyo.units.kWh,
         )
