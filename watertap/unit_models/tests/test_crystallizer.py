@@ -585,7 +585,7 @@ class TestCrystallization:
     @pytest.mark.component
     def test_solution2_operatingcost_steampressure(self, Crystallizer_frame_2):
         m = Crystallizer_frame_2
-        m.fs.costing.crystallizer_steam_pressure.fix(5)
+        m.fs.costing.crystallizer.steam_pressure.fix(5)
         b = m.fs.unit
         b.crystal_growth_rate.fix(5e-8)
         b.souders_brown_constant.fix(0.0244)
