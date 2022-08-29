@@ -378,7 +378,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Create unit model parameters and vars
         self.cell_pair_num = Var(
             initialize=1,
-            domain=NonNegativeIntegers,
+            domain=NonNegativeReals,
             bounds=(1, 10000),
             units=pyunits.dimensionless,
             doc="cell pair number in a stack",
