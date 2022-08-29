@@ -1102,21 +1102,25 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         make_capital_cost_var(blk)
         make_fixed_operating_cost_var(blk)
         # Conversions to use units from cost equations in reference
-        col_vol_gal = pyo.units.convert(
+        blk.unit_model.col_vol_gal = pyo.units.convert(
             blk.unit_model.col_vol_per, to_units=pyo.units.gal
         )
         bed_vol_ft3 = pyo.units.convert(
             blk.unit_model.bed_vol, to_units=pyo.units.ft**3
         )
-        bw_tank_vol = pyo.units.convert(
+        blk.unit_model.bw_tank_vol = pyo.units.convert(
             (
                 blk.unit_model.bw_flow * blk.unit_model.t_bw
                 + blk.unit_model.rinse_flow * blk.unit_model.t_rinse
             ),
             to_units=pyo.units.gal,
         )
-        regen_tank_vol = pyo.units.convert(
-            (blk.unit_model.regen_flow * blk.unit_model.t_regen), to_units=pyo.units.gal
+        blk.unit_model.regen_tank_vol = pyo.units.convert(
+            (
+                blk.unit_model.properties_regen[0].flow_vol_phase["Liq"]
+                * blk.unit_model.t_regen
+            ),
+            to_units=pyo.units.gal,
         )
         ix_type = blk.unit_model.config.ion_exchange_type
         TIC = 1.65
@@ -1163,9 +1167,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_vessel_constraint = pyo.Constraint(
             expr=blk.capital_cost_vessel
             == blk.costing_package.ix_vessel_intercept
-            + blk.costing_package.ix_vessel_A_coeff * col_vol_gal**3
-            + blk.costing_package.ix_vessel_B_coeff * col_vol_gal**2
-            + blk.costing_package.ix_vessel_C_coeff * col_vol_gal
+            + blk.costing_package.ix_vessel_A_coeff * blk.unit_model.col_vol_gal**3
+            + blk.costing_package.ix_vessel_B_coeff * blk.unit_model.col_vol_gal**2
+            + blk.costing_package.ix_vessel_C_coeff * blk.unit_model.col_vol_gal
         )
         blk.capital_cost_resin_constraint = pyo.Constraint(
             expr=blk.capital_cost_resin == resin_cost * bed_vol_ft3
@@ -1173,21 +1177,24 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_backwash_tank
             == blk.costing_package.ix_backwash_tank_intercept
-            + blk.costing_package.ix_backwash_tank_A_coeff * bw_tank_vol**3
-            + blk.costing_package.ix_backwash_tank_B_coeff * bw_tank_vol**2
-            + blk.costing_package.ix_backwash_tank_C_coeff * bw_tank_vol
+            + blk.costing_package.ix_backwash_tank_A_coeff
+            * blk.unit_model.bw_tank_vol**3
+            + blk.costing_package.ix_backwash_tank_B_coeff
+            * blk.unit_model.bw_tank_vol**2
+            + blk.costing_package.ix_backwash_tank_C_coeff * blk.unit_model.bw_tank_vol
         )
         blk.capital_cost_regen_tank_constraint = pyo.Constraint(
             expr=blk.capital_cost_regen_tank
             == blk.costing_package.ix_regen_tank_intercept
-            + blk.costing_package.ix_regen_tank_A_coeff * regen_tank_vol**2
-            + blk.costing_package.ix_regen_tank_B_coeff * regen_tank_vol
+            + blk.costing_package.ix_regen_tank_A_coeff
+            * blk.unit_model.regen_tank_vol**2
+            + blk.costing_package.ix_regen_tank_B_coeff * blk.unit_model.regen_tank_vol
         )
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == (
-                (blk.capital_cost_vessel * (blk.unit_model.number_columns + 1))
-                + blk.capital_cost_resin
+                (blk.capital_cost_vessel + blk.capital_cost_resin)
+                * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
                 + blk.capital_cost_backwash_tank
                 + blk.capital_cost_regen_tank
             )
@@ -1198,17 +1205,28 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.fixed_operating_cost
             == (
                 (
-                    bed_vol_ft3
+                    (
+                        bed_vol_ft3
+                        * (
+                            blk.unit_model.number_columns
+                            + blk.unit_model.number_columns_redund
+                        )
+                    )
                     * blk.costing_package.ix_annual_resin_replacement_factor
                     * resin_cost
                 )
             )
         )
 
-        regen_flow = (
-            (blk.unit_model.regen_dose * blk.unit_model.bed_vol)
-            / (blk.unit_model.t_breakthru + blk.unit_model.t_waste)
+        regen_soln_flow = (
+            (
+                blk.unit_model.regen_dose
+                * blk.unit_model.bed_vol
+                * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
+            )
+            / (blk.unit_model.t_cycle)
         ) / blk.unit_model.regen_recycle
+
         electricity_flow = (
             blk.unit_model.main_pump_power
             + blk.unit_model.regen_pump_power
@@ -1217,7 +1235,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         blk.costing_package.cost_flow(electricity_flow, "electricity")
-        blk.costing_package.cost_flow(regen_flow, regen_chem)
+        blk.costing_package.cost_flow(regen_soln_flow, regen_chem)
 
     def cost_gac(blk):
         """
