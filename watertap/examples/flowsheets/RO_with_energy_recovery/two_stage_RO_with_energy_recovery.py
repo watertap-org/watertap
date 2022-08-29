@@ -51,6 +51,7 @@ def main():
 
     # build, set, and initialize
     m = build()
+    # are operating conditions the same as 1-stage RO system?
     set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
 
@@ -179,10 +180,6 @@ def build():
     m.fs.S1.mixed_state[0].mass_frac_phase_comp
     m.fs.S1.PXR1_state[0].flow_vol_phase["Liq"]
 
-    # should RO1 properties be touched? If so, what's the naming convention? prop_out[0]? permeate vs permeate_side?
-    # m.fs.RO1.permeate.properties[0].flow_vol_phase["Liq"]
-    # m.fs.RO1.permeate.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
-
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
@@ -215,7 +212,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
         feed_state_block=m.fs.feed.properties[0],
         over_pressure=over_pressure,
         water_recovery=water_recovery,
-        NaCl_passage=0.01,
+        NaCl_passage=0.1,
         solver=solver,
     )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
@@ -225,7 +222,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
         feed_state_block=m.fs.feed.properties[0],
         over_pressure=over_pressure,
         water_recovery=water_recovery,
-        NaCl_passage=0.01,
+        NaCl_passage=0.1,
         solver=solver,
     )
     m.fs.P3.control_volume.properties_out[0].pressure.fix(operating_pressure)
@@ -240,7 +237,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # mixer, no degrees of freedom
 
-    # RO units
+    # RO units - Assume these remain the same as a 1 stage RO system or should sizing be halfed?
     m.fs.RO1.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO1.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO1.channel_height.fix(1e-3)  # channel height in membrane stage [m]
@@ -274,13 +271,13 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # initialize RO2
     m.fs.RO2.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"]
     )
     m.fs.RO2.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-        m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+        m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"]
     )
     m.fs.RO2.feed_side.properties_in[0].temperature = value(
-        m.fs.feed.properties[0].temperature
+        m.fs.P3.control_volume.properties_out[0].temperature
     )
     m.fs.RO2.feed_side.properties_in[0].pressure = value(
         m.fs.P3.control_volume.properties_out[0].pressure
@@ -308,9 +305,9 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
 def calculate_operating_pressure(
     feed_state_block=None,
-    over_pressure=0.15,
+    over_pressure=0.15,     # Why is this 0.15 here, but 0.3 everywhere else?
     water_recovery=0.5,
-    NaCl_passage=0.01,
+    NaCl_passage=0.1,
     solver=None,
 ):
     """
@@ -324,7 +321,7 @@ def calculate_operating_pressure(
         water_recovery: the mass-based fraction of inlet H2O that becomes permeate
                         (default=0.5)
         NaCl_passage:   the mass-based fraction of inlet NaCl that becomes permeate
-                        (default=0.01)
+                        (default=0.1)
         solver:     solver object to be used (default=None)
     """
     t = ConcreteModel()  # create temporary model
