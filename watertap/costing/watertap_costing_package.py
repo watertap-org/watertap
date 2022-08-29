@@ -117,7 +117,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / pyo.units.kWh,
         )
 
-        self.carbon_intensity = pyo.Param(
+        self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
             initialize=0.1,
             doc="Grid carbon intensity [kgCO2_eq/kWh]",
@@ -635,27 +635,27 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             ),
         )
 
-    def add_specific_carbon_intensity(
-        self, flow_rate, name="specific_carbon_intensity"
+    def add_specific_electrical_carbon_intensity(
+        self, flow_rate, name="specific_electrical_carbon_intensity"
     ):
         """
-        Add specific carbon intensity (kg_CO2eq/m**3) to costing block.
+        Add specific electrical carbon intensity (kg_CO2eq/m**3) to costing block.
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
-                        calculating specific energy consumption
+                        calculating specific electrical carbon intensity
             name (optional) - the name of the Expression for the specific
-                              energy consumption (default: specific_energy_consumption)
+                              energy consumption (default: specific_electrical_carbon_intensity)
         """
 
         self.add_component(
             name,
             pyo.Expression(
                 expr=self.aggregate_flow_electricity
-                * self.carbon_intensity
+                * self.electrical_carbon_intensity
                 / pyo.units.convert(
                     flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
                 ),
-                doc=f"Specific carbon intensity based on flow {flow_rate.name}",
+                doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
 
