@@ -58,7 +58,7 @@ class TestElectrodialysisVoltageConst:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-            "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
@@ -202,7 +202,7 @@ class TestElectrodialysisVoltageConst:
             "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         # set scaling factors for some vars
-        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 100)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
 
@@ -307,7 +307,7 @@ class TestElectrodialysisCurrentConst:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-            "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
@@ -449,7 +449,7 @@ class TestElectrodialysisCurrentConst:
             "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         # set scaling factors for some vars
-        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 100)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
         iscale.calculate_scaling_factors(m.fs)
         initialization_tester(m)
@@ -518,7 +518,7 @@ class TestElectrodialysis_withNeutralSPecies:
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
-            "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
@@ -667,7 +667,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "flow_mol_phase_comp", 1e4, index=("Liq", "N")
         )
         # set scaling factors for some vars
-        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 100)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
 
         iscale.calculate_scaling_factors(m.fs)
@@ -726,10 +726,10 @@ class TestElectrodialysis_withNeutralSPecies:
         assert "vars" in perform_dict
         assert value(
             perform_dict["vars"]["Total electrical power consumption(Watt)"]
-        ) == pytest.approx(5.63, rel=5e-3)
+        ) == pytest.approx(5.837, rel=5e-3)
         assert value(
             perform_dict["vars"]["Specific electrical power consumption (kW*h/m**3)"]
-        ) == pytest.approx(0.376, rel=5e-3)
+        ) == pytest.approx(0.3896, rel=5e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.480, rel=5e-3
         )
