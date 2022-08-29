@@ -51,22 +51,22 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    # display_results(m.fs)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
     # adjust_default_parameters(m)
-    # m.fs.costing.hydrogen_product_cost.fix(0)
-    # m.fs.costing.methane_product_cost.fix(0)
-    # m.fs.costing.display()
 
     results = solve(m)
     assert_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
+
+    m.fs.metab_hydrogen.display()
+
+    print(results)
 
     return m, results
 
