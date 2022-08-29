@@ -44,9 +44,14 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice, VariableEfficiency
+from watertap.unit_models.pressure_changer import (
+    Pump,
+    EnergyRecoveryDevice,
+    VariableEfficiency,
+)
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
+
 
 class ERDtype(StrEnum):
     pressure_exchanger = "pressure_exchanger"
@@ -61,7 +66,9 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(erd_type=ERDtype.pressure_exchanger, variable_efficiency=Variable_efficiency.none):
+def main(
+    erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
+):
     # set up solver
     solver = get_solver()
 
@@ -79,7 +86,7 @@ def main(erd_type=ERDtype.pressure_exchanger, variable_efficiency=Variable_effic
     # optimize and display
     optimize_set_up(m)
     optimize(m, solver=solver)
-    
+
     # print("\n***---Optimization results---***")
     display_system(m)
     display_design(m)
@@ -90,7 +97,10 @@ def main(erd_type=ERDtype.pressure_exchanger, variable_efficiency=Variable_effic
 
     return m
 
-def build(erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none):
+
+def build(
+    erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
+):
 
     # flowsheet set up
     m = ConcreteModel()
@@ -136,9 +146,11 @@ def build(erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEffic
         )
 
         m.fs.PXR = PressureExchanger(default={"property_package": m.fs.properties})
-        m.fs.P2 = Pump(default={
-            "property_package": m.fs.properties,
-            "variable_efficiency": variable_efficiency,}
+        m.fs.P2 = Pump(
+            default={
+                "property_package": m.fs.properties,
+                "variable_efficiency": variable_efficiency,
+            }
         )
         m.fs.M1 = Mixer(
             default={
