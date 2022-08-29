@@ -87,6 +87,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
 
+        # Define standard material flows and costs
+        # The WaterTAP costing package creates flows
+        # in a lazy fashion, the first time `cost_flow`
+        # is called for a flow. The `available_flows`
+        # are all the flows which can be costed with
+        # the WaterTAP costing package.
+        self.available_flows = {}
+
         # Build flowsheet level costing components
         # These are the global parameters
         self.utilization_factor = pyo.Var(
@@ -116,6 +124,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Electricity cost",
             units=self.base_currency / pyo.units.kWh,
         )
+        self.available_flows["electricity"] = self.electricity_base_cost
 
         def build_reverse_osmosis_cost_param_block(blk):
 
@@ -266,6 +275,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOCl purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["NaOCl"] = blk.cost / blk.purity
 
         self.naocl = pyo.Block(rule=build_naocl_cost_param_block)
 
@@ -290,6 +300,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="CaOH2 purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["CaOH2"] = blk.cost / blk.purity
 
         self.caoh2 = pyo.Block(rule=build_caoh2_cost_param_block)
 
@@ -395,6 +406,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
         )
+        self.available_flows["steam"] = self.steam_unit_cost
 
         def build_gac_cost_param_block(blk):
 
@@ -488,18 +500,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         # fix the parameters
         for var in self.component_objects(pyo.Var, descend_into=True):
             var.fix()
-
-        # Define standard material flows and costs
-        # The WaterTAP costing package creates flows
-        # in a lazy fashion, the first time `cost_flow`
-        # is called for a flow. The `available_flows`
-        # are all the flows which can be costed with
-        # the WaterTAP costing package.
-        self.available_flows = {}
-        self.available_flows["electricity"] = self.electricity_base_cost
-        self.available_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
-        self.available_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
-        self.available_flows["steam"] = self.steam_unit_cost
 
     def cost_flow(self, flow_expr, flow_type):
         """
