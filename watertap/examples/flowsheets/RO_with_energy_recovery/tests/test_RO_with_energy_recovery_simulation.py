@@ -40,10 +40,12 @@ from idaes.core.util.scaling import (
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+from watertap.unit_models.pressure_changer import (
+    Pump,
+    EnergyRecoveryDevice,
     VariableEfficiency,
-    main,
+)
+from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,
     initialize_system,
@@ -63,7 +65,10 @@ solver = get_solver()
 class TestROwithPX:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(erd_type="pressure_exchanger")
+        m = build(
+            erd_type=ERDtype.pressure_exchanger,
+            variable_efficiency=VariableEfficiency.none,
+        )
 
         return m
 
@@ -279,11 +284,11 @@ class TestROwithPX:
             captured.out
             == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
-Product: 0.493 kg/s, 280 ppm
+Product: 0.493 kg/s, 502 ppm
 Volumetric recovery: 49.5%
 Water recovery: 50.0%
-Energy Consumption: 2.7 kWh/m3
-Levelized cost of water: 0.44 $/m3
+Energy Consumption: 2.0 kWh/m3
+Levelized cost of water: 0.41 $/m3
 """
         )
 
@@ -297,17 +302,17 @@ Levelized cost of water: 0.44 $/m3
         assert (
             captured.out
             == """---decision variables---
-Operating pressure 74.9 bar
-Membrane area 60.2 m2
+Operating pressure 52.7 bar
+Membrane area 138.0 m2
 ---design variables---
 Pump 1
-outlet pressure: 74.9 bar
-power 4.57 kW
+outlet pressure: 52.7 bar
+power 3.19 kW
 Separator
-Split fraction 50.53
+Split fraction 50.52
 Pump 2
-outlet pressure: 74.9 bar
-power 0.30 kW
+outlet pressure: 52.7 bar
+power 0.31 kW
 """
         )
 
@@ -353,16 +358,14 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)
 
-    @pytest.mark.component
-    def test_configuration_option(self):
-        m = main(erd_type=ERDtype.pressure_exchanger, VariableEfficiency.flow)
-
-        assert value(m.fs.P1.efficiency_pump[0]) == pytest.approx(0.8, rel=1e-5)
 
 class TestROwithTurbine:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(erd_type=ERDtype.pump_as_turbine)
+        m = build(
+            erd_type=ERDtype.pump_as_turbine,
+            variable_efficiency=VariableEfficiency.flow,
+        )
 
         return m
 
@@ -392,6 +395,7 @@ class TestROwithTurbine:
         m = system_frame
         set_operating_conditions(m)
         assert m.fs.ERD.efficiency_pump[0].is_fixed()
+        assert m.fs.P1.flow_ratio[0].is_fixed()
         assert pytest.approx(0.95, rel=1e-5) == value(m.fs.ERD.efficiency_pump[0])
         assert pytest.approx(101325, rel=1e-5) == value(
             m.fs.ERD.control_volume.properties_out[0].pressure
@@ -410,17 +414,16 @@ class TestROwithTurbine:
         m = system_frame
         optimize_set_up(m)
         solve(m, solver=solver)
-        assert degrees_of_freedom(m) == 1
 
     @pytest.mark.component
     def test_solution(self, system_frame):
         m = system_frame
         fs = m.fs
-        assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
-        assert pytest.approx(2.42916, rel=1e-5) == value(
+        assert pytest.approx(138.627, rel=1e-5) == value(fs.RO.area)
+        assert pytest.approx(2.28941, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
         )
-        assert pytest.approx(0.54814, rel=1e-5) == value(fs.costing.LCOW)
+        assert pytest.approx(0.54131, rel=1e-5) == value(fs.costing.LCOW)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):

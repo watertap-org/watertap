@@ -74,9 +74,7 @@ def main(
 
     # build, set, and initialize
     m = build(erd_type=erd_type, variable_efficiency=variable_efficiency)
-    set_operating_conditions(
-        m, variable_efficiency, water_recovery=0.5, over_pressure=0.3, solver=solver
-    )
+    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
 
     # optimize and display
@@ -106,6 +104,7 @@ def build(
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.erd_type = erd_type
+    m.fs.variable_efficiency = variable_efficiency
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
@@ -245,7 +244,6 @@ def build(
 
 def set_operating_conditions(
     m,
-    variable_efficiency=VariableEfficiency.none,
     water_recovery=0.5,
     over_pressure=0.3,
     solver=None,
@@ -278,7 +276,7 @@ def set_operating_conditions(
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     default_efficiency = 0.8
-    if variable_efficiency is VariableEfficiency.none:
+    if m.fs.variable_efficiency is VariableEfficiency.none:
         # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
         m.fs.P1.efficiency_pump.fix(default_efficiency)  # pump efficiency [-]
 
@@ -286,7 +284,7 @@ def set_operating_conditions(
             # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
             m.fs.P2.efficiency_pump.fix(default_efficiency)
 
-    elif variable_efficiency is VariableEfficiency.flow:
+    elif m.fs.variable_efficiency is VariableEfficiency.flow:
         # fix pump 1 efficiency and flow ratio
         m.fs.P1.bep_eta.fix(default_efficiency)
         m.fs.P1.flow_ratio[0].fix(1)
@@ -496,9 +494,6 @@ def initialize_pump_as_turbine(m, optarg):
 
 
 def optimize_set_up(m):
-    # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-
     # unfix decision variables and add bounds
     # pump 1 and pump 2
     m.fs.P1.control_volume.properties_out[0].pressure.unfix()
@@ -517,13 +512,6 @@ def optimize_set_up(m):
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(150)
-
-    # additional specifications
-    m.fs.product_salinity = Param(default=500e-6, mutable=True)
-
-    m.fs.water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= 0
-    )
 
     # ---checking model---
     assert_degrees_of_freedom(m, 1)
@@ -630,5 +618,7 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    # m = main(erd_type=ERDtype.pressure_exchanger)
-    m = main(erd_type=ERDtype.pump_as_turbine)
+    m = main(
+        erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
+    )
+    # m = main(erd_type=ERDtype.pump_as_turbine, variable_efficiency=VariableEfficiency.flow)
