@@ -22,8 +22,8 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supe
     initialize_system,
     solve,
     add_costing,
-    display_results,
-    display_costing,
+    display_metrics_results,
+    display_additional_results,
 )
 
 solver = get_solver()
@@ -109,5 +109,5 @@ class TestSupercritical_Sludge_to_GasFlowsheet:
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
-        display_results(m)
-        display_costing(m)
+        display_metrics_results(m)
+        display_additional_results(m)

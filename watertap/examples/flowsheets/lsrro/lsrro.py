@@ -153,12 +153,12 @@ def build(
     m.fs.costing.factor_total_investment.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.factor_membrane_replacement.fix(0.15)
     m.fs.costing.electricity_base_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis_membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis_high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump_cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.erd_pressure_exchanger_cost.fix(535)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -568,7 +568,7 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.high_pressure_pump_cost
+        == blk.costing_package.high_pressure_pump.cost
         * pyunits.watt
         / (pyunits.m**3 * pyunits.pascal / pyunits.s)
         * blk.unit_model.outlet.pressure[t0]
