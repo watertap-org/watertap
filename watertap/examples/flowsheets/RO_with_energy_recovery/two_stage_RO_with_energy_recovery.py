@@ -73,72 +73,66 @@ def main():
 def build():
     # flowsheet set up
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic = False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     # unit models (1st stage)
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package = m.fs.properties)
     m.fs.S1 = Separator(
-        default={"property_package": m.fs.properties, "outlet_list": ["P1", "PXR1"]}
+        property_package = m.fs.properties, outlet_list = ["P1", "PXR1"]
     )
-    m.fs.P1 = Pump(default={"property_package": m.fs.properties})
-    m.fs.PXR1 = PressureExchanger(default={"property_package": m.fs.properties})
-    m.fs.P2 = Pump(default={"property_package": m.fs.properties})
+    m.fs.P1 = Pump(property_package = m.fs.properties)
+    m.fs.PXR1 = PressureExchanger(property_package = m.fs.properties)
+    m.fs.P2 = Pump(property_package = m.fs.properties)
     m.fs.M1 = Mixer(
-        default={
-            "property_package": m.fs.properties,
-            "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-            "inlet_list": ["P1", "P2"],
-        }
+            property_package = m.fs.properties,
+            momentum_mixing_type = MomentumMixingType.equality,  # booster pump will match pressure
+            inlet_list = ["P1", "P2"],
     )
     m.fs.RO1 = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "pressure_change_type": PressureChangeType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-        }
+            property_package = m.fs.properties,
+            has_pressure_change = True,
+            pressure_change_type = PressureChangeType.calculated,
+            mass_transfer_coefficient = MassTransferCoefficient.calculated,
+            concentration_polarization_type = ConcentrationPolarizationType.calculated,
     )
-    m.fs.disposal1 = Product(default={"property_package": m.fs.properties})
+    m.fs.disposal1 = Product(property_package = m.fs.properties)
 
     # unit models (2nd stage)
-    m.fs.P3 = Pump(default={"property_package": m.fs.properties})
+    m.fs.P3 = Pump(property_package = m.fs.properties)
     m.fs.RO2 = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "pressure_change_type": PressureChangeType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-        }
+            property_package = m.fs.properties,
+            has_pressure_change = True,
+            pressure_change_type = PressureChangeType.calculated,
+            mass_transfer_coefficient = MassTransferCoefficient.calculated,
+            concentration_polarization_type = ConcentrationPolarizationType.calculated,
     )
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal2 = Product(default={"property_package": m.fs.properties})
+    m.fs.product = Product(property_package = m.fs.properties)
+    m.fs.disposal2 = Product(property_package = m.fs.properties)
 
 
     # costing (1st stage)
     m.fs.P1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
     m.fs.P2.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
 
     m.fs.RO1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
     m.fs.PXR1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
 
     # costing (2nd stage)
     m.fs.P3.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
     m.fs.RO2.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
+        flowsheet_costing_block = m.fs.costing
     )
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
