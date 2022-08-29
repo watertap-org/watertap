@@ -166,7 +166,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 units=pyo.units.year**-1,
             )
             blk.reactor_cost = pyo.Var(
-                initialize=172.158,
+                initialize=202.346,
                 doc="UV reactor cost",
                 units=costing.base_currency / (pyo.units.m**3 / pyo.units.hr),
             )
