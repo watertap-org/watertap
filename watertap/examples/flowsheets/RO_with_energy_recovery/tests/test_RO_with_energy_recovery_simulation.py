@@ -421,6 +421,9 @@ class TestROwithTurbine:
             fs.costing.specific_energy_consumption
         )
         assert pytest.approx(0.54131, rel=1e-5) == value(fs.costing.LCOW)
+        assert pytest.approx(1.08746, rel=1e-5) == value(
+            fs.costing.specific_electrical_carbon_intensity
+        )
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
