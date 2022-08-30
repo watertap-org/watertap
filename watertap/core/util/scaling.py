@@ -69,15 +69,17 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             blk.clone()
         )  # clone flowsheet to re-solve at conditions supplied by scale
 
-        # TODO: Need to get sf that are established by propagating non-indexed objects not active in model
-        for var_obj in temp_blk.component_objects(
-            ctype=pyo.Var, active=True, descend_into=True
+        for obj in temp_blk.component_objects(
+            ctype=pyo.Var,
+            active=None,
+            sort=False,
+            descend_into=True,
+            descent_order=None,
         ):
-
-            if get_scaling_factor(var_obj) is not None:
-                unset_scaling_factor(
-                    var_obj
-                )  # remove prior sf which are reestablished on init
+            unset_scaling_factor(obj)
+            if obj.is_indexed:
+                for (index, indexed_obj) in obj.items():
+                    unset_scaling_factor(obj[index])
 
         # loop through all vars to wipe previous sf and reset dsf considering new scale
         for (var_name, var_index), var_obj in temp_blk.component_data_iterindex(
@@ -98,6 +100,8 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
                 and var_obj.fixed
             ):
 
+                print(var_obj)
+
                 # overwrite old dsf with one considering the new scale
                 dsf = blk.fs.properties.get_default_scaling(var_name, index=var_index)
                 temp_blk.fs.properties.set_default_scaling(
@@ -114,7 +118,6 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
         temp_blk.fs.unit.initialize(outlvl=idaes.logger.ERROR)
         results = solver.solve(temp_blk)
         print(results)
-
         # ensure model solves wrt new scale
         if not pyo.check_optimal_termination(results):
             yield "Failed run on", scale, "scale"
@@ -161,3 +164,86 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             # positive or negative can tell whether it is proportional or inversely proportional,
             # but will still be caught by tol value
             yield "high sensitivity of scaled variable", var_key, sens
+
+
+'''
+def _component_data_iteritems(self, ctype, active, sort, dedup):
+    """return the name, index, and component data for matching ctypes
+
+    Generator that returns a nested 2-tuple of
+
+        ((component name, index value), _ComponentData)
+
+    for every component data in the block matching the specified
+    ctype(s).
+
+    Parameters
+    ----------
+    ctype:  None or type or iterable
+        Specifies the component types (`ctypes`) to include
+
+    active: None or bool
+        Filter components by the active flag
+
+    sort: None or bool or SortComponents
+        Iterate over the components in a specified sorted order
+
+    dedup: _DeduplicateInfo
+        Deduplicator to prevent returning the same _ComponentData twice
+    """
+    _sort_indices = SortComponents.sort_indices(sort)
+    _subcomp = PseudoMap(self, ctype, active, sort)
+    for name, comp in _subcomp.items():
+        # NOTE: Suffix has a dict interface (something other derived
+        #   non-indexed Components may do as well), so we don't want
+        #   to test the existence of iteritems as a check for
+        #   component datas. We will rely on is_indexed() to catch
+        #   all the indexed components.  Then we will do special
+        #   processing for the scalar components to catch the case
+        #   where there are "sparse scalar components"
+        if comp.is_indexed():
+            _items = comp.items()
+            if _sort_indices:
+                _items = sorted_robust(_items, key=itemgetter(0))
+        elif hasattr(comp, '_data'):
+            # This is a Scalar component, which may be empty (e.g.,
+            # from Constraint.Skip on a scalar Constraint).  Only
+            # return a ComponentData if one officially exists.
+            # Sorting is not a concern as this component has either
+            # 0 or 1 datas
+            assert len(comp._data) <= 1
+            _items = comp._data.items()
+        else:
+            # This is a non-IndexedComponent Component.  Return it.
+            _items = ((None, comp),)
+
+        if active is None or not isinstance(comp, ActiveIndexedComponent):
+            _items = (((name, idx), compData) for idx, compData in _items)
+        else:
+            _items = (((name, idx), compData) for idx, compData in _items
+                      if compData.active == active)
+
+        yield from dedup.unique(comp, _items, False)
+
+
+def component_data_iterindex(self,
+                             ctype=None,
+                             active=None,
+                             sort=False,
+                             descend_into=True,
+                             descent_order=None):
+    """
+    Return a generator that returns a tuple for each
+    component data object in a block.  By default, this
+    generator recursively descends into sub-blocks.  The
+    tuple is
+
+        ((component name, index value), _ComponentData)
+
+    """
+    dedup = _DeduplicateInfo()
+    for _block in self.block_data_objects(
+            active, sort, descend_into, descent_order):
+        yield from _block._component_data_iteritems(
+            ctype, active, sort, dedup)
+'''

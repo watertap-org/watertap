@@ -126,7 +126,7 @@ class TestGACSimplified:
             "flow_mol_phase_comp", 1e4, index=("Liq", "DCE")
         )
         calculate_scaling_factors(m_gac)
-        initialization_tester(gac_frame_simplified)
+        initialization_tester(m_gac)
 
         # Check var scaling before solve
         badly_scaled_var_lst = list(
@@ -242,6 +242,8 @@ class TestElectrodialysisVoltageConst:
         m_ed.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
+        calculate_scaling_factors(m_ed)
+        initialization_tester(m_ed)
 
         badly_scaled_var_values = {
             var.name: val for (var, val) in badly_scaled_var_generator(m_ed)
@@ -249,7 +251,9 @@ class TestElectrodialysisVoltageConst:
         assert not badly_scaled_var_values
 
         results = solver.solve(m_ed)
-        check_optimal_termination(results)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
 
         badly_scaled_var_values = {
             var.name: val for (var, val) in badly_scaled_var_generator(m_ed)
@@ -257,13 +261,13 @@ class TestElectrodialysisVoltageConst:
         assert not badly_scaled_var_values
 
     @pytest.mark.unit
-    def test_variable_sens_generator_electrodialysis_0D(
+    def test_variable_sens_generator_electrodialysis_0d(
         self, electrodialysis_cell_frame
     ):
         m_ed = electrodialysis_cell_frame
 
         # test variable sens generator with electrodialysis 0D model
-        sens_var_lst = list(variable_sens_generator(m_ed))
+        sens_var_lst = list(variable_sens_generator(m_ed, lb_scale=1e-1, ub_scale=1e0))
         for i in sens_var_lst:
             print(i)
 
