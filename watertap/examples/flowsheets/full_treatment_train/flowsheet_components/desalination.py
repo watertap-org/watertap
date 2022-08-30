@@ -17,6 +17,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Mixer
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     set_scaling_factor,
@@ -275,12 +276,18 @@ def initialize_desalination(m, **kwargs):
             propagate_state(m.fs.s_desal_feed_pumpRO)
         m.fs.pump_RO.initialize(optarg=optarg)
         propagate_state(m.fs.s_desal_pumpRO_RO)
-        m.fs.RO.initialize(optarg=optarg)
+        try:
+            m.fs.RO.initialize(optarg=optarg)
+        except InitializationError:
+            pass
         if kwargs["is_twostage"]:
             propagate_state(m.fs.s_desal_RO_pumpRO2)
             m.fs.pump_RO2.initialize(optarg=optarg)
             propagate_state(m.fs.s_desal_pumpRO2_RO2)
-            m.fs.RO2.initialize(optarg=optarg)
+            try:
+                m.fs.RO2.initialize(optarg=optarg)
+            except InitializationError:
+                pass
             propagate_state(m.fs.s_desal_permeateRO_mixer)
             propagate_state(m.fs.s_desal_permeateRO2_mixer)
             m.fs.mixer_permeate.initialize(optarg=optarg)

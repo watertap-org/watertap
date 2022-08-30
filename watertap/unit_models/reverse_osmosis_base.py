@@ -547,12 +547,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             None
         """
 
-        if degrees_of_freedom(self) != 0:
-            # TODO: should we have a separate error for DoF?
-            raise Exception(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(self)}"
-            )
 
         source_flags = self.feed_side.initialize(
             state_args=state_args,
@@ -563,6 +557,13 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         )
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        if degrees_of_freedom(self) != 0:
+            # TODO: should we have a separate error for DoF?
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
 
         state_args = self._get_state_args(initialize_guess, state_args)
 

@@ -807,7 +807,6 @@ class MembraneChannelMixin:
                 state_args_cv[k] = (1.0 - x) * state_args[k] + x * state_args_retentate[
                     k
                 ]
-        state_args_interface = state_args_tx
 
         return {
             "feed_side": state_args,
