@@ -30,6 +30,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
@@ -546,6 +547,13 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             None
         """
 
+        if degrees_of_freedom(self) != 0:
+            # TODO: should we have a separate error for DoF?
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
+
         source_flags = self.feed_side.initialize(
             state_args=state_args,
             outlvl=outlvl,
@@ -584,7 +592,10 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
                 res = opt.solve(self, tee=slc.tee)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         if not check_optimal_termination(res):
+            # release inlet state, in case this error is caught
+            self.feed_side.release_state(source_flags, outlvl)
             raise InitializationError(f"Unit model {self.name} failed to initailize")
 
         # release inlet state

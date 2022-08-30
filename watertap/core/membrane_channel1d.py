@@ -155,8 +155,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             None
         """
         super().add_state_blocks(information_flow, has_phase_equilibrium)
-        self.first_element = self.length_domain.first()
-
         self._add_interface_stateblock(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self, **kwrags):
