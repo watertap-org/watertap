@@ -60,29 +60,80 @@ class TestParamBlock(object):
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ADM1ReactionBlock
 
-        assert len(model.rparams.rate_reaction_idx) == 8
+        assert len(model.rparams.rate_reaction_idx) == 19
         for i in model.rparams.rate_reaction_idx:
-            assert i in ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+            assert i in [
+                "R1",
+                "R2",
+                "R3",
+                "R4",
+                "R5",
+                "R6",
+                "R7",
+                "R8",
+                "R9",
+                "R10",
+                "R11",
+                "R12",
+                "R13",
+                "R14",
+                "R15",
+                "R16",
+                "R17",
+                "R18",
+                "R19",
+            ]
 
-        assert len(model.rparams.rate_reaction_stoichiometry) == 8 * 14
+        assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 25
         for i in model.rparams.rate_reaction_stoichiometry:
-            assert i[0] in ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+            assert i[0] in [
+                "R1",
+                "R2",
+                "R3",
+                "R4",
+                "R5",
+                "R6",
+                "R7",
+                "R8",
+                "R9",
+                "R10",
+                "R11",
+                "R12",
+                "R13",
+                "R14",
+                "R15",
+                "R16",
+                "R17",
+                "R18",
+                "R19",
+            ]
             assert i[1] == "Liq"
             assert i[2] in [
                 "H2O",
+                "S_su",
+                "S_aa",
+                "S_fa",
+                "S_va",
+                "S_bu",
+                "S_pro",
+                "S_ac",
+                "S_h2",
+                "S_ch4",
+                "S_IC",
+                "S_IN",
                 "S_I",
-                "S_S",
+                "X_c",
+                "X_ch",
+                "X_pr",
+                "X_li",
+                "X_su",
+                "X_aa",
+                "X_fa",
+                "X_c4",
+                "X_pro",
+                "X_ac",
+                "X_h2",
                 "X_I",
-                "X_S",
-                "X_BH",
-                "X_BA",
-                "X_P",
-                "S_O",
-                "S_NO",
-                "S_NH",
-                "S_ND",
-                "X_ND",
-                "S_ALK",
             ]
 
         assert isinstance(model.rparams.Y_A, Var)

@@ -119,11 +119,11 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             # "S_cat": 0,
         }
         self.Ci = pyo.Var(
-            self.state_ref.solute_set,
+            Ci_dict.keys(),
             initialize=Ci_dict,
             units=pyo.units.kmol / pyo.units.kg,
             domain=pyo.PositiveReals,
-            doc="Carbon content of component, kmole C/kg COD",
+            doc="Carbon content of component [kmole C/kg COD]",
         )
 
         # Nitrogen content
@@ -132,40 +132,40 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         # N_bac is nitrogen content
         N_bac = 0.08 * pyo.units.kg * pyo.units.m**-3 / mw_n
 
-        Ni_dict = {
-            "S_su": 0,
-            "S_aa": 0.007,  # varies
-            "S_fa": 0,
-            "S_va": 0,
-            "S_bu": 0,
-            "S_pro": 0,
-            "S_ac": 0,
-            "S_h2": 0,
-            "S_ch4": 0,
-            "S_IC": 0,
-            "S_I": 0.06 / mw_n,  # varies
-            "X_c": 0.0376 / mw_n,  # varies
-            "X_ch": 0,
-            "X_pr": 0,  # varies
-            "X_li": 0,
-            "X_su": N_bac,
-            "X_aa": N_bac,
-            "X_fa": N_bac,
-            "X_c4": N_bac,
-            "X_pro": N_bac,
-            "X_ac": N_bac,
-            "X_h2": N_bac,
-            "X_I": 0,  # varies
-            # "S_an": 0,
-            # "S_cat": 0,
-        }
-        self.Ni = pyo.Var(
-            Ni_dict.keys(),
-            initialize=Ni_dict,
-            units=pyo.units.kmol / pyo.units.kg,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen content of component, kmole N/kg COD",
-        )
+        # Ni_dict = {
+        #     "S_su": 0,
+        #     "S_aa": 0.007,  # varies
+        #     "S_fa": 0,
+        #     "S_va": 0,
+        #     "S_bu": 0,
+        #     "S_pro": 0,
+        #     "S_ac": 0,
+        #     "S_h2": 0,
+        #     "S_ch4": 0,
+        #     "S_IC": 0,
+        #     "S_I": 0.06 / mw_n,  # varies
+        #     "X_c": 0.0376 / mw_n,  # varies
+        #     "X_ch": 0,
+        #     "X_pr": 0,  # varies
+        #     "X_li": 0,
+        #     "X_su": N_bac,
+        #     "X_aa": N_bac,
+        #     "X_fa": N_bac,
+        #     "X_c4": N_bac,
+        #     "X_pro": N_bac,
+        #     "X_ac": N_bac,
+        #     "X_h2": N_bac,
+        #     "X_I": 0,  # varies
+        #     # "S_an": 0,
+        #     # "S_cat": 0,
+        # }
+        # self.Ni = pyo.Var(
+        #     Ni_dict.keys(),
+        #     initialize=Ni_dict,
+        #     units=pyo.units.kmol / pyo.units.kg,
+        #     domain=pyo.PositiveReals,
+        #     doc="Nitrogen content of component, kmole N/kg COD",
+        # )
         # Stoichiometric Parameters (Table 6.1 in Batstone et al., 2002)
         self.f_sI_xc = pyo.Var(
             initialize=0.1,
@@ -174,7 +174,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             doc="Soluble inerts from composites",
         )
         self.f_xI_xc = pyo.Var(
-            initialize=0.25,
+            initialize=0.20,  # replacing 0.25 with 0.2 in accordance with Rosen & Jeppsson, 2006
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Particulate inerts from composites",
@@ -192,22 +192,36 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             doc="Proteins from composites",
         )
         self.f_li_xc = pyo.Var(
-            initialize=0.25,
+            initialize=0.30,  # replacing 0.25 with 0.3 in accordance with Rosen & Jeppsson, 2006
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
             doc="Lipids from composites",
         )
         self.N_xc = pyo.Var(
-            initialize=0.002,
-            units=pyo.units.dimensionless,
+            initialize=0.0376
+            / 14,  # change from 0.002 to 0.0376/14 based on Rosen & Jeppsson, 2006
+            units=pyo.units.kmol * pyo.units.kg**-1,
             domain=pyo.PositiveReals,
-            doc="Nitrogen content of composites",
+            doc="Nitrogen content of composites [kmole N/kg COD]",
         )
         self.N_I = pyo.Var(
-            initialize=0.002,
+            initialize=0.06
+            / 14,  # change from 0.002 to 0.06/14 based on Rosen & Jeppsson, 2006
+            units=pyo.units.kmol * pyo.units.kg**-1,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen content of inerts [kmole N/kg COD]",
+        )
+        self.N_aa = pyo.Var(
+            initialize=0.007,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Nitrogen content of inerts",
+            doc="Nitrogen in amino acids and proteins [kmole N/kg COD]",
+        )
+        self.N_bac = pyo.Var(
+            initialize=0.08 / 14,
+            units=pyo.units.kmol * pyo.units.kg**-1,
+            domain=pyo.PositiveReals,
+            doc="Nitrogen content in bacteria [kmole N/kg COD]",
         )
         self.f_fa_li = pyo.Var(
             initialize=0.95,
@@ -245,12 +259,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Hydrogen from amino acids",
         )
-        self.N_aa = pyo.Var(
-            initialize=0.007,
-            units=pyo.units.dimensionless,
-            domain=pyo.PositiveReals,
-            doc="Nitrogen in amino acids and proteins",
-        )
+
         self.f_va_aa = pyo.Var(
             initialize=0.23,
             units=pyo.units.dimensionless,
@@ -275,8 +284,121 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Acetate from amino acids",
         )
-        # Kinetic Parameters
-
+        self.Y_su = pyo.Var(
+            initialize=0.10,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on sugar substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_aa = pyo.Var(
+            initialize=0.08,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on amino acid substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_fa = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on fatty acid substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_c4 = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on valerate substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_pro = pyo.Var(
+            initialize=0.04,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on propionate substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_ac = pyo.Var(
+            initialize=0.05,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of biomass on acetate substrate [kg COD X/ kg COD S]",
+        )
+        self.Y_h2 = pyo.Var(
+            initialize=0.06,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Yield of hydrogen per biomass [kg COD S/ kg COD X]",  # TODO: unsure if typo in Rosen & Jeppsson, 2006- revisit
+        )
+        # Biochemical Parameters
+        self.k_dis = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order kinetic parameter for disintegration",
+        )
+        self.k_hyd_ch = pyo.Var(
+            initialize=10,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order kinetic parameter for hydrolysis of carbohydrates",
+        )
+        self.k_hyd_pr = pyo.Var(
+            initialize=10,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order kinetic parameter for hydrolysis of proteins",
+        )
+        self.k_hyd_li = pyo.Var(
+            initialize=10,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order kinetic parameter for hydrolysis of lipids",
+        )
+        self.K_S_IN = pyo.Var(
+            initialize=1e-4,
+            units=pyo.units.kmol * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Inhibition parameter for inorganic nitrogen",
+        )
+        self.k_m_su = pyo.Var(
+            initialize=30,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of sugars",
+        )
+        self.K_S_su = pyo.Var(
+            initialize=0.5,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of sugars",
+        )
+        self.pH_UL_aa = pyo.Var(
+            initialize=5.5,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Upper limit of pH for uptake rate of amino acids",
+        )
+        self.pH_LL_aa = pyo.Var(
+            initialize=4,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Lower limit of pH for uptake rate of amino acids",
+        )
+        self.k_m_aa = pyo.Var(
+            initialize=50,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of amino acids",
+        )
+        self.k_m_aa = pyo.Var(
+            initialize=50,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of amino acids",
+        )
+        self.K_S_aa = pyo.Var(
+            initialize=0.3,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of amino acids",
+        )
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
         # Note that reaction stoichiometry is on a mass basis.
@@ -786,7 +908,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         for R in s_ic_rxns:
             self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
                 self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S]
-                for S in self.state_ref.solute_set
+                for S in Ci_dict.keys()
                 if S != "S_IC"
             )
 
