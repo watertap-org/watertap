@@ -335,12 +335,12 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Resin particle density",
         )
 
-        self.selectivity = Var(
+        self.langmuir = Var(
             [target_ion],
             initialize=1.5,
             bounds=(0.5, None),
             units=pyunits.dimensionless,
-            doc="Selectivity coefficient",
+            doc="Langmuir isotherm coefficient",
         )
 
         self.separation_factor = Var(
@@ -754,7 +754,7 @@ class IonExchangeODData(UnitModelBlockData):
             doc="Separation factor calc",
         )
         def eq_sep_factor(b, j):
-            return b.separation_factor[j] == 1 / b.selectivity[j]
+            return b.separation_factor[j] == 1 / b.langmuir[j]
 
         @self.Constraint(
             [target_ion],
@@ -762,40 +762,16 @@ class IonExchangeODData(UnitModelBlockData):
         )
         def eq_langmuir(b, j):
             return b.separation_factor[j] * (
-                b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j])
-            ) == (b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity))
+                b.c_norm[j] * (1 - b.resin_eq_capacity / b.resin_max_capacity)
+            ) == (b.resin_eq_capacity / b.resin_max_capacity * (1 - b.c_norm[j]))
 
-        @self.Constraint(doc="Resin capacity mass balance")
-        def eq_resin_cap_balance(b):
-            return b.resin_max_capacity == b.resin_unused_capacity + b.resin_eq_capacity
-
-        @self.Constraint(doc="Interstitial velocity")
-        def eq_vel_inter(b):
-            return b.vel_inter == b.vel_bed / b.bed_porosity
-
-        @self.Constraint(doc="Resin surface area per vol")
-        def eq_resin_surf_per_vol(b):
-            return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
-
-        @self.Constraint(doc="Contact time")
-        def eq_t_contact(b):
-            return b.t_contact == b.bed_depth / b.vel_inter
-
-        @self.Constraint()
+        @self.Constraint(doc="Pressure conservation")
         def eq_press_conservation(b):
             return b.properties_in[0].pressure == b.properties_out[0].pressure
 
-        @self.Constraint()
+        @self.Constraint(doc="Temperature conservation")
         def eq_temp_conservation(b):
             return b.properties_in[0].temperature == b.properties_out[0].temperature
-
-        @self.Constraint(doc="Flow through bed constraint")
-        def eq_bed_flow(b):
-            prop_in = b.properties_in[0]
-            return (b.bed_depth * b.bed_porosity) / b.vel_bed == (
-                (b.bed_porosity * b.bed_vol)
-                / (prop_in.flow_vol_phase["Liq"] / b.number_columns)
-            )
 
         # =========== DIMENSIONLESS ===========
 
@@ -829,6 +805,32 @@ class IonExchangeODData(UnitModelBlockData):
 
         # =========== RESIN & COLUMN ===========
 
+        @self.Constraint(doc="Resin capacity mass balance")
+        def eq_resin_cap_balance(b):
+            return b.resin_max_capacity == b.resin_unused_capacity + b.resin_eq_capacity
+
+        @self.Constraint(doc="Interstitial velocity")
+        def eq_vel_inter(b):
+            return b.vel_inter == b.vel_bed / b.bed_porosity
+
+        @self.Constraint(doc="Column holdup")
+        def eq_holdup(b):
+            return (
+                b.holdup
+                == b.holdup_A
+                + b.holdup_B
+                * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
+                ** b.holdup_exp
+            )
+
+        @self.Constraint(doc="Resin surface area per vol")
+        def eq_resin_surf_per_vol(b):
+            return b.resin_surf_per_vol == (6 * (1 - b.bed_porosity)) / b.resin_diam
+
+        @self.Constraint(doc="Contact time")
+        def eq_t_contact(b):
+            return b.t_contact == b.bed_depth / b.vel_inter
+
         @self.Constraint(doc="Service flow rate")
         def eq_service_flow_rate(b):
             prop_in = b.properties_in[0]
@@ -839,6 +841,14 @@ class IonExchangeODData(UnitModelBlockData):
                     to_units=pyunits.m**3 / pyunits.hr,
                 )
                 / b.bed_vol_tot
+            )
+
+        @self.Constraint(doc="Flow through bed constraint")
+        def eq_bed_flow(b):
+            prop_in = b.properties_in[0]
+            return (b.bed_depth * b.bed_porosity) / b.vel_bed == (
+                (b.bed_porosity * b.bed_vol)
+                / (prop_in.flow_vol_phase["Liq"] / b.number_columns)
             )
 
         @self.Constraint(doc="Total bed volume")
@@ -996,16 +1006,6 @@ class IonExchangeODData(UnitModelBlockData):
                 ) / (prop_regen.flow_vol_phase["Liq"] * b.t_regen)
             else:
                 return prop_regen.conc_equiv_phase_comp["Liq", j] == 0
-
-        @self.Constraint(doc="Column holdup")
-        def eq_holdup(b):
-            return (
-                b.holdup
-                == b.holdup_A
-                + b.holdup_B
-                * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-                ** b.holdup_exp
-            )
 
         # =========== REGENERATION, RINSE, BACKWASHING ===========
 
@@ -1253,7 +1253,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.resin_particle_dens, 1)
 
-        iscale.set_scaling_factor(self.selectivity, 1)
+        iscale.set_scaling_factor(self.langmuir, 1)
 
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
 
@@ -1429,13 +1429,13 @@ class IonExchangeODData(UnitModelBlockData):
         var_dict["Peclet Number (particle)"] = self.Pe_p
         for i in self.config.property_package.ion_set:
             ion = i.replace("_", "")
-            keq = f"Resin Selectivity for {ion}"
+            keq = f"Langmuir Coeff. for {ion}"
             req = f"Resin Separation Factor for {ion}"
             kf = f"Fluid Mass Transfer Coeff. for {ion}"
             kd = f"Rate Coeff. for {ion}"
             sc = f"Schmidt Number for {ion}"
             sh = f"Sherwood Number for {ion}"
-            var_dict[keq] = self.selectivity[i]
+            var_dict[keq] = self.langmuir[i]
             var_dict[req] = self.separation_factor[i]
             var_dict[kf] = self.fluid_mass_transfer_coeff[i]
             var_dict[kd] = self.rate_coeff[i]
