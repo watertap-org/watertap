@@ -24,6 +24,7 @@ from pyomo.environ import (
 )
 from idaes.core.util.math import smooth_max
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
@@ -42,6 +43,11 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+# ---------------------------------------------------------------------
+class UVDoseType(Enum):
+    fixed = auto()  # uv dose is a user specified value
+    calculated = auto()
 
 
 @declare_process_block_class("Ultraviolet0D")
@@ -168,6 +174,19 @@ class Ultraviolet0DData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "uv_dose_type",
+        ConfigValue(
+            default=UVDoseType.fixed,
+            domain=In(UVDoseType),
+            description="Surface diffusion coefficient",
+            doc="""Indicates whether the uv dose will be calculated or fixed by the user
+        **default** - UVDoseType.fixed.
+        **Valid values:** {
+        **UVDoseType.fixed** - user specifies uv dose,
+        **UVDoseType.calculated** - calculates uv dose based on the lamp power and UV transmittance}""",
+        ),
+    )
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -284,20 +303,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta("length") ** 3,
             doc="UV reactor volume.",
-        )
-        self.UVT = Var(
-            initialize=0.9,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="UV transmittance.",
-        )
-        self.UVA = Var(
-            initialize=0.045,
-            bounds=(0, 10),
-            domain=NonNegativeReals,
-            units=pyunits.cm**-1,
-            doc="UV absorbance.",
         )
 
         # Add electricity parameters
@@ -431,11 +436,82 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_uv_dose(b):
             return b.uv_dose == b.uv_intensity * b.exposure_time
 
-        @self.Constraint(
-            doc="Constraint for UV absorbance",
-        )
-        def eq_UVA(b):
-            return b.UVA == -log10(b.UVT) / (1 * pyunits.cm)
+        # ---------------------------------------------------------------------
+        if self.config.uv_dose_type == UVDoseType.calculated:
+            self.UVT = Var(
+                initialize=0.9,
+                bounds=(0, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="UV transmittance.",
+            )
+            self.A_coeff = Var(
+                initialize=2.15138,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="UV dose delivery model coefficient A.",
+            )
+            self.B_coeff = Var(
+                initialize=10.2072,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="UV dose delivery model coefficient B.",
+            )
+            self.C_coeff = Var(
+                initialize=0.696709,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="UV dose delivery model coefficient C.",
+            )
+            self.D_coeff = Var(
+                initialize=1.09563,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="UV dose delivery model coefficient D.",
+            )
+            self.relative_lamp_output = Var(
+                initialize=1,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Output from the lamps relative to a new lamp, S/S0.",
+            )
+            self.num_of_banks = Var(
+                initialize=2,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Number of banks.",
+            )
+
+            @self.Constraint(
+                doc="Constraint for UV dose based on lamp power and UV transmittance",
+            )
+            def eq_uv_dose_detail(b):
+                Qr = pyunits.convert(
+                    pyunits.convert(
+                        b.control_volume.properties_in[0].flow_vol,
+                        to_units=pyunits.gal / pyunits.day,
+                    )
+                    / (1000000 * pyunits.gal / pyunits.day),
+                    to_units=pyunits.dimensionless,
+                )
+                UVA = -log10(b.UVT)
+                return b.uv_dose == pyunits.convert(
+                    (
+                        10**b.A_coeff
+                        * UVA ** (b.B_coeff * UVA)
+                        * (b.relative_lamp_output / Qr) ** b.C_coeff
+                        * b.num_of_banks**b.D_coeff
+                        * pyunits.mJ
+                        / pyunits.cm**2
+                    ),
+                    to_units=units_meta("mass") * units_meta("time") ** -2,
+                )
 
         # UV reactor volume
         @self.Constraint(
@@ -675,7 +751,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.exposure_time, sf)
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
-            sf = iscale.get_scaling_factor(self.uv_dose, default=1e-2, warning=True)
+            sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)
         iscale.set_scaling_factor(self.uv_dose, sf)
 
         if iscale.get_scaling_factor(self.inactivation_rate) is None:
@@ -711,13 +787,35 @@ class Ultraviolet0DData(UnitModelBlockData):
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.lamp_efficiency) is None:
-            iscale.set_scaling_factor(self.lamp_efficiency, 10)
+            iscale.set_scaling_factor(self.lamp_efficiency, 1)
 
-        if iscale.get_scaling_factor(self.UVT) is None:
-            iscale.set_scaling_factor(self.UVT, 10)
+        if hasattr(self, "UVT"):
+            if iscale.get_scaling_factor(self.UVT) is None:
+                iscale.set_scaling_factor(self.UVT, 1)
 
-        if iscale.get_scaling_factor(self.UVA) is None:
-            iscale.set_scaling_factor(self.UVA, 100)
+        if hasattr(self, "A_coeff"):
+            if iscale.get_scaling_factor(self.A_coeff) is None:
+                iscale.set_scaling_factor(self.A_coeff, 1)
+
+        if hasattr(self, "B_coeff"):
+            if iscale.get_scaling_factor(self.B_coeff) is None:
+                iscale.set_scaling_factor(self.B_coeff, 1)
+
+        if hasattr(self, "C_coeff"):
+            if iscale.get_scaling_factor(self.C_coeff) is None:
+                iscale.set_scaling_factor(self.C_coeff, 1)
+
+        if hasattr(self, "D_coeff"):
+            if iscale.get_scaling_factor(self.D_coeff) is None:
+                iscale.set_scaling_factor(self.D_coeff, 1)
+
+        if hasattr(self, "relative_lamp_output"):
+            if iscale.get_scaling_factor(self.relative_lamp_output) is None:
+                iscale.set_scaling_factor(self.relative_lamp_output, 1)
+
+        if hasattr(self, "num_of_banks"):
+            if iscale.get_scaling_factor(self.num_of_banks) is None:
+                iscale.set_scaling_factor(self.num_of_banks, 1)
 
         if iscale.get_scaling_factor(self.reactor_volume) is None:
             sf = iscale.get_scaling_factor(
@@ -808,13 +906,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.reactor_volume)
             iscale.constraint_scaling_transform(c, sf)
 
-        for c in self.eq_UVA.values():
-            if iscale.get_scaling_factor(self.UVA) is None:
-                sf = -log10(iscale.get_scaling_factor(self.UVT))
-            else:
-                sf = iscale.get_scaling_factor(self.UVA)
-            iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_rate_constant.items():
             if iscale.get_scaling_factor(self.rate_constant) is None:
                 sf = iscale.get_scaling_factor(
@@ -863,3 +954,8 @@ class Ultraviolet0DData(UnitModelBlockData):
         for t, c in self.eq_electricity_demand.items():
             sf = iscale.get_scaling_factor(self.electricity_demand[t])
             iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_uv_dose_detail"):
+            for c in self.eq_uv_dose_detail.values():
+                sf = iscale.get_scaling_factor(self.uv_dose)
+                iscale.constraint_scaling_transform(c, sf)
