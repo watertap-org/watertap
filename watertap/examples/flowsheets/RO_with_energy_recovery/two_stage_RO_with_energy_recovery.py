@@ -42,6 +42,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.infeasible import print_infeasible_constraints, print_close_to_bounds, print_infeasible_bounds
 from watertap.costing import WaterTAPCosting
 
 
@@ -174,7 +175,7 @@ def build():
     iscale.set_scaling_factor(m.fs.P3.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.RO2.area, 1e1)
 
-    # touch properties used in specifying and initializing the model (1st stage)
+    # touch properties used in specifying and initializing the model
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
     m.fs.S1.mixed_state[0].mass_frac_phase_comp
@@ -193,8 +194,8 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     # ---specifications---
     # feed
     # state variables
-    m.fs.feed.properties[0].pressure.fix(101325)  # stage 1 feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # stage 1 feed temperature [K]
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     m.fs.feed.properties.calculate_state(
         var_args={
@@ -351,13 +352,17 @@ def calculate_operating_pressure(
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, tee=True, check_termination=True):
+    print_close_to_bounds(blk)
+    print_infeasible_constraints(blk)
+    print_infeasible_bounds(blk)
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
         assert_optimal_termination(results)
     return results
+
 
 
 def initialize_system(m, solver=None):
@@ -441,7 +446,6 @@ def initialize_system(m, solver=None):
 def optimize_set_up(m):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-
     # unfix decision variables and add bounds
     # pumps
     m.fs.P1.control_volume.properties_out[0].pressure.unfix()
@@ -452,7 +456,7 @@ def optimize_set_up(m):
     m.fs.P2.control_volume.properties_out[0].pressure.setub(80e5)
     m.fs.P2.deltaP.setlb(0)
     m.fs.P3.control_volume.properties_out[0].pressure.unfix()
-    m.fs.P3.control_volume.properties_out[0].pressure.setlb(10e5)
+    m.fs.P3.control_volume.properties_out[0].pressure.setlb(10e3)
     m.fs.P3.control_volume.properties_out[0].pressure.setub(80e5)
     m.fs.P3.deltaP.setlb(0)
 
