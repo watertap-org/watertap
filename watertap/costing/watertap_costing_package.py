@@ -117,6 +117,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / pyo.units.kWh,
         )
 
+        self.electrical_carbon_intensity = pyo.Param(
+            mutable=True,
+            initialize=0.475,
+            doc="Grid carbon intensity [kgCO2_eq/kWh]",
+            units=pyo.units.kg / pyo.units.kWh,
+        )
+
         def build_reverse_osmosis_cost_param_block(blk):
 
             costing = blk.parent_block()
@@ -625,6 +632,30 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
                 ),
                 doc=f"Specific energy consumption based on flow {flow_rate.name}",
+            ),
+        )
+
+    def add_specific_electrical_carbon_intensity(
+        self, flow_rate, name="specific_electrical_carbon_intensity"
+    ):
+        """
+        Add specific electrical carbon intensity (kg_CO2eq/m**3) to costing block.
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating specific electrical carbon intensity
+            name (optional) - the name of the Expression for the specific
+                              energy consumption (default: specific_electrical_carbon_intensity)
+        """
+
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=self.aggregate_flow_electricity
+                * self.electrical_carbon_intensity
+                / pyo.units.convert(
+                    flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
+                ),
+                doc=f"Specific electrical carbon intensity based on flow {flow_rate.name}",
             ),
         )
 
