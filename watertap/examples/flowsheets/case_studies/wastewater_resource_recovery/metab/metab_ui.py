@@ -56,6 +56,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Feed",
     )
+
     # Unit model data, hydrogen reactor
     exports.add(
         obj=fs.metab_hydrogen.recovery_frac_mass_H2O[0],
@@ -90,7 +91,163 @@ def export_variables(flowsheet=None, exports=None):
         input_category="Hydrogen reactor",
         is_output=False,
     )
-    # TODO: add all unit costing data
+    exports.add(
+        obj=fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"],
+        name="H2 conversion ratio",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="H2 mass conversion ratio with respect to COD [g-H2 produced/g-COD reacted]",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_hydrogen.hydraulic_retention_time,
+        name="HRT",
+        ui_units=pyunits.hr,
+        display_units="h",
+        rounding=1,
+        description="Hydraulic retention time",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_hydrogen.energy_electric_mixer_vol,
+        name="Mixer specific power",
+        ui_units=pyunits.kW / pyunits.m**3,
+        display_units="kW/m3 of reactor",
+        rounding=3,
+        description="Mixer specific power relating the power to the volume of the reactor",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_hydrogen.energy_electric_vacuum_flow_vol_byproduct,
+        name="Vacuum specific power",
+        ui_units=pyunits.kW / (pyunits.kg / pyunits.hr),
+        display_units="kW/(kg-H2/h)",
+        rounding=0,
+        description="Vacuum specific power relating the power to the production of H2",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_hydrogen.energy_thermal_flow_vol_inlet,
+        name="Specific heating",
+        ui_units=pyunits.MJ / pyunits.m**3,
+        display_units="MJ/m3 of reactor",
+        rounding=0,
+        description="Specific heating relating the thermal energy input to reactor volume",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_bulk_density["hydrogen"],
+        name="Bead bulk density",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3 of reactor",
+        rounding=1,
+        description="Bead bulk density [kg-beads/m3 of reactor]",
+        is_input=True,
+        input_category="Hydrogen reactor",
+        is_output=False,
+    )
+
+    # Unit cost data, hydrogen reactor
+    exports.add(
+        obj=fs.costing.metab.reactor_cost["hydrogen"],
+        name="Reactor cost",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of reactor",
+        rounding=0,
+        description="Reactor capital cost parameter",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.mixer_cost["hydrogen"],
+        name="Mixer cost",
+        ui_units=fs.costing.base_currency / pyunits.kW,
+        display_units="$/kW of mixer",
+        rounding=0,
+        description="Mixer capital cost parameter",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_cost["hydrogen"],
+        name="Bead cost",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg",
+        rounding=0,
+        description="Bead cost parameter",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_replacement_factor["hydrogen"],
+        name="Bead replacement factor",
+        ui_units=1 / pyunits.year,
+        display_units="1/year",
+        rounding=2,
+        description="Bead replacement factor - amount of initial beads replaced per year",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_sidestream_fraction["hydrogen"],
+        name="Membrane side stream",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Fraction of reactor volumetric flow that recirculates in membrane side stream",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_specific_size["hydrogen"],
+        name="Membrane specific size",
+        ui_units=pyunits.m**2 / (pyunits.m**3 / pyunits.hr),
+        display_units="m2/(m3/h of side stream)",
+        rounding=2,
+        description="Membrane specific size relating membrane area to side stream flow rate",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_cost["hydrogen"],
+        name="Membrane cost",
+        ui_units=fs.costing.base_currency / pyunits.m**2,
+        display_units="$/m2",
+        rounding=0,
+        description="Membrane cost parameter",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.vacuum_cost["hydrogen"],
+        name="Vacuum cost",
+        ui_units=fs.costing.base_currency / (pyunits.kg / pyunits.hr),
+        display_units="$/(kg-H2/h)",
+        rounding=0,
+        description="Vacuum cost parameter",
+        is_input=True,
+        input_category="Hydrogen reactor costing",
+        is_output=False,
+    )
+
     # Unit model data, methane reactor
     exports.add(
         obj=fs.metab_methane.recovery_frac_mass_H2O[0],
@@ -125,8 +282,254 @@ def export_variables(flowsheet=None, exports=None):
         input_category="Methane reactor",
         is_output=False,
     )
-    # TODO: add all unit costing data
-    # TODO: add system costing data
+    exports.add(
+        obj=fs.metab_methane.hydraulic_retention_time,
+        name="HRT",
+        ui_units=pyunits.hr,
+        display_units="h",
+        rounding=1,
+        description="Hydraulic retention time",
+        is_input=True,
+        input_category="Methane reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_methane.energy_electric_mixer_vol,
+        name="Mixer specific power",
+        ui_units=pyunits.kW / pyunits.m**3,
+        display_units="kW/m3 of reactor",
+        rounding=3,
+        description="Mixer specific power relating the power to the volume of the reactor",
+        is_input=True,
+        input_category="Methane reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_methane.energy_electric_vacuum_flow_vol_byproduct,
+        name="Vacuum specific power",
+        ui_units=pyunits.kW / (pyunits.kg / pyunits.hr),
+        display_units="kW/(kg-H2/h)",
+        rounding=0,
+        description="Vacuum specific power relating the power to the production of H2",
+        is_input=True,
+        input_category="Methane reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.metab_methane.energy_thermal_flow_vol_inlet,
+        name="Specific heating",
+        ui_units=pyunits.MJ / pyunits.m**3,
+        display_units="MJ/m3 of reactor",
+        rounding=0,
+        description="Specific heating relating the thermal energy input to reactor volume",
+        is_input=True,
+        input_category="Methane reactor",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_bulk_density["methane"],
+        name="Bead bulk density",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3 of reactor",
+        rounding=1,
+        description="Bead bulk density [kg-beads/m3 of reactor]",
+        is_input=True,
+        input_category="Methane reactor",
+        is_output=False,
+    )
+
+    # Unit cost data, methane reactor
+    exports.add(
+        obj=fs.costing.metab.reactor_cost["methane"],
+        name="Reactor cost",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of reactor",
+        rounding=0,
+        description="Reactor capital cost parameter",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.mixer_cost["methane"],
+        name="Mixer cost",
+        ui_units=fs.costing.base_currency / pyunits.kW,
+        display_units="$/kW of mixer",
+        rounding=0,
+        description="Mixer capital cost parameter",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_cost["methane"],
+        name="Bead cost",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg",
+        rounding=0,
+        description="Bead cost parameter",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.bead_replacement_factor["methane"],
+        name="Bead replacement factor",
+        ui_units=1 / pyunits.year,
+        display_units="1/year",
+        rounding=2,
+        description="Bead replacement factor - amount of initial beads replaced per year",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_sidestream_fraction["methane"],
+        name="Membrane side stream",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Fraction of reactor volumetric flow that recirculates in membrane side stream",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_specific_size["methane"],
+        name="Membrane specific size",
+        ui_units=pyunits.m**2 / (pyunits.m**3 / pyunits.hr),
+        display_units="m2/(m3/h of side stream)",
+        rounding=2,
+        description="Membrane specific size relating membrane area to side stream flow rate",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.membrane_cost["methane"],
+        name="Membrane cost",
+        ui_units=fs.costing.base_currency / pyunits.m**2,
+        display_units="$/m2",
+        rounding=0,
+        description="Membrane cost parameter",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.costing.metab.vacuum_cost["methane"],
+        name="Vacuum cost",
+        ui_units=fs.costing.base_currency / (pyunits.kg / pyunits.hr),
+        display_units="$/(kg-CH4/h)",
+        rounding=0,
+        description="Vacuum cost parameter",
+        is_input=True,
+        input_category="Methane reactor costing",
+        is_output=False,
+    )
+
+    # System costing
+    exports.add(
+        obj=fs.costing.utilization_factor,
+        name="Utilization factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Utilization factor - [annual use hours/total hours in year]",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.TIC,
+        name="Practical investment factor",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=1,
+        description="Practical investment factor - [total investment cost/direct capital costs]",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.plant_lifetime,
+        name="Plant lifetime",
+        ui_units=pyunits.year,
+        display_units="years",
+        rounding=1,
+        description="Plant lifetime",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.wacc,
+        name="Discount rate",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=1,
+        description="Discount rate used in calculating the capital annualization",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.maintenance_costs_percent_FCI,
+        name="Fixed operating cost factor",
+        ui_units=1 / pyunits.year,
+        display_units="fraction/year",
+        rounding=1,
+        description="Fixed operating cost factor - [annual fixed operating cost/total investment cost]",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.electricity_cost,
+        name="Electricity cost",
+        ui_units=fs.costing.base_currency / pyunits.kWh,
+        display_units="$/kWh",
+        rounding=3,
+        description="Electricity cost",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.heat_cost,
+        name="Heating cost",
+        ui_units=fs.costing.base_currency / pyunits.MJ,
+        display_units="$/MJ",
+        rounding=3,
+        description="Heating cost",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.hydrogen_product_cost,
+        name="Hydrogen cost",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg",
+        rounding=3,
+        description="Hydrogen cost is negative because it is sold",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+    exports.add(
+        obj=fs.costing.methane_product_cost,
+        name="Methane cost",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg",
+        rounding=3,
+        description="Methane cost is negative because it is sold",
+        is_input=False,
+        is_output=True,
+        output_category="System costing",
+    )
+
+    # System metrics
     exports.add(
         obj=fs.costing.LCOT,
         name="Levelized cost of treatment",

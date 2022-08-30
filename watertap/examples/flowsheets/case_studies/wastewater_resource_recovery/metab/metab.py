@@ -64,9 +64,8 @@ def main():
     display_metrics_results(m)
     display_additional_results(m)
 
+    m.fs.costing.display()
     m.fs.metab_hydrogen.display()
-
-    print(results)
 
     return m, results
 
