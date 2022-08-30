@@ -26,6 +26,7 @@ from idaes.core import (
     MaterialFlowBasis,
     MaterialBalanceType,
     AqueousPhase,
+    EnergyBalanceType,
 )
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
@@ -374,6 +375,7 @@ def test_general_methods(model3):
         m.fs.stream[0].default_material_balance_type()
         is MaterialBalanceType.componentTotal
     )
+    assert m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.none
 
     assert hasattr(m.fs.stream[0], "get_material_flow_basis")
     assert m.fs.stream[0].get_material_flow_basis() is MaterialFlowBasis.molar
