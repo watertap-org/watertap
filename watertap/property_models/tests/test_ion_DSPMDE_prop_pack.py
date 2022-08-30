@@ -207,7 +207,10 @@ def model2():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock(
-        default={"solute_list": ["A", "B", "C", "D"]}
+        default={
+            "solute_list": ["A", "B", "C", "D"],
+            "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
+        }
     )
 
     return m
@@ -244,11 +247,6 @@ def test_property_ions(model2):
     stream[0].radius_stokes_comp["B"] = 1e-9
     stream[0].radius_stokes_comp["C"] = 1e-9
     stream[0].radius_stokes_comp["D"] = 1e-10
-
-    stream[0].charge_comp["A"] = 1
-    stream[0].charge_comp["B"] = -2
-    stream[0].charge_comp["C"] = 2
-    stream[0].charge_comp["D"] = -1
 
     stream[0].assert_electroneutrality(defined_state=True, tol=1e-8)
 
@@ -947,7 +945,7 @@ def model4():
                 "D": 1e-10,
                 "E": 1e-10,
             },
-            "charge": {"A": 1, "B": -2, "C": 2, "D": -1, "E": 0},
+            "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
         }
     )
 
