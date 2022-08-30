@@ -284,11 +284,11 @@ class TestROwithPX:
             captured.out
             == """---system metrics---
 Feed: 1.02 kg/s, 35000 ppm
-Product: 0.493 kg/s, 502 ppm
+Product: 0.493 kg/s, 280 ppm
 Volumetric recovery: 49.5%
 Water recovery: 50.0%
-Energy Consumption: 2.0 kWh/m3
-Levelized cost of water: 0.41 $/m3
+Energy Consumption: 2.7 kWh/m3
+Levelized cost of water: 0.44 $/m3
 """
         )
 
@@ -302,17 +302,17 @@ Levelized cost of water: 0.41 $/m3
         assert (
             captured.out
             == """---decision variables---
-Operating pressure 52.7 bar
-Membrane area 138.0 m2
+Operating pressure 74.9 bar
+Membrane area 60.2 m2
 ---design variables---
 Pump 1
-outlet pressure: 52.7 bar
-power 3.19 kW
+outlet pressure: 74.9 bar
+power 4.57 kW
 Separator
-Split fraction 50.52
+Split fraction 50.53
 Pump 2
-outlet pressure: 52.7 bar
-power 0.31 kW
+outlet pressure: 74.9 bar
+power 0.30 kW
 """
         )
 
@@ -347,16 +347,13 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
         optimize(m, solver=solver)
 
         # check decision variables
-        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(5.708e6, rel=1e-3)
-        assert value(m.fs.RO.area) == pytest.approx(115, rel=1e-3)
+        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(5251017, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(138.844, rel=1e-3)
         # check system metrics
-        assert value(m.fs.RO.recovery_vol_phase[0, "Liq"]) == pytest.approx(
-            0.4954, rel=1e-3
-        )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            2.110, rel=1e-3
+            1.9574, rel=1e-3
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.41425, rel=1e-3)
 
 
 class TestROwithTurbine:
@@ -420,7 +417,7 @@ class TestROwithTurbine:
         m = system_frame
         fs = m.fs
         assert pytest.approx(138.627, rel=1e-5) == value(fs.RO.area)
-        assert pytest.approx(2.28941, rel=1e-5) == value(
+        assert pytest.approx(2.28925, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
         )
         assert pytest.approx(0.54131, rel=1e-5) == value(fs.costing.LCOW)
