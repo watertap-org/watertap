@@ -38,6 +38,7 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -730,10 +731,63 @@ class Ultraviolet0DData(UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         # TODO: add other performance constants
         var_dict = {}
+
+        var_dict["UV dose"] = self.uv_dose
+        var_dict["Average intensity of UV light"] = self.uv_intensity
+
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
+        # loop through desired state block properties indexed by [phase, comp]
+        phase_comp_prop_dict = {
+            "flow_mol_phase_comp": "Molar flow rate",
+            "flow_mass_phase_comp": "Mass flow rate",
+            "conc_mol_phase_comp": "Molar concentration",
+            "conc_mass_phase_comp": "Mass concentration",
+        }
+        for prop_name, prop_str in phase_comp_prop_dict.items():
+            for j in self.config.property_package.component_list:
+                if self.control_volume.properties_in[
+                    time_point
+                ].is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ process feed inlet"] = getattr(
+                        self.control_volume.properties_in[time_point], prop_name
+                    )["Liq", j]
+                if self.control_volume.properties_out[
+                    time_point
+                ].is_property_constructed(prop_name):
+                    var_dict[f"{prop_str} of {j} @ process feed outlet"] = getattr(
+                        self.control_volume.properties_out[time_point], prop_name
+                    )["Liq", j]
+
+        # loop through desired state block properties indexed by [phase]
+        phase_prop_dict = {
+            "flow_vol_phase": "Volumetric flow rate",
+        }
+        for prop_name, prop_str in phase_prop_dict.items():
+            if self.control_volume.properties_in[time_point].is_property_constructed(
+                prop_name
+            ):
+                var_dict[f"{prop_str} @ process feed inlet"] = getattr(
+                    self.control_volume.properties_in[time_point], prop_name
+                )["Liq"]
+            if self.control_volume.properties_out[time_point].is_property_constructed(
+                prop_name
+            ):
+                var_dict[f"{prop_str} @ process feed outlet"] = getattr(
+                    self.control_volume.properties_out[time_point], prop_name
+                )["Liq"]
+
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Process Inlet": self.inlet,
+                "Process Outlet": self.outlet,
+            },
+            time_point=time_point,
+        )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

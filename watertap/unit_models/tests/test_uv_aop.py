@@ -271,6 +271,11 @@ class TestUV:
         )
         assert pytest.approx(0.0202303, rel=1e-5) == value(m.fs.costing.LCOW)
 
+    @pytest.mark.component
+    def test_reporting(self, UV_frame):
+        m = UV_frame
+        m.fs.unit.report()
+
 
 class TestUV_standard:
     @pytest.fixture(scope="class")
@@ -490,6 +495,11 @@ class TestUV_standard:
             m.fs.unit.costing.fixed_operating_cost
         )
         assert pytest.approx(0.0137057, rel=1e-5) == value(m.fs.costing.LCOW)
+
+    @pytest.mark.component
+    def test_reporting(self, UV_frame):
+        m = UV_frame
+        m.fs.unit.report()
 
 
 class TestUV_with_multiple_comps:
@@ -738,6 +748,11 @@ class TestUV_with_multiple_comps:
         )
         assert pytest.approx(0.02023034, rel=1e-5) == value(m.fs.costing.LCOW)
 
+    @pytest.mark.component
+    def test_reporting(self, UV_frame):
+        m = UV_frame
+        m.fs.unit.report()
+
 
 class TestUV_detailed:
     @pytest.fixture(scope="class")
@@ -970,3 +985,8 @@ class TestUV_detailed:
             m.fs.unit.costing.fixed_operating_cost
         )
         assert pytest.approx(0.0181887, rel=1e-5) == value(m.fs.costing.LCOW)
+
+    @pytest.mark.component
+    def test_reporting(self, UV_frame):
+        m = UV_frame
+        m.fs.unit.report()
