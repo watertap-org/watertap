@@ -46,9 +46,14 @@ def create_base_model(mode):
 
     # call main to create and initialize model with flow-type variable efficiency
     m = ConcreteModel()
-    m.ro_mp = swro.build(variable_efficiency=VariableEfficiency.flow)
-    swro.set_operating_conditions(m.ro_mp, variable_efficiency=VariableEfficiency.flow)
-    swro.initialize_system(m.ro_mp, skipRO=False)
+    # m.ro_mp = swro.build(erd_type=swro.ERDtype.pump_as_turbine
+    #                      ,variable_efficiency=VariableEfficiency.flow)
+    # swro.set_operating_conditions(m.ro_mp)
+    # swro.initialize_system(m.ro_mp, skipRO=False)
+    m.ro_mp = swro.main(
+        erd_type=swro.ERDtype.pump_as_turbine,
+        variable_efficiency=VariableEfficiency.flow,
+    )
     return m
 
 
@@ -58,7 +63,7 @@ def create_swro_mp_block(mode="flexible"):
     m = create_base_model(mode)
     b1 = m.ro_mp
 
-    ramp_time = 60  # seconds (0.5 min)
+    ramp_time = 3600  # seconds (1 hr)
     if mode == "flexible":
         ramping_rate = 0.7e5  # Pa/s
     else:

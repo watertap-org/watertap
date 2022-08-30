@@ -36,8 +36,8 @@ import watertap.core.util.infeasible as infeas
 
 def main(
     ndays=1,
-    filename="pricesignals_GOLETA_6_N200_20220601.csv",
-    # filename="dagget_CA_LMP_hourly_2015.csv",
+    # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+    filename="dagget_CA_LMP_hourly_2015.csv",
 ):
     file_path = os.path.realpath(__file__)
     base_path = os.path.dirname(file_path)
@@ -95,11 +95,13 @@ def build_flowsheet(n_steps):
 def initialize_system(m):
     print(f"\n----- Initializing Base Model -----")
     # fully initialize a base model
-    base_model = swro.main(swro.VariableEfficiency.flow)
-    # create a copy of the base model
-    reinitialize_values = ComponentMap()
-    for v in base_model.component_data_objects(Var):
-        reinitialize_values[v] = v.value
+    # base_model = swro.main(erd_type=swro.ERDtype.pump_as_turbine,
+    #     variable_efficiency=swro.VariableEfficiency.flow)
+    # # create a copy of the base model
+    # reinitialize_values = ComponentMap()
+    # for v in base_model.component_data_objects(Var):
+    #     reinitialize_values[v] = v.value
+    #
 
     # loop through each time step block and set values
     t_blocks = m.get_active_process_blocks()
@@ -107,17 +109,17 @@ def initialize_system(m):
     for count, blk in enumerate(t_blocks):
         print(f"\n----- Initializing MultiPeriod Time Step {count} -----")
         blk_swro = blk.ro_mp
-        for v, val in reinitialize_values.items():
-            blk_swro.find_component(v).set_value(val, skip_validation=True)
-
+        # for v, val in reinitialize_values.items():
+        #     blk_swro.find_component(v).set_value(val, skip_validation=True)
+        blk_swro.fs.RO.area.fix()
         # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
         blk_swro.fs.P1.flow_ratio[0].unfix()
-        v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
-        blk_swro.fs.P1.bep_flow.fix(v1)
-
-        blk_swro.fs.P2.flow_ratio[0].unfix()
-        v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
-        blk_swro.fs.P2.bep_flow.fix(v2)
+        # v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
+        blk_swro.fs.P1.bep_flow.fix()
+        #
+        # blk_swro.fs.P2.flow_ratio[0].unfix()
+        # v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
+        # blk_swro.fs.P2.bep_flow.fix(v2)
 
         # unfix RO control volume operational variables
         blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
@@ -253,12 +255,12 @@ def visualize_results(m, t_blocks, data):
             for blk in t_blocks
         ]
     )
-    pump2_flow = np.array(
-        [
-            blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
-            for blk in t_blocks
-        ]
-    )
+    # pump2_flow = np.array(
+    #     [
+    #         blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
+    #         for blk in t_blocks
+    #     ]
+    # )
     pressure = np.array(
         [
             blk.ro_mp.fs.P1.control_volume.properties_out[0].pressure.value
@@ -269,9 +271,9 @@ def visualize_results(m, t_blocks, data):
     pump1_efficiency = np.array(
         [blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks]
     )
-    pump2_efficiency = np.array(
-        [blk.ro_mp.fs.P2.efficiency_pump[0]() for blk in t_blocks]
-    )
+    # pump2_efficiency = np.array(
+    #     [blk.ro_mp.fs.P2.efficiency_pump[0]() for blk in t_blocks]
+    # )
 
     fig, ax = plt.subplots(3, 2)
     fig.suptitle(
@@ -288,7 +290,7 @@ def visualize_results(m, t_blocks, data):
     # ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
 
     ax[1, 0].plot(time_step, pump1_flow * 3600, label="Main RO pump")
-    ax[1, 0].plot(time_step, pump2_flow * 3600, label="Booster pump")
+    # ax[1, 0].plot(time_step, pump2_flow * 3600, label="Booster pump")
     ax[1, 0].set_xlabel("Time [hr]")
     ax[1, 0].set_ylabel("Pump flowrate [m3/hr]")
     ax[1, 0].legend()
@@ -302,7 +304,7 @@ def visualize_results(m, t_blocks, data):
     ax[0, 1].set_ylabel("Net Power [kWh]")
 
     ax[1, 1].plot(time_step, pump1_efficiency * 100, label="Main RO pump")
-    ax[1, 1].plot(time_step, pump2_efficiency * 100, label="Booster pump")
+    # ax[1, 1].plot(time_step, pump2_efficiency * 100, label="Booster pump")
     ax[1, 1].set_xlabel("Time [hr]")
     ax[1, 1].set_ylabel("Pump efficiency [%]")
     ax[1, 1].legend()

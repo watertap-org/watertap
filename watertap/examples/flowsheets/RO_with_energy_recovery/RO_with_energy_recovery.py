@@ -618,7 +618,9 @@ def display_state(m):
 
 
 if __name__ == "__main__":
+    # m = main(
+    #     erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
+    # )
     m = main(
-        erd_type=ERDtype.pressure_exchanger, variable_efficiency=VariableEfficiency.none
+        erd_type=ERDtype.pump_as_turbine, variable_efficiency=VariableEfficiency.flow
     )
-    # m = main(erd_type=ERDtype.pump_as_turbine, variable_efficiency=VariableEfficiency.flow)
