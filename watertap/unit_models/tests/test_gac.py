@@ -406,8 +406,8 @@ class TestGACRobust:
         assert check_optimal_termination(results)
 
         # Check for known cost solution of default twin alternating contactors
-        assert value(mr.fs.costing.gac_num_contactors_op) == 1
-        assert value(mr.fs.costing.gac_num_contactors_redundant) == 1
+        assert value(mr.fs.costing.gac.num_contactors_op) == 1
+        assert value(mr.fs.costing.gac.num_contactors_redundant) == 1
         assert pytest.approx(56900.93523, rel=1e-5) == value(
             mr.fs.unit.costing.contactor_cost
         )
@@ -448,14 +448,14 @@ class TestGACRobust:
         )
         mr.fs.costing.cost_process()
 
-        mr.fs.costing.gac_num_contactors_op.fix(4)
-        mr.fs.costing.gac_num_contactors_redundant.fix(2)
+        mr.fs.costing.gac.num_contactors_op.fix(4)
+        mr.fs.costing.gac.num_contactors_redundant.fix(2)
 
         results = solver.solve(mr)
 
         # Check for known cost solution when changing volume scale of vessels in parallel
-        assert value(mr.fs.costing.gac_num_contactors_op) == 4
-        assert value(mr.fs.costing.gac_num_contactors_redundant) == 2
+        assert value(mr.fs.costing.gac.num_contactors_op) == 4
+        assert value(mr.fs.costing.gac.num_contactors_redundant) == 2
         assert pytest.approx(89035.16691, rel=1e-5) == value(
             mr.fs.unit.costing.contactor_cost
         )
@@ -493,10 +493,10 @@ class TestGACRobust:
 
         # Check for bed_mass_gac_cost_ref to be overwritten if bed_mass_gac is greater than bed_mass_gac_cost_max_ref
         assert value(mr.fs.unit.bed_mass_gac) > value(
-            mr.fs.costing.bed_mass_gac_max_ref
+            mr.fs.costing.gac.bed_mass_max_ref
         )
         assert value(mr.fs.unit.costing.bed_mass_gac_ref) == (
-            pytest.approx(value(mr.fs.costing.bed_mass_gac_max_ref), 1e-5)
+            pytest.approx(value(mr.fs.costing.gac.bed_mass_max_ref), 1e-5)
         )
 
 
