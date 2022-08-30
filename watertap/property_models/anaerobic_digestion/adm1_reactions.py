@@ -306,7 +306,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             initialize=0.06,
             units=pyo.units.dimensionless,
             domain=pyo.PositiveReals,
-            doc="Yield of biomass on valerate substrate [kg COD X/ kg COD S]",
+            doc="Yield of biomass on valerate and butyrate substrate [kg COD X/ kg COD S]",
         )
         self.Y_pro = pyo.Var(
             initialize=0.04,
@@ -399,6 +399,157 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             domain=pyo.PositiveReals,
             doc="Half saturation value for uptake of amino acids",
         )
+        self.k_m_fa = pyo.Var(
+            initialize=6,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of fatty acids",
+        )
+        self.K_S_fa = pyo.Var(
+            initialize=0.4,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of fatty acids",
+        )
+        self.K_I_h2_fa = pyo.Var(
+            initialize=5e-6,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Inhibition parameter for hydrogen during uptake of fatty acids",
+        )
+        self.k_m_c4 = pyo.Var(
+            initialize=20,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of valerate and butyrate",
+        )
+        self.K_S_c4 = pyo.Var(
+            initialize=0.2,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of valerate and butyrate",
+        )
+        self.K_I_h2_c4 = pyo.Var(
+            initialize=1e-5,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Inhibition parameter for hydrogen during uptake of valerate and butyrate",
+        )
+        self.k_m_pro = pyo.Var(
+            initialize=13,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of propionate",
+        )
+        self.K_S_pro = pyo.Var(
+            initialize=0.1,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of propionate",
+        )
+        self.K_I_h2_pro = pyo.Var(
+            initialize=3.5e-6,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Inhibition parameter for hydrogen during uptake of propionate",
+        )
+        self.k_m_ac = pyo.Var(
+            initialize=8,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of acetate",
+        )
+        self.K_S_ac = pyo.Var(
+            initialize=0.15,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of acetate",
+        )
+        self.K_I_nh3 = pyo.Var(
+            initialize=0.0018,
+            units=pyo.units.kmol * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Inhibition parameter for ammonia during uptake of acetate",
+        )
+        self.pH_UL_ac = pyo.Var(
+            initialize=7,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Upper limit of pH for uptake rate of acetate",
+        )
+        self.pH_LL_ac = pyo.Var(
+            initialize=6,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Lower limit of pH for uptake rate of acetate",
+        )
+        self.k_m_h2 = pyo.Var(
+            initialize=35,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="Monod maximum specific uptake rate of hydrogen",
+        )
+        self.K_S_h2 = pyo.Var(
+            initialize=7e-6,
+            units=pyo.units.kg * pyo.units.m**-3,
+            domain=pyo.PositiveReals,
+            doc="Half saturation value for uptake of hydrogen",
+        )
+        self.pH_UL_h2 = pyo.Var(
+            initialize=6,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Upper limit of pH for uptake rate of hydrogen",
+        )
+        self.pH_LL_h2 = pyo.Var(
+            initialize=5,
+            units=pyo.units.dimensionless,
+            domain=pyo.PositiveReals,
+            doc="Lower limit of pH for uptake rate of hydrogen",
+        )
+        self.k_dec_X_su = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_su",
+        )
+        self.k_dec_X_aa = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_aa",
+        )
+        self.k_dec_X_fa = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_fa",
+        )
+        self.k_dec_X_c4 = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_c4",
+        )
+        self.k_dec_X_pro = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_pro",
+        )
+        self.k_dec_X_ac = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_ac",
+        )
+        self.k_dec_X_h2 = pyo.Var(
+            initialize=0.02,
+            units=pyo.units.day**-1,
+            domain=pyo.PositiveReals,
+            doc="First-order decay rate for X_h2",
+        )
+
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
         # Note that reaction stoichiometry is on a mass basis.
