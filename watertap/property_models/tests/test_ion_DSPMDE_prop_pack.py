@@ -864,8 +864,7 @@ def test_assert_electroneutrality_get_property():
     # check error when adjust_by_ion is not in solute list
     with pytest.raises(
         ValueError,
-        match="adjust_by_ion must be set to the name of an "
-        "ion in the list of solutes.",
+        match="adjust_by_ion must be set to the name of an ion in the ion_set.",
     ):
         stream[0].assert_electroneutrality(defined_state=True, adjust_by_ion="foo")
 
