@@ -69,6 +69,16 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             blk.clone()
         )  # clone flowsheet to re-solve at conditions supplied by scale
 
+        # TODO: Need to get sf that are established by propagating non-indexed objects not active in model
+        for var_obj in temp_blk.component_objects(
+            ctype=pyo.Var, active=True, descend_into=True
+        ):
+
+            if get_scaling_factor(var_obj) is not None:
+                unset_scaling_factor(
+                    var_obj
+                )  # remove prior sf which are reestablished on init
+
         # loop through all vars to wipe previous sf and reset dsf considering new scale
         for (var_name, var_index), var_obj in temp_blk.component_data_iterindex(
             ctype=pyo.Var, active=True, descend_into=True
@@ -103,6 +113,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
         calculate_scaling_factors(temp_blk)
         temp_blk.fs.unit.initialize(outlvl=idaes.logger.ERROR)
         results = solver.solve(temp_blk)
+        print(results)
 
         # ensure model solves wrt new scale
         if not pyo.check_optimal_termination(results):
@@ -133,6 +144,9 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
                 sv_hist[v.name] = [sv]
             else:
                 sv_hist[v.name].append(sv)
+
+        # clear temp_blk before running other scale
+        temp_blk.clear()
 
     # loop through svs store in sv_hist to determine change in scaled variable
     # TODO: Can the objects of the original blk be output, as opposed to variable

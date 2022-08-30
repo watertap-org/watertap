@@ -37,6 +37,7 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     badly_scaled_var_generator,
+    get_scaling_factor,
 )
 from idaes.core import UnitModelCostingBlock
 
@@ -241,9 +242,6 @@ class TestElectrodialysisVoltageConst:
         m_ed.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Cl_-")
         )
-
-        calculate_scaling_factors(m_ed.fs)
-        initialization_tester(m_ed)
 
         badly_scaled_var_values = {
             var.name: val for (var, val) in badly_scaled_var_generator(m_ed)
