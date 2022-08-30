@@ -290,6 +290,23 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
     def _add_mass_transfer(self):
         raise NotImplementedError()
 
+    def _add_length_and_width(self):
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.length = Var(
+            initialize=10,
+            bounds=(0.1, 5e2),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Effective membrane length",
+        )
+        self.width = Var(
+            initialize=1,
+            bounds=(1e-1, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Membrane width",
+        )
+
     def _add_area(self, include_constraint=True):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 

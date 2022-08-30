@@ -42,34 +42,26 @@ from watertap.core.membrane_channel_base import (
 class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData):
 
     # overwrite CV0D `add_geometry`
-    def add_geometry(self, has_length_and_width=True):
+    def add_geometry(self, length_var=None, width_var=None):
         """
         Method to create spatial domain and volume Var in ControlVolume.
 
         Args:
-            has_length_and_width - (optional) add a length and width
-                variables to the membrane channel. Default: `True`
+            length_var - (optional) external variable to use for the length of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
 
+            width_var - (optional) external variable to use for the width of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
         Returns:
             None
         """
 
-        if has_length_and_width:
-            units_meta = self.config.property_package.get_metadata().get_derived_units
-            self.length = Var(
-                initialize=10,
-                bounds=(0.1, 5e2),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Effective membrane length",
-            )
-            self.width = Var(
-                initialize=1,
-                bounds=(1e-1, 1e3),
-                domain=NonNegativeReals,
-                units=units_meta("length"),
-                doc="Membrane width",
-            )
+        self._add_var_reference(length_var, "length", "length_var")
+        self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(
         self, information_flow=FlowDirection.forward, has_phase_equilibrium=None

@@ -271,6 +271,21 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
+    def _add_var_reference(self, pyomo_var, reference_name, param_name):
+        if pyomo_var is not None:
+            # Validate length_Var and add a reference
+            if not isinstance(pyomo_var, (Var, Param, Expression)):
+                raise ConfigurationError(
+                    f"{self.name} {param_name} must be a Pyomo Var, Param or "
+                    "Expression."
+                )
+            elif pyomo_var.is_indexed():
+                raise ConfigurationError(
+                    f"{self.name} {param_name} must be a scalar (unindexed) "
+                    "component."
+                )
+            add_object_reference(self, reference_name, pyomo_var)
+
     def add_total_pressure_balances(
         self,
         has_pressure_change=True,
@@ -347,7 +362,7 @@ class MembraneChannelMixin:
                     == b.properties[t, x].conc_mass_phase_comp["Liq", j]
                 )
 
-            return
+            return self.eq_cp_modulus
 
         if concentration_polarization_type not in (
             ConcentrationPolarizationType.fixed,
@@ -400,7 +415,7 @@ class MembraneChannelMixin:
             if mass_transfer_coefficient == MassTransferCoefficient.calculated:
                 self._add_calculated_mass_transfer_coefficient()
 
-        return self.eq_concentration_polarization
+        return self.eq_cp_modulus
 
     def add_expressions(self):
         """

@@ -98,11 +98,22 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             doc="Number of finite elements",
         )
 
-    def add_geometry(self, flow_direction=FlowDirection.forward, **kwargs):
+    def add_geometry(
+        self, length_var, width_var, flow_direction=FlowDirection.forward, **kwargs
+    ):
         """
         Method to create spatial domain and volume Var in ControlVolume.
 
         Args:
+            length_var - An external variable to use for the length of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
+
+            width_var - An external variable to use for the width of
+                         the channel. If a variable is provided, a
+                         reference will be made to this in place of the length
+                         Var.
             flow_direction - argument indicating direction of material flow
                             relative to length domain. Valid values:
                                 - FlowDirection.forward (default), flow goes
@@ -120,16 +131,10 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         Returns:
             None
         """
-        super().add_geometry(flow_direction=flow_direction, **kwargs)
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.width = Var(
-            initialize=1,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="Membrane width",
+        super().add_geometry(
+            length_var=length_var, flow_direction=flow_direction, **kwargs
         )
+        self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(
         self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
