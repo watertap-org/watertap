@@ -13,6 +13,7 @@
 from pyomo.environ import (
     ConcreteModel,
     value,
+    Set,
     Constraint,
     Expression,
     Objective,
@@ -53,29 +54,30 @@ import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
 from watertap.costing import WaterTAPCosting, PumpType
 import math
-
+import pandas as pd
 
 def main():
     # build
     m = build()
     add_Q_ext(m, time_point=m.fs.config.time)
     set_operating_conditions(m)
-    #set_operating_conditions_validation(m)
     initialize_system(m)
-    #m.fs.Q_ext[0].fix(0)
     scale_costs(m)
+    fix_outlet_pressures(m)
+
     print('DOF after initialization: ', degrees_of_freedom(m))
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
     #m.fs.objective = Objective(expr=1)
     solver = get_solver()
-    results = solve(m)
+    results = solve(m,tee=False)
     print('First solve - simulation')
     print(results.solver.termination_condition)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
     display_results(m)
 
-    print('Second solve')
+    print('Second solve - optimize')
+    m.fs.recovery[0].fix(0.7)
     m.fs.Q_ext[0].fix(0)
     del m.fs.objective
     set_up_optimization(m)
@@ -85,14 +87,47 @@ def main():
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
 
-    assert False
-    print('Third solve')
+    save_results(m,filename=None)
+    # assert False
+
+    print('Third solve - optimize again')
+    m.fs.recovery[0].fix(0.45)
     results = solve(m)
     print(results.solver.termination_condition)
     display_results(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
 
+    save_results(m,filename=None)
+    assert False
+
+    # Display all states
+    print('\n0f')
+    display_seawater_states(m.fs.feed.properties[0])
+    print('\n1f')
+    display_seawater_states(m.fs.pump_feed.control_volume.properties_out[0])
+    print('\n1fb')
+    display_seawater_states(m.fs.hx_brine.cold.properties_out[0])
+    print('\n1fd')
+    display_seawater_states(m.fs.hx_distillate.cold.properties_out[0])
+    print('\n2f')
+    display_seawater_states(m.fs.mixer_feed.mixed_state[0])
+    print('\n1v')
+    display_water_states(m.fs.evaporator.properties_vapor[0])
+    print('\n2v')
+    display_water_states(m.fs.compressor.control_volume.properties_out[0])
+    print('\n1b')
+    display_seawater_states(m.fs.evaporator.properties_brine[0])
+    print('\n2b')
+    display_seawater_states(m.fs.pump_brine.control_volume.properties_out[0])
+    print('\n3b')
+    display_seawater_states(m.fs.brine.properties[0])
+    print('\n1d')
+    display_water_states(m.fs.condenser.control_volume.properties_out[0])
+    print('\n2d')
+    display_seawater_states(m.fs.pump_distillate.control_volume.properties_out[0])
+    print('\n3d')
+    display_seawater_states(m.fs.distillate.properties[0])
 
 def build():
     # flowsheet set up
@@ -251,6 +286,10 @@ def build():
                                               m.fs.recovery[0]*(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"] +
                                               m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"]))
 
+    # Make split ratio equal to recovery
+    m.fs.split_ratio_recovery_equality = Constraint(expr=m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] ==
+                                                    m.fs.recovery[0])
+
     # Scaling
     # properties
     m.fs.properties_feed.set_default_scaling(
@@ -352,6 +391,63 @@ def add_costing(m):
     m.fs.costing.add_LCOW(m.fs.distillate.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.distillate.properties[0].flow_vol)
 
+    # Add costing expressions
+    m.fs.costing.MVC_comp = Set(initialize=["feed_pump",
+                                            "distillate_pump",
+                                            "brine_pump",
+                                            "hx_distillate",
+                                            "hx_brine",
+                                            "mixer",
+                                            "evaporator",
+                                            "compressor"])
+
+    # Percentage of capital costs
+    m.fs.costing.MVC_captial_cost_percentage = Expression(m.fs.costing.MVC_comp)
+    m.fs.costing.MVC_captial_cost_percentage["feed_pump"] = (m.fs.pump_feed.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["distillate_pump"] = (m.fs.pump_distillate.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["brine_pump"] = (m.fs.pump_brine.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["hx_distillate"] = (m.fs.hx_distillate.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["hx_brine"] = (m.fs.hx_brine.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["mixer"] = (m.fs.mixer_feed.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["evaporator"] = (m.fs.evaporator.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+    m.fs.costing.MVC_captial_cost_percentage["compressor"] = (m.fs.compressor.costing.capital_cost/m.fs.costing.aggregate_capital_cost)
+
+    # Percentage of costs normalized to LCOW
+    m.fs.costing.annual_operating_costs = Expression(expr=m.fs.costing.total_investment_cost*m.fs.costing.factor_capital_annualization+m.fs.costing.total_operating_cost)
+    m.fs.costing.MVC_LCOW_comp = Set(initialize=["feed_pump",
+                                            "distillate_pump",
+                                            "brine_pump",
+                                            "hx_distillate",
+                                            "hx_brine",
+                                            "mixer",
+                                            "evaporator",
+                                            "compressor",
+                                            "electricity",
+                                            "MLC",
+                                            "capital_costs",
+                                            "operating_costs"])
+    m.fs.costing.LCOW_percentage = Expression(m.fs.costing.MVC_LCOW_comp)
+    m.fs.costing.LCOW_percentage["feed_pump"] = (m.fs.pump_feed.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["distillate_pump"] = (m.fs.pump_distillate.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["brine_pump"] = (m.fs.pump_brine.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["hx_distillate"] = (m.fs.hx_distillate.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["hx_brine"] = (m.fs.hx_brine.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["mixer"] = (m.fs.mixer_feed.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["evaporator"] = (m.fs.evaporator.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["compressor"] = (m.fs.compressor.costing.capital_cost*m.fs.costing.factor_total_investment*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage['electricity'] = (m.fs.costing.aggregate_flow_costs['electricity']*m.fs.costing.utilization_factor/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage['MLC'] = (m.fs.costing.maintenance_labor_chemical_operating_cost/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["capital_costs"] = (m.fs.costing.total_investment_cost*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
+    m.fs.costing.LCOW_percentage["operating_costs"] = (m.fs.costing.total_operating_cost/m.fs.costing.annual_operating_costs)
+
+    # m.fs.costing.LCOW_constraint.pprint()
+    # m.fs.costing.total_operating_cost_constraint.pprint()
+    # m.fs.costing.aggregate_fixed_operating_cost_constraint.pprint()
+    # m.fs.costing.aggregate_variable_operating_cost_constraint.pprint()
+    # m.fs.costing.aggregate_flow_electricity_constraint.pprint()
+    # m.fs.costing.aggregate_flow_costs_constraint.pprint()
+    # m.fs.costing.aggregate_capital_cost_constraint.pprint()
+
 def add_pressure_drop_to_hx(hx_blk, time_point):
     # input: hx_blk - heat exchanger block
     # output: deactivates control volume pressure balance and adds pressure drop to pressure balance equation
@@ -370,18 +466,20 @@ def add_pressure_drop_to_hx(hx_blk, time_point):
 
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.1)
+    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.15)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     #m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(2)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
     m.fs.feed.properties[0].pressure.fix(101325)
+
+    m.fs.recovery[0].fix(0.7)
 
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
     m.fs.pump_feed.control_volume.deltaP[0].fix(7e3)
 
     # Separator
-    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].fix(0.5)
+    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"] = m.fs.recovery[0].value
 
     # distillate HX
     m.fs.hx_distillate.overall_heat_transfer_coefficient.fix(1e3)
@@ -401,11 +499,10 @@ def set_operating_conditions(m):
     m.fs.evaporator.area.fix(1000)  # m^2
     #m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"] = 5
     #m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(20)
-    m.fs.recovery.fix(0.5)
 
     # compressor
     m.fs.compressor.pressure_ratio.fix(2)
-    m.fs.compressor.control_volume.properties_out[0].temperature = 400
+    #m.fs.compressor.control_volume.properties_out[0].temperature = 400
     # m.fs.compressor.pressure_ratio = 2
     m.fs.compressor.efficiency.fix(0.8)
 
@@ -417,14 +514,11 @@ def set_operating_conditions(m):
     m.fs.pump_distillate.efficiency_pump.fix(0.8)
     m.fs.pump_distillate.control_volume.deltaP[0].fix(4e4)
 
-    # Brine outlet
-    # m.fs.brine.properties[0].pressure.fix(101325)
-
-    # Distillate outlet
-    # m.fs.distillate.properties[0].pressure.fix(101325)
-
     # Fix 0 TDS
     m.fs.tb_distillate.properties_out[0].flow_mass_phase_comp['Liq','TDS'].fix(1e-5)
+
+    # Costing
+    m.fs.costing.factor_total_investment.fix(2)
 
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
@@ -490,6 +584,9 @@ def set_operating_conditions_validation(m):
 
     iscale.calculate_scaling_factors(m)
 
+    # Costing
+    m.fs.costing.factor_total_investment.fix(0.5)
+
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
 
@@ -513,11 +610,14 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s02)
     # Touch property for initialization
     m.fs.separator_feed.mixed_state[0].mass_frac_phase_comp["Liq", "TDS"]
+    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].fix(m.fs.recovery[0].value)
+
     m.fs.separator_feed.mixed_state.initialize(optarg=optarg)
     # Touch properties for initialization
     m.fs.separator_feed.hx_brine_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.hx_distillate_cold_state[0].mass_frac_phase_comp["Liq", "TDS"]
     m.fs.separator_feed.initialize(optarg=optarg, outlvl=idaeslog.INFO_HIGH)
+    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].unfix()
 
     # initialize distillate heat exchanger
     propagate_state(m.fs.s03)
@@ -589,17 +689,20 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s14) # from translator block to pump
     m.fs.pump_distillate.initialize(optarg=optarg)
 
-    # # Initialize brine HX again
-    # propagate_state(m.fs.s11)
-    # m.fs.hx_brine.initialize()
-    #
-    # # Initialize distillate HX again
-    # propagate_state(m.fs.s15)
-    # m.fs.hx_distillate.initialize()
-
     m.fs.costing.initialize()
 
     print('Initialization done')
+
+def fix_outlet_pressures(m):
+    # unfix pump heads
+    m.fs.pump_brine.control_volume.deltaP[0].unfix()
+    m.fs.pump_distillate.control_volume.deltaP[0].unfix()
+
+    # Fix outlet pressures
+    m.fs.brine.properties[0].pressure.fix(101325)
+    m.fs.distillate.properties[0].pressure.fix(101325)
+
+    return
 
 def calculate_cost_sf(cost):
     sf = 10**-(math.log10(cost.value))
@@ -638,16 +741,17 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
         print(msg)
         return results
 
-
 def sweep_solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
         solver = get_solver()
-    # # First simulate
-    # model.fs.objective = Objective(expr=model.fs.Q_ext[0])
-    # results = solver.solve(model, tee=tee)
-    # # Now optimize
-    # model.fs.Q_ext[0].fix(0)
+
+    # First simulate minimizing Q_ext
+    model.fs.objective = Objective(expr=model.fs.Q_ext[0])
+    results = solver.solve(model, tee=tee)
+
+    # Now optimize
+    model.fs.Q_ext[0].fix(0)
     del model.fs.objective
     set_up_optimization(model)
     results = solve(model)
@@ -703,6 +807,7 @@ def display_results(m):
     print("Feed mass fraction:                      ", m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value)
     print("Vapor flow rate:                         ", m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value)
     print('Recovery:                                ', m.fs.recovery[0].value)
+    print('Distillate preheater area:               ', m.fs.hx_distillate.area.value)
     print("Preheated feed temperature:              ", m.fs.evaporator.properties_feed[0].temperature.value)
     print("Evaporator temperature:                  ", m.fs.evaporator.properties_brine[0].temperature.value)
     print("Compressed vapor temperature:            ", m.fs.compressor.control_volume.properties_out[0].temperature.value)
@@ -712,8 +817,149 @@ def display_results(m):
     print("Evaporator area:                         ", m.fs.evaporator.area.value)
     print('Evaporator LMTD:                         ', m.fs.evaporator.lmtd.value)
     print('Specific energy consumption:             ', value(m.fs.costing.specific_energy_consumption))
+    print('Total investment factor:                 ', m.fs.costing.factor_total_investment.value)
     print('LCOW:                                    ', m.fs.costing.LCOW.value)
     print('External Q:                              ', m.fs.Q_ext[0].value)
+
+def save_results(m,filename=None):
+
+    feed_concentration = round(m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value,3)*1000
+    recovery = round(m.fs.recovery[0].value,2)*100
+
+    if filename is None:
+        filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_" + str(feed_concentration) + "_rr_" + str(recovery) + ".csv"
+
+    outputs = {}
+    outputs['Feed concentration'] = [feed_concentration]
+    outputs['Recovery'] = [recovery]
+    outputs['Feed mass flow water'] = [m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'].value]
+    outputs['Feed mass flow salt'] = [m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'TDS'].value]
+    outputs['Feed mass fraction'] = [m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value]
+    outputs['Feed temperature'] = [m.fs.feed.properties[0].temperature.value]
+    outputs['Feed pressure'] = [m.fs.feed.properties[0].pressure.value]
+
+    # Brine from evaporator
+    outputs['Brine mass flow water'] = [m.fs.brine.properties[0].flow_mass_phase_comp['Liq', 'H2O'].value]
+    outputs['Brine mass flow salt'] = [m.fs.brine.properties[0].flow_mass_phase_comp['Liq', 'TDS'].value]
+    outputs['Brine temperature'] = [m.fs.evaporator.properties_brine[0].temperature.value]
+    outputs['Brine pressure'] = [m.fs.evaporator.properties_brine[0].pressure.value]
+
+    # Vapor
+    outputs['Vapor mass flow'] = [m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O'].value]
+    outputs['Vapor temperature'] = [m.fs.evaporator.properties_vapor[0].temperature.value]
+    outputs['Vapor pressure'] = [m.fs.evaporator.properties_vapor[0].pressure.value]
+
+    # Compressed vapor
+    outputs['Compressed vapor temperature'] = [m.fs.compressor.control_volume.properties_out[0].temperature.value]
+    outputs['Compressed vapor pressure'] = [m.fs.compressor.control_volume.properties_out[0].pressure.value]
+
+    # Condensed vapor/distillate
+    outputs['Distillate temperature'] = [m.fs.condenser.control_volume.properties_out[0].temperature.value]
+    outputs['Distillate pressure'] = [m.fs.condenser.control_volume.properties_out[0].pressure.value]
+
+    # Exiting distillate
+    outputs['Exiting distillate pressure'] = [m.fs.distillate.properties[0].pressure.value]
+
+    # Exiting brine
+    outputs['Exiting brine pressure'] = [m.fs.brine.properties[0].pressure.value]
+
+    # Evaporator performance
+    outputs['Evaporator area'] = [m.fs.evaporator.area.value]
+    outputs['Evaporator LMTD'] = [m.fs.evaporator.lmtd.value]
+    outputs['Evaporator heat transfer'] = [m.fs.evaporator.heat_transfer.value]
+    outputs['Evaporator overall heat transfer coefficient'] = [m.fs.evaporator.U.value]
+    outputs['Evaporator approach temperature in'] = [m.fs.evaporator.delta_temperature_in.value]
+    outputs['Evaporator approach temperature out'] = [m.fs.evaporator.delta_temperature_out.value]
+
+    # Compressor performance
+    outputs['Compressor pressure ratio'] = [m.fs.compressor.pressure_ratio.value]
+    outputs['Compressor work'] = [m.fs.compressor.control_volume.work[0].value]
+    outputs['Compressor efficiency'] = [m.fs.compressor.efficiency.value]
+
+    # Preheater performance
+    outputs['Preheater split ratio'] = [m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].value]
+
+    # Feed exiting distillate heat exchanger
+    outputs['Feed exiting distillate hx temperature'] = [m.fs.hx_distillate.cold.properties_out[0].temperature.value]
+    outputs['Feed exiting distillate hx pressure'] = [m.fs.hx_distillate.cold.properties_out[0].pressure.value]
+
+    # Feed exiting brine heat exchanger
+    outputs['Feed exiting brine hx temperature'] = [m.fs.hx_brine.cold.properties_out[0].temperature.value]
+    outputs['Feed exiting brine hx pressure'] = [m.fs.hx_brine.cold.properties_out[0].pressure.value]
+
+    # Preheated feed
+    outputs['Preheated feed temperature'] = [m.fs.evaporator.properties_feed[0].temperature.value]
+    outputs['Preheated feed pressure'] = [m.fs.evaporator.properties_feed[0].pressure.value]
+
+    # Distillate heat exchanger performance
+    outputs['Distillate hx area'] = [m.fs.hx_distillate.area.value]
+    outputs['Distillate hx delta temp in'] = [m.fs.hx_distillate.delta_temperature_in[0].value]
+    outputs['Distillate hx delta temp out'] = [m.fs.hx_distillate.delta_temperature_out[0].value]
+    outputs['Distillate hx heat transfer'] = [m.fs.hx_distillate.heat_duty[0].value]
+    outputs['Distillate hx overall heat transfer coefficient'] = [m.fs.hx_distillate.overall_heat_transfer_coefficient[0].value]
+
+    # Brine heat exchanger performance
+    outputs['Brine hx area'] = [m.fs.hx_brine.area.value]
+    outputs['Brine hx delta temp in'] = [m.fs.hx_brine.delta_temperature_in[0].value]
+    outputs['Brine hx delta temp out'] = [m.fs.hx_brine.delta_temperature_out[0].value]
+    outputs['Brine hx heat transfer'] = [m.fs.hx_brine.heat_duty[0].value]
+    outputs['Brine hx overall heat transfer coefficient'] = [m.fs.hx_brine.overall_heat_transfer_coefficient[0].value]
+
+    # External Q
+    outputs['Q external'] = [m.fs.Q_ext[0].value]
+
+    # Cost outcome metrics
+    outputs['Feed pump capital cost'] = [m.fs.pump_feed.costing.capital_cost.value]
+    outputs['Distillate pump captial cost'] = [m.fs.pump_distillate.costing.capital_cost.value]
+    outputs['Brine pump captial cost'] = [m.fs.pump_distillate.costing.capital_cost.value]
+    outputs['Distillate hx capital cost'] = [m.fs.hx_distillate.costing.capital_cost.value]
+    outputs['Brine hx capital cost'] = [m.fs.hx_brine.costing.capital_cost.value]
+    outputs['Mixer capital cost'] = [m.fs.mixer_feed.costing.capital_cost.value]
+    outputs['Evaporator capital cost'] = [m.fs.evaporator.costing.capital_cost.value]
+    outputs['Compressor capital cost'] = [m.fs.compressor.costing.capital_cost.value]
+    outputs['Aggregate capital cost'] = [m.fs.costing.aggregate_capital_cost.value]
+    outputs['Aggregate electricity flow cost'] = [value(m.fs.costing.aggregate_flow_costs['electricity'])]
+    outputs['Total investment cost'] = [m.fs.costing.total_investment_cost.value]
+    outputs['Total investment factor'] = [m.fs.costing.factor_total_investment.value]
+    outputs['Evaporator material factor'] = [m.fs.costing.evaporator_material_factor_cost.value]
+    outputs['Distillate hx material factor'] = [m.fs.costing.heat_exchanger_material_factor_cost.value]
+    outputs['Brine hx material factor'] = [m.fs.costing.heat_exchanger_material_factor_cost.value]
+    outputs['Electricity cost'] = [m.fs.costing.electricity_base_cost.value]
+    outputs['Capital annualization factor'] = [m.fs.costing.factor_capital_annualization.value]
+    outputs['Utilization factor'] = [m.fs.costing.utilization_factor.value]
+    outputs['MLC cost'] = [value(m.fs.costing.maintenance_labor_chemical_operating_cost)]
+    outputs['Total operating cost'] = [value(m.fs.costing.total_operating_cost)]
+    outputs['LCOW'] = [m.fs.costing.LCOW.value]
+    outputs['SEC'] = [value(m.fs.costing.specific_energy_consumption)]
+
+    # Normalized capital costs
+    outputs['CC normalized feed pump'] = [value(m.fs.costing.MVC_captial_cost_percentage['feed_pump'])]
+    outputs['CC normalized distillate pump'] = [value(m.fs.costing.MVC_captial_cost_percentage["distillate_pump"])]
+    outputs['CC normalized brine pump'] = [value(m.fs.costing.MVC_captial_cost_percentage["brine_pump"])]
+    outputs['CC normalized distiallte hx'] = [value(m.fs.costing.MVC_captial_cost_percentage["hx_distillate"])]
+    outputs['CC normalized brine hx'] = [value(m.fs.costing.MVC_captial_cost_percentage["hx_brine"])]
+    outputs['CC normalized mixer'] =[value(m.fs.costing.MVC_captial_cost_percentage["mixer"])]
+    outputs['CC normalized evaportor'] =[value(m.fs.costing.MVC_captial_cost_percentage["evaporator"])]
+    outputs['CC normalized compressor'] =[value(m.fs.costing.MVC_captial_cost_percentage["compressor"])]
+
+    # Normalized LCOW costs
+    outputs['LCOW normalized feed pump'] = [value(m.fs.costing.LCOW_percentage["feed_pump"])]
+    outputs['LCOW normalized distillate pump'] = [value(m.fs.costing.LCOW_percentage["distillate_pump"])]
+    outputs['LCOW normalized brine pump'] = [value(m.fs.costing.LCOW_percentage["brine_pump"])]
+    outputs['LCOW normalized distillate hx'] = [value(m.fs.costing.LCOW_percentage["hx_distillate"])]
+    outputs['LCOW normalized brine hx'] = [value(m.fs.costing.LCOW_percentage["hx_brine"])]
+    outputs['LCOW normalized mixer'] = [value(m.fs.costing.LCOW_percentage["mixer"])]
+    outputs['LCOW normalized evaporator'] = [value(m.fs.costing.LCOW_percentage["evaporator"])]
+    outputs['LCOW normalized compressor'] = [value(m.fs.costing.LCOW_percentage["compressor"])]
+    outputs['LCOW normalized electricity'] = [value(m.fs.costing.LCOW_percentage['electricity'])]
+    outputs['LCOW normalized MLC'] = [value(m.fs.costing.LCOW_percentage['MLC'])]
+    outputs['LCOW normalized capex'] = [value(m.fs.costing.LCOW_percentage["capital_costs"])]
+    outputs['LCOW normalized opex'] = [value(m.fs.costing.LCOW_percentage["operating_costs"])]
+
+    df = pd.DataFrame(outputs)
+    df = df.set_index('Feed concentration').T
+
+    df.to_csv(filename,index=False)
 
 def display_system(m):
     recovery = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
@@ -761,19 +1007,20 @@ def display_system(m):
     print("\nCondenser")
     print("Heat transfer: ", m.fs.condenser.control_volume.heat[0].value, " W")
 
-
 def display_seawater_states(state_blk):
     print("water mass flow ", state_blk.flow_mass_phase_comp["Liq", "H2O"].value)
     print("TDS mass flow   ", state_blk.flow_mass_phase_comp["Liq", "TDS"].value)
     print("temperature     ", state_blk.temperature.value)
     print("pressure        ", state_blk.pressure.value)
-
+    print("specific enthalpy", value(state_blk.enth_flow))
 
 def display_water_states(state_blk):
     print("Liquid mass flow ", state_blk.flow_mass_phase_comp["Liq", "H2O"].value)
     print("Vapor mass flow  ", state_blk.flow_mass_phase_comp["Vap", "H2O"].value)
     print("temperature      ", state_blk.temperature.value)
     print("pressure         ", state_blk.pressure.value)
+    print("specific enthalpy vapor", state_blk.enth_flow_phase['Vap'].value)
+    print("specific enthalpy liquid", state_blk.enth_flow_phase['Liq'].value)
 
 
 if __name__ == "__main__":

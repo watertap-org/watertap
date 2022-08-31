@@ -90,7 +90,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # Set the base year for all costs
         self.base_currency = pyo.units.USD_2018
-        # Set a base period for all operating costs
+        # Set a base period for all operating costsutilization_factor
         self.base_period = pyo.units.year
 
         # Build flowsheet level costing components
@@ -292,7 +292,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.evaporator_material_factor_cost = pyo.Var(
-            initialize=10,
+            initialize=1,
             doc="Horizontal falling tube evaporator material factor (Couper et al., 2005)",
             units=pyo.units.dimensionless,
         )
@@ -322,7 +322,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.heat_exchanger_material_factor_cost = pyo.Var(
-            initialize=1,
+            initialize=9,
             doc='Heat exchanger material factor',
             units=pyo.units.dimensionless
         )
