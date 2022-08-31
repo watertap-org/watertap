@@ -518,6 +518,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -593,14 +594,16 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
                 res = opt.solve(self, tee=slc.tee)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        if not check_optimal_termination(res):
-            # release inlet state, in case this error is caught
-            self.feed_side.release_state(source_flags, outlvl)
-            raise InitializationError(f"Unit model {self.name} failed to initailize")
 
-        # release inlet state
+        # release inlet state, in case this error is caught
         self.feed_side.release_state(source_flags, outlvl)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            if raise_on_failure:
+                raise InitializationError(
+                    f"Unit model {self.name} failed to initailize"
+                )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
