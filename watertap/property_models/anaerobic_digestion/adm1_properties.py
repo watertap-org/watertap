@@ -84,7 +84,7 @@ class ADM1ParameterData(PhysicalParameterBlock):
         self.X_su = Solute(doc="Sugar degraders")
         self.X_aa = Solute(doc="Amino acid degraders")
         self.X_fa = Solute(doc="Long chain fatty acid (LCFA) degraders")
-        self.X_c4 = Solute(doc="Valerate degraders")
+        self.X_c4 = Solute(doc="Valerate and butyrate degraders")
         self.X_pro = Solute(doc="Propionate degraders")
         self.X_ac = Solute(doc="Acetate degraders")
         self.X_h2 = Solute(doc="Hydrogen degraders")
