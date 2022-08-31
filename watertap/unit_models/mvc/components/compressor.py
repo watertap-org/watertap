@@ -35,7 +35,7 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
@@ -171,7 +171,7 @@ class CompressorData(UnitModelBlockData):
         )
 
         self.efficiency = Var(
-            initialize=0.8, bounds=(1e-8, 1), units=pyunits.dimensionless
+            initialize=0.8, bounds=(0.0, 1), units=pyunits.dimensionless
         )
 
         # Build control volume

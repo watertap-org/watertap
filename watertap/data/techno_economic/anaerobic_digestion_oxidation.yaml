@@ -17,11 +17,11 @@ default:
   recovery_frac_mass_H2O:
     value: 0.9999
     units: dimensionless
-    reference: 'Beef Processing case study. '
-  default_removal_frac_mass_solute:
+    reference: 'Beef Processing case study.'
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.75
       units: dimensionless

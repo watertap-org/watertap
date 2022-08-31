@@ -99,10 +99,10 @@ are parameters that should be provided in order to fully solve the model.
    "Pressure, inlet_diluate",":math:`p^D`", "temperature", "None", ":math:`Pa`", 1
    "Pressure, inlet_concentrate",":math:`p^C`", "temperature", "None", ":math:`Pa`", 1
    "Component molar flow rate, inlet_diluate", ":math:`N_{j, in}^D`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
-   "Component molar flow rate, inlet_concentrate", ":math:`N_{j, out}^C`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
+   "Component molar flow rate, inlet_concentrate", ":math:`N_{j, in}^C`", "flow_mol_phase_comp", "[t], ['Liq'], ['H2O', 'Na_+', '\Cl_-']", ":math:`mol s^{-1}`", 3
    "Water transport number", ":math:`t_w`", "water_trans_number_membrane", "['cem', 'aem']", "dimensionless", 2
    "Water permeability", ":math:`L`", "water_permeability_membrane", "['cem', 'aem']", ":math:`m^{-1}s^{-1}Pa^{-1}`", 2
-   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`A`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
+   "Voltage or Current \ :sup:`2`", ":math:`U` or :math:`I`", "voltage or current", "[t]", ":math:`\text{V}` or :math:`A`", 1
    "Electrode areal resistance", ":math:`r_{el}`", "electrodes_resistance", "[t]", ":math:`\Omega m^2`", 1
    "Cell pair number", ":math:`n`", "cell_pair_num", "None", "dimensionless", 1
    "Current utilization coefficient", ":math:`\xi`", "current_utilization", "None", "dimensionless", 1
@@ -117,8 +117,8 @@ are parameters that should be provided in order to fully solve the model.
 **Note**
  :sup:`1` DOF number takes account of the indices of the corresponding parameter.
 
- :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant Current"
- or "Constant Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
+ :sup:`2` A user should provide either current or voltage as the electrical input, in correspondence to the "Constant_Current"
+ or "Constant_Voltage" treatment mode (configured in this model). The user also should provide an electrical magnitude
  that ensures a operational current *below the limiting current* of the feed solution.
 
 
@@ -141,6 +141,10 @@ dictionary in the following format (instanced by a NaCl solution).
 
 This model, by default, uses H\ :sub:`2`\ O  as the solvent of the feed solution.
 
+Information regarding the property package this unit model relies on can be found here: 
+
+:py:mod:`watertap.property_models.ion_DSPMDE_prop_pack`
+
 Equations
 ---------
 
@@ -156,19 +160,19 @@ processes are well developed and some good summaries for the electrodialysis sce
    "Component mass balance", ":math:`N_{j, in}^{C\: or\:  D}-N_{j, out}^{C\: or\:  D}+J_j^{C\: or\:  D} bl=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi I}{((bl) z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi I}{((bl) z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C-c_j^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)+\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)-\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)+\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)\left(\frac{\rho_w}{M_w}\right)`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\left(\frac{I}{(bl)F}\right)-\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C-p_{osm}^D \right)\left(\frac{\rho_w}{M_w}\right)``", ":math:`j \in \left['H_2 O'\right]`"
 
 Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
 
 .. csv-table:: **Table 4** Electrical and Performance Equations
    :header: "Description", "Equation"
 
-   "Ohm's Law", ":math:`V =  I R_{tot}`"
-   "Resistance calculation", ":math:`R_{tot}=\left[n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}\right]\left(bl\right)`"
+   "Ohm's Law", ":math:`U =  \frac{I r_{tot}}{bl}`"
+   "Resistance calculation", ":math:`r_{tot}=n\left(r^{cem}+r^{aem}+\frac{s}{\kappa^C}+\frac{s}{\kappa^D}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P=UI`"
-   "Water-production-specific power consumption", ":math:`P_Q=\left(\frac{UI}{3.6\times 10^6 nQ_{out}^D}\right)`"
-   "Overall current efficiency", ":math:`I\eta=\sum_{j}{\left[\left(N_{j,in}^D-N_{j,out}^D\right)z_j F\right]}`"
+   "Water-production-specific power consumption", ":math:`P_Q=\frac{UI}{3.6\times 10^6 nQ_{out}^D}`"
+   "Overall current efficiency", ":math:`I\eta=\sum_{j \in[cation]}{\left[\left(N_{j,in}^D-N_{j,out}^D\right)z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
@@ -178,6 +182,9 @@ Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
+   "**Parameters**"
+   ":math:`\rho_w`", "Mass density of water", ":math:`kg\  m^{-3}`"
+   ":math:`M_w`", "Molecular weight of water", ":math:`kg\  mol^{-1}`"
    "**Variables and Parameters**"
    ":math:`N`", "Molar flow rate of a component", ":math:`mol\  s^{-1}`"
    ":math:`J`", "Molar flux of a component", ":math:`mol\  m^{-2}s^{-1}`"
@@ -196,7 +203,7 @@ Nomenclature
    ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
    ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
-   ":math:`R_{tot}`", "Total resistance", ":math:`\Omega`"
+   ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
    ":math:`s`", "Spacer thickness", ":math:`m`"

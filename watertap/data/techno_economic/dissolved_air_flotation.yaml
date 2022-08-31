@@ -20,10 +20,10 @@ default:
     reference: (1) https://www.engineeringtoolbox.com/water-pumping-costs-d_1527.html,
       (2) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5, (3) Cost
       Estimating Manual for Water Treatment Facilities (McGivney/Kawamura)
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     bod:
       value: 0.95
       units: dimensionless

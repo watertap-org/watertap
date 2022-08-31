@@ -24,9 +24,9 @@ copyright = "2021, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "0.5.0dev"
+release = "0.6.0dev"
 # The short X.Y version
-version = "0.5.0dev"
+version = "0.6.0dev"
 # -- General configuration ---------------------------------------------------
 
 
@@ -108,19 +108,25 @@ panels_add_bootstrap_css = False
 
 
 def run_apidoc(*args):
-    # NOTE the env var must be set before importing apidoc, or the options will have no effect
-    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance,noindex"
+    # NOTE the env var must be set before importing apidoc, or the options
+    # will have no effect
+    os.environ["SPHINX_APIDOC_OPTIONS"] = "members,show-inheritance"
     from sphinx.ext import apidoc
 
-    args = [
-        "../watertap",
-        "../watertap/*tests",
-        "-o",
-        "apidoc",
-        "--force",
-    ]
+    args = ["../watertap", "../watertap/*tests", "-o", "apidoc", "--force"]
     apidoc.main(args)
 
 
+def skip(app, what, name, obj, would_skip, options):
+    """Do not skip constructors!"""
+    if name == "__init__":
+        return False
+    return would_skip
+
+
 def setup(app):
-    app.connect("builder-inited", run_apidoc)
+    if os.environ.get("SKIP_APIDOC", False):
+        print("Skipping apidoc")
+    else:
+        app.connect("builder-inited", run_apidoc)
+    app.connect("autodoc-skip-member", skip)

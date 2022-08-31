@@ -17,12 +17,11 @@ default:
   recovery_frac_mass_H2O:
     value: 0.9999
     units: dimensionless
-    reference: 'Based on "Sedimentation" cost model. See references in VAR. There
-      will be minimal water losses. '
-  default_removal_frac_mass_solute:
+    reference: Based on "Sedimentation" cost model.
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.990826
       units: dimensionless

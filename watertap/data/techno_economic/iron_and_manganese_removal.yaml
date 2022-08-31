@@ -2,10 +2,10 @@ default:
   recovery_frac_mass_H2O:
     value: 0.9999
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     iron:
       value: 0.9
       units: dimensionless
@@ -31,7 +31,7 @@ default:
     units: dimensionless
   capital_cost:
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TPEC
     reference_state:
       value: 1
       units: m^3/hr

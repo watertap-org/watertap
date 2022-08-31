@@ -1,7 +1,12 @@
 default:
-  energy_electric_flow_vol_inlet:
-    value: 2.36698
+  elec_coeff_1:
+    value: 9.5
     units: kWh/m^3
+    reference: Assessing Location and Scale of Urban Nonpotable Water Reuse Systems for Life-Cycle Energy Consumption and Greenhouse Gas Emissions -  Kavvada et al (2016)
+  elec_coeff_2:
+    value: -0.3
+    units: dimensionless
+    reference: Assessing Location and Scale of Urban Nonpotable Water Reuse Systems for Life-Cycle Energy Consumption and Greenhouse Gas Emissions -  Kavvada et al (2016)
   capital_cost:
     basis: flow_vol
     cost_factor: None
@@ -19,10 +24,10 @@ default:
     units: dimensionless
     reference: (1) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5,
       (2) Cost Estimating Manual for Water Treatment Facilities (McGivney/Kawamura)
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.5
       units: dimensionless
@@ -46,17 +51,21 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-        \ Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
     cryptosporidium:
       value: 0.9999
       units: dimensionless
       constituent_longform: Cryptosporidium
 
 mbr_denitrification:
-  energy_electric_flow_vol_inlet:
-    value: 2.36698
+  elec_coeff_1:
+    value: 9.5
     units: kWh/m^3
+    reference: Assessing Location and Scale of Urban Nonpotable Water Reuse Systems for Life-Cycle Energy Consumption and Greenhouse Gas Emissions -  Kavvada et al (2016)
+  elec_coeff_2:
+    value: -0.3
+    units: dimensionless
+    reference: Assessing Location and Scale of Urban Nonpotable Water Reuse Systems for Life-Cycle Energy Consumption and Greenhouse Gas Emissions -  Kavvada et al (2016)
   capital_cost:
     basis: flow_vol
     cost_factor: None
@@ -73,10 +82,10 @@ mbr_denitrification:
     value: 0.9999
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tss:
       value: 0.5
       units: dimensionless
@@ -100,8 +109,7 @@ mbr_denitrification:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-        \ Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E.Coli)
     cryptosporidium:
       value: 0.9999
       units: dimensionless

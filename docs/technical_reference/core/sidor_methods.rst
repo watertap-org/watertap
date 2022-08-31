@@ -13,7 +13,7 @@ The `build_sido_reactive` method is intended to be used to rapidly construct a s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_sido_reactive, ZeroOrderBaseData
@@ -40,14 +40,14 @@ Variables
 
 The build_sido_reactive method creates the following variables in addition to those created by the `StateBlocks`.
 
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 Variable                        Name                      Indices         Notes
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 :math:`r_{t}`                   recovery_frac_mass_H2O    time            Fraction of mass flow of water in inlet that goes to treated stream.
-:math:`f_{t,j}`                 removal_frac_mass_solute  time, solutes   Fraction of mass flow of each solute that goes to byproduct stream.
+:math:`f_{t,j}`                 removal_frac_mass_comp    time, component Fraction of mass flow of each component that goes to byproduct stream.
 :math:`X_{t, r}`                reaction_conversion       time, reaction  Fractional conversion of key reactant via reaction r.
 :math:`\xi_{t, r}`              extent_of_reaction        time, reaction  Extent of reaction r in kg/s.
-=============================== ========================= =============== =====================================================================
+=============================== ========================= =============== ======================================================================
 
 Parameters
 ----------
@@ -112,4 +112,4 @@ A mass balance constraint is then written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_sido_reactive.build_sido_reactive
+* :mod:`watertap.core.zero_order_sido_reactive`

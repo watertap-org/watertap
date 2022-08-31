@@ -72,21 +72,27 @@ def test_unit_parameter_files(tech):
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
     no_energy_electric_flow_vol_inlet = [
+        "anaerobic_mbr_mec",
+        "autothermal_hydrothermal_liquefaction",
         "backwash_solids_handling",
         "brine_concentrator",
         "CANDO_P",
         "chemical_addition",
         "coag_and_floc",
+        "cofermentation",
         "constructed_wetlands",
         "deep_well_injection",
         "electrochemical_nutrient_removal",
+        "electrodialysis_reversal",
         "energy_recovery",
         "evaporation_pond",
         "filter_press",
         "gac",
         "gas_sparged_membrane",
+        "hydrothermal_gasification",
         "ion_exchange",
         "iron_and_manganese_removal",
+        "mbr",
         "metab",
         "municipal_drinking",
         "ozonation",
@@ -94,13 +100,15 @@ def test_unit_parameter_files(tech):
         "photothermal_membrane",
         "pump_electricity",
         "storage_tank",
+        "supercritical_salt_precipitation",
         "surface_discharge",
         "sw_onshore_intake",
+        "vfa_recovery",
         "water_pumping_station",
         "well_field",
     ]
 
-    expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_solute"]
+    expected = ["recovery_frac_mass_H2O", "default_removal_frac_mass_comp"]
 
     for k in data.values():
 
@@ -113,7 +121,7 @@ def test_unit_parameter_files(tech):
                 assert k[e]["value"] >= 0
                 assert k[e]["value"] <= 1
             elif tech in siso_full_recovery:
-                if e == "default_removal_frac_mass_solute":
+                if e == "default_removal_frac_mass_comp":
                     assert e in k.keys()
             else:
                 assert e not in k.keys()
@@ -127,8 +135,8 @@ def test_unit_parameter_files(tech):
             assert k[e]["value"] >= 0
 
         # Check for specific removal fractions
-        if "removal_frac_mass_solute" in k.keys():
-            for (j, c_data) in k["removal_frac_mass_solute"].items():
+        if "removal_frac_mass_comp" in k.keys():
+            for (j, c_data) in k["removal_frac_mass_comp"].items():
                 assert "units" in c_data.keys()
                 assert_units_equivalent(c_data["units"], units.dimensionless)
                 assert "value" in c_data.keys()

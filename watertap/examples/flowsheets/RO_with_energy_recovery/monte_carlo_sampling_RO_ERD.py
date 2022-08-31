@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from watertap.tools.parameter_sweep import (
     UniformSample,
     NormalSample,

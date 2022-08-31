@@ -1,19 +1,19 @@
-Anaerobic Mbr Mec (ZO)
-======================
+Integrated Anaerobic Membrane Bioreactor/Microbial Electrolysis Cell (ZO)
+=========================================================================
 
 Model Type
 ----------
-This unit model is formulated as a reactive single-inlet, double-outlet model form.
+This unit model is formulated as a **reactive single-inlet, double-outlet** model form.
 See documentation for :ref:`reactive single-inlet, double-outlet Helper Methods<sidor_methods>`.
 
 Electricity Consumption
 -----------------------
-Electricity consumption is calculated using the constant_intensity helper function.
+Electricity consumption is calculated using the **pump_electricity** helper function.
 See documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.
 
 Costing Method
 --------------
-Costing is calculated using the False method in the zero-order costing package.
+Costing is calculated using the **cost_anaerobic_mbr_mec** method in the zero-order costing package.
 See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
 
 .. index::

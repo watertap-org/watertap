@@ -40,8 +40,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component
-from idaes.core.phases import LiquidPhase, SolidPhase, PhaseType
+from idaes.core.base.components import Component
+from idaes.core.base.phases import LiquidPhase, SolidPhase, PhaseType
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -58,7 +58,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 __author__ = "Austin Ladshaw"
 
@@ -202,7 +202,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "flow_vol_phase": {"method": "_flow_vol_phase"},
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-                "visc_d": {"method": "_visc_d"},
+                "visc_d_phase": {"method": "_visc_d_phase"},
                 "enth_flow": {"method": "_enth_flow"},
             }
         )
@@ -487,7 +487,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_flow_dict,
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -517,7 +517,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.mass_frac_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_frac_dict,
-            bounds=(1e-16, 1.001),
+            bounds=(0.0, 1.001),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -571,7 +571,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize={"Liq": 1e-3},
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -596,7 +596,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.conc_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_conc_dict,
-            bounds=(1e-16, None),
+            bounds=(0.0, None),
             units=pyunits.kg / pyunits.m**3,
             doc="Mass concentration",
         )
@@ -611,11 +611,11 @@ class CoagulationStateBlockData(StateBlockData):
             self.seawater_mass_frac_dict.keys(), rule=rule_conc_mass_phase_comp
         )
 
-    def _visc_d(self):
-        self.visc_d = Var(
+    def _visc_d_phase(self):
+        self.visc_d_phase = Var(
             self.params.phase_list,
             initialize={"Liq": 0.001},
-            bounds=(1e-6, 0.01),
+            bounds=(0.0, 0.01),
             units=pyunits.kg / pyunits.m / pyunits.s,
             doc="Dynamic viscosity",
         )
@@ -624,12 +624,14 @@ class CoagulationStateBlockData(StateBlockData):
         #   -------------------------------------------------------------
         #   D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
         #     Liquids. Hemisphere Publishing Corp. (1989)
-        def rule_visc_d(b, p):
-            return b.visc_d[p] == (
+        def rule_visc_d_phase(b, p):
+            return b.visc_d_phase[p] == (
                 b.params.mu_A * exp(b.params.mu_B / (b.temperature - b.params.mu_C))
             )
 
-        self.eq_visc_d = Constraint(self.params.phase_list, rule=rule_visc_d)
+        self.eq_visc_d_phase = Constraint(
+            self.params.phase_list, rule=rule_visc_d_phase
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
@@ -776,13 +778,13 @@ class CoagulationStateBlockData(StateBlockData):
                     self.eq_conc_mass_phase_comp[pair], sf
                 )
 
-        if self.is_property_constructed("visc_d"):
-            if iscale.get_scaling_factor(self.visc_d) is None:
-                iscale.set_scaling_factor(self.visc_d, 1e3)
+        if self.is_property_constructed("visc_d_phase"):
+            if iscale.get_scaling_factor(self.visc_d_phase) is None:
+                iscale.set_scaling_factor(self.visc_d_phase, 1e3)
 
             # transforming constraints
-            sf = iscale.get_scaling_factor(self.visc_d)
-            iscale.constraint_scaling_transform(self.eq_visc_d["Liq"], sf)
+            sf = iscale.get_scaling_factor(self.visc_d_phase)
+            iscale.constraint_scaling_transform(self.eq_visc_d_phase["Liq"], sf)
 
         if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:

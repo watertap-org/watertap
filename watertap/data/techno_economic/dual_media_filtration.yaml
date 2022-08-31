@@ -17,11 +17,11 @@ default:
   recovery_frac_mass_H2O:
     value: 0.99
     units: dimensionless
-    reference: 'Placeholder. Not utilized in any case studies. '
-  default_removal_frac_mass_solute:
+    reference: 
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.2
       units: dimensionless

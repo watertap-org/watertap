@@ -17,7 +17,7 @@ outlet where composition changes, such as a generic bioreactor).
 """
 
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
@@ -47,7 +47,7 @@ def build_siso(self):
 
     Two additional variables are added:
         * recovery_frac_mass_H2O (indexed by time)
-        * removal_frac_mass_solute (indexed by time and solute)
+        * removal_frac_mass_comp (indexed by time and component)
 
     Two additional constraints are added to represent the material balances
         * water_recovery_equation (indexed by time)
@@ -89,10 +89,10 @@ def build_siso(self):
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        bounds=(1e-8, 1.0000001),
+        bounds=(0.0, 1.0000001),
         doc="Mass recovery fraction of water in the treated stream",
     )
-    self.removal_frac_mass_solute = Var(
+    self.removal_frac_mass_comp = Var(
         self.flowsheet().time,
         self.config.property_package.solute_set,
         domain=NonNegativeReals,
@@ -117,13 +117,13 @@ def build_siso(self):
         doc="Constraint for solute concentration in treated " "stream.",
     )
     def solute_treated_equation(b, t, j):
-        return (1 - b.removal_frac_mass_solute[t, j]) * b.properties_in[
-            t
-        ].flow_mass_comp[j] == b.properties_treated[t].flow_mass_comp[j]
+        return (1 - b.removal_frac_mass_comp[t, j]) * b.properties_in[t].flow_mass_comp[
+            j
+        ] == b.properties_treated[t].flow_mass_comp[j]
 
     self._stream_table_dict = {"Inlet": self.inlet, "Treated": self.treated}
 
-    self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
+    self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
 
     self._get_Q = _get_Q_siso
 

@@ -23,7 +23,7 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -200,14 +200,14 @@ class EvaporatorData(UnitModelBlockData):
         self.area = Var(initialize=1e2, bounds=(1e-1, 1e4), units=pyunits.m**2)
 
         self.delta_temperature_in = Var(
-            initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K
+            initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K
         )
 
         self.delta_temperature_out = Var(
-            initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K
+            initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K
         )
 
-        self.lmtd = Var(initialize=1e1, bounds=(1e-8, 1e3), units=pyunits.K)
+        self.lmtd = Var(initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K)
 
         self.heat_transfer = Var(
             initialize=1e4, bounds=(1, 1e10), units=pyunits.J * pyunits.s**-1
@@ -292,13 +292,12 @@ class EvaporatorData(UnitModelBlockData):
         def eq_vapor_pressure(b, t):
             return b.properties_vapor[t].pressure == b.properties_brine[t].pressure
 
-        # Vapor temperature
+        # Vapor temperature - assumed to be equal to brine temperature
         @self.Constraint(self.flowsheet().time, doc="Vapor temperature")
         def eq_vapor_temperature(b, t):
             return (
                 b.properties_vapor[t].temperature == b.properties_brine[t].temperature
             )
-            # return b.properties_vapor[t].temperature == 0.5*(b.properties_out[t].temperature + b.properties_in[t].temperature)
 
         ### EVAPORATOR CONSTRAINTS ###
         # log mean temperature

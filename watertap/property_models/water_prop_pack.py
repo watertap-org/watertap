@@ -33,15 +33,15 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase, VaporPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase, VaporPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import (
     ConfigurationError,
@@ -82,7 +82,7 @@ class WaterParameterData(PhysicalParameterBlock):
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
 
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
         """
@@ -372,9 +372,9 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-6, index="Vap")
         self.set_default_scaling("pressure_sat", 1e-5)
-        self.set_default_scaling("cp_phase", 1e-3, index="Liq")
-        self.set_default_scaling("cp_phase", 1e-3, index="Vap")
-        self.set_default_scaling("dh_vap", 1e-6)
+        self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
+        self.set_default_scaling("cp_mass_phase", 1e-3, index="Vap")
+        self.set_default_scaling("dh_vap_mass", 1e-6)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -392,8 +392,8 @@ class WaterParameterData(PhysicalParameterBlock):
                 "pressure_sat": {"method": "_pressure_sat"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
-                "cp_phase": {"method": "_cp_phase"},
-                "dh_vap": {"method": "_dh_vap"},
+                "cp_mass_phase": {"method": "_cp_mass_phase"},
+                "dh_vap_mass": {"method": "_dh_vap_mass"},
             }
         )
 
@@ -646,7 +646,7 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(1e-10, None),
+            bounds=(0.0, None),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -757,7 +757,7 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mole fraction",
         )
@@ -801,7 +801,7 @@ class WaterStateBlockData(StateBlockData):
                 # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
                 #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
                 # h_vap = h_w + dh_vap_w
-                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap
+                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -815,7 +815,9 @@ class WaterStateBlockData(StateBlockData):
             doc="Saturation vapor pressure",
         )
 
-        def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+        def rule_pressure_sat(
+            b,
+        ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
             psatw = (
                 exp(
@@ -852,16 +854,16 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list, rule=rule_enth_flow_phase
         )
 
-    def _cp_phase(self):
-        self.cp_phase = Var(
+    def _cp_mass_phase(self):
+        self.cp_mass_phase = Var(
             self.params.phase_list,
             initialize=4e3,
-            bounds=(1e-8, 1e8),
+            bounds=(0.0, 1e8),
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity",
         )
 
-        def rule_cp_phase(b, phase):
+        def rule_cp_mass_phase(b, phase):
             if phase == "Liq":
                 # specific heat, eq. 9 in Sharqawy et al. (2010)
                 # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -879,11 +881,14 @@ class WaterStateBlockData(StateBlockData):
                 D = (
                     b.params.cp_phase_param_D1
                 )  # + b.params.cp_phase_param_D2 * s + b.params.cp_phase_param_D3 * s ** 2
-                return b.cp_phase["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
+                return (
+                    b.cp_mass_phase["Liq"]
+                    == (A + B * t + C * t**2 + D * t**3) * 1000
+                )
             else:  # phase == 'Vap'
                 t = b.temperature / 1000
                 return (
-                    b.cp_phase["Vap"]
+                    b.cp_mass_phase["Vap"]
                     == b.params.cp_vap_param_A
                     + b.params.cp_vap_param_B * t
                     + b.params.cp_vap_param_C * t**2
@@ -891,22 +896,24 @@ class WaterStateBlockData(StateBlockData):
                     + b.params.cp_vap_param_E / t**2
                 )
 
-        self.eq_cp_phase = Constraint(self.params.phase_list, rule=rule_cp_phase)
+        self.eq_cp_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_cp_mass_phase
+        )
 
-    def _dh_vap(self):
-        self.dh_vap = Var(
+    def _dh_vap_mass(self):
+        self.dh_vap_mass = Var(
             initialize=2.4e6,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization",
         )
 
-        def rule_dh_vap(
+        def rule_dh_vap_mass(
             b,
         ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
             return (
-                b.dh_vap
+                b.dh_vap_mass
                 == b.params.dh_vap_w_param_0
                 + b.params.dh_vap_w_param_1 * t
                 + b.params.dh_vap_w_param_2 * t**2
@@ -914,7 +921,7 @@ class WaterStateBlockData(StateBlockData):
                 + b.params.dh_vap_w_param_4 * t**4
             )
 
-        self.eq_dh_vap = Constraint(rule=rule_dh_vap)
+        self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must

@@ -14,13 +14,9 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Param,
     NonNegativeReals,
     NegativeReals,
-    units as pyunits,
-    exp,
     value,
-    Constraint,
     check_optimal_termination,
     Set,
 )
@@ -33,9 +29,10 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
 )
-from idaes.core.control_volume1d import DistributedVars
+from idaes.core.base.control_volume1d import DistributedVars
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from watertap.core.util.initialization import check_solve, check_dof
 from watertap.unit_models._reverse_osmosis_base import (
@@ -280,7 +277,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=mass_transfer_phase_comp_initialize,
-            bounds=(1e-8, 1e6),
+            bounds=(0.0, 1e6),
             domain=NonNegativeReals,
             units=units_meta("mass")
             * units_meta("time") ** -1

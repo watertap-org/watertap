@@ -13,7 +13,7 @@ The `build_siso` method is intended to be used to rapidly construct a standard s
 Usage
 -----
 
-.. testcode::
+.. doctest::
 
   from idaes.core import declare_process_block_class
   from watertap.core import build_siso, ZeroOrderBaseData
@@ -40,12 +40,12 @@ Variables
 
 The build_siso method creates the following variables in addition to those created by the `StateBlocks`.
 
-=============================== ========================= ============== =====================================================================
-Variable                        Name                      Indices        Notes
-=============================== ========================= ============== =====================================================================
-:math:`r_{t}`                   recovery_frac_mass_H2O    time           Fraction of mass flow of water in inlet that goes to treated stream.
-:math:`f_{t,j}`                 removal_frac_mass_solute  time, solutes  Fraction of mass flow of each solute that is removed from the inlet stream.
-=============================== ========================= ============== =====================================================================
+=============================== ========================= =============== ==============================================================================
+Variable                        Name                      Indices         Notes
+=============================== ========================= =============== ==============================================================================
+:math:`r_{t}`                   recovery_frac_mass_H2O    time            Fraction of mass flow of water in inlet that goes to treated stream.
+:math:`f_{t,j}`                 removal_frac_mass_comp    time, component Fraction of mass flow of each component that is removed from the inlet stream.
+=============================== ========================= =============== ==============================================================================
 
 recovery_frac_mass_H2O is intended to be fixed to 1 (e.g., UV reactor which yields product stream without water losses), but the user can optionally set this to some fraction.
 
@@ -71,6 +71,4 @@ Thus, a mass balance constraint is only written for each solute.
 Module Documentation
 --------------------
 
-.. automodule:: watertap.core.zero_order_siso.build_siso
-    :members:
-    :noindex:
+* :mod:`watertap.core.zero_order_siso`
