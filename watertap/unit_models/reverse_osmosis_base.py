@@ -774,7 +774,8 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
 
-        self._permeate_scaled_properties = ComponentSet()
+        if not hasattr(self, "_permeate_scaled_properties"):
+            self._permeate_scaled_properties = ComponentSet()
 
         for sb in (self.permeate_side, self.mixed_permeate):
             for blk in sb.values():
