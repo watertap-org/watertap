@@ -363,7 +363,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
@@ -378,7 +378,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Solvent and solute mass flux",
@@ -425,7 +425,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().config.time,
-                self.length_domain,
+                self.difference_elements,
                 solute_set,
                 doc="Concentration polarization",
             )

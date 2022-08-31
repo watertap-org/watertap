@@ -16,6 +16,7 @@ from enum import Enum, auto
 
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import (
+    Constraint,
     Expression,
     Param,
     NegativeReals,
@@ -271,6 +272,9 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
+    def _skip_element(self, x):
+        raise NotImplementedError()
+
     def _add_var_reference(self, pyomo_var, reference_name, param_name):
         if pyomo_var is not None:
             # Validate length_Var and add a reference
@@ -302,6 +306,8 @@ class MembraneChannelMixin:
             doc="Pressure at interface",
         )
         def eq_equal_pressure_interface(b, t, x):
+            if b._skip_element(x):
+                return Constraint.Skip
             return b.properties_interface[t, x].pressure == b.properties[t, x].pressure
 
         if has_pressure_change:
@@ -321,6 +327,8 @@ class MembraneChannelMixin:
             doc="Temperature at interface",
         )
         def eq_equal_temp_interface(b, t, x):
+            if b._skip_element(x):
+                return Constraint.Skip
             return (
                 b.properties[t, x].temperature
                 == b.properties_interface[t, x].temperature
@@ -334,6 +342,8 @@ class MembraneChannelMixin:
             doc="Volumetric flow at interface of inlet",
         )
         def eq_equal_flow_vol_interface(b, t, x):
+            if b._skip_element(x):
+                return Constraint.Skip
             return (
                 b.properties_interface[t, x].flow_vol_phase["Liq"]
                 == b.properties[t, x].flow_vol_phase["Liq"]
@@ -357,6 +367,8 @@ class MembraneChannelMixin:
                 doc="Unit concentration polarization modulus",
             )
             def eq_cp_modulus(b, t, x, j):
+                if b._skip_element(x):
+                    return Constraint.Skip
                 return (
                     b.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
                     == b.properties[t, x].conc_mass_phase_comp["Liq", j]
@@ -390,6 +402,8 @@ class MembraneChannelMixin:
             doc="Concentration polarization modulus",
         )
         def eq_cp_modulus(b, t, x, j):
+            if b._skip_element(x):
+                return Constraint.Skip
             return (
                 self.properties_interface[t, x].conc_mass_phase_comp["Liq", j]
                 == self.properties[t, x].conc_mass_phase_comp["Liq", j]
@@ -470,6 +484,8 @@ class MembraneChannelMixin:
             doc="Mass transfer coefficient in membrane channel",
         )
         def eq_K(b, t, x, j):
+            if b._skip_element(x):
+                return Constraint.Skip
             return (
                 b.K[t, x, j] * b.dh
                 # TODO: add diff coefficient to SW prop and consider multi-components

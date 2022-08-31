@@ -85,9 +85,12 @@ CONFIG_Template.declare(
 
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
+
+    def _skip_element(self, x):
+        return self.first_element == x
+
     def apply_transformation(self, *args, **kwargs):
         super().apply_transformation(*args, **kwargs)
-        self.first_element = self.length_domain.first()
         self.difference_elements = Set(
             ordered=True,
             initialize=(x for x in self.length_domain if x != self.first_element),
@@ -155,6 +158,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             None
         """
         super().add_state_blocks(information_flow, has_phase_equilibrium)
+        self.first_element = self.length_domain.first()
         self._add_interface_stateblock(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self, **kwrags):
@@ -173,7 +177,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             doc="Isothermal assumption for feed channel",
         )
         def eq_feed_isothermal(b, t, x):
-            if x == b.length_domain.first():
+            if x == b.first_element:
                 return Constraint.Skip
             return (
                 b.properties[t, b.length_domain.first()].temperature

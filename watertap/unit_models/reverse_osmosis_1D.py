@@ -122,8 +122,8 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
 
         else:
 
-            @self.Constraint(self.flowsheet().config.time, doc="pressure change")
-            def eq_pressure_change(b, t):
+            @self.Constraint(self.flowsheet().config.time, doc="Pressure drop across unit")
+            def eq_pressure_drop(b, t):
                 return b.deltaP[t] == sum(
                     b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
                 )
@@ -140,7 +140,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=mass_transfer_phase_comp_initialize,
@@ -156,7 +156,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Mass transfer term equation
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer term",
@@ -171,7 +171,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer from feed to permeate",
@@ -186,7 +186,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
         # Mass flux = feed mass transfer equation
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
+            self.difference_elements,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="Mass transfer term",
