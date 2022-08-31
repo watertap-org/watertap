@@ -11,38 +11,43 @@
 #
 ###############################################################################
 
+import math
 import os
 import pytest
 
-import numpy as np
 import pandas as pd
 
 from watertap.examples.flowsheets.lsrro.multi_sweep import run_case
 
-from .gha_divider import get_test_cases_subset
-
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 
-_test_cases = list(range(1, 6))
+# NOTE: we used to test up to 5 stages, but those are
+#       excluded by the rule below, so no point in running
+_test_cases = list(range(1, 3))
 
-# comment out this line if you want to run the entire baseline
-_test_cases = get_test_cases_subset(_test_cases)
 
-
-@pytest.mark.parametrize("test_case_index", _test_cases)
+@pytest.mark.parametrize("number_of_stages", _test_cases)
 @pytest.mark.integration
-def test_against_multisweep(test_case_index, tmp_path):
-    csv_file_name = f"{test_case_index}_stage_results_LSRRO.csv"
-    csv_test_file_name = os.path.join(tmp_path, csv_file_name)
+def test_against_multisweep(number_of_stages, tmp_path):
+    csv_file_name = f"{number_of_stages}_stage_results_LSRRO.csv"
+    csv_test_file_name = os.path.join("./", csv_file_name)
     csv_baseline_file_name = os.path.join(
         _this_file_path, "parameter_sweep_baselines", csv_file_name
     )
-    run_case(test_case_index, 2, output_filename=csv_test_file_name)
+    run_case(number_of_stages, 2, output_filename=csv_test_file_name)
 
     baseline = pd.read_csv(csv_baseline_file_name).astype(float).T.to_dict()
     test = pd.read_csv(csv_test_file_name).astype(float).T.to_dict()
 
     assert len(baseline) == len(test)
 
-    for k in test:
-        assert pytest.approx(baseline[k], nan_ok=True, rel=1e-02, abs=1e-07) == test[k]
+    for k, base in baseline.items():
+        # Don't test those cases which have too many stages
+        for s in range(1, number_of_stages + 1):
+            if math.isclose(base[f"Membrane Area-Stage {s}"], 1.0, abs_tol=1e-4):
+                print(
+                    f"Skipping feed concentration {base['# Feed Concentration']}, recovery {base['Volumetric Recovery Rate']}; stage {s} has membrane area of 1"
+                )
+                break
+        else:  # no break
+            assert pytest.approx(base, nan_ok=True, rel=1e-02, abs=1e-07) == test[k]
