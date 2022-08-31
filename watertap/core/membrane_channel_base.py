@@ -289,6 +289,16 @@ class MembraneChannelMixin:
                 )
             add_object_reference(self, reference_name, pyomo_var)
 
+    def _set_nfe(self):
+        self.first_element = self.length_domain.first()
+        self.last_element = self.length_domain.last()
+
+        self.nfe = Param(
+            initialize=(len(self.difference_elements)),
+            units=pyunits.dimensionless,
+            doc="Number of finite elements",
+        )
+
     def add_total_pressure_balances(
         self,
         has_pressure_change=True,
@@ -717,9 +727,13 @@ class MembraneChannelMixin:
             else:
                 initialize_guess["cp_modulus"] = 1
 
-        source = self.properties[
-            self.flowsheet().config.time.first(), self.first_element
-        ]
+        # Get source block
+        # TODO: need to re-visit for counterflow
+        if self._flow_direction == FlowDirection.forward:
+            source_idx = self.length_domain.first()
+        else:
+            source_idx = self.length_domain.last()
+        source = self.properties[self.flowsheet().config.time.first(), source_idx]
 
         if state_args is None:
             state_args = {}
@@ -808,26 +822,10 @@ class MembraneChannelMixin:
                 ] + x * state_args_interface_out[k]
         state_args_interface = state_args_tx
 
-        x = 0.5
-        state_args_cv = {}
-        for k in state_args:
-            if isinstance(state_args[k], dict):
-                if k not in state_args_cv:
-                    state_args_cv[k] = {}
-                for index in state_args[k]:
-                    state_args_cv[k][index] = (1.0 - x) * state_args[k][
-                        index
-                    ] + x * state_args_retentate[k][index]
-            else:
-                state_args_cv[k] = (1.0 - x) * state_args[k] + x * state_args_retentate[
-                    k
-                ]
-
         return {
             "feed_side": state_args,
             "retentate": state_args_retentate,
             "interface": state_args_interface,
-            "control_volume": state_args_cv,
         }
 
     def calculate_scaling_factors(self):

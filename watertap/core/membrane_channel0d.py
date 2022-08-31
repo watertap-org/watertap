@@ -44,7 +44,9 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         return False
 
     # overwrite CV0D `add_geometry`
-    def add_geometry(self, length_var=None, width_var=None):
+    def add_geometry(
+        self, length_var=None, width_var=None, flow_direction=FlowDirection.forward
+    ):
         """
         Method to create spatial domain and volume Var in ControlVolume.
 
@@ -58,9 +60,22 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                          the channel. If a variable is provided, a
                          reference will be made to this in place of the length
                          Var.
+            flow_direction - argument indicating direction of material flow
+                            relative to length domain. Valid values:
+                                - FlowDirection.forward (default), flow goes
+                                  from 0 to 1.
+                                - FlowDirection.backward, flow goes from 1 to 0
         Returns:
             None
         """
+        # Validate and create flow direction attribute, like 1D
+        if flow_direction in (flwd for flwd in FlowDirection):
+            self._flow_direction = flow_direction
+        else:
+            raise ConfigurationError(
+                "{} invalid value for flow_direction "
+                "argument. Must be a FlowDirection Enum.".format(self.name)
+            )
 
         self._add_var_reference(length_var, "length", "length_var")
         self._add_var_reference(width_var, "width", "width_var")
@@ -82,31 +97,43 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             None
         """
         super().add_state_blocks(information_flow, has_phase_equilibrium)
+
         # quack like a 1D model
         self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
         add_object_reference(self, "difference_elements", self.length_domain)
-        self.first_element = self.length_domain.first()
 
-        self.nfe = Param(
-            initialize=(len(self.difference_elements)),
-            units=pyunits.dimensionless,
-            doc="Number of finite elements",
-        )
+        self._set_nfe()
 
-        add_object_reference(
-            self,
-            "properties",
-            {
-                **{
-                    (t, 0.0): self.properties_in[t]
-                    for t in self.flowsheet().config.time
+        if self._flow_direction == FlowDirection.forward:
+            add_object_reference(
+                self,
+                "properties",
+                {
+                    **{
+                        (t, 0.0): self.properties_in[t]
+                        for t in self.flowsheet().config.time
+                    },
+                    **{
+                        (t, 1.0): self.properties_out[t]
+                        for t in self.flowsheet().config.time
+                    },
                 },
-                **{
-                    (t, 1.0): self.properties_out[t]
-                    for t in self.flowsheet().config.time
+            )
+        else:
+            add_object_reference(
+                self,
+                "properties",
+                {
+                    **{
+                        (t, 0.0): self.properties_out[t]
+                        for t in self.flowsheet().config.time
+                    },
+                    **{
+                        (t, 1.0): self.properties_in[t]
+                        for t in self.flowsheet().config.time
+                    },
                 },
-            },
-        )
+            )
 
         self._add_interface_stateblock(has_phase_equilibrium)
 
@@ -212,20 +239,37 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
-        source_flags = self.properties_in.initialize(
-            state_args=state_args["feed_side"],
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            hold_state=True,
-        )
+        if self._flow_direction == FlowDirection.forward:
+            source_flags = self.properties_in.initialize(
+                state_args=state_args["feed_side"],
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                hold_state=True,
+            )
 
-        self.properties_out.initialize(
-            state_args=state_args["retentate"],
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-        )
+            self.properties_out.initialize(
+                state_args=state_args["retentate"],
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+            )
+
+        else:
+            source_flags = self.properties_out.initialize(
+                state_args=state_args["feed_side"],
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                hold_state=True,
+            )
+
+            self.properties_in.initialize(
+                state_args=state_args["retentate"],
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+            )
 
         self.properties_interface.initialize(
             outlvl=outlvl,

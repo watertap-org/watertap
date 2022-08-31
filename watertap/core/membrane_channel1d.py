@@ -86,19 +86,18 @@ CONFIG_Template.declare(
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
     def _skip_element(self, x):
-        return self.first_element == x
+        if self.config.transformation_scheme != "FORWARD":
+            return x == self.length_domain.first()
+        else:
+            return x == self.length_domain.last()
 
     def apply_transformation(self, *args, **kwargs):
         super().apply_transformation(*args, **kwargs)
         self.difference_elements = Set(
             ordered=True,
-            initialize=(x for x in self.length_domain if x != self.first_element),
+            initialize=(x for x in self.length_domain if not self._skip_element(x)),
         )
-        self.nfe = Param(
-            initialize=(len(self.difference_elements)),
-            units=pyunits.dimensionless,
-            doc="Number of finite elements",
-        )
+        self._set_nfe()
 
     def add_geometry(
         self, length_var, width_var, flow_direction=FlowDirection.forward, **kwargs
@@ -151,13 +150,10 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
                                outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
-            package_arguments: dict-like object of arguments to be passed to
-                                state blocks as construction arguments
         Returns:
             None
         """
         super().add_state_blocks(information_flow, has_phase_equilibrium)
-        self.first_element = self.length_domain.first()
         self._add_interface_stateblock(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self, **kwrags):
@@ -176,7 +172,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             doc="Isothermal assumption for feed channel",
         )
         def eq_feed_isothermal(b, t, x):
-            if x == b.first_element:
+            if self._skip_element(x):
                 return Constraint.Skip
             return (
                 b.properties[t, b.length_domain.first()].temperature
@@ -252,8 +248,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
             solver=solver,
             state_args=state_args["interface"],
         )
-
-        init_log.info("Initialization Complete")
 
         if hold_state:
             return source_flags
