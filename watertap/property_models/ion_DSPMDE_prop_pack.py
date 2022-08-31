@@ -618,7 +618,7 @@ class _DSPMDEStateBlock(StateBlock):
             for j in self[k].params.ion_set:
                 if (
                     self[k].is_property_constructed("elec_mobility_phase_comp")
-                    and self[k].params.config.equiv_conductivity_calculation
+                    and self[k].params.config.elec_mobility_calculation
                     == ElectricalMobilityCalculation.EinsteinRelation
                 ):
                     self[k].elec_mobility_phase_comp["Liq", j].set_value(
@@ -628,13 +628,11 @@ class _DSPMDEStateBlock(StateBlock):
                         / (Constants.gas_constant * self[k].temperature)
                     )
                 if self[k].is_property_constructed("conc_equiv_phase_comp"):
-
                     self[k].conc_equiv_phase_comp["Liq", j].set_value(
                         self[k].conc_mol_phase_comp["Liq", j]
                         / abs(self[k].params.charge_comp[j])
                     )
                 if self[k].is_property_constructed("flow_equiv_phase_comp"):
-
                     self[k].flow_equiv_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
                         * abs(self[k].params.charge_comp[j])
