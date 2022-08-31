@@ -44,6 +44,7 @@ def main(
     ndays=1,
     # filename="pricesignals_GOLETA_6_N200_20220601.csv",
     filename="dagget_CA_LMP_hourly_2015.csv",
+    price_multiplier=1,
 ):
     file_path = os.path.realpath(__file__)
     base_path = os.path.dirname(file_path)
@@ -57,7 +58,7 @@ def main(
         carbon_cost = False
 
     # get data
-    lmp, co2i = _get_lmp(n_steps, data_path, carbon_cost)
+    lmp, co2i = _get_lmp(n_steps, data_path, carbon_cost, price_multiplier)
 
     mp_swro = build_flowsheet(n_steps)
 
@@ -70,7 +71,7 @@ def main(
     return m, t_blocks, [lmp, co2i]
 
 
-def _get_lmp(time_steps, data_path, carbon_cost=False):
+def _get_lmp(time_steps, data_path, carbon_cost=False, price_multiplier=1):
     """
     Get price signals from data set
     :param time_steps: Number of time steps considered in MP analysis
@@ -88,7 +89,7 @@ def _get_lmp(time_steps, data_path, carbon_cost=False):
         co2i = np.zeros_like(lmp)
 
     # index only the desired number of timesteps
-    return lmp * 1, co2i
+    return lmp * price_multiplier, co2i
 
 
 def build_flowsheet(n_steps):
@@ -234,7 +235,7 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         doc="Flow-averaged permeate quality must be greater than 0 ppm",
     )
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
-    t_blocks[0].ro_mp.previous_pressure.fix(55e5)
+    t_blocks[0].ro_mp.previous_pressure.fix(50e5)
 
     return m, t_blocks
 
@@ -412,8 +413,13 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    m, t_blocks, data = main(*sys.argv[1:])
-    path = os.path.join(os.getcwd(), "simulation_data_1_00.csv")
+    m, t_blocks, data = main(
+        ndays=1,
+        # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+        filename="dagget_CA_LMP_hourly_2015.csv",
+        price_multiplier=3,
+    )
+    path = os.path.join(os.getcwd(), "simulation_data_3_00.csv")
     save_results(m, t_blocks, data, path)
     # title_label = "LMP scaling = 25%"
     # visualize_results(path,
