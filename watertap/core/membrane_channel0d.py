@@ -40,7 +40,6 @@ from watertap.core.membrane_channel_base import (
 
 @declare_process_block_class("MembraneChannel0DBlock")
 class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData):
-
     def _skip_element(self, x):
         return False
 

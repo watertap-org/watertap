@@ -85,7 +85,6 @@ CONFIG_Template.declare(
 
 @declare_process_block_class("MembraneChannel1DBlock")
 class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData):
-
     def _skip_element(self, x):
         return self.first_element == x
 
@@ -240,7 +239,7 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
 
         # intialize self.properties
         source_flags = super().initialize(
-            state_args=state_args["control_volume"],
+            state_args=state_args["feed_side"],
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,

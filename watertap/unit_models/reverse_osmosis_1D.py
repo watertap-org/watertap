@@ -122,7 +122,9 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
 
         else:
 
-            @self.Constraint(self.flowsheet().config.time, doc="Pressure drop across unit")
+            @self.Constraint(
+                self.flowsheet().config.time, doc="Pressure drop across unit"
+            )
             def eq_pressure_drop(b, t):
                 return b.deltaP[t] == sum(
                     b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements

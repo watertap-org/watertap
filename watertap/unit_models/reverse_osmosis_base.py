@@ -442,7 +442,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         return self.eq_flux_mass
 
-    def _get_state_args(self, initialize_guess, state_args):
+    def _get_state_args_permeate(self, initialize_guess, state_args):
         """
         Arguments:
             initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
@@ -508,9 +508,8 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
                 "solute_recovery"
             ]
-        return {
-            "permeate": state_args_permeate,
-        }
+
+        return state_args_permeate
 
     def initialize_build(
         self,
@@ -547,7 +546,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             None
         """
 
-
         source_flags = self.feed_side.initialize(
             state_args=state_args,
             outlvl=outlvl,
@@ -565,20 +563,22 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        state_args = self._get_state_args(initialize_guess, state_args)
+        state_args_permeate = self._get_state_args_permeate(
+            initialize_guess, state_args
+        )
 
         self.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args["permeate"],
+            state_args=state_args_permeate,
         )
 
         self.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args["permeate"],
+            state_args=state_args_permeate,
         )
 
         # Create solver
