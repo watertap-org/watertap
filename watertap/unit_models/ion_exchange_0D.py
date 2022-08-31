@@ -13,8 +13,6 @@
 
 from copy import deepcopy
 
-from enum import Enum, auto
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -48,6 +46,7 @@ from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.misc import StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -57,10 +56,17 @@ __author__ = "Kurban Sitterley"
 _log = idaeslog.getLogger(__name__)
 
 
-class IonExchangeType(Enum):
-    anion = auto()
-    cation = auto()
-    mixed = auto()
+class IonExchangeType(StrEnum):
+    anion = "anion"
+    cation = "cation"
+    mixed = "mixed"
+
+
+class RegenerantChem(StrEnum):
+    HCl = "HCl"
+    NaOH = "NaOH"
+    H2SO4 = "H2SO4"
+    NaCl = "NaCl"
 
 
 @declare_process_block_class("IonExchange0D")
@@ -121,24 +127,14 @@ class IonExchangeODData(UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "ion_exchange_type",
-        ConfigValue(
-            default=IonExchangeType.cation,
-            domain=In(IonExchangeType),
-            description="Ion exchange type construction flag",
-            doc="""Options for different types of ion exchange process. **default** - ``IonExchangeType.cation``""",
-        ),
-    )
-
-    CONFIG.declare(
         "target_ion",
         ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
     )
 
-    CONFIG.declare(
-        "regenerant",
-        ConfigValue(default="HCl", domain=str, description="Regenerant"),
-    )
+    # CONFIG.declare(
+    #     "regenerant",
+    #     ConfigValue(default=RegenerantChem.HCl, domain=In(RegenerantChem), description="Regenerant chemical"),
+    # ) TODO: add way to change regenerant chemical via CONFIG
 
     def build(self):
         super().build()
@@ -165,6 +161,16 @@ class IonExchangeODData(UnitModelBlockData):
 
         ion_set = self.config.property_package.ion_set
         target_ion = self.config.target_ion
+        self.target_ion_set = Set(
+            initialize=[target_ion]
+        )  # create set for future development of multi-component model
+
+        if "+" in target_ion:
+            self.ion_exchange_type = IonExchangeType.cation
+            self.regen_chem = RegenerantChem.HCl
+        if "-" in target_ion:
+            self.ion_exchange_type = IonExchangeType.anion
+            self.regen_chem = RegenerantChem.NaOH
 
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -336,7 +342,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.langmuir = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=1.5,
             bounds=(0.5, None),
             units=pyunits.dimensionless,
@@ -344,7 +350,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.separation_factor = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=0.2,
             bounds=(0, 1.1),
             units=pyunits.dimensionless,
@@ -434,7 +440,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.fluid_mass_transfer_coeff = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=1e-3,
             bounds=(0, None),
             units=pyunits.m / pyunits.s,
@@ -442,8 +448,8 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.rate_coeff = Var(
-            [target_ion],
-            initialize=0.214e-3,
+            self.target_ion_set,
+            initialize=2e-4,
             bounds=(0, 1),
             units=pyunits.m**3 / (pyunits.kg * pyunits.s),
             doc="Rate coefficient",
@@ -485,7 +491,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.HTU = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=0.5,
             bounds=(0, 1),
             units=pyunits.m,
@@ -507,7 +513,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.mass_in = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=1e3,
             bounds=(0, None),
             units=pyunits.mol,
@@ -515,7 +521,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.mass_removed = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=1e3,
             bounds=(0, None),
             units=pyunits.mol,
@@ -523,7 +529,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.mass_out = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=100,
             bounds=(0, None),
             units=pyunits.mol,
@@ -583,7 +589,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.Sh = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=30,
             units=pyunits.dimensionless,
             doc="Sherwood number",
@@ -607,7 +613,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.c_norm = Var(
-            [target_ion],
+            self.target_ion_set,
             initialize=0.5,
             bounds=(0, 1),
             units=pyunits.dimensionless,
@@ -745,19 +751,19 @@ class IonExchangeODData(UnitModelBlockData):
         # Add ports - oftentimes users interact with these rather than the state blocks
         self.add_port(name="inlet", block=self.properties_in)
         self.add_port(name="outlet", block=self.properties_out)
-        self.add_port(name="waste", block=self.properties_regen)
+        self.add_port(name="regen", block=self.properties_regen)
 
         # =========== EQUILIBRIUM ===========
 
         @self.Constraint(
-            [target_ion],
+            self.target_ion_set,
             doc="Separation factor calc",
         )
         def eq_sep_factor(b, j):
             return b.separation_factor[j] == 1 / b.langmuir[j]
 
         @self.Constraint(
-            [target_ion],
+            self.target_ion_set,
             doc="Langmuir isotherm",
         )
         def eq_langmuir(b, j):
@@ -780,7 +786,7 @@ class IonExchangeODData(UnitModelBlockData):
             prop_in = b.properties_in[0]
             return b.Re == (b.vel_bed * b.resin_diam) / prop_in.visc_k_phase["Liq"]
 
-        @self.Constraint([target_ion], doc="Schmidt number")
+        @self.Constraint(self.target_ion_set, doc="Schmidt number")
         def eq_Sc(b, j):
             prop_in = b.properties_in[0]
             return (
@@ -788,7 +794,7 @@ class IonExchangeODData(UnitModelBlockData):
                 == prop_in.visc_k_phase["Liq"] / prop_in.diffus_phase_comp["Liq", j]
             )
 
-        @self.Constraint([target_ion], doc="Sherwood number")
+        @self.Constraint(self.target_ion_set, doc="Sherwood number")
         def eq_Sh(b, j):
             return (
                 b.Sh[j]
@@ -881,7 +887,7 @@ class IonExchangeODData(UnitModelBlockData):
             ) ** 2
 
         # =========== KINETICS ===========
-        @self.Constraint([target_ion], doc="Fluid mass transfer coeff")
+        @self.Constraint(self.target_ion_set, doc="Fluid mass transfer coeff")
         def eq_fluid_mass_transfer_coeff(b, j):
             prop_in = b.properties_in[0]
             return (
@@ -889,7 +895,7 @@ class IonExchangeODData(UnitModelBlockData):
                 == (prop_in.diffus_phase_comp["Liq", j] * b.Sh[j]) / b.resin_diam
             )
 
-        @self.Constraint([target_ion], doc="Rate coefficient")
+        @self.Constraint(self.target_ion_set, doc="Rate coefficient")
         def eq_rate_coeff(b, j):
             return b.rate_coeff[j] == (
                 6 * (1 - b.bed_porosity) * b.fluid_mass_transfer_coeff[j]
@@ -898,7 +904,7 @@ class IonExchangeODData(UnitModelBlockData):
                 * b.resin_diam
             )
 
-        @self.Constraint([target_ion], doc="Height of transfer unit - HTU")
+        @self.Constraint(self.target_ion_set, doc="Height of transfer unit - HTU")
         def eq_HTU(b, j):
             return b.HTU[j] == b.vel_bed / (
                 pyunits.convert(b.resin_bulk_dens, to_units=pyunits.kg / pyunits.m**3)
@@ -919,7 +925,9 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_lh(b):
             return b.lh == b.num_transfer_units * (b.dimensionless_time - 1)
 
-        @self.Constraint([target_ion], doc="Right hand side of constant pattern sol'n")
+        @self.Constraint(
+            self.target_ion_set, doc="Right hand side of constant pattern sol'n"
+        )
         def eq_fixed_pattern_soln(b, j):
             return (
                 b.lh
@@ -939,7 +947,7 @@ class IonExchangeODData(UnitModelBlockData):
                 / b.partition_ratio
             )
 
-        @self.Constraint([target_ion], doc="Number of mass-transfer units")
+        @self.Constraint(self.target_ion_set, doc="Number of mass-transfer units")
         def eq_num_transfer_units(b, j):
             return (
                 b.num_transfer_units
@@ -962,7 +970,7 @@ class IonExchangeODData(UnitModelBlockData):
                 (prop_regen.flow_vol_phase["Liq"] * b.t_regen) / b.t_cycle
             )  # assume regen water comes from treated stream
 
-        @self.Constraint([target_ion], doc="Influent total mass of ion")
+        @self.Constraint(self.target_ion_set, doc="Influent total mass of ion")
         def eq_mass_in(b, j):
             prop_in = b.properties_in[0]
             return (
@@ -972,14 +980,14 @@ class IonExchangeODData(UnitModelBlockData):
                 * b.t_breakthru
             )
 
-        @self.Constraint([target_ion], doc="Removed total mass of ion")
+        @self.Constraint(self.target_ion_set, doc="Removed total mass of ion")
         def eq_mass_removed(b, j):
             return b.mass_removed[j] == pyunits.convert(
                 b.resin_eq_capacity * b.resin_bulk_dens * b.bed_vol * b.number_columns,
                 to_units=pyunits.mol,
             )
 
-        @self.Constraint([target_ion], doc="Mass of ion in effluent")
+        @self.Constraint(self.target_ion_set, doc="Mass of ion in effluent")
         def eq_mass_out(b, j):
             return b.mass_out[j] == b.mass_in[j] - b.mass_removed[j]
 
@@ -1260,6 +1268,8 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.bed_area, 1)
 
         iscale.set_scaling_factor(self.bed_vol, 1)
+
+        iscale.set_scaling_factor(self.bed_vol_tot, 0.1)
 
         iscale.set_scaling_factor(self.bed_depth, 1)
 
