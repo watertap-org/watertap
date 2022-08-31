@@ -129,7 +129,7 @@ def ix_scaling(m, sf=1e5, est_recov=0.95, est_removal=0.99):
 
 class TestIonExchange:
     @pytest.fixture(scope="class")
-    def IX_frame(self):
+    def IX_frame_no_inert(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = DSPMDEParameterBlock(default=ix_in)
@@ -191,8 +191,8 @@ class TestIonExchange:
         return m
 
     @pytest.mark.unit
-    def test_config(self, IX_frame):
-        m = IX_frame
+    def test_config(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
 
         assert len(m.fs.unit.config) == 7
 
@@ -202,7 +202,7 @@ class TestIonExchange:
         assert m.fs.unit.config.property_package is m.fs.properties
 
     @pytest.mark.unit
-    def test_build(self, IX_frame):
+    def test_build(self, IX_frame_no_inert):
         m = IX_frame
         ix = m.fs.unit
         # test ports and variables
@@ -333,13 +333,13 @@ class TestIonExchange:
         assert number_unused_variables(m) == 13
 
     @pytest.mark.unit
-    def test_dof(self, IX_frame):
-        m = IX_frame
+    def test_dof(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         check_dof(m, fail_flag=True)
 
     @pytest.mark.unit
-    def test_calculate_scaling(self, IX_frame):
-        m = IX_frame
+    def test_calculate_scaling(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         m = ix_scaling(m)
 
         calculate_scaling_factors(m)
@@ -350,14 +350,14 @@ class TestIonExchange:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_initialize(self, IX_frame):
-        m = IX_frame
+    def test_initialize(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         initialization_tester(m)
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_solve(self, IX_frame):
-        m = IX_frame
+    def test_solve(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         calculate_scaling_factors(m)
         results = solver.solve(m)
 
@@ -366,8 +366,8 @@ class TestIonExchange:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_conservation(self, IX_frame):
-        m = IX_frame
+    def test_conservation(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         ix = m.fs.unit
         comp_lst = m.fs.properties.solute_set
 
@@ -383,8 +383,8 @@ class TestIonExchange:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_solution(self, IX_frame):
-        m = IX_frame
+    def test_solution(self, IX_frame_no_inert):
+        m = IX_frame_no_inert
         ix = m.fs.unit
 
         results_dict = {
