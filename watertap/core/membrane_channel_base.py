@@ -86,7 +86,7 @@ CONFIG_Template.declare(
         domain=In([False]),
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not.
-**default** = False. Membrane units do not yet support dynamic
+**default** - False. Membrane units do not yet support dynamic
 behavior.""",
     ),
 )
@@ -139,7 +139,7 @@ CONFIG_Template.declare(
         doc="""Indicates what type of mass balance should be constructed,
 **default** - useDefault.
 **Valid values:** {
-**MaterialBalanceType.useDefault - refer to property package for default
+**MaterialBalanceType.useDefault** - refer to property package for default
 balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
@@ -158,7 +158,7 @@ CONFIG_Template.declare(
         doc="""Indicates what type of energy balance should be constructed.
 **default** - useDefault.
 **Valid values:** {
-**EnergyBalanceType.useDefault - refer to property package for default
+**EnergyBalanceType.useDefault** - refer to property package for default
 balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
@@ -256,14 +256,13 @@ CONFIG_Template.declare(
 
     **default** - ``PressureChangeType.fixed_per_stage`` 
 
-.. csv-table::
-    :header: "Configuration Options", "Description"
-
-    "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
-    "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
-    "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-
-""",
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+    
+        "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
+        "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+        "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+    """,
     ),
 )
 
