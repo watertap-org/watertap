@@ -202,6 +202,7 @@ class NanofiltrationData(UnitModelBlockData):
         .. csv-table::
             :header: "Configuration Options", "Description"
 
+            "``MassTransferCoefficient.none``", "Simplifying assumption to ignore mass transfer coefficient"
             "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
             "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on
             spiral wound module correlation"
@@ -291,7 +292,7 @@ class NanofiltrationData(UnitModelBlockData):
         if hasattr(self.config.property_package, "ion_set") and hasattr(
             self.config.property_package, "solute_set"
         ):
-            solute_set = (
+            self.solute_set = solute_set = (
                 self.config.property_package.ion_set
                 | self.config.property_package.solute_set
             )
@@ -490,6 +491,9 @@ class NanofiltrationData(UnitModelBlockData):
                 units=pyunits.V * pyunits.m**-1,
                 doc="Electric potential gradient of feed-membrane interface",
             )
+        else:
+            pass
+
         if (
             self.config.mass_transfer_coefficient
             == MassTransferCoefficient.spiral_wound
@@ -529,6 +533,9 @@ class NanofiltrationData(UnitModelBlockData):
                 units=units_meta("length"),
                 doc="Characteristic length of spacer",
             )
+        else:
+            pass
+
         self.length = Var(
             initialize=10,
             bounds=(0, 5e2),
@@ -571,111 +578,6 @@ class NanofiltrationData(UnitModelBlockData):
         ###############################################################################################################
         # Make expressions that don't depend on any variables
         self._make_expressions()
-
-        @self.Expression(
-            self.flowsheet().config.time,
-            io_list,
-            solute_set,
-            doc="Donnan exclusion contribution to partitioning on feed side",
-        )
-        def partition_factor_donnan_comp_feed(b, t, x, j):
-            return exp(
-                -b.feed_side.properties_in[t].charge_comp[j]
-                * Constants.faraday_constant
-                / (Constants.gas_constant * b.pore_entrance[t, x].temperature)
-                * b.electric_potential[t, x, "pore_entrance"]
-            )
-
-        @self.Expression(
-            self.flowsheet().config.time,
-            io_list,
-            solute_set,
-            doc="Donnan exclusion contribution to partitioning on permeate side",
-        )
-        def partition_factor_donnan_comp_permeate(b, t, x, j):
-            return exp(
-                -b.feed_side.properties_in[t].charge_comp[j]
-                * Constants.faraday_constant
-                / (Constants.gas_constant * b.pore_exit[t, x].temperature)
-                * (
-                    b.electric_potential[t, x, "pore_exit"]
-                    - b.electric_potential[t, x, "permeate"]
-                )
-            )
-
-        # Volumetric Water Flux at inlet and outlet ------------------------------------#
-        @self.Expression(
-            self.flowsheet().config.time,
-            io_list,
-            doc="Volumetric water flux at inlet and outlet",
-        )
-        def flux_vol_water(b, t, x):
-            if not x:
-                prop = b.feed_side.properties_in[t]
-            elif x:
-                prop = b.feed_side.properties_out[t]
-            return (
-                b.flux_mol_phase_comp[t, x, "Liq", "H2O"]
-                * prop.mw_comp["H2O"]
-                / prop.dens_mass_solvent
-            )
-
-        # Average Volumetric Water Flux ------------------------------------#
-        @self.Expression(
-            self.flowsheet().config.time, doc="Average volumetric water flux"
-        )
-        def flux_vol_water_avg(b, t):
-            return sum(b.flux_vol_water[t, x] for x in io_list) / len(io_list)
-
-        # Average mole flux of each component ------------------------------------#
-        @self.Expression(
-            self.flowsheet().config.time,
-            phase_list,
-            solvent_solute_set,
-            doc="Average molar component flux",
-        )
-        def flux_mol_phase_comp_avg(b, t, p, j):
-            return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) / len(
-                io_list
-            )
-
-        # Average concentration inside the membrane------------------------------------#
-        @self.Expression(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            solvent_solute_set,
-            doc="Average molar concentration inside the membrane",
-        )
-        def conc_mol_phase_comp_pore_avg(b, t, x, p, j):
-            return (
-                b.pore_entrance[t, x].conc_mol_phase_comp[p, j]
-                + b.pore_exit[t, x].conc_mol_phase_comp[p, j]
-            ) / len(io_list)
-
-        # OBSERVED rejection of each ion ------------------------------------#
-        @self.Expression(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            solute_set,
-            doc="Observed solute rejection",
-        )
-        def rejection_observed_phase_comp(b, t, p, j):
-            return (
-                1
-                - b.mixed_permeate[t].conc_mol_phase_comp[p, j]
-                / b.feed_side.properties_in[t].conc_mol_phase_comp[p, j]
-            )
-
-        # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
-        #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
-        #  additional variable in the model that is independent of aforementioned parameters which are used in
-        #  the mass transfer coefficient calculation for spiral wound modules. Revisit later.
-
-        # Cross sectional area ------------------------------------#
-        @self.Expression(doc="Cross-sectional area")
-        def area_cross(b):
-            return b.channel_height * b.width * b.spacer_porosity
 
         ################################################################################################################
         # Constraints
@@ -1195,10 +1097,8 @@ class NanofiltrationData(UnitModelBlockData):
             )
 
     def _make_expressions(self):
-        solute_set = (
-            self.config.property_package.solute_set
-            | self.config.property_package.ion_set
-        )
+        solute_set = self.solute_set
+        io_list = self.io_list
 
         # Stokes radius to membrane pore radius ratio (for each solute)
         @self.Expression(
@@ -1307,6 +1207,111 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_in[t].temperature
                 )
             )
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            io_list,
+            solute_set,
+            doc="Donnan exclusion contribution to partitioning on feed side",
+        )
+        def partition_factor_donnan_comp_feed(b, t, x, j):
+            return exp(
+                -b.feed_side.properties_in[t].charge_comp[j]
+                * Constants.faraday_constant
+                / (Constants.gas_constant * b.pore_entrance[t, x].temperature)
+                * b.electric_potential[t, x, "pore_entrance"]
+            )
+
+        @self.Expression(
+            self.flowsheet().config.time,
+            io_list,
+            solute_set,
+            doc="Donnan exclusion contribution to partitioning on permeate side",
+        )
+        def partition_factor_donnan_comp_permeate(b, t, x, j):
+            return exp(
+                -b.feed_side.properties_in[t].charge_comp[j]
+                * Constants.faraday_constant
+                / (Constants.gas_constant * b.pore_exit[t, x].temperature)
+                * (
+                    b.electric_potential[t, x, "pore_exit"]
+                    - b.electric_potential[t, x, "permeate"]
+                )
+            )
+
+        # Volumetric Water Flux at inlet and outlet ------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Volumetric water flux at inlet and outlet",
+        )
+        def flux_vol_water(b, t, x):
+            if not x:
+                prop = b.feed_side.properties_in[t]
+            elif x:
+                prop = b.feed_side.properties_out[t]
+            return (
+                b.flux_mol_phase_comp[t, x, "Liq", "H2O"]
+                * prop.mw_comp["H2O"]
+                / prop.dens_mass_solvent
+            )
+
+        # Average Volumetric Water Flux ------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time, doc="Average volumetric water flux"
+        )
+        def flux_vol_water_avg(b, t):
+            return sum(b.flux_vol_water[t, x] for x in io_list) / len(io_list)
+
+        # Average mole flux of each component ------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="Average molar component flux",
+        )
+        def flux_mol_phase_comp_avg(b, t, p, j):
+            return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) / len(
+                io_list
+            )
+
+        # Average concentration inside the membrane------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time,
+            io_list,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="Average molar concentration inside the membrane",
+        )
+        def conc_mol_phase_comp_pore_avg(b, t, x, p, j):
+            return (
+                b.pore_entrance[t, x].conc_mol_phase_comp[p, j]
+                + b.pore_exit[t, x].conc_mol_phase_comp[p, j]
+            ) / len(io_list)
+
+        # OBSERVED rejection of each ion ------------------------------------#
+        @self.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solute_set,
+            doc="Observed solute rejection",
+        )
+        def rejection_observed_phase_comp(b, t, p, j):
+            return (
+                1
+                - b.mixed_permeate[t].conc_mol_phase_comp[p, j]
+                / b.feed_side.properties_in[t].conc_mol_phase_comp[p, j]
+            )
+
+        # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
+        #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
+        #  additional variable in the model that is independent of aforementioned parameters which are used in
+        #  the mass transfer coefficient calculation for spiral wound modules. Revisit later.
+
+        # Cross sectional area ------------------------------------#
+        @self.Expression(doc="Cross-sectional area")
+        def area_cross(b):
+            return b.channel_height * b.width * b.spacer_porosity
 
     def initialize_build(
         self,
@@ -1945,11 +1950,6 @@ class NanofiltrationData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        solute_set = (
-            self.config.property_package.ion_set
-            | self.config.property_package.solute_set
-        )
-
         # setting scaling factors for variables
         for v in self.recovery_vol_phase.values():
             iscale.set_scaling_factor(v, 1)
@@ -1964,7 +1964,7 @@ class NanofiltrationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
             iscale.set_scaling_factor(self.area, sf)
 
-        for (t, x, y), v in self.electric_potential.items():
+        for v in self.electric_potential.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1e4)
         if hasattr(self, "electric_potential_grad_feed_interface"):
