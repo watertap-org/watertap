@@ -1193,7 +1193,7 @@ def model5():
         "trans_num_calculation": TransportNumberCalculation.none,
     }
     dic1 = dic0.copy()
-    dic1.update(dic_transnum | dic_equivcond | dic_config)
+    dic1.update(**dic_transnum, **dic_equivcond, **dic_config)
     m1 = ConcreteModel()
     m2 = ConcreteModel()
     m1.fs = FlowsheetBlock(default={"dynamic": False})
