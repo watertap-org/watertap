@@ -40,7 +40,7 @@ import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recov
 from watertap.unit_models.pressure_changer import VariableEfficiency
 
 
-def create_base_model(mode):
+def create_base_model():
 
     print("\nCreating RO flowsheet and MP concrete model...")
 
@@ -57,17 +57,14 @@ def create_base_model(mode):
     return m
 
 
-def create_swro_mp_block(mode="flexible"):
+def create_swro_mp_block():
     print(">>> Creating model for each time period")
 
-    m = create_base_model(mode)
+    m = create_base_model()
     b1 = m.ro_mp
 
-    ramp_time = 3600  # seconds (1 hr)
-    if mode == "flexible":
-        ramping_rate = 0.7e5  # Pa/s
-    else:
-        ramping_rate = 0  # Pa/s
+    ramp_time = 60  # seconds (1 min)
+    ramping_rate = 0.7e5  # Pa/s
 
     # Add coupling variables
     b1.previous_pressure = Var(
@@ -80,14 +77,14 @@ def create_swro_mp_block(mode="flexible"):
     @b1.Constraint(doc="Pressure ramping down constraint")
     def constraint_ramp_down(b):
         return (
-            b.previous_pressure - ramp_time * ramping_rate
+            b.previous_pressure - 40e5
             <= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
     @b1.Constraint(doc="Pressure ramping up constraint")
     def constraint_ramp_up(b):
         return (
-            b.previous_pressure + ramp_time * ramping_rate
+            b.previous_pressure + 40e5
             >= b.fs.P1.control_volume.properties_out[0].pressure
         )
 
@@ -123,8 +120,7 @@ def create_multiperiod_swro_model(n_time_points=4):
     """
     multiperiod_swro = MultiPeriodModel(
         n_time_points,
-        # lambda: create_swro_mp_block(mode="fixed"),
-        lambda: create_swro_mp_block(mode="flexible"),
+        lambda: create_swro_mp_block(),
         get_swro_link_variable_pairs,
         get_swro_periodic_variable_pairs,
     )

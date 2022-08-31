@@ -12,8 +12,14 @@
 ###############################################################################
 
 import numpy as np
-import sys, os
+import pandas as pd
+import sys, os, matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.rc("font", size=22)
+plt.rc("axes", titlesize=22)
+scaling_obj = 1
+scaling_factor = 1
 
 from pyomo.environ import (
     Param,
@@ -82,7 +88,7 @@ def _get_lmp(time_steps, data_path, carbon_cost=False):
         co2i = np.zeros_like(lmp)
 
     # index only the desired number of timesteps
-    return lmp, co2i
+    return lmp * 1, co2i
 
 
 def build_flowsheet(n_steps):
@@ -113,9 +119,9 @@ def initialize_system(m):
         #     blk_swro.find_component(v).set_value(val, skip_validation=True)
         blk_swro.fs.RO.area.fix()
         # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
+        blk_swro.fs.P1.bep_flow.fix()
         blk_swro.fs.P1.flow_ratio[0].unfix()
         # v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
-        blk_swro.fs.P1.bep_flow.fix()
         #
         # blk_swro.fs.P2.flow_ratio[0].unfix()
         # v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
@@ -124,7 +130,9 @@ def initialize_system(m):
         # unfix RO control volume operational variables
         blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
         blk_swro.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
-
+        blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
+            0.0005
+        )
         # unfix feed flow rate and fix concentration instead
         blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
         blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
@@ -180,6 +188,10 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
             doc="Energy consumption per timestep kWh/hr",
         )
+        blk.electricity_cost = Expression(
+            expr=blk.energy_consumption * blk.lmp_signal,
+            doc="Price associated with hourly electricity consumption",
+        )
         blk.carbon_emission = Expression(
             expr=blk.energy_consumption
             * pyunits.convert(blk.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
@@ -199,13 +211,13 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     )
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
-        expr=sum([blk.weighted_LCOW for blk in t_blocks]),
+        expr=sum([blk.electricity_cost for blk in t_blocks]),
         doc="Daily cost to produce water",
     )
 
     m.permeate_yield = Constraint(
         expr=abs(sum([blk.water_prod for blk in t_blocks]) / daily_water_production - 1)
-        <= 1e-3,
+        <= 1e-5,
         doc="The water production over the day is fixed within a tolerance",
     )
 
@@ -222,7 +234,7 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         doc="Flow-averaged permeate quality must be greater than 0 ppm",
     )
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
-    t_blocks[0].ro_mp.previous_pressure.fix(50e5)
+    t_blocks[0].ro_mp.previous_pressure.fix(55e5)
 
     return m, t_blocks
 
@@ -234,7 +246,7 @@ def solve(m):
     return m, results
 
 
-def visualize_results(m, t_blocks, data):
+def save_results(m, t_blocks, data, savepath=None):
     time_step = np.array(range(len(t_blocks)))
     LCOW = value(m.LCOW)
     qual = 1e6 * value(
@@ -248,19 +260,6 @@ def visualize_results(m, t_blocks, data):
             for blk in t_blocks
         ]
     )
-
-    pump1_flow = np.array(
-        [
-            blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
-            for blk in t_blocks
-        ]
-    )
-    # pump2_flow = np.array(
-    #     [
-    #         blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
-    #         for blk in t_blocks
-    #     ]
-    # )
     pressure = np.array(
         [
             blk.ro_mp.fs.P1.control_volume.properties_out[0].pressure.value
@@ -268,52 +267,156 @@ def visualize_results(m, t_blocks, data):
         ]
     )
     power = np.array([blk.energy_consumption() for blk in t_blocks])
-    pump1_efficiency = np.array(
-        [blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks]
+
+    flowrate1 = np.array(
+        [
+            blk.ro_mp.fs.P1.control_volume.properties_out[0].flow_vol_phase["Liq"]()
+            for blk in t_blocks
+        ]
     )
-    # pump2_efficiency = np.array(
-    #     [blk.ro_mp.fs.P2.efficiency_pump[0]() for blk in t_blocks]
-    # )
+    efficiency1 = np.array([blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks])
+
+    if savepath is None:
+        savepath = os.path.join(os.getcwd(), "simulation_data_0_25.csv")
+    if t_blocks[0].ro_mp.fs.erd_type is swro.ERDtype.pump_as_turbine:
+        output_data = np.hstack(
+            (
+                time_step.reshape(-1, 1),
+                data[0][:].reshape(-1, 1),
+                data[1][:].reshape(-1, 1),
+                power.reshape(-1, 1),
+                recovery.reshape(-1, 1),
+                pressure.reshape(-1, 1),
+                flowrate1.reshape(-1, 1),
+                efficiency1.reshape(-1, 1),
+            )
+        )
+        df = pd.DataFrame(
+            output_data,
+            columns=[
+                "time",
+                "lmp",
+                "co2i",
+                "power",
+                "recovery",
+                "pressure",
+                "flowrate1",
+                "efficiency1",
+            ],
+        )
+
+    elif t_blocks[0].ro_mp.fs.erd_type is swro.ERDtype.pressure_exchanger:
+        flowrate2 = np.array(
+            [
+                blk.ro_mp.fs.P2.control_volume.properties_out[0].flow_vol_phase["Liq"]()
+                for blk in t_blocks
+            ]
+        )
+        efficiency2 = np.array(
+            [blk.ro_mp.fs.P2.efficiency_pump[0]() for blk in t_blocks]
+        )
+        output_data = np.hstack(
+            (
+                time_step.reshape(-1, 1),
+                data[0][:].reshape(-1, 1),
+                data[1][:].reshape(-1, 1),
+                power.reshape(-1, 1),
+                recovery.reshape(-1, 1),
+                pressure.reshape(-1, 1),
+                flowrate1.reshape(-1, 1),
+                efficiency1.reshape(-1, 1),
+                flowrate2.reshape(-1, 1),
+                efficiency2.reshape(-1, 1),
+            )
+        )
+        df = pd.DataFrame(
+            output_data,
+            columns=[
+                "time",
+                "lmp",
+                "co2i",
+                "power",
+                "recovery",
+                "pressure",
+                "flowrate1",
+                "efficiency1",
+                "flowrate2",
+                "efficiency2",
+            ],
+        )
+    else:
+        return
+
+    df.to_csv(savepath)
+
+
+def visualize_results(
+    path, erd_type=swro.ERDtype.pump_as_turbine, co2i=False, title_label=""
+):
+    df = pd.read_csv(path)
+    time_step = df["time"].values
 
     fig, ax = plt.subplots(3, 2)
     fig.suptitle(
-        "SWRO MultiPeriod optimization results: {} hours\nLCOW: {} $/m3\nPermeate quality: {}ppm".format(
-            len(t_blocks), round(LCOW, 3), round(qual, 3)
-        ),
+        f"SWRO MultiPeriod optimization results: {len(time_step)} hours\n"
+        + title_label,
         y=0.95,
     )
-    # ax2 = ax[0, 0].twinx()
-    ax[0, 0].plot(time_step, data[0][:], color="black", label="LMP")
-    # ax2.plot(time_step, data[1][:], color="forestgreen",label="CO2i")
+
+    ax[0, 0].plot(time_step, df["lmp"].values, color="black", label="LMP")
     ax[0, 0].set_xlabel("Time [hr]")
     ax[0, 0].set_ylabel("Electricity price [$/kWh]", color="black")
-    # ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
+    if co2i:
+        ax2 = ax[0, 0].twinx()
+        ax2.plot(time_step, df["co2i"].values, color="forestgreen", label="CO2i")
+        ax2.set_ylabel("Carbon intensity [kgCO2/kWh]", color="forestgreen")
 
-    ax[1, 0].plot(time_step, pump1_flow * 3600, label="Main RO pump")
-    # ax[1, 0].plot(time_step, pump2_flow * 3600, label="Booster pump")
-    ax[1, 0].set_xlabel("Time [hr]")
-    ax[1, 0].set_ylabel("Pump flowrate [m3/hr]")
-    ax[1, 0].legend()
-
-    ax[2, 0].plot(time_step, recovery * 100)
-    ax[2, 0].set_xlabel("Time [hr]")
-    ax[2, 0].set_ylabel("Water Recovery [%]")
-
-    ax[0, 1].plot(time_step, power)
+    ax[0, 1].plot(time_step, df["power"].values / max(df["power"].values))
     ax[0, 1].set_xlabel("Time [hr]")
-    ax[0, 1].set_ylabel("Net Power [kWh]")
+    ax[0, 1].set_ylabel("Power [fraction of max]")
 
-    ax[1, 1].plot(time_step, pump1_efficiency * 100, label="Main RO pump")
-    # ax[1, 1].plot(time_step, pump2_efficiency * 100, label="Booster pump")
+    ax[1, 0].plot(time_step, df["recovery"].values * 100)
+    ax[1, 0].set_xlabel("Time [hr]")
+    ax[1, 0].set_ylabel("Water Recovery [%]")
+
+    ax[1, 1].plot(
+        time_step, df["pressure"].values * 1e-5 / 80
+    )  # normalized by burst pressure
     ax[1, 1].set_xlabel("Time [hr]")
-    ax[1, 1].set_ylabel("Pump efficiency [%]")
-    ax[1, 1].legend()
+    ax[1, 1].set_ylabel("Fraction of 80 bar")
+    ax[1, 1].set_title("RO Inlet Pressure")
 
-    ax[2, 1].plot(time_step, pressure * 1e-5)
+    ax[2, 0].plot(
+        time_step,
+        df["flowrate1"].values / max(df["flowrate1"].values),
+        label="Main RO pump",
+    )
+    ax[2, 0].set_xlabel("Time [hr]")
+    ax[2, 0].set_ylabel("Fraction of max flowrate")
+    ax[2, 0].set_title("Pump flowrate [m3/hr]")
+    ax[2, 0].legend()
+
+    ax[2, 1].plot(time_step, df["efficiency1"].values / 0.8, label="Main RO pump")
     ax[2, 1].set_xlabel("Time [hr]")
-    ax[2, 1].set_ylabel("RO Inlet Pressure [bar]")
+    ax[2, 1].set_ylabel("Fraction of BEP efficiency")
+    ax[2, 1].set_title("Pump efficiency [%]")
+    ax[2, 1].legend()
+
+    if erd_type is swro.ERDtype.pressure_exchanger:
+        ax[1, 0].plot(
+            time_step,
+            df["flowrate2"].values / max(df["flowrate2"].values),
+            label="Booster pump",
+        )
+        ax[1, 1].plot(time_step, df["efficiency2"].values / 0.8, label="Booster pump")
 
 
 if __name__ == "__main__":
     m, t_blocks, data = main(*sys.argv[1:])
-    visualize_results(m, t_blocks, data)
+    path = os.path.join(os.getcwd(), "simulation_data_1_00.csv")
+    save_results(m, t_blocks, data, path)
+    # title_label = "LMP scaling = 25%"
+    # visualize_results(path,
+    #                   erd_type=t_blocks[0].ro_mp.fs.erd_type,
+    #                   co2i=False,
+    #                   title_label=title_label)
