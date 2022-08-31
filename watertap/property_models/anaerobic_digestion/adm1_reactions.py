@@ -569,7 +569,10 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R1", "Liq", "S_h2"): 0,
             ("R1", "Liq", "S_ch4"): 0,
             ("R1", "Liq", "S_IC"): 0,
-            ("R1", "Liq", "S_IN"): 0,
+            ("R1", "Liq", "S_IN"): self.N_xc
+            - self.f_xI_xc * self.N_I
+            - self.f_sI_xc * self.N_I
+            - self.f_pr_xc * self.N_aa,
             ("R1", "Liq", "S_I"): self.f_sI_xc,
             ("R1", "Liq", "X_c"): -1,
             ("R1", "Liq", "X_ch"): self.f_ch_xc,
@@ -672,7 +675,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R5", "Liq", "S_ac"): (1 - self.Y_su) * self.f_ac_su,
             ("R5", "Liq", "S_h2"): (1 - self.Y_su) * self.f_h2_su,
             ("R5", "Liq", "S_ch4"): 0,
-            # ("R5", "Liq", "S_IC"): -sum(self.conc_mass_comp_ref[S] * self.),
+            ("R5", "Liq", "S_IC"): 0,  ## updated later
             ("R5", "Liq", "S_IN"): -self.Y_su * self.N_bac,
             ("R5", "Liq", "S_I"): 0,
             ("R5", "Liq", "X_c"): 0,
@@ -698,7 +701,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R6", "Liq", "S_ac"): (1 - self.Y_aa) * self.f_ac_aa,
             ("R6", "Liq", "S_h2"): (1 - self.Y_aa) * self.f_h2_aa,
             ("R6", "Liq", "S_ch4"): 0,
-            # ("R6", "Liq", "S_IC"): 0,
+            ("R6", "Liq", "S_IC"): 0,
             ("R6", "Liq", "S_IN"): self.N_aa - self.Y_aa * self.N_bac,
             ("R6", "Liq", "S_I"): 0,
             ("R6", "Liq", "X_c"): 0,
@@ -802,7 +805,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R10", "Liq", "S_ac"): (1 - self.Y_pro) * 0.57,
             ("R10", "Liq", "S_h2"): (1 - self.Y_pro) * 0.43,
             ("R10", "Liq", "S_ch4"): 0,
-            # ("R10", "Liq", "S_IC"): 0,
+            ("R10", "Liq", "S_IC"): 0,
             ("R10", "Liq", "S_IN"): -self.Y_pro * self.N_bac,
             ("R10", "Liq", "S_I"): 0,
             ("R10", "Liq", "X_c"): 0,
@@ -828,7 +831,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R11", "Liq", "S_ac"): -1,
             ("R11", "Liq", "S_h2"): 0,
             ("R11", "Liq", "S_ch4"): 1 - self.Y_ac,
-            # ("R11", "Liq", "S_IC"): 0,
+            ("R11", "Liq", "S_IC"): 0,
             ("R11", "Liq", "S_IN"): -self.Y_ac * self.N_bac,
             ("R11", "Liq", "S_I"): 0,
             ("R11", "Liq", "X_c"): 0,
@@ -854,7 +857,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R12", "Liq", "S_ac"): 0,
             ("R12", "Liq", "S_h2"): -1,
             ("R12", "Liq", "S_ch4"): (1 - self.Y_h2),
-            # ("R12", "Liq", "S_IC"): 0,
+            ("R12", "Liq", "S_IC"): 0,
             ("R12", "Liq", "S_IN"): -self.Y_h2 * self.N_bac,
             ("R12", "Liq", "S_I"): 0,
             ("R12", "Liq", "X_c"): 0,
@@ -881,7 +884,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R13", "Liq", "S_h2"): 0,
             ("R13", "Liq", "S_ch4"): 0,
             ("R13", "Liq", "S_IC"): 0,
-            ("R13", "Liq", "S_IN"): 0,
+            ("R13", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R13", "Liq", "S_I"): 0,
             ("R13", "Liq", "X_c"): 1,
             ("R13", "Liq", "X_ch"): 0,
@@ -907,7 +910,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R14", "Liq", "S_h2"): 0,
             ("R14", "Liq", "S_ch4"): 0,
             ("R14", "Liq", "S_IC"): 0,
-            ("R14", "Liq", "S_IN"): 0,
+            ("R14", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R14", "Liq", "S_I"): 0,
             ("R14", "Liq", "X_c"): 1,
             ("R14", "Liq", "X_ch"): 0,
@@ -933,7 +936,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R15", "Liq", "S_h2"): 0,
             ("R15", "Liq", "S_ch4"): 0,
             ("R15", "Liq", "S_IC"): 0,
-            ("R15", "Liq", "S_IN"): 0,
+            ("R15", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R15", "Liq", "S_I"): 0,
             ("R15", "Liq", "X_c"): 1,
             ("R15", "Liq", "X_ch"): 0,
@@ -959,7 +962,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R16", "Liq", "S_h2"): 0,
             ("R16", "Liq", "S_ch4"): 0,
             ("R16", "Liq", "S_IC"): 0,
-            ("R16", "Liq", "S_IN"): 0,
+            ("R16", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R16", "Liq", "S_I"): 0,
             ("R16", "Liq", "X_c"): 1,
             ("R16", "Liq", "X_ch"): 0,
@@ -985,7 +988,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R17", "Liq", "S_h2"): 0,
             ("R17", "Liq", "S_ch4"): 0,
             ("R17", "Liq", "S_IC"): 0,
-            ("R17", "Liq", "S_IN"): 0,
+            ("R17", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R17", "Liq", "S_I"): 0,
             ("R17", "Liq", "X_c"): 1,
             ("R17", "Liq", "X_ch"): 0,
@@ -1011,7 +1014,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R18", "Liq", "S_h2"): 0,
             ("R18", "Liq", "S_ch4"): 0,
             ("R18", "Liq", "S_IC"): 0,
-            ("R18", "Liq", "S_IN"): 0,
+            ("R18", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R18", "Liq", "S_I"): 0,
             ("R18", "Liq", "X_c"): 1,
             ("R18", "Liq", "X_ch"): 0,
@@ -1037,7 +1040,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             ("R19", "Liq", "S_h2"): 0,
             ("R19", "Liq", "S_ch4"): 0,
             ("R19", "Liq", "S_IC"): 0,
-            ("R19", "Liq", "S_IN"): 0,
+            ("R19", "Liq", "S_IN"): self.N_bac - self.N_xc,
             ("R19", "Liq", "S_I"): 0,
             ("R19", "Liq", "X_c"): 1,
             ("R19", "Liq", "X_ch"): 0,
@@ -1055,7 +1058,8 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
 
         # TODO: Add S_IC stoichiometric coefficients that depend on other stoich coefficients (R5, 6, 10, 11, 12)
         #  - determine conversion factors for S_IC stoichiometry as/if needed
-        s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
+        # s_ic_rxns = ["R5", "R6", "R10", "R11", "R12"]
+        s_ic_rxns = self.rate_reaction_idx
         for R in s_ic_rxns:
             self.rate_reaction_stoichiometry[R, "Liq", "S_IC"] = -sum(
                 self.Ci[S] * self.rate_reaction_stoichiometry[R, "Liq", S]
@@ -1108,7 +1112,7 @@ class _ADM1ReactionBlock(ReactionBlockBase):
 @declare_process_block_class("ADM1ReactionBlock", block_class=_ADM1ReactionBlock)
 class ADM1ReactionBlockData(ReactionBlockDataBase):
     """
-    ReactionBlcok for ADM1.
+    ReactionBlock for ADM1.
     """
 
     def build(self):
@@ -1130,127 +1134,177 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
 
-        # try:
-        #
-        #     def rate_expression_rule(b, r):
-        # if r == "R1":
-        #     # R1: Aerobic growth of heterotrophs
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.mu_H
-        #         * (
-        #             b.conc_mass_comp_ref["S_S"]
-        #             / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
-        #         )
-        #         * (
-        #             b.conc_mass_comp_ref["S_O"]
-        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-        #         )
-        #         * b.conc_mass_comp_ref["X_BH"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R2":
-        #     # R2: Anoxic growth of heterotrophs
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.mu_H
-        #         * (
-        #             b.conc_mass_comp_ref["S_S"]
-        #             / (b.params.K_S + b.conc_mass_comp_ref["S_S"])
-        #         )
-        #         * (
-        #             b.params.K_OH
-        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-        #         )
-        #         * (
-        #             b.conc_mass_comp_ref["S_NO"]
-        #             / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-        #         )
-        #         * b.params.eta_g
-        #         * b.conc_mass_comp_ref["X_BH"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R3":
-        #     # R3: Aerobic growth of autotrophs
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.mu_A
-        #         * (
-        #             b.conc_mass_comp_ref["S_NH"]
-        #             / (b.params.K_NH + b.conc_mass_comp_ref["S_NH"])
-        #         )
-        #         * (
-        #             b.conc_mass_comp_ref["S_O"]
-        #             / (b.params.K_OA + b.conc_mass_comp_ref["S_O"])
-        #         )
-        #         * b.conc_mass_comp_ref["X_BA"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R4":
-        #     # R4: Decay of heterotrophs
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.b_H * b.conc_mass_comp_ref["X_BH"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R5":
-        #     # R5: Decay of autotrophs
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.b_A * b.conc_mass_comp_ref["X_BA"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R6":
-        #     # R6: Ammonification of soluble organic nitrogen
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.k_a
-        #         * b.conc_mass_comp_ref["S_ND"]
-        #         * b.conc_mass_comp_ref["X_BH"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R7":
-        #     # R7: Hydrolysis of entrapped organics
-        #     return b.reaction_rate[r] == pyo.units.convert(
-        #         b.params.k_h
-        #         * (b.conc_mass_comp_ref["X_S"] / b.conc_mass_comp_ref["X_BH"])
-        #         / (
-        #             b.params.K_X
-        #             + (
-        #                 b.conc_mass_comp_ref["X_S"]
-        #                 / b.conc_mass_comp_ref["X_BH"]
-        #             )
-        #         )
-        #         * (
-        #             (
-        #                 b.conc_mass_comp_ref["S_O"]
-        #                 / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-        #             )
-        #             + b.params.eta_h
-        #             * b.params.K_OH
-        #             / (b.params.K_OH + b.conc_mass_comp_ref["S_O"])
-        #             * (
-        #                 b.conc_mass_comp_ref["S_NO"]
-        #                 / (b.params.K_NO + b.conc_mass_comp_ref["S_NO"])
-        #             )
-        #         )
-        #         * b.conc_mass_comp_ref["X_BH"],
-        #         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-        #     )
-        # elif r == "R8":
-        #     # R8: Hydrolysis of entrapped organic nitrogen
-        #     return b.reaction_rate[r] == (
-        #         b.reaction_rate["R7"]
-        #         * (b.conc_mass_comp_ref["X_ND"] / b.conc_mass_comp_ref["X_S"])
-        #     )
-        # else:
-        #     raise BurntToast()
+        try:
 
-        # self.rate_expression = pyo.Constraint(
-        #     self.params.rate_reaction_idx,
-        #     rule=rate_expression_rule,
-        #     doc="ADM1 rate expressions",
-        # )
+            def rate_expression_rule(b, r):
+                if r == "R1":
+                    # R1:  Disintegration
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dis * b.conc_mass_comp_ref["X_c"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R2":
+                    # R2: Hydrolysis of carbohydrates
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_hyd_ch * b.conc_mass_comp_ref["X_ch"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R3":
+                    # R3: Hydrolysis of proteins
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_hyd_pr * b.conc_mass_comp_ref["X_pr"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R4":
+                    # R4: Hydrolysis of lipids
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_hyd_li * b.conc_mass_comp_ref["X_li"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R5":
+                    # R5: Uptake of sugars
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_su
+                        * b.conc_mass_comp_ref["S_su"]
+                        / (b.params.K_S_su + b.conc_mass_comp_ref["S_su"])
+                        * b.conc_mass_comp_ref["X_su"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R6":
+                    # R6: Uptake of amino acids
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_aa
+                        * b.conc_mass_comp_ref["S_aa"]
+                        / (b.params.K_S_aa + b.conc_mass_comp_ref["S_aa"])
+                        * b.conc_mass_comp_ref["X_aa"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R7":
+                    # R7: Uptake of long chain fatty acids (LCFAs)
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_fa
+                        * b.conc_mass_comp_ref["S_fa"]
+                        / (b.params.K_S_fa + b.conc_mass_comp_ref["S_fa"])
+                        * b.conc_mass_comp_ref["X_fa"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R8":
+                    # R8: Uptake of valerate
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_c4
+                        * b.conc_mass_comp_ref["S_va"]
+                        / (b.params.K_S_c4 + b.conc_mass_comp_ref["S_va"])
+                        * b.conc_mass_comp_ref["X_c4"]
+                        * b.conc_mass_comp_ref["S_va"]
+                        / (
+                            b.conc_mass_comp_ref["S_bu"] + b.conc_mass_comp_ref["S_va"]
+                        )  # TODO: consider adding eps value to this denominator to avoid division by zero (or reformulate)
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R9":
+                    # R9:  Uptake of butyrate
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_c4
+                        * b.conc_mass_comp_ref["S_bu"]
+                        / (b.params.K_S_c4 + b.conc_mass_comp_ref["S_bu"])
+                        * b.conc_mass_comp_ref["X_c4"]
+                        * b.conc_mass_comp_ref["S_bu"]
+                        / (
+                            b.conc_mass_comp_ref["S_bu"] + b.conc_mass_comp_ref["S_va"]
+                        )  # TODO: consider adding eps value to this denominator to avoid division by zero (or reformulate)
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R10":
+                    # R10: Uptake of propionate
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_pr
+                        * b.conc_mass_comp_ref["S_pro"]
+                        / (b.params.K_S_pro + b.conc_mass_comp_ref["S_pro"])
+                        * b.conc_mass_comp_ref["X_pro"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R11":
+                    # R11: Uptake of acetate
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_ac
+                        * b.conc_mass_comp_ref["S_ac"]
+                        / (b.params.K_S_ac + b.conc_mass_comp_ref["S_ac"])
+                        * b.conc_mass_comp_ref["X_ac"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R12":
+                    # R12: Uptake of hydrogen
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_m_h2
+                        * b.conc_mass_comp_ref["S_h2"]
+                        / (b.params.K_S_h2 + b.conc_mass_comp_ref["S_h2"])
+                        * b.conc_mass_comp_ref["X_h2"]
+                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R13":
+                    # R13: Decay of X_su
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_su * b.conc_mass_comp_ref["X_su"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R14":
+                    # R14: Decay of X_aa
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_aa * b.conc_mass_comp_ref["X_aa"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R15":
+                    # R15: Decay of X_fa
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_fa * b.conc_mass_comp_ref["X_fa"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R16":
+                    # R16: Decay of X_c4
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_c4 * b.conc_mass_comp_ref["X_c4"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R17":
+                    # R17: Decay of X_pro
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_pro * b.conc_mass_comp_ref["X_pro"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R18":
+                    # R18: Decay of X_ac
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_ac * b.conc_mass_comp_ref["X_ac"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                elif r == "R19":
+                    # R19: Decay of X_h2
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.k_dec_X_h2 * b.conc_mass_comp_ref["X_h2"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
+                    )
+                else:
+                    raise BurntToast()
 
-        # except AttributeError:
-        #     # If constraint fails, clean up so that DAE can try again later
-        #     self.del_component(self.reaction_rate)
-        #     self.del_component(self.rate_expression)
-        #     raise
+            self.rate_expression = pyo.Constraint(
+                self.params.rate_reaction_idx,
+                rule=rate_expression_rule,
+                doc="ADM1 rate expressions",
+            )
+
+        except AttributeError:
+            # If constraint fails, clean up so that DAE can try again later
+            self.del_component(self.reaction_rate)
+            self.del_component(self.rate_expression)
+            raise
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.mass
