@@ -44,7 +44,6 @@ from watertap.unit_models import (
     IonExchange0D,
     GAC,
 )
-from watertap.unit_models.ion_exchange_0D import IonExchangeType
 
 
 class ROType(StrEnum):
@@ -1256,7 +1255,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             ),
             to_units=pyo.units.gal,
         )
-        ix_type = blk.unit_model.config.ion_exchange_type
+        ix_type = blk.unit_model.ion_exchange_type
         TIC = 1.65
         blk.capital_cost_vessel = pyo.Var(
             initialize=1e5,
@@ -1286,17 +1285,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         ion_exchange_params = blk.costing_package.ion_exchange
 
         # TODO: add way to have other regen chemicals
-        if ix_type == IonExchangeType.cation:
+        if ix_type == "cation":
             resin_cost = ion_exchange_params.cation_exchange_resin_cost
-            blk.unit_model.regen_chem = "HCl"
 
-        elif ix_type == IonExchangeType.anion:
+        elif ix_type == "anion":
             resin_cost = ion_exchange_params.anion_exchange_resin_cost
-            blk.unit_model.regen_chem = "NaOH"
 
-        elif ix_type == IonExchangeType.mixed:
+        elif ix_type == "mixed":
             raise ConfigurationError(
-                "Resin costing for IonExchangeType.mixed has not been implemented yet."
+                "IonExchangeOD model for IonExchangeType.mixed has not been implemented yet."
             )
 
         blk.capital_cost_vessel_constraint = pyo.Constraint(
