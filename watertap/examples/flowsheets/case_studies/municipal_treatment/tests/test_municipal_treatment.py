@@ -64,7 +64,7 @@ def test_municipal_treatment():
         m.fs.recharge_pump.properties[0].flow_mass_comp["tss"]
     ) == pytest.approx(1.656e-6, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(5.1682e-7, rel=1e-3)  # in M$/m**3
+    assert value(m.fs.costing.LCOW) == pytest.approx(5.0547e-7, rel=1e-3)  # in M$/m**3
     assert value(m.fs.costing.electricity_intensity) == pytest.approx(
         4.4812e-1, rel=1e-3
     )
