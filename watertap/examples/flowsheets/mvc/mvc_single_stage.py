@@ -466,7 +466,7 @@ def add_pressure_drop_to_hx(hx_blk, time_point):
 
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.15)
+    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.05)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     #m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(2)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)

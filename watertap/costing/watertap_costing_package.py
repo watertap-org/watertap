@@ -322,7 +322,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.heat_exchanger_material_factor_cost = pyo.Var(
-            initialize=9,
+            initialize=3,
             doc='Heat exchanger material factor',
             units=pyo.units.dimensionless
         )

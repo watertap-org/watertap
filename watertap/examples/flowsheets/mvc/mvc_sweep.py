@@ -59,7 +59,7 @@ def main():
     # make_maps_tif_4(map_dir, save_dir)
     # tif_sensitivity_maps()
     # sr_sensitivity_maps()
-    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/cost_breakdown/Evap_material_factor_1"
+    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/cost_breakdown/Evap_material_factor_1_hx_3"
     make_cost_bar_charts(map_dir)
 
 def sr_sensitivity_maps():
