@@ -98,10 +98,10 @@ setup(
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
         # tutorial tests
-        "nbformat",
-        "scipy ; python_version < '3.10' ",
+        # "nbformat",
+        # "scipy ; python_version < '3.10' ",
         # for parameter_sweep
-        "h5py",
+        # "h5py",
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic",
         "numpy",
