@@ -185,7 +185,7 @@ class TestElectrodialysisVoltageConst:
         edfs.optimize_system(m)
         isinstance(m.fs.objective, Objective)
         assert m.fs.objective.expr == m.fs.costing.LCOW
-        assert degrees_of_freedom(m) == 2
+        assert degrees_of_freedom(m) == 1
 
         assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
             8.7e-5, abs=1e-6
