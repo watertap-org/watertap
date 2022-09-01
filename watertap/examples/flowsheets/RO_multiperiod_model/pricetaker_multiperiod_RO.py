@@ -122,6 +122,7 @@ def initialize_system(m):
         # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
         blk_swro.fs.P1.bep_flow.fix()
         blk_swro.fs.P1.flow_ratio[0].unfix()
+        blk_swro.fs.costing.utilization_factor.fix(1)
         # v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
         #
         # blk_swro.fs.P2.flow_ratio[0].unfix()
@@ -144,7 +145,18 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
-    daily_water_production = 38 * pyunits.m**3 / pyunits.day
+    daily_water_production = 38.52 * pyunits.m**3 / pyunits.day
+    fixed_hourly_cost = 0.6102
+    # base_costing_block = t_blocks[0].ro_mp.fs.costing
+    # fixed_hourly_cost = Expression(
+    #     expr= pyunits.convert(base_costing_block.total_investment_cost
+    #         * base_costing_block.factor_capital_annualization
+    #         + base_costing_block.maintenance_labor_chemical_operating_cost
+    #         + base_costing_block.aggregate_fixed_operating_cost,
+    #         to_units=pyunits.USD_2018 / pyunits.hr),
+    #     doc="Base cost of the plant as defined by the initialized model at t=0 [$/m3]"
+    # )
+
     # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
         blk_swro = blk.ro_mp
@@ -180,18 +192,9 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             * blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"],
             doc="Permeate flow weighted concentration of salt in the permeate",
         )
-
-        blk.weighted_LCOW = Expression(
-            expr=blk_swro.fs.costing.LCOW * blk.water_prod,
-            doc="hourly cost [$/hr]",
-        )
         blk.energy_consumption = Expression(
             expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
             doc="Energy consumption per timestep kWh/hr",
-        )
-        blk.electricity_cost = Expression(
-            expr=blk.energy_consumption * blk.lmp_signal,
-            doc="Price associated with hourly electricity consumption",
         )
         blk.carbon_emission = Expression(
             expr=blk.energy_consumption
@@ -204,36 +207,49 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.hour),
             doc="Hourly cost associated with carbon emissions $/hr",
         )
+        blk.weighted_LCOW = Expression(
+            expr=fixed_hourly_cost + blk.energy_consumption * blk.lmp_signal,
+            doc="hourly cost [$/hr]",
+        )
+        blk.weighted_LCOW_b = Expression(
+            expr=blk.ro_mp.fs.costing.LCOW * blk.water_prod,
+            doc="hourly cost [$/hr]",
+        )
 
     m.LCOW = Expression(
-        expr=sum([blk.weighted_LCOW for blk in t_blocks])
+        expr=sum([blk.weighted_LCOW_b for blk in t_blocks])
         / sum([blk.water_prod for blk in t_blocks]),
         doc="Daily, flow-normalized cost of water",
     )
+
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
-        expr=(1100 * 0.1 / 365 + 0.1) + sum([blk.electricity_cost for blk in t_blocks]),
+        expr=sum([blk.weighted_LCOW for blk in t_blocks])
+        / sum([blk.water_prod for blk in t_blocks]),
         doc="Daily cost to produce water",
     )
 
     m.permeate_yield = Constraint(
-        expr=abs(sum([blk.water_prod for blk in t_blocks]) / daily_water_production - 1)
-        <= 1e-5,
+        expr=(
+            daily_water_production - 1e-5,
+            sum(blk.water_prod for blk in t_blocks),
+            daily_water_production + 1e-5,
+        ),
         doc="The water production over the day is fixed within a tolerance",
     )
 
-    m.permeate_quality_ub = Constraint(
-        expr=(
-            sum([blk.weighted_permeate_quality for blk in t_blocks])
-            <= 0.0005 * sum([blk.water_prod for blk in t_blocks])
-        ),
-        doc="Flow-averaged permeate quality must be less than 500 ppm",
-    )
-
-    m.permeate_quality_lb = Constraint(
-        expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
-        doc="Flow-averaged permeate quality must be greater than 0 ppm",
-    )
+    # m.permeate_quality_ub = Constraint(
+    #     expr=(
+    #         sum([blk.weighted_permeate_quality for blk in t_blocks])
+    #         <= 0.0005 * sum([blk.water_prod for blk in t_blocks])
+    #     ),
+    #     doc="Flow-averaged permeate quality must be less than 500 ppm",
+    # )
+    #
+    # m.permeate_quality_lb = Constraint(
+    #     expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
+    #     doc="Flow-averaged permeate quality must be greater than 0 ppm",
+    # )
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
     t_blocks[0].ro_mp.previous_pressure.fix(50e5)
 
@@ -249,11 +265,12 @@ def solve(m):
 
 def save_results(m, t_blocks, data, savepath=None):
     time_step = np.array(range(len(t_blocks)))
-    LCOW = value(m.LCOW)
-    qual = 1e6 * value(
-        sum([blk.weighted_permeate_quality for blk in t_blocks])
-        / sum([blk.water_prod for blk in t_blocks])
-    )
+    LCOW = value(m.obj)
+    # qual = 1e6 * value(
+    #     sum([blk.weighted_permeate_quality for blk in t_blocks])
+    #     / sum([blk.water_prod for blk in t_blocks])
+    # )
+    print(LCOW)
 
     recovery = np.array(
         [
@@ -413,14 +430,14 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    price_multiplier = 3
+    price_multiplier = 10
     m, t_blocks, data = main(
         ndays=1,
         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
         filename="dagget_CA_LMP_hourly_2015.csv",
         price_multiplier=price_multiplier,
     )
-    path = os.path.join(os.getcwd(), "simulation_data_3_00.csv")
+    path = os.path.join(os.getcwd(), "fixed_simulation_data_10_00.csv")
     save_results(m, t_blocks, data, path)
     title_label = f"LMP scaling = {price_multiplier}"
     visualize_results(

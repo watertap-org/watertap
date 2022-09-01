@@ -331,6 +331,7 @@ def set_operating_conditions(
     m.fs.RO.initialize(optarg=solver.options)
 
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
+    m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(0.0005)
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
