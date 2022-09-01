@@ -257,16 +257,21 @@ class CompressorData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # # ---------------------------------------------------------------------
         # check if guess is needed for the heat based on degrees of freedom
-        fixed_heat = False
-        if degrees_of_freedom(blk) != 0:
+        has_guessed_heat = False
+        if degrees_of_freedom(blk) >1:
+            raise RuntimeError(
+                "The model has {} degrees of freedom rather than 0 or 1 (with a guessed heat) for initialization."
+                " This error suggests that an outlet condition has not been fixed"
+                " for initialization.".format(degrees_of_freedom(blk))
+            )
+        elif degrees_of_freedom(blk) == 1:
             if heat != None:
                 blk.control_volume.heat.fix(heat)
-                fixed_heat = True
+                has_guessed_heat = True
             else:
                 raise RuntimeError(
-                    "The model has {} degrees of freedom rather than 0 for initialization."
-                    " This error suggests that an outlet condition has not been fixed"
-                    " for initialization.".format(degrees_of_freedom(blk))
+                    "The model has 1 degree of freedom rather than 0 for initialization."
+                     " A common error for this model is not providing a guess for heat in the initialization."
                 )
 
         # Solve unit
@@ -281,7 +286,7 @@ class CompressorData(UnitModelBlockData):
             # Release Inlet state
             blk.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        if fixed_heat:
+        if has_guessed_heat:
             blk.control_volume.heat.unfix()
 
     def _get_performance_contents(self, time_point=0):

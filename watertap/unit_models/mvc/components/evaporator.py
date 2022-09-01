@@ -429,23 +429,29 @@ class EvaporatorData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-        # check if guess is needed for approach temperatures
-        # need to also check for degrees of freedom?
-        fixed_delta_temperature = False
-        if (
-            not blk.delta_temperature_in.is_fixed()
-            and not blk.delta_temperature_out.is_fixed()
-        ):
-            if delta_temperature_in != None and delta_temperature_out != None:
-                blk.delta_temperature_in.fix(delta_temperature_in)
-                blk.delta_temperature_out.fix(delta_temperature_out)
-                fixed_delta_temperature = True
-            else:
+        # incorporate guessed temperature differences
+        has_guessed_delta_temperature_in = False
+        if delta_temperature_in != None:
+            if blk.delta_temperature_in.is_fixed():
                 raise RuntimeError(
-                    "The model has {} degrees of freedom rather than 0 for initialization."
-                    " This error suggests that temperature differences have not been fixed"
-                    " for initialization.\n".format(degrees_of_freedom(blk))
+                    "A guess was provided for the delta_temperature_in variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_in"
                 )
+            blk.delta_temperature_in.fix(delta_temperature_in)
+            has_guessed_delta_temperature_in = True
+
+        has_guessed_delta_temperature_out = False
+        if delta_temperature_out != None:
+            if blk.delta_temperature_out.is_fixed():
+                raise RuntimeError(
+                    "A guess was provided for the delta_temperature_out variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_out"
+                )
+            blk.delta_temperature_out.fix(delta_temperature_out)
+            has_guessed_delta_temperature_out = True
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -454,8 +460,9 @@ class EvaporatorData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states and release delta_temperature
         blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
-        if fixed_delta_temperature:
+        if has_guessed_delta_temperature_in:
             blk.delta_temperature_in.unfix()
+        if has_guessed_delta_temperature_out:
             blk.delta_temperature_out.unfix()
         if hasattr(blk, "connection_to_condenser"):
             blk.connection_to_condenser.activate()
