@@ -258,7 +258,7 @@ class CompressorData(UnitModelBlockData):
         # # ---------------------------------------------------------------------
         # check if guess is needed for the heat based on degrees of freedom
         has_guessed_heat = False
-        if degrees_of_freedom(blk) >1:
+        if degrees_of_freedom(blk) > 1:
             raise RuntimeError(
                 "The model has {} degrees of freedom rather than 0 or 1 (with a guessed heat) for initialization."
                 " This error suggests that an outlet condition has not been fixed"
@@ -271,7 +271,7 @@ class CompressorData(UnitModelBlockData):
             else:
                 raise RuntimeError(
                     "The model has 1 degree of freedom rather than 0 for initialization."
-                     " A common error for this model is not providing a guess for heat in the initialization."
+                    " A common error for this model is not providing a guess for heat in the initialization."
                 )
 
         # Solve unit
