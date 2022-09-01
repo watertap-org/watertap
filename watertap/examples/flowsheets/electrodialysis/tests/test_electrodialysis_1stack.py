@@ -225,7 +225,7 @@ class TestElectrodialysisVoltageConst:
         ) == pytest.approx(2.003, rel=2e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.538, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.435, abs=0.001
+            1.435, abs=0.002
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.25, abs=0.01)
 
