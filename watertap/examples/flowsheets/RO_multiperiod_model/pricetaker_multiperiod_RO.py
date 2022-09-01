@@ -212,7 +212,7 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     )
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
-        expr=sum([blk.electricity_cost for blk in t_blocks]),
+        expr=(1100 * 0.1 / 365 + 0.1) + sum([blk.electricity_cost for blk in t_blocks]),
         doc="Daily cost to produce water",
     )
 
@@ -413,16 +413,19 @@ def visualize_results(
 
 
 if __name__ == "__main__":
+    price_multiplier = 3
     m, t_blocks, data = main(
         ndays=1,
         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
         filename="dagget_CA_LMP_hourly_2015.csv",
-        price_multiplier=3,
+        price_multiplier=price_multiplier,
     )
     path = os.path.join(os.getcwd(), "simulation_data_3_00.csv")
     save_results(m, t_blocks, data, path)
-    # title_label = "LMP scaling = 25%"
-    # visualize_results(path,
-    #                   erd_type=t_blocks[0].ro_mp.fs.erd_type,
-    #                   co2i=False,
-    #                   title_label=title_label)
+    title_label = f"LMP scaling = {price_multiplier}"
+    visualize_results(
+        path,
+        erd_type=t_blocks[0].ro_mp.fs.erd_type,
+        co2i=False,
+        title_label=title_label,
+    )
