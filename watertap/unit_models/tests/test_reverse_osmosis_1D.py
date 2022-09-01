@@ -469,8 +469,8 @@ class TestReverseOsmosis:
         initialization_tester(m)
 
         # Test variable scaling
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         # Solve
         results = solver.solve(m)
@@ -596,8 +596,8 @@ class TestReverseOsmosis:
         # Test initialization
         initialization_tester(m)
         # Check for poorly scaled variables
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         # Solve
         results = solver.solve(m)
@@ -721,8 +721,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -847,8 +847,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -975,8 +975,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
@@ -1104,8 +1104,8 @@ class TestReverseOsmosis:
 
         initialization_tester(m)
 
-        # badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # assert badly_scaled_var_lst == []
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
 
         results = solver.solve(m)
 
