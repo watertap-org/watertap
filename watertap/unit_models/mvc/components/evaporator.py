@@ -429,8 +429,9 @@ class EvaporatorData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-        # check degrees of freedom
-        under_constrained_flag = False
+        # check if guess is needed for approach temperatures
+        # need to also check for degrees of freedom?
+        fixed_delta_temperature = False
         if (
             not blk.delta_temperature_in.is_fixed()
             and not blk.delta_temperature_out.is_fixed()
@@ -438,7 +439,7 @@ class EvaporatorData(UnitModelBlockData):
             if delta_temperature_in != None and delta_temperature_out != None:
                 blk.delta_temperature_in.fix(delta_temperature_in)
                 blk.delta_temperature_out.fix(delta_temperature_out)
-                under_constrained_flag = True
+                fixed_delta_temperature = True
             else:
                 raise RuntimeError(
                     "The model has {} degrees of freedom rather than 0 for initialization."
@@ -453,7 +454,7 @@ class EvaporatorData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states and release delta_temperature
         blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
-        if under_constrained_flag:
+        if fixed_delta_temperature:
             blk.delta_temperature_in.unfix()
             blk.delta_temperature_out.unfix()
         if hasattr(blk, "connection_to_condenser"):

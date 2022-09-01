@@ -236,7 +236,8 @@ class CompressorData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
-            hold_state: boolean indicating if the inlet conditions should stay fixed
+            hold_state : boolean indicating if the inlet conditions should stay fixed
+            heat : inital guess for heat transfer out of condenser (negative)
 
         Returns: None
         """
@@ -255,12 +256,12 @@ class CompressorData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # # ---------------------------------------------------------------------
-        # check degrees of freedom
-        under_constrained_flag = False
+        # check if guess is needed for the heat based on degrees of freedom
+        fixed_heat = False
         if degrees_of_freedom(blk) != 0:
             if heat != None:
                 blk.control_volume.heat.fix(heat)
-                under_constrained_flag = True
+                fixed_heat = True
             else:
                 raise RuntimeError(
                     "The model has {} degrees of freedom rather than 0 for initialization."
@@ -280,7 +281,7 @@ class CompressorData(UnitModelBlockData):
             # Release Inlet state
             blk.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        if under_constrained_flag:
+        if fixed_heat:
             blk.control_volume.heat.unfix()
 
     def _get_performance_contents(self, time_point=0):
