@@ -180,12 +180,26 @@ class Ultraviolet0DData(UnitModelBlockData):
         ConfigValue(
             default=UVDoseType.fixed,
             domain=In(UVDoseType),
-            description="Surface diffusion coefficient",
+            description="UV dose construction flag",
             doc="""Indicates whether the uv dose will be calculated or fixed by the user
         **default** - UVDoseType.fixed.
         **Valid values:** {
         **UVDoseType.fixed** - user specifies uv dose,
         **UVDoseType.calculated** - calculates uv dose based on the lamp power and UV transmittance}""",
+        ),
+    )
+    CONFIG.declare(
+        "has_aop",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="AOP term construction flag",
+            doc="""Indicates whether terms for AOP should be
+    constructed,
+    **default** - False.
+    **Valid values:** {
+    **True** - include AOP terms,
+    **False** - exclude AOP terms.}""",
         ),
     )
 
@@ -248,26 +262,6 @@ class Ultraviolet0DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
             doc="Overall pseudo-first order rate constant.",
-        )
-
-        self.photolysis_rate_constant = Var(
-            self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
-            initialize=2e-3,
-            bounds=(0, None),
-            domain=NonNegativeReals,
-            units=units_meta("time") ** -1,
-            doc="Pseudo-first order rate constant for direct photolysis of component.",
-        )
-
-        self.reaction_rate_constant = Var(
-            self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
-            initialize=5e-4,
-            bounds=(0, 100),
-            domain=NonNegativeReals,
-            units=units_meta("time") ** -1,
-            doc="Pseudo-first order rate constant for indirect photolysis of component.",
         )
 
         self.dens_solvent = Param(
@@ -534,16 +528,65 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_rate_constant(b, p, j):
             return b.rate_constant[p, j] == b.uv_intensity * b.inactivation_rate[p, j]
 
-        @self.Constraint(
-            self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
-            doc="Constraint for pseudo-first order rate constant with respect to direct and indirect photolysis",
-        )
-        def eq_overall_rate_constant(b, p, j):
-            return (
-                b.rate_constant[p, j]
-                == b.photolysis_rate_constant[p, j] + b.reaction_rate_constant[p, j]
+        # ---------------------------------------------------------------------
+        if self.config.has_aop is True:
+            self.photolysis_rate_constant = Var(
+                self.config.property_package.phase_list,
+                self.config.property_package.solute_set,
+                initialize=2e-3,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=units_meta("time") ** -1,
+                doc="Pseudo-first-order rate constant for direct photolysis of component.",
             )
+            self.reaction_rate_constant = Var(
+                self.config.property_package.phase_list,
+                self.config.property_package.solute_set,
+                initialize=5e-4,
+                bounds=(0, 100),
+                domain=NonNegativeReals,
+                units=units_meta("time") ** -1,
+                doc="Pseudo-first-order rate constant for indirect photolysis of component.",
+            )
+            self.second_order_reaction_rate_constant = Var(
+                self.config.property_package.phase_list,
+                self.config.property_package.solute_set,
+                initialize=3.3e8,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.M**-1 * pyunits.s**-1,
+                doc="Second-order reaction rate constant for the reaction between component and hydrogen peroxide.",
+            )
+            self.hydrogen_peroxide_conc = Var(
+                initialize=5.05e-13,
+                bounds=(0, None),
+                domain=NonNegativeReals,
+                units=pyunits.M,
+                doc="Steady-state concentration of hydrogen peroxide.",
+            )
+
+            @self.Constraint(
+                self.config.property_package.phase_list,
+                self.config.property_package.solute_set,
+                doc="Constraint for pseudo-first order reaction rate constant with respect to direct and indirect photolysis",
+            )
+            def eq_overall_rate_constant(b, p, j):
+                return (
+                    b.rate_constant[p, j]
+                    == b.photolysis_rate_constant[p, j] + b.reaction_rate_constant[p, j]
+                )
+
+            @self.Constraint(
+                self.config.property_package.phase_list,
+                self.config.property_package.solute_set,
+                doc="Constraint for pseudo-first order reaction rate constant",
+            )
+            def eq_reaction_rate_constant(b, p, j):
+                return (
+                    b.reaction_rate_constant[p, j]
+                    == b.second_order_reaction_rate_constant[p, j]
+                    * b.hydrogen_peroxide_conc
+                )
 
         # mass transfer
         @self.Constraint(
@@ -558,7 +601,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             if comp.is_solvent():
                 return b.control_volume.mass_transfer_term[t, p, j] == 0
             elif comp.is_solute():
-                return (
+                return b.control_volume.mass_transfer_term[t, p, j] == -(
                     prop_in.get_material_flow_terms(p, j)
                     * (
                         1
@@ -569,7 +612,6 @@ class Ultraviolet0DData(UnitModelBlockData):
                             )
                         )
                     )
-                    == -b.control_volume.mass_transfer_term[t, p, j]
                 )
 
         # electricity
@@ -820,23 +862,42 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
         iscale.set_scaling_factor(self.rate_constant, sf)
 
-        if iscale.get_scaling_factor(self.photolysis_rate_constant) is None:
-            sf = iscale.get_scaling_factor(
-                self.photolysis_rate_constant, default=1e3, warning=True
-            )
-        iscale.set_scaling_factor(self.photolysis_rate_constant, sf)
-
-        if iscale.get_scaling_factor(self.reaction_rate_constant) is None:
-            sf = iscale.get_scaling_factor(
-                self.reaction_rate_constant, default=1e3, warning=True
-            )
-        iscale.set_scaling_factor(self.reaction_rate_constant, sf)
-
         if iscale.get_scaling_factor(self.electrical_efficiency_phase_comp) is None:
             sf = iscale.get_scaling_factor(
                 self.electrical_efficiency_phase_comp, default=1e-5, warning=True
             )
         iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
+
+        if hasattr(self, "photolysis_rate_constant"):
+            if iscale.get_scaling_factor(self.photolysis_rate_constant) is None:
+                sf = iscale.get_scaling_factor(
+                    self.photolysis_rate_constant, default=1e3, warning=True
+                )
+            iscale.set_scaling_factor(self.photolysis_rate_constant, sf)
+
+        if hasattr(self, "reaction_rate_constant"):
+            if iscale.get_scaling_factor(self.reaction_rate_constant) is None:
+                sf = iscale.get_scaling_factor(
+                    self.reaction_rate_constant, default=1e3, warning=True
+                )
+            iscale.set_scaling_factor(self.reaction_rate_constant, sf)
+
+        if hasattr(self, "second_order_reaction_rate_constant"):
+            if (
+                iscale.get_scaling_factor(self.second_order_reaction_rate_constant)
+                is None
+            ):
+                sf = iscale.get_scaling_factor(
+                    self.second_order_reaction_rate_constant, default=1e-8, warning=True
+                )
+            iscale.set_scaling_factor(self.second_order_reaction_rate_constant, sf)
+
+        if hasattr(self, "hydrogen_peroxide_conc"):
+            if iscale.get_scaling_factor(self.hydrogen_peroxide_conc) is None:
+                sf = iscale.get_scaling_factor(
+                    self.hydrogen_peroxide_conc, default=1e13, warning=True
+                )
+            iscale.set_scaling_factor(self.hydrogen_peroxide_conc, sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -969,19 +1030,10 @@ class Ultraviolet0DData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.rate_constant[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_overall_rate_constant.items():
-            if iscale.get_scaling_factor(self.rate_constant) is None:
-                sf = iscale.get_scaling_factor(
-                    self.photolysis_rate_constant[ind]
-                ) + iscale.get_scaling_factor(self.reaction_rate_constant[ind])
-            else:
-                sf = iscale.get_scaling_factor(self.rate_constant[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_outlet_conc.items():
             (t, p, j) = ind
             sf = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].get_material_flow_terms(p, j)
+                self.control_volume.mass_transfer_term[t, p, j]
             )
             iscale.constraint_scaling_transform(c, sf)
 
@@ -1012,4 +1064,19 @@ class Ultraviolet0DData(UnitModelBlockData):
         if hasattr(self, "eq_uv_dose_detail"):
             for c in self.eq_uv_dose_detail.values():
                 sf = iscale.get_scaling_factor(self.uv_dose)
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_overall_rate_constant"):
+            for ind, c in self.eq_overall_rate_constant.items():
+                if iscale.get_scaling_factor(self.rate_constant) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.photolysis_rate_constant[ind]
+                    ) + iscale.get_scaling_factor(self.reaction_rate_constant[ind])
+                else:
+                    sf = iscale.get_scaling_factor(self.rate_constant[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "eq_reaction_rate_constant"):
+            for c in self.eq_reaction_rate_constant.values():
+                sf = iscale.get_scaling_factor(self.reaction_rate_constant)
                 iscale.constraint_scaling_transform(c, sf)
