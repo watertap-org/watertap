@@ -455,7 +455,6 @@ def initialize_pump_as_turbine(m, optarg):
 
 
 def optimize_set_up(m):
-    # objective
 
     # unfix decision variables and add bounds
     # pump 1 and pump 2
