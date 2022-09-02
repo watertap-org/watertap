@@ -285,6 +285,7 @@ def save_results(m, t_blocks, data, savepath=None):
         ]
     )
     power = np.array([blk.energy_consumption() for blk in t_blocks])
+    permeate = np.array([blk.water_prod() for blk in t_blocks])
 
     flowrate1 = np.array(
         [
@@ -303,6 +304,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 data[0][:].reshape(-1, 1),
                 data[1][:].reshape(-1, 1),
                 power.reshape(-1, 1),
+                permeate.reshape(-1, 1),
                 recovery.reshape(-1, 1),
                 pressure.reshape(-1, 1),
                 flowrate1.reshape(-1, 1),
@@ -318,6 +320,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 "power",
                 "recovery",
                 "pressure",
+                "permeate",
                 "flowrate1",
                 "efficiency1",
             ],
@@ -341,6 +344,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 power.reshape(-1, 1),
                 recovery.reshape(-1, 1),
                 pressure.reshape(-1, 1),
+                permeate.reshape(-1, 1),
                 flowrate1.reshape(-1, 1),
                 efficiency1.reshape(-1, 1),
                 flowrate2.reshape(-1, 1),
@@ -356,6 +360,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 "power",
                 "recovery",
                 "pressure",
+                "permeate",
                 "flowrate1",
                 "efficiency1",
                 "flowrate2",
