@@ -81,22 +81,19 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(
-        self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
+        self, has_phase_equilibrium=None
     ):
         """
         This method constructs the state blocks for the
         control volume.
 
         Args:
-            information_flow: a FlowDirection Enum indicating whether
-                               information flows from inlet-to-outlet or
-                               outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
         Returns:
             None
         """
-        super().add_state_blocks(information_flow, has_phase_equilibrium)
+        super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
 
         # quack like a 1D model
         self.length_domain = Set(ordered=True, initialize=(0.0, 1.0))
@@ -236,40 +233,24 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="control_volume")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="control_volume")
 
+        # TODO: this function needs to be changed for use on the permeate side
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
-        if self._flow_direction == FlowDirection.forward:
-            source_flags = self.properties_in.initialize(
-                state_args=state_args["feed_side"],
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-                hold_state=True,
-            )
+        source_flags = self.properties_in.initialize(
+            state_args=state_args["feed_side"],
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+        )
 
-            self.properties_out.initialize(
-                state_args=state_args["retentate"],
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-            )
-
-        else:
-            source_flags = self.properties_out.initialize(
-                state_args=state_args["feed_side"],
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-                hold_state=True,
-            )
-
-            self.properties_in.initialize(
-                state_args=state_args["retentate"],
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-            )
+        self.properties_out.initialize(
+            state_args=state_args["retentate"],
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+        )
 
         self.properties_interface.initialize(
             outlvl=outlvl,

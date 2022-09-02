@@ -138,22 +138,19 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(
-        self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
+        self, has_phase_equilibrium=None
     ):
         """
         This method constructs the state blocks for the
         control volume.
 
         Args:
-            information_flow: a FlowDirection Enum indicating whether
-                               information flows from inlet-to-outlet or
-                               outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
         Returns:
             None
         """
-        super().add_state_blocks(information_flow, has_phase_equilibrium)
+        super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
         self._add_interface_stateblock(has_phase_equilibrium)
 
     def add_total_enthalpy_balances(self, **kwrags):
