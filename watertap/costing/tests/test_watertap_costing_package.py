@@ -13,15 +13,19 @@
 
 import pytest
 
-from pyomo.environ import Block
+import pyomo.environ as pyo
+import idaes.core as idc
 
 from idaes.core.util.exceptions import ConfigurationError
-from watertap.costing.watertap_costing_package import WaterTAPCostingData
+from watertap.costing.watertap_costing_package import (
+    WaterTAPCostingData,
+    WaterTAPCosting,
+)
 
 
 def _get_config_testing_block():
-    blk = Block()
-    blk.unit_model = Block()
+    blk = pyo.Block()
+    blk.unit_model = pyo.Block()
     return blk
 
 
@@ -80,3 +84,28 @@ def test_cost_crystallizer_configuration_error():
         " foo. Argument must be a member of the CrystallizerCostType Enum.",
     ):
         WaterTAPCostingData.cost_crystallizer(blk, cost_type="foo")
+
+
+@pytest.mark.componet
+def test_lazy_flow_costing():
+    m = pyo.ConcreteModel()
+    m.fs = idc.FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.costing = WaterTAPCosting()
+    # electricity should not be pre-registered
+    assert "electricity" not in m.fs.costing.flow_types
+
+    m.fs.electricity = pyo.Var(units=pyo.units.kW)
+
+    m.fs.costing.cost_flow(m.fs.electricity, "electricity")
+    # electricity should now be registered
+    assert "electricity" in m.fs.costing.flow_types
+
+    assert "foo" not in m.fs.costing.flow_types
+    with pytest.raises(
+        ValueError,
+        match="foo is not a recognized flow type. Please check "
+        "your spelling and that the flow type has been available to"
+        " the FlowsheetCostingBlock.",
+    ):
+        m.fs.costing.cost_flow(m.fs.electricity, "foo")

@@ -40,7 +40,7 @@ from idaes.core.util.scaling import (
 import watertap.property_models.NaCl_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,
@@ -51,16 +51,17 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     display_system,
     display_state,
     display_design,
+    ERDtype,
 )
 
 
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
-class TestEnergyRecoverySystem:
+class TestROwithPX:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build()
+        m = build(erd_type="pressure_exchanger")
 
         return m
 
@@ -195,7 +196,7 @@ class TestEnergyRecoverySystem:
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert not m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(50, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(99.081, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -297,11 +298,11 @@ Levelized cost of water: 0.44 $/m3
 Operating pressure 74.9 bar
 Membrane area 60.2 m2
 ---design variables---
-Separator
-Split fraction 50.53
 Pump 1
 outlet pressure: 74.9 bar
 power 4.57 kW
+Separator
+Split fraction 50.53
 Pump 2
 outlet pressure: 74.9 bar
 power 0.30 kW
@@ -349,3 +350,75 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
             2.110, rel=1e-3
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)
+
+
+class TestROwithTurbine:
+    @pytest.fixture(scope="class")
+    def system_frame(self):
+        m = build(erd_type=ERDtype.pump_as_turbine)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, system_frame):
+        m = system_frame
+        fs = m.fs
+        assert isinstance(fs.ERD, EnergyRecoveryDevice)
+        # arcs
+        arc_dict = {
+            fs.s01: (fs.feed.outlet, fs.P1.inlet),
+            fs.s02: (fs.P1.outlet, fs.RO.inlet),
+            fs.s03: (fs.RO.permeate, fs.product.inlet),
+            fs.s04: (fs.RO.retentate, fs.ERD.inlet),
+            fs.s05: (fs.ERD.outlet, fs.disposal.inlet),
+        }
+        for arc, port_tpl in arc_dict.items():
+            assert arc.source is port_tpl[0]
+            assert arc.destination is port_tpl[1]
+
+    @pytest.mark.component
+    def test_units(self, system_frame):
+        assert_units_consistent(system_frame)
+
+    @pytest.mark.component
+    def test_set_operating_conditions(self, system_frame):
+        m = system_frame
+        set_operating_conditions(m)
+        assert m.fs.ERD.efficiency_pump[0].is_fixed()
+        assert pytest.approx(0.95, rel=1e-5) == value(m.fs.ERD.efficiency_pump[0])
+        assert pytest.approx(101325, rel=1e-5) == value(
+            m.fs.ERD.control_volume.properties_out[0].pressure
+        )
+
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.component
+    def test_initialize_system(self, system_frame):
+        m = system_frame
+        initialize_system(m, solver=solver)
+        assert pytest.approx(60.1545, rel=1e-5) == value(m.fs.RO.area)
+
+    @pytest.mark.component
+    def test_optimize_setup(self, system_frame):
+        m = system_frame
+        optimize_set_up(m)
+        solve(m, solver=solver)
+        assert degrees_of_freedom(m) == 1
+
+    @pytest.mark.component
+    def test_solution(self, system_frame):
+        m = system_frame
+        fs = m.fs
+        assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
+        assert pytest.approx(2.42916, rel=1e-5) == value(
+            fs.costing.specific_energy_consumption
+        )
+        assert pytest.approx(1.15385, rel=1e-3) == value(
+            fs.costing.specific_electrical_carbon_intensity
+        )
+        assert pytest.approx(0.54814, rel=1e-5) == value(fs.costing.LCOW)
+
+    @pytest.mark.component
+    def test_config_error(self, system_frame):
+        with pytest.raises(Exception):
+            build(erd_type="not_a_configuration")
