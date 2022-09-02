@@ -329,7 +329,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="HCl purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["HCl"] = self.hcl.cost / self.hcl.purity
+            costing.available_flows["HCl"] = blk.cost / blk.purity
 
         self.hcl = pyo.Block(rule=build_hcl_cost_param_block)
 
@@ -350,7 +350,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOH purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["NaOH"] = self.naoh.cost / self.naoh.purity
+            costing.available_flows["NaOH"] = blk.cost / blk.purity
 
         self.naoh = pyo.Block(rule=build_naoh_cost_param_block)
 
