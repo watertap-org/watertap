@@ -87,6 +87,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
 
+        # Define standard material flows and costs
+        # The WaterTAP costing package creates flows
+        # in a lazy fashion, the first time `cost_flow`
+        # is called for a flow. The `available_flows`
+        # are all the flows which can be costed with
+        # the WaterTAP costing package.
+        self.available_flows = {}
+
         # Build flowsheet level costing components
         # These are the global parameters
         self.utilization_factor = pyo.Var(
@@ -116,6 +124,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Electricity cost",
             units=self.base_currency / pyo.units.kWh,
         )
+        self.available_flows["electricity"] = self.electricity_base_cost
 
         self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
@@ -273,6 +282,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOCl purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["NaOCl"] = blk.cost / blk.purity
 
         self.naocl = pyo.Block(rule=build_naocl_cost_param_block)
 
@@ -297,6 +307,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="CaOH2 purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["CaOH2"] = blk.cost / blk.purity
 
         self.caoh2 = pyo.Block(rule=build_caoh2_cost_param_block)
 
@@ -402,6 +413,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
         )
+        self.available_flows["steam"] = self.steam_unit_cost
 
         def build_gac_cost_param_block(blk):
 
@@ -496,11 +508,33 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         for var in self.component_objects(pyo.Var, descend_into=True):
             var.fix()
 
-        # Define standard material flows and costs
-        self.defined_flows["electricity"] = self.electricity_base_cost
-        self.defined_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
-        self.defined_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
-        self.defined_flows["steam"] = self.steam_unit_cost
+    def cost_flow(self, flow_expr, flow_type):
+        """
+        This method registers a given flow component (Var or expression) for
+        costing. All flows are required to be bounded to be non-negative (i.e.
+        a lower bound equal to or greater than 0).
+
+        Args:
+            flow_expr: Pyomo Var or expression that represents a material flow
+                that should be included in the process costing. Units are
+                expected to be on a per time basis.
+            flow_type: string identifying the material this flow represents.
+                This string must be available to the FlowsheetCostingBlock
+                as a known flow type.
+
+        Raises:
+            ValueError if flow_type is not recognized.
+            TypeError if flow_expr is an indexed Var.
+        """
+        if flow_type not in self.available_flows:
+            raise ValueError(
+                f"{flow_type} is not a recognized flow type. Please check "
+                "your spelling and that the flow type has been available to"
+                " the FlowsheetCostingBlock."
+            )
+        if flow_type not in self.flow_types:
+            self.register_flow_type(flow_type, self.available_flows[flow_type])
+        super().cost_flow(flow_expr, flow_type)
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
