@@ -259,10 +259,9 @@ class TestReverseOsmosis:
         port_lst = ["inlet", "retentate", "permeate"]
         for port_str in port_lst:
             port = getattr(m.fs.unit, port_str)
-            assert (
-                len(port.vars) == 3
-            )  # number of state variables for NaCl property package
             assert isinstance(port, Port)
+            # number of state variables for NaCl property package
+            assert len(port.vars) == 3
 
         # test feed-side control volume and associated stateblocks
         assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
