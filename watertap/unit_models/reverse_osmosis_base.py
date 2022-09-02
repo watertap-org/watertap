@@ -94,7 +94,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
 
         validate_membrane_config_args(self)
 
-        self._add_feed_side_membrane_channel_and_geometery()
+        self._add_feed_side_membrane_channel_and_geometry()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 

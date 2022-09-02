@@ -58,7 +58,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
     _add_has_full_reporting(CONFIG)
 
-    def _add_feed_side_membrane_channel_and_geometery(self):
+    def _add_feed_side_membrane_channel_and_geometry(self):
         # Build membrane channel control volume
         self.feed_side = MembraneChannel0DBlock(
             default={

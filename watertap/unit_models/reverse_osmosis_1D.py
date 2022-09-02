@@ -79,7 +79,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             )
             self.config.transformation_scheme = "BACKWARD"
 
-    def _add_feed_side_membrane_channel_and_geometery(self):
+    def _add_feed_side_membrane_channel_and_geometry(self):
         # Check configuration errors
         self._process_config()
 
