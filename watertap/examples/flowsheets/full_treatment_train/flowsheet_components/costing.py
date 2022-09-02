@@ -243,7 +243,9 @@ def display_costing(m):
         "Labor & Maintenance Costs": m.fs.costing.maintenance_labor_chemical_operating_cost
         / m.fs.costing.annual_water_production,
         "Total Electricity Cost": m.fs.costing.aggregate_flow_costs["electricity"]
-        / m.fs.costing.annual_water_production,
+        / m.fs.costing.annual_water_production
+        if "electricity" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
         "Total Membrane Replacement Cost": (
             m.fs.NF.costing.fixed_operating_cost
             + m.fs.RO.costing.fixed_operating_cost
@@ -252,10 +254,14 @@ def display_costing(m):
         / m.fs.costing.annual_water_production,
         "Lime softener CAPEX": m.fs.lime_softening_unit_capex,
         "Lime softener OPEX": m.fs.costing.aggregate_flow_costs["CaOH2"]
-        / m.fs.costing.annual_water_production,
+        / m.fs.costing.annual_water_production
+        if "CaOH2" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
         "Chlorination CAPEX": m.fs.chlorination_unit_capex,
         "Chlorination OPEX": m.fs.costing.aggregate_flow_costs["NaOCl"]
-        / m.fs.costing.annual_water_production,
+        / m.fs.costing.annual_water_production
+        if "NaOCl" in m.fs.costing.aggregate_flow_costs
+        else 0.0,
     }
 
     for item, val in cost_dict.items():
