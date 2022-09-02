@@ -160,6 +160,7 @@ def build(erd_type=ERDtype.pressure_exchanger):
     m.fs.costing.add_specific_electrical_carbon_intensity(
         m.fs.product.properties[0].flow_vol
     )
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # connections
     if erd_type == ERDtype.pressure_exchanger:
@@ -227,7 +228,6 @@ def set_operating_conditions(
 
     if solver is None:
         solver = get_solver()
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
     # ---specifications---
     # feed
     # state variables
@@ -456,7 +456,6 @@ def initialize_pump_as_turbine(m, optarg):
 
 def optimize_set_up(m):
     # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # unfix decision variables and add bounds
     # pump 1 and pump 2

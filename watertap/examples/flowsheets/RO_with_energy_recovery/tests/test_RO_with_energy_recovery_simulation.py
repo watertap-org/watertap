@@ -74,6 +74,7 @@ class TestROwithPX:
         assert isinstance(m.fs, FlowsheetBlock)
         assert isinstance(m.fs.properties, props.NaClParameterBlock)
         assert isinstance(m.fs.costing, Block)
+        assert number_total_objectives(m) == 1
 
         # unit models
         fs = m.fs
@@ -335,7 +336,6 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
     @pytest.mark.component
     def test_optimization(self, system_frame):
         m = system_frame
-        assert number_total_objectives(m) == 1
 
         optimize_set_up(m)
         optimize(m, solver=solver)
@@ -365,6 +365,8 @@ class TestROwithTurbine:
         m = system_frame
         fs = m.fs
         assert isinstance(fs.ERD, EnergyRecoveryDevice)
+        assert number_total_objectives(m) == 1
+
         # arcs
         arc_dict = {
             fs.s01: (fs.feed.outlet, fs.P1.inlet),
@@ -410,7 +412,6 @@ class TestROwithTurbine:
     def test_solution(self, system_frame):
         m = system_frame
         fs = m.fs
-        assert number_total_objectives(m) == 1
         assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
         assert pytest.approx(2.42916, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
