@@ -276,7 +276,7 @@ class MembraneChannelMixin:
 
     def _add_var_reference(self, pyomo_var, reference_name, param_name):
         if pyomo_var is not None:
-            # Validate length_Var and add a reference
+            # Validate pyomo_var and add a reference
             if not isinstance(pyomo_var, (Var, Param, Expression)):
                 raise ConfigurationError(
                     f"{self.name} {param_name} must be a Pyomo Var, Param or "

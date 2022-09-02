@@ -80,9 +80,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         self._add_var_reference(length_var, "length", "length_var")
         self._add_var_reference(width_var, "width", "width_var")
 
-    def add_state_blocks(
-        self, has_phase_equilibrium=None
-    ):
+    def add_state_blocks(self, has_phase_equilibrium=None):
         """
         This method constructs the state blocks for the
         control volume.
