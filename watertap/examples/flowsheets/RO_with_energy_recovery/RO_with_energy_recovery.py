@@ -227,7 +227,7 @@ def set_operating_conditions(
 
     if solver is None:
         solver = get_solver()
-
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
     # ---specifications---
     # feed
     # state variables

@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, number_total_objectives
 from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
@@ -335,6 +335,7 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
     @pytest.mark.component
     def test_optimization(self, system_frame):
         m = system_frame
+        assert number_total_objectives(m) == 1
 
         optimize_set_up(m)
         optimize(m, solver=solver)
@@ -409,6 +410,7 @@ class TestROwithTurbine:
     def test_solution(self, system_frame):
         m = system_frame
         fs = m.fs
+        assert number_total_objectives(m) == 1
         assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
         assert pytest.approx(2.42916, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
