@@ -24,6 +24,7 @@ from pyomo.environ import (
 )
 from idaes.core import (
     declare_process_block_class,
+    DistributedVars,
     FlowDirection,
     useDefault,
 )
@@ -39,6 +40,21 @@ from watertap.core.membrane_channel_base import (
 )
 
 CONFIG_Template = Base_CONFIG_Template()
+
+CONFIG_Template.declare(
+    "area_definition",
+    ConfigValue(
+        default=DistributedVars.uniform,
+        domain=In(DistributedVars),
+        description="Argument for defining form of area variable",
+        doc="""Argument defining whether area variable should be spatially
+variant or not. **default** - DistributedVars.uniform.
+**Valid values:** {
+DistributedVars.uniform - area does not vary across spatial domain,
+DistributedVars.variant - area can vary over the domain and is indexed
+by time and space.}""",
+    ),
+)
 
 CONFIG_Template.declare(
     "transformation_method",

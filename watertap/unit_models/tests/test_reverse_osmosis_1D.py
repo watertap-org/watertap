@@ -69,7 +69,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.config) == 16
+    assert len(m.fs.unit.config) == 17
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
