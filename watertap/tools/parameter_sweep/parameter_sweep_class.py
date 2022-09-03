@@ -33,75 +33,27 @@ from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
-from idaes.core.util import to_json, from_json
-
 np.set_printoptions(linewidth=200)
 
 
 class _ParameterSweepBase(ABC):
     def __init__(self, *args, **kwargs):
-        if try_mpi:
-            self.comm = self._init_mpi(mpi_comm)
-        else:
-            self.comm = self._init_ray()
+        self.comm = self._init_mpi()
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
 
     # ================================================================
 
-    def _init_mpi(self, mpi_comm):
+    def _init_mpi(self):
         try:
             from mpi4py import MPI
 
-            if mpi_comm is None:
-                return MPI.COMM_WORLD
-            else:
-                return mpi_comm
+            return MPI.COMM_WORLD
         except:
             dummy_comm = DummyMPI()
             return dummy_comm
 
     # ================================================================
-
-    def _init_ray(self):
-        # Testing to see if ray excists and importing it,
-        # if it does not exists will creat a dummy decortor
-        try:
-            import ray
-
-            if ray.is_initialized() == False:
-                try:
-                    print(os.environ["ip_head"], os.environ["redis_password"])
-                    # if ray.is_initialized()
-                    ray.init(
-                        address=os.environ["ip_head"],
-                        _redis_password=os.environ["redis_password"],
-                    )
-                    print("Nodes in the Ray cluster:")
-                    print(ray.nodes())
-
-                    print(ray.cluster_resources())
-                    return
-                except (KeyError):
-                    print("Did not find ray cluster address, running in local mode")
-                    ray.init()
-
-            else:
-                print("ray already running")
-        except (ImportError):
-            # if ray does not exist, create dummy class for testing its
-            # existance and decoraitng
-            print("Did not find ray.io, ignoring")
-
-            class ray:
-                def remote(num_cpus, schscheduling_strategy):
-                    pass
-
-                def is_initialized():
-                    return False
-
-        dummy_comm = DummyMPI()
-        return dummy_comm
 
     def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)
@@ -186,11 +138,10 @@ class _ParameterSweepBase(ABC):
 
     def _update_model_values(self, m, param_dict, values):
 
-        set_vals = {}  # dict for returing specific set values for serlized use
         for k, item in enumerate(param_dict.values()):
-            # enable use of non objects for serlization
-            param = m.find_component(str(item.pyomo_object))
-            self.set_vals[str(item.pyomo_object)] = values[k]
+
+            param = item.pyomo_object
+
             if param.is_variable_type():
                 # Fix the single value to values[k]
                 param.fix(values[k])
@@ -201,20 +152,6 @@ class _ParameterSweepBase(ABC):
 
             else:
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
-        return set_vals
-
-    # ================================================================
-
-    def _update_model_values_from_dict(self, m, values):
-        # Function takes a dict of values and update model useing
-        # the dict, where each key is paramter, and value is value to update to
-        for k, value in values.items():
-            param = m.find_component(str(k))
-            if param.is_variable_type():
-                param.fix(value)
-
-            elif param.is_parameter_type():
-                param.set_value(value)
 
     # ================================================================
 
@@ -336,75 +273,32 @@ class _ParameterSweepBase(ABC):
 
         # Add information to this output that WILL NOT be written as part
         # of the file saving step.
-        # with serlized upadte this is not longer needed
-        # comp_dict["_pyo_obj"] = component
+        comp_dict["_pyo_obj"] = component
 
         return comp_dict
 
     # ================================================================
 
     def _update_local_output_dict(
-        self,
-        model,
-        sweep_params,
-        case_number,
-        sweep_vals,
-        run_successful,
-        output_dict,
-        single_copy_mode=False,
+        self, model, sweep_params, case_number, sweep_vals, run_successful, output_dict
     ):
-        """single_copy_mode if true, will create a new dict with single values for
-        serlized use"""
-        if single_copy_mode:
-            copy_dict = {"sweep_params": {}, outputs: {}}
+
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
         for key, item in sweep_params.items():
-            value = model.find_component(key).value
-            if single_copy_mode:
-                copy_dict["sweep_params"][key] = {"value": value}
-            else:
-                op_ps_dict[key]["value"][case_number] = value
+            var_name = item.pyomo_object.name
+            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+
         # Get the outputs from model
         if run_successful:
             for label, val in output_dict["outputs"].items():
-                val = pyo.value(model.find_component(label))
-                if single_copy_mode:
-                    copy_dict["outputs"][label] = {"value": val}
-                else:
-                    output_dict["outputs"][label]["value"][case_number] = val
+                output_dict["outputs"][label]["value"][case_number] = pyo.value(
+                    val["_pyo_obj"]
+                )
 
         else:
             for label in output_dict["outputs"].keys():
-                if single_copy_mode:
-                    copy_dict["outputs"][label] = {"value": np.nan}
-                else:
-                    output_dict["outputs"][label]["value"][case_number] = np.nan
-        if single_copy_mode:
-            return copy_dict
-
-    # ================================================================
-
-    def _merge_copied_dicts(self, global_output_dict, dict_array):
-        # merging serlied array of dicts ,into single copied dict
-        global_output_dict["solve_successful"] = np.zeros(len(dict_array))
-        for case_number, case_dict in enumerate(dict_array):
-            for key in global_output_dict["sweep_params"].keys():
-                # print(global_output_dict["sweep_params"])
-                # print(dict_array)  # [case_number]["sweep_params"])
-                global_output_dict["sweep_params"][key]["value"][
-                    case_number
-                ] = dict_array[case_number]["sweep_params"][key]["value"]
-
-            for key in global_output_dict["outputs"].keys():
-                global_output_dict["outputs"][key]["value"][case_number] = dict_array[
-                    case_number
-                ]["outputs"][key]["value"]
-            # print(global_output_dict["solve_successful"])
-            global_output_dict["solve_successful"][case_number] = dict_array[
-                case_number
-            ]["solve_successful"]
-        return global_output_dict
+                output_dict["outputs"][label]["value"][case_number] = np.nan
 
     # ================================================================
 
@@ -412,12 +306,11 @@ class _ParameterSweepBase(ABC):
 
         # Before we can create the global dictionary, we need to delete the pyomo
         # object contained within the dictionary
-        # NOTNEEDED anymore as we removed this dependance
-        # for key, val in local_output_dict.items():
-        #     if key != "solve_successful":
-        #         for subval in val.values():
-        #             if "_pyo_obj" in subval:
-        #                 del subval["_pyo_obj"]
+        for key, val in local_output_dict.items():
+            if key != "solve_successful":
+                for subval in val.values():
+                    if "_pyo_obj" in subval:
+                        del subval["_pyo_obj"]
 
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
@@ -501,10 +394,9 @@ class _ParameterSweepBase(ABC):
                     "Reinitialization function was not specified. The model will not be reinitialized."
                 )
             else:
-                if reinitialize_values is not None:
-                    for v, val in reinitialize_values.items():
-                        if not v.fixed:
-                            v.set_value(val, skip_validation=True)
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 reinitialize_function(model, **reinitialize_kwargs)
 
         try:
@@ -516,10 +408,9 @@ class _ParameterSweepBase(ABC):
         except:
             # run_successful remains false. We try to reinitialize and solve again
             if reinitialize_function is not None:
-                if reinitialize_values is not None:
-                    for v, val in reinitialize_values.items():
-                        if not v.fixed:
-                            v.set_value(val, skip_validation=True)
+                for v, val in reinitialize_values.items():
+                    if not v.fixed:
+                        v.set_value(val, skip_validation=True)
                 try:
                     reinitialize_function(model, **reinitialize_kwargs)
                     with capture_output():
@@ -536,57 +427,6 @@ class _ParameterSweepBase(ABC):
             run_successful = True
 
         return run_successful
-
-    @ray.remote(num_cpus=1, scheduling_strategy="SPREAD")
-    def _param_step_kernel(
-        self,
-        build_model,
-        build_kwargs,
-        sweep_params,
-        outputs,
-        local_values,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        reinitialize_values,
-        probe_function,
-        local_output_dict,
-    ):
-        # Wrapper for serlaized use iwth ray of stnadard param_sweep_kernel
-        # requires additonal build model and buld_kwargs,
-        model = build_model(**build_kwargs)
-        if reinitialize_values is None:
-            reinitialize_function(model, **reinitialize_kwargs)
-        else:
-            from_json(model, s=reinitialize_values)
-            print("UPDATED FROM JSON", reinitialize_before_sweep)
-        _update_model_values_from_dict(model, sweep_params)
-        run_successful = False
-        if probe_function is None or probe_function(model):
-            run_successful = _param_sweep_kernel(
-                model,
-                optimize_function,
-                optimize_kwargs,
-                reinitialize_before_sweep,
-                reinitialize_function,
-                reinitialize_kwargs,
-            )
-        else:
-            run_successful = False
-
-        copied_dict = _update_local_output_dict(
-            model,
-            sweep_params,
-            None,
-            None,
-            run_successful,
-            local_output_dict,
-            single_copy_mode=True,
-        )
-        copied_dict["solve_successful"] = run_successful
-        return copied_dict
 
     # ================================================================
 
@@ -675,53 +515,8 @@ class _ParameterSweepBase(ABC):
     #     local_output_dict["solve_successful"] = local_solve_successful_list
     #
     #     return local_output_dict
-    def _do_param_swee(
-        self,
-        model,
-        build_model,
-        build_kwargs,
-        sweep_params,
-        outputs,
-        local_values,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        probe_function,
-    ):
 
-        if ray.initialized():
-            local_output_dict = self._do_param_sweep_ray(
-                model,
-                build_model,
-                build_kwargs,
-                sweep_params,
-                outputs,
-                local_values,
-                optimize_function,
-                optimize_kwargs,
-                reinitialize_function,
-                reinitialize_kwargs,
-                reinitialize_before_sweep,
-                probe_function,
-            )
-        else:
-            local_output_dict = self._do_param_sweep_standard(
-                model,
-                sweep_params,
-                outputs,
-                local_values,
-                optimize_function,
-                optimize_kwargs,
-                reinitialize_function,
-                reinitialize_kwargs,
-                reinitialize_before_sweep,
-                probe_function,
-            )
-        return local_output_dict
-
-    def _do_param_sweep_standard(
+    def _do_param_sweep(
         self,
         model,
         sweep_params,
@@ -791,68 +586,6 @@ class _ParameterSweepBase(ABC):
 
         return local_output_dict
 
-    def _do_param_sweep_ray(
-        self,
-        model,
-        sweep_params,
-        outputs,
-        local_values,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        probe_function,
-    ):
-
-        # Initialize space to hold results
-        local_num_cases = np.shape(local_values)[0]
-
-        # Create the output skeleton for storing detailed data
-        local_output_dict = self._create_local_output_skeleton(
-            model, sweep_params, outputs, local_num_cases
-        )
-
-        local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
-
-        local_solve_successful_list = []
-
-        reinitialize_values = to_json(model, return_json_string=True)
-        # ================================================================
-        # Run all optimization cases
-        # ================================================================
-        update_dicts = []
-        for k in range(local_num_cases):
-            update_dicts.append(
-                _update_model_values(model, sweep_params, local_values[k, :])
-            )
-        solved_dict_array = ray.get(
-            [
-                _param_step_kernel.remote(
-                    build_model,
-                    build_kwargs,
-                    update_dicts[k],
-                    outputs,
-                    local_values,
-                    optimize_function,
-                    optimize_kwargs,
-                    reinitialize_function,
-                    reinitialize_kwargs,
-                    reinitialize_before_sweep,
-                    reinitialize_values,
-                    probe_function,
-                    local_output_dict,
-                )
-                for k in range(local_num_cases)
-            ]
-        )
-
-        # local_solve_successful_list.append(run_successful)
-        local_output_dict = _merge_copied_dicts(local_output_dict, solved_dict_array)
-        #    local_output_dict["solve_successful"] = local_solve_successful_list
-
-        return local_output_dict
-
     # ================================================================
 
     @abstractmethod
@@ -884,13 +617,6 @@ class ParameterSweep(_ParameterSweepBase):
             model : A Pyomo ConcreteModel containing a watertap flowsheet, for best
                     results it should be initialized before being passed to this
                     function.
-            build_model : (Need for use with ray.io) A function for build a Pyomo ConcreteModel,
-                            it should contain necessary calls to set up the model for intilization
-                            and solution step, this will be called by every ray worker  before
-                            executing "reinitlize_function", unles "reintilize_values" are a json string
-                                (This function can contain stanard build model function and set oprating conditons function etc.)
-            build_kwargs: (Need for use with ray.io) values to pas onto the buld function
-                            to ensure mode is setup correctly
 
             sweep_params: A dictionary containing the values to vary with the format
                           ``sweep_params['Short/Pretty-print Name'] =
@@ -910,9 +636,7 @@ class ParameterSweep(_ParameterSweepBase):
 
             h5_results_file_name (optional) : The path and file name to write a h5 file. The default `None`
                                               does not write a file.
-                                              Providing a dict enables additional options
-                                              h5_dir: directory where to store results in the h5 file it self
-                                              save_keys: True/False (defaults: False) will write a companion text file `{h5_results_file_name}.txt`
+                                              Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                                               which contains the variable names contained within the H5 file.
 
             optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
@@ -942,8 +666,7 @@ class ParameterSweep(_ParameterSweepBase):
                                                   every parameter sweep realization. The default is False.
                                                   Note the parameter sweep model will try to reinitialize the
                                                   solve regardless of the option if the run fails.
-            try_mpi (optional): Default (True), if provide False, will try to use ray to paralize, \
-                                                if fails to find Ray will run in serilized mode on single core
+
             mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
                                   If None COMM_WORLD will be used. The default is sufficient for most
                                   users.
@@ -999,8 +722,6 @@ class ParameterSweep(_ParameterSweepBase):
         self,
         model,
         sweep_params,
-        build_model=None,
-        build_kwargs=None,
         outputs=None,
         optimize_function=None,  # self._default_optimize,
         optimize_kwargs=None,
@@ -1037,8 +758,6 @@ class ParameterSweep(_ParameterSweepBase):
         # Do the Loop
         local_results_dict = self._do_param_sweep(
             model,
-            build_model,
-            build_kwargs,
             sweep_params,
             outputs,
             local_values,
