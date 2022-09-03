@@ -283,6 +283,3 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         if hasattr(self, "dP_dx"):
             for v in self.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-5)
-        else:
-            for v in self.pressure_dx.values():
-                iscale.set_scaling_factor(v, 1e5)
