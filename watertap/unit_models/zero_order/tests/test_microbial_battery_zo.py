@@ -14,6 +14,7 @@
 Tests for zero-order microbial battery model
 """
 import pytest
+import os
 
 from pyomo.environ import (
     Block,
@@ -221,7 +222,6 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
         default={
             "solute_list": [
@@ -234,7 +234,18 @@ def test_costing():
             ]
         }
     )
-    m.fs.costing = ZeroOrderCosting()
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "examples",
+        "flowsheets",
+        "case_studies",
+        "groundwater_treatment",
+        "groundwater_treatment_case_study.yaml",
+    )
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     m.fs.unit = MicrobialBatteryZO(
         default={"property_package": m.fs.params, "database": m.db}
     )
@@ -266,6 +277,6 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(4.37e-3, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(4320.05, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
