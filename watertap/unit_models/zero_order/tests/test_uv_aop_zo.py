@@ -313,36 +313,38 @@ def test_costing():
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = UVAOPZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = UVAOPZO(default={"property_package": m.fs.params, "database": m.db})
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "cryptosporidium"].fix(3)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "cryptosporidium"].fix(3)
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
+    m.fs.unit.costing = UnitModelCostingBlock(
         default={"flowsheet_costing_block": m.fs.costing}
     )
 
-    assert isinstance(m.fs.unit1.chemical_flow_mass, Var)
+    assert isinstance(m.fs.unit.chemical_flow_mass, Var)
     assert isinstance(m.fs.costing.uv_aop, Block)
-    assert isinstance(m.fs.costing.uv_aop.uv_capital_a_parameter, Var)
-    assert isinstance(m.fs.costing.uv_aop.uv_capital_b_parameter, Var)
-    assert isinstance(m.fs.costing.uv_aop.uv_capital_c_parameter, Var)
-    assert isinstance(m.fs.costing.uv_aop.uv_capital_d_parameter, Var)
+    assert isinstance(m.fs.costing.uv_aop.reactor_cost, Var)
+    assert isinstance(m.fs.costing.uv_aop.lamp_cost, Var)
     assert isinstance(m.fs.costing.uv_aop.aop_capital_a_parameter, Var)
     assert isinstance(m.fs.costing.uv_aop.aop_capital_b_parameter, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
+    initialization_tester(m)
+    results = solver.solve(m)
+    check_optimal_termination(results)
+    assert pytest.approx(18.5857, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert str(m.fs.costing._registered_flows["hydrogen_peroxide"][0]) == str(
-        m.fs.unit1.chemical_flow_mass[0]
+        m.fs.unit.chemical_flow_mass[0]
     )
