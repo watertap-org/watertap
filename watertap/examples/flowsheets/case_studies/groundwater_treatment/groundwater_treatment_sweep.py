@@ -24,7 +24,7 @@ def set_up_sensitivity(m):
     opt_function = groundwater_treatment.solve
 
     # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW
+    outputs["LCOT"] = m.fs.costing.LCOT
 
     return outputs, optimize_kwargs, opt_function
 

@@ -356,7 +356,20 @@ def add_costing(m):
         )
     )
 
-    m.fs.costing.add_LCOW(m.fs.feed.flow_vol[0])
+    m.fs.costing.LCOT = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+        / (
+            pyunits.convert(
+                m.fs.feed.flow_vol[0],
+                to_units=pyunits.m**3 / m.fs.costing.base_period,
+            )
+            * m.fs.costing.utilization_factor
+        ),
+        doc="Levelized Cost of Treatment (with respect to feed flowrate)",
+    )
 
 
 def display_costing(m):
@@ -365,10 +378,10 @@ def display_costing(m):
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     print("\n---------- Levelized costs ----------")
-    LCOW = value(
-        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
-    print(f"Levelized cost of water: {LCOW:.2f} $/m^3")
+    print(f"Levelized cost of treatment: {LCOT:.2f} $/m^3")
 
     print("\n------------- Capital costs -------------")
     DCC_normalized = value(
