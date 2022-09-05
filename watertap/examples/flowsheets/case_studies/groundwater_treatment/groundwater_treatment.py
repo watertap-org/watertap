@@ -356,7 +356,7 @@ def add_costing(m):
         )
     )
 
-    m.fs.costing.add_LCOW(m.fs.filtered_water.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.feed.flow_vol[0])
 
 
 def display_costing(m):
