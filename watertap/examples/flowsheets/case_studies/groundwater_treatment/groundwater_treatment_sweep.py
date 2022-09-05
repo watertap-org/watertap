@@ -25,12 +25,11 @@ def set_up_sensitivity(m):
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOT"] = m.fs.costing.LCOT
 
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
+def run_analysis(case_num=1, nx=2, interpolate_nan_outputs=True):
     m = groundwater_treatment.main()[0]
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
     sweep_params = {}
@@ -43,8 +42,6 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
         sweep_params["filtration_media_cost"] = LinearSample(
             m.fs.costing.filtration_media_cost, 100, 5000, nx
         )
-    elif case_num == 3:
-        sweep_params["water_cost"] = LinearSample(m.fs.costing.water_cost, 0, 2, nx)
     else:
         raise ValueError(f"{case_num} is not yet implemented")
 

@@ -1673,7 +1673,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.eq_DCC_membrane = pyo.Constraint(
             expr=blk.DCC_membrane
             == pyo.units.convert(
-                blk.unit_model.get_inlet_flow(0)
+                blk.unit_model.get_inlet_flow(t0)
                 * membrane_sidestream_fraction
                 * membrane_specific_size
                 * membrane_cost,
@@ -1683,7 +1683,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.eq_DCC_vacuum = pyo.Constraint(
             expr=blk.DCC_vacuum
             == pyo.units.convert(
-                blk.unit_model.properties_byproduct[0].flow_mass_comp[
+                blk.unit_model.properties_byproduct[t0].flow_mass_comp[
                     blk.unit_model._gas_comp
                 ]
                 * vacuum_cost,
@@ -1732,7 +1732,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
         blk.config.flowsheet_costing_block.cost_flow(blk.unit_model.heat[t0], "heat")
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.properties_byproduct[0].flow_mass_comp[
+            blk.unit_model.properties_byproduct[t0].flow_mass_comp[
                 blk.unit_model._gas_comp
             ],
             blk.unit_model._gas_comp + "_product",
@@ -2972,6 +2972,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties_in[t0].flow_mass_comp["filtration_media"],
+            "filtration_media",
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties_byproduct[t0].flow_mass_comp["filtration_media"],
+            "filtration_media_disposal",
         )
 
     def cost_vfa_recovery(blk):
