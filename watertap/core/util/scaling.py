@@ -69,6 +69,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             blk.clone()
         )  # clone flowsheet to re-solve at conditions supplied by scale
 
+        # need to handle objects with no data but that have sf that are propagated to data objects
         for obj in temp_blk.component_objects(
             ctype=pyo.Var,
             active=None,
@@ -86,9 +87,8 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             ctype=pyo.Var, active=True, descend_into=True
         ):
 
-            unset_scaling_factor(
-                var_obj
-            )  # remove prior sf which are reestablished on init
+            # repetitive with above loop
+            unset_scaling_factor(var_obj)
 
             # if the flow term has a default scaling factor and is fixed, as standard by flowsheets,
             # overwrite the dsf to new scale magnitude

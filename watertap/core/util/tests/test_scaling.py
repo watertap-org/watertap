@@ -267,7 +267,9 @@ class TestElectrodialysisVoltageConst:
         m_ed = electrodialysis_cell_frame
 
         # test variable sens generator with electrodialysis 0D model
-        sens_var_lst = list(variable_sens_generator(m_ed, lb_scale=1e-1, ub_scale=1e0))
+        sens_var_lst = list(
+            variable_sens_generator(m_ed, lb_scale=1e0, ub_scale=1e1)
+        )  # checking the generator works independent of the uns
         for i in sens_var_lst:
             print(i)
 
