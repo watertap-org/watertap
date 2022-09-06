@@ -28,6 +28,8 @@ from idaes.core.solvers import get_solver
 from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
+from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
+
 
 from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
@@ -37,6 +39,41 @@ np.set_printoptions(linewidth=200)
 
 
 class _ParameterSweepBase(ABC):
+
+    CONFIG = ConfigDict()
+
+    CONFIG.declare('debugging_data_dir'
+        ConfigValue(
+            default=None,
+            domain=str,
+            description="directory path to output debugging data."
+        )
+    )
+
+    CONFIG.declare('interpolate_nan_outputs'
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Bool to decide whether to interpolate NaN outputs."
+        )
+    )
+
+    CONFIG.declare('optimize_function',
+        ConfigValue(
+            default=_ParameterSweepBase._default_optimize,
+            domain=function,
+            description="Default optimization function to be used for the parameter sweep.",
+        )
+    )
+
+    CONFIG.declare('reinitialize_function'
+        ConfigValue(
+            default=None,
+            domain=function,
+            description="Function to reinitialize a flowsheet"
+        )
+    )
+
     def __init__(self, *args, **kwargs):
         self.comm = self._init_mpi()
         self.rank = self.comm.Get_rank()
