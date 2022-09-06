@@ -185,7 +185,7 @@ class TestElectrodialysisVoltageConst:
         edfs.optimize_system(m)
         isinstance(m.fs.objective, Objective)
         assert m.fs.objective.expr == m.fs.costing.LCOW
-        assert degrees_of_freedom(m) == 2
+        assert degrees_of_freedom(m) == 1
 
         assert value(m.fs.feed.properties[0].flow_vol_phase["Liq"]) == pytest.approx(
             8.7e-5, abs=1e-6
@@ -222,10 +222,10 @@ class TestElectrodialysisVoltageConst:
             m.fs.EDstack.cell_width
             * m.fs.EDstack.cell_length
             * m.fs.EDstack.cell_pair_num
-        ) == pytest.approx(2.003, rel=1e-3)
+        ) == pytest.approx(2.003, rel=2e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.538, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            1.435, abs=0.001
+            1.435, abs=0.002
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.25, abs=0.01)
 
