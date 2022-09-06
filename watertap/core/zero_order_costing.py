@@ -2455,19 +2455,17 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
             [
-                "uv_capital_a_parameter",
-                "uv_capital_b_parameter",
-                "uv_capital_c_parameter",
-                "uv_capital_d_parameter",
+                "reactor_cost",
+                "lamp_cost",
             ],
         )
 
-        expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B, C, D)
+        expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B)
 
         # Determine if a costing factor is required
         factor = parameter_dict["capital_cost"]["cost_factor"]
@@ -2500,22 +2498,20 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D, E, F = _get_tech_parameters(
+        A, B, C, D = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
             [
-                "uv_capital_a_parameter",
-                "uv_capital_b_parameter",
-                "uv_capital_c_parameter",
-                "uv_capital_d_parameter",
+                "reactor_cost",
+                "lamp_cost",
                 "aop_capital_a_parameter",
                 "aop_capital_b_parameter",
             ],
         )
 
-        expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B, C, D)
-        expr += ZeroOrderCostingData._get_aop_capital_cost(blk, E, F)
+        expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B)
+        expr += ZeroOrderCostingData._get_aop_capital_cost(blk, C, D)
 
         # Determine if a costing factor is required
         factor = parameter_dict["capital_cost"]["cost_factor"]
@@ -3052,31 +3048,21 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         return expr
 
-    def _get_uv_capital_cost(blk, A, B, C, D):
+    def _get_uv_capital_cost(blk, A, B):
         """
         Generate expression for capital cost of UV reactor.
         """
         t0 = blk.flowsheet().time.first()
 
         Q = pyo.units.convert(
-            pyo.units.convert(
-                blk.unit_model.properties_in[t0].flow_vol,
-                to_units=pyo.units.Mgallons / pyo.units.day,
-            )
-            / (pyo.units.Mgallons / pyo.units.day),
-            to_units=pyo.units.dimensionless,
+            blk.unit_model.properties_in[t0].flow_vol,
+            to_units=pyo.units.m**3 / pyo.units.hr,
         )
 
-        uv_dose = pyo.units.convert(
-            blk.unit_model.uv_reduced_equivalent_dose[t0]
-            / (pyo.units.mJ / pyo.units.cm**2),
-            to_units=pyo.units.dimensionless,
-        )
-
-        uvt_in = blk.unit_model.uv_transmittance_in[t0]
+        E = pyo.units.convert(blk.unit_model.electricity[t0], to_units=pyo.units.kW)
 
         expr = pyo.units.convert(
-            A * Q + B * uv_dose * Q + C * (Q * uvt_in) ** 7 + D * uv_dose * Q * uvt_in,
+            A * Q + B * E,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 

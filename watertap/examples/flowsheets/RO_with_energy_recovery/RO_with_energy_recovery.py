@@ -157,6 +157,9 @@ def build(erd_type=ERDtype.pressure_exchanger):
     m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
 
     # connections
     if erd_type == ERDtype.pressure_exchanger:
