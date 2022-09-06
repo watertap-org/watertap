@@ -242,6 +242,7 @@ def test_costing():
         "examples",
         "flowsheets",
         "case_studies",
+        "wastewater_resource_recovery",
         "groundwater_treatment",
         "groundwater_treatment_case_study.yaml",
     )

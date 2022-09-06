@@ -15,7 +15,7 @@ import os, sys
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
-import watertap.examples.flowsheets.case_studies.groundwater_treatment.groundwater_treatment as groundwater_treatment
+import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment as groundwater_treatment
 
 
 def set_up_sensitivity(m):
