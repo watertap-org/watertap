@@ -13,12 +13,12 @@
 
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.groundwater_treatment import (
-    groundwater_treatment_sweep,
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_sweep import (
+    run_analysis,
 )
 
 sweep_list = []
-for case_num in [1, 2, 3]:
+for case_num in [1, 2]:
     sweep_list.append(case_num)
 
 
@@ -28,7 +28,7 @@ def test_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     nx = 2
-    global_results, sweep_params, m = groundwater_treatment_sweep.run_analysis(
+    global_results, sweep_params, m = run_analysis(
         case_num, nx, interpolate_nan_outputs=False
     )
     os.chdir(cwd)
