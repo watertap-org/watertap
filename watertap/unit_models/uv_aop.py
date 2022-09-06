@@ -202,6 +202,21 @@ class Ultraviolet0DData(UnitModelBlockData):
     **False** - exclude AOP terms.}""",
         ),
     )
+    CONFIG.declare(
+        "target_species",
+        ConfigValue(
+            default=None,
+            domain=set,
+            description="Species target for uv disinfection, currently only supports single species",
+            doc="""Indicate which component in the property package's component list is the target species
+        for disinfection by the UV system, currently the model supports a single species
+        **default** - None.
+        **Valid values:** {
+        if the property package solute set only contains one item (two component, one solute, one solvent/water),
+        the model will accept the single solute as the target species, for multi-solute systems a string of
+        the component id must be provided.}""",
+        ),
+    )
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -242,6 +257,15 @@ class Ultraviolet0DData(UnitModelBlockData):
                     len(self.solvent_list)
                 )
             )
+
+        # separate target species to be adsorbed and other species considered inert
+        component_set = self.config.property_package.component_list
+        solute_set = self.config.property_package.solute_set
+        # apply target species automatically if arg left to default and only one viable option exists
+        if self.config.target_species is None and len(solute_set) == 1:
+            self.config.target_species = solute_set
+        target_species = self.config.target_species
+        inert_species = component_set - self.config.target_species
 
         # Add unit parameters
         self.inactivation_rate = Var(
@@ -522,7 +546,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         # rate constant
         @self.Constraint(
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            target_species,
             doc="Constraint for pseudo-first order rate constant with respect to uv intensity",
         )
         def eq_rate_constant(b, p, j):
@@ -567,7 +591,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
             @self.Constraint(
                 self.config.property_package.phase_list,
-                self.config.property_package.solute_set,
+                target_species,
                 doc="Constraint for pseudo-first order reaction rate constant with respect to direct and indirect photolysis",
             )
             def eq_overall_rate_constant(b, p, j):
@@ -578,7 +602,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
             @self.Constraint(
                 self.config.property_package.phase_list,
-                self.config.property_package.solute_set,
+                target_species,
                 doc="Constraint for pseudo-first order reaction rate constant",
             )
             def eq_reaction_rate_constant(b, p, j):
