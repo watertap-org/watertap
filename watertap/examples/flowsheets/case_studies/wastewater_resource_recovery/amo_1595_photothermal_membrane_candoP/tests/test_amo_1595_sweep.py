@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_
 )
 
 sweep_list = []
-for case_num in [1, 2]:
+for case_num in [1, 2, 3]:
     sweep_list.append(case_num)
 
 

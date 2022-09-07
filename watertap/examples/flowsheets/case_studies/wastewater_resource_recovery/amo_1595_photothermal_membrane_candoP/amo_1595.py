@@ -249,6 +249,14 @@ def add_costing(m):
         doc="Volume of byproduct water generated per year",
     )
 
+    m.fs.costing.value_water_byproduct = Expression(
+        expr=pyunits.convert(
+            m.fs.costing.water_byproduct_volume * m.fs.costing.water_cost,
+            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
+        ),
+        doc="Value of byproduct water generated per year",
+    )
+
     m.fs.costing.N2O_byproduct_mass = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
@@ -319,6 +327,7 @@ def add_costing(m):
             + m.fs.costing.total_operating_cost
             - m.fs.costing.value_bcp_recovery
             - m.fs.costing.value_N2O_byproduct
+            - m.fs.costing.value_water_byproduct
         )
         / (
             pyunits.convert(
@@ -327,7 +336,7 @@ def add_costing(m):
             )
             * m.fs.costing.utilization_factor
         ),
-        doc="Levelized Cost of Treatment with respect to influent flowrate including revenue from BCP and N2O",
+        doc="Levelized Cost of Treatment with respect to influent flowrate including revenue from BCP, N2O, and byproduct water",
     )
 
     m.fs.costing.LC_BCP = Expression(
@@ -536,9 +545,19 @@ def display_costing(m):
     )
     print(f"N2O revenue: {N2O_revenue:.2f} k$/year")
 
+    water_revenue = value(
+        pyunits.convert(
+            m.fs.costing.value_water_byproduct,
+            to_units=pyunits.kUSD_2020 / pyunits.year,
+        )
+    )
+    print(f"Water revenue: {water_revenue:.2f} k$/year")
+
     total_revenue = value(
         pyunits.convert(
-            m.fs.costing.value_bcp_recovery + m.fs.costing.value_N2O_byproduct,
+            m.fs.costing.value_bcp_recovery
+            + m.fs.costing.value_N2O_byproduct
+            + m.fs.costing.value_water_byproduct,
             to_units=pyunits.kUSD_2020 / pyunits.year,
         )
     )
