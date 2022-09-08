@@ -627,7 +627,7 @@ class _ParameterSweepBase(ABC):
 
     @abstractmethod
     def parameter_sweep(self, *args, **kwargs):
-        raise NotImplementedError
+        pass
 
     # ================================================================
 
@@ -730,7 +730,7 @@ class ParameterSweep(_ParameterSweepBase):
         """
 
         # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
+        super().__init__()
 
         self.writer = ParameterSweepWriter(
             self.comm,
