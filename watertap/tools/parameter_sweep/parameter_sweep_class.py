@@ -40,11 +40,11 @@ np.set_printoptions(linewidth=200)
 
 class _ParameterSweepBase(ABC):
 
-    CONFIG = ConfigDict()
+    CONFIG = ConfigDict(implicit=False)
 
     CONFIG.declare('optimize_function',
         ConfigValue(
-            default=self._default_optimize,
+            default=None,
             # domain=function,
             description="Optimization function to be used for the parameter sweep.",
         )
@@ -82,6 +82,14 @@ class _ParameterSweepBase(ABC):
         )
     )
 
+    CONFIG.declare('probe_function',
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function to probe if a flowsheet configuration will work"
+        )
+    )
+
     def __init__(
             self,
             optimize_function,  # _default_optimize,
@@ -89,6 +97,7 @@ class _ParameterSweepBase(ABC):
             reinitialize_function,
             reinitialize_kwargs,
             reinitialize_before_sweep,
+            probe_function,
             csv_results_file_name, 
             h5_results_file_name, 
             debugging_data_dir, 
@@ -103,12 +112,13 @@ class _ParameterSweepBase(ABC):
 
         if optimize_function is None:
             optimize_function = self._default_optimize
-            
+        
         self.CONFIG["optimize_function"] = optimize_function
         self.CONFIG["optimize_kwargs"] = optimize_kwargs
         self.CONFIG["reinitialize_function"] = reinitialize_function
         self.CONFIG["reinitialize_kwargs"] = reinitialize_kwargs
         self.CONFIG["reinitialize_before_sweep"] = reinitialize_before_sweep
+        self.CONFIG["probe_function"] = probe_function
 
         # # Set up optimize_kwargs
         # if optimize_kwargs is None:
@@ -461,13 +471,19 @@ class _ParameterSweepBase(ABC):
     def _param_sweep_kernel(
         self,
         model,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_before_sweep,
-        reinitialize_function,
-        reinitialize_kwargs,
+        # optimize_function,
+        # optimize_kwargs,
+        # reinitialize_before_sweep,
+        # reinitialize_function,
+        # reinitialize_kwargs,
         reinitialize_values,
     ):
+
+        optimize_function = self.CONFIG["optimize_function"]
+        optimize_kwargs = self.CONFIG["optimize_kwargs"]
+        reinitialize_before_sweep = self.CONFIG["reinitialize_before_sweep"]
+        reinitialize_function = self.CONFIG["reinitialize_function"]
+        reinitialize_kwargs = self.CONFIG["reinitialize_kwargs"]
 
         run_successful = False  # until proven otherwise
 
@@ -520,13 +536,16 @@ class _ParameterSweepBase(ABC):
         sweep_params,
         outputs,
         local_values,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        probe_function,
+        # optimize_function,
+        # optimize_kwargs,
+        # reinitialize_function,
+        # reinitialize_kwargs,
+        # reinitialize_before_sweep,
+        # probe_function,
     ):
+
+        # Create easy to read variables for configurations
+        probe_function = self.CONFIG["probe_function"]
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
@@ -540,7 +559,7 @@ class _ParameterSweepBase(ABC):
 
         local_solve_successful_list = []
 
-        if reinitialize_function is not None:
+        if self.CONFIG["reinitialize_function"] is not None:
             reinitialize_values = ComponentMap()
             for v in model.component_data_objects(pyo.Var):
                 reinitialize_values[v] = v.value
@@ -558,11 +577,11 @@ class _ParameterSweepBase(ABC):
             if probe_function is None or probe_function(model):
                 run_successful = self._param_sweep_kernel(
                     model,
-                    optimize_function,
-                    optimize_kwargs,
-                    reinitialize_before_sweep,
-                    reinitialize_function,
-                    reinitialize_kwargs,
+                    # optimize_function,
+                    # optimize_kwargs,
+                    # reinitialize_before_sweep,
+                    # reinitialize_function,
+                    # reinitialize_kwargs,
                     reinitialize_values,
                 )
             else:
@@ -595,7 +614,7 @@ class _ParameterSweepBase(ABC):
 
 class ParameterSweep(_ParameterSweepBase):
 
-    CONFIG = ConfigDict()
+    CONFIG = _ParameterSweepBase.CONFIG
 
     def __init__(
         self,
@@ -604,6 +623,7 @@ class ParameterSweep(_ParameterSweepBase):
         reinitialize_function=None,
         reinitialize_kwargs=dict(),
         reinitialize_before_sweep=False,
+        probe_function=None,
         csv_results_file_name=None,
         h5_results_file_name=None,
         debugging_data_dir=None,
@@ -705,6 +725,7 @@ class ParameterSweep(_ParameterSweepBase):
                 reinitialize_function,
                 reinitialize_kwargs,
                 reinitialize_before_sweep,
+                probe_function,
                 csv_results_file_name, 
                 h5_results_file_name, 
                 debugging_data_dir, 
@@ -736,7 +757,7 @@ class ParameterSweep(_ParameterSweepBase):
         # reinitialize_function=None,
         # reinitialize_kwargs=None,
         # reinitialize_before_sweep=False,
-        probe_function=None,
+        # probe_function=None,
         num_samples=None,
         seed=None,
     ):
@@ -769,12 +790,12 @@ class ParameterSweep(_ParameterSweepBase):
             sweep_params,
             outputs,
             local_values,
-            optimize_function,
-            optimize_kwargs,
-            reinitialize_function,
-            reinitialize_kwargs,
-            reinitialize_before_sweep,
-            probe_function,
+            # optimize_function = self.CONFIG["optimize_function"]
+            # optimize_kwargs = self.CONFIG["optimize_kwargs"]
+            # reinitialize_function = self.CONFIG["reinitialize_function"]
+            # reinitialize_kwargs = self.CONFIG["reinitialize_kwargs"]
+            # reinitialize_before_sweep = self.CONFIG["reinitialize_before_sweep"]
+            # probe_function = self.CONFIG["probe_function"]
         )
 
         # Aggregate results on Master
@@ -797,7 +818,7 @@ class ParameterSweep(_ParameterSweepBase):
 
 class RecursiveParameterSweep(_ParameterSweepBase):
 
-    CONFIG = ConfigDict()
+    CONFIG = _ParameterSweepBase.CONFIG
 
     def __init__(
         self,
@@ -806,6 +827,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         reinitialize_function=None,
         reinitialize_kwargs=dict(),
         reinitialize_before_sweep=False,
+        probe_function=None,
         csv_results_file_name=None,
         h5_results_file_name=None,
         debugging_data_dir=None,
@@ -821,6 +843,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 reinitialize_function,
                 reinitialize_kwargs,
                 reinitialize_before_sweep,
+                probe_function,
                 csv_results_file_name, 
                 h5_results_file_name, 
                 debugging_data_dir, 

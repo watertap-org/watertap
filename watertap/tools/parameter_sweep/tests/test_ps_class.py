@@ -519,6 +519,7 @@ class TestParallelManager:
     def test_parameter_sweep(self, model, tmp_path):
 
         ps = ParameterSweep(
+            optimize_function=_optimization,
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -553,7 +554,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=outputs,
-            optimize_function=_optimization,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -683,6 +683,9 @@ class TestParallelManager:
     def test_parameter_sweep_optimize(self, model, tmp_path):
 
         ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"relax_feasibility": True},
+            probe_function=_good_test_function,
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -720,9 +723,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=outputs,
-            optimize_function=_optimization,
-            optimize_kwargs={"relax_feasibility": True},
-            probe_function=_good_test_function,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -827,6 +827,9 @@ class TestParallelManager:
     def test_parameter_sweep_recover(self, model, tmp_path):
 
         ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_function=_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -855,9 +858,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=None,
-            optimize_function=_optimization,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -970,6 +970,9 @@ class TestParallelManager:
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
 
         ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_function=_bad_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -998,9 +1001,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=None,
-            optimize_function=_optimization,
-            reinitialize_function=_bad_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1136,6 +1136,10 @@ class TestParallelManager:
         csv_results_file_name = str(results_fname) + ".csv"
         h5_results_file_name = str(results_fname) + ".h5"
         ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
             csv_results_file_name=csv_results_file_name,
             h5_results_file_name=h5_results_file_name,
             debugging_data_dir=tmp_path,
@@ -1155,10 +1159,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=None,
-            optimize_function=_optimization,
-            reinitialize_before_sweep=True,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -1270,7 +1270,12 @@ class TestParallelManager:
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
 
-        ps = ParameterSweep()
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=None,
+            reinitialize_kwargs=None,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1286,16 +1291,15 @@ class TestParallelManager:
                 m,
                 sweep_params,
                 outputs=None,
-                optimize_function=_optimization,
-                reinitialize_before_sweep=True,
-                reinitialize_function=None,
-                reinitialize_kwargs=None,
             )
 
     @pytest.mark.component
     def test_parameter_sweep_probe_fail(self, model, tmp_path):
 
         ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"relax_feasibility": True},
+            probe_function=_bad_test_function,
             csv_results_file_name=None,
             h5_results_file_name=None,
             debugging_data_dir=None,
@@ -1333,9 +1337,6 @@ class TestParallelManager:
             m,
             sweep_params,
             outputs=outputs,
-            optimize_function=_optimization,
-            optimize_kwargs={"relax_feasibility": True},
-            probe_function=_bad_test_function,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
