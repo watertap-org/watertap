@@ -42,22 +42,6 @@ class _ParameterSweepBase(ABC):
 
     CONFIG = ConfigDict()
 
-    CONFIG.declare('debugging_data_dir',
-        ConfigValue(
-            default=None,
-            domain=str,
-            description="directory path to output debugging data."
-        )
-    )
-
-    CONFIG.declare('interpolate_nan_outputs',
-        ConfigValue(
-            default=False,
-            domain=bool,
-            description="Bool to decide whether to interpolate NaN outputs."
-        )
-    )
-
     CONFIG.declare('optimize_function',
         ConfigValue(
             default=None,
@@ -90,10 +74,29 @@ class _ParameterSweepBase(ABC):
         )
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, 
+            csv_results_file_name, 
+            h5_results_file_name, 
+            debugging_data_dir, 
+            interpolate_nan_outputs, 
+            *args, 
+            **kwargs
+        ):
+
         self.comm = self._init_mpi()
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
+
+        print("args = ", args)
+        print("kwargs = ", kwargs)
+        # Initialize the writer
+        self.writer = ParameterSweepWriter(
+            self.comm,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=debugging_data_dir,
+            interpolate_nan_outputs=interpolate_nan_outputs,
+        )
 
     # ================================================================
 
@@ -649,6 +652,9 @@ class _ParameterSweepBase(ABC):
 
 
 class ParameterSweep(_ParameterSweepBase):
+
+    CONFIG = ConfigDict()
+
     def __init__(
         self,
         csv_results_file_name=None,
@@ -746,15 +752,10 @@ class ParameterSweep(_ParameterSweepBase):
         """
 
         # Initialize the base Class
-        super().__init__()
-
-        self.writer = ParameterSweepWriter(
-            self.comm,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=debugging_data_dir,
-            interpolate_nan_outputs=interpolate_nan_outputs,
-        )
+        super().__init__(csv_results_file_name, 
+                         h5_results_file_name, 
+                         debugging_data_dir, 
+                         interpolate_nan_outputs)
 
     def _aggregate_local_results(
         self, global_values, local_output_dict, num_samples, local_num_cases
