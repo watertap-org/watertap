@@ -26,6 +26,7 @@ from idaes.core.util import get_solver
 from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
+from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
 
 np.set_printoptions(linewidth=200)
 
@@ -59,6 +60,41 @@ np.set_printoptions(linewidth=200)
 
 
 class ParameterSweepWriter(ABC):
+
+    CONFIG = ConfigDict()
+
+    CONFIG.declare('debugging_data_dir',
+        ConfigValue(
+            default=None,
+            domain=str,
+            description="directory path to output debugging data."
+        )
+    )
+
+    CONFIG.declare('csv_results_file_name',
+        ConfigValue(
+            default=None,
+            domain=str,
+            description="filepath to the output CSV file."
+        )
+    )
+
+    CONFIG.declare('h5_results_file_name',
+        ConfigValue(
+            default=None,
+            domain=str,
+            description="filepath to the output H5 file."
+        )
+    )
+
+    CONFIG.declare('interpolate_nan_outputs',
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Bool to decide whether to interpolate NaN outputs."
+        )
+    )
+
     def __init__(
         self,
         comm,

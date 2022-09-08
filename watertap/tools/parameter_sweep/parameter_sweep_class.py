@@ -42,7 +42,7 @@ class _ParameterSweepBase(ABC):
 
     CONFIG = ConfigDict()
 
-    CONFIG.declare('debugging_data_dir'
+    CONFIG.declare('debugging_data_dir',
         ConfigValue(
             default=None,
             domain=str,
@@ -50,7 +50,7 @@ class _ParameterSweepBase(ABC):
         )
     )
 
-    CONFIG.declare('interpolate_nan_outputs'
+    CONFIG.declare('interpolate_nan_outputs',
         ConfigValue(
             default=False,
             domain=bool,
@@ -60,17 +60,33 @@ class _ParameterSweepBase(ABC):
 
     CONFIG.declare('optimize_function',
         ConfigValue(
-            default=_ParameterSweepBase._default_optimize,
-            domain=function,
-            description="Default optimization function to be used for the parameter sweep.",
+            default=None,
+            # domain=function,
+            description="Optimization function to be used for the parameter sweep.",
         )
     )
 
-    CONFIG.declare('reinitialize_function'
+    CONFIG.declare('optimize_kwargs',
         ConfigValue(
             default=None,
-            domain=function,
+            # domain=function,
+            description="Keyword argument for the optimization function for the parameter sweep.",
+        )
+    )
+
+    CONFIG.declare('reinitialize_function',
+        ConfigValue(
+            default=None,
+            # domain=function,
             description="Function to reinitialize a flowsheet"
+        )
+    )
+
+    CONFIG.declare('reinitialize_kwargs',
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Keyword arguments for the reinitialization function."
         )
     )
 
