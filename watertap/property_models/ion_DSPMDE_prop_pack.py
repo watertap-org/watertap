@@ -281,7 +281,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         for j in self.config.solute_list:
             if j in self.config.charge:
-                if self.config.charge[j] > 0:
+                if self.config.charge[j] == 0:
+                    raise ConfigurationError(
+                        "The charge property should not be assigned to the neutral component: {}".format(
+                            j
+                        )
+                    )
+                elif self.config.charge[j] > 0:
                     self.add_component(
                         str(j),
                         Cation(
@@ -293,7 +299,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                     )
                     self.component_list.add(str(j))
                     self.ion_set.add(str(j))
-                elif self.config.charge[j] < 0:
+                else:
                     self.add_component(
                         str(j),
                         Anion(
@@ -305,8 +311,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                     )
                     self.component_list.add(str(j))
                     self.ion_set.add(str(j))
-                else:
-                    self.add_component(str(j), Solute())
             else:
                 self.add_component(str(j), Solute())
 
@@ -1194,10 +1198,10 @@ class DSPMDEStateBlockData(StateBlockData):
                 if ("Liq", j) not in self.params.config.elec_mobility_data.keys():
                     raise ConfigurationError(
                         """ 
-                        Missing **elec_mobility_data** to build the `elec_mobility_phase_comp` 
-                        and/or its related essential variables for {} in {}. 
-                        Please instance this configuration or alternatively use an **elec_mobility_calculation** 
-                        method to contruct the demanded variable(s))""".format(
+                        Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
+                        and/or its derived variables for {} in {}. 
+                        Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
+                        """.format(
                             j, self.name
                         )
                     )
@@ -1213,10 +1217,10 @@ class DSPMDEStateBlockData(StateBlockData):
                 if ("Liq", j) not in self.params.config.diffusivity_data.keys():
                     raise ConfigurationError(
                         """
-                        Missing valid **diffusivity_data** for using **ElectricalMobilityCalculation.EisteinRelation** 
-                        to compute the `elec_mobility_phase_comp` for {} in {} . 
-                        Please provide valid **diffusivity_data** or 
-                        use other **ElectricalMobilityCalculation** configurations. """.format(
+                        Missing a valid diffusivity_data configuration to use EinsteinRelation 
+                        to compute the "elec_mobility_phase_comp" for {} in {} . 
+                        Provide this configuration or 
+                        use another "elec_mobility_calculation" configuration value. """.format(
                             j, self.name
                         )
                     )
@@ -1224,8 +1228,8 @@ class DSPMDEStateBlockData(StateBlockData):
                     if ("Liq", j) in self.params.config.elec_mobility_data.keys():
                         _log.warning(
                             """
-                            The provided **elec_mobility_data** of {} will be overritten 
-                            by the calculated data for {} because the EisteinRelation 
+                            The provided elec_mobility_data of {} will be overritten 
+                            by the calculated data for {} because the EinsteinRelation 
                             method is selected.""".format(
                                 j, self.name
                             )
@@ -1379,9 +1383,9 @@ class DSPMDEStateBlockData(StateBlockData):
                 if ("Liq", j) not in self.params.config.trans_num_data.keys():
                     raise ConfigurationError(
                         """ 
-                        Missing valid **trans_num_data** to build the `trans_num_phase_comp` for {} in {}.  
-                        Please instance this configuration or alternatively use an **trans_num_calculation** 
-                        method to contruct the demanded variable(s))""".format(
+                        Missing a valid trans_num_data configuration to build "trans_num_phase_comp" for {} in {}.  
+                        Provide this configuration or use another "trans_num_calculation"
+                        configuration value to contruct the demanded variable(s))""".format(
                             j, self.name
                         )
                     )
@@ -1394,8 +1398,8 @@ class DSPMDEStateBlockData(StateBlockData):
                 if ("Liq", j) in self.params.config.trans_num_data.keys():
                     _log.warning(
                         """
-                        The provided **trans_num_data** of {} will be overritten by the calculated data for {}
-                        because the **TransportNumberCalculation** is set as **ElectricalMobility**.""".format(
+                        The provided trans_num_data of {} will be overritten by the calculated data for {}
+                        because "TransportNumberCalculation" is set as "ElectricalMobility".""".format(
                             j, self.name
                         )
                     )
@@ -1431,10 +1435,10 @@ class DSPMDEStateBlockData(StateBlockData):
                 if "Liq" not in self.params.config.equiv_conductivity_phase_data.keys():
                     raise ConfigurationError(
                         """ 
-                        Missing valid **equiv_conductivity_phase_data** to build 
-                        the `equiv_condunctivity_phase` variable and related essential variables for {}. 
-                        Please instance this configuration or alternatively use an **equiv_conductivity_calculation** 
-                        method to contruct the demanded variable(s))""".format(
+                        Missing a valid equiv_conductivity_phase_data configuration to build 
+                        "equiv_conductivity_phase" and its derived variables for {}. 
+                        Provide this configuration or use another "equiv_conductivity_calculation"
+                        configuration value to contruct the demanded variable(s))""".format(
                             self.name
                         )
                     )
@@ -1444,7 +1448,7 @@ class DSPMDEStateBlockData(StateBlockData):
                             """ 
                             Cautions should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
                             Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
-                            the phase equivalent conductivity using the `EquivalentConductivityCalculation.ElectricalMobility` method 
+                            the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
                             is recommended."""
                         )
                     return (
@@ -1458,8 +1462,8 @@ class DSPMDEStateBlockData(StateBlockData):
                 if len(self.params.config.equiv_conductivity_phase_data) != 0:
                     _log.warning(
                         """
-                        The provided **equiv_conductivity_phase_data** will be overritten by the calculated data for {} because the 
-                        **EquivalentConductivityCalculation** is set as **ElectricalMobility**.""".format(
+                        The provided equiv_conductivity_phase_data will be overritten by the calculated data for {} because
+                        "EquivalentConductivityCalculation" is set as "ElectricalMobility".""".format(
                             self.name
                         )
                     )
