@@ -30,7 +30,7 @@ global_parameters:
     value: 0
     units: dimensionless
   maintenance_costs_percent_FCI:
-    value: 0
+    value: 0.02
     units: 1/year
   laboratory_fees_percent_FCI:
     value: 0
@@ -48,5 +48,5 @@ global_parameters:
     units: dimensionless
   TIC:
     # Total Installed Cost
-    value: 1.65
+    value: 2
     units: dimensionless
