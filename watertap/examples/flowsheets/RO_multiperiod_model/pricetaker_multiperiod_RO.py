@@ -187,6 +187,14 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             ),
             doc="annual water production",
         )
+        blk.max_capacity = Constraint(
+            expr=blk.water_prod
+            <= pyunits.convert(
+                daily_water_production, to_units=pyunits.m**3 / pyunits.hr
+            ),
+            doc="Set the maximum utilization on an hourly basis",
+        )
+
         blk.weighted_permeate_quality = Expression(
             expr=blk.water_prod
             * blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"],
@@ -229,14 +237,19 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         doc="Daily cost to produce water",
     )
 
-    m.permeate_yield = Constraint(
-        expr=(
-            daily_water_production - 1e-5,
-            sum(blk.water_prod for blk in t_blocks),
-            daily_water_production + 1e-5,
-        ),
-        doc="The water production over the day is fixed within a tolerance",
-    )
+    # m.permeate_yield = Constraint(
+    #     expr= sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
+    #     doc="The water production over the day is fixed within a tolerance",
+    # )
+
+    # m.permeate_yield = Constraint(
+    #     expr=(
+    #         daily_water_production - 1e-5,
+    #         sum(blk.water_prod for blk in t_blocks),
+    #         daily_water_production + 1e-5,
+    #     ),
+    #     doc="The water production over the day is fixed within a tolerance",
+    # )
 
     # m.permeate_quality_ub = Constraint(
     #     expr=(
@@ -304,9 +317,9 @@ def save_results(m, t_blocks, data, savepath=None):
                 data[0][:].reshape(-1, 1),
                 data[1][:].reshape(-1, 1),
                 power.reshape(-1, 1),
-                permeate.reshape(-1, 1),
                 recovery.reshape(-1, 1),
                 pressure.reshape(-1, 1),
+                permeate.reshape(-1, 1),
                 flowrate1.reshape(-1, 1),
                 efficiency1.reshape(-1, 1),
             )
@@ -435,19 +448,31 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    price_multiplier = 10
-    m, t_blocks, data = main(
-        ndays=1,
-        # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-        filename="dagget_CA_LMP_hourly_2015.csv",
-        price_multiplier=price_multiplier,
-    )
-    path = os.path.join(os.getcwd(), "fixed_simulation_data_10_00.csv")
-    save_results(m, t_blocks, data, path)
-    title_label = f"LMP scaling = {price_multiplier}"
-    visualize_results(
-        path,
-        erd_type=t_blocks[0].ro_mp.fs.erd_type,
-        co2i=False,
-        title_label=title_label,
-    )
+    price_multiplier = [0.25, 1, 3, 10]
+    file_save = [
+        "simulation_data_0_25_ubcon.csv",
+        # "simulation_data_0_25_unc.csv",
+        "simulation_data_1_00_ubcon.csv",
+        # "simulation_data_1_00_unc.csv",
+        "simulation_data_3_00_ubcon.csv",
+        # "simulation_data_3_00_unc.csv",
+        "simulation_data_10_00_ubcon.csv",
+        # "simulation_data_10_00_unc.csv",
+    ]
+    for i, multiplier in enumerate(price_multiplier):
+
+        m, t_blocks, data = main(
+            ndays=1,
+            # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+            filename="dagget_CA_LMP_hourly_2015.csv",
+            price_multiplier=multiplier,
+        )
+        path = os.path.join(os.getcwd(), file_save[i])
+        save_results(m, t_blocks, data, path)
+    # title_label = f"LMP scaling = {price_multiplier}"
+    # visualize_results(
+    #     path,
+    #     erd_type=t_blocks[0].ro_mp.fs.erd_type,
+    #     co2i=False,
+    #     title_label=title_label,
+    # )
