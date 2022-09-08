@@ -274,6 +274,8 @@ def set_operating_conditions(
         m.fs.P1.control_volume.properties_out[0].pressure
     )
 
+    m.fs.RO.area.fix(50)  # guess area for RO initialization
+
     if m.fs.erd_type == ERDtype.pressure_exchanger:
         # pressure exchanger
         m.fs.PXR.efficiency_pressure_exchanger.fix(
@@ -290,6 +292,9 @@ def set_operating_conditions(
         erd_type_not_found(m.fs.erd_type)
 
     m.fs.RO.initialize(optarg=solver.options)
+
+    # unfix guessed area, and fix water recovery
+    m.fs.RO.area.unfix()
 
     m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
 
