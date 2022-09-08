@@ -1308,10 +1308,6 @@ def model6():
     dic2.update(**dic_charge)
     dic3 = dic0.copy()
     dic3.update(**dic_charge, **dic_diffus, **dic_config)
-    # dic4 = dic0.copy()
-
-    # dic2 = dic0.copy()
-    # dic2 = dic0.copy()
     m1 = ConcreteModel()
     m2 = ConcreteModel()
     m3 = ConcreteModel()
