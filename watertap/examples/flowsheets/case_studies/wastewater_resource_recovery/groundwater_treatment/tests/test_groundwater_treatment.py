@@ -21,7 +21,7 @@ from pyomo.environ import (
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.groundwater_treatment.groundwater_treatment import (
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment import (
     build,
     set_operating_conditions,
     initialize_system,
@@ -152,8 +152,7 @@ class TestGroundwaterTreatmentFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(1.5316, rel=1e-3)
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.5316, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(1.8539, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):
