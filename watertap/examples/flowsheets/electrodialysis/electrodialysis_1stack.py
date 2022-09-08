@@ -151,10 +151,6 @@ def build():
         * m.fs.EDstack.cell_length
         * m.fs.EDstack.cell_pair_num
     )
-    # scaling constraint
-    iscale.constraint_scaling_transform(m.fs.eq_product_salinity, 1)
-    iscale.constraint_scaling_transform(m.fs.eq_disposal_salinity, 1)
-    iscale.constraint_scaling_transform(m.fs.eq_mem_area, 1)
 
     # Add Arcs
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.separator.inlet)
