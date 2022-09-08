@@ -693,7 +693,7 @@ class ParameterSweep(_ParameterSweepBase):
         """
 
         # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
+        super().__init__()
 
         self.writer = ParameterSweepWriter(
             self.comm,
