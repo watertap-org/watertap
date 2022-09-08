@@ -27,7 +27,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from watertap.unit_models.uv_aop import Ultraviolet0D
+from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
 import watertap.property_models.NDMA_prop_pack as props
 from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
@@ -76,7 +76,6 @@ class TestUV:
         reaction_rate_constant = 0 * pyunits.min**-1
         EEO = 0.25 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.8
-        UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
@@ -103,14 +102,13 @@ class TestUV:
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
-        m.fs.unit.UVT.fix(UVT)
         return m
 
     @pytest.mark.unit
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 8
+        assert len(m.fs.unit.config) == 9
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -171,8 +169,8 @@ class TestUV:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 40
-        assert number_total_constraints(m) == 27
+        assert number_variables(m) == 38
+        assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
         # test unit consistency
@@ -240,7 +238,6 @@ class TestUV:
         assert pytest.approx(500, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)
         )
-        assert pytest.approx(0.04576, rel=1e-3) == value(m.fs.unit.UVA)
         assert pytest.approx(2.3e-3, rel=1e-3) == value(
             m.fs.unit.photolysis_rate_constant["Liq", "NDMA"]
         )
@@ -268,13 +265,11 @@ class TestUV:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(910125.5, rel=1e-5) == value(
-            m.fs.unit.costing.capital_cost
-        )
+        assert pytest.approx(1041639, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
         assert pytest.approx(53286.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.01923547, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0202303, rel=1e-5) == value(m.fs.costing.LCOW)
 
 
 class TestUV_standard:
@@ -288,7 +283,7 @@ class TestUV_standard:
         m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
 
         # Example system for verifying costing
-        feed_flow_mass = 1206.5 * pyunits.kg / pyunits.s
+        feed_flow_mass = 1026.5 * pyunits.kg / pyunits.s
         feed_mass_frac_NDMA = 74e-9
         feed_pressure = 101325 * pyunits.Pa
         feed_temperature = (273.15 + 25) * pyunits.K
@@ -296,9 +291,8 @@ class TestUV_standard:
         exporure_time = 32 * pyunits.s
         inactivation_rate = 180 * pyunits.cm**2 / pyunits.J
         reaction_rate_constant = 0 * pyunits.min**-1
-        EEO = 0.02204 * pyunits.kWh / pyunits.m**3
+        EEO = 0.0259 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.8
-        UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
         m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
@@ -312,7 +306,7 @@ class TestUV_standard:
             "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e4, index=("Liq", "NDMA")
+            "flow_mass_phase_comp", 1e5, index=("Liq", "NDMA")
         )
 
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
@@ -325,14 +319,13 @@ class TestUV_standard:
         m.fs.unit.outlet.pressure[0].fix(feed_pressure)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
-        m.fs.unit.UVT.fix(UVT)
         return m
 
     @pytest.mark.unit
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 8
+        assert len(m.fs.unit.config) == 9
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -393,8 +386,8 @@ class TestUV_standard:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 40
-        assert number_total_constraints(m) == 27
+        assert number_variables(m) == 38
+        assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
         # test unit consistency
@@ -438,16 +431,16 @@ class TestUV_standard:
     @pytest.mark.component
     def test_solution(self, UV_frame):
         m = UV_frame
-        assert pytest.approx(1206.5, rel=1e-3) == value(
+        assert pytest.approx(1026.5, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(4356.4694, rel=1e-3) == value(
+        assert pytest.approx(3706.5195, rel=1e-3) == value(
             pyunits.convert(
                 m.fs.unit.control_volume.properties_in[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.hr,
             )
         )
-        assert pytest.approx(8.9281e-05, rel=1e-3) == value(
+        assert pytest.approx(7.5961e-05, rel=1e-3) == value(
             m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
                 "Liq", "NDMA"
             ]
@@ -465,7 +458,7 @@ class TestUV_standard:
                 ]
             )
         )
-        assert pytest.approx(38.7242, rel=1e-3) == value(
+        assert pytest.approx(32.9468, rel=1e-3) == value(
             pyunits.convert(m.fs.unit.reactor_volume, to_units=pyunits.m**3)
         )
         assert pytest.approx(300, rel=1e-3) == value(
@@ -492,11 +485,11 @@ class TestUV_standard:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(820705, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
-        assert pytest.approx(23529.4, rel=1e-5) == value(
+        assert pytest.approx(820692, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(23525, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0116620, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0137057, rel=1e-5) == value(m.fs.costing.LCOW)
 
 
 class TestUV_with_multiple_comps:
@@ -532,7 +525,6 @@ class TestUV_with_multiple_comps:
         EEO = 0.25 * pyunits.kWh / pyunits.m**3
         EEO_DCE = 0.15 * pyunits.kWh / pyunits.m**3
         lamp_efficiency = 0.8
-        UVT = 0.9
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA - feed_mass_frac_DCE
         m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "NDMA"].fix(
@@ -566,14 +558,13 @@ class TestUV_with_multiple_comps:
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
         m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "DCE"].fix(EEO_DCE)
         m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
-        m.fs.unit.UVT.fix(UVT)
         return m
 
     @pytest.mark.unit
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 8
+        assert len(m.fs.unit.config) == 9
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -634,8 +625,8 @@ class TestUV_with_multiple_comps:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 70
-        assert number_total_constraints(m) == 44
+        assert number_variables(m) == 68
+        assert number_total_constraints(m) == 43
         assert number_unused_variables(m) == 12
 
         # test unit consistency
@@ -741,8 +732,241 @@ class TestUV_with_multiple_comps:
         assert_optimal_termination(results)
 
         # Check solutions
-        assert pytest.approx(1544038, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(1767152, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
         assert pytest.approx(90400.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0192355, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.02023034, rel=1e-5) == value(m.fs.costing.LCOW)
+
+
+class TestUV_detailed:
+    @pytest.fixture(scope="class")
+    def UV_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.NDMAParameterBlock()
+
+        m.fs.unit = Ultraviolet0D(
+            default={
+                "property_package": m.fs.properties,
+                "uv_dose_type": UVDoseType.calculated,
+            }
+        )
+
+        # Example system for verifying costing
+        # Example parameters are from data UVCAT-v11-Chapter-9-Examples.xls with
+        # LPHO lamp type and no dose pacing. UV System Cost Analysis Tool (UVCAT):
+        # https://www.nyserda.ny.gov/About/Publications/Research-and-Development-Technical-Reports/Water-and-Wastewater-Technical-Reports/Optimization-of-UV-Disinfection
+        feed_flow_mass = 1026.5 * pyunits.kg / pyunits.s
+        feed_mass_frac_NDMA = 74e-9
+        feed_pressure = 101325 * pyunits.Pa
+        feed_temperature = (273.15 + 25) * pyunits.K
+        uv_intensity = 1 * pyunits.mW / pyunits.cm**2
+        inactivation_rate = 180 * pyunits.cm**2 / pyunits.J
+        reaction_rate_constant = 0 * pyunits.min**-1
+        EEO = 0.0259 * pyunits.kWh / pyunits.m**3
+        lamp_efficiency = 0.8
+        UVT = 0.9
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NDMA
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NDMA"].fix(
+            feed_flow_mass * feed_mass_frac_NDMA
+        )
+
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e6, index=("Liq", "NDMA")
+        )
+
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.uv_intensity.fix(uv_intensity)
+        m.fs.unit.inactivation_rate["Liq", "NDMA"].fix(inactivation_rate)
+        m.fs.unit.reaction_rate_constant["Liq", "NDMA"].fix(reaction_rate_constant)
+        m.fs.unit.outlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.electrical_efficiency_phase_comp[0, "Liq", "NDMA"].fix(EEO)
+        m.fs.unit.lamp_efficiency.fix(lamp_efficiency)
+
+        # UV dose specifications
+        m.fs.unit.A_coeff.fix(2.49874660356544)
+        m.fs.unit.B_coeff.fix(9.19999598497674)
+        m.fs.unit.C_coeff.fix(0.782147006905514)
+        m.fs.unit.D_coeff.fix(0.948675398855577)
+        m.fs.unit.relative_lamp_output.fix(1)
+        m.fs.unit.num_of_banks.fix(8)
+        m.fs.unit.UVT.fix(UVT)
+        return m
+
+    @pytest.mark.unit
+    def test_config(self, UV_frame):
+        m = UV_frame
+        # check unit config arguments
+        assert len(m.fs.unit.config) == 9
+
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+        assert (
+            m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        )
+        assert m.fs.unit.config.property_package is m.fs.properties
+        assert m.fs.unit.config.uv_dose_type is UVDoseType.calculated
+
+    @pytest.mark.unit
+    def test_build(self, UV_frame):
+        m = UV_frame
+
+        # test ports and variables
+        port_lst = ["inlet", "outlet"]
+        port_vars_lst = ["flow_mass_phase_comp", "pressure", "temperature"]
+        for port_str in port_lst:
+            assert hasattr(m.fs.unit, port_str)
+            port = getattr(m.fs.unit, port_str)
+            assert len(port.vars) == 3
+            assert isinstance(port, Port)
+            for var_str in port_vars_lst:
+                assert hasattr(port, var_str)
+                var = getattr(port, var_str)
+                assert isinstance(var, Var)
+
+        # test unit objects (including parameters, variables, and constraints)
+        unit_objs_lst = [
+            "uv_dose",
+            "inactivation_rate",
+            "eq_outlet_conc",
+        ]
+        for obj_str in unit_objs_lst:
+            assert hasattr(m.fs.unit, obj_str)
+
+        # test state block objects
+        cv_name = "control_volume"
+        cv_stateblock_lst = ["properties_in", "properties_out"]
+        stateblock_objs_lst = [
+            "flow_mass_phase_comp",
+            "pressure",
+            "temperature",
+            "mass_frac_phase_comp",
+            "conc_mass_phase_comp",
+            "dens_mass_phase",
+            "eq_mass_frac_phase_comp",
+            "eq_conc_mass_phase_comp",
+            "eq_dens_mass_phase",
+        ]
+        # control volume
+        assert hasattr(m.fs.unit, cv_name)
+        cv_blk = getattr(m.fs.unit, cv_name)
+        for blk_str in cv_stateblock_lst:
+            assert hasattr(cv_blk, blk_str)
+            blk = getattr(cv_blk, blk_str)
+            for obj_str in stateblock_objs_lst:
+                assert hasattr(blk[0], obj_str)
+
+        # test statistics
+        assert number_variables(m) == 45
+        assert number_total_constraints(m) == 27
+        assert number_unused_variables(m) == 0
+
+        # test unit consistency
+        assert_units_consistent(m.fs.unit)
+
+    @pytest.mark.unit
+    def test_dof(self, UV_frame):
+        m = UV_frame
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, UV_frame):
+        m = UV_frame
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, UV_frame):
+        initialization_tester(UV_frame)
+
+    @pytest.mark.component
+    def test_var_scaling(self, UV_frame):
+        m = UV_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, UV_frame):
+        m = UV_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, UV_frame):
+        m = UV_frame
+        assert pytest.approx(1026.5, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp["Liq", "H2O"]
+        )
+        assert pytest.approx(3706.5195, rel=1e-3) == value(
+            pyunits.convert(
+                m.fs.unit.control_volume.properties_in[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.hr,
+            )
+        )
+        assert pytest.approx(7.5961e-05, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                "Liq", "NDMA"
+            ]
+        )
+        assert pytest.approx(52.3852, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.uv_dose, to_units=pyunits.mJ / pyunits.cm**2)
+        )
+        assert pytest.approx(4.0951, rel=1e-3) == value(
+            log10(
+                m.fs.unit.control_volume.properties_in[0].flow_mass_phase_comp[
+                    "Liq", "NDMA"
+                ]
+                / m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                    "Liq", "NDMA"
+                ]
+            )
+        )
+        assert pytest.approx(491.407, rel=1e-3) == value(
+            pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
+        )
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, UV_frame):
+        m = UV_frame
+
+        m.fs.costing = WaterTAPCosting()
+        m.fs.costing.base_currency = pyunits.USD_2020
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+            },
+        )
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
+        results = solver.solve(m)
+
+        assert_optimal_termination(results)
+
+        # Check solutions
+        assert pytest.approx(865726, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+        assert pytest.approx(38511.4, rel=1e-5) == value(
+            m.fs.unit.costing.fixed_operating_cost
+        )
+        assert pytest.approx(0.0181887, rel=1e-5) == value(m.fs.costing.LCOW)
