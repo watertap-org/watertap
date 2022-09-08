@@ -98,7 +98,7 @@ setup(
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
         # tutorial tests
-        # "nbformat",
+        "nbformat",
         "scipy",
         # for parameter_sweep
         "h5py",
