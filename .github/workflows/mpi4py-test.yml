@@ -40,4 +40,4 @@ jobs:
       run: conda info
     - name: Test parallel pytest
       run: |
-        mpirun -n 2 pytest watertap/tools/tests/test_parameter_sweep.py --no-cov
+        mpirun -n 2 pytest watertap/tools/tests/parameter_sweep/test_parameter_sweep.py --no-cov

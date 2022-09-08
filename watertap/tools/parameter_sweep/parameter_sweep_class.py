@@ -914,7 +914,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         sweep_params,
         outputs=None,
         req_num_samples=None,
-        probe_function=None,
+        # probe_function=None,
         seed=None,
     ):
 
@@ -949,12 +949,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 sweep_params,
                 outputs,
                 local_values,
-                optimize_function,
-                optimize_kwargs,
-                reinitialize_function,
-                reinitialize_kwargs,
-                reinitialize_before_sweep,
-                probe_function,
             )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
@@ -1000,7 +994,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         )
 
         # if we are debugging
-        if self.writer.debugging_data_dir is not None:
+        if self.writer.CONFIG["debugging_data_dir"] is not None:
             local_filtered_values = np.zeros(
                 (local_n_successful, len(local_filtered_dict["sweep_params"])),
                 dtype=np.float64,
