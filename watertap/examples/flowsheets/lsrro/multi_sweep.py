@@ -20,7 +20,7 @@ from pyomo.environ import (
     Param,
 )
 
-from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep.parameter_sweep import LinearSample, parameter_sweep
 from watertap.examples.flowsheets.lsrro import lsrro
 
 

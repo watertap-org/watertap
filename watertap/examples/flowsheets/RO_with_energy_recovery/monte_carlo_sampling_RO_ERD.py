@@ -12,7 +12,7 @@
 ###############################################################################
 
 from idaes.core.solvers import get_solver
-from watertap.tools.parameter_sweep import (
+from watertap.tools.parameter_sweep.parameter_sweep import (
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
@@ -27,7 +27,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     optimize,
 )
 
-from watertap.tools.parameter_sweep_input_parser import (
+from watertap.tools.parameter_sweep.parameter_sweep_input_parser import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
 )

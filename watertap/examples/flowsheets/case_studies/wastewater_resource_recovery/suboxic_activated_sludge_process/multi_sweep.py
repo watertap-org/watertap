@@ -12,7 +12,7 @@
 ###############################################################################
 import os
 import sys
-from watertap.tools.parameter_sweep import (
+from watertap.tools.parameter_sweep.parameter_sweep import (
     _init_mpi,
     LinearSample,
     parameter_sweep,
