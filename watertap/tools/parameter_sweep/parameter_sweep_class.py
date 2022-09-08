@@ -590,7 +590,7 @@ class _ParameterSweepBase(ABC):
 
     @abstractmethod
     def parameter_sweep(self, *args, **kwargs):
-        raise NotImplementedError
+        pass
 
     # ================================================================
 
