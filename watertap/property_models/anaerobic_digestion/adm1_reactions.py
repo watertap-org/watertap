@@ -1125,6 +1125,129 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         # Concentration
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
 
+    def _pH(self):
+        def rule_pH(b):
+            # TODO: determine how to handle hydrogen ion concentration - add as Solute or include as variable/expression?
+            # For now, use self.S_H
+            return -pyo.log10(b.S_H)
+
+        self.pH = pyo.Expression(rule=rule_pH, doc="pH of solution")
+
+    def _I_IN_lim(self):
+        def rule_I_IN_lim(b):
+            # TODO: revisit molar concentration of S_IN as it is not in property model as of yet
+            return 1 / (
+                1 + b.params.K_S_IN / b.state_ref.conc_mol_phase_comp["Liq", "S_IN"]
+            )
+
+        self.I_IN_lim = pyo.Expression(rule=rule_I_IN_lim)
+
+    def _I_h2_fa(self):
+        def rule_I_h2_fa(b):
+            return 1 / (
+                1 + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_fa
+            )
+
+        self.I_h2_fa = pyo.Expression(rule=rule_I_h2_fa)
+
+    def _I_h2_c4(self):
+        def rule_I_h2_c4(b):
+            return 1 / (
+                1 + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_c4
+            )
+
+        self.I_h2_c4 = pyo.Expression(rule=rule_I_h2_c4)
+
+    def _I_h2_pro(self):
+        def rule_I_h2_pro(b):
+            return 1 / (
+                1
+                + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_pro
+            )
+
+        self.I_h2_pro = pyo.Expression(rule=rule_I_h2_pro)
+
+    def _I_nh3(self):
+        def rule_I_nh3(b):
+            # TODO: need to figure out inclusion of ammonia molar concentration
+            return 1 / (
+                1 + b.state_ref.conc_mol_phase_comp["Liq", "S_nh3"] / b.params.K_I_nh3
+            )
+
+        self.I_nh3 = pyo.Expression(rule=rule_I_nh3)
+
+    def _I_pH_aa(self):
+        def rule_I_pH_aa(b):
+            return pyo.Expr_if(
+                b.pH > b.params.pH_UL_aa,
+                1,
+                pyo.exp(
+                    -3
+                    * (
+                        (b.pH - b.params.pH_UL_aa)
+                        / (b.params.pH_UL_aa - b.params.pH_LL_aa)
+                    )
+                    ** 2
+                ),
+            )
+
+        self.I_pH_aa = pyo.Expression(rule=rule_I_pH_aa)
+
+    def _I_pH_ac(self):
+        def rule_I_pH_ac(b):
+            return pyo.Expr_if(
+                b.pH > b.params.pH_UL_ac,
+                1,
+                pyo.exp(
+                    -3
+                    * (
+                        (b.pH - b.params.pH_UL_ac)
+                        / (b.params.pH_UL_ac - b.params.pH_LL_ac)
+                    )
+                    ** 2
+                ),
+            )
+
+        self.I_pH_ac = pyo.Expression(rule=rule_I_pH_ac)
+
+    def _I_pH_h2(self):
+        def rule_I_pH_h2(b):
+            return pyo.Expr_if(
+                b.pH > b.params.pH_UL_h2,
+                1,
+                pyo.exp(
+                    -3
+                    * (
+                        (b.pH - b.params.pH_UL_h2)
+                        / (b.params.pH_UL_h2 - b.params.pH_LL_h2)
+                    )
+                    ** 2
+                ),
+            )
+
+        self.I_pH_h2 = pyo.Expression(rule=rule_I_pH_h2)
+
+    def _I(self):
+        def rule_I(b, r):
+            if r == "R5" or r == "R6":
+                return b.I_pH_aa * b.I_IN_lim
+            elif r == "R7":
+                return b.I_pH_aa * b.I_IN_lim * b.I_h2_fa
+            elif r == "R8" or r == "R9":
+                return b.I_pH_aa * b.I_IN_lim * b.I_h2_c4
+            elif r == "R10":
+                return b.I_pH_aa * b.I_IN_lim * b.I_h2_pro
+            elif r == "R11":
+                return b.I_pH_ac * b.I_IN_lim * b.I_nh3
+            elif r == "R12":
+                return b.I_pH_h2 * b.I_IN_lim
+            else:
+                raise BurntToast()
+
+        self.I = pyo.Expression(
+            [f"R{i}" for i in range(5, 13)], rule=rule_I, doc="Inhibition functions"
+        )
+
     # Rate of reaction method
     def _rxn_rate(self):
         self.reaction_rate = pyo.Var(
@@ -1305,27 +1428,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.reaction_rate)
             self.del_component(self.rate_expression)
             raise
-
-    def _I(self):
-        def rule_I(blk, idx):
-            if idx == "R5" or idx == "R6":
-                return blk.I_pH_aa * blk.I_IN_lim
-            elif idx == "R7":
-                pass
-            elif idx == "R8":
-                pass
-            elif idx == "R9":
-                pass
-            elif idx == "R10":
-                pass
-            elif idx == "R11":
-                pass
-            elif idx == "R12":
-                pass
-            else:
-                raise BurntToast()
-
-        self.I = pyo.Expression([f"R{i}" for i in range(5, 13)], rule=rule_I)
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.mass
