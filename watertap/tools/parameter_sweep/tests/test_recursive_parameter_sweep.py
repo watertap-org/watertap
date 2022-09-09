@@ -30,18 +30,17 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     _read_output_h5,
     _create_local_output_skeleton,
     _create_global_output,
-    parameter_sweep,
+)
+
+from watertap.tools.parameter_sweep.sampling_types import (
     LinearSample,
     UniformSample,
     NormalSample,
     SamplingType,
     LatinHypercubeSample,
 )
-
-from watertap.tools.parameter_sweep.recursive_parameter_sweep import (
-    _aggregate_filtered_input_arr,
-    recursive_parameter_sweep,
-)
+from watertap.tools.parameter_sweep import recursive_parameter_sweep
+from watertap.tools.parameter_sweep.recursive_parameter_sweep import _aggregate_filtered_input_arr
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,

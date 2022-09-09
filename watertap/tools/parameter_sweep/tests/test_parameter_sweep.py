@@ -31,6 +31,9 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     _read_output_h5,
     _create_local_output_skeleton,
     _create_global_output,
+)
+
+from watertap.tools.parameter_sweep import (
     parameter_sweep,
     LinearSample,
     GeomSample,
