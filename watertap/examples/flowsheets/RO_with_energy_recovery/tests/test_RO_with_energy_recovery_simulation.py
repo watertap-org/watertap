@@ -196,7 +196,7 @@ class TestROwithPX:
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert not m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(99.081, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(50, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
