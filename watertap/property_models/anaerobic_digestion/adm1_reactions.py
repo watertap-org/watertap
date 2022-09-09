@@ -118,6 +118,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             # "S_an": 0,
             # "S_cat": 0,
         }
+        # TODO: Ci might need to go to the property model instead to be used for conc_mol_phase_comp
         self.Ci = pyo.Var(
             Ci_dict.keys(),
             initialize=Ci_dict,
@@ -553,6 +554,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         # Reaction Stoichiometry
         # This is the stoichiometric part of the Peterson matrix in dict form.
         # Note that reaction stoichiometry is on a mass basis.
+        # TODO: S_IC and S_IN are on molar basis. Will need to address this.
         # See Table 3.1 in Batstone et al., 2002.
 
         # Exclude non-zero stoichiometric coefficients for S_IC initially since they depend on other stoichiometric coefficients.
@@ -1074,9 +1076,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
-            {
-                "reaction_rate": {"method": "_rxn_rate"},
-            }
+            {"reaction_rate": {"method": "_rxn_rate"}, "I": {"method": "_I"}}
         )
         obj.add_default_units(
             {
@@ -1305,6 +1305,27 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.reaction_rate)
             self.del_component(self.rate_expression)
             raise
+
+    def _I(self):
+        def rule_I(blk, idx):
+            if idx == "R5" or idx == "R6":
+                return blk.I_pH_aa * blk.I_IN_lim
+            elif idx == "R7":
+                pass
+            elif idx == "R8":
+                pass
+            elif idx == "R9":
+                pass
+            elif idx == "R10":
+                pass
+            elif idx == "R11":
+                pass
+            elif idx == "R12":
+                pass
+            else:
+                raise BurntToast()
+
+        self.I = pyo.Expression([f"R{i}" for i in range(5, 13)], rule=rule_I)
 
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.mass
