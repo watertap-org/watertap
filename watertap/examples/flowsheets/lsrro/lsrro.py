@@ -643,8 +643,8 @@ def set_operating_conditions(m, Cin=None):
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or stage.config.pressure_change_type == PressureChangeType.calculated:
-            stage.channel_height.fix(height)
-            stage.spacer_porosity.fix(spacer_porosity)
+            stage.feed_side.channel_height.fix(height)
+            stage.feed_side.spacer_porosity.fix(spacer_porosity)
 
     # energy recovery devices
     for erd in m.fs.EnergyRecoveryDevices.values():
@@ -960,7 +960,7 @@ def optimize_set_up(
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or (stage.config.pressure_change_type == PressureChangeType.calculated):
-            stage.N_Re[0, 0].unfix()
+            stage.feed_side.N_Re[0, 0].unfix()
 
         if idx > m.fs.Stages.first():
             stage.B_comp.unfix()

@@ -233,12 +233,12 @@ def set_operating_conditions(m):
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     # m.fs.RO.width.fix(5)  # stage width [m]
-    # m.fs.RO.N_Re[0, 0].fix(500)
-    m.fs.RO.velocity[0, 0].fix(0.15)
+    # m.fs.RO.feed_side.N_Re[0, 0].fix(500)
+    m.fs.RO.feed_side.velocity[0, 0].fix(0.15)
     m.fs.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
 
     # energy recovery device, 2 degrees of freedom (efficiency and outlet pressure)
@@ -270,12 +270,12 @@ def pre_optimize(m):
     m.fs.pump.deltaP.setlb(0)
 
     # RO
-    # m.fs.RO.N_Re[0, 0].unfix()
-    # m.fs.RO.N_Re.setlb(1)
-    # m.fs.RO.N_Re.setub(1000)
-    m.fs.RO.velocity[0, 0].unfix()
-    m.fs.RO.velocity.setlb(0.01)
-    m.fs.RO.velocity.setub(1)
+    # m.fs.RO.feed_side.N_Re[0, 0].unfix()
+    # m.fs.RO.feed_side.N_Re.setlb(1)
+    # m.fs.RO.feed_side.N_Re.setub(1000)
+    m.fs.RO.feed_side.velocity[0, 0].unfix()
+    m.fs.RO.feed_side.velocity.setlb(0.01)
+    m.fs.RO.feed_side.velocity.setub(1)
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(150)
 
@@ -373,6 +373,11 @@ def export_ui_variables(fs):
                 "to_units": "mm / hr",
                 "category": Category.perf,
             },
+        },
+    )
+    export_variables(
+        fs.RO.feed_side,
+        variables={
             "channel_height": {
                 "display_name": "RO channel height",
                 "to_units": "mm",
@@ -646,7 +651,9 @@ def ui_output(fs):
             "Inlet crossflow velocity": (
                 round(
                     value(
-                        units.convert(fs.RO.velocity[0, 0], to_units=units.cm / units.s)
+                        units.convert(
+                            fs.RO.feed_side.velocity[0, 0], to_units=units.cm / units.s
+                        )
                     ),
                     1,
                 ),

@@ -719,9 +719,13 @@ class TestReverseOsmosis:
             m.fs.unit.deltaP[0] / m.fs.unit.length
         )
         assert pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 0.0])
-        assert pytest.approx(0.2361, rel=1e-3) == value(m.fs.unit.feed_side.velocity[0, 0.0])
+        assert pytest.approx(0.2361, rel=1e-3) == value(
+            m.fs.unit.feed_side.velocity[0, 0.0]
+        )
         assert pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 1.0])
-        assert pytest.approx(0.1187, rel=1e-3) == value(m.fs.unit.feed_side.velocity[0, 1.0])
+        assert pytest.approx(0.1187, rel=1e-3) == value(
+            m.fs.unit.feed_side.velocity[0, 1.0]
+        )
         assert pytest.approx(7.089e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )

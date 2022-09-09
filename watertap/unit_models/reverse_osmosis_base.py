@@ -58,11 +58,6 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-def _add_object_reference_if_exists(dest_block, dest_name, source_block, source_name):
-    if hasattr(source_block, source_name):
-        add_object_reference(dest_block, dest_name, getattr(source_block, source_name))
-
-
 class ReverseOsmosisBaseData(UnitModelBlockData):
     """
     Reverse Osmosis base class
@@ -705,7 +700,9 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                 self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
             )
             if hasattr(self.feed_side, "N_Re_avg"):
-                expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[time_point]
+                expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
+                    time_point
+                ]
             for j in self.config.property_package.solute_set:
                 expr_dict[f"{j} Average Solute Flux (GMH)"] = (
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
