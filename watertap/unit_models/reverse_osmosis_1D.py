@@ -119,7 +119,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
                 doc="Fixed pressure drop across unit",
             )
             def eq_pressure_drop(b, t, x):
-                return b.deltaP[t] == b.length * b.dP_dx[t, x]
+                return b.deltaP[t] == b.length * b.feed_side.dP_dx[t, x]
 
         else:
 
@@ -128,7 +128,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             )
             def eq_pressure_drop(b, t):
                 return b.deltaP[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+                    b.feed_side.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
                 )
 
     def _add_mass_transfer(self):
