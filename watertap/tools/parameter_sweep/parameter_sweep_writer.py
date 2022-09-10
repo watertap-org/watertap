@@ -63,36 +63,36 @@ class ParameterSweepWriter(ABC):
 
     CONFIG = ConfigDict()
 
-    CONFIG.declare('debugging_data_dir',
+    CONFIG.declare(
+        "debugging_data_dir",
         ConfigValue(
             default=None,
             domain=str,
-            description="directory path to output debugging data."
-        )
+            description="directory path to output debugging data.",
+        ),
     )
 
-    CONFIG.declare('csv_results_file_name',
+    CONFIG.declare(
+        "csv_results_file_name",
         ConfigValue(
-            default=None,
-            domain=str,
-            description="filepath to the output CSV file."
-        )
+            default=None, domain=str, description="filepath to the output CSV file."
+        ),
     )
 
-    CONFIG.declare('h5_results_file_name',
+    CONFIG.declare(
+        "h5_results_file_name",
         ConfigValue(
-            default=None,
-            domain=str,
-            description="filepath to the output H5 file."
-        )
+            default=None, domain=str, description="filepath to the output H5 file."
+        ),
     )
 
-    CONFIG.declare('interpolate_nan_outputs',
+    CONFIG.declare(
+        "interpolate_nan_outputs",
         ConfigValue(
             default=False,
             domain=bool,
-            description="Bool to decide whether to interpolate NaN outputs."
-        )
+            description="Bool to decide whether to interpolate NaN outputs.",
+        ),
     )
 
     def __init__(
@@ -114,7 +114,10 @@ class ParameterSweepWriter(ABC):
         self.CONFIG["interpolate_nan_outputs"] = interpolate_nan_outputs
 
         if self.rank == 0:
-            if self.CONFIG["h5_results_file_name"] is None and self.CONFIG["csv_results_file_name"] is None:
+            if (
+                self.CONFIG["h5_results_file_name"] is None
+                and self.CONFIG["csv_results_file_name"] is None
+            ):
                 warnings.warn(
                     "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
                 )
@@ -252,7 +255,8 @@ class ParameterSweepWriter(ABC):
         if write_h5:
             fname_h5 = f"local_results_{self.rank:03}.h5"
             self._write_output_to_h5(
-                local_results_dict, os.path.join(self.CONFIG["debugging_data_dir"], fname_h5)
+                local_results_dict,
+                os.path.join(self.CONFIG["debugging_data_dir"], fname_h5),
             )
         if write_csv:
             fname_csv = f"local_results_{self.rank:03}.csv"
