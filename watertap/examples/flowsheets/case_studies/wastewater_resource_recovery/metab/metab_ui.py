@@ -139,9 +139,9 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.metab_hydrogen.energy_thermal_flow_vol_inlet,
         name="Specific heating",
         ui_units=pyunits.MJ / pyunits.m**3,
-        display_units="MJ/m3 of reactor",
+        display_units="MJ/m3 of water",
         rounding=0,
-        description="Specific heating relating the thermal energy input to reactor volume",
+        description="Specific heating relating the thermal energy input to water volume",
         is_input=True,
         input_category="Hydrogen reactor",
         is_output=False,
@@ -319,9 +319,9 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.metab_methane.energy_thermal_flow_vol_inlet,
         name="Specific heating",
         ui_units=pyunits.MJ / pyunits.m**3,
-        display_units="MJ/m3 of reactor",
+        display_units="MJ/m3 of water",
         rounding=0,
-        description="Specific heating relating the thermal energy input to reactor volume",
+        description="Specific heating relating the thermal energy input to water volume",
         is_input=True,
         input_category="Methane reactor",
         is_output=False,
@@ -436,9 +436,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="fraction",
         rounding=2,
         description="Utilization factor - [annual use hours/total hours in year]",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.TIC,
@@ -447,9 +447,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="fraction",
         rounding=1,
         description="Practical investment factor - [total investment cost/direct capital costs]",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.plant_lifetime,
@@ -458,9 +458,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="years",
         rounding=1,
         description="Plant lifetime",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.wacc,
@@ -469,9 +469,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="fraction",
         rounding=1,
         description="Discount rate used in calculating the capital annualization",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.maintenance_costs_percent_FCI,
@@ -480,9 +480,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="fraction/year",
         rounding=1,
         description="Fixed operating cost factor - [annual fixed operating cost/total investment cost]",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.electricity_cost,
@@ -491,9 +491,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/kWh",
         rounding=3,
         description="Electricity cost",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.heat_cost,
@@ -502,9 +502,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/MJ",
         rounding=3,
         description="Heating cost",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.hydrogen_product_cost,
@@ -513,9 +513,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/kg",
         rounding=3,
         description="Hydrogen cost is negative because it is sold",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
     exports.add(
         obj=fs.costing.methane_product_cost,
@@ -524,9 +524,9 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/kg",
         rounding=3,
         description="Methane cost is negative because it is sold",
-        is_input=False,
-        is_output=True,
-        output_category="System costing",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
     )
 
     # System metrics
@@ -535,47 +535,154 @@ def export_variables(flowsheet=None, exports=None):
         name="Levelized cost of treatment",
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
-        rounding=1,
+        rounding=2,
         description="Levelized cost of treatment including operating and capital costs",
         is_input=False,
         is_output=True,
-        output_category="System metrics",
+        output_category="Levelized cost metrics",
     )
     exports.add(
         obj=fs.costing.LCOW,
         name="Levelized cost of water",
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product",
-        rounding=1,
+        rounding=2,
         description="Levelized cost of water including operating and capital costs",
         is_input=False,
         is_output=True,
-        output_category="System metrics",
+        output_category="Levelized cost metrics",
     )
     exports.add(
         obj=fs.costing.LCOH,
         name="Levelized cost of hydrogen",
         ui_units=fs.costing.base_currency / pyunits.kg,
         display_units="$/kg-H2",
-        rounding=1,
+        rounding=2,
         description="Levelized cost of hydrogen including operating and capital costs",
         is_input=False,
         is_output=True,
-        output_category="System metrics",
+        output_category="Levelized cost metrics",
     )
     exports.add(
         obj=fs.costing.LCOM,
         name="Levelized cost of methane",
         ui_units=fs.costing.base_currency / pyunits.kg,
         display_units="$/kg-CH4",
-        rounding=1,
+        rounding=2,
         description="Levelized cost of methane including operating and capital costs",
         is_input=False,
         is_output=True,
-        output_category="System metrics",
+        output_category="Levelized cost metrics",
     )
-    # TODO: add all metric results
+    exports.add(
+        obj=fs.costing.LCOCR,
+        name="Levelized cost of COD removal",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg-COD removed",
+        rounding=2,
+        description="Levelized cost of chemical oxygen demand removal including operating and capital costs",
+        is_input=False,
+        is_output=True,
+        output_category="Levelized cost metrics",
+    )
+    # Normalized metrics
+    direct_capital_norm = ((fs.metab_hydrogen.costing.capital_cost
+                      + fs.metab_methane.costing.capital_cost)
+                      / fs.costing.TIC
+                      / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=direct_capital_norm,
+        name="Normalized direct capital costs",
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        display_units="$/(m3/day)",
+        rounding=1,
+        description="Normalized direct capital costs - [total direct capital costs/feed flow rate] ",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized cost metrics",
+    )
+    total_capital_norm = (fs.costing.total_capital_cost
+                      / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=total_capital_norm,
+        name="Normalized total capital costs",
+        ui_units=fs.costing.base_currency / (pyunits.m ** 3 / pyunits.day),
+        display_units="$/(m3/day)",
+        rounding=1,
+        description="Normalized total capital costs accounting for indirect "
+                    "capital and installation - [total capital costs/feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized cost metrics",
+    )
+    elec_operating_norm = (fs.costing.aggregate_flow_costs["electricity"]
+                     / fs.costing.annual_water_inlet)
+    exports.add(
+        obj=elec_operating_norm,
+        name="Normalized electricity costs",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of feed",
+        rounding=2,
+        description="Normalized electricity cost - [annual electricity costs/annual feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized cost metrics",
+    )
+    heat_operating_norm = (fs.costing.aggregate_flow_costs["heat"]
+                     / fs.costing.annual_water_inlet)
+    exports.add(
+        obj=heat_operating_norm,
+        name="Normalized heating costs",
+        ui_units=fs.costing.base_currency / pyunits.m ** 3,
+        display_units="$/m3 of feed",
+        rounding=2,
+        description="Normalized heating cost - [annual heating costs/annual feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized cost metrics",
+    )
 
+    # performance metrics
+    recovery_vol = (fs.product_H2O.properties[0].flow_vol
+                    / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=recovery_vol,
+        name="Volumetric recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="m3 of product/m3 of feed",
+        rounding=3,
+        description="Normalized heating cost - [annual heating costs/annual feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+    removal_cod = (1
+            - fs.product_H2O.properties[0].flow_mass_comp["cod"]
+            / fs.feed.properties[0].flow_mass_comp["cod"])
+    exports.add(
+        obj=removal_cod,
+        name="COD removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="COD removal fraction [1 - outlet COD flow/inlet COD flow]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+    # methane_prod = (m.fs.product_methane.properties[0].flow_mass_comp["methane"]
+    #                 / m.fs.feed.properties[0].flow_vol)
+    # exports.add(
+    #     obj=methane_prod,
+    #     name="methan_prod",
+    #     ui_units=pyunits.kg / pyunits.m**3,
+    #     display_units="fraction",
+    #     rounding=3,
+    #     description="COD removal fraction [1 - outlet COD flow/inlet COD flow]",
+    #     is_input=False,
+    #     is_output=True,
+    #     output_category="Normalized performance metrics",
+    # )
 
 def build_flowsheet():
     # build and solve initial flowsheet
