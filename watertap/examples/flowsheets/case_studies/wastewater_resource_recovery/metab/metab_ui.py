@@ -11,12 +11,18 @@
 #
 ###############################################################################
 from watertap.ui.fsapi import FlowsheetInterface
+from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
-    main,
+    build,
+    set_operating_conditions,
+    initialize_system,
     solve,
+    add_costing,
+    adjust_default_parameters
 )
 from idaes.core.solvers import get_solver
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, assert_optimal_termination
+from pyomo.util.check_units import assert_units_consistent
 
 
 def export_to_ui():
@@ -35,8 +41,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.feed.flow_vol[0],
         name="Volumetric flow rate",
-        ui_units=pyunits.L / pyunits.hr,
-        display_units="L/h",  # can this be done by default?
+        ui_units=pyunits.m**3 / pyunits.hr,
+        display_units="m3/h",
         rounding=0,
         description="Inlet volumetric flow rate",
         is_input=True,
@@ -529,6 +535,52 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
 
+    # Outlets
+    exports.add(
+        obj=fs.product_H2O.properties[0].flow_vol,
+        name="Product water flow rate",
+        ui_units=pyunits.m**3 / pyunits.hr,
+        display_units="m3/h",
+        rounding=2,
+        description="Outlet product water flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.product_H2O.properties[0].conc_mass_comp["cod"],
+        name="Product water COD concentration",
+        ui_units=pyunits.g / pyunits.L,
+        display_units="g/L",
+        rounding=2,
+        description="Outlet product water chemical oxygen demand concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"],
+        name="Hydrogen product flow rate",
+        ui_units=pyunits.kg / pyunits.hr,
+        display_units="kg-H2/h",
+        rounding=3,
+        description="Outlet hydrogen product flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.product_methane.properties[0].flow_mass_comp["methane"],
+        name="Methane product flow rate",
+        ui_units=pyunits.kg / pyunits.hr,
+        display_units="kg-CH4/h",
+        rounding=3,
+        description="Outlet methane product flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+
     # System metrics
     exports.add(
         obj=fs.costing.LCOT,
@@ -670,23 +722,174 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    # methane_prod = (m.fs.product_methane.properties[0].flow_mass_comp["methane"]
-    #                 / m.fs.feed.properties[0].flow_vol)
-    # exports.add(
-    #     obj=methane_prod,
-    #     name="methan_prod",
-    #     ui_units=pyunits.kg / pyunits.m**3,
-    #     display_units="fraction",
-    #     rounding=3,
-    #     description="COD removal fraction [1 - outlet COD flow/inlet COD flow]",
-    #     is_input=False,
-    #     is_output=True,
-    #     output_category="Normalized performance metrics",
-    # )
+    hydrogen_production = (fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"]
+                          / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=hydrogen_production,
+        name="Hydrogen production",
+        ui_units=pyunits.kg / pyunits.m ** 3,
+        display_units="kg-H2/m3 of feed",
+        rounding=3,
+        description="Hydrogen production [hydrogen product flow rate/feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+
+    methane_production = (fs.product_methane.properties[0].flow_mass_comp["methane"]
+                    / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=methane_production,
+        name="Methane production",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg-CH4/m3 of feed",
+        rounding=3,
+        description="Methane production [methane product flow rate/feed flow rate]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+
+    # Capital costs
+    exports.add(
+        obj=fs.costing.total_capital_cost,
+        name="Total",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=1,
+        description="Total capital costs - including investment factor to account for indirect capital",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.metab_hydrogen.costing.capital_cost,
+        name="Hydrogen reactor",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=1,
+        description="Hydrogen reactor",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+    exports.add(
+        obj=fs.metab_methane.costing.capital_cost,
+        name="Methane reactor",
+        ui_units=fs.costing.base_currency,
+        display_units="$",
+        rounding=1,
+        description="Methane reactor",
+        is_input=False,
+        is_output=True,
+        output_category="Capital costs",
+    )
+
+    # Operating costs
+    exports.add(
+        obj=fs.costing.total_operating_cost,
+        name="Total",
+        ui_units=fs.costing.base_currency/pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Total annual operating costs - including electricity, heating, and fixed",
+        is_input=False,
+        is_output=True,
+        output_category="Operating costs",
+    )
+    exports.add(
+        obj=fs.costing.aggregate_flow_costs["electricity"],
+        name="Electricity",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Annual electricity costs ",
+        is_input=False,
+        is_output=True,
+        output_category="Operating costs",
+    )
+    exports.add(
+        obj=fs.costing.aggregate_flow_costs["heat"],
+        name="Heating",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Annual heating costs ",
+        is_input=False,
+        is_output=True,
+        output_category="Operating costs",
+    )
+    exports.add(
+        obj=fs.costing.total_fixed_operating_cost,
+        name="Fixed",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Annual fixed operating costs - these costs include material replacement, maintenance, and labor",
+        is_input=False,
+        is_output=True,
+        output_category="Operating costs",
+    )
+
+    # Revenue
+    total_revenue = -(
+            fs.costing.aggregate_flow_costs["hydrogen_product"]
+            + fs.costing.aggregate_flow_costs["methane_product"])
+    exports.add(
+        obj=total_revenue,
+        name="Total",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Total revenue - including the sale of hydrogen and methane",
+        is_input=False,
+        is_output=True,
+        output_category="Revenue",
+    )
+    exports.add(
+        obj=-fs.costing.aggregate_flow_costs["hydrogen_product"],
+        name="Hydrogen",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Revenue from selling hydrogen",
+        is_input=False,
+        is_output=True,
+        output_category="Revenue",
+    )
+    exports.add(
+        obj=-fs.costing.aggregate_flow_costs["methane_product"],
+        name="Methane",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=1,
+        description="Revenue from selling methane",
+        is_input=False,
+        is_output=True,
+        output_category="Revenue",
+    )
 
 def build_flowsheet():
     # build and solve initial flowsheet
-    (m, results) = main()
+    m = build()
+
+    set_operating_conditions(m)
+    assert_degrees_of_freedom(m, 0)
+    assert_units_consistent(m)
+
+    initialize_system(m)
+
+    results = solve(m)
+    assert_optimal_termination(results)
+
+    add_costing(m)
+    assert_degrees_of_freedom(m, 0)
+    m.fs.costing.initialize()
+
+    adjust_default_parameters(m)
+
+    results = solve(m)
+    assert_optimal_termination(results)
     return m.fs
 
 

@@ -56,16 +56,13 @@ def main():
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    adjust_default_parameters(m)
+    # adjust_default_parameters(m)
 
     results = solve(m)
     assert_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
-
-    m.fs.costing.display()
-    m.fs.metab_hydrogen.display()
 
     return m, results
 
