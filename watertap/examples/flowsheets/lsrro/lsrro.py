@@ -34,6 +34,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.misc import StrEnum
 from idaes.models.unit_models import Feed, Product, Mixer
@@ -153,12 +154,12 @@ def build(
     m.fs.costing.factor_total_investment.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.factor_membrane_replacement.fix(0.15)
     m.fs.costing.electricity_base_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis_membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis_high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump_cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.erd_pressure_exchanger_cost.fix(535)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -568,7 +569,7 @@ def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.high_pressure_pump_cost
+        == blk.costing_package.high_pressure_pump.cost
         * pyunits.watt
         / (pyunits.m**3 * pyunits.pascal / pyunits.s)
         * blk.unit_model.outlet.pressure[t0]
@@ -731,7 +732,7 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
 
-        m.fs.ROUnits[stage].initialize(optarg=optarg)
+        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
@@ -762,7 +763,7 @@ def do_backward_initialization_pass(m, optarg):
     for stage in reversed(m.fs.NonFinalStages):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
-        m.fs.ROUnits[stage].initialize(optarg=optarg)
+        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
         if stage == first_stage:
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_ERD_to_pump)
@@ -777,7 +778,7 @@ def do_backward_initialization_pass(m, optarg):
             propagate_state(m.fs.booster_pump_to_mixer[stage])
 
 
-def initialize(m, verbose=False, solver=None):
+def initialize(m, verbose=True, solver=None):
 
     # ---initializing---
     # set up solvers
@@ -800,7 +801,12 @@ def initialize(m, verbose=False, solver=None):
     # run SD tool
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
-        unit.initialize(optarg=solver.options, outlvl=outlvl)
+        if "ROUnits" in unit.name:
+            unit.initialize(
+                optarg=solver.options, outlvl=outlvl, raise_on_failure=False
+            )
+        else:
+            unit.initialize(optarg=solver.options, outlvl=outlvl)
 
     seq.run(m, func_initialize)
 
