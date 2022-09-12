@@ -14,6 +14,7 @@
 Tests for zero-order microbial battery model
 """
 import pytest
+import os
 
 from pyomo.environ import (
     Block,
@@ -221,7 +222,6 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
         default={
             "solute_list": [
@@ -234,7 +234,19 @@ def test_costing():
             ]
         }
     )
-    m.fs.costing = ZeroOrderCosting()
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "examples",
+        "flowsheets",
+        "case_studies",
+        "wastewater_resource_recovery",
+        "groundwater_treatment",
+        "groundwater_treatment_case_study.yaml",
+    )
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     m.fs.unit = MicrobialBatteryZO(
         default={"property_package": m.fs.params, "database": m.db}
     )
@@ -248,6 +260,7 @@ def test_costing():
     m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(5e-9)
     m.fs.unit.inlet.flow_mass_comp[0, "filtration_media"].fix(5e-9)
 
+    m.db.get_unit_operation_parameters("microbial_battery")
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
 
     assert degrees_of_freedom(m.fs.unit) == 0
@@ -256,16 +269,23 @@ def test_costing():
         default={"flowsheet_costing_block": m.fs.costing}
     )
 
-    assert isinstance(m.fs.costing.microbial_battery, Block)
-    assert isinstance(m.fs.costing.microbial_battery.sizing_cost, Var)
+    m.fs.costing.cost_process()
 
+    assert isinstance(m.fs.costing.microbial_battery, Block)
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.costing.microbial_battery.sizing_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(4.37e-3, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(4320.05, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert "filtration_media" in m.fs.costing._registered_flows
+    assert "filtration_media_disposal" in m.fs.costing._registered_flows
+
+    assert isinstance(m.fs.costing.total_capital_cost, Var)
+    assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
+    assert isinstance(m.fs.costing.aggregate_flow_costs, Var)
