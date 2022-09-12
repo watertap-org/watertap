@@ -1140,7 +1140,10 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 1 + b.params.K_S_IN / b.state_ref.conc_mol_phase_comp["Liq", "S_IN"]
             )
 
-        self.I_IN_lim = pyo.Expression(rule=rule_I_IN_lim)
+        self.I_IN_lim = pyo.Expression(
+            rule=rule_I_IN_lim,
+            doc="Inhibition function related to secondary substrate; inhibit uptake when inorganic nitrogen S_IN~ 0",
+        )
 
     def _I_h2_fa(self):
         def rule_I_h2_fa(b):
@@ -1148,7 +1151,10 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 1 + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_fa
             )
 
-        self.I_h2_fa = pyo.Expression(rule=rule_I_h2_fa)
+        self.I_h2_fa = pyo.Expression(
+            rule=rule_I_h2_fa,
+            doc="hydrogen inhibition attributed to long chain fatty acids",
+        )
 
     def _I_h2_c4(self):
         def rule_I_h2_c4(b):
@@ -1156,7 +1162,10 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 1 + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_c4
             )
 
-        self.I_h2_c4 = pyo.Expression(rule=rule_I_h2_c4)
+        self.I_h2_c4 = pyo.Expression(
+            rule=rule_I_h2_c4,
+            doc="hydrogen inhibition attributed to valerate and butyrate uptake",
+        )
 
     def _I_h2_pro(self):
         def rule_I_h2_pro(b):
@@ -1165,7 +1174,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 + b.state_ref.conc_mass_phase_comp["Liq", "S_h2"] / b.params.K_I_h2_pro
             )
 
-        self.I_h2_pro = pyo.Expression(rule=rule_I_h2_pro)
+        self.I_h2_pro = pyo.Expression(
+            rule=rule_I_h2_pr, doc="hydrogen inhibition attributed to propionate uptake"
+        )
 
     def _I_nh3(self):
         def rule_I_nh3(b):
@@ -1174,7 +1185,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 1 + b.state_ref.conc_mol_phase_comp["Liq", "S_nh3"] / b.params.K_I_nh3
             )
 
-        self.I_nh3 = pyo.Expression(rule=rule_I_nh3)
+        self.I_nh3 = pyo.Expression(
+            rule=rule_I_nh3, doc="ammonia inibition attributed to acetate uptake"
+        )
 
     def _I_pH_aa(self):
         def rule_I_pH_aa(b):
@@ -1191,7 +1204,10 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 ),
             )
 
-        self.I_pH_aa = pyo.Expression(rule=rule_I_pH_aa)
+        self.I_pH_aa = pyo.Expression(
+            rule=rule_I_pH_aa,
+            doc="pH inhibition of amino-acid-utilizing microorganisms",
+        )
 
     def _I_pH_ac(self):
         def rule_I_pH_ac(b):
@@ -1208,7 +1224,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 ),
             )
 
-        self.I_pH_ac = pyo.Expression(rule=rule_I_pH_ac)
+        self.I_pH_ac = pyo.Expression(
+            rule=rule_I_pH_ac, doc="pH inhibition of acetate-utilizing microorganisms"
+        )
 
     def _I_pH_h2(self):
         def rule_I_pH_h2(b):
@@ -1225,7 +1243,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 ),
             )
 
-        self.I_pH_h2 = pyo.Expression(rule=rule_I_pH_h2)
+        self.I_pH_h2 = pyo.Expression(
+            rule=rule_I_pH_h2, doc="pH inhibition of hydrogen-utilizing microorganisms"
+        )
 
     def _I(self):
         def rule_I(b, r):
@@ -1245,7 +1265,9 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                 raise BurntToast()
 
         self.I = pyo.Expression(
-            [f"R{i}" for i in range(5, 13)], rule=rule_I, doc="Inhibition functions"
+            [f"R{i}" for i in range(5, 13)],
+            rule=rule_I,
+            doc="Process inhibition functions",
         )
 
     # Rate of reaction method
@@ -1291,7 +1313,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_su"]
                         / (b.params.K_S_su + b.conc_mass_comp_ref["S_su"])
                         * b.conc_mass_comp_ref["X_su"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R6":
@@ -1301,7 +1323,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_aa"]
                         / (b.params.K_S_aa + b.conc_mass_comp_ref["S_aa"])
                         * b.conc_mass_comp_ref["X_aa"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R7":
@@ -1311,7 +1333,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_fa"]
                         / (b.params.K_S_fa + b.conc_mass_comp_ref["S_fa"])
                         * b.conc_mass_comp_ref["X_fa"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R8":
@@ -1325,7 +1347,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         / (
                             b.conc_mass_comp_ref["S_bu"] + b.conc_mass_comp_ref["S_va"]
                         )  # TODO: consider adding eps value to this denominator to avoid division by zero (or reformulate)
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R9":
@@ -1339,7 +1361,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         / (
                             b.conc_mass_comp_ref["S_bu"] + b.conc_mass_comp_ref["S_va"]
                         )  # TODO: consider adding eps value to this denominator to avoid division by zero (or reformulate)
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R10":
@@ -1349,7 +1371,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_pro"]
                         / (b.params.K_S_pro + b.conc_mass_comp_ref["S_pro"])
                         * b.conc_mass_comp_ref["X_pro"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R11":
@@ -1359,7 +1381,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_ac"]
                         / (b.params.K_S_ac + b.conc_mass_comp_ref["S_ac"])
                         * b.conc_mass_comp_ref["X_ac"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R12":
@@ -1369,7 +1391,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
                         * b.conc_mass_comp_ref["S_h2"]
                         / (b.params.K_S_h2 + b.conc_mass_comp_ref["S_h2"])
                         * b.conc_mass_comp_ref["X_h2"]
-                        * b.I[r],  # TODO: create inhibition variable and constraint
+                        * b.I[r],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.d,
                     )
                 elif r == "R13":
