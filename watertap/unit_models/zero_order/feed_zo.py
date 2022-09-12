@@ -72,7 +72,9 @@ class FeedZOData(FeedData):
                 for j in self.properties[t].component_list
             )
 
-        self.flow_vol_constraint = Constraint(self.flowsheet().time, rule=rule_Q)
+        self.flow_vol_constraint = Constraint(
+            self.flowsheet().time, rule=rule_Q, doc="Volumetric flowrate of the feed"
+        )
 
         def rule_C(blk, t, j):
             return (
@@ -85,7 +87,10 @@ class FeedZOData(FeedData):
             )
 
         self.conc_mass_constraint = Constraint(
-            self.flowsheet().time, comp_list, rule=rule_C
+            self.flowsheet().time,
+            comp_list,
+            rule=rule_C,
+            doc="Component mass concentrations",
         )
         # For the UI
         export_variables(

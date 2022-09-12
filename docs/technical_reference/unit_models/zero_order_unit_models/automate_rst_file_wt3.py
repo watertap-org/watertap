@@ -165,6 +165,81 @@ def grab_unit_components(unit_class):
     )
 
 
+def grab_unit_components_feed(unit_class):
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.props = WaterParameterBlock(
+        default={
+            "solute_list": [
+                "toc",
+                "tss",
+                "cod",
+                "tds",
+                "nitrogen",
+                "phosphates",
+                "phosphorus",
+                "struvite",
+                "nonbiodegradable_cod",
+                "hydrogen",
+                "ammonium_as_nitrogen",
+                "nitrate",
+                "bod",
+            ]
+        }
+    )
+    unit = getattr(zo, unit_class)
+    m.fs.unit = zo.FeedZO(
+        default={
+            "property_package": m.fs.props,
+        }
+    )
+
+    added_vars = []
+    added_var_docs = []
+    added_var_units = []
+    added_cons = []
+    added_con_docs = []
+    for var in m.fs.unit.component_data_objects(Var, descend_into=False):
+
+        addedvarname = var.name
+        newname = addedvarname.replace("fs.unit.", "").split("[", 1)[0]
+        model_var = getattr(m.fs.unit, newname)
+
+        if not (newname == "properties"):
+            if newname not in added_vars:
+                added_vars.append(newname)
+
+                added_var_docs.append(model_var.doc)
+                added_var_units.append(str(model_var._units).replace("'", ""))
+                if added_var_units[-1] == "None":
+                    added_var_units[-1] = "dimensionless"
+                if "**" in added_var_units[-1]:
+                    added_var_units[-1] = (
+                        ":math:" + f"`{added_var_units[-1]}`"
+                    ).replace("**", "^")
+                else:
+                    added_var_units[-1] = ":math:" + f"`{added_var_units[-1]}`"
+
+    for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
+        addedconame = con.name
+        connewname = addedconame.replace("fs.unit.", "").split("[", 1)[0]
+        model_con = getattr(m.fs.unit, connewname)
+        if connewname not in added_cons:
+            added_cons.append(connewname)
+            added_con_docs.append(model_con.doc)
+
+    return (
+        m,
+        added_vars,
+        added_var_docs,
+        added_var_units,
+        added_cons,
+        added_con_docs,
+    )
+
+
 df = pd.read_excel("WT3_unit_classification_for_doc.xlsx")
 
 unit_name_list = [i.title() for i in df["Name"]]
@@ -256,7 +331,11 @@ for i, u in enumerate(unit_name_list):
 
             f.write(f"\n{list[count]}\n")
         else:
-            f.write("\n")
+            f.write(
+                "\nThe Feed (ZO) block for zero-order flowsheets contains "
+                "methods for getting concentration data from the database, and it "
+                "has been created to work with the zero-order property package.\n"
+            )
         count += 1
 
         # write Electricity Consumption section
@@ -318,6 +397,35 @@ for i, u in enumerate(unit_name_list):
                 addedcons,
                 condocs,
             ) = grab_unit_components(class_name_list[i])
+            if len(addedvars) > 0:
+                f.write("\nAdditional Variables\n")
+                f.write("-" * len("Additional Variables"))
+                f.write("\n\n")
+                f.write(".. csv-table::\n")
+                f.write('   :header: "Description", "Variable Name", "Units"\n\n')
+            for k, v in enumerate(addedvars):
+                f.write(f'   "{vardocs[k]}", "{v}", "{varunits[k]}"\n')
+
+            # write Additional Constraints section if unit is non-basic
+            if len(addedcons) > 0:
+                f.write("\nAdditional Constraints\n")
+                f.write("-" * len("Additional Constraints"))
+                f.write("\n\n")
+                f.write(".. csv-table::\n")
+                f.write('   :header: "Description", "Constraint Name"\n\n')
+                for k, c in enumerate(addedcons):
+                    f.write(f'   "{condocs[k]}", "{c}"\n')
+
+        else:
+            print(class_name_list[i])
+            (
+                _,
+                addedvars,
+                vardocs,
+                varunits,
+                addedcons,
+                condocs,
+            ) = grab_unit_components_feed(class_name_list[i])
             if len(addedvars) > 0:
                 f.write("\nAdditional Variables\n")
                 f.write("-" * len("Additional Variables"))
