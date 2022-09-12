@@ -98,17 +98,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"],
-        name="H2 conversion ratio",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",
-        rounding=2,
-        description="H2 mass conversion ratio with respect to COD [g-H2 produced/g-COD reacted]",
-        is_input=True,
-        input_category="Hydrogen reactor",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.metab_hydrogen.hydraulic_retention_time,
         name="HRT",
         ui_units=pyunits.hr,
@@ -638,26 +627,11 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Levelized cost metrics",
     )
     # Normalized metrics
-    direct_capital_norm = ((fs.metab_hydrogen.costing.capital_cost
-                      + fs.metab_methane.costing.capital_cost)
-                      / fs.costing.TIC
-                      / fs.feed.properties[0].flow_vol)
-    exports.add(
-        obj=direct_capital_norm,
-        name="Normalized direct capital costs",
-        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
-        display_units="$/(m3/day)",
-        rounding=1,
-        description="Normalized direct capital costs - [total direct capital costs/feed flow rate] ",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized cost metrics",
-    )
     total_capital_norm = (fs.costing.total_capital_cost
-                      / fs.feed.properties[0].flow_vol)
+                          / fs.feed.properties[0].flow_vol)
     exports.add(
         obj=total_capital_norm,
-        name="Normalized total capital costs",
+        name="Total capital",
         ui_units=fs.costing.base_currency / (pyunits.m ** 3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
@@ -667,11 +641,26 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized cost metrics",
     )
+    direct_capital_norm = ((fs.metab_hydrogen.costing.capital_cost
+                      + fs.metab_methane.costing.capital_cost)
+                      / fs.costing.TIC
+                      / fs.feed.properties[0].flow_vol)
+    exports.add(
+        obj=direct_capital_norm,
+        name="Direct capital",
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        display_units="$/(m3/day)",
+        rounding=1,
+        description="Normalized direct capital costs - [total direct capital costs/feed flow rate] ",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized cost metrics",
+    )
     elec_operating_norm = (fs.costing.aggregate_flow_costs["electricity"]
                      / fs.costing.annual_water_inlet)
     exports.add(
         obj=elec_operating_norm,
-        name="Normalized electricity costs",
+        name="Electricity",
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
@@ -684,7 +673,7 @@ def export_variables(flowsheet=None, exports=None):
                      / fs.costing.annual_water_inlet)
     exports.add(
         obj=heat_operating_norm,
-        name="Normalized heating costs",
+        name="Heating",
         ui_units=fs.costing.base_currency / pyunits.m ** 3,
         display_units="$/m3 of feed",
         rounding=2,
