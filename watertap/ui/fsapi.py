@@ -109,6 +109,7 @@ class FlowsheetExport(BaseModel):
         if len(args) == 1:
             obj = args[0]
         elif data is None:
+            _log.debug(f"Create ModelExport from args: {kwargs}")
             obj = ModelExport.parse_obj(kwargs)
         else:
             if isinstance(data, dict):
