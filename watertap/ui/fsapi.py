@@ -51,7 +51,7 @@ class ModelExport(BaseModel):
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
-        return values["obj"].value
+        return pyo.value(values["obj"])
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
@@ -109,6 +109,7 @@ class FlowsheetExport(BaseModel):
         if len(args) == 1:
             obj = args[0]
         elif data is None:
+            _log.debug(f"Create ModelExport from args: {kwargs}")
             obj = ModelExport.parse_obj(kwargs)
         else:
             if isinstance(data, dict):
