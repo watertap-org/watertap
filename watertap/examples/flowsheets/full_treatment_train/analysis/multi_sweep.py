@@ -2,11 +2,7 @@ import sys
 import os
 import time
 
-from watertap.tools.parameter_sweep.parameter_sweep import (
-    _init_mpi,
-    LinearSample,
-    parameter_sweep,
-)
+from watertap.tools.parameter_sweep.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
 
 def append_costing_outputs(m, outputs, units_to_cost):

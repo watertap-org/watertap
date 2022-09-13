@@ -20,11 +20,6 @@ import ast
 from pyomo.environ import value
 
 from watertap.tools.parameter_sweep.parameter_sweep import (
-    LinearSample,
-    UniformSample,
-    NormalSample,
-    SamplingType,
-    LatinHypercubeSample,
     _init_mpi,
     _build_combinations,
     _divide_combinations,
@@ -37,10 +32,15 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     _create_global_output,
 )
 
-from watertap.tools.parameter_sweep import recursive_parameter_sweep
-from watertap.tools.parameter_sweep.recursive_parameter_sweep import (
-    _aggregate_filtered_input_arr,
+from watertap.tools.parameter_sweep.sampling_types import (
+    LinearSample,
+    UniformSample,
+    NormalSample,
+    SamplingType,
+    LatinHypercubeSample,
 )
+from watertap.tools.parameter_sweep import recursive_parameter_sweep
+from watertap.tools.parameter_sweep.recursive_parameter_sweep import _aggregate_filtered_input_arr
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,
