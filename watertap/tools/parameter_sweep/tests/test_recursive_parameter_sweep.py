@@ -40,7 +40,9 @@ from watertap.tools.parameter_sweep.sampling_types import (
     LatinHypercubeSample,
 )
 from watertap.tools.parameter_sweep import recursive_parameter_sweep
-from watertap.tools.parameter_sweep.recursive_parameter_sweep import _aggregate_filtered_input_arr
+from watertap.tools.parameter_sweep.recursive_parameter_sweep import (
+    _aggregate_filtered_input_arr,
+)
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,
