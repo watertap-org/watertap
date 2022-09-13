@@ -5,6 +5,7 @@ Simple flowsheet interface API
 __author__ = "Dan Gunter"
 
 # stdlib
+import logging
 from collections import namedtuple
 from enum import Enum
 from glob import glob
@@ -51,7 +52,7 @@ class ModelExport(BaseModel):
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
-        return pyo.value(values["obj"])
+        return pyo.value(v)
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
@@ -210,7 +211,11 @@ class FlowsheetInterface:
         Returns:
             None
         """
-        return self.run_action(Actions.build, **kwargs)
+        try:
+            self.run_action(Actions.build, **kwargs)
+        except Exception as err:
+            _log.error(f"Building flowsheet: {err}")
+        return
 
     def solve(self, **kwargs):
         """Solve flowsheet.
@@ -219,9 +224,14 @@ class FlowsheetInterface:
             **kwargs: User-defined values
 
         Returns:
-            Return value of the underlying function
+            Return value of the underlying solve function
         """
-        return self.run_action(Actions.solve, **kwargs)
+        try:
+            result = self.run_action(Actions.solve, **kwargs)
+        except Exception as err:
+            _log.error(f"Solving flowsheet: {err}")
+            result = None
+        return result
 
     def dict(self) -> Dict:
         """Serialize.
@@ -289,6 +299,9 @@ class FlowsheetInterface:
                 )
             else:
                 result = action_func(flowsheet=self.fs_exp.obj, **kwargs)
+            # Sync model with exported values
+            if action_name in (Actions.build, Actions.solve):
+                self.export_values()
             return result
 
         self._actions[action_name] = action_wrapper
@@ -377,3 +390,15 @@ class FlowsheetInterface:
                         f"'{python_file}': {err}"
                     )
         return result
+
+    def export_values(self):
+        """Copy current values in underlying Pyomo model into exported model.
+
+        Side-effects:
+            Attribute ``fs_exp`` is modified.
+        """
+        for key, mo in self.fs_exp.model_objects.items():
+            model_value = pyo.value(mo.obj)
+            if _log.isEnabledFor(logging.DEBUG):
+                _log.debug(f"Export value. key={key}, value={model_value}")
+            mo.value = model_value
