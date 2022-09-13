@@ -3,7 +3,7 @@ import os
 import time
 
 from pyomo.environ import Constraint
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab as metab
 
 
@@ -139,26 +139,23 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
     nx = int(nx)
     interpolate_nan_outputs = bool(interpolate_nan_outputs)
 
-    # Start MPI communicator
-    comm, rank, num_procs = _init_mpi()
-
     tic = time.time()
     global_results, sweep_params = run_analysis(case_num, nx, interpolate_nan_outputs)
     print(global_results)
     toc = time.time()
 
-    if rank == 0:
-        total_samples = 1
+    total_samples = 1
 
-        for k, v in sweep_params.items():
-            total_samples *= v.num_samples
+    for k, v in sweep_params.items():
+        total_samples *= v.num_samples
 
-        print("Finished case_num = %d." % (case_num))
-        print(
-            "Processed %d swept parameters comprising %d total points."
-            % (len(sweep_params), total_samples)
-        )
-        print("Elapsed time = %.1f s." % (toc - tic))
+    print("Finished case_num = %d." % (case_num))
+    print(
+        "Processed %d swept parameters comprising %d total points."
+        % (len(sweep_params), total_samples)
+    )
+    print("Elapsed time = %.1f s." % (toc - tic))
+
     return global_results, sweep_params
 
 

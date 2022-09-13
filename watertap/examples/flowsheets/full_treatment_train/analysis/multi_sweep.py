@@ -2,7 +2,7 @@ import sys
 import os
 import time
 
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
 
 def append_costing_outputs(m, outputs, units_to_cost):
@@ -292,9 +292,6 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
 
 if __name__ == "__main__":
 
-    # Start MPI communicator
-    comm, rank, num_procs = _init_mpi()
-
     # Get the case number to run
     try:
         case_num = int(sys.argv[1])
@@ -321,15 +318,14 @@ if __name__ == "__main__":
     print(global_results)
     toc = time.time()
 
-    if rank == 0:
-        total_samples = 1
+    total_samples = 1
 
-        for k, v in sweep_params.items():
-            total_samples *= v.num_samples
+    for k, v in sweep_params.items():
+        total_samples *= v.num_samples
 
-        print("Finished case_num = %d." % (case_num))
-        print(
-            "Processed %d swept parameters comprising %d total points."
-            % (len(sweep_params), total_samples)
-        )
-        print("Elapsed time = %.1f s." % (toc - tic))
+    print("Finished case_num = %d." % (case_num))
+    print(
+        "Processed %d swept parameters comprising %d total points."
+        % (len(sweep_params), total_samples)
+    )
+    print("Elapsed time = %.1f s." % (toc - tic))
