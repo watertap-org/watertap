@@ -679,6 +679,7 @@ class TestParallelManager:
             read_txt_dict = ast.literal_eval(f_contents)
             assert read_txt_dict == truth_txt_dict
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
 
