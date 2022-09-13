@@ -38,14 +38,34 @@ from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSa
 np.set_printoptions(linewidth=200)
 
 
+def _default_optimize(model, options=None, tee=False):
+    """
+    Default optimization function used in parameter_sweep.
+    Optimizes ``model`` using the IDAES default solver.
+    Raises a RuntimeError if the TerminationCondition is not optimal
+
+    Arguments:
+
+        model : A Pyomo ConcreteModel to optimize
+
+        options (optional) : Solver options to pass into idaes.core.utils.get_solver.
+                             Default is None
+        tee (options) : To display the solver log. Default it False
+
+    """
+    solver = get_solver(options=options)
+    results = solver.solve(model, tee=tee)
+    return results
+
+
 class _ParameterSweepBase(ABC):
 
-    CONFIG = ConfigDict(implicit=False)
+    CONFIG = ParameterSweepWriter.CONFIG()
 
     CONFIG.declare(
         "optimize_function",
         ConfigValue(
-            default=None,
+            default=_default_optimize,
             # domain=function,
             description="Optimization function to be used for the parameter sweep.",
         ),
@@ -98,41 +118,22 @@ class _ParameterSweepBase(ABC):
 
     def __init__(
         self,
-        optimize_function,  # _default_optimize,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        probe_function,
-        csv_results_file_name,
-        h5_results_file_name,
-        debugging_data_dir,
-        interpolate_nan_outputs,
-        *args,
-        **kwargs,
+        **options,
     ):
 
-        self.comm = self._init_mpi()
+        self.comm = options.pop("comm", self._init_mpi())
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
 
-        if optimize_function is None:
-            optimize_function = self._default_optimize
-
-        self.CONFIG["optimize_function"] = optimize_function
-        self.CONFIG["optimize_kwargs"] = optimize_kwargs
-        self.CONFIG["reinitialize_function"] = reinitialize_function
-        self.CONFIG["reinitialize_kwargs"] = reinitialize_kwargs
-        self.CONFIG["reinitialize_before_sweep"] = reinitialize_before_sweep
-        self.CONFIG["probe_function"] = probe_function
+        self.config = self.CONFIG(options)
 
         # Initialize the writer
         self.writer = ParameterSweepWriter(
             self.comm,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=debugging_data_dir,
-            interpolate_nan_outputs=interpolate_nan_outputs,
+            csv_results_file_name=self.config.csv_results_file_name,
+            h5_results_file_name=self.config.h5_results_file_name,
+            debugging_data_dir=self.config.debugging_data_dir,
+            interpolate_nan_outputs=self.config.interpolate_nan_outputs,
         )
 
     # ================================================================
@@ -264,26 +265,6 @@ class _ParameterSweepBase(ABC):
         return global_results
 
     # ================================================================
-
-    @staticmethod
-    def _default_optimize(model, options=None, tee=False):
-        """
-        Default optimization function used in parameter_sweep.
-        Optimizes ``model`` using the IDAES default solver.
-        Raises a RuntimeError if the TerminationCondition is not optimal
-
-        Arguments:
-
-            model : A Pyomo ConcreteModel to optimize
-
-            options (optional) : Solver options to pass into idaes.core.utils.get_solver.
-                                 Default is None
-            tee (options) : To display the solver log. Default it False
-
-        """
-        solver = get_solver(options=options)
-        results = solver.solve(model, tee=tee)
-        return results
 
     # ================================================================
 
@@ -469,11 +450,11 @@ class _ParameterSweepBase(ABC):
 
     def _param_sweep_kernel(self, model, reinitialize_values):
 
-        optimize_function = self.CONFIG["optimize_function"]
-        optimize_kwargs = self.CONFIG["optimize_kwargs"]
-        reinitialize_before_sweep = self.CONFIG["reinitialize_before_sweep"]
-        reinitialize_function = self.CONFIG["reinitialize_function"]
-        reinitialize_kwargs = self.CONFIG["reinitialize_kwargs"]
+        optimize_function = self.config.optimize_function
+        optimize_kwargs = self.config.optimize_kwargs
+        reinitialize_before_sweep = self.config.reinitialize_before_sweep
+        reinitialize_function = self.config.reinitialize_function
+        reinitialize_kwargs = self.config.reinitialize_kwargs
 
         run_successful = False  # until proven otherwise
 
@@ -523,7 +504,7 @@ class _ParameterSweepBase(ABC):
     def _do_param_sweep(self, model, sweep_params, outputs, local_values):
 
         # Create easy to read variables for configurations
-        probe_function = self.CONFIG["probe_function"]
+        probe_function = self.config["probe_function"]
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
@@ -537,7 +518,7 @@ class _ParameterSweepBase(ABC):
 
         local_solve_successful_list = []
 
-        if self.CONFIG["reinitialize_function"] is not None:
+        if self.config["reinitialize_function"] is not None:
             reinitialize_values = ComponentMap()
             for v in model.component_data_objects(pyo.Var):
                 reinitialize_values[v] = v.value
@@ -587,123 +568,7 @@ class _ParameterSweepBase(ABC):
 
 class ParameterSweep(_ParameterSweepBase):
 
-    CONFIG = _ParameterSweepBase.CONFIG
-
-    def __init__(
-        self,
-        optimize_function=None,
-        optimize_kwargs=dict(),
-        reinitialize_function=None,
-        reinitialize_kwargs=dict(),
-        reinitialize_before_sweep=False,
-        probe_function=None,
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir=None,
-        interpolate_nan_outputs=False,
-        *args,
-        **kwargs,
-    ):
-
-        """
-        This function offers a general way to perform repeated optimizations
-        of a model for the purposes of exploring a parameter space while
-        monitoring multiple outputs.
-        If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
-
-        Arguments:
-
-            model : A Pyomo ConcreteModel containing a watertap flowsheet, for best
-                    results it should be initialized before being passed to this
-                    function.
-
-            sweep_params: A dictionary containing the values to vary with the format
-                          ``sweep_params['Short/Pretty-print Name'] =
-                          (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)``.
-                          A uniform number of samples ``num_samples`` will be take between
-                          the ``lower_limit`` and ``upper_limit``.
-
-            outputs : An optional dictionary containing "short names" as keys and and Pyomo objects
-                      on ``model`` whose values to report as values. E.g.,
-                      ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
-                      If not provided, i.e., outputs = None, the default behavior is to save all model
-                      variables, parameters, and expressions which provides very thorough results
-                      at the cost of large file sizes.
-
-            csv_results_file_name (optional) : The path and file name to write a csv file. The default `None`
-                                               does not write a csv file.
-
-            h5_results_file_name (optional) : The path and file name to write a h5 file. The default `None`
-                                              does not write a file.
-                                              Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
-                                              which contains the variable names contained within the H5 file.
-
-            optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
-                                           ``model`` and loads the results back into ``model``. The first
-                                           argument of this function is ``model``. The default uses the
-                                           default IDAES solver, raising an exception if the termination
-                                           condition is not optimal.
-
-            optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
-                                         ``optimize_function``. The first arg will always be ``model``,
-                                         e.g., ``optimize_function(model, **optimize_kwargs)``. The default
-                                         uses no kwargs.
-
-            reinitialize_function (optional) : A user-defined function to perform the re-initialize the
-                                               flowsheet ``model`` if the first call to ``optimize_function``
-                                               fails for any reason. After ``reinitialize_function``, the
-                                               parameter sweep tool will immediately call
-                                               ``optimize_function`` again.
-
-            reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to
-                                             ``reinitialize_function``. The first arg will always be
-                                             ``model``, e.g.,
-                                             ``reinitialize_function(model, **reinitialize_kwargs)``.
-                                             The default uses no kwargs.
-
-            reinitialize_before_sweep (optional): Boolean option to reinitialize the flow sheet model before
-                                                  every parameter sweep realization. The default is False.
-                                                  Note the parameter sweep model will try to reinitialize the
-                                                  solve regardless of the option if the run fails.
-
-            mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                                  If None COMM_WORLD will be used. The default is sufficient for most
-                                  users.
-
-            debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
-                                            purposes. If None no `debugging` data will be saved.
-
-            interpolate_nan_outputs (optional) : When the parameter sweep has finished, interior values
-                                                 of np.nan will be replaced with a value obtained via
-                                                 a linear interpolation of their surrounding valid neighbors.
-                                                 If true, a second output file with the extension "_clean"
-                                                 will be saved alongside the raw (un-interpolated) values.
-
-            num_samples (optional) : If the user is using sampling techniques rather than a linear grid
-                                     of values, they need to set the number of samples
-
-            seed (optional) : If the user is using a random sampling technique, this sets the seed
-
-        Returns:
-
-            save_data : A list were the first N columns are the values of the parameters passed
-                        by ``sweep_params`` and the remaining columns are the values of the
-                        simulation identified by the ``outputs`` argument.
-        """
-
-        # Initialize the base Class
-        super().__init__(
-            optimize_function,
-            optimize_kwargs,
-            reinitialize_function,
-            reinitialize_kwargs,
-            reinitialize_before_sweep,
-            probe_function,
-            csv_results_file_name,
-            h5_results_file_name,
-            debugging_data_dir,
-            interpolate_nan_outputs,
-        )
+    CONFIG = _ParameterSweepBase.CONFIG()
 
     def _aggregate_local_results(
         self, global_values, local_output_dict, num_samples, local_num_cases
@@ -772,37 +637,7 @@ class ParameterSweep(_ParameterSweepBase):
 
 class RecursiveParameterSweep(_ParameterSweepBase):
 
-    CONFIG = _ParameterSweepBase.CONFIG
-
-    def __init__(
-        self,
-        optimize_function=None,
-        optimize_kwargs=dict(),
-        reinitialize_function=None,
-        reinitialize_kwargs=dict(),
-        reinitialize_before_sweep=False,
-        probe_function=None,
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir=None,
-        interpolate_nan_outputs=False,
-        *args,
-        **kwargs,
-    ):
-
-        # Initialize the base Class
-        super().__init__(
-            optimize_function,
-            optimize_kwargs,
-            reinitialize_function,
-            reinitialize_kwargs,
-            reinitialize_before_sweep,
-            probe_function,
-            csv_results_file_name,
-            h5_results_file_name,
-            debugging_data_dir,
-            interpolate_nan_outputs,
-        )
+    CONFIG = _ParameterSweepBase.CONFIG()
 
     def _filter_recursive_solves(
         self, model, sweep_params, outputs, recursive_local_dict
@@ -994,7 +829,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         )
 
         # if we are debugging
-        if self.writer.CONFIG["debugging_data_dir"] is not None:
+        if self.writer.config["debugging_data_dir"] is not None:
             local_filtered_values = np.zeros(
                 (local_n_successful, len(local_filtered_dict["sweep_params"])),
                 dtype=np.float64,
