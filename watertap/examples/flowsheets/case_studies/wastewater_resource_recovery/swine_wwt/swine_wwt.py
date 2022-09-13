@@ -915,7 +915,7 @@ def display_metrics_results(m):
             to_units=pyunits.dimensionless,
         )
     )
-    print(f"COD removal: {CODR_normalized:.4f} dimensionless")
+    print(f"COD removal: {CODR_normalized:.4f} kg COD removed/ kg COD in")
     TPR_normalized = value(
         pyunits.convert(
             1
