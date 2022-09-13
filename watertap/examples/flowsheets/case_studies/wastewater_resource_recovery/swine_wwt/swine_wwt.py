@@ -924,7 +924,7 @@ def display_metrics_results(m):
             to_units=pyunits.dimensionless,
         )
     )
-    print(f"Total P removal: {TPR_normalized:.4f} dimensionless")
+    print(f"Total P removal: {TPR_normalized:.4f} kg P removed/ kg P in")
     TNR_normalized = value(
         pyunits.convert(
             1
@@ -933,7 +933,7 @@ def display_metrics_results(m):
             to_units=pyunits.dimensionless,
         )
     )
-    print(f"Total N removal: {TNR_normalized:.4f} dimensionless")
+    print(f"Total N removal: {TNR_normalized:.4f} kg N removed/ kg N in")
 
     print("----------Energy intensity----------")
     SEC = value(
