@@ -130,7 +130,8 @@ def test_actions():
         assert flowsheet == garbage
 
     def fake_export(flowsheet=None, exports=None):
-        exports.add(obj=garbage)
+        with pytest.raises(Exception):
+            exports.add(obj=garbage)
         exports.add(obj=v1)  # form 1
         exports.add(v1)  # form 2
         exports.add(data=v1)  # form 3
