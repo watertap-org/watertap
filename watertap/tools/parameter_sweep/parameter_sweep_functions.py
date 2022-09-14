@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-# used to be defined in this module
+
 from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,

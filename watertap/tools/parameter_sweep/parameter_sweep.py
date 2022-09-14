@@ -12,30 +12,21 @@
 ###############################################################################
 import numpy as np
 import pyomo.environ as pyo
-import sys
-import os
-import itertools
 import warnings
 import copy, pprint
-import h5py
-import pathlib
 
-from scipy.interpolate import griddata
-from enum import Enum, auto
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
-from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
 import watertap.tools.MPI as MPI
-
-np.set_printoptions(linewidth=200)
 
 
 def _default_optimize(model, options=None, tee=False):

@@ -14,19 +14,9 @@
 # sampling.py - This file contains all of the sampling classes
 
 import numpy as np
-import pyomo.environ as pyo
-import sys
 
-from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC
-from idaes.core.util import get_solver
-
-from idaes.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet
-from pyomo.common.tee import capture_output
-
-np.set_printoptions(linewidth=200)
 
 
 class SamplingType(Enum):

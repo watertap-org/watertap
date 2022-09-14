@@ -21,12 +21,11 @@ from watertap.tools.parameter_sweep.sampling_types import (
 )
 import yaml
 import idaes.logger as idaeslog
-from abc import ABC
 
 _log = idaeslog.getLogger(__name__)
 
 
-class ParameterSweepReader(ABC):
+class ParameterSweepReader:
     @staticmethod
     def _yaml_to_dict(yaml_filename):
         """Reads and stores a yaml file as a dictionary
