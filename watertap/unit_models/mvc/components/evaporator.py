@@ -442,7 +442,7 @@ class EvaporatorData(UnitModelBlockData):
             has_guessed_delta_temperature_in = True
 
         has_guessed_delta_temperature_out = False
-        if delta_temperature_out != None:
+        if delta_temperature_out is not None:
             if blk.delta_temperature_out.is_fixed():
                 raise RuntimeError(
                     "A guess was provided for the delta_temperature_out variable in the "
