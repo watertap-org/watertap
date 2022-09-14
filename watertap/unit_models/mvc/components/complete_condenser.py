@@ -265,7 +265,7 @@ class CompressorData(UnitModelBlockData):
                 " for initialization.".format(degrees_of_freedom(blk))
             )
         elif degrees_of_freedom(blk) == 1:
-            if heat != None:
+            if heat is not None:
                 blk.control_volume.heat.fix(heat)
                 has_guessed_heat = True
             else:
