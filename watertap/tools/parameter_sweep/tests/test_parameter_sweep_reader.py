@@ -19,7 +19,11 @@ import yaml
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep.parameter_sweep_reader import ParameterSweepReader
+from watertap.tools.parameter_sweep.parameter_sweep_reader import (
+    ParameterSweepReader,
+    get_sweep_params_from_yaml,
+    set_defaults_from_yaml,
+)
 
 # Imports for conditional fails
 from idaes.config import bin_directory as idaes_bin_directory
@@ -154,8 +158,7 @@ class TestInputParser:
         m = model
         filename, truth_values = get_param_yaml_file
 
-        psr = ParameterSweepReader()
-        values = psr.get_sweep_params_from_yaml(m, filename)
+        values = get_sweep_params_from_yaml(m, filename)
 
         for key, truth_value in truth_values.items():
             assert key in values
@@ -174,8 +177,7 @@ class TestInputParser:
         m = model
         filename, truth_values = get_default_yaml_file
 
-        psr = ParameterSweepReader()
-        psr.set_defaults_from_yaml(m, filename)
+        set_defaults_from_yaml(m, filename)
 
         for key, truth_value in truth_values.items():
             component = m.find_component(key)

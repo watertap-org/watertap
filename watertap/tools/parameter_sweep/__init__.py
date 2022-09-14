@@ -11,9 +11,10 @@ from watertap.tools.parameter_sweep.parameter_sweep_functions import (
     parameter_sweep,
     recursive_parameter_sweep,
 )
-from watertap.tools.parameter_sweep.parameter_sweep_input_parser import (
+from watertap.tools.parameter_sweep.parameter_sweep_reader import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
+    ParameterSweepReader,
 )
 from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
