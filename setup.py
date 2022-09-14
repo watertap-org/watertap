@@ -134,6 +134,7 @@ setup(
             "*.yaml",
             "*.yml",
             "*.csv",
+            "*.png",
         ],
     },
     entry_points={

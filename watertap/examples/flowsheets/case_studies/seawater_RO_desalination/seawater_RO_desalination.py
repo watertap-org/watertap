@@ -815,6 +815,21 @@ def display_costing(m):
         )
 
 
+def export_to_ui():
+    from watertap.ui.fsapi import FlowsheetInterface
+
+    def noop(*args, **kwargs):
+        return
+
+    return FlowsheetInterface(
+        name="Seawater RO",
+        description="Seawater RO desalination",
+        do_export=noop,
+        do_build=noop,
+        do_solve=noop,
+    )
+
+
 if __name__ == "__main__":
     main(erd_type="pressure_exchanger")
     # main(erd_type='pump_as_turbine')
