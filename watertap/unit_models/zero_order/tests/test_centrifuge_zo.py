@@ -46,20 +46,16 @@ class TestCentrifugeZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["phosphates", "struvite"]}
         )
 
-
-        m.fs.unit = CentrifugeZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = CentrifugeZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(0)
-
 
         return m
 
@@ -95,10 +91,7 @@ class TestCentrifugeZO:
             == data["energy_electric_flow_vol_inlet"]["value"]
         )
         assert model.fs.unit.polymer_dose[0].fixed
-        assert (
-            model.fs.unit.polymer_dose[0].value
-            == data["polymer_dose"]["value"]
-        )
+        assert model.fs.unit.polymer_dose[0].value == data["polymer_dose"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -152,7 +145,9 @@ class TestCentrifugeZO:
         assert pytest.approx(1.052688e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["struvite"]
         )
-        assert pytest.approx(1.000054e-10, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(1.000054e-10, abs=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -167,7 +162,6 @@ class TestCentrifugeZO:
                 )
             )
 
-
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
@@ -179,7 +173,9 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["phosphates", "struvite"]})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["phosphates", "struvite"]}
+    )
 
     m.fs.costing = ZeroOrderCosting()
 
@@ -200,7 +196,6 @@ def test_costing():
     assert isinstance(m.fs.costing.centrifuge, Block)
     assert isinstance(m.fs.costing.centrifuge.HRT, Var)
     assert isinstance(m.fs.costing.centrifuge.sizing_cost, Var)
-
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)

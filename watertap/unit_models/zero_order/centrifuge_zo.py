@@ -48,9 +48,7 @@ class CentrifugeZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.polymer_dose)
 
-        self._perf_var_dict[
-            "Polymer Dose (mg/L)"
-        ] = self.polymer_dose
+        self._perf_var_dict["Polymer Dose (mg/L)"] = self.polymer_dose
 
         def rule_chem_flow(blk, t, j):
             return blk.chemical_flow_mass[t, j] == pyunits.convert(

@@ -70,50 +70,43 @@ def main():
     return m, results
 
 
-
 def build():
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(dynamic = False)
-    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list = ["phosphates", "struvite"])
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["phosphates", "struvite"])
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(property_package = m.fs.prop)
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # Magprex reactor treatment for struvite precipitation
-    m.fs.magprex = MagprexZO(
-        property_package = m.fs.prop,
-        database = m.db
-    )
+    m.fs.magprex = MagprexZO(property_package=m.fs.prop, database=m.db)
 
     # centrifuge treatment
-    m.fs.centrifuge = CentrifugeZO(
-        property_package = m.fs.prop,
-        database = m.db
-    )
+    m.fs.centrifuge = CentrifugeZO(property_package=m.fs.prop, database=m.db)
 
     # struvite classifier treatment
-    m.fs.classifier = StruviteClassifierZO(
-        property_package = m.fs.prop,
-        database = m.db
-    )
+    m.fs.classifier = StruviteClassifierZO(property_package=m.fs.prop, database=m.db)
 
     # product and waste streams
-    m.fs.struvite_product = Product(property_package = m.fs.prop)
-    m.fs.biosolid_product = Product(property_package = m.fs.prop)
-    m.fs.centrate = Product(property_package = m.fs.prop)
-
+    m.fs.struvite_product = Product(property_package=m.fs.prop)
+    m.fs.biosolid_product = Product(property_package=m.fs.prop)
+    m.fs.centrate = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.magprex.inlet)
     m.fs.s02 = Arc(source=m.fs.magprex.treated, destination=m.fs.centrifuge.inlet)
     m.fs.s03 = Arc(source=m.fs.centrifuge.treated, destination=m.fs.centrate.inlet)
-    m.fs.s04 = Arc(source=m.fs.centrifuge.byproduct, destination=m.fs.biosolid_product.inlet)
+    m.fs.s04 = Arc(
+        source=m.fs.centrifuge.byproduct, destination=m.fs.biosolid_product.inlet
+    )
     m.fs.s05 = Arc(source=m.fs.magprex.byproduct, destination=m.fs.classifier.inlet)
-    m.fs.s06 = Arc(source=m.fs.classifier.outlet, destination=m.fs.struvite_product.inlet)
+    m.fs.s06 = Arc(
+        source=m.fs.classifier.outlet, destination=m.fs.struvite_product.inlet
+    )
 
     # expand arcs
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -127,9 +120,9 @@ def build():
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 126.2 * pyunits.m ** 3 / pyunits.hr
-    conc_mass_phosphates = 350 * pyunits.g / pyunits.m ** 3
-    conc_mass_struvite = 1e-10 * pyunits.g / pyunits.m ** 3
+    flow_vol = 126.2 * pyunits.m**3 / pyunits.hr
+    conc_mass_phosphates = 350 * pyunits.g / pyunits.m**3
+    conc_mass_struvite = 1e-10 * pyunits.g / pyunits.m**3
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_phosphates)
     m.fs.feed.conc_mass_comp[0, "struvite"].fix(conc_mass_struvite)
@@ -144,6 +137,7 @@ def set_operating_conditions(m):
 
     # struvite classifier
     m.fs.classifier.load_parameters_from_database(use_default_removal=True)
+
 
 def initialize_system(m):
     seq = SequentialDecomposition()
@@ -166,11 +160,12 @@ def display_results(m):
     print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    unit_list = ["feed", "magprex", "centrifuge","classifier"]
+    unit_list = ["feed", "magprex", "centrifuge", "classifier"]
     for u in unit_list:
         m.fs.component(u).report()
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
 
 def add_costing(m):
     # yaml file path
@@ -180,7 +175,7 @@ def add_costing(m):
     )
 
     # add costing block
-    m.fs.costing = ZeroOrderCosting(case_study_definition = source_file)
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
     m.fs.magprex.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.centrifuge.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -279,6 +274,6 @@ def display_costing(m):
     )
     print(f"Levelized Cost of Struvite: {LCOS:.3f} $/kg")
 
-if __name__ == "__main__":
-    m, results= main()
 
+if __name__ == "__main__":
+    m, results = main()

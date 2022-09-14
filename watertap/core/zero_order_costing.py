@@ -3059,7 +3059,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost, to_units=blk.config.flowsheet_costing_block.base_currency,
+            ref_state * HRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         # Determine if a costing factor is required
@@ -3108,7 +3109,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * SRT * size_cost, to_units=blk.config.flowsheet_costing_block.base_currency,
+            ref_state * SRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         # Determine if a costing factor is required
@@ -3154,7 +3156,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost, to_units=blk.config.flowsheet_costing_block.base_currency,
+            ref_state * HRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         # Determine if a costing factor is required
@@ -3200,7 +3203,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost, to_units=blk.config.flowsheet_costing_block.base_currency,
+            ref_state * HRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         # Determine if a costing factor is required
@@ -3217,7 +3221,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
-
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
@@ -3375,7 +3378,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         HRCSZO: cost_hrcs,
         MagprexZO: cost_magprex,
         CentrifugeZO: cost_centrifuge,
-        StruviteClassifierZO: cost_struvite_classifier
+        StruviteClassifierZO: cost_struvite_classifier,
     }
 
 

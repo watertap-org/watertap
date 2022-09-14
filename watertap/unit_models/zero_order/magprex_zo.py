@@ -73,4 +73,3 @@ class MagprexZOData(ZeroOrderBaseData):
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
-

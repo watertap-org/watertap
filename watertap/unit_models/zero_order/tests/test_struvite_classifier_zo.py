@@ -46,19 +46,13 @@ class TestStruviteClassifierZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["struvite"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["struvite"]})
 
-
-        m.fs.unit = StruviteClassifierZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = StruviteClassifierZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(10)
-
 
         return m
 
@@ -82,7 +76,6 @@ class TestStruviteClassifierZO:
             model.fs.unit.energy_electric_flow_vol_inlet.value
             == data["energy_electric_flow_vol_inlet"]["value"]
         )
-
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -147,7 +140,6 @@ def test_costing():
     assert isinstance(m.fs.costing.struvite_classifier, Block)
     assert isinstance(m.fs.costing.struvite_classifier.HRT, Var)
     assert isinstance(m.fs.costing.struvite_classifier.sizing_cost, Var)
-
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)

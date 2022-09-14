@@ -46,20 +46,16 @@ class TestMagprexZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["phosphates", "struvite"]}
         )
 
-
-        m.fs.unit = MagprexZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = MagprexZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(0)
-
 
         return m
 
@@ -171,7 +167,6 @@ class TestMagprexZO:
                 )
             )
 
-
     @pytest.mark.component
     def test_report(self, model):
         model.fs.unit.report()
@@ -183,12 +178,10 @@ class TestMagprexZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
-        m.fs.params = WaterParameterBlock(solute_list = ["phosphates", "struvite", "foo"])
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["phosphates", "struvite", "foo"])
 
-        m.fs.unit = MagprexZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = MagprexZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
