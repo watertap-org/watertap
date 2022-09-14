@@ -196,7 +196,7 @@ class TestROwithPX:
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert not m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(99.081, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(50, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -412,6 +412,9 @@ class TestROwithTurbine:
         assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
         assert pytest.approx(2.42916, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
+        )
+        assert pytest.approx(1.15385, rel=1e-3) == value(
+            fs.costing.specific_electrical_carbon_intensity
         )
         assert pytest.approx(0.54814, rel=1e-5) == value(fs.costing.LCOW)
 
