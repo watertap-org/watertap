@@ -159,21 +159,19 @@ def test_aggregate_filtered_input_arr():
 @pytest.mark.component
 def test_recursive_parameter_sweep(model, tmp_path):
 
-    ps = RecursiveParameterSweep(
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir=None,
-    )
+    comm = RecursiveParameterSweep().comm
 
-    tmp_path = _get_rank0_path(ps.comm, tmp_path)
+    tmp_path = _get_rank0_path(comm, tmp_path)
 
     results_fname = os.path.join(tmp_path, "global_results")
     csv_results_file = str(results_fname) + ".csv"
     h5_results_file = str(results_fname) + ".h5"
 
-    ps.writer.set_debugging_data_dir(tmp_path)
-    ps.writer.set_csv_results_filename(csv_results_file)
-    ps.writer.set_h5_results_file_name(h5_results_file)
+    ps = RecursiveParameterSweep(
+        csv_results_file_name=csv_results_file,
+        h5_results_file_name=h5_results_file,
+        debugging_data_dir=tmp_path,
+    )
 
     m = model
 
