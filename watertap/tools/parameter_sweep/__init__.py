@@ -20,6 +20,7 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,
 )
+
 # TODO: should this be removed?
 import numpy as _np
 
