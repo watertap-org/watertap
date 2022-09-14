@@ -27,6 +27,7 @@ from pyomo.environ import (
     Objective,
     Constraint,
     units as pyunits,
+    Expr_if,
     Var,
     value,
     ComponentMap,
@@ -147,6 +148,7 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     t_blocks = mp_swro.get_active_process_blocks()
     daily_water_production = 38.52 * pyunits.m**3 / pyunits.day
     fixed_hourly_cost = 0.6102
+    peak_load_surcharge = 0.1 * pyunits.USD_2018 / pyunits.kWh
     # base_costing_block = t_blocks[0].ro_mp.fs.costing
     # fixed_hourly_cost = Expression(
     #     expr= pyunits.convert(base_costing_block.total_investment_cost
@@ -174,6 +176,12 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             default=carbontax,
             mutable=True,
             units=blk_swro.fs.costing.base_currency / pyunits.kg,
+        )
+        blk.demand_charge_trigger = Param(
+            default=max(lmp)
+            * 0.9,  # TODO - change this to be informed by real market value
+            mutable=True,
+            units=blk_swro.fs.costing.base_currency / pyunits.kWh,
         )
 
         # set the electricity_price in each flowsheet
@@ -204,6 +212,11 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
             doc="Energy consumption per timestep kWh/hr",
         )
+        blk.demand_charge = Expr_if(
+            blk.lmp_signal > blk.demand_charge_trigger,
+            peak_load_surcharge,
+            0,
+        )
         blk.carbon_emission = Expression(
             expr=blk.energy_consumption
             * pyunits.convert(blk.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
@@ -216,7 +229,8 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             doc="Hourly cost associated with carbon emissions $/hr",
         )
         blk.weighted_LCOW = Expression(
-            expr=fixed_hourly_cost + blk.energy_consumption * blk.lmp_signal,
+            expr=fixed_hourly_cost
+            + blk.energy_consumption * (blk.lmp_signal + blk.demand_charge),
             doc="hourly cost [$/hr]",
         )
         blk.weighted_LCOW_b = Expression(
@@ -237,10 +251,10 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         doc="Daily cost to produce water",
     )
 
-    # m.permeate_yield = Constraint(
-    #     expr= sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
-    #     doc="The water production over the day is fixed within a tolerance",
-    # )
+    m.permeate_yield = Constraint(
+        expr=sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
+        doc="The water production over the day is fixed within a tolerance",
+    )
 
     # m.permeate_yield = Constraint(
     #     expr=(
@@ -424,12 +438,12 @@ def visualize_results(
 
     ax[2, 0].plot(
         time_step,
-        df["flowrate1"].values / max(df["flowrate1"].values),
+        df["permeate"].values / max(df["permeate"].values),
         label="Main RO pump",
     )
     ax[2, 0].set_xlabel("Time [hr]")
     ax[2, 0].set_ylabel("Fraction of max flowrate")
-    ax[2, 0].set_title("Pump flowrate [m3/hr]")
+    ax[2, 0].set_title("Permeate flowrate [m3/hr]")
     ax[2, 0].legend()
 
     ax[2, 1].plot(time_step, df["efficiency1"].values / 0.8, label="Main RO pump")
@@ -448,31 +462,41 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    price_multiplier = [0.25, 1, 3, 10]
-    file_save = [
-        "simulation_data_0_25_ubcon.csv",
-        # "simulation_data_0_25_unc.csv",
-        "simulation_data_1_00_ubcon.csv",
-        # "simulation_data_1_00_unc.csv",
-        "simulation_data_3_00_ubcon.csv",
-        # "simulation_data_3_00_unc.csv",
-        "simulation_data_10_00_ubcon.csv",
-        # "simulation_data_10_00_unc.csv",
-    ]
-    for i, multiplier in enumerate(price_multiplier):
+    # price_multiplier = [0.25, 1, 3, 10]
+    # file_save = [
+    #     "simulation_data_0_25_ubcon.csv",
+    #     # "simulation_data_0_25_unc.csv",
+    #     "simulation_data_1_00_ubcon.csv",
+    #     # "simulation_data_1_00_unc.csv",
+    #     "simulation_data_3_00_ubcon.csv",
+    #     # "simulation_data_3_00_unc.csv",
+    #     "simulation_data_10_00_ubcon.csv",
+    #     # "simulation_data_10_00_unc.csv",
+    # ]
+    # for i, multiplier in enumerate(price_multiplier):
+    #
+    #     m, t_blocks, data = main(
+    #         ndays=1,
+    #         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+    #         filename="dagget_CA_LMP_hourly_2015.csv",
+    #         price_multiplier=multiplier,
+    #     )
+    #     path = os.path.join(os.getcwd(), file_save[i])
+    #     save_results(m, t_blocks, data, path)
+    m, t_blocks, data = main(
+        ndays=1,
+        # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+        filename="dagget_CA_LMP_hourly_2015.csv",
+        price_multiplier=20,
+    )
+    file_save = "temp.csv"
+    path = os.path.join(os.getcwd(), file_save)
+    save_results(m, t_blocks, data, path)
 
-        m, t_blocks, data = main(
-            ndays=1,
-            # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-            filename="dagget_CA_LMP_hourly_2015.csv",
-            price_multiplier=multiplier,
-        )
-        path = os.path.join(os.getcwd(), file_save[i])
-        save_results(m, t_blocks, data, path)
-    # title_label = f"LMP scaling = {price_multiplier}"
-    # visualize_results(
-    #     path,
-    #     erd_type=t_blocks[0].ro_mp.fs.erd_type,
-    #     co2i=False,
-    #     title_label=title_label,
-    # )
+    title_label = f"LMP scaling = {20}"
+    visualize_results(
+        path,
+        erd_type=t_blocks[0].ro_mp.fs.erd_type,
+        co2i=False,
+        title_label=title_label,
+    )
