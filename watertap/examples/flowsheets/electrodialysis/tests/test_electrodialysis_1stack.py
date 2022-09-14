@@ -196,33 +196,13 @@ class TestElectrodialysisVoltageConst:
         assert value(
             m.fs.disposal.properties[0].flow_vol_phase["Liq"]
         ) == pytest.approx(4.5e-5, abs=1e-6)
-        assert value(
-            sum(
-                m.fs.feed.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(9.895, rel=1e-3)
-        assert value(
-            sum(
-                m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(1.000, rel=1e-3)
-        assert value(
-            sum(
-                m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
-                for j in m.fs.properties.ion_set
-            )
-        ) == pytest.approx(18.074, rel=1e-3)
+        assert value(m.fs.product_salinity) == pytest.approx(1.000, rel=1e-3)
+        assert value(m.fs.disposal_salinity) == pytest.approx(18.074, rel=1e-3)
 
         assert value(m.fs.EDstack.recovery_mass_H2O[0]) == pytest.approx(
             0.483, rel=1e-3
         )
-        assert value(
-            m.fs.EDstack.cell_width
-            * m.fs.EDstack.cell_length
-            * m.fs.EDstack.cell_pair_num
-        ) == pytest.approx(2.003, rel=2e-3)
+        assert value(m.fs.mem_area) == pytest.approx(2.0028, rel=1e-3)
         assert value(m.fs.EDstack.voltage_applied[0]) == pytest.approx(7.538, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             1.435, abs=0.002
