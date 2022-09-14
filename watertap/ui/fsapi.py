@@ -344,6 +344,7 @@ class FlowsheetInterface:
         Side-effects:
             Attribute ``fs_exp`` is modified.
         """
+        _log.info("Exporting values from flowsheet model to UI")
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
