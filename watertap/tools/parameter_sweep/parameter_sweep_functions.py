@@ -20,11 +20,20 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
 def parameter_sweep(
     model,
     sweep_params,
+    outputs=None,
+    csv_results_file_name=None,
+    h5_results_file_name=None,
+    optimize_function=None,
+    optimize_kwargs=None,
+    reinitialize_function=None,
+    reinitialize_kwargs=None,
+    reinitialize_before_sweep=False,
+    probe_function=None,
+    mpi_comm=None,
+    debugging_data_dir=None,
+    interpolate_nan_outputs=False,
     num_samples=None,
     seed=None,
-    outputs=None,
-    mpi_comm=None,
-    **kwargs,
 ):
 
     """
@@ -116,8 +125,29 @@ def parameter_sweep(
                     simulation identified by the ``outputs`` argument.
     """
 
+    kwargs = {}
     if mpi_comm is not None:
         kwargs["comm"] = mpi_comm
+    if csv_results_file_name is not None:
+        kwargs["csv_results_file_name"] = csv_results_file_name
+    if h5_results_file_name is not None:
+        kwargs["h5_results_file_name"] = h5_results_file_name
+    if optimize_function is not None:
+        kwargs["optimize_function"] = optimize_function
+    if optimize_kwargs is not None:
+        kwargs["optimize_kwargs"] = optimize_kwargs
+    if reinitialize_function is not None:
+        kwargs["reinitialize_function"] = reinitialize_function
+    if reinitialize_kwargs is not None:
+        kwargs["reinitialize_kwargs"] = reinitialize_kwargs
+    kwargs["reinitialize_before_sweep"] = reinitialize_before_sweep
+    if probe_function is not None:
+        kwargs["probe_function"] = probe_function
+    if debugging_data_dir is not None:
+        kwargs["debugging_data_dir"] = debugging_data_dir
+    if interpolate_nan_outputs is not None:
+        kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+
     ps = ParameterSweep(**kwargs)
 
     return ps.parameter_sweep(
@@ -129,14 +159,44 @@ def recursive_parameter_sweep(
     model,
     sweep_params,
     outputs=None,
+    csv_results_file_name=None,
+    h5_results_file_name=None,
+    optimize_function=None,
+    optimize_kwargs=None,
+    reinitialize_function=None,
+    reinitialize_kwargs=None,
+    reinitialize_before_sweep=False,
+    probe_function=None,
     mpi_comm=None,
+    debugging_data_dir=None,
+    interpolate_nan_outputs=False,
     req_num_samples=None,
     seed=None,
-    **kwargs,
 ):
 
+    kwargs = {}
     if mpi_comm is not None:
         kwargs["comm"] = mpi_comm
+    if csv_results_file_name is not None:
+        kwargs["csv_results_file_name"] = csv_results_file_name
+    if h5_results_file_name is not None:
+        kwargs["h5_results_file_name"] = h5_results_file_name
+    if optimize_function is not None:
+        kwargs["optimize_function"] = optimize_function
+    if optimize_kwargs is not None:
+        kwargs["optimize_kwargs"] = optimize_kwargs
+    if reinitialize_function is not None:
+        kwargs["reinitialize_function"] = reinitialize_function
+    if reinitialize_kwargs is not None:
+        kwargs["reinitialize_kwargs"] = reinitialize_kwargs
+    kwargs["reinitialize_before_sweep"] = reinitialize_before_sweep
+    if probe_function is not None:
+        kwargs["probe_function"] = probe_function
+    if debugging_data_dir is not None:
+        kwargs["debugging_data_dir"] = debugging_data_dir
+    if interpolate_nan_outputs is not None:
+        kwargs["interpolate_nan_outputs"] = interpolate_nan_outputs
+
     rps = RecursiveParameterSweep(**kwargs)
 
     return rps.parameter_sweep(
