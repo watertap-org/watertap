@@ -105,7 +105,7 @@ class TestUV:
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -166,7 +166,7 @@ class TestUV:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 36
+        assert number_variables(m) == 38
         assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0
 
@@ -321,7 +321,7 @@ class TestUV_standard:
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -382,7 +382,7 @@ class TestUV_standard:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 36
+        assert number_variables(m) == 38
         assert number_total_constraints(m) == 25
         assert number_unused_variables(m) == 0
 
@@ -509,6 +509,7 @@ class TestUV_with_multiple_comps:
             default={
                 "property_package": m.fs.properties,
                 "energy_balance_type": EnergyBalanceType.none,
+                "target_species": ["NDMA", "DCE"],
             }
         )
 
@@ -562,7 +563,7 @@ class TestUV_with_multiple_comps:
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -623,8 +624,8 @@ class TestUV_with_multiple_comps:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 64
-        assert number_total_constraints(m) == 41
+        assert number_variables(m) == 68
+        assert number_total_constraints(m) == 42
         assert number_unused_variables(m) == 12
 
         # test unit consistency
@@ -808,7 +809,7 @@ class TestUV_detailed:
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -870,7 +871,7 @@ class TestUV_detailed:
                 assert hasattr(blk[0], obj_str)
 
         # test statistics
-        assert number_variables(m) == 43
+        assert number_variables(m) == 45
         assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
@@ -1039,7 +1040,7 @@ class TestUVAOP:
     def test_config(self, UV_frame):
         m = UV_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -1101,7 +1102,7 @@ class TestUVAOP:
 
         # test statistics
         assert number_variables(m) == 40
-        assert number_total_constraints(m) == 27
+        assert number_total_constraints(m) == 26
         assert number_unused_variables(m) == 0
 
         # test unit consistency

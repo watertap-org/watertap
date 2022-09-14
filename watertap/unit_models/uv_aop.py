@@ -21,6 +21,7 @@ from pyomo.environ import (
     Set,
     Suffix,
     units as pyunits,
+    Constraint,
 )
 from idaes.core.util.math import smooth_max
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -42,6 +43,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.misc import add_object_reference
 
 _log = idaeslog.getLogger(__name__)
 
@@ -207,7 +209,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         ConfigValue(
             default=None,
             domain=set,
-            description="Species target for uv disinfection, currently only supports single species",
+            description="Species target for uv disinfection",
             doc="""Indicate which component in the property package's component list is the target species
         for disinfection by the UV system, currently the model supports a single species
         **default** - None.
@@ -234,43 +236,26 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
-        self.solvent_list = Set()
-        self.solute_list = Set()
-        for c in self.config.property_package.component_list:
-            comp = self.config.property_package.get_component(c)
-            try:
-                if comp.is_solvent():
-                    self.solvent_list.add(c)
-                if comp.is_solute():
-                    self.solute_list.add(c)
-            except TypeError:
-                raise ConfigurationError(
-                    "UV model only supports one solvent and one or more solutes,"
-                    "the provided property package has specified a component '{}' "
-                    "that is not a solvent or solute".format(c)
-                )
-        if len(self.solvent_list) > 1:
-            raise ConfigurationError(
-                "UV model only supports one solvent component,"
-                "the provided property package has specified {} solvent components".format(
-                    len(self.solvent_list)
-                )
-            )
-
         # separate target species to be adsorbed and other species considered inert
         component_set = self.config.property_package.component_list
         solute_set = self.config.property_package.solute_set
         # apply target species automatically if arg left to default and only one viable option exists
         if self.config.target_species is None and len(solute_set) == 1:
-            self.config.target_species = solute_set
-        target_species = self.config.target_species
-        inert_species = component_set - self.config.target_species
+            add_object_reference(self, "target_species", solute_set)
+        elif self.config.target_species is not None:
+            self.target_species = Set()
+            for k in self.config.target_species:
+                self.target_species.add(k)
+            self.inert_species = component_set - self.target_species
+        else:
+            raise ConfigurationError(
+                "Target species should be a set of strings. Please provide target species and a correct format"
+            )
 
         # Add unit parameters
         self.inactivation_rate = Var(
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=2.5e-4,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -280,12 +265,32 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         self.rate_constant = Var(
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=2.5e-3,
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("time") ** -1,
             doc="Overall pseudo-first order rate constant.",
+        )
+
+        self.photolysis_rate_constant = Var(
+            self.config.property_package.phase_list,
+            self.target_species,
+            initialize=2e-3,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("time") ** -1,
+            doc="Pseudo-first-order rate constant for direct photolysis of component.",
+        )
+
+        self.reaction_rate_constant = Var(
+            self.config.property_package.phase_list,
+            self.target_species,
+            initialize=5e-4,
+            bounds=(0, 100),
+            domain=NonNegativeReals,
+            units=units_meta("time") ** -1,
+            doc="Pseudo-first-order rate constant for indirect photolysis of component.",
         )
 
         self.dens_solvent = Param(
@@ -328,7 +333,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         self.electricity_demand_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=1,
             bounds=(0, None),
             units=units_meta("mass")
@@ -340,7 +345,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         self.max_phase_electricity_demand = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=1,
             bounds=(0, None),
             units=units_meta("mass")
@@ -351,7 +356,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         self.electricity_demand_comp = Var(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=1,
             bounds=(0, None),
             units=units_meta("mass")
@@ -362,7 +367,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         self.max_component_electricity_demand = Var(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=1,
             bounds=(0, None),
             units=units_meta("mass")
@@ -394,7 +399,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         self.electrical_efficiency_phase_comp = Var(
             self.flowsheet().time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             initialize=1,
             bounds=(0, None),
             units=units_meta("mass")
@@ -546,35 +551,28 @@ class Ultraviolet0DData(UnitModelBlockData):
         # rate constant
         @self.Constraint(
             self.config.property_package.phase_list,
-            target_species,
+            self.target_species,
             doc="Constraint for pseudo-first order rate constant with respect to uv intensity",
         )
         def eq_rate_constant(b, p, j):
             return b.rate_constant[p, j] == b.uv_intensity * b.inactivation_rate[p, j]
 
+        @self.Constraint(
+            self.config.property_package.phase_list,
+            self.target_species,
+            doc="Constraint for pseudo-first order reaction rate constant with respect to direct and indirect photolysis",
+        )
+        def eq_overall_rate_constant(b, p, j):
+            return (
+                b.rate_constant[p, j]
+                == b.photolysis_rate_constant[p, j] + b.reaction_rate_constant[p, j]
+            )
+
         # ---------------------------------------------------------------------
         if self.config.has_aop is True:
-            self.photolysis_rate_constant = Var(
-                self.config.property_package.phase_list,
-                self.config.property_package.solute_set,
-                initialize=2e-3,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("time") ** -1,
-                doc="Pseudo-first-order rate constant for direct photolysis of component.",
-            )
-            self.reaction_rate_constant = Var(
-                self.config.property_package.phase_list,
-                self.config.property_package.solute_set,
-                initialize=5e-4,
-                bounds=(0, 100),
-                domain=NonNegativeReals,
-                units=units_meta("time") ** -1,
-                doc="Pseudo-first-order rate constant for indirect photolysis of component.",
-            )
             self.second_order_reaction_rate_constant = Var(
                 self.config.property_package.phase_list,
-                self.config.property_package.solute_set,
+                self.target_species,
                 initialize=3.3e8,
                 bounds=(0, None),
                 domain=NonNegativeReals,
@@ -591,18 +589,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
             @self.Constraint(
                 self.config.property_package.phase_list,
-                target_species,
-                doc="Constraint for pseudo-first order reaction rate constant with respect to direct and indirect photolysis",
-            )
-            def eq_overall_rate_constant(b, p, j):
-                return (
-                    b.rate_constant[p, j]
-                    == b.photolysis_rate_constant[p, j] + b.reaction_rate_constant[p, j]
-                )
-
-            @self.Constraint(
-                self.config.property_package.phase_list,
-                target_species,
+                self.target_species,
                 doc="Constraint for pseudo-first order reaction rate constant",
             )
             def eq_reaction_rate_constant(b, p, j):
@@ -611,6 +598,17 @@ class Ultraviolet0DData(UnitModelBlockData):
                     == b.second_order_reaction_rate_constant[p, j]
                     * b.hydrogen_peroxide_conc
                 )
+
+        else:
+
+            @self.Constraint(
+                self.config.property_package.phase_list,
+                self.target_species,
+                doc="Fix pseudo-first order reaction rate constant to zero",
+            )
+            def eq_no_reaction_rate_constant(b, p, j):
+                b.reaction_rate_constant[p, j].fix(0)
+                return Constraint.Skip
 
         # mass transfer
         @self.Constraint(
@@ -621,10 +619,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         )
         def eq_outlet_conc(b, t, p, j):
             prop_in = b.control_volume.properties_in[t]
-            comp = self.config.property_package.get_component(j)
-            if comp.is_solvent():
-                return b.control_volume.mass_transfer_term[t, p, j] == 0
-            elif comp.is_solute():
+            if j in b.target_species:
                 return b.control_volume.mass_transfer_term[t, p, j] == -(
                     prop_in.get_material_flow_terms(p, j)
                     * (
@@ -637,12 +632,15 @@ class Ultraviolet0DData(UnitModelBlockData):
                         )
                     )
                 )
+            else:
+                b.control_volume.mass_transfer_term[t, p, j].fix(0)
+                return Constraint.Skip
 
         # electricity
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             doc="Constraints for electricity demand of the UV reactor.",
         )
         def eq_electricity_demand_phase_comp(b, t, p, j):
@@ -665,7 +663,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            self.target_species,
             doc="Constraints for calculating maximum electricity demand for different phases.",
         )
         def eq_max_phase_electricity_demand(b, t, p, j):
@@ -687,7 +685,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            self.target_species,
             doc="Constraints for electricity demand of each component.",
         )
         def eq_electricity_demand_comp(b, t, j):
@@ -700,11 +698,11 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            self.config.property_package.solute_set,
+            self.target_species,
             doc="Constraints for calculating maximum electricity demand for multiple components.",
         )
         def eq_max_electricity_demand(b, t, j):
-            if j == b.config.property_package.solute_set.first():
+            if j == b.target_species.first():
                 return (
                     b.max_component_electricity_demand[t, j]
                     == b.electricity_demand_comp[t, j]
@@ -712,9 +710,7 @@ class Ultraviolet0DData(UnitModelBlockData):
             else:
                 return b.max_component_electricity_demand[t, j] == (
                     smooth_max(
-                        b.max_component_electricity_demand[
-                            t, b.config.property_package.solute_set.prev(j)
-                        ],
+                        b.max_component_electricity_demand[t, b.target_species.prev(j)],
                         b.electricity_demand_comp[t, j],
                         b.eps_electricity,
                     )
@@ -727,9 +723,7 @@ class Ultraviolet0DData(UnitModelBlockData):
         def eq_electricity_demand(b, t):
             return (
                 b.electricity_demand[t]
-                == b.max_component_electricity_demand[
-                    t, b.config.property_package.solute_set.last()
-                ]
+                == b.max_component_electricity_demand[t, b.target_species.last()]
             )
 
     def initialize_build(
@@ -1006,7 +1000,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         for (t, j), v in self.max_component_electricity_demand.items():
             if iscale.get_scaling_factor(v) is None:
-                j = self.config.property_package.solute_set.first()
+                j = self.target_species.first()
                 sf = iscale.get_scaling_factor(
                     self.electricity_demand_comp[t, j], warning=True
                 )
@@ -1014,7 +1008,7 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         for t, v in self.electricity_demand.items():
             if iscale.get_scaling_factor(v) is None:
-                j = self.config.property_package.solute_set.last()
+                j = self.target_species.last()
                 sf = iscale.get_scaling_factor(
                     self.max_component_electricity_demand[t, j], warning=True
                 )
@@ -1054,6 +1048,15 @@ class Ultraviolet0DData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.rate_constant[ind])
             iscale.constraint_scaling_transform(c, sf)
 
+        for ind, c in self.eq_overall_rate_constant.items():
+            if iscale.get_scaling_factor(self.rate_constant) is None:
+                sf = iscale.get_scaling_factor(
+                    self.photolysis_rate_constant[ind]
+                ) + iscale.get_scaling_factor(self.reaction_rate_constant[ind])
+            else:
+                sf = iscale.get_scaling_factor(self.rate_constant[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_outlet_conc.items():
             (t, p, j) = ind
             sf = iscale.get_scaling_factor(
@@ -1088,16 +1091,6 @@ class Ultraviolet0DData(UnitModelBlockData):
         if hasattr(self, "eq_uv_dose_detail"):
             for c in self.eq_uv_dose_detail.values():
                 sf = iscale.get_scaling_factor(self.uv_dose)
-                iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, "eq_overall_rate_constant"):
-            for ind, c in self.eq_overall_rate_constant.items():
-                if iscale.get_scaling_factor(self.rate_constant) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.photolysis_rate_constant[ind]
-                    ) + iscale.get_scaling_factor(self.reaction_rate_constant[ind])
-                else:
-                    sf = iscale.get_scaling_factor(self.rate_constant[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "eq_reaction_rate_constant"):

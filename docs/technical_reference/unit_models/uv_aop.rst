@@ -66,6 +66,8 @@ The table below gives an outline of these.
 
    "Inactivation rate coefficient", ":math:`k`", "inactivation_rate", "[p, j]", ":math:`\text{m}^2\text{/J}`"
    "Overall pseudo-first order rate constant", ":math:`k_0`", "rate_constant", "[p, j]", ":math:`\text{s}^{-1}`"
+   "Pseudo-first order rate constant for direct photolysis of component", ":math:`k_d`", "photolysis_rate_constant", "[p, j]", ":math:`\text{s}^{-1}`"
+   "Pseudo-first order rate constant for indirect photolysis of component", ":math:`k_i`", "reaction_rate_constant", "[p, j]", ":math:`\text{s}^{-1}`"
    "UV dose", ":math:`D`", "uv_dose", None, ":math:`\text{J/}\text{m}^2`"
    "Average intensity of UV light", ":math:`I`", "uv_intensity", None, ":math:`\text{J/}\text{m}^2\text{/s}`"
    "Exposure time of UV light", ":math:`t`", "exposure_time", None, ":math:`\text{s}`"
@@ -77,12 +79,13 @@ The table below gives an outline of these.
 
 **Users must provide values for and 'fix' certain variables to solve the model with DOF=0. Thus, users should fix**
     * either 'inactivation_rate' or 'rate_constant',
-    * either 'photolysis_rate_constant' or 'reaction_rate_constant',
     * two variables out of 'uv_dose', 'uv_intensity' and 'exposure_time',
     * either 'electricity_demand_phase_comp' or 'electrical_efficiency',
     * and 'lamp_efficiency'.
 
 **However, users may later unfix certain variables for optimization purposes.**
+
+**NOTE: 'reaction_rate_constant' is fixed to 0 when 'has_aop' configuration is set to default 'False'**
 
 When setting the ``uv_dose_type`` configuration option to ``UVDoseType.calculated``, there are 7 additional variables that must be fixed.
 This leads to a total of 12 degrees of freedom. Additional variables that must be fixed include:
@@ -98,14 +101,12 @@ This leads to a total of 12 degrees of freedom. Additional variables that must b
    "Relative lamp output", ":math:`\frac{S}{S_0}`", "relative_lamp_output", None, None
    "Number of banks", ":math:`N_{bank}`", "num_of_banks", None, None
 
-When setting the ``has_aop`` configuration option to ``True``, there are 2 additional variables that must be fixed.
-This leads to a total of 7 degrees of freedom. Additional variables that must be fixed include:
+When setting the ``has_aop`` configuration option to ``True``, there are 2 additional variable that must be fixed.
+This leads to a total of 6 degrees of freedom. Additional variables that must be fixed include:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Pseudo-first order rate constant for direct photolysis of component", ":math:`k_d`", "photolysis_rate_constant", "[p, j]", ":math:`\text{s}^{-1}`"
-   "Pseudo-first order rate constant for indirect photolysis of component", ":math:`k_i`", "reaction_rate_constant", "[p, j]", ":math:`\text{s}^{-1}`"
    "Second-order reaction rate constant", ":math:`k_{OH}`", "second_order_reaction_rate_constant", "[p, j]", ":math:`\text{M}^{-1} \text{s}^{-1}`"
    "Steady-state concentration of hydrogen peroxide", ":math:`c_{\text{H}_2\text{O}_2}`", "hydrogen_peroxide_conc", None, ":math:`\text{M}`"
 
@@ -122,11 +123,14 @@ if ``uv_dose_type`` and ``has_aop`` are set to default:
 
    "UV dose", ":math:`D = I \cdot t`"
    "Pseudo-first order rate constant", ":math:`k_0 = I \cdot k`"
+   "Pseudo-first order rate constant", ":math:`k_0 = k_d + k_i`"
    "Solvent mass balance", ":math:`M_{\text{H2O},out} = M_{\text{H2O},in}`"
    "Solute mass balance", ":math:`M_{p, j, out} = M_{p, j, in} \cdot \exp(D \cdot k)`"
    "Electricity demand of each component with phase", ":math:`E_{p, j} = EE/O_{p, j} \cdot F_{in} \cdot \log_{10}(M_{p, j, in} / M_{p, j, out}) / \eta`"
    "Electricity demand of each component", ":math:`E_j = \max_p E_{p, j}`"
    "Electricity demand", ":math:`E = \max_j E_j`"
+
+**NOTE: 'reaction_rate_constant' is fixed to 0**
 
 if ``uv_dose_type`` is set to ``UVDoseType.calculated``, there is one additional equation:
 
@@ -135,12 +139,11 @@ if ``uv_dose_type`` is set to ``UVDoseType.calculated``, there is one additional
 
    "UV dose", ":math:`D = 10^A \cdot (-\log_{10}(UVT))^{(-B \cdot \log_{10}(UVT))} \cdot (\frac{S}{S_0} / F_{in})^C \cdot N_{bank}^D`"
 
-if ``has_aop`` is set to ``True``, there are two additional equations:
+if ``has_aop`` is set to ``True``, there are one additional equation:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Pseudo-first order rate constant", ":math:`k_0 = k_d + k_i`"
    "Reaction rate constant", ":math:`k_i = k_{OH} \cdot c_{\text{H}_2\text{O}_2}`"
 
 Class Documentation
