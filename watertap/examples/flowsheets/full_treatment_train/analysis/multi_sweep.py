@@ -6,6 +6,7 @@ from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
 import watertap.tools.MPI as MPI
 
+
 def append_costing_outputs(m, outputs, units_to_cost):
     for unit_name in units_to_cost:
         unit_costing = getattr(m.fs, unit_name).costing
