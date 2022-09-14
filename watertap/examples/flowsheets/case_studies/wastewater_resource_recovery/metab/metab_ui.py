@@ -18,7 +18,7 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.meta
     initialize_system,
     solve,
     add_costing,
-    adjust_default_parameters
+    adjust_default_parameters,
 )
 from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits, assert_optimal_termination
@@ -627,24 +627,24 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Levelized cost metrics",
     )
     # Normalized metrics
-    total_capital_norm = (fs.costing.total_capital_cost
-                          / fs.feed.properties[0].flow_vol)
+    total_capital_norm = fs.costing.total_capital_cost / fs.feed.properties[0].flow_vol
     exports.add(
         obj=total_capital_norm,
         name="Total capital",
-        ui_units=fs.costing.base_currency / (pyunits.m ** 3 / pyunits.day),
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         display_units="$/(m3/day)",
         rounding=1,
         description="Normalized total capital costs accounting for indirect "
-                    "capital and installation - [total capital costs/feed flow rate]",
+        "capital and installation - [total capital costs/feed flow rate]",
         is_input=False,
         is_output=True,
         output_category="Normalized cost metrics",
     )
-    direct_capital_norm = ((fs.metab_hydrogen.costing.capital_cost
-                      + fs.metab_methane.costing.capital_cost)
-                      / fs.costing.TIC
-                      / fs.feed.properties[0].flow_vol)
+    direct_capital_norm = (
+        (fs.metab_hydrogen.costing.capital_cost + fs.metab_methane.costing.capital_cost)
+        / fs.costing.TIC
+        / fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=direct_capital_norm,
         name="Direct capital",
@@ -656,8 +656,9 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized cost metrics",
     )
-    elec_operating_norm = (fs.costing.aggregate_flow_costs["electricity"]
-                     / fs.costing.annual_water_inlet)
+    elec_operating_norm = (
+        fs.costing.aggregate_flow_costs["electricity"] / fs.costing.annual_water_inlet
+    )
     exports.add(
         obj=elec_operating_norm,
         name="Electricity",
@@ -669,12 +670,13 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized cost metrics",
     )
-    heat_operating_norm = (fs.costing.aggregate_flow_costs["heat"]
-                     / fs.costing.annual_water_inlet)
+    heat_operating_norm = (
+        fs.costing.aggregate_flow_costs["heat"] / fs.costing.annual_water_inlet
+    )
     exports.add(
         obj=heat_operating_norm,
         name="Heating",
-        ui_units=fs.costing.base_currency / pyunits.m ** 3,
+        ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
         description="Normalized heating cost - [annual heating costs/annual feed flow rate]",
@@ -684,8 +686,9 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # performance metrics
-    recovery_vol = (fs.product_H2O.properties[0].flow_vol
-                    / fs.feed.properties[0].flow_vol)
+    recovery_vol = (
+        fs.product_H2O.properties[0].flow_vol / fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=recovery_vol,
         name="Volumetric recovery",
@@ -697,9 +700,11 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    removal_cod = (1
-            - fs.product_H2O.properties[0].flow_mass_comp["cod"]
-            / fs.feed.properties[0].flow_mass_comp["cod"])
+    removal_cod = (
+        1
+        - fs.product_H2O.properties[0].flow_mass_comp["cod"]
+        / fs.feed.properties[0].flow_mass_comp["cod"]
+    )
     exports.add(
         obj=removal_cod,
         name="COD removal",
@@ -711,12 +716,14 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    hydrogen_production = (fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"]
-                          / fs.feed.properties[0].flow_vol)
+    hydrogen_production = (
+        fs.product_hydrogen.properties[0].flow_mass_comp["hydrogen"]
+        / fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=hydrogen_production,
         name="Hydrogen production",
-        ui_units=pyunits.kg / pyunits.m ** 3,
+        ui_units=pyunits.kg / pyunits.m**3,
         display_units="kg-H2/m3 of feed",
         rounding=3,
         description="Hydrogen production [hydrogen product flow rate/feed flow rate]",
@@ -725,8 +732,10 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Normalized performance metrics",
     )
 
-    methane_production = (fs.product_methane.properties[0].flow_mass_comp["methane"]
-                    / fs.feed.properties[0].flow_vol)
+    methane_production = (
+        fs.product_methane.properties[0].flow_mass_comp["methane"]
+        / fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=methane_production,
         name="Methane production",
@@ -778,7 +787,7 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.costing.total_operating_cost,
         name="Total",
-        ui_units=fs.costing.base_currency/pyunits.year,
+        ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=1,
         description="Total annual operating costs - including electricity, heating, and fixed",
@@ -822,8 +831,9 @@ def export_variables(flowsheet=None, exports=None):
 
     # Revenue
     total_revenue = -(
-            fs.costing.aggregate_flow_costs["hydrogen_product"]
-            + fs.costing.aggregate_flow_costs["methane_product"])
+        fs.costing.aggregate_flow_costs["hydrogen_product"]
+        + fs.costing.aggregate_flow_costs["methane_product"]
+    )
     exports.add(
         obj=total_revenue,
         name="Total",
@@ -857,6 +867,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Revenue",
     )
+
 
 def build_flowsheet():
     # build and solve initial flowsheet
