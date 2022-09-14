@@ -249,6 +249,7 @@ class FlowsheetInterface:
         Args:
             data: The input flowsheet (probably deserialized from JSON)
         """
+        u = pyo.units
         fs = FlowsheetExport.parse_obj(data)  # new instance from data
         # Set the value for each input variable
         missing = []
@@ -261,8 +262,15 @@ class FlowsheetInterface:
                 missing.append((key, src.name))
                 continue
             # set value in this flowsheet
+            ui_units = dst.ui_units
             if dst.is_input and not dst.is_readonly:
-                dst.obj.value = dst.value = src.value
+                # create a Var so Pyomo can do the unit conversion for us
+                tmp = pyo.Var(initialize=src.value, units=ui_units)
+                tmp.construct()
+                # Convert units when setting value in the model
+                dst.obj.value = u.convert(tmp, to_units=u.get_units(dst.obj))
+                # Don't convert units when setting the exported value
+                dst.value = src.value
 
         if missing:
             raise self.MissingObjectError(missing)
@@ -330,76 +338,12 @@ class FlowsheetInterface:
             )
         return func(**kwargs)
 
-    @classmethod
-    def find(cls, package: str) -> Dict[str, FSI]:
-        """Find all modules with a flowsheet interface in a given package.
-        Having a flowhseet interface means simply that there is a function
-        whose name matches the contents of :attr:`FlowsheetInterface.UI_HOOK`.
-        This function should build and return a :class:`FlowsheetInterface` object.
-
-        Args:
-            package: Dotted package name, e.g. "watertap" or "my.package"
-
-        Returns:
-            Dict mapping module names to FlowsheetInterface objects
-
-        Raises:
-            ImportError: if package cannot be imported
-            IOError: If package directory cannot be found
-        """
-        pkg = importlib.import_module(package)
-
-        # Get a directory for the package, dealing with some failure modes
-
-        try:
-            pkg_path = Path(pkg.__file__).parent
-        except TypeError:  # missing __init__.py perhaps
-            raise IOError(
-                f"Cannot find package '{package}' directory, possibly "
-                f"missing an '__init__.py' file"
-            )
-        if not pkg_path.is_dir():
-            raise IOError(
-                f"Cannot load from package '{package}': "
-                f"path '{pkg_path}' not a directory"
-            )
-
-        # Find modules and import
-
-        skip_expr = re.compile(r"_test|test_|__")
-        result = {}
-
-        for python_file in pkg_path.glob("**/*.py"):
-            _log.debug(f"FlowsheetInterface.find: importing file '{python_file}'")
-            if skip_expr.search(str(python_file)):
-                continue
-            relative_path = python_file.relative_to(pkg_path)
-            dotted_name = relative_path.as_posix()[:-3].replace("/", ".")
-            module_name = package + "." + dotted_name
-            try:
-                module = importlib.import_module(module_name)
-            except Exception as err:  # assume the import could do bad things
-                _log.warning(f"Import of file '{python_file}' failed: {err}")
-                continue
-            func = getattr(module, cls.UI_HOOK, None)
-            if func:
-                try:
-                    result[module_name] = func()
-                except Exception as err:  # If the function blows up
-                    _log.error(
-                        f"Could not get FlowsheetInterface for module "
-                        f"'{python_file}': {err}"
-                    )
-        return result
-
     def export_values(self):
         """Copy current values in underlying Pyomo model into exported model.
 
         Side-effects:
             Attribute ``fs_exp`` is modified.
         """
+        u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
-            model_value = pyo.value(mo.obj)
-            if _log.isEnabledFor(logging.DEBUG):
-                _log.debug(f"Export value. key={key}, value={model_value}")
-            mo.value = model_value
+            mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
