@@ -183,11 +183,6 @@ def test_load():
 
 
 @pytest.mark.unit
-def test_find_smoke():
-    fsapi.FlowsheetInterface.find("watertap")
-
-
-@pytest.mark.unit
 def test_require_methods():
     fsi = flowsheet_interface()
     methods = ("do_export", "do_build", "do_solve")
