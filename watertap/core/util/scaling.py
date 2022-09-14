@@ -26,8 +26,6 @@ from idaes.core.util.scaling import (
     unset_scaling_factor,
 )
 
-solver = get_solver()
-
 __author__ = "Hunter Barber"
 
 
@@ -51,23 +49,21 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
         tol : tolerance for the change in magnitude of scaled variables between
             the lower and upper bounds (default = 1e3), should always be smaller
             than the difference in magnitude of lb_scale and up_scale
-        zero: magnitude that is considered to be zero, scaled variables with a value of
-            zero are okay, and not reported (default = 1e-10)
+        zero: magnitude that is considered to be zero, scaled variables with an absolute value
+            of less than this value are okay, and not reported (default = 1e-10)
 
     Yields:
         string denoting what step failed, variable name as string,
             sensitivity of sv between lower and upper solutions
     """
 
-    # TODO: Check DOF is 0
-
+    solver = get_solver()
     sv_hist = {}
 
     for scale in [lb_scale, ub_scale]:
 
-        temp_blk = (
-            blk.clone()
-        )  # clone flowsheet to re-solve at conditions supplied by scale
+        # clone flowsheet to re-solve at conditions supplied by scale
+        temp_blk = blk.clone()
 
         # need to handle objects with no data but that have sf that are propagated to data objects
         for obj in temp_blk.component_objects(
@@ -105,7 +101,7 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
                 # overwrite old dsf with one considering the new scale
                 dsf = blk.fs.properties.get_default_scaling(var_name, index=var_index)
                 temp_blk.fs.properties.set_default_scaling(
-                    var_name, dsf * scale**-1, index=var_index
+                    var_name, dsf / scale, index=var_index
                 )
 
                 # overwrite the fixed variable value
@@ -124,8 +120,8 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             break
 
         # check variable scaling wrt new scale
-        for b in list(badly_scaled_var_generator(temp_blk, zero=zero)):
-            yield f"badly scaled variable for scaled flow of {scale} ", b[0].name, b[1]
+        for var, sv in badly_scaled_var_generator(temp_blk, zero=zero):
+            yield f"badly scaled variable for scaled flow of {scale} ", var.name, sv
 
         # store results for sv to sv_hist dict for current model copy
         # TODO: Can this be moved to eliminate the need for the sv_hist dict
