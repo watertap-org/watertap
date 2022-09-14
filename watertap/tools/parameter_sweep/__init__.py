@@ -1,4 +1,4 @@
-from watertap.tools.parameter_sweep.parameter_sweep import (
+from watertap.tools.parameter_sweep.sampling_types import (
     SamplingType,
     LinearSample,
     GeomSample,
@@ -7,11 +7,15 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     NormalSample,
     LatinHypercubeSample,
 )
-from watertap.tools.parameter_sweep.parameter_sweep import parameter_sweep
-from watertap.tools.parameter_sweep.recursive_parameter_sweep import (
+from watertap.tools.parameter_sweep.parameter_sweep_functions import (
+    parameter_sweep,
     recursive_parameter_sweep,
 )
 from watertap.tools.parameter_sweep.parameter_sweep_input_parser import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
+)
+from watertap.tools.parameter_sweep.parameter_sweep import (
+    ParameterSweep,
+    RecursiveParameterSweep,
 )

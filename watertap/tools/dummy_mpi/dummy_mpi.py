@@ -14,6 +14,10 @@ import numpy as np
 
 
 class DummyMPI:
+
+    rank = 0
+    size = 1
+
     @staticmethod
     def Get_rank():
         return 0

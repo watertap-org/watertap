@@ -30,34 +30,6 @@ from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
 
 np.set_printoptions(linewidth=200)
 
-# class _WriterBase(ABC):
-#     def __init__(self):
-#         pass
-#
-#     @abstractmethod
-#     def strip_extension(self, file_name, extension):
-#         if file_name.lower().endswith(extension):
-#             return file_name[: -len(extension)], extension
-#         else:
-#             return file_name, None
-#
-#     @abstractmethod
-#     def process_results_filename(self, results_file_name):
-#         # Get the directory path
-#         dirname = os.path.dirname(results_file_name)
-#         # Get the file name without the extension
-#         known_extensions = [".h5", ".csv"]
-#         for ext in known_extensions:
-#             fname_no_ext, extension = _strip_extension(results_file_name, ext)
-#             if extension is not None:
-#                 break
-#
-#         return dirname, fname_no_ext, extension
-#
-# class CSVWriter(_WriterBase):
-#     def __init__(self):
-#         pass
-
 
 class ParameterSweepWriter(ABC):
 
@@ -116,16 +88,12 @@ class ParameterSweepWriter(ABC):
                     "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
                 )
 
-    # ================================================================
-
     @staticmethod
     def _strip_extension(file_name, extension):
         if file_name.lower().endswith(extension):
             return file_name[: -len(extension)], extension
         else:
             return file_name, None
-
-    # ================================================================
 
     @staticmethod
     def _process_results_filename(results_file_name):
@@ -139,8 +107,6 @@ class ParameterSweepWriter(ABC):
                 break
 
         return dirname, fname_no_ext, extension
-
-    # ================================================================
 
     @staticmethod
     def _interp_nan_values(global_values, global_results):
@@ -170,8 +136,6 @@ class ParameterSweepWriter(ABC):
             warnings.warn("Too few points to perform interpolation.")
 
         return global_results_clean
-
-    # ================================================================
 
     def save_results(
         self,
@@ -220,8 +184,6 @@ class ParameterSweepWriter(ABC):
 
         return global_save_data
 
-    # ================================================================
-
     def _write_debug_data(
         self,
         sweep_params,
@@ -260,8 +222,6 @@ class ParameterSweepWriter(ABC):
                 fmt="%.6e",
             )
 
-    # ================================================================
-
     def _write_outputs(self, output_dict, txt_options="metadata"):
 
         self._write_output_to_h5(output_dict, self.config["h5_results_file_name"])
@@ -285,8 +245,6 @@ class ParameterSweepWriter(ABC):
 
         with open(txt_fname, "w") as log_file:
             pprint.pprint(my_dict, log_file)
-
-    # ================================================================
 
     def _write_output_to_h5(self, output_dict, h5_results_file_name):
 

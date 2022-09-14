@@ -1,15 +1,4 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
-# through Lawrence Berkeley National Laboratory, Oak Ridge National
-# Laboratory, National Renewable Energy Laboratory, and National Energy
-# Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
-#
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
-# information, respectively. These files are also available online at the URL
-# "https://github.com/watertap-org/watertap/"
-#
-###############################################################################
+# test_ps_class.py
 
 import pytest
 import os
@@ -19,29 +8,10 @@ import warnings
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep.parameter_sweep import (
-    _init_mpi,
-    _build_combinations,
-    _divide_combinations,
-    _update_model_values,
-    _aggregate_results_arr,
-    _interp_nan_values,
-    _process_sweep_params,
-    _write_output_to_h5,
-    _read_output_h5,
-    _create_local_output_skeleton,
-    _create_global_output,
-)
-
-from watertap.tools.parameter_sweep import (
-    parameter_sweep,
-    LinearSample,
-    GeomSample,
-    ReverseGeomSample,
-    UniformSample,
-    NormalSample,
-    SamplingType,
-)
+from watertap.tools.parameter_sweep.sampling_types import *
+from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
+from watertap.tools.parameter_sweep.parameter_sweep_writer import *
+from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
 
 # -----------------------------------------------------------------------------
 
@@ -76,14 +46,6 @@ class TestParallelManager:
         return m
 
     @pytest.mark.unit
-    def test_init_mpi(self):
-        comm, rank, num_procs = _init_mpi()
-
-        assert type(rank) == int
-        assert type(num_procs) == int
-        assert 0 <= rank < num_procs
-
-    @pytest.mark.unit
     def test_single_index_unrolled(self):
         indexed_var = pyo.Var(["a"])
         indexed_var.construct()
@@ -102,7 +64,8 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_linear_build_combinations(self):
-        comm, rank, num_procs = _init_mpi()
+        # comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=1.0, mutable=True)
@@ -121,8 +84,8 @@ class TestParallelManager:
         param_dict["var_B"] = LinearSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
         )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
@@ -138,7 +101,8 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_geom_build_combinations(self):
-        comm, rank, num_procs = _init_mpi()
+        # comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=1.0, mutable=True)
@@ -157,8 +121,8 @@ class TestParallelManager:
         param_dict["var_B"] = GeomSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = GeomSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
         )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
@@ -174,7 +138,8 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_reverse_geom_build_combinations(self):
-        comm, rank, num_procs = _init_mpi()
+        # comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=1.0, mutable=True)
@@ -193,8 +158,8 @@ class TestParallelManager:
         param_dict["var_B"] = ReverseGeomSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = ReverseGeomSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
         )
 
         assert np.shape(global_combo_array)[0] == nn_A * nn_B * nn_C
@@ -209,7 +174,8 @@ class TestParallelManager:
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     def test_random_build_combinations(self):
-        comm, rank, num_procs = _init_mpi()
+        # comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         nn = int(1e5)
 
@@ -227,9 +193,7 @@ class TestParallelManager:
         param_dict["var_B"] = UniformSample(B_param, range_B[0], range_B[1])
         param_dict["var_C"] = UniformSample(C_param, range_C[0], range_C[1])
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs
-        )
+        global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 
         assert np.shape(global_combo_array)[0] == nn
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -256,9 +220,7 @@ class TestParallelManager:
         param_dict["var_B"] = NormalSample(B_param, range_B[0], range_B[1])
         param_dict["var_C"] = NormalSample(C_param, range_C[0], range_C[1])
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs
-        )
+        global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 
         assert np.shape(global_combo_array)[0] == nn
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -273,9 +235,9 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_divide_combinations(self):
-        # _divide_combinations(global_combo_array, rank, num_procs)
+        ps = ParameterSweep()
 
-        comm, rank, num_procs = _init_mpi()
+        # comm, rank, num_procs = _init_mpi()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=1.0, mutable=True)
@@ -294,13 +256,15 @@ class TestParallelManager:
         param_dict["var_B"] = LinearSample(B_param, range_B[0], range_B[1], nn_B)
         param_dict["var_C"] = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(
-            param_dict, SamplingType.FIXED, None, comm, rank, num_procs
+        global_combo_array = ps._build_combinations(
+            param_dict, SamplingType.FIXED, None
         )
 
+        num_procs = ps.num_procs
+        rank = ps.rank
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
-        local_combo_array = _divide_combinations(global_combo_array, rank, num_procs)
+        local_combo_array = ps._divide_combinations(global_combo_array)
 
         assert np.shape(local_combo_array)[1] == 3
 
@@ -321,6 +285,7 @@ class TestParallelManager:
     @pytest.mark.component
     def test_update_model_values(self, model):
         m = model
+        ps = ParameterSweep()
 
         param_dict = dict()
         param_dict["input_a"] = LinearSample(m.fs.input["a"], None, None, None)
@@ -331,14 +296,15 @@ class TestParallelManager:
 
         new_values = [1.1 * original_a, 1.1 * original_b]
 
-        _update_model_values(m, param_dict, new_values)
+        ps._update_model_values(m, param_dict, new_values)
 
         assert value(m.fs.input["a"]) == pytest.approx(new_values[0])
         assert value(m.fs.input["b"]) == pytest.approx(new_values[1])
 
     @pytest.mark.unit
     def test_aggregate_results_arr(self):
-        comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
+
         input_dict = {
             "outputs": {
                 "fs.input[a]": {
@@ -396,9 +362,8 @@ class TestParallelManager:
         }
 
         global_num_cases = len(input_dict["sweep_params"]["fs.input[a]"]["value"])
-        global_results_arr = _aggregate_results_arr(
-            input_dict, global_num_cases, comm, rank, num_procs
-        )
+        global_results_arr = ps._aggregate_results_arr(input_dict, global_num_cases)
+
         reference_results_arr = np.array(
             [
                 [0.0, 0.0, 0.2, 0.0, 0.0, 0.0],
@@ -416,112 +381,8 @@ class TestParallelManager:
         assert np.array_equal(global_results_arr, reference_results_arr)
 
     @pytest.mark.unit
-    def test_interp_nan_values(self):
-
-        global_values = np.array(
-            [
-                [0, 0, 0],
-                [0, 0, 1],
-                [0, 1, 0],
-                [0, 1, 1],
-                [1, 0, 0],
-                [1, 0, 1],
-                [1, 1, 0],
-                [1, 1, 1],
-                [0.5, 0.5, 0.5],
-                [1, 1, 1],
-            ]
-        )
-
-        global_results = np.array([0, 1, 2, 3, 4, 5, 6, 7, np.nan, np.nan])[
-            np.newaxis
-        ].T
-
-        global_results_clean = _interp_nan_values(global_values, global_results)
-
-        assert np.shape(global_results_clean)[1] == np.shape(global_results)[1]
-        assert np.shape(global_results_clean)[0] == np.shape(global_results)[0]
-
-        assert (global_results_clean[8]) == pytest.approx(np.mean(global_results[0:8]))
-        assert (global_results_clean[9]) == pytest.approx(global_results[7])
-
-    @pytest.mark.unit
-    def test_h5_read_write(self, tmp_path):
-        comm, rank, num_procs = _init_mpi()
-        tmp_path = _get_rank0_path(comm, tmp_path)
-
-        input_dict = {
-            "outputs": {
-                "fs.input[a]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.output[c]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.2, 0.2, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.output[d]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.75, 0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.slack[ab_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.slack[cd_slack]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                },
-            },
-            "solve_successful": [True] * 9,
-            "sweep_params": {
-                "fs.input[a]": {
-                    "lower bound": None,
-                    "units": "None",
-                    "upper bound": None,
-                    "value": np.array([0.1, 0.1, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0]),
-                },
-                "fs.input[b]": {
-                    "lower bound": 0,
-                    "units": "None",
-                    "upper bound": 1,
-                    "value": np.array([0.0, 0.25, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0]),
-                },
-            },
-        }
-
-        import copy
-
-        reference_dict = copy.deepcopy(input_dict)
-        reference_dict["sweep_params"]["fs.input[a]"]["lower bound"] = np.finfo("d").min
-        reference_dict["sweep_params"]["fs.input[a]"]["upper bound"] = np.finfo("d").max
-
-        h5_fname = "h5_test_{0}.h5".format(rank)
-        _write_output_to_h5(
-            input_dict, h5_results_file_name=os.path.join(tmp_path, h5_fname)
-        )
-        read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
-        _assert_dictionary_correctness(reference_dict, read_dictionary)
-
-    @pytest.mark.unit
     def test_create_local_output_skeleton(self, model):
-        comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -537,12 +398,10 @@ class TestParallelManager:
             "performance": m.fs.performance,
         }
 
-        sweep_params, sampling_type = _process_sweep_params(sweep_params)
-        values = _build_combinations(
-            sweep_params, sampling_type, None, comm, rank, num_procs
-        )
+        sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
+        values = ps._build_combinations(sweep_params, sampling_type, None)
         num_cases = np.shape(values)[0]
-        output_dict = _create_local_output_skeleton(
+        output_dict = ps._create_local_output_skeleton(
             model, sweep_params, None, num_cases
         )
 
@@ -599,7 +458,7 @@ class TestParallelManager:
 
     @pytest.mark.unit
     def test_create_global_output(self, model):
-        comm, rank, num_procs = _init_mpi()
+        ps = ParameterSweep()
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -615,55 +474,66 @@ class TestParallelManager:
             "performance": m.fs.performance,
         }
 
-        sweep_params, sampling_type = _process_sweep_params(sweep_params)
+        sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
         # Get the globale sweep param values
-        global_num_cases = 2 * num_procs
-        global_values = _build_combinations(
-            sweep_params, sampling_type, global_num_cases, comm, rank, num_procs
+        global_num_cases = 2 * ps.num_procs
+        global_values = ps._build_combinations(
+            sweep_params, sampling_type, global_num_cases
         )
         # divide the workload between processors
-        local_values = _divide_combinations(global_values, rank, num_procs)
+        local_values = ps._divide_combinations(global_values)
         local_num_cases = np.shape(local_values)[0]
 
-        local_output_dict = _create_local_output_skeleton(
+        local_output_dict = ps._create_local_output_skeleton(
             model, sweep_params, None, local_num_cases
         )
 
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
             for subkey, subvalue in value.items():
-                subvalue["value"][:] = rank
+                subvalue["value"][:] = ps.rank
 
         # Local output dict also contains the solve_successful. The solve status is
         # based on the
         local_output_dict["solve_successful"] = [True] * local_num_cases
 
         # Get the global output dictionary, This is properly created only on rank 0
-        global_output_dict = _create_global_output(
-            local_output_dict, global_num_cases, comm, rank, num_procs
+        global_output_dict = ps._create_global_output(
+            local_output_dict, global_num_cases
         )
 
-        if num_procs == 1:
-            assert local_output_dict == global_output_dict
+        if ps.rank > 0:
+            assert global_output_dict == local_output_dict
         else:
-            comm.Barrier()
-            if rank > 0:
-                assert global_output_dict == local_output_dict
-            else:
-                test_array = np.repeat(np.arange(0, num_procs, dtype=float), 2)
-                test_list = [True] * global_num_cases
-                for key, value in global_output_dict.items():
-                    if key != "solve_successful":
-                        for subkey, subvalue in value.items():
-                            assert np.allclose(subvalue["value"], test_array)
-                    elif key == "solve_successful":
-                        assert list(value) == test_list
-            comm.Barrier()
+            test_array = np.repeat(np.arange(0, ps.num_procs, dtype=float), 2)
+            test_list = [True] * global_num_cases
+            for key, value in global_output_dict.items():
+                if key != "solve_successful":
+                    for subkey, subvalue in value.items():
+                        assert np.allclose(subvalue["value"], test_array)
+                elif key == "solve_successful":
+                    assert list(value) == test_list
+        ps.comm.Barrier()
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
+
+        comm = ParameterSweep().comm
+
         tmp_path = _get_rank0_path(comm, tmp_path)
+
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            comm=comm,
+            optimize_function=_optimization,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -678,28 +548,18 @@ class TestParallelManager:
             "performance": m.fs.performance,
         }
 
-        results_fname = os.path.join(tmp_path, "global_results")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
-
         # Call the parameter_sweep function
-        parameter_sweep(
+        _ = ps.parameter_sweep(
             m,
             sweep_params,
             outputs=outputs,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            debugging_data_dir=tmp_path,
-            interpolate_nan_outputs=True,
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
             assert os.path.isfile(
@@ -707,7 +567,7 @@ class TestParallelManager:
             )
 
             # Check that all local output files have been created
-            for k in range(num_procs):
+            for k in range(ps.num_procs):
                 assert os.path.isfile(
                     os.path.join(tmp_path, f"local_results_{k:03}.h5")
                 )
@@ -723,7 +583,7 @@ class TestParallelManager:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check for the h5 output
-        if rank == 0:
+        if ps.rank == 0:
             truth_dict = {
                 "outputs": {
                     "output_c": {
@@ -818,11 +678,25 @@ class TestParallelManager:
             read_txt_dict = ast.literal_eval(f_contents)
             assert read_txt_dict == truth_txt_dict
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
+        comm = ParameterSweep().comm
 
-        comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"relax_feasibility": True},
+            probe_function=_good_test_function,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -842,23 +716,17 @@ class TestParallelManager:
         h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
-        parameter_sweep(
+        ps.parameter_sweep(
             m,
             sweep_params,
             outputs=outputs,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            optimize_kwargs={"relax_feasibility": True},
-            probe_function=_good_test_function,
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -876,7 +744,7 @@ class TestParallelManager:
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         # Check the h5
-        if rank == 0:
+        if ps.rank == 0:
 
             truth_dict = {
                 "outputs": {
@@ -954,8 +822,22 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
+        comm = ParameterSweep().comm
+
         tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_function=_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -964,28 +846,19 @@ class TestParallelManager:
         A = m.fs.input["a"]
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        results_fname = os.path.join(tmp_path, "global_results_recover")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
-        parameter_sweep(
+        _ = ps.parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -996,8 +869,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if rank == 0:
-
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -1090,8 +962,22 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
+        comm = ParameterSweep().comm
+
         tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_function=_bad_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1100,28 +986,19 @@ class TestParallelManager:
         A = m.fs.input["a"]
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        results_fname = os.path.join(tmp_path, "global_results_bad_recover")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
-        parameter_sweep(
+        _ = ps.parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            reinitialize_function=_bad_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1132,7 +1009,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if rank == 0:
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -1245,8 +1122,20 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
-        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        results_fname = os.path.join(tmp_path, "global_results_force_initialize")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=_reinitialize,
+            reinitialize_kwargs={"slack_penalty": 10.0},
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=False,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1255,29 +1144,19 @@ class TestParallelManager:
         A = m.fs.input["a"]
         B = m.fs.input["b"]
         sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
-        results_fname = os.path.join(tmp_path, "global_results_force_initialize")
-        csv_results_file_name = str(results_fname) + ".csv"
-        h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
-        parameter_sweep(
+        _ = ps.parameter_sweep(
             m,
             sweep_params,
             outputs=None,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            reinitialize_before_sweep=True,
-            reinitialize_function=_reinitialize,
-            reinitialize_kwargs={"slack_penalty": 10.0},
-            mpi_comm=comm,
         )
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
         #       returns
-        if rank == 0:
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1288,8 +1167,7 @@ class TestParallelManager:
             truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
-        if rank == 0:
-
+            # H5 dictionary test
             truth_dict = {
                 "outputs": {
                     "fs.output[c]": {
@@ -1382,8 +1260,13 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
-        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            reinitialize_before_sweep=True,
+            reinitialize_function=None,
+            reinitialize_kwargs=None,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1395,23 +1278,31 @@ class TestParallelManager:
 
         with pytest.raises(ValueError):
             # Call the parameter_sweep function
-            parameter_sweep(
+            ps.parameter_sweep(
                 m,
                 sweep_params,
                 outputs=None,
-                csv_results_file_name=None,
-                h5_results_file_name=None,
-                optimize_function=_optimization,
-                reinitialize_before_sweep=True,
-                reinitialize_function=None,
-                reinitialize_kwargs=None,
-                mpi_comm=comm,
             )
 
     @pytest.mark.component
-    def test_parameter_sweep_bad_test_function(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
+    def test_parameter_sweep_probe_fail(self, model, tmp_path):
+
+        comm = ParameterSweep().comm
+
         tmp_path = _get_rank0_path(comm, tmp_path)
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        ps = ParameterSweep(
+            optimize_function=_optimization,
+            optimize_kwargs={"relax_feasibility": True},
+            probe_function=_bad_test_function,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+        )
 
         m = model
         m.fs.slack_penalty = 1000.0
@@ -1431,19 +1322,17 @@ class TestParallelManager:
         h5_results_file_name = str(results_fname) + ".h5"
 
         # Call the parameter_sweep function
-        global_save_data = parameter_sweep(
+        ps.parameter_sweep(
             m,
             sweep_params,
             outputs=outputs,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            optimize_function=_optimization,
-            optimize_kwargs={"relax_feasibility": True},
-            probe_function=_bad_test_function,
-            mpi_comm=comm,
         )
 
-        if rank == 0:
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
+        if ps.rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file_name)
 
@@ -1458,7 +1347,6 @@ class TestParallelManager:
                 np.nan,
                 np.nan,
             ]
-
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             truth_dict = {
@@ -1506,9 +1394,167 @@ class TestParallelManager:
             }
 
             read_dict = _read_output_h5(h5_results_file_name)
-
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+
+    @pytest.mark.component
+    def test_parameter_sweep_function(self, model, tmp_path):
+        comm = ParameterSweep().comm
+        rank = comm.rank
+        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+        outputs = {
+            "output_c": m.fs.output["c"],
+            "output_d": m.fs.output["d"],
+            "performance": m.fs.performance,
+        }
+
+        results_fname = os.path.join(tmp_path, "global_results")
+        csv_results_file_name = str(results_fname) + ".csv"
+        h5_results_file_name = str(results_fname) + ".h5"
+
+        # Call the parameter_sweep function
+        parameter_sweep(
+            m,
+            sweep_params,
+            outputs=outputs,
+            csv_results_file_name=csv_results_file_name,
+            h5_results_file_name=h5_results_file_name,
+            optimize_function=_optimization,
+            debugging_data_dir=tmp_path,
+            interpolate_nan_outputs=True,
+            mpi_comm=comm,
+        )
+
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
+        if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(csv_results_file_name)
+            assert os.path.isfile(
+                os.path.join(tmp_path, "interpolated_global_results.csv")
+            )
+
+            # Check that all local output files have been created
+            for k in range(comm.size):
+                assert os.path.isfile(
+                    os.path.join(tmp_path, f"local_results_{k:03}.h5")
+                )
+                assert os.path.isfile(
+                    os.path.join(tmp_path, f"local_results_{k:03}.csv")
+                )
+
+            # Attempt to read in the data
+            data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
+
+            # Compare the last row of the imported data to truth
+            truth_data = [0.9, 0.5, np.nan, np.nan, np.nan]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+        # Check for the h5 output
+        if rank == 0:
+            truth_dict = {
+                "outputs": {
+                    "output_c": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.2, 0.2, np.nan, 1.0, 1.0, np.nan, np.nan, np.nan, np.nan]
+                        ),
+                    },
+                    "output_d": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [
+                                0.0,
+                                0.75,
+                                np.nan,
+                                0.0,
+                                0.75,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                            ]
+                        ),
+                    },
+                    "performance": {
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.95,
+                                np.nan,
+                                1.0,
+                                1.75,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                                np.nan,
+                            ]
+                        )
+                    },
+                },
+                "solve_successful": [
+                    True,
+                    True,
+                    False,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                ],
+                "sweep_params": {
+                    "fs.input[a]": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
+                        ),
+                    },
+                    "fs.input[b]": {
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
+                        ),
+                    },
+                },
+            }
+
+            read_dict = _read_output_h5(h5_results_file_name)
+            _assert_dictionary_correctness(truth_dict, read_dict)
+            _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+
+            # Check if there is a text file created
+            import ast
+
+            truth_txt_dict = {
+                "outputs": ["output_c", "output_d", "performance"],
+                "sweep_params": ["fs.input[a]", "fs.input[b]"],
+            }
+
+            txt_fpath = h5_results_file_name + ".txt"
+            assert os.path.exists(txt_fpath)
+            f = open(txt_fpath)
+            f_contents = f.read()
+            read_txt_dict = ast.literal_eval(f_contents)
+            assert read_txt_dict == truth_txt_dict
 
 
 def _optimization(m, relax_feasibility=False):
@@ -1555,7 +1601,6 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                             test_dict[key][subkey]["value"],
                             subitem["value"],
                             equal_nan=True,
-                            rtol=1e-04,
                         )
                     else:
                         assert subsubitem == test_dict[key][subkey][subsubkey]
@@ -1574,7 +1619,6 @@ def _assert_h5_csv_agreement(csv_filename, h5_dict):
             assert np.allclose(
                 h5_dict[output_type][key]["value"], csv_data[:, idx], equal_nan=True
             )
-            # print(f'Passed test of {key}')
 
 
 def _build_header_list_from_csv(csv_filename):
@@ -1597,3 +1641,31 @@ def _build_header_list_from_csv(csv_filename):
                 csv_header[-1] += f",{item}"
 
     return csv_header
+
+
+def _read_output_h5(filepath):
+
+    f = h5py.File(filepath, "r")
+
+    l1_keys = list(f.keys())
+    output_dict = {}
+    for key in l1_keys:  # Input or Output
+        if key != "solve_successful":
+            output_dict[key] = {}
+            l2_keys = list(f[key].keys())
+            for subkey in l2_keys:  # Variable name
+                output_dict[key][subkey] = {}
+                l3_keys = list(f[key][subkey].keys())
+                for subsubkey in l3_keys:  # variable metadata
+                    output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
+                    if subsubkey == "units":
+                        # The strings are recovered in bytes. we choose to convert it to utf-8
+                        output_dict[key][subkey][subsubkey] = output_dict[key][subkey][
+                            subsubkey
+                        ].decode("utf-8")
+        elif key == "solve_successful":
+            output_dict[key] = list(f[key]["solve_successful"][()])
+
+    f.close()
+
+    return output_dict

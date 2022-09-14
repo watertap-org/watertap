@@ -11,14 +11,13 @@
 #
 ###############################################################################
 
-from watertap.tools.parameter_sweep.parameter_sweep import (
+from watertap.tools.parameter_sweep.sampling_types import (
     LinearSample,
     GeomSample,
     ReverseGeomSample,
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
-    _read_output_h5,
 )
 import yaml
 import idaes.logger as idaeslog

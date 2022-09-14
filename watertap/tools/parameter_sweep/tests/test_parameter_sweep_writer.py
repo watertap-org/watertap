@@ -18,9 +18,9 @@ import pyomo.environ as pyo
 import warnings, copy
 
 from pyomo.environ import value
-from watertap.tools.parameter_sweep.parameter_sweep_class import *
+from watertap.tools.parameter_sweep.parameter_sweep import *
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
-from watertap.tools.parameter_sweep.tests.test_ps_class import (
+from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _read_output_h5,
     _assert_dictionary_correctness,
