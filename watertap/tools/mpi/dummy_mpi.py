@@ -13,7 +13,7 @@
 import numpy as np
 
 
-class DummyMPI:
+class DummyCOMM:
 
     rank = 0
     size = 1

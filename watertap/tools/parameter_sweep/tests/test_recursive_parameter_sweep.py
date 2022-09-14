@@ -30,7 +30,8 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _get_rank0_path,
     _assert_dictionary_correctness,
 )
-from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
+
+import watertap.tools.MPI as MPI
 
 # -----------------------------------------------------------------------------
 
@@ -162,7 +163,7 @@ def test_aggregate_filtered_input_arr():
 @pytest.mark.component
 def test_recursive_parameter_sweep(model, tmp_path):
 
-    comm = RecursiveParameterSweep().comm
+    comm = MPI.COMM_WORLD
 
     tmp_path = _get_rank0_path(comm, tmp_path)
 
@@ -311,7 +312,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
 
 @pytest.mark.component
 def test_recursive_parameter_sweep_function(model, tmp_path):
-    comm = RecursiveParameterSweep().comm
+    comm = MPI.COMM_WORLD
     tmp_path = _get_rank0_path(comm, tmp_path)
 
     m = model

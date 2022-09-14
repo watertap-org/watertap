@@ -11,7 +11,8 @@ from pyomo.environ import value
 from watertap.tools.parameter_sweep.sampling_types import *
 from watertap.tools.parameter_sweep import ParameterSweep, parameter_sweep
 from watertap.tools.parameter_sweep.parameter_sweep_writer import *
-from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
+
+import watertap.tools.MPI as MPI
 
 # -----------------------------------------------------------------------------
 
@@ -64,7 +65,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_linear_build_combinations(self):
-        # comm, rank, num_procs = _init_mpi()
         ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
@@ -101,7 +101,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_geom_build_combinations(self):
-        # comm, rank, num_procs = _init_mpi()
         ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
@@ -138,7 +137,6 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_reverse_geom_build_combinations(self):
-        # comm, rank, num_procs = _init_mpi()
         ps = ParameterSweep()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
@@ -174,7 +172,6 @@ class TestParallelManager:
         assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     def test_random_build_combinations(self):
-        # comm, rank, num_procs = _init_mpi()
         ps = ParameterSweep()
 
         nn = int(1e5)
@@ -236,8 +233,6 @@ class TestParallelManager:
     @pytest.mark.component
     def test_divide_combinations(self):
         ps = ParameterSweep()
-
-        # comm, rank, num_procs = _init_mpi()
 
         A_param = pyo.Param(initialize=0.0, mutable=True)
         B_param = pyo.Param(initialize=1.0, mutable=True)
@@ -518,7 +513,7 @@ class TestParallelManager:
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
 
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
 
@@ -681,7 +676,7 @@ class TestParallelManager:
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -822,7 +817,7 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -962,7 +957,7 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -1287,7 +1282,7 @@ class TestParallelManager:
     @pytest.mark.component
     def test_parameter_sweep_probe_fail(self, model, tmp_path):
 
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
 
         tmp_path = _get_rank0_path(comm, tmp_path)
         results_fname = os.path.join(tmp_path, "global_results")
@@ -1399,7 +1394,7 @@ class TestParallelManager:
 
     @pytest.mark.component
     def test_parameter_sweep_function(self, model, tmp_path):
-        comm = ParameterSweep().comm
+        comm = MPI.COMM_WORLD
         rank = comm.rank
         tmp_path = _get_rank0_path(comm, tmp_path)
 

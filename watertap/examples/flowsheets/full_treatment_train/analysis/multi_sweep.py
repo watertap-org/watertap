@@ -4,6 +4,7 @@ import time
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
+import watertap.tools.MPI as MPI
 
 def append_costing_outputs(m, outputs, units_to_cost):
     for unit_name in units_to_cost:
@@ -318,14 +319,15 @@ if __name__ == "__main__":
     print(global_results)
     toc = time.time()
 
-    total_samples = 1
+    if MPI.COMM_WORLD.rank == 0:
+        total_samples = 1
 
-    for k, v in sweep_params.items():
-        total_samples *= v.num_samples
+        for k, v in sweep_params.items():
+            total_samples *= v.num_samples
 
-    print("Finished case_num = %d." % (case_num))
-    print(
-        "Processed %d swept parameters comprising %d total points."
-        % (len(sweep_params), total_samples)
-    )
-    print("Elapsed time = %.1f s." % (toc - tic))
+        print("Finished case_num = %d." % (case_num))
+        print(
+            "Processed %d swept parameters comprising %d total points."
+            % (len(sweep_params), total_samples)
+        )
+        print("Elapsed time = %.1f s." % (toc - tic))

@@ -30,10 +30,10 @@ from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
 
-
-from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
 from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
+
+import watertap.tools.MPI as MPI
 
 np.set_printoptions(linewidth=200)
 
@@ -121,7 +121,7 @@ class _ParameterSweepBase(ABC):
         **options,
     ):
 
-        self.comm = options.pop("comm", self._init_mpi())
+        self.comm = options.pop("comm", MPI.COMM_WORLD)
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
 
@@ -135,15 +135,6 @@ class _ParameterSweepBase(ABC):
             debugging_data_dir=self.config.debugging_data_dir,
             interpolate_nan_outputs=self.config.interpolate_nan_outputs,
         )
-
-    def _init_mpi(self):
-        try:
-            from mpi4py import MPI
-
-            return MPI.COMM_WORLD
-        except:
-            dummy_comm = DummyMPI()
-            return dummy_comm
 
     def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)

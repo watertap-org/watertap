@@ -11,28 +11,7 @@
 #
 ###############################################################################
 
-import pytest
-import numpy as np
-from watertap.tools.dummy_mpi.dummy_mpi import DummyMPI
-
-
-@pytest.mark.integration
-def test_dummy_mpi():
-    comm = DummyMPI()
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    n_arr = 3
-    dummy_array1 = np.arange(n_arr)
-    comm.Bcast(dummy_array1)
-    returned_array = comm.bcast(dummy_array1)
-    returned_list = comm.allgather(dummy_array1)
-    recvbuf = (np.zeros(n_arr), [n_arr])
-    comm.Gatherv(sendbuf=dummy_array1, recvbuf=recvbuf, root=0)
-
-    assert isinstance(comm, DummyMPI)
-    assert rank == 0
-    assert size == 1
-    assert returned_array is dummy_array1
-    assert returned_list == [dummy_array1]
-    assert (recvbuf[0] == dummy_array1).all
+try:
+    from mpi4py.MPI import *
+except ImportError:
+    from watertap.tools.MPI.dummy_mpi import DummyCOMM as COMM_WORLD
