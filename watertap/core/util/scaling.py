@@ -15,7 +15,7 @@ This module contains utility functions for testing the scaling of WaterTAP model
 """
 
 import pyomo.environ as pyo
-from pyomo.common.collections import ComponentSet
+from idaes.core import PhysicalParameterBlock
 
 import idaes.logger
 from idaes.core.solvers import get_solver
@@ -60,43 +60,38 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
     solver = get_solver()
     sv_hist = {}
 
+    # get property block
+    # TODO: Let multiple property packages be handled correctly
+    for fs_blk in blk.block_data_objects(
+        active=None, sort=False, descend_into=True, descent_order=None
+    ):
+        if isinstance(fs_blk, PhysicalParameterBlock):
+            property_blk = fs_blk
+
+    if property_blk is None:
+        raise TypeError("No PhysicalParameterBlock exists in the Flowsheet")
+
     for scale in [lb_scale, ub_scale]:
 
         # clone flowsheet to re-solve at conditions supplied by scale
         temp_blk = blk.clone()
-
-        # need to handle objects with no data but that have sf that are propagated to data objects
-        for obj in temp_blk.component_objects(
-            ctype=pyo.Var,
-            active=None,
-            sort=False,
-            descend_into=True,
-            descent_order=None,
-        ):
-            unset_scaling_factor(obj)
-            if obj.is_indexed:
-                for (index, indexed_obj) in obj.items():
-                    unset_scaling_factor(obj[index])
 
         # loop through all vars to wipe previous sf and reset dsf considering new scale
         for (var_name, var_index), var_obj in temp_blk.component_data_iterindex(
             ctype=pyo.Var, active=True, descend_into=True
         ):
 
-            # repetitive with above loop
+            # unset scaling factor of each variable
             unset_scaling_factor(var_obj)
+            # catch indexed variables that obtain sf propagated from an un-indexed parent
+            if var_index is not None:
+                unset_scaling_factor(var_obj.parent_component())
 
-            # if the flow term has a default scaling factor and is fixed, as standard by flowsheets,
-            # overwrite the dsf to new scale magnitude
-            # TODO: Check multiple inlet ports are handled correctly
+            # if the flow term has a default scaling factor, overwrite the dsf to new scale magnitude
             if (
-                blk.fs.properties.get_default_scaling(var_name, index=var_index)
-                is not None
+                property_blk.get_default_scaling(var_name, index=var_index) is not None
                 and "flow" in var_name
-                and var_obj.fixed
             ):
-
-                print(var_obj)
 
                 # overwrite old dsf with one considering the new scale
                 dsf = blk.fs.properties.get_default_scaling(var_name, index=var_index)
@@ -104,16 +99,16 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
                     var_name, dsf / scale, index=var_index
                 )
 
-                # overwrite the fixed variable value
-                var_obj.fix(var_obj * scale)
+                if var_obj.fixed:
+                    # overwrite the fixed variable value
+                    var_obj.fix(var_obj * scale)
 
-                # TODO: Determine how to consider user specified sf, e.g. ro.area
+                # TODO: Determine how to include specified sf, e.g. ro.area
 
         # resolve the model at the new scale
         calculate_scaling_factors(temp_blk)
         temp_blk.fs.unit.initialize(outlvl=idaes.logger.ERROR)
         results = solver.solve(temp_blk)
-        print(results)
         # ensure model solves wrt new scale
         if not pyo.check_optimal_termination(results):
             yield "Failed run on", scale, "scale"
@@ -124,16 +119,15 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
             yield f"badly scaled variable for scaled flow of {scale} ", var.name, sv
 
         # store results for sv to sv_hist dict for current model copy
-        # TODO: Can this be moved to eliminate the need for the sv_hist dict
-        for v in ComponentSet(
-            temp_blk.component_data_objects(pyo.Var, active=True, descend_into=True)
+        for v in temp_blk.component_data_objects(
+            pyo.Var, active=True, descend_into=True
         ):
 
-            val = pyo.value(v, exception=False)
-            if val is None:
+            if not v.stale:
                 continue
 
             sf = get_scaling_factor(v, default=1)
+            val = pyo.value(v, exception=False)
             sv = abs(val * sf)
             if sv < zero:
                 continue
@@ -148,8 +142,6 @@ def variable_sens_generator(blk, lb_scale=1e-2, ub_scale=1e2, tol=1e3, zero=1e-1
         temp_blk.clear()
 
     # loop through svs store in sv_hist to determine change in scaled variable
-    # TODO: Can the objects of the original blk be output, as opposed to variable
-    #   name strings taken from the temp_blk
     for var_key, var_sv in sv_hist.items():
 
         # get order of magnitude difference (sensitivity)
