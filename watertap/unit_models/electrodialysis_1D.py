@@ -817,60 +817,147 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_mass_transfer_term_diluate(self, t, x, p, j):
 
             if j == "H2O":
-                return (
-                    self.diluate.mass_transfer_term[t, x, p, j]
-                    == (
-                        -self.cell_width
-                        * (
-                            self.water_trans_number_membrane["cem"]
-                            + self.water_trans_number_membrane["aem"]
+                if self.config.diffusion_layer_polarization:
+                    return (
+                        self.diluate.mass_transfer_term[t, x, p, j]
+                        == (
+                            -self.cell_width
+                            * (
+                                self.water_trans_number_membrane["cem"]
+                                + self.water_trans_number_membrane["aem"]
+                            )
+                            * (
+                                self.current_density_x[t, x]
+                                / Constants.faraday_constant
+                            )
+                            - self.cell_width
+                            * self.diluate.properties[
+                                0, self.diluate.length_domain.first()
+                            ].dens_mass_solvent
+                            / self.config.property_package.mw_comp[j]
+                            * (
+                                self.water_permeability_membrane["cem"]
+                                + self.water_permeability_membrane["aem"]
+                            )
+                            * (
+                                self.concentrate.properties[t, x].pressure_osm_phase[p]
+                                * (
+                                    1
+                                    + self.current_density_x[t, x]
+                                    / self.current_dens_lim_x[t, x]
+                                )
+                                - self.diluate.properties[t, x].pressure_osm_phase[p]
+                                * (
+                                    1
+                                    - self.current_density_x[t, x]
+                                    / self.current_dens_lim_x[t, x]
+                                )
+                            )
                         )
-                        * (self.current_density_x[t, x] / Constants.faraday_constant)
-                        - self.cell_width
-                        * self.diluate.properties[
-                            0, self.diluate.length_domain.first()
-                        ].dens_mass_solvent
-                        / self.config.property_package.mw_comp[j]
-                        * (
-                            self.water_permeability_membrane["cem"]
-                            + self.water_permeability_membrane["aem"]
-                        )
-                        * (
-                            self.concentrate.properties[t, x].pressure_osm_phase[p]
-                            - self.diluate.properties[t, x].pressure_osm_phase[p]
-                        )
+                        * self.cell_pair_num
                     )
-                    * self.cell_pair_num
-                )
+                else:
+                    return (
+                        self.diluate.mass_transfer_term[t, x, p, j]
+                        == (
+                            -self.cell_width
+                            * (
+                                self.water_trans_number_membrane["cem"]
+                                + self.water_trans_number_membrane["aem"]
+                            )
+                            * (
+                                self.current_density_x[t, x]
+                                / Constants.faraday_constant
+                            )
+                            - self.cell_width
+                            * self.diluate.properties[
+                                0, self.diluate.length_domain.first()
+                            ].dens_mass_solvent
+                            / self.config.property_package.mw_comp[j]
+                            * (
+                                self.water_permeability_membrane["cem"]
+                                + self.water_permeability_membrane["aem"]
+                            )
+                            * (
+                                self.concentrate.properties[t, x].pressure_osm_phase[p]
+                                - self.diluate.properties[t, x].pressure_osm_phase[p]
+                            )
+                        )
+                        * self.cell_pair_num
+                    )
             elif j in self.config.property_package.ion_set:
-
-                return (
-                    self.diluate.mass_transfer_term[t, x, p, j]
-                    == (
-                        -self.cell_width
-                        * (
-                            self.ion_trans_number_membrane["cem", j]
-                            - self.ion_trans_number_membrane["aem", j]
+                if self.config.diffusion_layer_polarization:
+                    return (
+                        self.diluate.mass_transfer_term[t, x, p, j]
+                        == (
+                            -self.cell_width
+                            * (
+                                self.ion_trans_number_membrane["cem", j]
+                                - self.ion_trans_number_membrane["aem", j]
+                            )
+                            * (self.current_utilization * self.current_density_x[t, x])
+                            / (
+                                self.config.property_package.charge_comp[j]
+                                * Constants.faraday_constant
+                            )
+                            + self.cell_width
+                            * (
+                                self.solute_diffusivity_membrane["cem", j]
+                                / self.membrane_thickness["cem"]
+                                * (
+                                    self.conc_mem_surf_mol[
+                                        "cem", "cathode_left", t, x, j
+                                    ]
+                                    - self.conc_mem_surf_mol[
+                                        "cem", "anode_right", t, x, j
+                                    ]
+                                )
+                                + self.solute_diffusivity_membrane["aem", j]
+                                / self.membrane_thickness["aem"]
+                                * (
+                                    self.conc_mem_surf_mol[
+                                        "aem", "anode_right", t, x, j
+                                    ]
+                                    - self.conc_mem_surf_mol[
+                                        "aem", "cathode_left", t, x, j
+                                    ]
+                                )
+                            )
                         )
-                        * (self.current_utilization * self.current_density_x[t, x])
-                        / (
-                            self.config.property_package.charge_comp[j]
-                            * Constants.faraday_constant
-                        )
-                        + self.cell_width
-                        * (
-                            self.solute_diffusivity_membrane["cem", j]
-                            / self.membrane_thickness["cem"]
-                            + self.solute_diffusivity_membrane["aem", j]
-                            / self.membrane_thickness["aem"]
-                        )
-                        * (
-                            self.concentrate.properties[t, x].conc_mol_phase_comp[p, j]
-                            - self.diluate.properties[t, x].conc_mol_phase_comp[p, j]
-                        )
+                        * self.cell_pair_num
                     )
-                    * self.cell_pair_num
-                )
+                else:
+                    return (
+                        self.diluate.mass_transfer_term[t, x, p, j]
+                        == (
+                            -self.cell_width
+                            * (
+                                self.ion_trans_number_membrane["cem", j]
+                                - self.ion_trans_number_membrane["aem", j]
+                            )
+                            * (self.current_utilization * self.current_density_x[t, x])
+                            / (
+                                self.config.property_package.charge_comp[j]
+                                * Constants.faraday_constant
+                            )
+                            + self.cell_width
+                            * (
+                                self.solute_diffusivity_membrane["cem", j]
+                                / self.membrane_thickness["cem"]
+                                + self.solute_diffusivity_membrane["aem", j]
+                                / self.membrane_thickness["aem"]
+                            )
+                            * (
+                                self.concentrate.properties[t, x].conc_mol_phase_comp[
+                                    p, j
+                                ]
+                                - self.diluate.properties[t, x].conc_mol_phase_comp[
+                                    p, j
+                                ]
+                            )
+                        )
+                        * self.cell_pair_num
+                    )
             else:
                 return (
                     self.diluate.mass_transfer_term[t, x, p, j]
