@@ -21,7 +21,7 @@ from pyomo.environ import (
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.peracetic_acid_disinfection.peracetic_acid_disinfection import (
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection import (
     build,
     set_operating_conditions,
     initialize_system,

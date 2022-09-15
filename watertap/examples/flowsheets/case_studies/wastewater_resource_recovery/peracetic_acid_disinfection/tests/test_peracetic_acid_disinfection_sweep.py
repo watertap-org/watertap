@@ -13,8 +13,8 @@
 
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.peracetic_acid_disinfection import (
-    peracetic_acid_disinfection_sweep,
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection_sweep import (
+    run_analysis,
 )
 
 sweep_list = []
@@ -28,7 +28,7 @@ def test_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     nx = 2
-    global_results, sweep_params, m = peracetic_acid_disinfection_sweep.run_analysis(
+    global_results, sweep_params, m = run_analysis(
         case_num, nx, interpolate_nan_outputs=False
     )
     os.chdir(cwd)
