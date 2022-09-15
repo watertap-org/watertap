@@ -334,10 +334,6 @@ def test_recursive_parameter_sweep_function(model, tmp_path):
     h5_results_file = str(results_fname) + ".h5"
 
     # Run the parameter sweep
-    # recursive_parameter_sweep(m, sweep_params, outputs, results_file='recursive_sweep.csv',
-    #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
-    #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
-    #     reinitialize_kwargs={'solver':solver}
     data = recursive_parameter_sweep(
         m,
         sweep_params,
