@@ -67,6 +67,7 @@ class RegenerantChem(StrEnum):
     NaOH = "NaOH"
     H2SO4 = "H2SO4"
     NaCl = "NaCl"
+    MeOH = "MeOH"
 
 
 @declare_process_block_class("IonExchange0D")
@@ -131,10 +132,23 @@ class IonExchangeODData(UnitModelBlockData):
         ConfigValue(default="Ca_2+", domain=str, description="Target Ion"),
     )
 
-    # CONFIG.declare(
-    #     "regenerant",
-    #     ConfigValue(default=RegenerantChem.HCl, domain=In(RegenerantChem), description="Regenerant chemical"),
-    # ) TODO: add way to change regenerant chemical via CONFIG
+    CONFIG.declare(
+        "regenerant",
+        ConfigValue(
+            default=RegenerantChem.HCl,
+            domain=In(RegenerantChem),
+            description="Regenerant chemical",
+        ),
+    )  # TODO: add way to change regenerant chemical via CONFIG
+
+    CONFIG.declare(
+        "hazardous_waste",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Designates if resin and residuals contain hazardous material",
+        ),
+    )
 
     def build(self):
         super().build()
@@ -171,6 +185,9 @@ class IonExchangeODData(UnitModelBlockData):
         if "-" in target_ion:
             self.ion_exchange_type = IonExchangeType.anion
             self.regen_chem = RegenerantChem.NaOH
+
+        if "regenerant" in self.config.keys():
+            self.regen_chem = RegenerantChem(self.config["regenerant"])
 
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -245,7 +262,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.bed_depth_to_diam_ratio = Var(
             initialize=5,
-            bounds=(3, 1e4),
+            bounds=(0.5, None),
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -302,21 +319,21 @@ class IonExchangeODData(UnitModelBlockData):
         self.resin_max_capacity = Var(
             initialize=5,
             units=pyunits.mol / pyunits.kg,
-            bounds=(0.5, None),  # Perry's
+            bounds=(0, None),  # Perry's
             doc="Resin max capacity",
         )
 
         self.resin_eq_capacity = Var(
             initialize=1,
             units=pyunits.mol / pyunits.kg,
-            bounds=(0.5, None),  # Perry's
+            bounds=(0, None),  # Perry's
             doc="Resin equilibrium capacity",
         )
 
         self.resin_unused_capacity = Var(
             initialize=1,
             units=pyunits.mol / pyunits.kg,
-            bounds=(0.5, None),  # Perry's
+            bounds=(0, None),  # Perry's
             doc="Resin available capacity",
         )
 
@@ -344,7 +361,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.langmuir = Var(
             self.target_ion_set,
             initialize=1.5,
-            bounds=(0.5, None),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Langmuir isotherm coefficient",
         )
@@ -352,7 +369,7 @@ class IonExchangeODData(UnitModelBlockData):
         self.separation_factor = Var(
             self.target_ion_set,
             initialize=0.2,
-            bounds=(0, 1.1),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Separation factor",
         )
@@ -367,7 +384,7 @@ class IonExchangeODData(UnitModelBlockData):
         # ====== Bed/Column variables ====== #
 
         self.bed_vol = Var(
-            initialize=2,
+            initialize=1,
             units=pyunits.m**3,
             doc="Bed volume of one unit",
         )
@@ -375,17 +392,11 @@ class IonExchangeODData(UnitModelBlockData):
         self.bed_vol_tot = Var(
             initialize=2,
             units=pyunits.m**3,
-            doc="Bed volume of one unit",
+            doc="Total bed volume",
         )
 
         self.bed_depth = Var(
-            initialize=1, bounds=(0.1, 2), units=pyunits.m, doc="Bed depth"  # EPA-WBS
-        )
-
-        self.bed_area = Var(
-            initialize=0.63,
-            units=pyunits.m**2,
-            doc="Bed area",
+            initialize=1, bounds=(0, 2), units=pyunits.m, doc="Bed depth"  # EPA-WBS
         )
 
         self.bed_porosity = Var(
@@ -418,7 +429,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.number_columns = Var(
             initialize=2,
-            bounds=(2, None),
+            bounds=(1, None),
             units=pyunits.dimensionless,
             doc="Number of operational columns for ion exchange process",
         )
@@ -500,7 +511,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.dimensionless_time = Var(
             initialize=1,
-            bounds=(0, 1),
+            bounds=(-1, 1),
             units=pyunits.dimensionless,
             doc="Dimensionless time",
         )
@@ -559,7 +570,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.service_flow_rate = Var(
-            initialize=5,
+            initialize=10,
             bounds=(4, 40),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
@@ -861,10 +872,6 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_bed_vol_tot(b):
             return b.bed_vol_tot == b.bed_vol * b.number_columns
 
-        @self.Constraint(doc="Bed volume calculation")
-        def eq_bed_vol(b):
-            return b.bed_vol == b.bed_area * b.bed_depth
-
         @self.Constraint(doc="Column height")
         def eq_col_height(b):
             return (
@@ -1067,7 +1074,7 @@ class IonExchangeODData(UnitModelBlockData):
         @self.Constraint(doc="Backwashing flow rate")
         def eq_bw_flow(b):
             bw_rate = pyunits.convert(b.bw_rate, to_units=pyunits.m / pyunits.s)
-            return b.bw_flow == bw_rate * b.bed_area * b.number_columns
+            return b.bw_flow == bw_rate * (b.bed_vol / b.bed_depth) * b.number_columns
 
         @self.Constraint(doc="Backwash pump power")
         def eq_bw_pump_power(b):
@@ -1090,7 +1097,9 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Rinse flow rate")
         def eq_rinse_flow(b):
-            return b.rinse_flow == b.vel_bed * b.bed_area * b.number_columns
+            return (
+                b.rinse_flow == b.vel_bed * (b.bed_vol / b.bed_depth) * b.number_columns
+            )
 
         @self.Constraint(doc="Rinse pump power")
         def eq_rinse_pump_power(b):
@@ -1187,7 +1196,7 @@ class IonExchangeODData(UnitModelBlockData):
         for p, j in blk.properties_out.phase_component_set:
             if j == blk.config.target_ion:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
-                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-3
+                    state_args["flow_mol_phase_comp"][(p, j)] * 1e-5
                 )
 
         blk.properties_out.initialize(
@@ -1264,8 +1273,6 @@ class IonExchangeODData(UnitModelBlockData):
         iscale.set_scaling_factor(self.langmuir, 1)
 
         iscale.set_scaling_factor(self.resin_surf_per_vol, 1e-3)
-
-        iscale.set_scaling_factor(self.bed_area, 1)
 
         iscale.set_scaling_factor(self.bed_vol, 1)
 
