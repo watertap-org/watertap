@@ -1233,106 +1233,51 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="Calculate the total ohmic potential across the two diffusion layers of an iem.",
         )
         def eq_potential_ohm_dl_x(self, mem, t, x):
-            if mem == "cem":
-                return self.potential_ohm_dl_x[mem, t, x] == (
-                    Constants.faraday_constant
-                    * (
-                        sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
-                            ** -1
-                            for j in self.ion_set
-                        )
-                        ** -1
-                        * len(self.ion_set)
-                    )
-                    * (
-                        sum(
-                            self.ion_trans_number_membrane[mem, j]
-                            / self.config.property_package.charge_comp[j]
-                            for j in self.cation_set
-                        )
-                        - sum(
-                            self.diluate.properties[t, x].trans_num_phase_comp["Liq", j]
-                            / self.config.property_package.charge_comp[j]
-                            for j in self.cation_set
-                        )
+            return self.potential_ohm_dl_x[mem, t, x] == (
+                Constants.faraday_constant
+                * (
+                    sum(
+                        self.config.property_package.diffus_phase_comp["Liq", j] ** -1
+                        for j in self.ion_set
                     )
                     ** -1
-                    * self.diluate.properties[t, x].equiv_conductivity_phase["Liq"]
-                    ** -1
-                    * log(
-                        sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
-                            for j in self.ion_set
-                        )
-                        ** -1
-                        * sum(
-                            self.concentrate.properties[t, x].conc_mol_phase_comp[
-                                "Liq", j
-                            ]
-                            for j in self.ion_set
-                        )
-                        ** -1
-                        * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
-                            for j in self.ion_set
-                        )
-                        * sum(
-                            self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
-                            for j in self.ion_set
-                        )
+                    * len(self.ion_set)
+                )
+                * (
+                    sum(
+                        self.ion_trans_number_membrane["cem", j]
+                        / self.config.property_package.charge_comp[j]
+                        for j in self.cation_set
+                    )
+                    - sum(
+                        self.diluate.properties[t, x].trans_num_phase_comp["Liq", j]
+                        / self.config.property_package.charge_comp[j]
+                        for j in self.cation_set
                     )
                 )
-            else:
-                return self.potential_ohm_dl_x[mem, t, x] == (
-                    -Constants.faraday_constant
-                    * (
-                        sum(
-                            self.config.property_package.diffus_phase_comp["Liq", j]
-                            ** -1
-                            for j in self.ion_set
-                        )
-                        ** -1
-                        * len(self.ion_set)
-                    )
-                    * (
-                        sum(
-                            self.ion_trans_number_membrane[mem, j]
-                            / self.config.property_package.charge_comp[j]
-                            for j in self.cation_set
-                        )
-                        - sum(
-                            self.diluate.properties[t, x].trans_num_phase_comp["Liq", j]
-                            / self.config.property_package.charge_comp[j]
-                            for j in self.cation_set
-                        )
+                ** -1
+                * self.diluate.properties[t, x].equiv_conductivity_phase["Liq"] ** -1
+                * log(
+                    sum(
+                        self.conc_mem_surf_mol["cem", "anode_right", t, x, j]
+                        for j in self.ion_set
                     )
                     ** -1
-                    * self.diluate.properties[t, x].equiv_conductivity_phase["Liq"]
+                    * sum(
+                        self.concentrate.properties[t, x].conc_mol_phase_comp["Liq", j]
+                        for j in self.ion_set
+                    )
                     ** -1
-                    * log(
-                        sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
-                            for j in self.ion_set
-                        )
-                        * sum(
-                            self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
-                            for j in self.ion_set
-                        )
-                        * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
-                            for j in self.ion_set
-                        )
-                        ** -1
-                        * sum(
-                            self.concentrate.properties[t, x].conc_mol_phase_comp[
-                                "Liq", j
-                            ]
-                            for j in self.ion_set
-                        )
-                        ** -1
+                    * sum(
+                        self.conc_mem_surf_mol["cem", "cathode_left", t, x, j]
+                        for j in self.ion_set
+                    )
+                    * sum(
+                        self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
+                        for j in self.ion_set
                     )
                 )
+            )
 
         @self.Constraint(
             self.membrane_set,
@@ -1433,91 +1378,6 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     * self.current_density_x[t, x] ** -1
                 )
-
-            """
-            if (mem == "cem" and side == "cathode_left") or (
-                mem == "aem" and side == "anode_right"
-            ):
-                return self.dl_thickness_x[mem, side, t, x] == (
-                    abs(
-                        (sum(
-                            self.config.property_package.charge_comp[j]
-                            * self.conc_mem_surf_mol[mem, side, t, x, j]
-                            for j in self.cation_set
-                        )
-                        - sum(
-                            self.config.property_package.charge_comp[j]
-                            * self.concentrate.properties[t, x].conc_mol_phase_comp["Liq", j]
-                            for j in self.cation_set
-                        ))
-                        * Constants.faraday_constant
-                        * (
-                            sum(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
-                                ** -1
-                                for j in self.ion_set
-                            ) 
-                            ** -1 * len(self.ion_set) 
-                        )
-                        * (
-                            sum(
-                                self.ion_trans_number_membrane[mem, j]
-                                / self.config.property_package.charge_comp[j]
-                                for j in self.cation_set
-                            )
-                            - sum(
-                                self.diluate.properties[t, x].trans_num_phase_comp[
-                                    "Liq", j
-                                ]
-                                / self.config.property_package.charge_comp[j]
-                                for j in self.cation_set
-                            )
-                        )
-                        ** -1
-                    )
-                    * self.current_density_x[t, x] **-1
-                )
-            else:
-                return self.dl_thickness_x[mem, side, t, x] == (
-                    abs(
-                        (sum(
-                            abs(self.config.property_package.charge_comp[j])
-                            * self.conc_mem_surf_mol[mem, side, t, x, j]
-                            for j in self.cation_set
-                        )
-                        - sum(
-                            abs(self.config.property_package.charge_comp[j])
-                            * self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
-                            for j in self.cation_set
-                        ))
-                        * Constants.faraday_constant
-                        * (
-                            sum(
-                                self.config.property_package.diffus_phase_comp["Liq", j]
-                                ** -1
-                                for j in self.ion_set
-                            )
-                            ** -1 * len(self.ion_set) 
-                        )
-                        * (
-                            sum(
-                                self.ion_trans_number_membrane[mem, j]
-                                / self.config.property_package.charge_comp[j]
-                                for j in self.cation_set
-                            )
-                            - sum(
-                                self.diluate.properties[t, x].trans_num_phase_comp[
-                                    "Liq", j
-                                ]
-                                / self.config.property_package.charge_comp[j]
-                                for j in self.cation_set
-                            )
-                        )
-                        ** -1
-                    )
-                    * self.current_density_x[t, x] **-1
-                )
-            """
 
     # Intialization routines
     def initialize_build(
