@@ -314,6 +314,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         def build_hcl_cost_param_block(blk):
 
+            costing = blk.parent_block()
+
             blk.cost = pyo.Param(
                 mutable=True,
                 initialize=0.17,
@@ -326,10 +328,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="HCl purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["HCl"] = blk.cost / blk.purity
 
         self.hcl = pyo.Block(rule=build_hcl_cost_param_block)
 
         def build_naoh_cost_param_block(blk):
+
+            costing = blk.parent_block()
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -344,10 +349,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOH purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["NaOH"] = blk.cost / blk.purity
 
         self.naoh = pyo.Block(rule=build_naoh_cost_param_block)
 
         def build_meoh_cost_param_block(blk):
+            # MeOH = Methanol
+
+            costing = blk.parent_block()
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -362,10 +371,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="MeOH purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["MeOH"] = blk.cost / blk.purity
 
         self.meoh = pyo.Block(rule=build_meoh_cost_param_block)
 
         def build_nacl_cost_param_block(blk):
+
+            costing = blk.parent_block()
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -380,6 +392,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaCl purity",
                 units=pyo.units.dimensionless,
             )
+            costing.available_flows["NaCl"] = blk.cost / blk.purity
 
         self.nacl = pyo.Block(rule=build_nacl_cost_param_block)
 
