@@ -5,6 +5,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 import seaborn as sns
 import numpy as np
+import math
 
 from pyomo.environ import (
     units as pyunits,
@@ -42,25 +43,52 @@ def main():
     # plot_3D_results(output_file)
 
     # Optimize full system
-    # analysis = "C:/Users/carso/Documents/MVC/watertap_results/analysis_full_optimize_cases.csv"
-    # output_file = "C:/Users/carso/Documents/MVC/watertap_results/optimize_full_sweep_rr_wf_40_tif_8_results.csv"
-    # global_results, sweep_params, m = run_multi_param_case(analysis,system='mvc_full_opt',output_filename=output_file)
-    # #
-    #
-    # map_dir = "C:/Users/carso/Documents/MVC/watertap_results/opt_full_40_tif_8"
-    # save_dir = "C:/Users/carso/Documents/MVC/watertap_results/opt_full_40_tif_8/figures_Q_ext_min"
+    analysis = "C:/Users/carso/Documents/MVC/watertap_results/analysis_full_optimize_cases.csv"
+    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/opt_full_linearized/"
+    # map_dir_list = [map_dir+'evap_3000_hx_3000',
+    #                 map_dir+'evap_4000_hx_4000',
+    #                 map_dir+'evap_5000_hx_5000',
+    #                map_dir+'evap_6000_hx_6000']
+    # title_list = [r'$C_{evap}=C_{hx}=3000 \$/m^2$',
+    #               r'$C_{evap}=C_{hx}=4000 \$/m^2$',
+    #               r'$C_{evap}=C_{hx}=5000 \$/m^2$',
+    #               r'$C_{evap}=C_{hx}=6000 \$/m^2$']
+    # save_dir = map_dir+"figures_same_cost_3000_6000"
+    # make_maps_comparison(map_dir_list, save_dir, title_list)
+
+    map_dir_list = [map_dir + 'evap_6000_hx_4800',
+                    map_dir + 'evap_6000_hx_4000',
+                    map_dir + 'evap_6000_hx_3429',
+                    map_dir + 'evap_6000_hx_3000']
+    title_list = [r'$C_{evap}=6000 \$/m^2, C_{evap}=1.25\times C_{hx}$',
+                  r'$C_{evap}=6000 \$/m^2, C_{evap}=1.5\times C_{hx}$',
+                  r'$C_{evap}=5000 \$/m^2, C_{evap}=1.75\times C_{hx}$',
+                  r'$C_{evap}=6000 \$/m^2, C_{evap}=2\times C_{hx}$']
+    save_dir = map_dir+"figures_evap_6000_varying_cost_ratio"
+    make_maps_comparison(map_dir_list, save_dir, title_list)
+
+    # map_dir_list = [map_dir + 'evap_1000_hx_1500',
+    #                 map_dir + 'evap_1500_hx_2000']
+    # title_list = [r'$C_{evap}=1000 \$/m^2, C_{hx}=1500 \$/m^2$',
+    #               r'$C_{evap}=1500 \$/m^2, C_{hx}=2000 \$/m^2$',]
+    # save_dir = map_dir+"figures_evap_lower_cost"
+    # make_maps_comparison(map_dir_list, save_dir, title_list)
+
+    # # evap 800 hx 800
+    # map_dir = "C:/Users/carso/Documents/MVC/watertap_results/opt_full_linearized/evap_6000_hx_4800"
+    # output_file = map_dir + "/optimize_full_sweep_rr_wf_40.csv"
+    # global_results, sweep_params, m = run_multi_param_case(analysis,system='mvc_full_opt',output_filename=output_file,f_evap=6000, f_hx=4800)
+    # save_dir = map_dir + '/figures'
     # save_results_for_plotting(output_file,map_dir,7,9)
-    #
     # convert_units_results(map_dir)
-    # make_maps(map_dir,save_dir)
+    # make_maps_F_200(map_dir,save_dir)
+    # print(map_dir)
+
     # map_dir = "C:/Users/carso/Documents/MVC/watertap_results/Total investment factor sensitivity/opt_full_40_tif_4"
     # map_dir = "C:/Users/carso/Documents/MVC/watertap_results/opt_full_40_tif_4_fixed_split_ratio_Q_ext_min"
     # save_dir = map_dir + '/figures'
-    # make_maps_tif_4(map_dir, save_dir)
-    # tif_sensitivity_maps()
-    # sr_sensitivity_maps()
-    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/cost_breakdown/Evap_material_factor_1_hx_3"
-    make_cost_bar_charts(map_dir)
+    # map_dir = "C:/Users/carso/Documents/MVC/watertap_results/cost_breakdown/Linearized evap 3 hx 3"
+    # make_cost_bar_charts(map_dir)
 
 def sr_sensitivity_maps():
     # lcow_file = "C:/Users/carso/Documents/MVC/watertap_results/Total investment factor sensitivity/opt_full_40_tif_4/LCOW.csv"
@@ -141,10 +169,12 @@ def mvc_unit_presweep():
     results = solver.solve(m, tee=False)
     return m
 
-def mvc_full_presweep():
+def mvc_full_presweep(f_evap=1000, f_hx=1000):
     m = mvc_full.build()
     mvc_full.add_Q_ext(m, time_point=m.fs.config.time)
     mvc_full.set_operating_conditions(m)
+    m.fs.costing.heat_exchanger_unit_cost.fix(f_evap)
+    m.fs.costing.evaporator_unit_cost.fix(f_hx)
     mvc_full.initialize_system(m)
     mvc_full.scale_costs(m)
     # mvc_full.fix_outlet_pressures(m)
@@ -172,7 +202,7 @@ def run_analysis(analysis_file, fixed_params):
             assert False
         row += 1
 
-def run_multi_param_case(analysis_file, system='mvc_unit',output_filename=None):
+def run_multi_param_case(analysis_file, system='mvc_unit',output_filename=None,f_evap=1000,f_hx=1000):
     df = pd.read_csv(analysis_file)
     if output_filename is None:
         output_filename = ("C:/Users/carso/Documents/MVC/watertap_results/" + system + "_multi_param_results.csv")
@@ -185,12 +215,12 @@ def run_multi_param_case(analysis_file, system='mvc_unit',output_filename=None):
 
     elif system == 'mvc_full':
         # Get model
-        m = mvc_full_presweep()
+        m = mvc_full_presweep(f_evap=f_evap,f_hx=f_hx)
         opt_fcn = mvc_full.solve
         outputs = make_outputs_dict_mvc_full(m)
 
     elif system == 'mvc_full_opt':
-        m = mvc_full_presweep()
+        m = mvc_full_presweep(f_evap=f_evap,f_hx=f_hx)
         opt_fcn = mvc_full.sweep_solve
         outputs= make_outputs_dict_mvc_full(m)
     else:
@@ -309,7 +339,6 @@ def make_outputs_dict_mvc_unit(m):
     outputs['Evaporator approach temperature in'] = m.fs.evaporator.delta_temperature_in
     outputs['Evaporator approach temperature out'] = m.fs.evaporator.delta_temperature_out
 
-
     # Compressor performance
     outputs['Compressor pressure ratio'] = m.fs.compressor.pressure_ratio
     outputs['Compressor work'] = m.fs.compressor.control_volume.work[0]
@@ -356,6 +385,8 @@ def make_outputs_dict_mvc_full(m):
     outputs['Q external'] = m.fs.Q_ext[0]
 
     # Capital costs
+    outputs['Evaporator cost per area'] = m.fs.costing.evaporator_unit_cost
+    outputs['HX cost per area'] = m.fs.costing.heat_exchanger_unit_cost
     outputs['Feed pump capital cost'] = m.fs.pump_feed.costing.capital_cost
     outputs['Distillate pump captial cost'] = m.fs.pump_distillate.costing.capital_cost
     outputs['Brine pump captial cost'] = m.fs.pump_distillate.costing.capital_cost
@@ -415,30 +446,108 @@ def plot_3D_results(results_file):
     plt.colorbar(fig, label='Q external')
     plt.show()
 
-def plot_2D_heat_map(map_dir, save_dir, param, label, vmin, vmax, ticks, fmt):
+def plot_2D_heat_map(map_dir, save_dir, param, label, vmin, vmax, ticks, fmt,make_ticks=True):
     fig = plt.figure()
     ax = plt.axes()
     results_file = map_dir+'/'+param+'.csv'
     df = pd.read_csv(results_file)
+    mask = df.isnull()
+    if make_ticks:
+        decimal=int(fmt[1])
+        df_min = float(np.nanmin(df.values))
+        vmin = df_min-10**-decimal
+        df_max = float(np.nanmax(df.values))
+        vmax = df_max + 10**-decimal
+        n=5 # number of ticks
+        ticks = np.round(np.linspace(df_min, df_max, n),decimal) # round based on formatting decimal places
+
     xticklabels = ['25', '50', '75', '100', '125', '150', '175']
     yticklabels = ['40', '45', '50', '55', '60', '65', '70', '75', '80']
-    mask = df.isnull()
-    ax = sns.heatmap(df, cmap='Reds', mask=mask,
-                     vmin=vmin, vmax=vmax, annot=True, annot_kws={"fontsize": 8}, fmt=fmt,
-                     cbar_kws={'label': label, "ticks": ticks}, xticklabels=xticklabels,
-                     yticklabels=yticklabels
-                     )  # create heatmap
-    # ax = sns.heatmap(df, cmap='YlGnBu', mask=mask,
+    # ax = sns.heatmap(df, cmap='Reds', mask=mask,
     #                  vmin=vmin, vmax=vmax, annot=True, annot_kws={"fontsize": 8}, fmt=fmt,
     #                  cbar_kws={'label': label, "ticks": ticks}, xticklabels=xticklabels,
     #                  yticklabels=yticklabels
     #                  )  # create heatmap
+    ax = sns.heatmap(df, cmap='YlGnBu', mask=mask,
+                     vmin=vmin, vmax=vmax, annot=True, annot_kws={"fontsize": 8}, fmt=fmt,
+                     cbar_kws={'label': label, "ticks": ticks}, xticklabels=xticklabels,
+                     yticklabels=yticklabels
+                     )  # create heatmap
     ax.invert_yaxis()
     plt.yticks(rotation=0)
     ax.set_xlabel('Feed concentration (g/kg)')
     ax.set_ylabel('Water recovery (%)')
     fig.set_size_inches(3.25, 3.25)
-    plt.show()
+    # plt.show()
+    fig.savefig(save_dir + '/' + param + '.png',bbox_inches='tight',dpi=300)
+
+    # fig.savefig(save_dir + '/' + var + '.pdf',bbox_inches='tight')
+    # fig.savefig(save_dir + '/' + var + '.svg',bbox_inches='tight')
+    #fig.savefig(save_dir + '/' + var + '.png', bbox_inches='tight', dpi=300)
+
+def plot_2D_heat_map_subplots(map_dir, title_list, save_dir, param, param_label, vmin, vmax, ticks, fmt, make_ticks=True,show=False):
+    # map dir is a list
+    n = len(map_dir)
+
+    if make_ticks:
+        decimal=int(fmt[1])
+        # first file
+        results_file = map_dir[0] + '/' + param + '.csv'
+        df = pd.read_csv(results_file)
+        df_min = float(np.nanmin(df.values))
+        df_max = float(np.nanmax(df.values))
+
+        # search for max and mins
+        for i in range(1,n):
+            results_file = map_dir[i] + '/' + param + '.csv'
+            df = pd.read_csv(results_file)
+            min_val = float(np.nanmin(df.values))
+            if min_val < df_min:
+                df_min = min_val
+            max_val = float(np.nanmax(df.values))
+            if max_val > df_max:
+                df_max = max_val
+        # make ticks
+        vmin = df_min - 10 ** -decimal
+        vmax = df_max + 10 ** -decimal
+        n_ticks=5 # number of ticks
+        ticks = np.round(np.linspace(df_min, df_max, n_ticks),decimal) # round based on formatting decimal places
+
+    widths = [1 for i in range(n)]
+    heights = [1 for i in range(n)]
+    widths.append(0.08)
+    fig, ax = plt.subplots(1,n+1, gridspec_kw={'width_ratios':widths},figsize=(n*3,3))# figsize=(12,3))
+    # ax[0].get_shared_y_axes().join(ax[1],ax[2],ax[3])
+    # ax[1].get_shared_y_axes().join(ax[2],ax[3])
+
+    cbar = [False for i in range(n-1)]
+    cbar.append(True)
+    xticklabels = ['25', '50', '75', '100', '125', '150', '175']
+    yticklabels = ['40', '45', '50', '55', '60', '65', '70', '75', '80']
+    yticks = [[]for i in range(n)]
+    yticks[0] = yticklabels
+    g = {}
+    for i in range(n):
+        results_file = map_dir[i] + '/' + param + '.csv'
+        df = pd.read_csv(results_file)
+        mask = df.isnull()
+        ax[i].axis('equal')
+        g[i] = sns.heatmap(df, cmap='YlGnBu', mask=mask, square=True,
+                         vmin=vmin, vmax=vmax, annot=True, annot_kws={"fontsize": 8}, fmt=fmt,
+                         cbar_kws={'label': param_label, "ticks": ticks}, xticklabels=xticklabels,
+                         yticklabels=yticklabels,ax=ax[i],cbar=cbar[i],cbar_ax=ax[i+1]
+                         )  # create heatmap
+
+        #g[i].set_xlabel('Feed concentration (g/kg)')
+        ax[i].set_yticklabels(yticklabels,rotation=0)
+        ax[i].set_xticklabels(xticklabels,rotation=0)
+        ax[i].set_title(title_list[i],size=8)
+        g[i].invert_yaxis()
+        g[i].set_xlabel('Feed concentration (g/kg)')
+
+    g[0].set_ylabel('Water recovery (%)')
+    if show:
+        plt.show()
     fig.savefig(save_dir + '/' + param + '.png',bbox_inches='tight',dpi=300)
 
     # fig.savefig(save_dir + '/' + var + '.pdf',bbox_inches='tight')
@@ -521,343 +630,68 @@ def convert_units_results(map_dir):
     df = df - 273.15
     pd.DataFrame(df).to_csv(map_dir + '/Preheated feed temperature Celsius.csv', index=False)
 
-def make_maps_comparison(map_dir, save_dir):
+def make_maps_F_200(map_dir, save_dir):
     var = 'LCOW'
     label = r'LCOW [\$/$\rmm^3$ of product]'
-    vmin = 2  # minimum cost on bar, $/m3
-    vmax = 28  # maximum cost on bar, $/m3
-    ticks = [5,10,15,20,25]  # tick marks on bar
-    fmt = '.1f'  # format of annotation
-    plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-
-    var = 'Brine temperature Celsius'
-    label = 'Evaporator temperature [C]'
-    vmin = 25  # minimum cost on bar, $/m3
-    vmax = 161  # maximum cost on bar, $/m3
-    ticks = [25, 50, 75, 100, 125, 150]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-def make_maps_tif_8(map_dir, save_dir):
-    var = 'LCOW'
-    label = r'LCOW [\$/$\rmm^3$ of product]'
-    vmin = 20  # minimum cost on bar, $/m3
-    vmax = 28  # maximum cost on bar, $/m3
-    ticks = [20,22,24,26,28]  # tick marks on bar
+    vmin = 2.8  # minimum cost on bar, $/m3
+    vmax = 6.1 # maximum cost on bar, $/m3
+    ticks = [3,4,5,6]  # tick marks on bar
     fmt = '.1f'  # format of annotation
     plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
 
     var = 'SEC'
     label = r'SEC [kWh/$\rmm^3$ of product]'
-    vmin =45  # minimum cost on bar, $/m3
-    vmax = 70  # maximum cost on bar, $/m3
-    ticks = [40,50,60,70]  # tick marks on bar
+    vmin = 15  # minimum cost on bar, $/m3
+    vmax = 63  # maximum cost on bar, $/m3
+    ticks = [20,30,40,50,63]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
 
     var = 'Brine temperature Celsius'
     label = 'Evaporator temperature [C]'
     vmin = 25  # minimum cost on bar, $/m3
-    vmax = 76  # maximum cost on bar, $/m3
-    ticks = [30, 40, 50, 60,70]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Brine pressure kPa'
-    label = 'Evaporator pressure [kPa]'
-    vmin = 0  # minimum cost on bar, $/m3
-    vmax = 40  # maximum cost on bar, $/m3
-    ticks = [0, 10,20,30,40]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Preheated feed temperature Celsius'
-    label = 'Preheated feed temperature [C]'
-    vmin = 25  # minimum cost on bar, $/m3
-    vmax = 66  # maximum cost on bar, $/m3
-    ticks = [25, 35, 45, 55, 65]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Compressed vapor temperature Celsius'
-    label = 'Compressed vapor temperature [C]'
-    vmin = 50  # minimum cost on bar, $/m3
-    vmax = 250  # maximum cost on bar, $/m3
-    ticks = [50, 100, 150, 200]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Compressed vapor pressure kPa'
-    label = 'Compressed vapor pressure [kPa]'
-    vmin = 7  # minimum cost on bar, $/m3
-    vmax = 100  # maximum cost on bar, $/m3
-    ticks = [10,30, 50, 70, 90]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Distillate temperature Celsius'
-    label = 'Distillate temperature [C]'
-    vmin = 38  # minimum cost on bar, $/m3
-    vmax = 100  # maximum cost on bar, $/m3
-    ticks = [40, 60, 80, 100]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Preheater split ratio'
-    label = 'Preheater split ratio [C]'
-    vmin = 0  # minimum cost on bar, $/m3
-    vmax = 1  # maximum cost on bar, $/m3
-    ticks = [0, 0.2, 0.4, 0.6, 0.8, 1]  # tick marks on bar
-    fmt = '.2f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Distillate hx area'
-    label = r'Distillate preheater area [$\rmm^2$]'
-    vmin = 0  # minimum cost on bar, $/m3
     vmax = 150  # maximum cost on bar, $/m3
-    ticks = [0, 50, 100, 150]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Brine hx area'
-    label = r'Brine preheater area [$\rmm^2$]'
-    vmin = 0  # minimum cost on bar, $/m3
-    vmax = 325  # maximum cost on bar, $/m3
-    ticks = [0, 100, 200, 300]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Evaporator area'
-    label = r'Evaporator area [$\rmm^2$]'
-    vmin = 550  # minimum cost on bar, $/m3
-    vmax = 1600  # maximum cost on bar, $/m3
-    ticks = [600, 800, 1000, 1200, 1400, 1600]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Evaporator LMTD'
-    label = r'Evaporator LMTD [K]'
-    vmin = 59  # minimum cost on bar, $/m3
-    vmax = 71  # maximum cost on bar, $/m3
-    ticks = [60, 65, 70]  # tick marks on bar
-    fmt = '.1f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Compressor pressure ratio'
-    label = r'Compressor pressure ratio [-]'
-    vmin = 2  # minimum cost on bar, $/m3
-    vmax = 4.2  # maximum cost on bar, $/m3
-    ticks = [2, 3, 4]  # tick marks on bar
-    fmt = '.2f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Evaporator-feed temperature difference'
-    label = r'$T_{brine}-T_{feed}$ [C]'
-    vmin = -7  # minimum cost on bar, $/m3
-    vmax = 23  # maximum cost on bar, $/m3
-    ticks = [-5,0, 5, 10, 15,20]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Mass flux LMH'
-    label = r'Product flux over evaporator [LMH]'
-    vmin = 80  # minimum cost on bar, $/m3
-    vmax = 106  # maximum cost on bar, $/m3
-    ticks = [80, 85, 90,95, 100, 105]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-def make_maps_tif_4(map_dir, save_dir):
-    var = 'LCOW'
-    label = r'LCOW [\$/$\rmm^3$ of product]'
-    vmin = 12  # minimum cost on bar, $/m3
-    vmax = 16  # maximum cost on bar, $/m3
-    ticks = [12,13,14,15,16]  # tick marks on bar
-    fmt = '.1f'  # format of annotation
-    plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-    #
-    # var = 'SEC'
-    # label = r'SEC [kWh/$\rmm^3$ of product]'
-    # vmin = 35  # minimum cost on bar, $/m3
-    # vmax = 66  # maximum cost on bar, $/m3
-    # ticks = [35,45,55,65]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-    #
-    # var = 'Brine temperature Celsius'
-    # label = 'Evaporator temperature [C]'
-    # vmin = 30  # minimum cost on bar, $/m3
-    # vmax = 97  # maximum cost on bar, $/m3
-    # ticks = [30, 40, 50, 60,70, 80, 90]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine pressure kPa'
-    # label = 'Evaporator pressure [kPa]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 87  # maximum cost on bar, $/m3
-    # ticks = [0, 20,40,60, 80]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Preheated feed temperature Celsius'
-    # label = 'Preheated feed temperature [C]'
-    # vmin = 28  # minimum cost on bar, $/m3
-    # vmax = 91  # maximum cost on bar, $/m3
-    # ticks = [30, 50, 70, 90]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressed vapor temperature Celsius'
-    # label = 'Compressed vapor temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 250  # maximum cost on bar, $/m3
-    # ticks = [50, 100, 150, 200]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressed vapor pressure kPa'
-    # label = 'Compressed vapor pressure [kPa]'
-    # vmin = 10  # minimum cost on bar, $/m3
-    # vmax = 192  # maximum cost on bar, $/m3
-    # ticks = [25, 50, 75, 100, 125, 150, 175]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Distillate temperature Celsius'
-    # label = 'Distillate temperature [C]'
-    # vmin = 45  # minimum cost on bar, $/m3
-    # vmax = 120  # maximum cost on bar, $/m3
-    # ticks = [50, 70, 90, 110]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Preheater split ratio'
-    label = 'Preheater split ratio [C]'
-    vmin = 0  # minimum cost on bar, $/m3
-    vmax = 1  # maximum cost on bar, $/m3
-    ticks = [0, 0.2, 0.4, 0.6, 0.8, 1]  # tick marks on bar
-    fmt = '.2f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    # var = 'Distillate hx area'
-    # label = r'Distillate preheater area [$\rmm^2$]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 456  # maximum cost on bar, $/m3
-    # ticks = [0, 100, 200, 300, 400]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine hx area'
-    # label = r'Brine preheater area [$\rmm^2$]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 503  # maximum cost on bar, $/m3
-    # ticks = [100, 200, 300, 400, 500]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator area'
-    # label = r'Evaporator area [$\rmm^2$]'
-    # vmin = 600  # minimum cost on bar, $/m3
-    # vmax = 1600  # maximum cost on bar, $/m3
-    # ticks = [600, 800, 1000, 1200, 1400, 1600]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator LMTD'
-    # label = r'Evaporator LMTD [K]'
-    # vmin = 57  # minimum cost on bar, $/m3
-    # vmax = 63  # maximum cost on bar, $/m3
-    # ticks = [57, 59, 61,63]  # tick marks on bar
-    # fmt = '.1f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressor pressure ratio'
-    # label = r'Compressor pressure ratio [-]'
-    # vmin = 2  # minimum cost on bar, $/m3
-    # vmax = 4  # maximum cost on bar, $/m3
-    # ticks = [2, 3, 4]  # tick marks on bar
-    # fmt = '.2f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator-feed temperature difference'
-    # label = r'$T_{brine}-T_{feed}$ [C]'
-    # vmin = -7  # minimum cost on bar, $/m3
-    # vmax = 20  # maximum cost on bar, $/m3
-    # ticks = [-5,0, 5, 10, 15,20]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Mass flux LMH'
-    # label = r'Product flux over evaporator [LMH]'
-    # vmin = 80  # minimum cost on bar, $/m3
-    # vmax = 98  # maximum cost on bar, $/m3
-    # ticks = [80, 85, 90,95]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-def make_maps(map_dir, save_dir):
-    var = 'LCOW'
-    label = r'LCOW [\$/$\rmm^3$ of product]'
-    vmin = 7  # minimum cost on bar, $/m3
-    vmax = 11  # maximum cost on bar, $/m3
-    ticks = [7,8,9,10,11]  # tick marks on bar
-    fmt = '.1f'  # format of annotation
-    plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-
-    var = 'SEC'
-    label = r'SEC [kWh/$\rmm^3$ of product]'
-    vmin = 25  # minimum cost on bar, $/m3
-    vmax = 65  # maximum cost on bar, $/m3
-    ticks = [25,35,45,55,65]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-
-    var = 'Brine temperature Celsius'
-    label = 'Evaporator temperature [C]'
-    vmin = 35  # minimum cost on bar, $/m3
-    vmax = 125  # maximum cost on bar, $/m3
-    ticks = [40, 60, 80, 100, 120]  # tick marks on bar
+    ticks = [25,50, 100, 150]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Brine pressure kPa'
     label = 'Evaporator pressure [kPa]'
     vmin = 0  # minimum cost on bar, $/m3
-    vmax = 200  # maximum cost on bar, $/m3
-    ticks = [0, 50, 100, 150, 200]  # tick marks on bar
+    vmax = 403  # maximum cost on bar, $/m3
+    ticks = [0, 100, 200, 300, 400]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Preheated feed temperature Celsius'
     label = 'Preheated feed temperature [C]'
-    vmin = 40  # minimum cost on bar, $/m3
-    vmax = 120  # maximum cost on bar, $/m3
-    ticks = [40, 60, 80, 100, 120]  # tick marks on bar
+    vmin = 25  # minimum cost on bar, $/m3
+    vmax = 150  # maximum cost on bar, $/m3
+    ticks = [50, 100, 150]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressed vapor temperature Celsius'
     label = 'Compressed vapor temperature [C]'
-    vmin = 50  # minimum cost on bar, $/m3
-    vmax = 250  # maximum cost on bar, $/m3
-    ticks = [50, 100, 150, 200]  # tick marks on bar
+    vmin = 87  # minimum cost on bar, $/m3
+    vmax = 227  # maximum cost on bar, $/m3
+    ticks = [100, 150, 200]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressed vapor pressure kPa'
     label = 'Compressed vapor pressure [kPa]'
-    vmin = 10  # minimum cost on bar, $/m3
-    vmax = 370  # maximum cost on bar, $/m3
-    ticks = [50, 150, 250, 350]  # tick marks on bar
+    vmin = 3  # minimum cost on bar, $/m3
+    vmax = 629  # maximum cost on bar, $/m3
+    ticks = [200, 400, 600]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Distillate temperature Celsius'
     label = 'Distillate temperature [C]'
-    vmin = 50  # minimum cost on bar, $/m3
-    vmax = 140  # maximum cost on bar, $/m3
-    ticks = [50, 75, 100, 125]  # tick marks on bar
+    vmin = 34  # minimum cost on bar, $/m3
+    vmax = 161  # maximum cost on bar, $/m3
+    ticks = [50, 100, 150]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
@@ -865,47 +699,47 @@ def make_maps(map_dir, save_dir):
     label = 'Preheater split ratio [C]'
     vmin = 0.4  # minimum cost on bar, $/m3
     vmax = 1  # maximum cost on bar, $/m3
-    ticks = [0.4, 0.6, 0.8, 1]  # tick marks on bar
+    ticks = [0.4, 0.6, 0.8]  # tick marks on bar
     fmt = '.2f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Distillate hx area'
     label = r'Distillate preheater area [$\rmm^2$]'
-    vmin = 200  # minimum cost on bar, $/m3
-    vmax = 950  # maximum cost on bar, $/m3
-    ticks = [200, 400, 600, 800]  # tick marks on bar
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 1630  # maximum cost on bar, $/m3
+    ticks = [500,1000, 2000, 3000, 4000]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Brine hx area'
     label = r'Brine preheater area [$\rmm^2$]'
-    vmin = 40  # minimum cost on bar, $/m3
-    vmax = 900  # maximum cost on bar, $/m3
-    ticks = [100, 300, 500, 700, 900]  # tick marks on bar
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 1001  # maximum cost on bar, $/m3
+    ticks = [250,500, 750]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator area'
     label = r'Evaporator area [$\rmm^2$]'
-    vmin = 650  # minimum cost on bar, $/m3
-    vmax = 1800  # maximum cost on bar, $/m3
-    ticks = [800, 1000, 1200, 1400, 1600, 1800]  # tick marks on bar
+    vmin = 742  # minimum cost on bar, $/m3
+    vmax = 3740  # maximum cost on bar, $/m3
+    ticks = [1000, 2000, 3000]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator LMTD'
     label = r'Evaporator LMTD [K]'
-    vmin = 48  # minimum cost on bar, $/m3
-    vmax = 60  # maximum cost on bar, $/m3
-    ticks = [50, 55, 60]  # tick marks on bar
+    vmin = 19  # minimum cost on bar, $/m3
+    vmax = 61  # maximum cost on bar, $/m3
+    ticks = [20, 40, 60]  # tick marks on bar
     fmt = '.1f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressor pressure ratio'
     label = r'Compressor pressure ratio [-]'
-    vmin = 1.8  # minimum cost on bar, $/m3
-    vmax = 4  # maximum cost on bar, $/m3
-    ticks = [2, 3, 4]  # tick marks on bar
+    vmin = 1.5  # minimum cost on bar, $/m3
+    vmax = 3.6  # maximum cost on bar, $/m3
+    ticks = [2,2.5, 3]  # tick marks on bar
     fmt = '.2f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
@@ -919,269 +753,141 @@ def make_maps(map_dir, save_dir):
 
     var = 'Mass flux LMH'
     label = r'Product flux over evaporator [LMH]'
-    vmin = 70  # minimum cost on bar, $/m3
-    vmax = 90  # maximum cost on bar, $/m3
-    ticks = [70,75, 80, 85, 90]  # tick marks on bar
+    vmin = 28  # minimum cost on bar, $/m3
+    vmax = 82  # maximum cost on bar, $/m3
+    ticks = [30, 40,50,60,70,80]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
-def make_maps_tif_1(map_dir, save_dir):
-    # var = 'LCOW'
-    # label = r'LCOW [\$/$\rmm^3$ of product]'
-    # vmin = 4  # minimum cost on bar, $/m3
-    # vmax = 10.5  # maximum cost on bar, $/m3
-    # ticks = [4,6,8,10]  # tick marks on bar
-    # fmt = '.1f'  # format of annotation
-    # plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-    #
-    # var = 'SEC'
-    # label = r'SEC [kWh/$\rmm^3$ of product]'
-    # vmin = 15  # minimum cost on bar, $/m3
-    # vmax = 65  # maximum cost on bar, $/m3
-    # ticks = [20,30,40,50,60]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
-    #
-    # var = 'Brine temperature Celsius'
-    # label = 'Evaporator temperature [C]'
-    # vmin = 45  # minimum cost on bar, $/m3
-    # vmax = 162  # maximum cost on bar, $/m3
-    # ticks = [50, 75,100, 125,150]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine pressure kPa'
-    # label = 'Evaporator pressure [kPa]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 375  # maximum cost on bar, $/m3
-    # ticks = [0, 100, 200, 300, 400]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Preheated feed temperature Celsius'
-    # label = 'Preheated feed temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 150  # maximum cost on bar, $/m3
-    # ticks = [50,75,100,125,150]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressed vapor temperature Celsius'
-    # label = 'Compressed vapor temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 250  # maximum cost on bar, $/m3
-    # ticks = [50, 100, 150, 200]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    var = 'Compressed vapor pressure kPa'
-    label = 'Compressed vapor pressure [kPa]'
-    vmin = 10  # minimum cost on bar, $/m3
-    vmax = 600  # maximum cost on bar, $/m3
-    ticks = [100,200, 300, 400, 500,600]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-    # var = 'Distillate temperature Celsius'
-    # label = 'Distillate temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 160  # maximum cost on bar, $/m3
-    # ticks = [50, 75, 100, 125,150]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Preheater split ratio'
-    # label = 'Preheater split ratio [C]'
-    # vmin = 0.4  # minimum cost on bar, $/m3
-    # vmax = 1  # maximum cost on bar, $/m3
-    # ticks = [0.4, 0.6, 0.8, 1]  # tick marks on bar
-    # fmt = '.2f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Distillate hx area'
-    # label = r'Distillate preheater area [$\rmm^2$]'
-    # vmin = 500  # minimum cost on bar, $/m3
-    # vmax = 9000  # maximum cost on bar, $/m3
-    # ticks = [2000, 4000, 6000, 8000]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine hx area'
-    # label = r'Brine preheater area [$\rmm^2$]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 1600  # maximum cost on bar, $/m3
-    # ticks = [500, 1000, 1500]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator area'
-    # label = r'Evaporator area [$\rmm^2$]'
-    # vmin = 750  # minimum cost on bar, $/m3
-    # vmax = 5200  # maximum cost on bar, $/m3
-    # ticks = [1000, 2000, 3000,4000, 5000]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator LMTD'
-    # label = r'Evaporator LMTD [K]'
-    # vmin = 10  # minimum cost on bar, $/m3
-    # vmax = 55  # maximum cost on bar, $/m3
-    # ticks = [15,25,35,45, 55]  # tick marks on bar
-    # fmt = '.1f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressor pressure ratio'
-    # label = r'Compressor pressure ratio [-]'
-    # vmin = 1.5  # minimum cost on bar, $/m3
-    # vmax = 3.5  # maximum cost on bar, $/m3
-    # ticks = [1.5,2,2.5, 3,3.5]  # tick marks on bar
-    # fmt = '.2f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator-feed temperature difference'
-    # label = r'$T_{brine}-T_{feed}$ [C]'
-    # vmin = -7  # minimum cost on bar, $/m3
-    # vmax = 15  # maximum cost on bar, $/m3
-    # ticks = [-5,0, 5, 10, 15]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Mass flux LMH'
-    # label = r'Product flux over evaporator [LMH]'
-    # vmin = 20  # minimum cost on bar, $/m3
-    # vmax = 80  # maximum cost on bar, $/m3
-    # ticks = [20,40,60,80]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-
-def make_maps_tif_0p5(map_dir, save_dir):
-    # var = 'LCOW'
-    # label = r'LCOW [\$/$\rmm^3$ of product]'
-    # vmin = 2.6  # minimum cost on bar, $/m3
-    # vmax = 6  # maximum cost on bar, $/m3
-    # ticks = [3,4,5,6]  # tick marks on bar
-    # fmt = '.1f'  # format of annotation
-    # plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
+def make_maps_comparison(map_dir_list, save_dir, title_list):
+    var = 'LCOW'
+    label = r'LCOW [\$/$\rmm^3$ of product]'
+    vmin = 2.8  # minimum cost on bar, $/m3
+    vmax = 6.1 # maximum cost on bar, $/m3
+    ticks = [3,4,5,6]  # tick marks on bar
+    fmt = '.1f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     var = 'SEC'
     label = r'SEC [kWh/$\rmm^3$ of product]'
-    vmin = 10  # minimum cost on bar, $/m3
-    vmax = 60  # maximum cost on bar, $/m3
-    ticks = [10,20,30,40,50,60]  # tick marks on bar
+    vmin = 15  # minimum cost on bar, $/m3
+    vmax = 63  # maximum cost on bar, $/m3
+    ticks = [20,30,40,50,63]  # tick marks on bar
     fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir,save_dir,var,label,vmin,vmax,ticks,fmt)
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
-    # var = 'Brine temperature Celsius'
-    # label = 'Evaporator temperature [C]'
-    # vmin = 45  # minimum cost on bar, $/m3
-    # vmax = 162  # maximum cost on bar, $/m3
-    # ticks = [50, 75,100, 125,150]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine pressure kPa'
-    # label = 'Evaporator pressure [kPa]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 560  # maximum cost on bar, $/m3
-    # ticks = [0, 100, 200, 300, 400, 500]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Preheated feed temperature Celsius'
-    # label = 'Preheated feed temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 350  # maximum cost on bar, $/m3
-    # ticks = [100, 200, 300]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # # var = 'Compressed vapor temperature Celsius'
-    # # label = 'Compressed vapor temperature [C]'
-    # # vmin = 50  # minimum cost on bar, $/m3
-    # # vmax = 250  # maximum cost on bar, $/m3
-    # # ticks = [50, 100, 150, 200]  # tick marks on bar
-    # # fmt = '.0f'  # format of annotation
-    # # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressed vapor pressure kPa'
-    # label = 'Compressed vapor pressure [kPa]'
-    # vmin = 10  # minimum cost on bar, $/m3
-    # vmax = 900  # maximum cost on bar, $/m3
-    # ticks = [200, 400, 600, 800]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Distillate temperature Celsius'
-    # label = 'Distillate temperature [C]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 175  # maximum cost on bar, $/m3
-    # ticks = [50, 75, 100, 125,150,175]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # # var = 'Preheater split ratio'
-    # # label = 'Preheater split ratio [C]'
-    # # vmin = 0.4  # minimum cost on bar, $/m3
-    # # vmax = 1  # maximum cost on bar, $/m3
-    # # ticks = [0.4, 0.6, 0.8, 1]  # tick marks on bar
-    # # fmt = '.2f'  # format of annotation
-    # # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Distillate hx area'
-    # label = r'Distillate preheater area [$\rmm^2$]'
-    # vmin = 750  # minimum cost on bar, $/m3
-    # vmax = 3200  # maximum cost on bar, $/m3
-    # ticks = [1000, 1500, 2000, 2500, 3000]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Brine hx area'
-    # label = r'Brine preheater area [$\rmm^2$]'
-    # vmin = 50  # minimum cost on bar, $/m3
-    # vmax = 2700  # maximum cost on bar, $/m3
-    # ticks = [500, 1000, 1500, 2000, 1500]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator area'
-    # label = r'Evaporator area [$\rmm^2$]'
-    # vmin = 900  # minimum cost on bar, $/m3
-    # vmax = 2600  # maximum cost on bar, $/m3
-    # ticks = [1000, 1500, 2000, 2500]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator LMTD'
-    # label = r'Evaporator LMTD [K]'
-    # vmin = 30  # minimum cost on bar, $/m3
-    # vmax = 57  # maximum cost on bar, $/m3
-    # ticks = [30,35,45,50, 55]  # tick marks on bar
-    # fmt = '.1f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Compressor pressure ratio'
-    # label = r'Compressor pressure ratio [-]'
-    # vmin = 1.4  # minimum cost on bar, $/m3
-    # vmax = 3.5  # maximum cost on bar, $/m3
-    # ticks = [1.5,2,2.5, 3,3.5]  # tick marks on bar
-    # fmt = '.2f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Evaporator-feed temperature difference'
-    # label = r'$T_{brine}-T_{feed}$ [C]'
-    # vmin = -7  # minimum cost on bar, $/m3
-    # vmax = 15  # maximum cost on bar, $/m3
-    # ticks = [-5,0, 5, 10, 15]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
-    #
-    # var = 'Mass flux LMH'
-    # label = r'Product flux over evaporator [LMH]'
-    # vmin = 48  # minimum cost on bar, $/m3
-    # vmax = 80  # maximum cost on bar, $/m3
-    # ticks = [50,60,70,80]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    var = 'Brine temperature Celsius'
+    label = 'Evaporator temperature [C]'
+    vmin = 25  # minimum cost on bar, $/m3
+    vmax = 150  # maximum cost on bar, $/m3
+    ticks = [25,50, 100, 150]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Brine pressure kPa'
+    label = 'Evaporator pressure [kPa]'
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 403  # maximum cost on bar, $/m3
+    ticks = [0, 100, 200, 300, 400]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Preheated feed temperature Celsius'
+    label = 'Preheated feed temperature [C]'
+    vmin = 25  # minimum cost on bar, $/m3
+    vmax = 150  # maximum cost on bar, $/m3
+    ticks = [50, 100, 150]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Compressed vapor temperature Celsius'
+    label = 'Compressed vapor temperature [C]'
+    vmin = 87  # minimum cost on bar, $/m3
+    vmax = 227  # maximum cost on bar, $/m3
+    ticks = [100, 150, 200]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Compressed vapor pressure kPa'
+    label = 'Compressed vapor pressure [kPa]'
+    vmin = 3  # minimum cost on bar, $/m3
+    vmax = 629  # maximum cost on bar, $/m3
+    ticks = [200, 400, 600]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Distillate temperature Celsius'
+    label = 'Distillate temperature [C]'
+    vmin = 34  # minimum cost on bar, $/m3
+    vmax = 161  # maximum cost on bar, $/m3
+    ticks = [50, 100, 150]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Preheater split ratio'
+    label = 'Preheater split ratio [C]'
+    vmin = 0.4  # minimum cost on bar, $/m3
+    vmax = 1  # maximum cost on bar, $/m3
+    ticks = [0.4, 0.6, 0.8]  # tick marks on bar
+    fmt = '.2f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Distillate hx area'
+    label = r'Distillate preheater area [$\rmm^2$]'
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 1630  # maximum cost on bar, $/m3
+    ticks = [500,1000, 2000, 3000, 4000]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Brine hx area'
+    label = r'Brine preheater area [$\rmm^2$]'
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 1001  # maximum cost on bar, $/m3
+    ticks = [250,500, 750]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Evaporator area'
+    label = r'Evaporator area [$\rmm^2$]'
+    vmin = 742  # minimum cost on bar, $/m3
+    vmax = 3740  # maximum cost on bar, $/m3
+    ticks = [1000, 2000, 3000]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Evaporator LMTD'
+    label = r'Evaporator LMTD [K]'
+    vmin = 19  # minimum cost on bar, $/m3
+    vmax = 61  # maximum cost on bar, $/m3
+    ticks = [20, 40, 60]  # tick marks on bar
+    fmt = '.1f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Compressor pressure ratio'
+    label = r'Compressor pressure ratio [-]'
+    vmin = 1.5  # minimum cost on bar, $/m3
+    vmax = 3.6  # maximum cost on bar, $/m3
+    ticks = [2,2.5, 3]  # tick marks on bar
+    fmt = '.2f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Evaporator-feed temperature difference'
+    label = r'$T_{brine}-T_{feed}$ [C]'
+    vmin = -7  # minimum cost on bar, $/m3
+    vmax = 15  # maximum cost on bar, $/m3
+    ticks = [-5,0, 5, 10, 15]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'Mass flux LMH'
+    label = r'Product flux over evaporator [LMH]'
+    vmin = 28  # minimum cost on bar, $/m3
+    vmax = 82  # maximum cost on bar, $/m3
+    ticks = [30, 40,50,60,70,80]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map_subplots(map_dir_list, title_list, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
 
 def make_cost_bar_charts(map_dir):
     results_file = map_dir + '/costs_cases.csv'

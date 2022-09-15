@@ -298,7 +298,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.evaporator_unit_cost = pyo.Var(
-            initialize=360,
+            initialize= 1000, #360,
             doc="Horizontal falling tube evaporator unit cost per area (Couper et al., 2005)",
             units=pyo.units.USD_2005,
         )
@@ -322,7 +322,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.heat_exchanger_material_factor_cost = pyo.Var(
-            initialize=3,
+            initialize=1,
             doc='Heat exchanger material factor',
             units=pyo.units.dimensionless
         )
@@ -333,7 +333,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
         self.heat_exchanger_unit_cost = pyo.Var(
-            initialize=61,
+            initialize= 1000, #61,
             doc='Heat exchanger unit cost per area',
             units=pyo.units.USD_2018
         )
@@ -1055,8 +1055,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 (
                 blk.costing_package.evaporator_unit_cost
                 * blk.costing_package.evaporator_material_factor_cost
-                * (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.ft**2))
-                   /pyo.units.ft**2) ** blk.costing_package.evaporator_exponent)
+                * (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))
+                   /pyo.units.m**2))
                 ,
                 to_units=blk.costing_package.base_currency
                 )
@@ -1102,10 +1102,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.capital_cost
             == pyo.units.convert(
                 (blk.costing_package.heat_exchanger_material_factor_cost*
-                 (blk.costing_package.heat_exchanger_base_cost +
-                  blk.costing_package.heat_exchanger_unit_cost*
-                  (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))/pyo.units.m**2)
-                  **blk.costing_package.heat_exchanger_exponent)),
+                 (blk.costing_package.heat_exchanger_unit_cost*
+                  (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))/pyo.units.m**2))),
                                  to_units=blk.costing_package.base_currency)
         )
 

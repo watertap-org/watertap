@@ -69,7 +69,7 @@ def main():
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
     #m.fs.objective = Objective(expr=1)
     solver = get_solver()
-    results = solve(m,tee=False)
+    results = solve(m,tee=True)
     print('First solve - simulation')
     print(results.solver.termination_condition)
     if results.solver.termination_condition == "infeasible":
@@ -77,28 +77,39 @@ def main():
     display_results(m)
 
     print('Second solve - optimize')
-    m.fs.recovery[0].fix(0.7)
+    # m.fs.recovery[0].fix(0.7)
     m.fs.Q_ext[0].fix(0)
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m)
+    results = solve(m, tee=True)
     print(results.solver.termination_condition)
     display_results(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
-
-    save_results(m,filename=None)
+    assert False
+    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_1.csv"
+    save_results(m,filename=filename)
     # assert False
 
     print('Third solve - optimize again')
-    m.fs.recovery[0].fix(0.45)
+    # m.fs.recovery[0].fix(0.45)
     results = solve(m)
     print(results.solver.termination_condition)
     display_results(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
+    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_2.csv"
+    save_results(m,filename=filename)
 
-    save_results(m,filename=None)
+    print('Fourth solve - optimize again')
+    # m.fs.recovery[0].fix(0.45)
+    results = solve(m)
+    print(results.solver.termination_condition)
+    display_results(m)
+    if results.solver.termination_condition == "infeasible":
+        debug_infeasible(m.fs, solver)
+    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_3.csv"
+    save_results(m, filename=filename)
     assert False
 
     # Display all states
@@ -161,6 +172,7 @@ def build():
     # Set lower bound of approach temperatures
     m.fs.hx_distillate.delta_temperature_in.setlb(0)
     m.fs.hx_distillate.delta_temperature_out.setlb(0)
+    m.fs.hx_distillate.area.setlb(10)
     add_pressure_drop_to_hx(m.fs.hx_distillate, m.fs.config.time)
 
     m.fs.hx_brine = HeatExchanger(
@@ -177,6 +189,7 @@ def build():
     # Set lower bound of approach temperatures
     m.fs.hx_brine.delta_temperature_in.setlb(0)
     m.fs.hx_brine.delta_temperature_out.setlb(0)
+    m.fs.hx_brine.area.setlb(10)
 
     m.fs.mixer_feed = Mixer(
         default={
@@ -466,13 +479,13 @@ def add_pressure_drop_to_hx(hx_blk, time_point):
 
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.05)
+    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.075)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     #m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(2)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
     m.fs.feed.properties[0].pressure.fix(101325)
 
-    m.fs.recovery[0].fix(0.7)
+    m.fs.recovery[0].fix(0.6)
 
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
@@ -519,6 +532,8 @@ def set_operating_conditions(m):
 
     # Costing
     m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.heat_exchanger_unit_cost.fix(5000)
+    m.fs.costing.evaporator_unit_cost.fix(5000)
 
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
