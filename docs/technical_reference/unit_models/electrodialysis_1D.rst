@@ -186,6 +186,14 @@ Additionally, several other equations are built to describe the electrochemical 
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
+.. csv-table:: **Table 4** Electrical and Performance Equations
+   :header: "Description", "Equation"
+
+   "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
+   "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
+   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)ln\left(frac{c_s^{R}{c_s^{L}\right)`"
+   
+
 Nomenclature
 ------------
 .. csv-table:: **Table 5.** Nomenclature
