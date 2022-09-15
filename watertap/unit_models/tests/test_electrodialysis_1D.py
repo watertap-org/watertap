@@ -75,7 +75,7 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert m.fs.unit.config.operation_mode == "Constant_Voltage"
@@ -325,7 +325,7 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert m.fs.unit.config.operation_mode == "Constant_Current"
@@ -536,7 +536,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 13
+        assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert m.fs.unit.config.operation_mode == "Constant_Current"
