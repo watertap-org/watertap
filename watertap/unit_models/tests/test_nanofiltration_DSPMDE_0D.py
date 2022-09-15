@@ -22,6 +22,7 @@ from pyomo.environ import (
     units as pyunits,
     assert_optimal_termination,
 )
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
@@ -109,6 +110,7 @@ def test_config_with_CP():
     assert hasattr(m.fs.unit.config.property_package, "ion_set")
     assert hasattr(m.fs.unit.config.property_package, "cation_set")
     assert hasattr(m.fs.unit.config.property_package, "anion_set")
+    assert_units_consistent(m)
 
 
 @pytest.mark.unit
@@ -156,6 +158,7 @@ def test_config_without_CP():
     assert hasattr(m.fs.unit.config.property_package, "ion_set")
     assert hasattr(m.fs.unit.config.property_package, "cation_set")
     assert hasattr(m.fs.unit.config.property_package, "anion_set")
+    assert_units_consistent(m)
 
 
 class TestNanoFiltration_with_CP_5ions:
@@ -331,10 +334,10 @@ class TestNanoFiltration_with_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
@@ -353,15 +356,13 @@ class TestNanoFiltration_with_CP_5ions:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-        assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+        assert len(badly_scaled_var_lst) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
         unscaled_con_lst = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
     @pytest.mark.requires_idaes_solver
@@ -614,10 +615,10 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
@@ -636,15 +637,13 @@ class TestNanoFiltration_without_CP_5ions:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-        assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+        assert len(badly_scaled_var_lst) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
         unscaled_con_lst = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
     @pytest.mark.requires_idaes_solver
@@ -892,15 +891,13 @@ class TestNanoFiltration_with_CP_2ions:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-        assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+        assert len(badly_scaled_var_lst) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
         unscaled_con_lst = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
     @pytest.mark.requires_idaes_solver
@@ -1151,15 +1148,13 @@ class TestNanoFiltration_without_CP_2ions:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-        assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+        assert len(badly_scaled_var_lst) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
         unscaled_con_lst = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
     @pytest.mark.requires_idaes_solver
@@ -1406,10 +1401,10 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
@@ -1428,15 +1423,13 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-        assert len(unscaled_var_list) == 0
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+        assert len(badly_scaled_var_lst) == 0
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
         unscaled_con_lst = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_con_lst]
         assert len(unscaled_con_lst) == 0
 
     @pytest.mark.requires_idaes_solver
@@ -1596,15 +1589,13 @@ def test_inverse_solve():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-    assert len(unscaled_var_list) == 0
+    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    assert len(badly_scaled_var_lst) == 0
 
     # not all constraints have scaling factor so skipping the check for unscaled constraints
     unscaled_con_lst = list(unscaled_constraints_generator(m))
-    [print(i) for i in unscaled_con_lst]
     assert len(unscaled_con_lst) == 0
 
     initialization_tester(m)
@@ -1751,15 +1742,13 @@ def test_mass_transfer_coeff_fixed():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
-    assert len(unscaled_var_list) == 0
+    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    assert len(badly_scaled_var_lst) == 0
 
     # not all constraints have scaling factor so skipping the check for unscaled constraints
     unscaled_con_lst = list(unscaled_constraints_generator(m))
-    [print(i) for i in unscaled_con_lst]
     assert len(unscaled_con_lst) == 0
 
     initialization_tester(m)

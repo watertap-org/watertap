@@ -1,18 +1,12 @@
 default:
   capital_cost:  #Cost parameters retrieved by fitting TWDB data in ALAMO (MADp modeler, max terms=4)
     cost_factor: None
-    uv_capital_a_parameter:
-      value: 54575.441224888216140698
-      units: USD_2014
-    uv_capital_b_parameter:
-      value: 12268.649303773354830582
-      units: USD_2014
-    uv_capital_c_parameter:
-      value: 0.19242621822957126230235e-3
-      units: USD_2014
-    uv_capital_d_parameter:
-      value: -12779.106944244096766283
-      units: USD_2014
+    reactor_cost:
+      value: 202.346
+      units: USD_2020/(m^3/hr)
+    lamp_cost:
+      value: 235.5
+      units: USD_2020/kW
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
