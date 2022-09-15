@@ -6,7 +6,7 @@ import logging
 import pytest
 
 from pyomo.environ import units as pyunits
-from pyomo.environ import Var
+from pyomo.environ import Var, value
 
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
@@ -17,9 +17,11 @@ from watertap.ui import fsapi
 _log = logging.getLogger("idaes.watertap.ui.fsapi")
 _log.setLevel(logging.DEBUG)
 
+ERD_TYPE = "pressure_exchanger"
 
-def build_ro(erd_type=None):
-    model = RO.build_flowsheet(erd_type=erd_type)
+
+def build_ro(**kwargs):
+    model = RO.build_flowsheet(erd_type=ERD_TYPE)
     return model.fs
 
 
@@ -128,7 +130,7 @@ def test_actions():
         assert flowsheet == garbage
 
     def fake_export(flowsheet=None, exports=None):
-        with pytest.raises(AttributeError):
+        with pytest.raises(Exception):
             exports.add(obj=garbage)
         exports.add(obj=v1)  # form 1
         exports.add(v1)  # form 2
@@ -181,20 +183,6 @@ def test_load():
 
 
 @pytest.mark.unit
-def test_find_smoke():
-    fsapi.FlowsheetInterface.find("watertap")
-
-
-@pytest.mark.component
-def test_find():
-    result = fsapi.FlowsheetInterface.find("examples.ui")
-    assert len(result) == 1  # expect only 1 module (1 was bad)
-    interface = list(result.values())[0]  # get the module function
-    interface.build()  # make sure the module exported properly
-    interface.solve()
-
-
-@pytest.mark.unit
 def test_require_methods():
     fsi = flowsheet_interface()
     methods = ("do_export", "do_build", "do_solve")
@@ -211,3 +199,41 @@ def test_require_methods():
         badkw[meth] = 1
         with pytest.raises(TypeError):
             _ = fsapi.FlowsheetInterface(fsi, **badkw)
+
+
+@pytest.mark.component
+def test_export_values():
+    # get an interface
+    fsi = flowsheet_interface()
+    fsi.build()
+    d1 = fsi.dict()
+
+    # change one value
+    key = list(fsi.fs_exp.model_objects.keys())[0]
+    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    new_value = orig_value + 1
+    print(f"@@ orig_value = {orig_value}, new value = {new_value}")
+    fsi.fs_exp.model_objects[key].obj.value = new_value
+
+    # re-export
+    fsi.export_values()
+    d2 = fsi.dict()
+
+    print("== original")
+    print(d1)
+    print("== modified")
+    print(d2)
+
+    # check that change happened
+    assert d1 != d2
+
+
+@pytest.mark.component
+def test_export_values_build():
+    # get an interface
+    fsi = flowsheet_interface()
+    d1 = fsi.dict()
+    fsi.build()
+    # after build, new values should be exported to fsi.fs_exp
+    d2 = fsi.dict()
+    assert d1 != d2

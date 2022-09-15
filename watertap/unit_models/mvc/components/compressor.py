@@ -213,18 +213,6 @@ class CompressorData(UnitModelBlockData):
         self.add_port(name="inlet", block=self.control_volume.properties_in)
         self.add_port(name="outlet", block=self.control_volume.properties_out)
 
-        # References for control volume
-        # pressure change
-        # if (self.config.has_pressure_change is True and
-        #         self.config.momentum_balance_type != 'none'):
-        #     self.deltaP = Reference(self.control_volume.deltaP)
-
-        # Add constraints
-        # @self.Constraint(self.config.property_package.phase_list, doc="Mass balance for inlet/outlet")
-        # def eq_mass_balance(b, p):
-        #     return (b.control_volume.properties_in[0].flow_mass_phase_comp[p, 'H2O']
-        #             == b.control_volume.properties_out[0].flow_mass_phase_comp[p, 'H2O'])
-
         @self.Constraint(
             self.config.property_package.phase_list,
             doc="Mass balance for inlet/isentropic outlet",
@@ -272,7 +260,7 @@ class CompressorData(UnitModelBlockData):
                 - b.control_volume.properties_in[0].enth_mass_phase["Vap"]
             )
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """

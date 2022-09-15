@@ -13,11 +13,13 @@
 
 from pyomo.environ import (
     ConcreteModel,
+    Var,
     value,
     Constraint,
     Objective,
     TransformationFactory,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.network import Arc
 
@@ -113,6 +115,41 @@ def build():
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+
+    # Add two variable for reporting
+    m.fs.mem_area = Var(
+        initialize=1,
+        bounds=(0, 1e3),
+        units=pyunits.meter**2,
+        doc="Total membrane area for cem (or aem) in one stack",
+    )
+    m.fs.product_salinity = Var(
+        initialize=1, bounds=(0, 1000), units=pyunits.kg * pyunits.meter**-3
+    )
+    m.fs.disposal_salinity = Var(
+        initialize=1, bounds=(0, 1e6), units=pyunits.kg * pyunits.meter**-3
+    )
+    m.fs.eq_product_salinity = Constraint(
+        expr=m.fs.product_salinity
+        == sum(
+            m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    )
+    m.fs.eq_disposal_salinity = Constraint(
+        expr=m.fs.disposal_salinity
+        == sum(
+            m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    )
+
+    m.fs.eq_mem_area = Constraint(
+        expr=m.fs.mem_area
+        == m.fs.EDstack.cell_width
+        * m.fs.EDstack.cell_length
+        * m.fs.EDstack.cell_pair_num
     )
 
     # Add Arcs
@@ -230,25 +267,21 @@ def optimize_system(m, solver=None):
     # Choose and unfix variables to be optimized
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.cell_pair_num.unfix()
+    m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.01)
     m.fs.EDstack.voltage_applied[0].setub(60)
     m.fs.EDstack.cell_pair_num.setlb(1)
-    m.fs.EDstack.cell_pair_num.setub(1000)
+    m.fs.EDstack.cell_pair_num.setub(500)
 
     # Set a treatment goal
-    # Example here is to reach a final product water containing NaCl < 1 g/L (from a 10 g/L feed)
-    m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] <= 0.393
-    )
-    iscale.constraint_scaling_transform(
-        m.fs.eq_product_quality, 1
-    )  # scaling constraint
+    # Example here is to reach a final product water containing NaCl = 1 g/L (from a 10 g/L feed)
+    m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"].fix(0.393)
 
     print("---report model statistics---\n ", report_statistics(m.fs))
     if solver is None:
         solver = get_solver()
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
 
@@ -268,21 +301,11 @@ def display_model_metrics(m):
         ],
         "Product": [
             value(m.fs.product.properties[0].flow_vol_phase["Liq"]),
-            value(
-                sum(
-                    m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
-                    for j in m.fs.properties.ion_set
-                )
-            ),
+            value(m.fs.product_salinity),
         ],
         "Disposal": [
             value(m.fs.disposal.properties[0].flow_vol_phase["Liq"]),
-            value(
-                sum(
-                    m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
-                    for j in m.fs.properties.ion_set
-                )
-            ),
+            value(m.fs.disposal_salinity),
         ],
     }
     fp_table = DataFrame(
@@ -296,11 +319,7 @@ def display_model_metrics(m):
     pm_table = DataFrame(
         data=[
             value(m.fs.EDstack.recovery_mass_H2O[0]),
-            value(
-                m.fs.EDstack.cell_width
-                * m.fs.EDstack.cell_length
-                * m.fs.EDstack.cell_pair_num
-            ),
+            value(m.fs.mem_area),
             value(m.fs.EDstack.voltage_applied[0]),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),
