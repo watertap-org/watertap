@@ -676,9 +676,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         seed=None,
     ):
 
-        # if optimize_function is None:
-        #     optimize_function = self._default_optimize
-
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
@@ -743,8 +740,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
             loop_ctr += 1
 
-            # break # Delete me
-
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.
         local_filtered_dict, local_n_successful = self._filter_recursive_solves(
@@ -774,10 +769,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         # Now we can save this
         self.comm.Barrier()
-
-        if self.rank == 0:
-            print("global_filtered_dict")
-            pprint.pprint(global_filtered_dict)
 
         # Save to file
         global_save_data = self.writer.save_results(
