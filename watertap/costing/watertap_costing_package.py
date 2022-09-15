@@ -336,6 +336,42 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         self.naoh = pyo.Block(rule=build_naoh_cost_param_block)
 
+        def build_meoh_cost_param_block(blk):
+
+            blk.cost = pyo.Param(
+                mutable=True,
+                initialize=3.395,
+                doc="MeOH cost",  # for 100% purity - ICIS
+                units=pyo.units.USD_2008 / pyo.units.kg,
+            )
+
+            blk.purity = pyo.Param(
+                mutable=True,
+                initialize=1,
+                doc="MeOH purity",
+                units=pyo.units.dimensionless,
+            )
+
+        self.meoh = pyo.Block(rule=build_meoh_cost_param_block)
+
+        def build_nacl_cost_param_block(blk):
+
+            blk.cost = pyo.Param(
+                mutable=True,
+                initialize=0.09,
+                doc="NaCl cost",  # for solid, 100% purity - CatCost
+                units=pyo.units.USD_2020 / pyo.units.kg,
+            )
+
+            blk.purity = pyo.Param(
+                mutable=True,
+                initialize=1,
+                doc="NaCl purity",
+                units=pyo.units.dimensionless,
+            )
+
+        self.nacl = pyo.Block(rule=build_nacl_cost_param_block)
+
         def build_electrodialysis_cost_param_block(blk):
 
             costing = blk.parent_block()
@@ -519,6 +555,21 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 units=pyo.units.year**-1,
                 doc="Fraction of ion excange resin replaced per year, 4-5% of bed volume - EPA",
             )
+            blk.hazardous_min_cost = pyo.Var(
+                initialize=3240,
+                units=pyo.units.USD_2020,
+                doc="Min cost per hazardous waste shipment - EPA",
+            )
+            blk.hazardous_resin_disposal = pyo.Var(
+                initialize=347.10,
+                units=pyo.units.USD_2020 * pyo.units.ton**-1,
+                doc="Hazardous resin disposal cost - EPA",
+            )
+            blk.hazardous_regen_disposal = pyo.Var(
+                initialize=3.64,
+                units=pyo.units.USD_2020 * pyo.units.gal**-1,
+                doc="Hazardous liquid disposal cost - EPA",
+            )
 
         self.ion_exchange = pyo.Block(rule=build_ion_exhange_cost_param_block)
 
@@ -621,6 +672,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.defined_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
         self.defined_flows["HCl"] = self.hcl.cost / self.hcl.purity
         self.defined_flows["NaOH"] = self.naoh.cost / self.naoh.purity
+        self.defined_flows["NaCl"] = self.nacl.cost / self.nacl.purity
+        self.defined_flows["MeOH"] = self.meoh.cost / self.meoh.purity
         self.defined_flows["steam"] = self.steam_unit_cost
 
     def build_process_costs(self):
@@ -1241,6 +1294,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         bed_vol_ft3 = pyo.units.convert(
             blk.unit_model.bed_vol, to_units=pyo.units.ft**3
         )
+        bed_mass_ton = pyo.units.convert(
+            blk.unit_model.bed_vol * blk.unit_model.resin_bulk_dens,
+            to_units=pyo.units.ton,
+        )
         bw_tank_vol = pyo.units.convert(
             (
                 blk.unit_model.bw_flow * blk.unit_model.t_bw
@@ -1280,6 +1337,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             domain=pyo.NonNegativeReals,
             units=blk.costing_package.base_currency,
             doc="Capital cost for backwash + rinse solution tank",
+        )
+        blk.operating_cost_hazardous = pyo.Var(
+            initialize=1e5,
+            domain=pyo.NonNegativeReals,
+            units=blk.costing_package.base_currency,
+            doc="Operating cost for hazardous waste disposal",
         )
 
         ion_exchange_params = blk.costing_package.ion_exchange
@@ -1329,7 +1392,18 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
             * TIC
         )
-
+        if blk.unit_model.config.hazardous_waste:
+            blk.operating_cost_hazardous_constraint = pyo.Constraint(
+                expr=blk.operating_cost_hazardous
+                == (
+                    bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
+                    + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
+                )
+                * ion_exchange_params.annual_resin_replacement_factor
+                + ion_exchange_params.hazardous_min_cost
+            )
+        else:
+            blk.operating_cost_hazardous.fix(0)
         blk.fixed_operating_cost_constraint = pyo.Constraint(
             expr=blk.fixed_operating_cost
             == (
@@ -1338,6 +1412,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                     * ion_exchange_params.annual_resin_replacement_factor
                     * resin_cost
                 )
+                + blk.operating_cost_hazardous
             )
         )
 
