@@ -122,9 +122,9 @@ def initialize_system(m):
         blk_swro.fs.RO.area.fix()
         # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
         blk_swro.fs.P1.bep_flow.fix()
+        # blk_swro.fs.P1.bep_eta.unfix()
         blk_swro.fs.P1.flow_ratio[0].unfix()
         blk_swro.fs.costing.utilization_factor.fix(1)
-        # v1 = blk_swro.fs.P1.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
         #
         # blk_swro.fs.P2.flow_ratio[0].unfix()
         # v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
@@ -149,6 +149,14 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     daily_water_production = 38.52 * pyunits.m**3 / pyunits.day
     fixed_hourly_cost = 0.6102
     peak_load_surcharge = 0.1 * pyunits.USD_2018 / pyunits.kWh
+    load_shaving_benefit = (
+        0.1 * pyunits.USD_2018 / pyunits.kW
+    )  # TODO - replace with real market values
+    load_shaving_time = [
+        15,
+        20,
+    ]  # hours in the day where load needs to be shaved (4-9pm) starting at count=0
+    nominal_load = 4.31 * pyunits.kWh  # hourly load at steady conditions
     # base_costing_block = t_blocks[0].ro_mp.fs.costing
     # fixed_hourly_cost = Expression(
     #     expr= pyunits.convert(base_costing_block.total_investment_cost
@@ -217,6 +225,17 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             peak_load_surcharge,
             0,
         )
+
+        blk.load_shaving_trigger = Expr_if(
+            count > load_shaving_time[0],
+            Expr_if(
+                count < load_shaving_time[1],
+                load_shaving_benefit,
+                0,
+            ),
+            0,
+        )
+
         blk.carbon_emission = Expression(
             expr=blk.energy_consumption
             * pyunits.convert(blk.carbon_intensity, to_units=pyunits.kg / pyunits.kWh),
@@ -228,11 +247,21 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             * pyunits.convert(blk.carbon_emission, to_units=pyunits.kg / pyunits.hour),
             doc="Hourly cost associated with carbon emissions $/hr",
         )
+
+        blk.wholesale_energy_cost = blk.energy_consumption * blk.lmp_signal
+        blk.demand_surcharge_cost = blk.energy_consumption * blk.demand_charge
+        blk.load_shaving_revenue = blk.load_shaving_trigger * (
+            nominal_load - blk.energy_consumption
+        )
+
         blk.weighted_LCOW = Expression(
             expr=fixed_hourly_cost
-            + blk.energy_consumption * (blk.lmp_signal + blk.demand_charge),
+            + blk.wholesale_energy_cost
+            + blk.demand_surcharge_cost
+            - blk.load_shaving_revenue,
             doc="hourly cost [$/hr]",
         )
+
         blk.weighted_LCOW_b = Expression(
             expr=blk.ro_mp.fs.costing.LCOW * blk.water_prod,
             doc="hourly cost [$/hr]",
@@ -322,6 +351,10 @@ def save_results(m, t_blocks, data, savepath=None):
     )
     efficiency1 = np.array([blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks])
 
+    wholesale_charge = np.array([blk.wholesale_energy_cost() for blk in t_blocks])
+    demand_surcharge = np.array([blk.demand_surcharge_cost() for blk in t_blocks])
+    peak_load_revenue = np.array([-1 * blk.load_shaving_revenue() for blk in t_blocks])
+
     if savepath is None:
         savepath = os.path.join(os.getcwd(), "simulation_data_0_25.csv")
     if t_blocks[0].ro_mp.fs.erd_type is swro.ERDtype.pump_as_turbine:
@@ -336,6 +369,9 @@ def save_results(m, t_blocks, data, savepath=None):
                 permeate.reshape(-1, 1),
                 flowrate1.reshape(-1, 1),
                 efficiency1.reshape(-1, 1),
+                wholesale_charge.reshape(-1, 1),
+                demand_surcharge.reshape(-1, 1),
+                peak_load_revenue.reshape(-1, 1),
             )
         )
         df = pd.DataFrame(
@@ -350,6 +386,9 @@ def save_results(m, t_blocks, data, savepath=None):
                 "permeate",
                 "flowrate1",
                 "efficiency1",
+                "wholesale_charge",
+                "demand_surcharge",
+                "peak_load_revenue",
             ],
         )
 
@@ -483,17 +522,18 @@ if __name__ == "__main__":
     #     )
     #     path = os.path.join(os.getcwd(), file_save[i])
     #     save_results(m, t_blocks, data, path)
+    price_multiplier = 1
     m, t_blocks, data = main(
         ndays=1,
         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
         filename="dagget_CA_LMP_hourly_2015.csv",
-        price_multiplier=20,
+        price_multiplier=price_multiplier,
     )
-    file_save = "temp.csv"
+    file_save = "temp_test.csv"
     path = os.path.join(os.getcwd(), file_save)
     save_results(m, t_blocks, data, path)
 
-    title_label = f"LMP scaling = {20}"
+    title_label = f"LMP scaling = {price_multiplier}"
     visualize_results(
         path,
         erd_type=t_blocks[0].ro_mp.fs.erd_type,
