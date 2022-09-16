@@ -586,7 +586,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.config.has_nonohmic_potential_membrane
             or self.config.has_Nernst_diffusion_layer
         ):
-            self.conc_mem_surf_mol = Var(
+            self.conc_mem_surf_mol_x = Var(
                 self.membrane_set,
                 self.electrode_side,
                 self.flowsheet().time,
@@ -908,20 +908,20 @@ class Electrodialysis1DData(UnitModelBlockData):
                                 self.solute_diffusivity_membrane["cem", j]
                                 / self.membrane_thickness["cem"]
                                 * (
-                                    self.conc_mem_surf_mol[
+                                    self.conc_mem_surf_mol_x[
                                         "cem", "cathode_left", t, x, j
                                     ]
-                                    - self.conc_mem_surf_mol[
+                                    - self.conc_mem_surf_mol_x[
                                         "cem", "anode_right", t, x, j
                                     ]
                                 )
                                 + self.solute_diffusivity_membrane["aem", j]
                                 / self.membrane_thickness["aem"]
                                 * (
-                                    self.conc_mem_surf_mol[
+                                    self.conc_mem_surf_mol_x[
                                         "aem", "anode_right", t, x, j
                                     ]
-                                    - self.conc_mem_surf_mol[
+                                    - self.conc_mem_surf_mol_x[
                                         "aem", "cathode_left", t, x, j
                                     ]
                                 )
@@ -1097,14 +1097,14 @@ class Electrodialysis1DData(UnitModelBlockData):
                     mem == "aem" and side == "anode_right"
                 ):
                     return (
-                        self.conc_mem_surf_mol[mem, side, t, x, j]
+                        self.conc_mem_surf_mol_x[mem, side, t, x, j]
                         == self.concentrate.properties[t, x].conc_mol_phase_comp[
                             "Liq", j
                         ]
                     )
                 else:
                     return (
-                        self.conc_mem_surf_mol[mem, side, t, x, j]
+                        self.conc_mem_surf_mol_x[mem, side, t, x, j]
                         == self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
                     )
             else:
@@ -1141,11 +1141,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                 )
                 * log(
                     sum(
-                        self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
+                        self.conc_mem_surf_mol_x[mem, "cathode_left", t, x, j]
                         for j in self.ion_set
                     )
                     / sum(
-                        self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
+                        self.conc_mem_surf_mol_x[mem, "anode_right", t, x, j]
                         for j in self.ion_set
                     )
                 )
@@ -1221,13 +1221,13 @@ class Electrodialysis1DData(UnitModelBlockData):
             if (mem == "cem" and side == "cathode_left") or (
                 mem == "aem" and side == "anode_right"
             ):
-                return self.conc_mem_surf_mol[
+                return self.conc_mem_surf_mol_x[
                     mem, side, t, x, j
                 ] / self.concentrate.properties[t, x].conc_mol_phase_comp["Liq", j] == (
                     1 + self.current_density_x[t, x] / self.current_dens_lim_x[t, x]
                 )
             else:
-                return self.conc_mem_surf_mol[
+                return self.conc_mem_surf_mol_x[
                     mem, side, t, x, j
                 ] / self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j] == (
                     1 - self.current_density_x[t, x] / self.current_dens_lim_x[t, x]
@@ -1259,7 +1259,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     * log(
                         sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "anode_right", t, x, j]
                             for j in self.ion_set
                         )
                         * sum(
@@ -1269,7 +1269,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                             for j in self.ion_set
                         )
                         * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "cathode_left", t, x, j]
                             for j in self.ion_set
                         )
                         ** -1
@@ -1299,7 +1299,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     )
                     * log(
                         sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "anode_right", t, x, j]
                             for j in self.ion_set
                         )
                         * sum(
@@ -1307,7 +1307,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                             for j in self.ion_set
                         )
                         * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "cathode_left", t, x, j]
                             for j in self.ion_set
                         )
                         ** -1
@@ -1357,7 +1357,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     ** -1
                     * log(
                         sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "anode_right", t, x, j]
                             for j in self.ion_set
                         )
                         ** -1
@@ -1369,7 +1369,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         )
                         ** -1
                         * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "cathode_left", t, x, j]
                             for j in self.ion_set
                         )
                         * sum(
@@ -1407,7 +1407,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     ** -1
                     * log(
                         sum(
-                            self.conc_mem_surf_mol[mem, "anode_right", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "anode_right", t, x, j]
                             for j in self.ion_set
                         )
                         * sum(
@@ -1415,7 +1415,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                             for j in self.ion_set
                         )
                         * sum(
-                            self.conc_mem_surf_mol[mem, "cathode_left", t, x, j]
+                            self.conc_mem_surf_mol_x[mem, "cathode_left", t, x, j]
                             for j in self.ion_set
                         )
                         ** -1
@@ -1634,11 +1634,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                             .diluate.properties[(0.0, 0.0)]
                             .flow_mass_phase_comp[ind]
                         )
-                if hasattr(blk[k], "conc_mem_surf_mol"):
+                if hasattr(blk[k], "conc_mem_surf_mol_x"):
                     for mem in blk[k].membrane_set:
                         for side in blk[k].electrode_side:
                             for j in blk[k].ion_set:
-                                blk[k].conc_mem_surf_mol[mem, side, set, j].set_value(
+                                blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
                                     blk[k]
                                     .diluate.properties[set]
                                     .conc_mol_phase_comp["Liq", j]
@@ -1688,11 +1688,11 @@ class Electrodialysis1DData(UnitModelBlockData):
                             .concentrate.properties[(0.0, 0.0)]
                             .flow_mass_phase_comp[ind]
                         )
-                if hasattr(blk[k], "conc_mem_surf_mol"):
+                if hasattr(blk[k], "conc_mem_surf_mol_x"):
                     for mem in blk[k].membrane_set:
                         for side in blk[k].electrode_side:
                             for j in blk[k].ion_set:
-                                blk[k].conc_mem_surf_mol[mem, side, set, j].set_value(
+                                blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
                                     blk[k]
                                     .concentrate.properties[set]
                                     .conc_mol_phase_comp["Liq", j]
@@ -1852,14 +1852,14 @@ class Electrodialysis1DData(UnitModelBlockData):
                 ) * iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
                 iscale.set_scaling_factor(self.voltage_x[ind], sf)
 
-        if hasattr(self, "conc_mem_surf_mol"):
-            for ind in self.conc_mem_surf_mol:
-                if iscale.get_scaling_factor(self.conc_mem_surf_mol[ind]) is None:
+        if hasattr(self, "conc_mem_surf_mol_x"):
+            for ind in self.conc_mem_surf_mol_x:
+                if iscale.get_scaling_factor(self.conc_mem_surf_mol_x[ind]) is None:
                     if (ind[0] == "cem" and ind[1] == "cathode_left") or (
                         ind[0] == "aem" and ind[1] == "anode_right"
                     ):
                         iscale.set_scaling_factor(
-                            self.conc_mem_surf_mol[ind],
+                            self.conc_mem_surf_mol_x[ind],
                             iscale.get_scaling_factor(
                                 self.concentrate.properties[
                                     ind[2], ind[3]
@@ -1868,7 +1868,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         )
                     else:
                         iscale.set_scaling_factor(
-                            self.conc_mem_surf_mol[ind],
+                            self.conc_mem_surf_mol_x[ind],
                             iscale.get_scaling_factor(
                                 self.diluate.properties[
                                     ind[2], ind[3]
@@ -1957,7 +1957,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         ** -0.5
                         * len(self.ion_set) ** -1
                         * sum(
-                            iscale.get_scaling_factor(self.conc_mem_surf_mol[ind, j])
+                            iscale.get_scaling_factor(self.conc_mem_surf_mol_x[ind, j])
                             ** 2
                             for j in self.cation_set
                         )
