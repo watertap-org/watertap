@@ -17,32 +17,31 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex as magprex
+import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.hrcs as hrcs
 
 
 def set_up_sensitivity(m):
     outputs = {}
     optimize_kwargs = {"check_termination": False}
-    opt_function = magprex.solve
+    opt_function = hrcs.solve
 
     # create outputs
     outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOS"] = m.fs.costing.LCOS
 
     return outputs, optimize_kwargs, opt_function
 
 
 def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, results_path=None):
 
-    m = magprex.main()[0]
+    m = hrcs.main()[0]
 
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
 
     sweep_params = {}
     if case_num == 1:
         # sensitivity analysis
-        sweep_params["MgCl2_cost"] = LinearSample(
-            m.fs.costing.magnesium_chloride_cost, 0.05, 0.2, nx
+        sweep_params["FeCl3_cost"] = LinearSample(
+            m.fs.costing.ferric_chloride_cost, 0.2, 0.5, nx
         )
     elif case_num == 2:
         m.fs.costing.electricity_cost.unfix()
