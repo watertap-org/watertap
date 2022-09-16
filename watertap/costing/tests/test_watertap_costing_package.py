@@ -86,7 +86,7 @@ def test_cost_crystallizer_configuration_error():
         WaterTAPCostingData.cost_crystallizer(blk, cost_type="foo")
 
 
-@pytest.mark.componet
+@pytest.mark.component
 def test_lazy_flow_costing():
     m = pyo.ConcreteModel()
     m.fs = idc.FlowsheetBlock(default={"dynamic": False})

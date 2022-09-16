@@ -29,6 +29,7 @@ from idaes.core.util.math import smooth_min
 
 from idaes.models.unit_models import Mixer
 
+from watertap.core import LazyBlock, LazyBlockMixin
 from watertap.unit_models import (
     ReverseOsmosis0D,
     ReverseOsmosis1D,
@@ -72,7 +73,7 @@ class CrystallizerCostType(StrEnum):
 
 
 @declare_process_block_class("WaterTAPCosting")
-class WaterTAPCostingData(FlowsheetCostingBlockData):
+class WaterTAPCostingData(LazyBlockMixin, FlowsheetCostingBlockData):
     def build(self):
         super().build()
         self._registered_LCOWs = {}
@@ -152,8 +153,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Membrane cost",
                 units=costing.base_currency / (pyo.units.meter**2),
             )
+            blk.fix_all_vars()
 
-        self.reverse_osmosis = pyo.Block(rule=build_reverse_osmosis_cost_param_block)
+        self.reverse_osmosis = LazyBlock(rule=build_reverse_osmosis_cost_param_block)
 
         def build_nanofiltration_cost_param_block(blk):
 
@@ -169,8 +171,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Membrane cost",
                 units=costing.base_currency / (pyo.units.meter**2),
             )
+            blk.fix_all_vars()
 
-        self.nanofiltration = pyo.Block(rule=build_nanofiltration_cost_param_block)
+        self.nanofiltration = LazyBlock(rule=build_nanofiltration_cost_param_block)
 
         def build_uv_cost_param_block(blk):
 
@@ -191,8 +194,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="UV lamps, sleeves, ballasts and sensors cost",
                 units=costing.base_currency / pyo.units.kW,
             )
+            blk.fix_all_vars()
 
-        self.ultraviolet = pyo.Block(rule=build_uv_cost_param_block)
+        self.ultraviolet = LazyBlock(rule=build_uv_cost_param_block)
 
         def build_high_pressure_pump_cost_param_block(blk):
 
@@ -203,8 +207,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="High pressure pump cost",
                 units=costing.base_currency / pyo.units.watt,
             )
+            blk.fix_all_vars()
 
-        self.high_pressure_pump = pyo.Block(
+        self.high_pressure_pump = LazyBlock(
             rule=build_high_pressure_pump_cost_param_block
         )
 
@@ -217,8 +222,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Low pressure pump cost",
                 units=costing.base_currency / (pyo.units.liter / pyo.units.second),
             )
+            blk.fix_all_vars()
 
-        self.low_pressure_pump = pyo.Block(
+        self.low_pressure_pump = LazyBlock(
             rule=build_low_pressure_pump_cost_param_block
         )
 
@@ -231,8 +237,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Pressure exchanger cost",
                 units=costing.base_currency / (pyo.units.meter**3 / pyo.units.hours),
             )
+            blk.fix_all_vars()
 
-        self.energy_recovery_device = pyo.Block(
+        self.energy_recovery_device = LazyBlock(
             rule=build_energy_recovery_device_cost_param_block
         )
 
@@ -245,8 +252,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Pressure exchanger cost",
                 units=costing.base_currency / (pyo.units.meter**3 / pyo.units.hours),
             )
+            blk.fix_all_vars()
 
-        self.pressure_exchanger = pyo.Block(
+        self.pressure_exchanger = LazyBlock(
             rule=build_pressure_exchanger_cost_param_block
         )
 
@@ -259,8 +267,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Mixer cost",
                 units=costing.base_currency / (pyo.units.liters / pyo.units.second),
             )
+            blk.fix_all_vars()
 
-        self.mixer = pyo.Block(rule=build_mixer_cost_param_block)
+        self.mixer = LazyBlock(rule=build_mixer_cost_param_block)
 
         def build_naocl_cost_param_block(blk):
 
@@ -282,9 +291,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOCl purity",
                 units=pyo.units.dimensionless,
             )
+            blk.fix_all_vars()
             costing.available_flows["NaOCl"] = blk.cost / blk.purity
 
-        self.naocl = pyo.Block(rule=build_naocl_cost_param_block)
+        self.naocl = LazyBlock(rule=build_naocl_cost_param_block)
 
         def build_caoh2_cost_param_block(blk):
 
@@ -307,9 +317,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="CaOH2 purity",
                 units=pyo.units.dimensionless,
             )
+            blk.fix_all_vars()
             costing.available_flows["CaOH2"] = blk.cost / blk.purity
 
-        self.caoh2 = pyo.Block(rule=build_caoh2_cost_param_block)
+        self.caoh2 = LazyBlock(rule=build_caoh2_cost_param_block)
 
         def build_electrodialysis_cost_param_block(blk):
 
@@ -345,8 +356,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Electrode replacements [fraction of electrode replaced/year]",
                 units=pyo.units.year**-1,
             )
+            blk.fix_all_vars()
 
-        self.electrodialysis = pyo.Block(rule=build_electrodialysis_cost_param_block)
+        self.electrodialysis = LazyBlock(rule=build_electrodialysis_cost_param_block)
 
         def build_crystallizer_cost_param_block(blk):
 
@@ -404,11 +416,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="Forced circulation crystallizer volume-based cost exponent (Yusuf et al., 2019)",
                 units=pyo.units.dimensionless,
             )
+            blk.fix_all_vars()
 
-        self.crystallizer = pyo.Block(rule=build_crystallizer_cost_param_block)
+        self.crystallizer = LazyBlock(rule=build_crystallizer_cost_param_block)
 
         # Crystallizer operating cost information from literature
-        self.steam_unit_cost = pyo.Var(
+        self.steam_unit_cost = pyo.Param(
+            mutable=True,
             initialize=0.004,
             units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
@@ -501,12 +515,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 units=pyo.units.USD_2020 * pyo.units.kg**-1,
                 doc="Unit cost to makeup spent GAC adsorbent with fresh adsorbent",
             )
+            blk.fix_all_vars()
 
-        self.gac = pyo.Block(rule=build_gac_cost_param_block)
+        self.gac = LazyBlock(rule=build_gac_cost_param_block)
 
-        # fix the parameters
-        for var in self.component_objects(pyo.Var, descend_into=True):
-            var.fix()
+        self.fix_all_vars()
 
     def cost_flow(self, flow_expr, flow_type):
         """

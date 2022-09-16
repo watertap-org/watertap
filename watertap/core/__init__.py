@@ -18,6 +18,7 @@ from .membrane_channel_base import (
 )
 from .membrane_channel0d import MembraneChannel0DBlock
 from .membrane_channel1d import MembraneChannel1DBlock
+from .lazy_block import LazyBlock, LazyBlockMixin
 from .wt_database import Database
 from .zero_order_base import ZeroOrderBaseData
 from .zero_order_properties import WaterParameterBlock, WaterStateBlock
