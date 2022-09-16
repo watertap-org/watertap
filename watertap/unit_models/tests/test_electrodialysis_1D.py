@@ -12,7 +12,10 @@
 ###############################################################################
 import pytest
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
-from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
+from watertap.unit_models.electrodialysis_1D import (
+    ElectricalOperationMode,
+    Electrodialysis1D,
+)
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
     ConcreteModel,
@@ -65,7 +68,7 @@ class TestElectrodialysisVoltageConst:
         m.fs.unit = Electrodialysis1D(
             default={
                 "property_package": m.fs.properties,
-                "operation_mode": "Constant_Voltage",
+                "operation_mode": ElectricalOperationMode.Constant_Voltage,
                 "finite_elements": 20,
             }
         )
@@ -78,7 +81,9 @@ class TestElectrodialysisVoltageConst:
         assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Voltage"
+        assert (
+            m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
+        )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -98,7 +103,6 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.water_trans_number_membrane, Var)
         assert isinstance(m.fs.unit.water_permeability_membrane, Var)
         assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
-        assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
         assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
@@ -314,7 +318,7 @@ class TestElectrodialysisCurrentConst:
         m.fs.unit = Electrodialysis1D(
             default={
                 "property_package": m.fs.properties,
-                "operation_mode": "Constant_Current",
+                "operation_mode": ElectricalOperationMode.Constant_Current,
                 "finite_elements": 20,
             }
         )
@@ -328,7 +332,9 @@ class TestElectrodialysisCurrentConst:
         assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Current"
+        assert (
+            m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
+        )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -350,7 +356,6 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
-        assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
         assert isinstance(m.fs.unit.current_utilization, Var)
         assert isinstance(m.fs.unit.diluate.power_electrical_x, Var)
@@ -525,7 +530,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit = Electrodialysis1D(
             default={
                 "property_package": m.fs.properties,
-                "operation_mode": "Constant_Current",
+                "operation_mode": ElectricalOperationMode.Constant_Current,
                 "finite_elements": 20,
             }
         )
@@ -539,7 +544,9 @@ class TestElectrodialysis_withNeutralSPecies:
         assert len(m.fs.unit.config) == 16
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Current"
+        assert (
+            m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
+        )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -561,7 +568,6 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.membrane_areal_resistance, Var)
         assert isinstance(m.fs.unit.current_applied, Var)
         assert isinstance(m.fs.unit.current_density_x, Var)
-        assert isinstance(m.fs.unit.voltage_applied, Var)
         assert isinstance(m.fs.unit.voltage_x, Var)
         assert isinstance(m.fs.unit.current_utilization, Var)
         assert isinstance(m.fs.unit.diluate.power_electrical_x, Var)
