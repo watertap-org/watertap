@@ -40,7 +40,7 @@ from watertap.unit_models.zero_order import (
     FeedZO,
     ClarifierZO,
     HRCSZO,
-    )
+)
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
@@ -70,42 +70,37 @@ def main():
     return m, results
 
 
-
 def build():
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(dynamic = False)
-    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list = ["tss", "cod", "oxygen", "carbon_dioxide"])
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(
+        solute_list=["tss", "cod", "oxygen", "carbon_dioxide"]
+    )
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(property_package = m.fs.prop)
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # mixer for recycle stream
     m.fs.mixer = Mixer(
-        property_package = m.fs.prop,
-        inlet_list = ["inlet1", "inlet2"],
-        momentum_mixing_type = MomentumMixingType.none,
-        energy_mixing_type = MixingType.none
+        property_package=m.fs.prop,
+        inlet_list=["inlet1", "inlet2"],
+        momentum_mixing_type=MomentumMixingType.none,
+        energy_mixing_type=MixingType.none,
     )
 
     # HR-CS treatment
-    m.fs.HRCS = HRCSZO(
-        property_package = m.fs.prop,
-        database = m.db
-    )
+    m.fs.HRCS = HRCSZO(property_package=m.fs.prop, database=m.db)
 
     # clarifier treatment
-    m.fs.clarifier = ClarifierZO(
-        property_package = m.fs.prop,
-        database = m.db
-    )
+    m.fs.clarifier = ClarifierZO(property_package=m.fs.prop, database=m.db)
 
     # product and waste streams
-    m.fs.product = Product(property_package = m.fs.prop)
-    m.fs.disposal = Product(property_package = m.fs.prop)
+    m.fs.product = Product(property_package=m.fs.prop)
+    m.fs.disposal = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.mixer.inlet1)
@@ -127,11 +122,13 @@ def build():
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 47317.6 * pyunits.m ** 3 / pyunits.hr
+    flow_vol = 47317.6 * pyunits.m**3 / pyunits.hr
     conc_mass_tss = 243 * pyunits.mg / pyunits.liter
     conc_mass_co2 = 0.001 * pyunits.mg / pyunits.liter
     mass_flow_cod = 336 * pyunits.ton / pyunits.day
-    mass_flow_oxygen = 895.15 * pyunits.ton / pyunits.day  # equivalent to the number of moles of carbon being added
+    mass_flow_oxygen = (
+        895.15 * pyunits.ton / pyunits.day
+    )  # equivalent to the number of moles of carbon being added
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
     m.fs.feed.conc_mass_comp[0, "carbon_dioxide"].fix(conc_mass_co2)
@@ -145,11 +142,12 @@ def set_operating_conditions(m):
 
     # clarifier
     m.fs.clarifier.load_parameters_from_database(use_default_removal=True)
-    m.fs.clarifier.removal_frac_mass_comp[0,"tss"].fix(0.914)
-    m.fs.clarifier.removal_frac_mass_comp[0,"cod"].fix(0.72)
+    m.fs.clarifier.removal_frac_mass_comp[0, "tss"].fix(0.914)
+    m.fs.clarifier.removal_frac_mass_comp[0, "cod"].fix(0.72)
     m.fs.clarifier.recovery_frac_mass_H2O[0].fix(1)
 
     assert_degrees_of_freedom(m, 0)
+
 
 def initialize_system(m, solver=None):
 
@@ -193,17 +191,18 @@ def display_results(m):
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
+
 def add_costing(m):
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "hrcs_case_1575.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(case_study_definition = source_file)
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     m.fs.watertap_costing = WaterTAPCosting()
 
     m.fs.mixer.costing = UnitModelCostingBlock(
-        flowsheet_costing_block = m.fs.watertap_costing
+        flowsheet_costing_block=m.fs.watertap_costing
     )
     costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
 
@@ -242,10 +241,13 @@ def add_costing(m):
                 to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
             )
         )
+
+
 def display_results(m):
     unit_list = ["feed", "mixer", "HRCS", "clarifier"]
     for u in unit_list:
         m.fs.component(u).report()
+
 
 def display_costing(m):
 
@@ -271,7 +273,6 @@ def display_costing(m):
             ),
         )
 
-
     print("\n----------Capital costs----------\n")
     total_capital_costs = value(m.fs.costing.total_capital_cost) / 1e3
     print(f"Total capital costs: {total_capital_costs:.3f} $k")
@@ -291,6 +292,6 @@ def display_costing(m):
     )
     print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
 
-if __name__ == "__main__":
-    m, results= main()
 
+if __name__ == "__main__":
+    m, results = main()

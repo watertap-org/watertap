@@ -45,19 +45,17 @@ class TestHRCSZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-                solute_list = [
-                    "tss",
-                    "cod",
-                    "oxygen",
-                    "carbon_dioxide",
-                ]
+            solute_list=[
+                "tss",
+                "cod",
+                "oxygen",
+                "carbon_dioxide",
+            ]
         )
 
-        m.fs.unit = HRCSZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = HRCSZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -75,7 +73,7 @@ class TestHRCSZO:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
-        
+
         assert isinstance(model.fs.unit.ferric_chloride_dose, Var)
         assert isinstance(model.fs.unit.ferric_chloride_demand, Var)
         assert isinstance(model.fs.unit.ferric_chloride_demand_equation, Constraint)
@@ -202,20 +200,18 @@ class TestHRCSZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(dynamic = False)
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-                solute_list = [
-                    "tss",
-                    "cod",
-                    "oxygen",
-                    "carbon_dioxide",
-                    "foo",
-                ]
+            solute_list=[
+                "tss",
+                "cod",
+                "oxygen",
+                "carbon_dioxide",
+                "foo",
+            ]
         )
 
-        m.fs.unit = HRCSZO(
-            property_package = m.fs.params, database = m.db
-        )
+        m.fs.unit = HRCSZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -233,7 +229,7 @@ class TestHRCSZO_w_default_removal:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
-        
+
         assert isinstance(model.fs.unit.ferric_chloride_dose, Var)
         assert isinstance(model.fs.unit.ferric_chloride_demand, Var)
         assert isinstance(model.fs.unit.ferric_chloride_demand_equation, Constraint)
@@ -366,15 +362,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(dynamic = False)
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(solute_list = ["tss", "cod", "oxygen", "carbon_dioxide"])
+    m.fs.params = WaterParameterBlock(
+        solute_list=["tss", "cod", "oxygen", "carbon_dioxide"]
+    )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit = HRCSZO(
-        property_package = m.fs.params, database = m.db
-    )
+    m.fs.unit = HRCSZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -385,9 +381,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        flowsheet_costing_block = m.fs.costing
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.hrcs, Block)
     assert isinstance(m.fs.costing.hrcs.SRT, Var)
