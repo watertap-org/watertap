@@ -65,8 +65,16 @@ class LazyBlockMixin:
 
     example:
 
-    class MyClassData(LazyBlockMixin, ProcessBlockData):
-        ....
+        .. code-block::
+
+            class MyClassData(LazyBlockMixin, ProcessBlockData):
+
+                def build(self):
+
+                    def my_lazy_block_rule(blk):
+                        blk.x = Var()
+                    self.lazy_block = LazyBlock(rule=my_lazy_block_rule)
+
     """
 
     def __init__(self, *args, **kwargs):
