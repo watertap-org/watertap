@@ -5,7 +5,7 @@ defined_flows:
     value: 0.08
     units: USD_2020/kWh
   magnesium_chloride:
-    value: 278
+    value: 0.0786
     units: USD_2020/kg
 global_parameters:
   plant_lifetime:
