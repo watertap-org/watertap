@@ -183,21 +183,21 @@ def test_property_ions(model):
     assert_optimal_termination(results)
 
     assert value(m.fs.stream[0].conc_mass_phase_comp["Liq", "A"]) == pytest.approx(
-        2.1288e-1, rel=1e-3
+        2.1206e-1, rel=1e-3
     )
 
     assert value(m.fs.stream[0].conc_mol_phase_comp["Liq", "A"]) == pytest.approx(
-        21.288, rel=1e-3
+        21.2055, rel=1e-3
     )
     assert value(m.fs.stream[0].molality_phase_comp["Liq", "A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
-    assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(16.7, rel=1e-3)
+    assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(15.5, rel=1e-3)
     assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
-        60.546e5, rel=1e-3
+        2.812e6, rel=1e-3
     )
     assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
-        1001.76, rel=1e-3
+        1000.0, rel=1e-3
     )
     assert value(m.fs.stream[0].act_coeff_phase_comp["Liq", "A"]) == 1
 
@@ -215,7 +215,7 @@ def model2():
 
 
 @pytest.mark.component
-def test_property_ions(model2):
+def test_property_ions_2(model2):
     m = model2
 
     stream = m.fs.stream = m.fs.properties.build_state_block(
@@ -786,7 +786,7 @@ def test_assert_electroneutrality_get_property():
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-def test_assert_electroneutrality_get_property():
+def test_assert_electroneutrality_get_property_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock(
