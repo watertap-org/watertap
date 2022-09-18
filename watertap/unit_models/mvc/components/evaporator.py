@@ -25,7 +25,8 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -208,36 +209,28 @@ class EvaporatorData(UnitModelBlockData):
 
         self.lmtd = Var(initialize=1e1, bounds=(0.0, 1e3), units=pyunits.K)
 
-        # Add feed_side block
-        self.feed_side = Block()
-
-        # Add unit variables to feed
-        self.feed_side.heat_transfer = Var(
+        self.heat_transfer = Var(
             initialize=1e4, bounds=(1, 1e10), units=pyunits.J * pyunits.s**-1
         )
 
-        # Add feed_side state blocks
+        # Add state blocks
         # Feed state block
         tmp_dict = dict(**self.config.property_package_args_feed)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package_feed
         tmp_dict["defined_state"] = True  # feed inlet defined
-        self.feed_side.properties_feed = (
-            self.config.property_package_feed.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of feed inlet",
-                default=tmp_dict,
-            )
+        self.properties_feed = self.config.property_package_feed.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of feed inlet",
+            default=tmp_dict,
         )
 
         # Brine state block
         tmp_dict["defined_state"] = False  # brine outlet not yet defined
-        self.feed_side.properties_brine = (
-            self.config.property_package_feed.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of brine outlet",
-                default=tmp_dict,
-            )
+        self.properties_brine = self.config.property_package_feed.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of brine outlet",
+            default=tmp_dict,
         )
 
         # Vapor state block
@@ -245,33 +238,22 @@ class EvaporatorData(UnitModelBlockData):
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package_vapor
         tmp_dict["defined_state"] = False  # vapor outlet not yet defined
-        self.feed_side.properties_vapor = (
-            self.config.property_package_vapor.state_block_class(
-                self.flowsheet().config.time,
-                doc="Material properties of vapor outlet",
-                default=tmp_dict,
-            )
+        self.properties_vapor = self.config.property_package_vapor.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of vapor outlet",
+            default=tmp_dict,
         )
 
-        # Add condenser
-        self.condenser = Condenser(
-            default={"property_package": self.config.property_package_vapor}
-        )
+        # Add block for condenser constraints
+        self.connection_to_condenser = Block()
 
         # Add ports - oftentimes users interact with these rather than the state blocks
-        self.add_port(name="inlet_feed", block=self.feed_side.properties_feed)
-        self.add_port(name="outlet_brine", block=self.feed_side.properties_brine)
-        self.add_port(name="outlet_vapor", block=self.feed_side.properties_vapor)
-        self.add_port(
-            name="inlet_condenser", block=self.condenser.control_volume.properties_in
-        )
-        self.add_port(
-            name="outlet_condenser", block=self.condenser.control_volume.properties_out
-        )
+        self.add_port(name="inlet_feed", block=self.properties_feed)
+        self.add_port(name="outlet_brine", block=self.properties_brine)
+        self.add_port(name="outlet_vapor", block=self.properties_vapor)
 
-        ### FEED SIDE CONSTRAINTS ###
         # Mass balance
-        @self.feed_side.Constraint(
+        @self.Constraint(
             self.flowsheet().time,
             self.config.property_package_feed.component_list,
             doc="Mass balance",
@@ -292,7 +274,7 @@ class EvaporatorData(UnitModelBlockData):
                 )
 
         # Energy balance
-        @self.feed_side.Constraint(self.flowsheet().time, doc="Energy balance")
+        @self.Constraint(self.flowsheet().time, doc="Energy balance")
         def eq_energy_balance(b, t):
             return (
                 b.heat_transfer + b.properties_feed[t].enth_flow
@@ -301,42 +283,23 @@ class EvaporatorData(UnitModelBlockData):
             )
 
         # Brine pressure
-        @self.feed_side.Constraint(self.flowsheet().time, doc="Brine pressure")
+        @self.Constraint(self.flowsheet().time, doc="Brine pressure")
         def eq_brine_pressure(b, t):
             return b.properties_brine[t].pressure == b.properties_brine[t].pressure_sat
 
         # Vapor pressure
-        @self.feed_side.Constraint(self.flowsheet().time, doc="Vapor pressure")
+        @self.Constraint(self.flowsheet().time, doc="Vapor pressure")
         def eq_vapor_pressure(b, t):
             return b.properties_vapor[t].pressure == b.properties_brine[t].pressure
 
-        # Vapor temperature
-        @self.feed_side.Constraint(self.flowsheet().time, doc="Vapor temperature")
+        # Vapor temperature - assumed to be equal to brine temperature
+        @self.Constraint(self.flowsheet().time, doc="Vapor temperature")
         def eq_vapor_temperature(b, t):
             return (
                 b.properties_vapor[t].temperature == b.properties_brine[t].temperature
             )
-            # return b.properties_vapor[t].temperature == 0.5*(b.properties_out[t].temperature + b.properties_in[t].temperature)
 
         ### EVAPORATOR CONSTRAINTS ###
-        # Temperature difference in
-        @self.Constraint(self.flowsheet().time, doc="Temperature difference in")
-        def eq_delta_temperature_in(b, t):
-            return (
-                b.delta_temperature_in
-                == b.condenser.control_volume.properties_in[t].temperature
-                - b.feed_side.properties_brine[t].temperature
-            )
-
-        # Temperature difference out
-        @self.Constraint(self.flowsheet().time, doc="Temperature difference out")
-        def eq_delta_temperature_out(b, t):
-            return (
-                b.delta_temperature_out
-                == b.condenser.control_volume.properties_out[t].temperature
-                - b.feed_side.properties_brine[t].temperature
-            )
-
         # log mean temperature
         @self.Constraint(self.flowsheet().time, doc="Log mean temperature difference")
         def eq_lmtd(b, t):
@@ -351,42 +314,78 @@ class EvaporatorData(UnitModelBlockData):
             )
             return b.lmtd == b.cbrt((dT_in * dT_out * dT_avg)) * temp_units
 
-        # Heat transfer between feed side and condenser
-        @self.Constraint(self.flowsheet().time, doc="Heat transfer balance")
-        def eq_heat_balance(b, t):
-            return b.feed_side.heat_transfer == -b.condenser.control_volume.heat[t]
-
         # Evaporator heat transfer
         @self.Constraint(self.flowsheet().time, doc="Evaporator heat transfer")
         def eq_evaporator_heat(b, t):
-            return b.feed_side.heat_transfer == b.U * b.area * b.lmtd
+            return b.heat_transfer == b.U * b.area * b.lmtd
 
-    def initialize(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+    def connect_to_condenser(self, condenser_blk):
+        # Temperature difference in
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Temperature difference in"
+        )
+        def eq_delta_temperature_in(b, t):
+            return (
+                self.delta_temperature_in
+                == condenser_blk.control_volume.properties_in[t].temperature
+                - self.properties_brine[t].temperature
+            )
+
+        # Temperature difference out
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Temperature difference out"
+        )
+        def eq_delta_temperature_out(b, t):
+            return (
+                self.delta_temperature_out
+                == condenser_blk.control_volume.properties_out[t].temperature
+                - self.properties_brine[t].temperature
+            )
+
+        # Heat transfer between feed side and condenser
+        @self.connection_to_condenser.Constraint(
+            self.flowsheet().time, doc="Heat transfer balance"
+        )
+        def eq_heat_balance(b, t):
+            return self.heat_transfer == -condenser_blk.control_volume.heat[t]
+
+    def initialize_build(
+        blk,
+        delta_temperature_in=None,
+        delta_temperature_out=None,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
 
-        Args:
-            state_args: a dict of arguments to be passed to the property
+        Keyword Arguments:
+            delta_temperature_in : value to fix delta_temperature_in
+            delta_temperature_out : value to fix delta_temperature_out
+            state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default=None)
-            solver: str indicating which solver to use during
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
                      initialization (default = None)
-        Returns:
-            None
+
+        Returns: None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
+        if hasattr(blk, "connection_to_condenser"):
+            blk.connection_to_condenser.deactivate()
+
         # ---------------------------------------------------------------------
         # Initialize feed side
-        flags_feed = blk.feed_side.properties_feed.initialize(
+        flags_feed = blk.properties_feed.initialize(
             solver=solver, optarg=optarg, hold_state=True
         )
         init_log.info_high("Initialization Step 1 Complete.")
@@ -395,7 +394,7 @@ class EvaporatorData(UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.feed_side.properties_feed[
+            state_dict = blk.properties_feed[
                 blk.flowsheet().config.time.first()
             ].define_port_members()
 
@@ -407,7 +406,7 @@ class EvaporatorData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.feed_side.properties_brine.initialize(
+        blk.properties_brine.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
         )
 
@@ -415,13 +414,13 @@ class EvaporatorData(UnitModelBlockData):
         state_args_vapor["pressure"] = 0.5 * state_args["pressure"]
         state_args_vapor["temperature"] = state_args["temperature"]
         state_args_vapor["flow_mass_phase_comp"] = {
-            ("Liq", "H2O"): blk.feed_side.properties_vapor[0]
+            ("Liq", "H2O"): blk.properties_vapor[0]
             .flow_mass_phase_comp["Liq", "H2O"]
             .lb,
             ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")],
         }
 
-        blk.feed_side.properties_vapor.initialize(
+        blk.properties_vapor.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -430,42 +429,51 @@ class EvaporatorData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-        # intialize condenser
-        state_args_condenser = state_args_vapor
-        state_args_condenser["flow_mass_phase_comp"][("Vap", "H2O")] = (
-            0.5 * state_args_condenser["flow_mass_phase_comp"][("Vap", "H2O")]
-        )
-        state_args_condenser["pressure"] = blk.feed_side.properties_brine[
-            0
-        ].pressure_sat.value
-        state_args_condenser["temperature"] = state_args["temperature"] + 5
-        blk.condenser.initialize(state_args=state_args_condenser)
-        # assert False
-        # flags_condenser_cv = blk.condenser.initialize(state_args=state_args_condenser,hold_state=True)
-        init_log.info_high("Initialization Step 3 Complete.")
-        # ---------------------------------------------------------------------
-        # Deactivate heat transfer balance
-        # blk.eq_heat_balance.deactivate()
+        # incorporate guessed temperature differences
+        has_guessed_delta_temperature_in = False
+        if delta_temperature_in is not None:
+            if blk.delta_temperature_in.is_fixed():
+                raise RuntimeError(
+                    "A guess was provided for the delta_temperature_in variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_in"
+                )
+            blk.delta_temperature_in.fix(delta_temperature_in)
+            has_guessed_delta_temperature_in = True
+
+        has_guessed_delta_temperature_out = False
+        if delta_temperature_out is not None:
+            if blk.delta_temperature_out.is_fixed():
+                raise RuntimeError(
+                    "A guess was provided for the delta_temperature_out variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_out"
+                )
+            blk.delta_temperature_out.fix(delta_temperature_out)
+            has_guessed_delta_temperature_out = True
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        # Release feed and condenser inlet states
-        blk.feed_side.properties_feed.release_state(flags_feed, outlvl=outlvl)
-        # blk.condenser.control_volume.release_state(flags_condenser_cv, outlvl=outlvl)
+        # Release feed and condenser inlet states and release delta_temperature
+        blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
+        if has_guessed_delta_temperature_in:
+            blk.delta_temperature_in.unfix()
+        if has_guessed_delta_temperature_out:
+            blk.delta_temperature_out.unfix()
+        if hasattr(blk, "connection_to_condenser"):
+            blk.connection_to_condenser.activate()
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
-            "Heat transfer": self.feed_side.heat_transfer,
-            "Evaporator temperature": self.feed_side.properties_brine[
-                time_point
-            ].temperature,
-            "Evaporator pressure": self.feed_side.properties_brine[time_point].pressure,
+            "Heat transfer": self.heat_transfer,
+            "Evaporator temperature": self.properties_brine[0].temperature,
+            "Evaporator pressure": self.properties_brine[0].pressure,
         }
 
         return {"vars": var_dict}
@@ -473,27 +481,8 @@ class EvaporatorData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        self.condenser.calculate_scaling_factors()
-
-        if iscale.get_scaling_factor(self.feed_side.heat_transfer) is None:
+        if iscale.get_scaling_factor(self.heat_transfer) is None:
             sf = iscale.get_scaling_factor(
-                self.feed_side.properties_vapor[0].enth_flow_phase["Vap"]
+                self.properties_vapor[0].enth_flow_phase["Vap"]
             )
-            iscale.set_scaling_factor(self.feed_side.heat_transfer, sf)
-
-        # for (t,j), c in self.eq_mass_balance.items():
-        #     sf = iscale.get_scaling_factor(self.properties_feed[t].flow_mass_phase_comp['Liq', j])
-        #     iscale.constraint_scaling_transform(c, sf)
-        #
-        # # Pressure constraints
-        # sf = iscale.get_scaling_factor(self.properties_feed[0].pressure)
-        # iscale.constraint_scaling_transform(self.eq_vapor_pressure, sf)
-        #
-        # # Temperature constraint
-        # sf = iscale.get_scaling_factor(self.properties_feed[0].temperature)
-        # iscale.constraint_scaling_transform(self.eq_brine_temperature, sf)
-        # iscale.constraint_scaling_transform(self.eq_vapor_temperature, sf)
-        #
-        # # Efficiency, work constraints
-        # sf = iscale.get_scaling_factor(self.heat_transfer)
-        # iscale.constraint_scaling_transform(self.eq_energy_balance, sf)
+            iscale.set_scaling_factor(self.heat_transfer, sf)
