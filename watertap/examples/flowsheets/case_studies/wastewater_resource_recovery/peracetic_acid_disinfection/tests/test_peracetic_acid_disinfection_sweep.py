@@ -13,6 +13,7 @@
 
 import os
 import pytest
+import tempfile
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection_sweep import (
     run_analysis,
 )
@@ -27,9 +28,14 @@ for case_num in [1]:
 def test_sweep(case_num, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
-    nx = 2
+    temp = tempfile.NamedTemporaryFile(delete=False)
+    temp.close()
     global_results, sweep_params, m = run_analysis(
-        case_num, nx, interpolate_nan_outputs=False
+        case_num,
+        nx=2,
+        interpolate_nan_outputs=False,
+        save_path=temp.name,
     )
+    os.remove(temp.name)
     os.chdir(cwd)
     return
