@@ -27,9 +27,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.models.unit_models import Product
+
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -72,30 +73,26 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "peracetic_acid",
-                "total_coliforms_fecal_ecoli",
-            ]
-        }
+        solute_list=[
+            "peracetic_acid",
+            "total_coliforms_fecal_ecoli",
+        ]
     )
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # PAA treatment
     m.fs.PAA = PeraceticAcidDisinfectionZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop,
+        database=m.db,
     )
 
     # product stream
-    m.fs.treated_water = Product(default={"property_package": m.fs.prop})
+    m.fs.treated_water = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.PAA.inlet)
@@ -159,10 +156,9 @@ def add_costing(m):
         "peracetic_acid_case_study.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    m.fs.PAA.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.PAA.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
 
