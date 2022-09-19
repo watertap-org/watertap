@@ -679,7 +679,6 @@ def test_seawater_data():
     assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
@@ -784,7 +783,6 @@ def test_assert_electroneutrality_get_property():
     assert not hasattr(stream, "charge_balance")
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_assert_electroneutrality_get_property_2():
     m = ConcreteModel()
