@@ -18,9 +18,9 @@ from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.pera
     run_analysis,
 )
 
-sweep_list = []
-for case_num in [1]:
-    sweep_list.append(case_num)
+sweep_list = [
+    1,
+]
 
 
 @pytest.mark.parametrize("case_num", sweep_list)
