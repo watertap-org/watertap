@@ -1545,6 +1545,7 @@ class DSPMDEStateBlockData(StateBlockData):
         get_property=None,
         solve=True,
     ):
+
         if tol is None:
             tol = 1e-8
         if not defined_state and get_property is not None:
@@ -1591,8 +1592,10 @@ class DSPMDEStateBlockData(StateBlockData):
             if adjust_by_ion is not None:
                 ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
             solve = get_solver()
+            solve.solve(self)
             results = solve.solve(self)
             if check_optimal_termination(results):
+                self.conc_mol_phase_comp[...].pprint()
                 val = value(
                     sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
