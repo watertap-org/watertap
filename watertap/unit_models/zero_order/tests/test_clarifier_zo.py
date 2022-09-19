@@ -316,3 +316,4 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit1) == 0
 
     assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+

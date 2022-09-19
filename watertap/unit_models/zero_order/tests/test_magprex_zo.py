@@ -333,7 +333,7 @@ def test_costing():
         "flowsheets",
         "case_studies",
         "wastewater_resource_recovery",
-        "magprex",
+        "amo_1575_magprex",
         "magprex_case_1575.yaml",
     )
 

@@ -396,7 +396,4 @@ def test_costing():
     initialization_tester(m)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert (
-        m.fs.unit.ferric_chloride_demand[0]
-        in m.fs.costing._registered_flows["ferric_chloride"]
-    )
+    assert m.fs.unit.ferric_chloride_demand[0]in m.fs.costing._registered_flows["ferric_chloride"]

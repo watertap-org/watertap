@@ -3127,6 +3127,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride"
+        )
 
     def cost_centrifuge(blk):
         """
