@@ -100,46 +100,39 @@ def build_flowsheet(n_steps):
     return mp_swro
 
 
-def initialize_system(m):
+def initialize_system(m, fix_feedflow=False, fix_recovery=False):
     print(f"\n----- Initializing Base Model -----")
-    # fully initialize a base model
-    # base_model = swro.main(erd_type=swro.ERDtype.pump_as_turbine,
-    #     variable_efficiency=swro.VariableEfficiency.flow)
-    # # create a copy of the base model
-    # reinitialize_values = ComponentMap()
-    # for v in base_model.component_data_objects(Var):
-    #     reinitialize_values[v] = v.value
-    #
-
     # loop through each time step block and set values
     t_blocks = m.get_active_process_blocks()
 
     for count, blk in enumerate(t_blocks):
         print(f"\n----- Initializing MultiPeriod Time Step {count} -----")
         blk_swro = blk.ro_mp
-        # for v, val in reinitialize_values.items():
-        #     blk_swro.find_component(v).set_value(val, skip_validation=True)
         blk_swro.fs.RO.area.fix()
-        # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
-        blk_swro.fs.P1.bep_flow.fix()
-        # blk_swro.fs.P1.bep_eta.unfix()
-        blk_swro.fs.P1.flow_ratio[0].unfix()
-        blk_swro.fs.costing.utilization_factor.fix(1)
-        #
-        # blk_swro.fs.P2.flow_ratio[0].unfix()
-        # v2 = blk_swro.fs.P2.control_volume.properties_out[0.0].flow_vol_phase["Liq"]
-        # blk_swro.fs.P2.bep_flow.fix(v2)
 
-        # unfix RO control volume operational variables
-        blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
-        blk_swro.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
+        if fix_feedflow is False:
+            # unfix the pump flow ratios and fix the bep flowrate as the nominal volumetric flowrate
+            blk_swro.fs.P1.bep_flow.fix()
+            blk_swro.fs.P1.flow_ratio[0].unfix()
+            blk_swro.fs.costing.utilization_factor.fix(1)
+
+            # unfix feed flow rate and fix concentration instead
+            blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+            blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
+            blk_swro.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(
+                0.035
+            )
+        else:
+            blk_swro.fs.P1.flow_ratio[0].fix()
+
+        if fix_recovery is False:
+            # unfix RO control volume operational variables
+            blk_swro.fs.P1.control_volume.properties_out[0.0].pressure.unfix()
+            blk_swro.fs.RO.recovery_mass_phase_comp[0.0, "Liq", "H2O"].unfix()
+
         blk_swro.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"].setub(
             0.0005
         )
-        # unfix feed flow rate and fix concentration instead
-        blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "H2O"].unfix()
-        blk_swro.fs.feed.properties[0.0].flow_mass_phase_comp["Liq", "NaCl"].unfix()
-        blk_swro.fs.feed.properties[0.0].mass_frac_phase_comp["Liq", "NaCl"].fix(0.035)
 
 
 def set_objective(mp_swro, lmp, co2i, carbontax=0):
@@ -152,11 +145,17 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
     load_shaving_benefit = (
         0.1 * pyunits.USD_2018 / pyunits.kW
     )  # TODO - replace with real market values
-    load_shaving_time = [
+    peak_time = [
         15,
         20,
     ]  # hours in the day where load needs to be shaved (4-9pm) starting at count=0
     nominal_load = 4.31 * pyunits.kWh  # hourly load at steady conditions
+
+    on_peak_demand_charge = Param(
+        default=10,
+        mutable=True,
+        units=t_blocks[0].ro_mp.fs.costing.base_currency / pyunits.kW,
+    )
     # base_costing_block = t_blocks[0].ro_mp.fs.costing
     # fixed_hourly_cost = Expression(
     #     expr= pyunits.convert(base_costing_block.total_investment_cost
@@ -184,12 +183,6 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             default=carbontax,
             mutable=True,
             units=blk_swro.fs.costing.base_currency / pyunits.kg,
-        )
-        blk.demand_charge_trigger = Param(
-            default=max(lmp)
-            * 0.9,  # TODO - change this to be informed by real market value
-            mutable=True,
-            units=blk_swro.fs.costing.base_currency / pyunits.kWh,
         )
 
         # set the electricity_price in each flowsheet
@@ -220,16 +213,11 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
             expr=blk_swro.fs.costing.specific_energy_consumption * blk.water_prod,
             doc="Energy consumption per timestep kWh/hr",
         )
-        blk.demand_charge = Expr_if(
-            blk.lmp_signal > blk.demand_charge_trigger,
-            peak_load_surcharge,
-            0,
-        )
 
         blk.load_shaving_trigger = Expr_if(
-            count > load_shaving_time[0],
+            count > peak_time[0],
             Expr_if(
-                count < load_shaving_time[1],
+                count < peak_time[1],
                 load_shaving_benefit,
                 0,
             ),
@@ -249,7 +237,6 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         )
 
         blk.wholesale_energy_cost = blk.energy_consumption * blk.lmp_signal
-        blk.demand_surcharge_cost = blk.energy_consumption * blk.demand_charge
         blk.load_shaving_revenue = blk.load_shaving_trigger * (
             nominal_load - blk.energy_consumption
         )
@@ -257,22 +244,12 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         blk.weighted_LCOW = Expression(
             expr=fixed_hourly_cost
             + blk.wholesale_energy_cost
-            + blk.demand_surcharge_cost
             - blk.load_shaving_revenue,
             doc="hourly cost [$/hr]",
         )
 
-        blk.weighted_LCOW_b = Expression(
-            expr=blk.ro_mp.fs.costing.LCOW * blk.water_prod,
-            doc="hourly cost [$/hr]",
-        )
-
-    m.LCOW = Expression(
-        expr=sum([blk.weighted_LCOW_b for blk in t_blocks])
-        / sum([blk.water_prod for blk in t_blocks]),
-        doc="Daily, flow-normalized cost of water",
-    )
-
+    # include demand charge
+    # TODO- include demand charge possibly nees
     # compile time block level expressions into a model-level objective
     m.obj = Objective(
         expr=sum([blk.weighted_LCOW for blk in t_blocks])
@@ -322,11 +299,6 @@ def solve(m):
 def save_results(m, t_blocks, data, savepath=None):
     time_step = np.array(range(len(t_blocks)))
     LCOW = value(m.obj)
-    # qual = 1e6 * value(
-    #     sum([blk.weighted_permeate_quality for blk in t_blocks])
-    #     / sum([blk.water_prod for blk in t_blocks])
-    # )
-    print(LCOW)
 
     recovery = np.array(
         [
@@ -352,7 +324,7 @@ def save_results(m, t_blocks, data, savepath=None):
     efficiency1 = np.array([blk.ro_mp.fs.P1.efficiency_pump[0]() for blk in t_blocks])
 
     wholesale_charge = np.array([blk.wholesale_energy_cost() for blk in t_blocks])
-    demand_surcharge = np.array([blk.demand_surcharge_cost() for blk in t_blocks])
+    # demand_surcharge = np.array([blk.demand_surcharge_cost() for blk in t_blocks])
     peak_load_revenue = np.array([-1 * blk.load_shaving_revenue() for blk in t_blocks])
 
     if savepath is None:
@@ -370,7 +342,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 flowrate1.reshape(-1, 1),
                 efficiency1.reshape(-1, 1),
                 wholesale_charge.reshape(-1, 1),
-                demand_surcharge.reshape(-1, 1),
+                # demand_surcharge.reshape(-1, 1),
                 peak_load_revenue.reshape(-1, 1),
             )
         )
@@ -387,7 +359,7 @@ def save_results(m, t_blocks, data, savepath=None):
                 "flowrate1",
                 "efficiency1",
                 "wholesale_charge",
-                "demand_surcharge",
+                # "demand_surcharge",
                 "peak_load_revenue",
             ],
         )
@@ -501,42 +473,45 @@ def visualize_results(
 
 
 if __name__ == "__main__":
-    # price_multiplier = [0.25, 1, 3, 10]
-    # file_save = [
-    #     "simulation_data_0_25_ubcon.csv",
-    #     # "simulation_data_0_25_unc.csv",
-    #     "simulation_data_1_00_ubcon.csv",
-    #     # "simulation_data_1_00_unc.csv",
-    #     "simulation_data_3_00_ubcon.csv",
-    #     # "simulation_data_3_00_unc.csv",
-    #     "simulation_data_10_00_ubcon.csv",
-    #     # "simulation_data_10_00_unc.csv",
-    # ]
-    # for i, multiplier in enumerate(price_multiplier):
-    #
-    #     m, t_blocks, data = main(
-    #         ndays=1,
-    #         # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-    #         filename="dagget_CA_LMP_hourly_2015.csv",
-    #         price_multiplier=multiplier,
-    #     )
-    #     path = os.path.join(os.getcwd(), file_save[i])
-    #     save_results(m, t_blocks, data, path)
-    price_multiplier = 1
-    m, t_blocks, data = main(
-        ndays=1,
-        # filename="pricesignals_GOLETA_6_N200_20220601.csv",
-        filename="dagget_CA_LMP_hourly_2015.csv",
-        price_multiplier=price_multiplier,
-    )
-    file_save = "temp_test.csv"
-    path = os.path.join(os.getcwd(), file_save)
-    save_results(m, t_blocks, data, path)
+    case = 2
+    if case == 1:
+        price_multiplier = [0.25, 1, 3, 10]
+        file_save = [
+            "simulation_data_0_25_ubcon.csv",
+            # "simulation_data_0_25_unc.csv",
+            "simulation_data_1_00_ubcon.csv",
+            # "simulation_data_1_00_unc.csv",
+            "simulation_data_3_00_ubcon.csv",
+            # "simulation_data_3_00_unc.csv",
+            "simulation_data_10_00_ubcon.csv",
+            # "simulation_data_10_00_unc.csv",
+        ]
+        for i, multiplier in enumerate(price_multiplier):
 
-    title_label = f"LMP scaling = {price_multiplier}"
-    visualize_results(
-        path,
-        erd_type=t_blocks[0].ro_mp.fs.erd_type,
-        co2i=False,
-        title_label=title_label,
-    )
+            m, t_blocks, data = main(
+                ndays=1,
+                # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+                filename="dagget_CA_LMP_hourly_2015.csv",
+                price_multiplier=multiplier,
+            )
+            path = os.path.join(os.getcwd(), file_save[i])
+            save_results(m, t_blocks, data, path)
+    elif case == 2:
+        price_multiplier = 10
+        m, t_blocks, data = main(
+            ndays=1,
+            # filename="pricesignals_GOLETA_6_N200_20220601.csv",
+            filename="dagget_CA_LMP_hourly_2015.csv",
+            price_multiplier=price_multiplier,
+        )
+        file_save = "temp.csv"
+        path = os.path.join(os.getcwd(), file_save)
+        save_results(m, t_blocks, data, path)
+
+        title_label = f"LMP scaling = {price_multiplier}"
+        visualize_results(
+            path,
+            erd_type=t_blocks[0].ro_mp.fs.erd_type,
+            co2i=False,
+            title_label=title_label,
+        )
