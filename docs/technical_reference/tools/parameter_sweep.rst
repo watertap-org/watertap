@@ -72,7 +72,7 @@ using two threads.
 
 .. code:: bash
 
-   mpirun -n 2 python parameter_sweep_script.py
+   mpiexec -n 2 python parameter_sweep_script.py
 
 For advanced users, the parameter sweep tool can optionally take a MPI communicator
 as an argument.
