@@ -157,8 +157,8 @@ The following variables are constructed when applying the UV-AOP costing method 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Units"
 
-   "UV reactor cost", ":math:`C_{cap,r}`", "reactor_cost", ":math:`\text{$}/(\text{m}^3\text{/h})`"
-   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_{cap,l}`", "lamp_cost", ":math:`\text{$}/\text{kW}`"
+   "UV reactor cost", ":math:`C_{cap,r}`", "reactor_cost", ":math:`$/(\text{m}^3\text{/h})`"
+   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_{cap,l}`", "lamp_cost", ":math:`$/\text{kW}`"
    "Fraction of UV replaced per year", ":math:`f_l`", "factor_lamp_replacement", ":math:`\text{y}^{-1}`"
 
 Capital Cost Calculations
