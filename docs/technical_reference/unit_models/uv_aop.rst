@@ -146,10 +146,51 @@ if ``has_aop`` is set to ``True``, there are one additional equation:
 
    "Reaction rate constant", ":math:`k_i = k_{OH} \cdot c_{\text{H}_2\text{O}_2}`"
 
+Costing Method
+---------------
+
+Costing Method Variables
++++++++++++++++++++++++++
+
+The following variables are constructed when applying the UV-AOP costing method in the ``watertap_costing_package``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Units"
+
+   "UV reactor cost", ":math:`C_{cap,r}`", "reactor_cost", ":math:`\text{$}/(\text{m}^3\text{/h})`"
+   "UV lamps, sleeves, ballasts and sensors cost", ":math:`C_{cap,l}`", "lamp_cost", ":math:`\text{$}/\text{kW}`"
+   "Fraction of UV replaced per year", ":math:`f_l`", "factor_lamp_replacement", ":math:`\text{y}^{-1}`"
+
+Capital Cost Calculations
++++++++++++++++++++++++++
+
+Capital costs are determined by the summation of reactor and lamp costing terms.
+The reactor costing term is determined based on inlet flow rate.
+The lamp costing term is determined based on electricity demand.
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Total capital cost", ":math:`C_{cap,tot} = C_{cap,r} \cdot F_{in} + C_{cap,l} \cdot E`"
+
+**NOTE: the default costing calculation is evaluated based on a UV system with low-pressure lamps.
+Users can provide corresponding costing variables for a specific UV system with other lamp types**
+
+Operating Cost Calculations
++++++++++++++++++++++++++++
+
+Operating costs are calculated as the cost to replace lamps, sleeves, ballasts and sensors in a UV system.
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Fixed operating cost", ":math:`C_{op} = f_l \cdot C_{cap,l} \cdot E`"
+
 Class Documentation
 -------------------
 
 * :mod:`watertap.unit_models.uv_aop`
+* :meth:`watertap.costing.watertap_costing_package.WaterTAPCostingData.cost_uv_aop`
 
 References
 ----------
