@@ -263,14 +263,14 @@ def display_costing(m):
 
     sec = electricity_intensity * value(
         pyunits.convert(
+            m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.s
+        )
+        / pyunits.convert(
             m.fs.product_struvite.flow_mass_comp[0, "struvite"],
             to_units=pyunits.kg / pyunits.s,
         )
-        / pyunits.convert(
-            m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.s
-        )
     )
-    print(f"Specific energy consumption: {sec:.3f} kWh/m3 feed")
+    print(f"Specific energy consumption: {sec:.3f} kWh/kg struvite")
 
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
