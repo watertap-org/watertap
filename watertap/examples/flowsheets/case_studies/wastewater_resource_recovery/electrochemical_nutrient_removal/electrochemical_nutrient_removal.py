@@ -178,10 +178,13 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
+    print("\n----------Units----------")
+
     unit_list = ["feed", "pump", "electroNP"]
     for u in unit_list:
         m.fs.component(u).report()
 
+    print("\n----------Recovery and Removal----------")
     water_recovery = value(
         m.fs.product_H2O.flow_mass_comp[0, "H2O"] / m.fs.feed.flow_mass_comp[0, "H2O"]
     )
@@ -206,13 +209,14 @@ def display_results(m):
 
 
 def display_costing(m):
+    print("\n----------Capital Cost----------")
     total_capital_cost = value(
         pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.USD_2018)
     )
     normalized_capex = total_capital_cost / value(
         pyunits.convert(m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / pyunits.hr)
     )
-    print(f"\nTotal Capital Costs: {total_capital_cost:.3f} $")
+    print(f"Total Capital Costs: {total_capital_cost:.3f} $")
     print(f"Normalized Capital Costs: {normalized_capex:.3f} $/m3/hr")
     print("Capital Cost Breakdown")
     for u in m.fs.costing._registered_unit_costing:
@@ -222,13 +226,13 @@ def display_costing(m):
                 price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
             ),
         )
-
+    print("\n----------Operation Cost----------")
     total_operating_cost = value(
         pyunits.convert(
             m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
         )
     )
-    print(f"\nTotal Operating Cost: {total_operating_cost:.3f} $/year")
+    print(f"Total Operating Cost: {total_operating_cost:.3f} $/year")
 
     opex_fraction = total_operating_cost / (
         total_operating_cost
@@ -254,12 +258,14 @@ def display_costing(m):
             ),
         )
 
+    print("\n----------Energy----------")
+
     electricity_intensity = value(
         pyunits.convert(
             m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
         )
     )
-    print(f"\nElectricity Intensity: {electricity_intensity:.3f} kWh/m^3")
+    print(f"Electricity Intensity: {electricity_intensity:.3f} kWh/m^3")
 
     sec = electricity_intensity * value(
         pyunits.convert(
@@ -272,10 +278,11 @@ def display_costing(m):
     )
     print(f"Specific energy consumption: {sec:.3f} kWh/kg struvite")
 
+    print("\n----------Levelized Cost----------")
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"\nLevelized Cost of Water: {LCOW:.3f} $/m^3")
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
 
     LCOS = value(
         pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
