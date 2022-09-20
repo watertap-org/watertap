@@ -199,7 +199,9 @@ def test_property_ions(model):
         1000.0, rel=1e-3
     )
     assert value(m.fs.stream[0].act_coeff_phase_comp["Liq", "A"]) == 1
-    assert value(m.fs.stream[0].trans_num_phase_comp["Liq", "A"]) == 0.5
+    assert value(m.fs.stream[0].trans_num_phase_comp["Liq", "B"]) == pytest.approx(
+        0.563, rel=1e-3
+    )
 
 
 @pytest.fixture(scope="module")
