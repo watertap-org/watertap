@@ -154,7 +154,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         ConfigValue(
             default=False,
             domain=Bool,
-            description="Configuration for whether to model the nonhomic potential across ion exchange membranes",
+            description="Configuration for whether to model the nonohmic potential across ion exchange membranes",
         ),
     )
 
@@ -1077,7 +1077,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.membrane_set,
             self.flowsheet().time,
             self.diluate.length_domain,
-            initialize=0.01,  # to reinspect
+            initialize=0.01,  # to inspect
             bounds=(-50, 50),
             units=pyunits.volt,
             doc="Nonohmic potential across a membane",
@@ -1158,20 +1158,20 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.membrane_set,
             self.flowsheet().time,
             self.diluate.length_domain,
-            initialize=0.01,  # to reinspect
+            initialize=0.01,  # to inspect
             bounds=(-50, 50),
             units=pyunits.volt,
-            doc="Nonhomic potential in two diffusion layers on the two sides of a membrane",
+            doc="Nonohmic potential in two diffusion layers on the two sides of a membrane",
         )
 
         self.potential_ohm_dl_x = Var(
             self.membrane_set,
             self.flowsheet().time,
             self.diluate.length_domain,
-            initialize=0.01,  # to reinspect
+            initialize=0.01,  # to inspect
             bounds=(0, 50),
             units=pyunits.volt,
-            doc="Homic potential in two diffusion layers on the two sides of a membrane",
+            doc="Ohmic potential in two diffusion layers on the two sides of a membrane",
         )
 
         self.dl_thickness_x = Var(
