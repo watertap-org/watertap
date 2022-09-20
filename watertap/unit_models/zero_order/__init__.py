@@ -98,3 +98,4 @@ from .photothermal_membrane_zo import PhotothermalMembraneZO
 from .suboxic_activated_sludge_process_zo import SuboxicASMZO
 from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .vfa_recovery_zo import VFARecoveryZO
+from .paa_disinfection_zo import PeraceticAcidDisinfectionZO
