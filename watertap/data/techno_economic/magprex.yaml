@@ -30,7 +30,7 @@ default:
       units: dimensionless
       constituent_longform: Struvite
   magnesium_chloride_dosage:
-    value: 10.71 # kg-MgCl2/kg sludge treated
+    value: 1.3 # kg-MgCl2/kg struvite
     units: dimensionless
   reactions:
     struvite_precip:

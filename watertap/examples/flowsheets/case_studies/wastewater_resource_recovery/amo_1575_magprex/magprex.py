@@ -176,10 +176,9 @@ def add_costing(m):
 
     # add costing block
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    m.fs.magprex.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.centrifuge.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.classifier.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.magprex.costing = UnitModelCostingBlock(flowsheet_costing_block = m.fs.costing)
+    m.fs.centrifuge.costing = UnitModelCostingBlock(flowsheet_costing_block = m.fs.costing)
+    m.fs.classifier.costing = UnitModelCostingBlock(flowsheet_costing_block = m.fs.costing)
 
     m.fs.costing.cost_process()
 
