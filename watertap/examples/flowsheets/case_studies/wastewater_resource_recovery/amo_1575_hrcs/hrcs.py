@@ -204,10 +204,9 @@ def add_costing(m):
     m.fs.mixer.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.watertap_costing
     )
-    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
 
-    m.fs.HRCS.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.clarifier.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.HRCS.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.clarifier.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
     m.fs.watertap_costing.cost_process()

@@ -69,7 +69,7 @@ class MagprexZOData(ZeroOrderBaseData):
             return b.MgCl2_flowrate[t] == (
                 b.magnesium_chloride_dosage
                 * pyunits.convert(
-                    b.properties_byproduct[t].flow_mass_comp["phosphates"],
+                    b.properties_byproduct[t].flow_mass_comp["struvite"],
                     to_units=pyunits.kg / pyunits.hour,
                 )
             )
