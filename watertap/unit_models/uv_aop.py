@@ -601,14 +601,8 @@ class Ultraviolet0DData(UnitModelBlockData):
 
         else:
 
-            @self.Constraint(
-                self.config.property_package.phase_list,
-                self.target_species,
-                doc="Fix pseudo-first order reaction rate constant to zero",
-            )
-            def eq_no_reaction_rate_constant(b, p, j):
-                b.reaction_rate_constant[p, j].fix(0)
-                return Constraint.Skip
+            self.reaction_rate_constant[p, j].fix(0)
+
 
         # mass transfer
         @self.Constraint(
