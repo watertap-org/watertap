@@ -1446,7 +1446,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     if len(self.params.ion_set) > 2:
                         _log.warning(
                             """ 
-                            Cautions should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
+                            Caution should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
                             Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
                             the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
                             is recommended."""
