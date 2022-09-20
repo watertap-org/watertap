@@ -600,9 +600,7 @@ class Ultraviolet0DData(UnitModelBlockData):
                 )
 
         else:
-
-            self.reaction_rate_constant[p, j].fix(0)
-
+            self.reaction_rate_constant.fix(0)
 
         # mass transfer
         @self.Constraint(
