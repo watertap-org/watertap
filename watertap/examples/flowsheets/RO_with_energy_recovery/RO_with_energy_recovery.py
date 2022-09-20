@@ -227,7 +227,6 @@ def set_operating_conditions(
 
     if solver is None:
         solver = get_solver()
-
     # ---specifications---
     # feed
     # state variables
@@ -460,7 +459,7 @@ def initialize_pump_as_turbine(m, optarg):
 
 
 def optimize_set_up(m):
-    # objective
+    # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # unfix decision variables and add bounds
