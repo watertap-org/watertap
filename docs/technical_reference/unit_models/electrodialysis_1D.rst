@@ -191,7 +191,13 @@ All equations are coded as "constraints" (Pyomo). Isothermal and isobaric condit
 
    "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
-   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)ln\left(frac{c_s^{R}{c_s^{L}\right)`"
+   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)ln\left(frac{c_s^R(x)}{c_s^L(x)}\right)`"
+   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{left(t_+^{iem}-t_+\right)\lambda}\ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`"
+   "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`"
+   "NDL thickness, cem", ":math:`\delta_d^{L/R}(x)=\frac{FD_sc_b^{L/R}(x)}{left(t_+^{iem}-t_+\right)i_{lim}(x)} `"
+   "NDL thickness, aem", ":math:`\delta_d^{L/R}(x)=-\frac{FDc_b^{L/R}(x)}{left(t_+^{iem}-t_+\right)i_{lim}(x)} `"
+
+
    
 
 Nomenclature
@@ -232,6 +238,16 @@ Nomenclature
    ":math:`P`", "Power consumption", ":math:`W`"
    ":math:`P_Q`", "Specific power consumption", ":math:`kW\ h\  m^{-3}`"
    ":math:`Q`", "Volume flow rate", ":math:`m^3s^{-1}`"
+   ":math:`\phi_m`", "Nonohmic potential across a membrane", ":math:`V`"
+   ":math:`\phi_d^{ohm}`", "Ohmic potential across a Nernst diffusion layer", ":math:`V`"
+   ":math:`\phi_d^{nonohm}`", "Nonohmic potential across a Nernst diffusion layer", ":math:`V`"
+   ":math:`c_s`", "Salt molar concentration at the membrane surface", ":math:`mol\ m^{-3}`"
+   ":math:`c_b`", "Salt molar concentration in the bulk solution", ":math:`mol\ m^{-3}`"
+   ":math:`D_s`", "Diffusivity of the salt molecular in the bulk solution", ":math:`m^2 s^{-1}`"
+   ":math:`i_{lim}`", "Limiting current density ", ":math:`A m^{-2}`"
+   ":math:`\lambda`", "equivalent conductivity of the solution", ":math:`m^2 \Omega^{-1} mol^{-1} `"
+
+
    "**Subscripts and superscripts**"
    ":math:`C`", "Concentrate channel",
    ":math:`D`", "Diluate channel",
@@ -240,6 +256,11 @@ Nomenclature
    ":math:`out`", "Outlet",
    ":math:`cem`", "Cation exchange membrane",
    ":math:`aem`", "Anion exchange membrane",
+   ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
+   ":math:`L`", "The left side of a membrane, facing the cathode",
+   ":math:`R`", "The right side of a membrane, facing the anode",
+   ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
+
 
 References
 ----------
