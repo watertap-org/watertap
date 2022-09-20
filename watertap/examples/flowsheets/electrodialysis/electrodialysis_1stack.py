@@ -269,8 +269,8 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.1)
-    m.fs.EDstack.voltage_applied[0].setub(50)
+    m.fs.EDstack.voltage_applied[0].setlb(0.01)
+    m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(1)
     m.fs.EDstack.cell_pair_num.setub(500)
 
