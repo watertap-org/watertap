@@ -109,9 +109,9 @@ class TestMagprexFlowsheet:
 
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(
-            0.016046, rel=1e-3
+            0.05002088, rel=1e-3
         )  # in $/m**3
-        assert value(m.fs.costing.LCOS) == pytest.approx(0.0482587, rel=1e-3)
+        assert value(m.fs.costing.LCOS) == pytest.approx(0.150438747, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):
