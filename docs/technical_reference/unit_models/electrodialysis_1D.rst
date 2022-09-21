@@ -187,7 +187,7 @@ Additionally, several other equations are built to describe the electrochemical 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
 Extended simulation 
----------
+-------------------
 This model supports extensive simulations of (1) the nonohmic potential across ion exchange membranes and (2) the Nernst diffusion layer. 
 Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculaiton of nonohmic 
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
@@ -199,7 +199,7 @@ electrolyte such as NaCl.
 .. csv-table:: **Table 5** Electrical and Performance Equations
    :header: "Description", "Equation", "Condition"
 
-   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)ln\left(frac{c_s^R(x)}{c_s^L(x)}\right)`", "`has_nonohmic_potential_membrane == True`"
+   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)\ln\left(frac{c_s^R(x)}{c_s^L(x)}\right)`", "`has_nonohmic_potential_membrane == True`"
    "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{left(t_+^{iem}-t_+\right)\lambda}\ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
    "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
    "NDL thickness, cem", ":math:`\delta_d^{L/R}(x)=\frac{FD_sc_b^{L/R}(x)}{left(t_+^{iem}-t_+\right)i_{lim}(x)} `", "`has_Nernst_diffusion_layer==True`"
@@ -277,6 +277,8 @@ Nomenclature
    ":math:`L`", "The left side of a membrane, facing the cathode",
    ":math:`R`", "The right side of a membrane, facing the anode",
    ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
+   ":math:`+` or :math:`-` ", "mono-cation or mono-anion",
+
 
 
 References
