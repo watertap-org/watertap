@@ -189,9 +189,9 @@ All equations are coded as "constraints" (Pyomo). Isothermal and isobaric condit
 Extended simulation 
 -------------------
 This model supports extensive simulations of (1) the nonohmic potential across ion exchange membranes and (2) the Nernst diffusion layer. 
-Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculaiton of nonohmic 
+Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculation of nonohmic
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
-diffusion layer inlucidng its ohmic and nonohmic potential changes. By established theoretial derivations, these additional calculations 
+diffusion layer including its ohmic and nonohmic potential changes. By established theoretical derivations, these additional calculations
 account for electricity sinks in addition to ohmic resistance of the system and for interface polarization effect, making the model closer 
 to the real and non-ideal desalination conditions. **Table 5** presents the equations underlying the two extensions assuming a 1:1 symmetric 
 electrolyte such as NaCl. 
@@ -199,13 +199,13 @@ electrolyte such as NaCl.
 .. csv-table:: **Table 5** Electrical and Performance Equations
    :header: "Description", "Equation", "Condition"
 
-   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F}\left(t_+^{iem}-t_-^{iem}\right)\ln\left(frac{c_s^R(x)}{c_s^L(x)}\right)`", "`has_nonohmic_potential_membrane == True`"
-   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{left(t_+^{iem}-t_+\right)\lambda}\ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
-   "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, cem", ":math:`\delta_d^{L/R}(x)=\frac{FD_sc_b^{L/R}(x)}{left(t_+^{iem}-t_+\right)i_{lim}(x)} `", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, aem", ":math:`\delta_d^{L/R}(x)=-\frac{FDc_b^{L/R}(x)}{left(t_+^{iem}-t_+\right)i_{lim}(x)} `", "`has_Nernst_diffusion_layer==True`"
-   "Concentration polarization ratio, cem", ":math:`frac{c_s^L(x)}{c_b^L(x)} = 1+\frac{i(x)}{i_{lim}(x)},frac{c_s^R(x)}{c_b^R(x)} = 1-\frac{i(x)}{i_{lim}(x)} `", "`has_Nernst_diffusion_layer==True` \ :sup:`1`"
-   "Concentration polarization ratio, aem", ":math:`frac{c_s^L(x)}{c_b^L(x)} = 1-\frac{i(x)}{i_{lim}(x)},frac{c_s^R(x)}{c_b^R(x)} = 1+\frac{i(x)}{i_{lim}(x)} `", "`has_Nernst_diffusion_layer==True`"
+   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R(x)}{c_s^L(x)} \right)`", "`has_nonohmic_potential_membrane == True`"
+   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
+   "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
+   "NDL thickness, cem", ":math:`\delta^{L/R}(x) = \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+ \right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
+   "NDL thickness, aem", ":math:`\delta^{L/R}(x) = - \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+\right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
+   "Concentration polarization ratio, cem", ":math:`\frac{c_s^L(x)}{c_b^L(x)} = 1+\frac{i(x)}{i_{lim}(x)},\qquad \frac{c_s^R(x)}{c_b^R(x)} = 1-\frac{i(x)}{i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True` \ :sup:`1`"
+   "Concentration polarization ratio, aem", ":math:`\frac{c_s^L(x)}{c_b^L(x)} = 1-\frac{i(x)}{i_{lim}(x)},\qquad \frac{c_s^R(x)}{c_b^R(x)} = 1+\frac{i(x)}{i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
    "Extended current-voltage relationship \ :sup:`2`", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x) ` \ :sup:`3`" 
 
 **Note**
@@ -262,7 +262,7 @@ Nomenclature
    ":math:`c_b`", "Salt molar concentration in the bulk solution", ":math:`mol\ m^{-3}`"
    ":math:`D_s`", "Diffusivity of the salt molecular in the bulk solution", ":math:`m^2 s^{-1}`"
    ":math:`i_{lim}`", "Limiting current density ", ":math:`A m^{-2}`"
-   ":math:`\lambda`", "equivalent conductivity of the solution", ":math:`m^2 \Omega^{-1} mol^{-1} `"
+   ":math:`\lambda`", "equivalent conductivity of the solution", ":math:`m^2 \Omega^{-1} mol^{-1}`"
 
 
    "**Subscripts and superscripts**"
