@@ -217,7 +217,7 @@ Some other modifications to previously defined equations are made to accommodate
 .. csv-table:: **Table 6** Other equation modifications under extensions
    :header: "Original equation description", "Equation replacement", "Condition"
 
-   "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x) ` \ :sup:`1`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
+   "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x)` \ :sup:`1`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d- \delta_{cem}^L(x) - \delta_{aem}^R(x)}{\kappa^C(x)}+\frac{d- \delta_{cem}^R(x) - \delta_{aem}^L(x)}{\kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
    "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
    "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
