@@ -26,7 +26,7 @@ default:
       units: dimensionless
       constituent_longform: Total Suspended Solids
     oxygen:
-      value: 0              # Reactive removal is handled in reaction
+      value: 1              # Reactive removal is handled in reaction
       units: dimensionless
       constituent_longform: Oxygen
     cod:

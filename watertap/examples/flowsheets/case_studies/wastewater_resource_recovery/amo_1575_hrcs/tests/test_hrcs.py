@@ -39,15 +39,13 @@ class TestHRCSFlowsheet:
     def test_build(self, system_frame):
         m = system_frame
         assert_units_consistent(m)
-        assert_degrees_of_freedom(m, 18)
+        assert_degrees_of_freedom(m, 19)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
         set_operating_conditions(m)
         initialize_system(m)
-
-        m.fs.feed.display()
 
         # test feed water flow
         assert value(m.fs.feed.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
@@ -72,9 +70,6 @@ class TestHRCSFlowsheet:
         results = solve(m)
         assert_optimal_termination(results)
 
-        m.fs.product.display()
-        m.fs.disposal.display()
-
         # check product flow
         assert value(m.fs.product.properties[0].flow_mass_comp["H2O"]) == pytest.approx(
             13127.656969, rel=1e-3
@@ -87,7 +82,7 @@ class TestHRCSFlowsheet:
         )
         assert value(
             m.fs.product.properties[0].flow_mass_comp["oxygen"]
-        ) == pytest.approx(7.680764, rel=1e-3)
+        ) == pytest.approx(1e-17, rel=1e-3)
         assert value(
             m.fs.product.properties[0].flow_mass_comp["carbon_dioxide"]
         ) == pytest.approx(0, abs=1e-6)
@@ -104,7 +99,7 @@ class TestHRCSFlowsheet:
         ) == pytest.approx(0, rel=1e-3)
         assert value(
             m.fs.disposal.properties[0].flow_mass_comp["oxygen"]
-        ) == pytest.approx(0, abs=1e-6)
+        ) == pytest.approx(7.680764, abs=1e-6)
         assert value(
             m.fs.disposal.properties[0].flow_mass_comp["carbon_dioxide"]
         ) == pytest.approx(1.718166, rel=1e-3)
@@ -121,7 +116,7 @@ class TestHRCSFlowsheet:
 
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(
-            0.00684983, rel=1e-3
+            0.012391297, rel=1e-3
         )  # in $/m**3
 
     @pytest.mark.component

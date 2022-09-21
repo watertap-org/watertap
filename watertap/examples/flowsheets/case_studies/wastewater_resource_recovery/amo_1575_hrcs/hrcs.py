@@ -96,7 +96,11 @@ def build():
     m.fs.HRCS = HRCSZO(property_package=m.fs.prop, database=m.db)
 
     # clarifier treatment
-    m.fs.clarifier = ClarifierZO(property_package=m.fs.prop, database=m.db)
+    m.fs.clarifier = ClarifierZO(
+        property_package=m.fs.prop,
+        database=m.db,
+        process_subtype="HRCS_clarifier",
+    )
 
     # product and waste streams
     m.fs.product = Product(property_package=m.fs.prop)
