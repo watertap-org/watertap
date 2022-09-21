@@ -45,13 +45,20 @@ class CentrifugeZOData(ZeroOrderBaseData):
             bounds=(0, None),
             doc="Dosing rate of polymer",
         )
-
         self._fixed_perf_vars.append(self.polymer_dose)
+        self._perf_var_dict["Dosage of polymer per sludge"] = self.polymer_dose
 
-        self._perf_var_dict["Polymer Dose (mg/L)"] = self.polymer_dose
+        self.polymer_demand = Var(
+            self.flowsheet().time,
+            units=pyunits.kg / pyunits.hr,
+            bounds=(0, None),
+            doc="Consumption rate of polymer",
+        )
+        self._perf_var_dict["Polymer Demand"] = self.polymer_demand
 
-        def rule_chem_flow(blk, t, j):
-            return blk.chemical_flow_mass[t, j] == pyunits.convert(
-                polymer_dose * blk.properties[t].flow_vol,
-                to_units=pyunits.kg / pyunits.s,
+        @self.Constraint(self.flowsheet().time, doc="Polymer demand constraint")
+        def polymer_demand_equation(b, t):
+            return b.polymer_demand[t] == pyunits.convert(
+                b.polymer_dose[t] * b.properties_in[t].flow_vol,
+                to_units=pyunits.kg / pyunits.hr,
             )

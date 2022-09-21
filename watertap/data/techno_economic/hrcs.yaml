@@ -5,9 +5,6 @@ default:
   capital_cost:
     basis: flow_vol
     cost_factor: None
-    reference_state:
-      value: 47317.6
-      units: m^3/hr
     SRT: # Solids retention time
       value: 2.3
       units: hr

@@ -35,6 +35,7 @@ from watertap.unit_models.zero_order import (
     CentrifugeZO,
     ChemicalAdditionZO,
     ChlorinationZO,
+    ClarifierZO,
     CoagulationFlocculationZO,
     CofermentationZO,
     ConstructedWetlandsZO,
@@ -3021,11 +3022,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        ref_state, HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["reference_state", "HRT", "sizing_cost"],
+            ["HRT", "sizing_cost"],
         )
 
         # Add cost variable and constraint
@@ -3037,7 +3038,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost,
+            blk.unit_model.properties_in[t0].flow_vol * HRT * size_cost,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
@@ -3071,11 +3072,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        ref_state, SRT, size_cost = _get_tech_parameters(
+        SRT, size_cost = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["reference_state", "SRT", "sizing_cost"],
+            ["SRT", "sizing_cost"],
         )
 
         # Add cost variable and constraint
@@ -3087,7 +3088,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * SRT * size_cost,
+            blk.unit_model.properties_in[t0].flow_vol * SRT * size_cost,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
@@ -3104,9 +3105,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
-        )
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride"
         )
 
     def cost_centrifuge(blk):
@@ -3121,11 +3119,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        ref_state, HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["reference_state", "HRT", "sizing_cost"],
+            ["HRT", "sizing_cost"],
         )
 
         # Add cost variable and constraint
@@ -3137,7 +3135,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost,
+            blk.unit_model.properties_in[t0].flow_vol * HRT * size_cost,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
@@ -3154,6 +3152,85 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.polymer_demand[t0], "polymer"
+        )
+
+    def cost_clarifier(blk, number_of_parallel_units=1):
+        """
+        General method for costing clarifiers. Costing is carried out
+        using either the general_power_law form or the standard form which
+        computes HRT and sizing costs.
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        # Get cost method for this technology
+        cost_method = _get_unit_cost_method(blk)
+        valid_methods = ["cost_power_law_flow", "cost_HRCS_clarifier"]
+        if cost_method == "cost_power_law_flow":
+            ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
+        elif cost_method == "cost_HRCS_clarifier":
+            # NOTE: number of units does not matter for cost_HRCS_clarifier
+            #       as its a linear function of membrane area
+            ZeroOrderCostingData.cost_HRCS_clarifier(blk)
+        else:
+            raise KeyError(
+                f"{cost_method} is not a relevant cost method for "
+                f"{blk.unit_model._tech_type}. Specify one of the following "
+                f"cost methods in the unit's YAML file: {valid_methods}"
+            )
+
+    def cost_HRCS_clarifier(blk):
+        """
+        Method for costing a clarifier unit in a high-rate contact stabilization (HRCS) process.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        HRT, size_cost = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["HRT", "sizing_cost"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * HRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride"
         )
 
     def cost_peracetic_acid(blk):
@@ -3215,11 +3292,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        ref_state, HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["reference_state", "HRT", "sizing_cost"],
+            ["HRT", "sizing_cost"],
         )
 
         # Add cost variable and constraint
@@ -3231,7 +3308,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            ref_state * HRT * size_cost,
+            blk.unit_model.properties[t0].flow_vol * HRT * size_cost,
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
@@ -3248,6 +3325,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties[t0].flow_mass_comp["struvite"],
+            "struvite_product",
         )
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
@@ -3360,6 +3442,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         BrineConcentratorZO: cost_brine_concentrator,
         ChemicalAdditionZO: cost_chemical_addition,
         ChlorinationZO: cost_chlorination,
+        ClarifierZO: cost_clarifier,
         CoagulationFlocculationZO: cost_coag_and_floc,
         CofermentationZO: cost_cofermentation,
         ConstructedWetlandsZO: cost_constructed_wetlands,

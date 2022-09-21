@@ -386,7 +386,6 @@ def test_costing():
     assert isinstance(m.fs.costing.hrcs, Block)
     assert isinstance(m.fs.costing.hrcs.SRT, Var)
     assert isinstance(m.fs.costing.hrcs.sizing_cost, Var)
-    assert isinstance(m.fs.costing.hrcs.reference_state, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
@@ -396,7 +395,3 @@ def test_costing():
     initialization_tester(m)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert (
-        m.fs.unit.ferric_chloride_demand[0]
-        in m.fs.costing._registered_flows["ferric_chloride"]
-    )

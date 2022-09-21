@@ -47,9 +47,7 @@ class TestCentrifugeZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["phosphates", "struvite"]}
-        )
+        m.fs.params = WaterParameterBlock(solute_list=["phosphates", "struvite"])
 
         m.fs.unit = CentrifugeZO(property_package=m.fs.params, database=m.db)
 
@@ -65,9 +63,11 @@ class TestCentrifugeZO:
         assert model.fs.unit._tech_type == "centrifuge"
 
         assert isinstance(model.fs.unit.polymer_dose, Var)
+        assert isinstance(model.fs.unit.polymer_demand, Var)
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.polymer_demand_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -148,6 +148,9 @@ class TestCentrifugeZO:
         assert pytest.approx(1.000054e-10, abs=1e-5) == value(
             model.fs.unit.electricity[0]
         )
+        assert pytest.approx(0.03636, rel=1e-5) == value(
+            model.fs.unit.polymer_demand[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -177,30 +180,44 @@ def test_costing():
         default={"solute_list": ["phosphates", "struvite"]}
     )
 
-    m.fs.costing = ZeroOrderCosting()
-
-    m.fs.unit1 = CentrifugeZO(
-        default={"property_package": m.fs.params, "database": m.db}
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "examples",
+        "flowsheets",
+        "case_studies",
+        "wastewater_resource_recovery",
+        "amo_1575_magprex",
+        "magprex_case_1575.yaml",
     )
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "phosphates"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "struvite"].fix(0)
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit = CentrifugeZO(property_package=m.fs.params, database=m.db)
+
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "struvite"].fix(0)
+
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.centrifuge, Block)
     assert isinstance(m.fs.costing.centrifuge.HRT, Var)
     assert isinstance(m.fs.costing.centrifuge.sizing_cost, Var)
 
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
+    initialization_tester(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
-    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.polymer_demand[0] in m.fs.costing._registered_flows["polymer"]

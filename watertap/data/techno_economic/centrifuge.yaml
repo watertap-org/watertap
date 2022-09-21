@@ -5,9 +5,6 @@ default:
   capital_cost:
     basis: flow_vol
     cost_factor: None
-    reference_state:
-      value: 100    # Placeholder value
-      units: m^3/hr
     HRT: # Hydraulic retention time
       value: 0.5
       units: hr

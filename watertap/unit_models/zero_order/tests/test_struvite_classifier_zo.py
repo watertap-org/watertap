@@ -122,7 +122,20 @@ def test_costing():
 
     m.fs.params = WaterParameterBlock(default={"solute_list": ["struvite"]})
 
-    m.fs.costing = ZeroOrderCosting()
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "examples",
+        "flowsheets",
+        "case_studies",
+        "wastewater_resource_recovery",
+        "amo_1575_magprex",
+        "magprex_case_1575.yaml",
+    )
+
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
 
     m.fs.unit1 = StruviteClassifierZO(
         default={"property_package": m.fs.params, "database": m.db}
@@ -148,3 +161,7 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit1) == 0
 
     assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert (
+        m.fs.unit1.properties[0].flow_mass_comp["struvite"]
+        in m.fs.costing._registered_flows["struvite_product"]
+    )

@@ -189,11 +189,62 @@ def add_costing(m):
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
-    m.fs.costing.LCOS = Expression(
+    m.fs.costing.annual_water_production = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.centrate.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.annual_water_inlet = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.total_annualized_cost = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
         )
+    )
+
+    m.fs.costing.LCOW_with_revenue = Expression(
+        expr=(
+            (
+                m.fs.costing.total_annualized_cost
+                + m.fs.costing.aggregate_flow_costs["struvite_product"]
+                + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
+                + m.fs.costing.aggregate_flow_costs["polymer"]
+            )
+            / m.fs.costing.annual_water_production
+        ),
+        doc="Levelized Cost of Water With Revenue",
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_water_inlet),
+        doc="Levelized Cost of Treatment Without Revenue",
+    )
+
+    m.fs.costing.LCOT_with_revenue = Expression(
+        expr=(
+            (
+                m.fs.costing.total_annualized_cost
+                + m.fs.costing.aggregate_flow_costs["struvite_product"]
+                + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
+                + m.fs.costing.aggregate_flow_costs["polymer"]
+            )
+            / m.fs.costing.annual_water_inlet
+        ),
+        doc="Levelized Cost of Treatment With Revenue",
+    )
+
+    m.fs.costing.LCOS = Expression(
+        expr=(m.fs.costing.total_annualized_cost)
         / (
             m.fs.costing.utilization_factor
             * pyunits.convert(
@@ -228,7 +279,7 @@ def display_results(m):
 
 
 def display_costing(m):
-    print("\nUnit Capital Costs\n")
+    print("\n----------Unit Capital Costs----------\n")
     for u in m.fs.costing._registered_unit_costing:
         print(
             u.name,
@@ -236,41 +287,67 @@ def display_costing(m):
                 price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
             ),
         )
-    print("\nUtility Costs\n")
+    print("\n----------Utility Costs----------\n")
     for f in m.fs.costing.flow_types:
         print(
             f,
-            " :    {price:0.3f} M$/year".format(
+            " :    {price:0.3f} $/year".format(
                 price=value(
                     pyunits.convert(
                         m.fs.costing.aggregate_flow_costs[f],
-                        to_units=pyunits.MUSD_2018 / pyunits.year,
+                        to_units=pyunits.USD_2018 / pyunits.year,
                     )
                 )
             ),
         )
 
-    print("")
+    print("\n----------Total Costs----------\n")
+
     total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.USD_2018)
     )
-    print(f"Total Capital Costs: {total_capital_cost:.3f} M$")
+    print(f"Total Capital Costs: {total_capital_cost:.3f} $")
+
     total_operating_cost = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.fs.costing.total_operating_cost, to_units=pyunits.USD_2018 / pyunits.year
         )
     )
-    print(f"Total Operating Costs: {total_operating_cost:.3f} M$/year")
+    print(f"Total Operating Costs: {total_operating_cost:.3f} $/year")
     electricity_intensity = value(
         pyunits.convert(
             m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
         )
     )
+
     print(f"Electricity Intensity: {electricity_intensity:.3f} kWh/m^3")
+
+    print("\n----------Levelized Costs----------\n")
+
+    LCOW_with_revenue = value(
+        pyunits.convert(
+            m.fs.costing.LCOW_with_revenue,
+            to_units=m.fs.costing.base_currency / pyunits.m**3,
+        )
+    )
+    print(
+        f"Levelized Cost of Water with Revenue: {LCOW_with_revenue:.4f} $/m3 of product"
+    )
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+    print(f"Levelized Cost of Water Without Revenue: {LCOW:.3f} $/m^3")
+
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Treatment: {LCOT:.3f} $/m^3")
+    LCOT_with_revenue = value(
+        pyunits.convert(
+            m.fs.costing.LCOT_with_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+        )
+    )
+    print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
 
     LCOS = value(
         pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
