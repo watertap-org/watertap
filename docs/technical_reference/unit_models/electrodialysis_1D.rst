@@ -200,7 +200,7 @@ electrolyte such as NaCl.
    :header: "Description", "Equation", "Condition"
 
    "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R(x)}{c_s^L(x)} \right)`", "`has_nonohmic_potential_membrane == True`"
-   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
+   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
    "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
    "NDL thickness, cem", ":math:`\delta^{L/R}(x) = \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+ \right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
    "NDL thickness, aem", ":math:`\delta^{L/R}(x) = - \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+\right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
