@@ -167,10 +167,10 @@ to simulate these processes are well developed and some good summaries for the e
    :header: "Description", "Equation", "Index set"
 
    "Component mass balance", ":math:`\left(\frac{\partial N_j (x)}{\partial x}\right)^{C\: or\:  D}+J_j(x)^{C\: or\:  D} b=0`", ":math:`j \in \left['H_2 O', '{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j(x)^C-c_j(x)^D \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
-   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
-   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}-\left(L^{cem}+L^{aem} \right)\left(p_{osm}(x)^C-p_{osm}(x)^D \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C(x)-c_j^D(x) \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
+   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}} +\frac{D_j^{aem}}{\delta ^{aem}}\right)\left(c_j^C(x)-c_j^D(x) \right)`", ":math:`j \in \left['{Na^{+}} ', '{Cl^{-}} '\right]`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C(x)-p_{osm}^D(x) \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}-\left(L^{cem}+L^{aem} \right)\left(p_{osm}^C(x)-p_{osm}^D(x) \right)\frac{\rho_w}{M_w}`", ":math:`j \in \left['H_2 O'\right]`"
 
 Additionally, several other equations are built to describe the electrochemical principles and electrodialysis performance.
 
@@ -179,10 +179,10 @@ Additionally, several other equations are built to describe the electrochemical 
 
    "Electrical input condition", ":math:`i(x) = \frac{I}{bl}`, for 'Constant_Current';  :math:`u(x) =U` for 'Constant_Voltage'"
    "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x)`"
-   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{s}{\kappa(x)^C}+\frac{s}{\kappa(x)^D}\right)+r_{el}`"
+   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d}{\kappa^C(x)}+\frac{d}{\kappa^D(x)}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P(x)=b\int _0 ^l u(x)i(x) dx`"
    "Water-production-specific power consumption", ":math:`P_Q=\frac{P(x=l)}{3.6\times 10^6 nQ_{out}^D}`"
-   "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j (x)}{\partial x}\right)^D z_j F\right]}`"
+   "Current efficiency for desalination", ":math:`bi(x)\eta(x)=-\sum_{j \in[cation]}{\left[\left(\frac{\partial N_j ^D(x)}{\partial x}\right) z_j F\right]}`"
 
 All equations are coded as "constraints" (Pyomo). Isothermal and isobaric conditions apply.
 
@@ -196,30 +196,41 @@ account for electricity sinks in addition to ohmic resistance of the system and 
 to the real and non-ideal desalination conditions. **Table 5** presents the equations underlying the two extensions assuming a 1:1 symmetric 
 electrolyte such as NaCl. 
 
-.. csv-table:: **Table 5** Electrical and Performance Equations
+.. csv-table:: **Table 5** Essential equations supporting model extensions 
    :header: "Description", "Equation", "Condition"
 
    "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R(x)}{c_s^L(x)} \right)`", "`has_nonohmic_potential_membrane == True`"
-   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_s}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
+   "Ohmic potential, NDL", ":math:`\phi_d^{ohm}(x)=\frac{FD_b}{\left(t_+^{iem}-t_+\right)\lambda}\ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
    "Nonohmic potential, NDL", ":math:`\phi_d^{nonohm}(x)=\frac{RT}{F}\left(t_+-t_-\right) \ln\left(\frac{c_s^L(x)c_b^R(x)}{c_s^R(x)c_b^L(x)}\right)`", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, cem", ":math:`\delta^{L/R}(x) = \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+ \right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
-   "NDL thickness, aem", ":math:`\delta^{L/R}(x) = - \frac{F D_s c_b^{L/R}(x)}{\left(t_+^{iem}-t_+\right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
+   "NDL thickness, cem", ":math:`\delta^{L/R}(x) = \frac{F D_b c_b^{L/R}(x)}{\left(t_+^{iem}-t_+ \right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
+   "NDL thickness, aem", ":math:`\delta^{L/R}(x) = - \frac{F D_b c_b^{L/R}(x)}{\left(t_+^{iem}-t_+\right) i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
    "Concentration polarization ratio, cem", ":math:`\frac{c_s^L(x)}{c_b^L(x)} = 1+\frac{i(x)}{i_{lim}(x)},\qquad \frac{c_s^R(x)}{c_b^R(x)} = 1-\frac{i(x)}{i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True` \ :sup:`1`"
    "Concentration polarization ratio, aem", ":math:`\frac{c_s^L(x)}{c_b^L(x)} = 1-\frac{i(x)}{i_{lim}(x)},\qquad \frac{c_s^R(x)}{c_b^R(x)} = 1+\frac{i(x)}{i_{lim}(x)}`", "`has_Nernst_diffusion_layer==True`"
-   "Extended current-voltage relationship \ :sup:`2`", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x) ` \ :sup:`3`" 
+   
 
 **Note**
 
  :sup:`1` When this configuration is turned off, :math:`i_{lim}` is considered as :math:`\infty` and the ratio becomes 1.
- 
- :sup:`2` This replaces the "Ohm's law" that is used in non-extended model.
- 
- :sup:`3` :math:`\phi_m(x), \phi_d^{ohm}(x)` or  :math:`\phi_d^{nonohm}(x)` takes 0 if its corresponding configuration is turned off (`value == False`).
- 
 
+Some other modifications to previously defined equations are made to accommodate the two extensions.  These are shown in **Table 6**.
+
+.. csv-table:: **Table 6** Other equation modifications under extensions
+   :header: "Original equation description", "Equation replacement", "Condition"
+
+   "Ohm's law", ":math:`u(x) =  i(x) r_{tot}(x) + \phi_m(x) + \phi_d^{ohm}(x) + \phi_d^{nonohm}(x) ` \ :sup:`1`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
+   "Resistance calculation", ":math:`r_{tot}(x)=n\left(r^{cem}+r^{aem}+\frac{d- \delta_{cem}^L(x) - \delta_{aem}^R(x)}{\kappa^C(x)}+\frac{d- \delta_{cem}^R(x) - \delta_{aem}^L(x)}{\kappa^D(x)}\right)+r_{el}`", "`has_Nernst_diffusion_layer==True`"
+   "mass transfer flux, concentrate, solute", ":math:`J_j^{C} = \left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}-\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
+   "mass transfer flux, diluate, solute", ":math:`J_j^{D} = -\left(t_j^{cem}-t_j^{aem} \right)\frac{\xi i(x)}{ z_j F}+\left(\frac{D_j^{cem}}{\delta ^{cem}}\left(c_{s,j}^{L,cem}(x)-c_{s,j}^{R,cem}(x) \right) +\frac{D_j^{aem}}{\delta ^{aem}} \left(c_{s,j}^{R,aem}(x)-c_{s,j}^{L,aem}(x) \right)\right)`", "`has_nonohmic_potential_membrane == True` and/or \ `has_Nernst_diffusion_layer==True`"
+   "mass transfer flux, concentrate, H\ :sub:`2`\ O", ":math:`J_j^{C} = \left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}+\left(L^{cem} \left(p_{s, osm}^{cem, L}(x)-p_{s, osm}^{cem, R}(x) \right)+L^{aem} \left(p_{s, osm}^{aem, R}(x)-p_{s, osm}^{aem, L}(x) \right)\right)\frac{\rho_w}{M_w}`", "`has_Nernst_diffusion_layer==True`"
+   "mass transfer flux, diluate, H\ :sub:`2`\ O", ":math:`J_j^{D} = -\left(t_w^{cem}+t_w^{aem} \right)\frac{i(x)}{F}-\left(L^{cem} \left(p_{s, osm}^{cem, L}(x)-p_{s, osm}^{cem, R}(x) \right)+L^{aem} \left(p_{s, osm}^{aem, R}(x)-p_{s, osm}^{aem, L}(x) \right)\right)\frac{\rho_w}{M_w}`", "`has_Nernst_diffusion_layer==True`"
+
+**Note**
+
+ :sup:`1` :math:`\phi_m(x), \phi_d^{ohm}(x)` or  :math:`\phi_d^{nonohm}(x)` takes 0 if its corresponding configuration is turned off (`value == False`).
+ 
 Nomenclature
 ------------
-.. csv-table:: **Table 6.** Nomenclature
+.. csv-table:: **Table 7.** Nomenclature
    :header: "Symbol", "Description", "Unit"
    :widths: 10, 20, 10
 
@@ -242,14 +253,14 @@ Nomenclature
    ":math:`F`", "Faraday constant", ":math:`C\ mol^{-1}`"
    ":math:`D`", "Ion Diffusivity", ":math:`m^2 s^{-1}`"
    ":math:`\delta`", "Membrane thickness", ":math:`m`"
-   ":math:`c`", "Solute concentration", ":math:`mol\ m^{-3}`"
+   ":math:`c` \ :sup:`1`", "Solute concentration", ":math:`mol\ m^{-3}`"
    ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
    ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
    ":math:`p_{osm}`", "Osmotic pressure", ":math:`Pa`"
    ":math:`r_{tot}`", "Total areal resistance", ":math:`\Omega m^2`"
    ":math:`r`", "Membrane areal resistance", ":math:`\Omega m^2`"
    ":math:`r_{el}`", "Electrode areal resistance", ":math:`\Omega m^2`"
-   ":math:`s`", "Spacer thickness", ":math:`m`"
+   ":math:`d`", "Spacer thickness", ":math:`m`"
    ":math:`\kappa`", "Solution conductivity", ":math:`S m^{-1}\ or\  \Omega^{-1} m^{-1}`"
    ":math:`\eta`", "Current efficiency for desalination", "dimensionless"
    ":math:`P`", "Power consumption", ":math:`W`"
@@ -258,12 +269,9 @@ Nomenclature
    ":math:`\phi_m`", "Nonohmic potential across a membrane", ":math:`V`"
    ":math:`\phi_d^{ohm}`", "Ohmic potential across a Nernst diffusion layer", ":math:`V`"
    ":math:`\phi_d^{nonohm}`", "Nonohmic potential across a Nernst diffusion layer", ":math:`V`"
-   ":math:`c_s`", "Salt molar concentration at the membrane surface", ":math:`mol\ m^{-3}`"
-   ":math:`c_b`", "Salt molar concentration in the bulk solution", ":math:`mol\ m^{-3}`"
-   ":math:`D_s`", "Diffusivity of the salt molecular in the bulk solution", ":math:`m^2 s^{-1}`"
+   ":math:`D_b`", "Diffusivity of the salt molecular in the bulk solution", ":math:`m^2 s^{-1}`"
    ":math:`i_{lim}`", "Limiting current density ", ":math:`A m^{-2}`"
    ":math:`\lambda`", "equivalent conductivity of the solution", ":math:`m^2 \Omega^{-1} mol^{-1}`"
-
 
    "**Subscripts and superscripts**"
    ":math:`C`", "Concentrate channel",
@@ -277,8 +285,13 @@ Nomenclature
    ":math:`L`", "The left side of a membrane, facing the cathode",
    ":math:`R`", "The right side of a membrane, facing the anode",
    ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
+   ":math:`s`", "location of the membrane surface",
+   ":math:`b`", "location of bulk solution",
    ":math:`+` or :math:`-` ", "mono-cation or mono-anion",
 
+**Note**
+
+ :sup:`1` When no component subscript (j), :math:`c` refers to the concentration of the salt molecules (e.g., NaCl)
 
 
 References
@@ -290,3 +303,9 @@ Strathmann, H. (2004). Ion-exchange membrane separation processes. Elsevier. Ch.
 
 Campione, A., Cipollina, A., Bogle, I. D. L., Gurreri, L., Tamburini, A., Tedesco, M., & Micale, G. (2019).
 A hierarchical model for novel schemes of electrodialysis desalination. Desalination, 465, 79-93.
+
+Campione, A., Gurreri, L., Ciofalo, M., Micale, G., Tamburini, A., & Cipollina, A. (2018). 
+Electrodialysis for water desalination: A critical assessment of recent developments on process 
+fundamentals, models and applications. Desalination, 434, 121-160.
+
+Spiegler, K. S. (1971). Polarization at ion exchange membrane-solution interfaces. Desalination, 9(4), 367-385.
