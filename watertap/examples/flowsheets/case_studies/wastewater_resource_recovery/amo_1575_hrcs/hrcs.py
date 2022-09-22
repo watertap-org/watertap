@@ -66,6 +66,7 @@ def main():
     results = solve(m)
     assert_optimal_termination(results)
     display_costing(m)
+    display_additional_results(m)
 
     return m, results
 
@@ -263,8 +264,8 @@ def add_costing(m):
 
     m.fs.costing.total_annualized_cost = Expression(
         expr=(
-            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
-            + m.fs.costing.total_operating_cost
+            m.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.total_operating_cost
         )
     )
 
@@ -301,6 +302,32 @@ def display_results(m):
     for u in unit_list:
         m.fs.component(u).report()
 
+    print("\n----------Performance Metrics----------\n")
+    volumetric_recovery = value(
+        m.fs.product.properties[0].flow_vol / m.fs.feed.properties[0].flow_vol
+    )
+    print(f"Volumetric recovery: {volumetric_recovery:.4f} m3 of product/m3 of feed")
+
+    sys_water_recovery = (
+        m.fs.product.flow_mass_comp[0, "H2O"]() / m.fs.feed.flow_mass_comp[0, "H2O"]()
+    )
+    print(f"Water Recovery: {sys_water_recovery*100 : .3f} %")
+
+    # Recycle stream messes with this value since it assumes 100% recycle
+    # carbon_capture = value(
+    #     (m.fs.clarifier.byproduct.flow_mass_comp[0,"cod"]()
+    #     + m.fs.product.flow_mass_comp[0,"cod"]()
+    #     )/ m.fs.feed.flow_mass_comp[0,"cod"]
+    # )
+    # print(f"Carbon Capture: {carbon_capture*100 : .3f} %")
+    # orthophosphate_removal = value(
+    #     pyunits.convert(
+    #         m.fs.product.conc_mass_comp[0, "tss"](),
+    #         to_units=pyunits.mg / pyunits.liter
+    #     )
+    # )
+    # print(f"Orthophosphate Removal: {orthophosphate_removal : .3f} mg/L")
+
 
 def display_costing(m):
 
@@ -312,6 +339,7 @@ def display_costing(m):
                 price=value(pyunits.convert(u.capital_cost, to_units=pyunits.MUSD_2018))
             ),
         )
+
     print("\n----------Utility Costs----------\n")
     for f in m.fs.costing.flow_types:
         print(
@@ -326,26 +354,50 @@ def display_costing(m):
             ),
         )
 
+    ferric_chloride_cost = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["ferric_chloride"],
+            to_units=pyunits.USD_2018 / pyunits.year,
+        )
+        / pyunits.convert(
+            m.fs.product.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+    )
+    print(f"ferric chloride: { ferric_chloride_cost: .4f} $/m3 of product")
+
     print("\n----------Total Costs----------\n")
 
-    total_capital_cost = value(
-        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.USD_2018)
+    total_annualized_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_annualized_cost,
+            to_units=pyunits.MUSD_2018 / pyunits.year,
+        )
     )
-    print(f"Total Capital Costs: {total_capital_cost:.3f} $")
+    print(f"Total Annual Cost: { total_annualized_cost: .4f} $M/year")
+
+    total_capital_cost = value(
+        pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2018)
+    )
+    print(f"Total Capital Costs: {total_capital_cost:.3f} $M")
 
     total_operating_cost = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+            m.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.3f} $M/year")
 
-    electricity_intensity = value(
+    opex_fraction = 100 * value(total_operating_cost / total_annualized_cost)
+    print(f"Opex Fraction of Annual Cost: {opex_fraction:.4f} %")
+
+    SEC = value(
         pyunits.convert(
-            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+            m.fs.costing.aggregate_flow_electricity
+            / m.fs.product.properties[0].flow_vol,
+            to_units=pyunits.kWh / pyunits.m**3,
         )
     )
-    print(f"Electricity Intensity: {electricity_intensity:.3f} kWh/m^3")
+    print(f"Specific electricity consumption: {SEC:.4f} kWh/m3 of product")
 
     print("\n----------Levelized Costs----------\n")
 
@@ -361,18 +413,61 @@ def display_costing(m):
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+    print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3 of product")
 
     LCOT_with_revenue = value(
         pyunits.convert(
-            m.fs.costing.LCOT_with_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+            m.fs.costing.LCOT_with_revenue, to_units=pyunits.USD_2018 / pyunits.m**3
         )
     )
     print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
     LCOT = value(
-        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
     print(f"Levelized Cost of Treatment: {LCOT:.3f} $/m^3")
+
+
+def display_additional_results(m):
+    print("\n----------Outlets----------\n")
+    product_H2O_flow = value(
+        pyunits.convert(
+            m.fs.product.properties[0].flow_vol,
+            to_units=pyunits.m**3 / pyunits.hr,
+        )
+    )
+    print(f"H2O outlet flow: {product_H2O_flow:.4f} m3/h")
+
+    product_H2O_tss = value(
+        pyunits.convert(
+            m.fs.product.properties[0].conc_mass_comp["tss"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet tss conc: {product_H2O_tss:.4f} g/L")
+
+    product_H2O_cod = value(
+        pyunits.convert(
+            m.fs.product.properties[0].conc_mass_comp["cod"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet cod conc: {product_H2O_cod:.4f} g/L")
+
+    product_H2O_oxgyen = value(
+        pyunits.convert(
+            m.fs.product.properties[0].conc_mass_comp["oxygen"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet oxygen conc: {product_H2O_oxgyen:.4f} g/L")
+
+    product_H2O_carbon_dioxide = value(
+        pyunits.convert(
+            m.fs.product.properties[0].conc_mass_comp["carbon_dioxide"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet CO2 conc: {product_H2O_carbon_dioxide:.4f} g/L")
 
 
 if __name__ == "__main__":

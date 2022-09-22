@@ -176,6 +176,7 @@ def add_costing(m):
 
     # add costing block
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+
     m.fs.magprex.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.centrifuge.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing
@@ -301,6 +302,39 @@ def display_costing(m):
             ),
         )
 
+    magnesium_chloride_cost = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["magnesium_chloride"],
+            to_units=pyunits.USD_2018 / pyunits.year,
+        )
+        / pyunits.convert(
+            m.fs.centrate.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+    )
+    print(f"magnesium chloride: { magnesium_chloride_cost: .4f} $/m3 of centrate")
+
+    polymer_cost = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["polymer"],
+            to_units=pyunits.USD_2018 / pyunits.year,
+        )
+        / pyunits.convert(
+            m.fs.centrate.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+    )
+    print(f"polymer: { polymer_cost: .4f} $/m3 of centrate")
+
+    struvite_cost = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["struvite_product"],
+            to_units=pyunits.USD_2018 / pyunits.year,
+        )
+        / pyunits.convert(
+            m.fs.centrate.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.year
+        )
+    )
+    print(f"struvite: { struvite_cost: .4f} $/m3 of centrate")
+
     print("\n----------Total Costs----------\n")
 
     total_capital_cost = value(
@@ -331,12 +365,12 @@ def display_costing(m):
         )
     )
     print(
-        f"Levelized Cost of Water with Revenue: {LCOW_with_revenue:.4f} $/m3 of product"
+        f"Levelized Cost of Water with Revenue: {LCOW_with_revenue:.4f} $/m3 of centrate"
     )
     LCOW = value(
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
-    print(f"Levelized Cost of Water Without Revenue: {LCOW:.3f} $/m^3")
+    print(f"Levelized Cost of Water Without Revenue: {LCOW:.3f} $/m^3 of centrate")
 
     LCOT = value(
         pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
