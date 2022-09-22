@@ -518,7 +518,7 @@ class TestGACMulti:
                     "BGCAT": 0.1,
                     "BGAN": 0.1,
                 },
-                "charge": {"TCE": 0, "BGSOL": 0, "BGCAT": 1, "BGAN": -2},
+                "charge": {"BGCAT": 1, "BGAN": -2},
             }
         )
 
