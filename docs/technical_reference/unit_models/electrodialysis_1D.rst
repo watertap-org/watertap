@@ -260,7 +260,7 @@ Nomenclature
    ":math:`z`", "Ion charge", "dimensionless"
    ":math:`F`", "Faraday constant", ":math:`C\ mol^{-1}`"
    ":math:`D`", "Ion Diffusivity", ":math:`m^2 s^{-1}`"
-   ":math:`\delta`", "Membrane thickness", ":math:`m`"
+   ":math:`\delta`", "Layer thickness, membrane or NDL", ":math:`m`"
    ":math:`c` \ :sup:`1`", "Solute concentration", ":math:`mol\ m^{-3}`"
    ":math:`t_w`", "Water electroosmotic transport number", "dimensionless"
    ":math:`L`", "Water permeability (osmosis)", ":math:`ms^{-1}Pa^{-1}`"
