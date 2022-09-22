@@ -3161,7 +3161,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         General method for costing clarifiers. Costing is carried out
         using either the general_power_law form or the standard form which
-        computes HRT and sizing costs.
+        computes HRT, sizing costs, and chemical input costs.
         Args:
             number_of_parallel_units (int, optional) - cost this unit as
                         number_of_parallel_units parallel units (default: 1)
