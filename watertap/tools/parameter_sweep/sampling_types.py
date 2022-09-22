@@ -14,30 +14,15 @@
 # sampling.py - This file contains all of the sampling classes
 
 import numpy as np
-import pyomo.environ as pyo
-import sys
 
-from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC
-from idaes.core.util import get_solver
-
-from idaes.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet
-from pyomo.common.tee import capture_output
-
-np.set_printoptions(linewidth=200)
-
-# ================================================================
 
 
 class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
     RANDOM_LHS = auto()
-
-
-# ================================================================
 
 
 class _Sample(ABC):
@@ -68,18 +53,12 @@ class _Sample(ABC):
         pass
 
 
-# ================================================================
-
-
 class RandomSample(_Sample):
     sampling_type = SamplingType.RANDOM
 
 
 class FixedSample(_Sample):
     sampling_type = SamplingType.FIXED
-
-
-# ================================================================
 
 
 class LinearSample(FixedSample):
@@ -92,8 +71,6 @@ class LinearSample(FixedSample):
         self.num_samples = num_samples
 
 
-# ================================================================
-
 class GeomSample(FixedSample):
     def sample(self, num_samples):
         return np.geomspace(
@@ -104,9 +81,6 @@ class GeomSample(FixedSample):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
         self.num_samples = num_samples
-
-
-# ================================================================
 
 
 class ReverseGeomSample(FixedSample):
@@ -124,8 +98,6 @@ class ReverseGeomSample(FixedSample):
         self.num_samples = num_samples
 
 
-# ================================================================
-
 class UniformSample(RandomSample):
     def sample(self, num_samples):
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
@@ -133,9 +105,6 @@ class UniformSample(RandomSample):
     def setup(self, lower_limit, upper_limit):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
-
-
-# ================================================================
 
 
 class NormalSample(RandomSample):
@@ -147,9 +116,6 @@ class NormalSample(RandomSample):
         self.sd = sd
 
 
-# ================================================================
-
-
 class LatinHypercubeSample(_Sample):
     sampling_type = SamplingType.RANDOM_LHS
 
@@ -159,6 +125,3 @@ class LatinHypercubeSample(_Sample):
     def setup(self, lower_limit, upper_limit):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
-
-
-# ================================================================

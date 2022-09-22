@@ -10,38 +10,33 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import os
-import sys
-from watertap.tools.parameter_sweep import (
-    LinearSample,
-    parameter_sweep,
-)
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal as electrochemical_nutrient_removal
+
+import os, sys
+
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+
+import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection as peracetic_acid_disinfection
 
 
 def set_up_sensitivity(m):
     outputs = {}
     optimize_kwargs = {"check_termination": False}
-    opt_function = electrochemical_nutrient_removal.solve
+    opt_function = peracetic_acid_disinfection.solve
 
     # create outputs
-    outputs["LCOW"] = m.fs.costing.LCOW
-    outputs["LCOS"] = m.fs.costing.LCOS
+    outputs["LCOT"] = m.fs.costing.LCOT
 
     return outputs, optimize_kwargs, opt_function
 
 
-def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, results_path=None):
-
-    m = electrochemical_nutrient_removal.main()[0]
-
+def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, save_path=None):
+    m = peracetic_acid_disinfection.main()[0]
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(m)
-
     sweep_params = {}
+
     if case_num == 1:
-        # sensitivity analysis
-        sweep_params["MgCl2_cost"] = LinearSample(
-            m.fs.costing.magnesium_chloride_cost, 135, 538, nx
+        sweep_params["disinfection_solution_cost"] = LinearSample(
+            m.fs.costing.disinfection_solution_cost, 2, 10, nx
         )
     else:
         raise ValueError(f"{case_num} is not yet implemented")
@@ -50,11 +45,13 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True, results_path=N
         m,
         sweep_params,
         outputs,
-        csv_results_file_name=results_path,
+        csv_results_file_name=save_path,
         optimize_function=opt_function,
         optimize_kwargs=optimize_kwargs,
         interpolate_nan_outputs=interpolate_nan_outputs,
     )
+
+    print(global_results)
 
     return global_results, sweep_params, m
 

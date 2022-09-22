@@ -11,26 +11,21 @@
 #
 ###############################################################################
 
-from watertap.tools.parameter_sweep import (
+from watertap.tools.parameter_sweep.sampling_types import (
     LinearSample,
     GeomSample,
     ReverseGeomSample,
     UniformSample,
     NormalSample,
     LatinHypercubeSample,
-    _read_output_h5,
 )
 import yaml
 import idaes.logger as idaeslog
-from abc import ABC
 
 _log = idaeslog.getLogger(__name__)
 
-class ParameterSweepReader(ABC):
 
-    def __init__(self):
-        pass
-
+class ParameterSweepReader:
     @staticmethod
     def _yaml_to_dict(yaml_filename):
         """Reads and stores a yaml file as a dictionary
@@ -56,7 +51,6 @@ class ParameterSweepReader(ABC):
             raise ValueError("Could not open file %s" % (yaml_filename))
 
         return input_dict
-
 
     def get_sweep_params_from_yaml(self, m, yaml_filename):
         """Creates a dictionary of swept model parameters specified via yaml file
@@ -95,7 +89,6 @@ class ParameterSweepReader(ABC):
 
         input_dict = self._yaml_to_dict(yaml_filename)
         return self._dict_to_params(m, input_dict)
-
 
     @staticmethod
     def _dict_to_params(m, input_dict):
@@ -149,7 +142,9 @@ class ParameterSweepReader(ABC):
                 )
 
             elif values["type"] == "NormalSample":
-                sweep_params[param] = NormalSample(component, values["mean"], values["std"])
+                sweep_params[param] = NormalSample(
+                    component, values["mean"], values["std"]
+                )
 
             elif values["type"] == "LatinHypercubeSample":
                 sweep_params[param] = LatinHypercubeSample(
@@ -163,7 +158,6 @@ class ParameterSweepReader(ABC):
         _log.debug(f"Property: {key}")
         _log.debug(f"New Value: {default_value:.6e}, Old Value: {component.value:.6e}")
         component.value = default_value
-
 
     def set_defaults_from_yaml(self, m, yaml_filename, verbose=False):
         """Sets default model values using values stored in a yaml file
@@ -218,3 +212,65 @@ class ParameterSweepReader(ABC):
         print(
             f"Set {number_defaults-fail_count} of {number_defaults} options to default values ({fail_count} failures, see warnings)"
         )
+
+
+def get_sweep_params_from_yaml(m, yaml_filename):
+    """Creates a dictionary of swept model parameters specified via yaml file
+
+    This function creates a dictionary of the items to vary during a parameter
+    sweep where the variable name, model attribute, and sweeping domain are
+    specified in a YAML file.  The YAML file should have the following format::
+
+        A_comp:
+            type: NormalSample
+            param: fs.RO.A_comp
+            mean: 4.0e-12
+            std: 0.5e-12
+
+    where the top-level keyword can be any short, easily understood identifier
+    for the parameter.  ``type`` must be one of ``LinearSample``, ``UniformSample``,
+    ``NormalSample``, or ``LatinHypercubeSample``.  ``param`` must be a valid
+    dot-sperated string path to the object attribute (in this case, an RO attribute
+    on the flowsheet ``m``) that you wish to vary.  The remaining arguments are
+    dependent on the sample type selected.  For ``NormalSample`` information about
+    the mean and standard deviation is required.  Consult the ``parameter_sweep``
+    help for more information on the different sample classes.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to deploy with the parameter sweep
+            tool.
+        yaml_filename (str):
+            The path to the yaml file.
+
+    Returns:
+        sweep_params (dict):
+            A dictionary containing different instances of parameter sweep samples
+
+    """
+    return ParameterSweepReader().get_sweep_params_from_yaml(m, yaml_filename)
+
+
+def set_defaults_from_yaml(m, yaml_filename, verbose=False):
+    """Sets default model values using values stored in a yaml file
+
+    This function reads a yaml file with the structure::
+
+        fs.path.to.attribute_1: 0.123
+        fs.path.to.attribute_2: 1.234
+        ...
+
+    and uses the (key, default_value) pairs to set default values
+    for the attributes in model ``m``.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to set default values for
+        yaml_filename (str):
+            The path to the yaml file.
+
+    Returns:
+        N/A
+
+    """
+    return ParameterSweepReader().set_defaults_from_yaml(m, yaml_filename, verbose)

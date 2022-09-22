@@ -12,7 +12,12 @@
 ###############################################################################
 import numpy as np
 
-class DummyMPI:
+
+class DummyCOMM:
+
+    rank = 0
+    size = 1
+
     @staticmethod
     def Get_rank():
         return 0
@@ -28,6 +33,10 @@ class DummyMPI:
     @staticmethod
     def Bcast(array, root=0):
         pass
+
+    @staticmethod
+    def bcast(array, root=0):
+        return array
 
     @staticmethod
     def allgather(value):

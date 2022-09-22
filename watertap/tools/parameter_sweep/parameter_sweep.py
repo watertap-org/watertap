@@ -12,46 +12,120 @@
 ###############################################################################
 import numpy as np
 import pyomo.environ as pyo
-import sys
-import os
-import itertools
 import warnings
 import copy, pprint
-import h5py
-import pathlib
 
-from scipy.interpolate import griddata
-from enum import Enum, auto
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
 from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
+from pyomo.common.config import ConfigValue
 
-from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.sampling_types import (SamplingType, LinearSample)
+from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
+from watertap.tools.parameter_sweep.sampling_types import SamplingType, LinearSample
 
-np.set_printoptions(linewidth=200)
+import watertap.tools.MPI as MPI
+
+
+def _default_optimize(model, options=None, tee=False):
+    """
+    Default optimization function used in parameter_sweep.
+    Optimizes ``model`` using the IDAES default solver.
+    Raises a RuntimeError if the TerminationCondition is not optimal
+
+    Arguments:
+
+        model : A Pyomo ConcreteModel to optimize
+
+        options (optional) : Solver options to pass into idaes.core.utils.get_solver.
+                             Default is None
+        tee (options) : To display the solver log. Default it False
+
+    """
+    solver = get_solver(options=options)
+    results = solver.solve(model, tee=tee)
+    return results
 
 
 class _ParameterSweepBase(ABC):
-    def __init__(self, *args, **kwargs):
-        self.comm = self._init_mpi()
+
+    CONFIG = ParameterSweepWriter.CONFIG()
+
+    CONFIG.declare(
+        "optimize_function",
+        ConfigValue(
+            default=_default_optimize,
+            # domain=function,
+            description="Optimization function to be used for the parameter sweep.",
+        ),
+    )
+
+    CONFIG.declare(
+        "optimize_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword argument for the optimization function for the parameter sweep.",
+        ),
+    )
+
+    CONFIG.declare(
+        "reinitialize_function",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function to reinitialize a flowsheet",
+        ),
+    )
+
+    CONFIG.declare(
+        "reinitialize_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Keyword arguments for the reinitialization function.",
+        ),
+    )
+
+    CONFIG.declare(
+        "reinitialize_before_sweep",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Reinitializing a model before every iteration.",
+        ),
+    )
+
+    CONFIG.declare(
+        "probe_function",
+        ConfigValue(
+            default=None,
+            # domain=function,
+            description="Function to probe if a flowsheet configuration will work",
+        ),
+    )
+
+    def __init__(
+        self,
+        **options,
+    ):
+
+        self.comm = options.pop("comm", MPI.COMM_WORLD)
         self.rank = self.comm.Get_rank()
         self.num_procs = self.comm.Get_size()
 
-    # ================================================================
+        self.config = self.CONFIG(options)
 
-    def _init_mpi(self):
-        try:
-            from mpi4py import MPI
-            return MPI.COMM_WORLD
-        except:
-            dummy_comm = DummyMPI()
-            return dummy_comm
-
-    # ================================================================
+        # Initialize the writer
+        self.writer = ParameterSweepWriter(
+            self.comm,
+            csv_results_file_name=self.config.csv_results_file_name,
+            h5_results_file_name=self.config.h5_results_file_name,
+            debugging_data_dir=self.config.debugging_data_dir,
+            interpolate_nan_outputs=self.config.interpolate_nan_outputs,
+        )
 
     def _build_combinations(self, d, sampling_type, num_samples):
         num_var_params = len(d)
@@ -118,8 +192,6 @@ class _ParameterSweepBase(ABC):
 
         return global_combo_array
 
-    # ================================================================
-
     def _divide_combinations(self, global_combo_array):
 
         # Split the total list of combinations into NUM_PROCS chunks,
@@ -131,8 +203,6 @@ class _ParameterSweepBase(ABC):
         local_combo_array = divided_combo_array[self.rank]
 
         return local_combo_array
-
-    # ================================================================
 
     def _update_model_values(self, m, param_dict, values):
 
@@ -151,8 +221,6 @@ class _ParameterSweepBase(ABC):
             else:
                 raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
-    # ================================================================
-
     def _aggregate_results_arr(self, global_results_dict, num_cases):
 
         global_results = np.zeros(
@@ -167,30 +235,6 @@ class _ParameterSweepBase(ABC):
             self.comm.Bcast(global_results, root=0)
 
         return global_results
-
-    # ================================================================
-
-    @staticmethod
-    def _default_optimize(model, options=None, tee=False):
-        """
-        Default optimization function used in parameter_sweep.
-        Optimizes ``model`` using the IDAES default solver.
-        Raises a RuntimeError if the TerminationCondition is not optimal
-
-        Arguments:
-
-            model : A Pyomo ConcreteModel to optimize
-
-            options (optional) : Solver options to pass into idaes.core.utils.get_solver.
-                                 Default is None
-            tee (options) : To display the solver log. Default it False
-
-        """
-        solver = get_solver(options=options)
-        results = solver.solve(model, tee=tee)
-        return results
-
-    # ================================================================
 
     def _process_sweep_params(self, sweep_params):
 
@@ -214,8 +258,6 @@ class _ParameterSweepBase(ABC):
 
         return sweep_params, sampling_type
 
-    # ================================================================
-
     def _create_local_output_skeleton(self, model, sweep_params, outputs, num_samples):
 
         output_dict = {}
@@ -228,9 +270,9 @@ class _ParameterSweepBase(ABC):
         for sweep_param in sweep_params.values():
             var = sweep_param.pyomo_object
             sweep_param_objs.add(var)
-            output_dict["sweep_params"][var.name] = self._create_component_output_skeleton(
-                var, num_samples
-            )
+            output_dict["sweep_params"][
+                var.name
+            ] = self._create_component_output_skeleton(var, num_samples)
 
         if outputs is None:
             # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
@@ -246,15 +288,11 @@ class _ParameterSweepBase(ABC):
         else:
             # Save only the outputs specified in the outputs dictionary
             for short_name, pyo_obj in outputs.items():
-                output_dict["outputs"][short_name] = self._create_component_output_skeleton(
-                    pyo_obj, num_samples
-                )
+                output_dict["outputs"][
+                    short_name
+                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         return output_dict
-
-
-    # ================================================================
-
 
     def _create_component_output_skeleton(self, component, num_samples):
 
@@ -277,8 +315,6 @@ class _ParameterSweepBase(ABC):
 
         return comp_dict
 
-    # ================================================================
-
     def _update_local_output_dict(
         self, model, sweep_params, case_number, sweep_vals, run_successful, output_dict
     ):
@@ -299,8 +335,6 @@ class _ParameterSweepBase(ABC):
         else:
             for label in output_dict["outputs"].keys():
                 output_dict["outputs"][label]["value"][case_number] = np.nan
-
-    # ================================================================
 
     def _create_global_output(self, local_output_dict, req_num_samples):
 
@@ -372,18 +406,13 @@ class _ParameterSweepBase(ABC):
 
         return global_output_dict
 
-    # ================================================================
+    def _param_sweep_kernel(self, model, reinitialize_values):
 
-    def _param_sweep_kernel(
-        self,
-        model,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_before_sweep,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_values,
-    ):
+        optimize_function = self.config.optimize_function
+        optimize_kwargs = self.config.optimize_kwargs
+        reinitialize_before_sweep = self.config.reinitialize_before_sweep
+        reinitialize_function = self.config.reinitialize_function
+        reinitialize_kwargs = self.config.reinitialize_kwargs
 
         run_successful = False  # until proven otherwise
 
@@ -428,107 +457,10 @@ class _ParameterSweepBase(ABC):
 
         return run_successful
 
-    # ================================================================
+    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
 
-    # def _do_param_sweep(
-    #     self,
-    #     model,
-    #     sweep_params,
-    #     outputs,
-    #     local_values,
-    #     optimize_function,
-    #     optimize_kwargs,
-    #     reinitialize_function,
-    #     reinitialize_kwargs,
-    #     reinitialize_before_sweep,
-    # ):
-    #
-    #     # Initialize space to hold results
-    #     local_num_cases = np.shape(local_values)[0]
-    #
-    #     # Create the output skeleton for storing detailed data
-    #     local_output_dict = self._create_local_output_skeleton(
-    #         model, sweep_params, outputs, local_num_cases
-    #     )
-    #
-    #     local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
-    #
-    #     local_solve_successful_list = []
-    #
-    #     # ================================================================
-    #     # Run all optimization cases
-    #     # ================================================================
-    #
-    #     for k in range(local_num_cases):
-    #         # Update the model values with a single combination from the parameter space
-    #         self._update_model_values(model, sweep_params, local_values[k, :])
-    #
-    #         run_successful = False  # until proven otherwise
-    #
-    #         # Forced reinitialization of the flowsheet if enabled
-    #         if reinitialize_before_sweep:
-    #             try:
-    #                 assert reinitialize_function is not None
-    #             except:
-    #                 raise ValueError(
-    #                     "Reinitialization function was not specified. The model will not be reinitialized."
-    #                 )
-    #             else:
-    #                 reinitialize_function(model, **reinitialize_kwargs)
-    #
-    #         try:
-    #             # Simulate/optimize with this set of parameter
-    #             with capture_output():
-    #                 results = optimize_function(model, **optimize_kwargs)
-    #             pyo.assert_optimal_termination(results)
-    #
-    #         except:
-    #             # run_successful remains false. We try to reinitialize and solve again
-    #             if reinitialize_function is not None:
-    #                 try:
-    #                     reinitialize_function(model, **reinitialize_kwargs)
-    #                     with capture_output():
-    #                         results = optimize_function(model, **optimize_kwargs)
-    #                     pyo.assert_optimal_termination(results)
-    #
-    #                 except:
-    #                     pass  # run_successful is still False
-    #                 else:
-    #                     run_successful = True
-    #
-    #         else:
-    #             # If the simulation suceeds, report stats
-    #             run_successful = True
-    #
-    #         # Update the loop based on the reinitialization
-    #         self._update_local_output_dict(
-    #             model,
-    #             sweep_params,
-    #             k,
-    #             local_values[k, :],
-    #             run_successful,
-    #             local_output_dict,
-    #         )
-    #
-    #         local_solve_successful_list.append(run_successful)
-    #
-    #     local_output_dict["solve_successful"] = local_solve_successful_list
-    #
-    #     return local_output_dict
-
-    def _do_param_sweep(
-        self,
-        model,
-        sweep_params,
-        outputs,
-        local_values,
-        optimize_function,
-        optimize_kwargs,
-        reinitialize_function,
-        reinitialize_kwargs,
-        reinitialize_before_sweep,
-        probe_function,
-    ):
+        # Create easy to read variables for configurations
+        probe_function = self.config["probe_function"]
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
@@ -542,7 +474,7 @@ class _ParameterSweepBase(ABC):
 
         local_solve_successful_list = []
 
-        if reinitialize_function is not None:
+        if self.config["reinitialize_function"] is not None:
             reinitialize_values = ComponentMap()
             for v in model.component_data_objects(pyo.Var):
                 reinitialize_values[v] = v.value
@@ -560,11 +492,6 @@ class _ParameterSweepBase(ABC):
             if probe_function is None or probe_function(model):
                 run_successful = self._param_sweep_kernel(
                     model,
-                    optimize_function,
-                    optimize_kwargs,
-                    reinitialize_before_sweep,
-                    reinitialize_function,
-                    reinitialize_kwargs,
                     reinitialize_values,
                 )
             else:
@@ -586,128 +513,17 @@ class _ParameterSweepBase(ABC):
 
         return local_output_dict
 
-    # ================================================================
-
     @abstractmethod
     def parameter_sweep(self, *args, **kwargs):
-        raise NotImplementedError
+        pass
 
-    # ================================================================
 
 class ParameterSweep(_ParameterSweepBase):
 
-    def __init__(self,
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir = None,
-        interpolate_nan_outputs = False,
-        *args,
-        **kwargs
-    ):
-
-        """
-        This function offers a general way to perform repeated optimizations
-        of a model for the purposes of exploring a parameter space while
-        monitoring multiple outputs.
-        If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
-
-        Arguments:
-
-            model : A Pyomo ConcreteModel containing a watertap flowsheet, for best
-                    results it should be initialized before being passed to this
-                    function.
-
-            sweep_params: A dictionary containing the values to vary with the format
-                          ``sweep_params['Short/Pretty-print Name'] =
-                          (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)``.
-                          A uniform number of samples ``num_samples`` will be take between
-                          the ``lower_limit`` and ``upper_limit``.
-
-            outputs : An optional dictionary containing "short names" as keys and and Pyomo objects
-                      on ``model`` whose values to report as values. E.g.,
-                      ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
-                      If not provided, i.e., outputs = None, the default behavior is to save all model
-                      variables, parameters, and expressions which provides very thorough results
-                      at the cost of large file sizes.
-
-            csv_results_file_name (optional) : The path and file name to write a csv file. The default `None`
-                                               does not write a csv file.
-
-            h5_results_file_name (optional) : The path and file name to write a h5 file. The default `None`
-                                              does not write a file.
-                                              Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
-                                              which contains the variable names contained within the H5 file.
-
-            optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
-                                           ``model`` and loads the results back into ``model``. The first
-                                           argument of this function is ``model``. The default uses the
-                                           default IDAES solver, raising an exception if the termination
-                                           condition is not optimal.
-
-            optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
-                                         ``optimize_function``. The first arg will always be ``model``,
-                                         e.g., ``optimize_function(model, **optimize_kwargs)``. The default
-                                         uses no kwargs.
-
-            reinitialize_function (optional) : A user-defined function to perform the re-initialize the
-                                               flowsheet ``model`` if the first call to ``optimize_function``
-                                               fails for any reason. After ``reinitialize_function``, the
-                                               parameter sweep tool will immediately call
-                                               ``optimize_function`` again.
-
-            reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to
-                                             ``reinitialize_function``. The first arg will always be
-                                             ``model``, e.g.,
-                                             ``reinitialize_function(model, **reinitialize_kwargs)``.
-                                             The default uses no kwargs.
-
-            reinitialize_before_sweep (optional): Boolean option to reinitialize the flow sheet model before
-                                                  every parameter sweep realization. The default is False.
-                                                  Note the parameter sweep model will try to reinitialize the
-                                                  solve regardless of the option if the run fails.
-
-            mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                                  If None COMM_WORLD will be used. The default is sufficient for most
-                                  users.
-
-            debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
-                                            purposes. If None no `debugging` data will be saved.
-
-            interpolate_nan_outputs (optional) : When the parameter sweep has finished, interior values
-                                                 of np.nan will be replaced with a value obtained via
-                                                 a linear interpolation of their surrounding valid neighbors.
-                                                 If true, a second output file with the extension "_clean"
-                                                 will be saved alongside the raw (un-interpolated) values.
-
-            num_samples (optional) : If the user is using sampling techniques rather than a linear grid
-                                     of values, they need to set the number of samples
-
-            seed (optional) : If the user is using a random sampling technique, this sets the seed
-
-        Returns:
-
-            save_data : A list were the first N columns are the values of the parameters passed
-                        by ``sweep_params`` and the remaining columns are the values of the
-                        simulation identified by the ``outputs`` argument.
-        """
-
-        # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
-
-        self.writer = ParameterSweepWriter(
-            self.comm,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=debugging_data_dir,
-            interpolate_nan_outputs=interpolate_nan_outputs
-        )
+    CONFIG = _ParameterSweepBase.CONFIG()
 
     def _aggregate_local_results(
-        self,
-        global_values,
-        local_output_dict,
-        num_samples,
-        local_num_cases
+        self, global_values, local_output_dict, num_samples, local_num_cases
     ):
 
         # Create the dictionary
@@ -715,7 +531,9 @@ class ParameterSweep(_ParameterSweepBase):
 
         # Create the array
         num_global_samples = np.shape(global_values)[0]
-        global_results_arr = self._aggregate_results_arr(global_results_dict, num_global_samples)
+        global_results_arr = self._aggregate_results_arr(
+            global_results_dict, num_global_samples
+        )
 
         return global_results_dict, global_results_arr
 
@@ -724,12 +542,6 @@ class ParameterSweep(_ParameterSweepBase):
         model,
         sweep_params,
         outputs=None,
-        optimize_function=None, # self._default_optimize,
-        optimize_kwargs=None,
-        reinitialize_function=None,
-        reinitialize_kwargs=None,
-        reinitialize_before_sweep=False,
-        probe_function=None,
         num_samples=None,
         seed=None,
     ):
@@ -741,18 +553,13 @@ class ParameterSweep(_ParameterSweepBase):
         np.random.seed(seed)
 
         # Enumerate/Sample the parameter space
-        global_values = self._build_combinations(sweep_params, sampling_type, num_samples)
+        global_values = self._build_combinations(
+            sweep_params, sampling_type, num_samples
+        )
 
         # divide the workload between processors
         local_values = self._divide_combinations(global_values)
         local_num_cases = np.shape(local_values)[0]
-
-        # Set up optimize_kwargs
-        if optimize_kwargs is None:
-            optimize_kwargs = dict()
-        # Set up reinitialize_kwargs
-        if reinitialize_kwargs is None:
-            reinitialize_kwargs = dict()
 
         # Do the Loop
         local_results_dict = self._do_param_sweep(
@@ -760,60 +567,33 @@ class ParameterSweep(_ParameterSweepBase):
             sweep_params,
             outputs,
             local_values,
-            optimize_function,
-            optimize_kwargs,
-            reinitialize_function,
-            reinitialize_kwargs,
-            reinitialize_before_sweep,
-            probe_function,
         )
 
         # Aggregate results on Master
         global_results_dict, global_results_arr = self._aggregate_local_results(
-            global_values,
-            local_results_dict,
-            num_samples,
-            local_num_cases
+            global_values, local_results_dict, num_samples, local_num_cases
         )
 
         # Save to file
-        global_save_data = self.writer.save_results(sweep_params, local_values, global_values, local_results_dict,
-            global_results_dict, global_results_arr)
+        global_save_data = self.writer.save_results(
+            sweep_params,
+            local_values,
+            global_values,
+            local_results_dict,
+            global_results_dict,
+            global_results_arr,
+        )
 
         return global_save_data, global_results_dict
 
+
 class RecursiveParameterSweep(_ParameterSweepBase):
 
-    def __init__(self,
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir = None,
-        interpolate_nan_outputs = False,
-        *args,
-        **kwargs
+    CONFIG = _ParameterSweepBase.CONFIG()
+
+    def _filter_recursive_solves(
+        self, model, sweep_params, outputs, recursive_local_dict
     ):
-
-        # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
-
-        # Initialize the writer
-        # if self.rank == 0:
-        #     if h5_results_file_name is None and csv_results_file_name is None:
-        #         warnings.warn(
-        #             "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
-        #         )
-        #         self.write_outputs = False
-        #     else:
-        #         self.write_outputs = True
-        self.writer = ParameterSweepWriter(
-            self.comm,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=debugging_data_dir,
-            interpolate_nan_outputs=interpolate_nan_outputs
-        )
-
-    def _filter_recursive_solves(self, model, sweep_params, outputs, recursive_local_dict):
 
         # Figure out how many filtered solves did this rank actually do
         filter_counter = 0
@@ -832,7 +612,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         for case_number, content in recursive_local_dict.items():
             # Filter all of the sucessful solves
             optimal_indices = [
-                idx for idx, success in enumerate(content["solve_successful"]) if success
+                idx
+                for idx, success in enumerate(content["solve_successful"])
+                if success
             ]
             n_successful_solves = len(optimal_indices)
             stop = offset + n_successful_solves
@@ -840,9 +622,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             for key, item in content.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        local_filtered_dict[key][subkey]["value"][offset:stop] = subitem[
-                            "value"
-                        ][optimal_indices]
+                        local_filtered_dict[key][subkey]["value"][
+                            offset:stop
+                        ] = subitem["value"][optimal_indices]
 
             # Place the solve status
             local_filtered_dict["solve_successful"].extend(
@@ -853,18 +635,17 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         return local_filtered_dict, filter_counter
 
-
-    # ================================================================
-
-
     def _aggregate_filtered_input_arr(self, global_filtered_dict, req_num_samples):
 
         global_filtered_values = np.zeros(
-            (req_num_samples, len(global_filtered_dict["sweep_params"])), dtype=np.float64
+            (req_num_samples, len(global_filtered_dict["sweep_params"])),
+            dtype=np.float64,
         )
 
         if self.rank == 0:
-            for i, (key, item) in enumerate(global_filtered_dict["sweep_params"].items()):
+            for i, (key, item) in enumerate(
+                global_filtered_dict["sweep_params"].items()
+            ):
                 global_filtered_values[:, i] = item["value"][:req_num_samples]
 
         if self.num_procs > 1:  # pragma: no cover
@@ -872,73 +653,34 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         return global_filtered_values
 
-
-    # ================================================================
-
-
     def _aggregate_filtered_results(self, local_filtered_dict, req_num_samples):
 
-        global_filtered_dict = self._create_global_output(local_filtered_dict, req_num_samples)
-        global_filtered_results = self._aggregate_results_arr(global_filtered_dict, req_num_samples)
-        global_filtered_values = self._aggregate_filtered_input_arr(global_filtered_dict, req_num_samples)
+        global_filtered_dict = self._create_global_output(
+            local_filtered_dict, req_num_samples
+        )
+        global_filtered_results = self._aggregate_results_arr(
+            global_filtered_dict, req_num_samples
+        )
+        global_filtered_values = self._aggregate_filtered_input_arr(
+            global_filtered_dict, req_num_samples
+        )
 
         return global_filtered_dict, global_filtered_results, global_filtered_values
-
-    # ================================================================
-
-    # @staticmethod
-    # def _default_optimize(model, options=None, tee=False):
-    #     """
-    #     Default optimization function used in parameter_sweep.
-    #     Optimizes ``model`` using the IDAES default solver.
-    #     Raises a RuntimeError if the TerminationCondition is not optimal
-    #
-    #     Arguments:
-    #
-    #         model : A Pyomo ConcreteModel to optimize
-    #
-    #         options (optional) : Solver options to pass into idaes.core.utils.get_solver.
-    #                              Default is None
-    #         tee (options) : To display the solver log. Default it False
-    #
-    #     """
-    #     solver = get_solver(options=options)
-    #     results = solver.solve(model, tee=tee)
-    #     return results
-
-    # ================================================================
-
 
     def parameter_sweep(
         self,
         model,
         sweep_params,
         outputs=None,
-        optimize_function=None, # _default_optimize,
-        optimize_kwargs=None,
-        reinitialize_function=None,
-        reinitialize_kwargs=None,
-        reinitialize_before_sweep=False,
         req_num_samples=None,
-        probe_function=None,
         seed=None,
     ):
-
-        if optimize_function is None:
-            optimize_function = self._default_optimize
 
         # Convert sweep_params to LinearSamples
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
         # Set the seed before sampling
         np.random.seed(seed)
-
-        # Set up optimize_kwargs
-        if optimize_kwargs is None:
-            optimize_kwargs = dict()
-        # Set up reinitialize_kwargs
-        if reinitialize_kwargs is None:
-            reinitialize_kwargs = dict()
 
         n_samples_remaining = req_num_samples
         num_total_samples = req_num_samples
@@ -962,12 +704,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                 sweep_params,
                 outputs,
                 local_values,
-                optimize_function,
-                optimize_kwargs,
-                reinitialize_function,
-                reinitialize_kwargs,
-                reinitialize_before_sweep,
-                probe_function
             )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
@@ -1004,8 +740,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
             loop_ctr += 1
 
-            # break # Delete me
-
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.
         local_filtered_dict, local_n_successful = self._filter_recursive_solves(
@@ -1013,12 +747,14 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         )
 
         # if we are debugging
-        if self.writer.debugging_data_dir is not None:
+        if self.writer.config["debugging_data_dir"] is not None:
             local_filtered_values = np.zeros(
                 (local_n_successful, len(local_filtered_dict["sweep_params"])),
                 dtype=np.float64,
             )
-            for i, (key, item) in enumerate(local_filtered_dict["sweep_params"].items()):
+            for i, (key, item) in enumerate(
+                local_filtered_dict["sweep_params"].items()
+            ):
                 local_filtered_values[:, i] = item["value"][:]
         else:
             local_filtered_values = None
@@ -1034,10 +770,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         # Now we can save this
         self.comm.Barrier()
 
-        if self.rank == 0:
-            print("global_filtered_dict")
-            pprint.pprint(global_filtered_dict)
-
         # Save to file
         global_save_data = self.writer.save_results(
             sweep_params,
@@ -1045,7 +777,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             global_filtered_values,
             local_filtered_dict,
             global_filtered_dict,
-            global_filtered_results
+            global_filtered_results,
         )
 
         return global_save_data
