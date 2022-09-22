@@ -196,11 +196,16 @@ descriptions (*References*), our model accounts for the cross-membrane diffusion
 in assumed Nernst diffusion layers (NDL), and the ohmic and nonohmic (i.e., diffusion) potentials across NDLs. These extensions take account
 of electricity sinks aside from ohmic resistance of the system, making the model closer to the real and non-ideal desalination conditions.
 
+.. figure:: ../../_static/unit_models/EDdiagram.png
+    :width: 400
+    :align: center
+
+    Figure 1. Schematic representation of an electrodialysis cell pair
 .. figure:: ../../_static/unit_models/elecdia.png
     :width: 800
     :align: center
 
-    Figure 2. Electrochemical cell setup for simulating Nernst diffusion layer and cross-membrane potential and concentration variations. 
+    Figure 2. Electrochemical cell setup for simulating Nernst diffusion layer and cross-membrane potential and concentration variations.
 
 **Table 5** presents the equations underlying the two extensions assuming a 1:1 symmetric electrolyte such as NaCl. 
 
