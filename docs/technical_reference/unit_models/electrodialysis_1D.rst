@@ -19,7 +19,7 @@ collected from diluate channels of all cell pairs while the concentrate product 
 or retreated. More overview of the electrodialysis technology can be found in the *References*.
 
 .. figure:: ../../_static/unit_models/EDdiagram.png
-    :width: 600
+    :width: 400
     :align: center
 
     Figure 1. Schematic representation of an electrodialysis cell pair
@@ -191,10 +191,18 @@ Extended simulation
 This model supports extensive simulations of (1) the nonohmic potential across ion exchange membranes and (2) the Nernst diffusion layer. 
 Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculation of nonohmic
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
-diffusion layer including its ohmic and nonohmic potential changes. By established theoretical derivations, these additional calculations
-account for electricity sinks in addition to ohmic resistance of the system and for interface polarization effect, making the model closer 
-to the real and non-ideal desalination conditions. **Table 5** presents the equations underlying the two extensions assuming a 1:1 symmetric 
-electrolyte such as NaCl. 
+diffusion layer including its ohmic and nonohmic potential changes. Based on a electrochemical cell setup in Figure 2 and established theoretical
+descriptions (*References*), our model accounts for the cross-membrane diffusion and Donnan potentials (nonohmic), ion concentration polarization
+in assumed Nernst diffusion layers (NDL), and the ohmic and nonohmic (i.e., diffusion) potentials across NDLs. These extensions take account
+of electricity sinks aside from ohmic resistance of the system, making the model closer to the real and non-ideal desalination conditions.
+
+.. figure:: ../../_static/unit_models/elecdia.png
+    :width: 800
+    :align: center
+
+    Figure 2. Electrochemical cell setup for simulating Nernst diffusion layer and cross-membrane potential and concentration variations. 
+
+**Table 5** presents the equations underlying the two extensions assuming a 1:1 symmetric electrolyte such as NaCl. 
 
 .. csv-table:: **Table 5** Essential equations supporting model extensions 
    :header: "Description", "Equation", "Condition"
