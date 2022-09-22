@@ -56,7 +56,7 @@ However, when writing a script, it is recommended (and in some cases, required; 
 Example: Python file with recommended structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doctest::
+.. testcode::
 
    # Import concrete model from Pyomo
    from pyomo.environ import ConcreteModel
@@ -115,7 +115,7 @@ Example: Python file with recommended structure
 Example: the same code without recommended structure (may cause errors on Windows)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doctest::
+.. code-block::
 
    # Import concrete model from Pyomo
    from pyomo.environ import ConcreteModel
