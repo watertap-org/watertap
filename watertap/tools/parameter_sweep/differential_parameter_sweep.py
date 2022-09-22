@@ -23,15 +23,25 @@ from watertap.tools.parameter_sweep_class import (_ParameterSweepBase, Parameter
 
 class DifferentialParameterSweep(_ParameterSweepBase):
 
+    CONFIG = _ParameterSweepBase.CONFIG()
+
+    CONFIG.declare(
+        "num_diff_samples",
+        ConfigValue(
+            default=1,
+            domain=int,
+            description="Number of differntial sweep samples",
+        ),
+    )
+
     def __init__(self,
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir = None,
-        interpolate_nan_outputs = False,
-        guarantee_solves=False,
-        num_diff_samples=1,
-        *args,
-        **kwargs,
+        # csv_results_file_name=None,
+        # h5_results_file_name=None,
+        # debugging_data_dir = None,
+        # interpolate_nan_outputs = False,
+        # guarantee_solves=False,
+        # num_diff_samples=1,
+        **options,
     ):
 
         # Initialize the base Class
