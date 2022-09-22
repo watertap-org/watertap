@@ -25,14 +25,9 @@ Additional Constraints
    "Volumetric flowrate of the feed", "flow_vol_constraint"
    "Component mass concentrations", "conc_mass_constraint"
 
-.. index::
-See documentation for :ref:`None Helper Methods<None>`.
-
-Electricity consumption is calculated using the **--** helper function.
-
 Class Documentation
 -------------------
 
-Costing is calculated using the **False** method in the zero-order costing package.
+See documentation for :ref:`None Helper Methods<None>`.
     :members:
     :noindex:

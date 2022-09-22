@@ -448,11 +448,12 @@ for i, u in enumerate(unit_name_list):
                 for k, c in enumerate(addedcons):
                     f.write(f'   "{condocs[k]}", "{c}"\n')
 
-        f.write("\n.. index::")
-        f.write(f"\n{list[count]}\n")
-        count += 1
-        f.write(f"\n{list[count]}\n")
-        count += 1
+        if not (zo_name_list[i] == "feed_zo"):
+            f.write("\n.. index::")
+            f.write(f"\n{list[count]}\n")
+            count += 1
+            f.write(f"\n{list[count]}\n")
+            count += 1
         f.write("\nClass Documentation\n")
         f.write("-" * len("Class Documentation"))
         f.write(f"\n\n{list[count]}\n")
