@@ -47,7 +47,7 @@ def grab_unit_components(unit_class):
     m = ConcreteModel()
     m.zero_db = Database(dbpath=sidor_db_path)
     m.db = Database()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = WaterParameterBlock(
         default={
@@ -168,32 +168,28 @@ def grab_unit_components(unit_class):
 def grab_unit_components_feed(unit_class):
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "toc",
-                "tss",
-                "cod",
-                "tds",
-                "nitrogen",
-                "phosphates",
-                "phosphorus",
-                "struvite",
-                "nonbiodegradable_cod",
-                "hydrogen",
-                "ammonium_as_nitrogen",
-                "nitrate",
-                "bod",
-            ]
-        }
+        solute_list=[
+            "toc",
+            "tss",
+            "cod",
+            "tds",
+            "nitrogen",
+            "phosphates",
+            "phosphorus",
+            "struvite",
+            "nonbiodegradable_cod",
+            "hydrogen",
+            "ammonium_as_nitrogen",
+            "nitrate",
+            "bod",
+        ]
     )
     unit = getattr(zo, unit_class)
     m.fs.unit = zo.FeedZO(
-        default={
-            "property_package": m.fs.props,
-        }
+        property_package=m.fs.props,
     )
 
     added_vars = []
@@ -322,13 +318,22 @@ for i, u in enumerate(unit_name_list):
         f.write("\n")
         count = 0
 
-        # write Model Type section
+        if zo_name_list[i] == "feed_zo":
+            f.write(
+                "\nThe Feed (ZO) model adds volumetric flowrate and mass concentration "
+                "as variables in connection with the zero-order property model's state "
+                "variable, mass flow rate. "
+                "This allows the user to enter feed volumetric flow rate and "
+                "concentrations without calculating the mass flowrates of each "
+                "component in the feed.\n"
+            )
+
         f.write("\nModel Type\n")
         f.write("-" * len("Model Type"))
-        f.write(f"\n{list[count]}")
-        count += 1
         if not (zo_name_list[i] == "feed_zo"):
-
+            # write Model Type section
+            f.write(f"\n{list[count]}")
+            count += 1
             f.write(f"\n{list[count]}\n")
         else:
             f.write(
@@ -338,13 +343,13 @@ for i, u in enumerate(unit_name_list):
             )
         count += 1
 
-        # write Electricity Consumption section
-        f.write("\nElectricity Consumption\n")
-        f.write("-" * len("Electricity Consumption"))
-        if (elect_func_list[i] != "pump_electricity") and (
-            elect_func_list[i] != "constant_intensity"
-        ):
-            if not (zo_name_list[i] == "feed_zo"):
+        if not (zo_name_list[i] == "feed_zo"):
+            # write Electricity Consumption section
+            f.write("\nElectricity Consumption\n")
+            f.write("-" * len("Electricity Consumption"))
+            if (elect_func_list[i] != "pump_electricity") and (
+                elect_func_list[i] != "constant_intensity"
+            ):
                 (
                     _,
                     _,
@@ -354,34 +359,32 @@ for i, u in enumerate(unit_name_list):
                     addedconscheck,
                     _,
                 ) = grab_unit_components(class_name_list[i])
-            else:
-                addedconscheck = []
-            if len(addedconscheck) > 0:
-                f.write(
-                    "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
-                )
-            else:
-                f.write("\nThis unit does not include energy consumption.\n")
-            count += 1
-        else:
-            f.write(f"\n{list[count]}")
-            count += 1
-            f.write(
-                f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
-            )
 
-        # write Costing Method section
-        f.write("\nCosting Method\n")
-        f.write("-" * len("Costing Method"))
-        if not cost_func_list[i]:
-            f.write("\nThis unit does not include costing.\n")
-            count += 1
-        else:
-            f.write(f"\n{list[count]}")
-            count += 1
-            f.write(
-                f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
-            )
+                if len(addedconscheck) > 0:
+                    f.write(
+                        "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
+                    )
+                count += 1
+            else:
+                f.write(f"\n{list[count]}")
+                count += 1
+                f.write(
+                    f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
+                )
+
+        if not (zo_name_list[i] == "feed_zo"):
+            # write Costing Method section
+            f.write("\nCosting Method\n")
+            f.write("-" * len("Costing Method"))
+            if not cost_func_list[i]:
+                f.write("\nThis unit does not include costing.\n")
+                count += 1
+            else:
+                f.write(f"\n{list[count]}")
+                count += 1
+                f.write(
+                    f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
+                )
 
         # write Additional Variables section if unit is non-basic
         # TODO: conditional setting section to Variables if custom model type; add indices?; Add constraints section
