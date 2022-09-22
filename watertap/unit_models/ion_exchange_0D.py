@@ -261,8 +261,8 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.bed_depth_to_diam_ratio = Var(
-            initialize=5,
-            bounds=(0.5, None),
+            initialize=1,
+            bounds=(1, 100),
             units=pyunits.dimensionless,
             doc="Min ratio of bed depth to diameter",
         )
@@ -338,7 +338,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.resin_diam = Var(
-            initialize=9e-4,
+            initialize=7e-4,
             bounds=(5e-4, 1.5e-3),
             units=pyunits.m,  # Perry's
             doc="Resin bead diameter",
@@ -408,14 +408,14 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.col_height = Var(
             initialize=2,
-            bounds=(0.3, 4.5),  # EPA-WBS
+            bounds=(0.0, 4.5),  # EPA-WBS
             units=pyunits.m,
             doc="Column height",
         )
 
         self.col_diam = Var(
             initialize=0.5,
-            bounds=(0.3, 4.5),  # EPA-WBS
+            bounds=(0.0, 4.5),  # EPA-WBS
             units=pyunits.m,
             doc="Column diameter",
         )
@@ -511,7 +511,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.dimensionless_time = Var(
             initialize=1,
-            bounds=(-1, 1),
+            # bounds=(-1, 1),
             units=pyunits.dimensionless,
             doc="Dimensionless time",
         )
@@ -571,7 +571,7 @@ class IonExchangeODData(UnitModelBlockData):
 
         self.service_flow_rate = Var(
             initialize=10,
-            bounds=(4, 40),
+            bounds=(1, 15),
             units=pyunits.hr**-1,
             doc="Service flow rate [BV/hr]",
         )
@@ -709,7 +709,7 @@ class IonExchangeODData(UnitModelBlockData):
         )
 
         self.t_rinse = Var(
-            initialize=360, units=pyunits.s, bounds=(120, 1800), doc="Rinse time"
+            initialize=360, units=pyunits.s, bounds=(120, None), doc="Rinse time"
         )
 
         self.main_pump_power = Var(
@@ -938,8 +938,8 @@ class IonExchangeODData(UnitModelBlockData):
         def eq_fixed_pattern_soln(b, j):
             return (
                 b.lh
-                == (log(b.c_norm[j]) - b.separation_factor[j] * log(1 - b.c_norm[j]))
-                / (1 - b.separation_factor[j])
+                == (log(b.c_norm[j]) - b.langmuir[j] * log(1 - b.c_norm[j]))
+                / (1 - b.langmuir[j])
                 + 1
             )
 
