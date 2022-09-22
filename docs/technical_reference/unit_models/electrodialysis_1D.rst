@@ -193,8 +193,8 @@ Users can customize these extenions via two configurations: `has_nonohmic_potent
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
 diffusion layer including its ohmic and nonohmic potential changes. Based on a electrochemical cell setup in Figure 2 and established theoretical
 descriptions (*References*), our model accounts for the cross-membrane diffusion and Donnan potentials (nonohmic), ion concentration polarization
-in assumed Nernst diffusion layers (NDL), and the ohmic and nonohmic (i.e., diffusion) potentials across NDLs. These extensions take account
-of electricity sinks aside from ohmic resistance of the system, making the model closer to the real and non-ideal desalination conditions.
+in assumed Nernst diffusion layers (NDL), and the ohmic and nonohmic (i.e., diffusion) potentials across NDLs. These extensions make the model 
+closer to the non-ideal physical conditions that can be encountered in real desalination practices.
 
 .. figure:: ../../_static/unit_models/elecdia.png
     :width: 800
