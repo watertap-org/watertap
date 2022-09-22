@@ -28,6 +28,6 @@ Additional Constraints
 Class Documentation
 -------------------
 
-See documentation for :ref:`None Helper Methods<None>`.
+.. automodule:: watertap.unit_models.zero_order.feed_zo
     :members:
     :noindex:

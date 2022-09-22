@@ -454,8 +454,14 @@ for i, u in enumerate(unit_name_list):
             count += 1
             f.write(f"\n{list[count]}\n")
             count += 1
-        f.write("\nClass Documentation\n")
-        f.write("-" * len("Class Documentation"))
-        f.write(f"\n\n{list[count]}\n")
-        f.write("    :members:\n")
-        f.write("    :noindex:\n")
+            f.write("\nClass Documentation\n")
+            f.write("-" * len("Class Documentation"))
+            f.write(f"\n\n{list[count]}\n")
+            f.write("    :members:\n")
+            f.write("    :noindex:\n")
+        else:
+            f.write("\nClass Documentation\n")
+            f.write("-" * len("Class Documentation"))
+            f.write(f"\n\n{list[6]}\n")
+            f.write("    :members:\n")
+            f.write("    :noindex:\n")
