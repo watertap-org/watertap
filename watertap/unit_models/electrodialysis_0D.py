@@ -438,18 +438,6 @@ class Electrodialysis0DData(UnitModelBlockData):
                 doc="Membane surface concentration of components",
             )
 
-        if self.config.has_nonohmic_potential_membrane:
-            self._make_performance_nonohm_mem()
-        if self.config.has_Nernst_diffusion_layer:
-            self.current_dens_lim_ioa = Var(
-                self.flowsheet().time,
-                initialize=1,
-                bounds=(0, 1000),
-                units=pyunits.amp * pyunits.meter**-2,
-                doc="Limiting Current Density accross the membrane as a function of the normalized length",
-            )
-            self._make_performance_dl_polarization()
-
         # Build control volume for the dilute channel
         self.diluate = ControlVolume0DBlock(
             default={
@@ -492,6 +480,18 @@ class Electrodialysis0DData(UnitModelBlockData):
         self.add_inlet_port(name="inlet_concentrate", block=self.concentrate)
         self.add_outlet_port(name="outlet_concentrate", block=self.concentrate)
 
+        # extension options
+        if self.config.has_nonohmic_potential_membrane:
+            self._make_performance_nonohm_mem()
+        if self.config.has_Nernst_diffusion_layer:
+            self.current_dens_lim_ioa = Var(
+                self.flowsheet().time,
+                initialize=1,
+                bounds=(0, 1000),
+                units=pyunits.amp * pyunits.meter**-2,
+                doc="Limiting Current Density accross the membrane as a function of the normalized length",
+            )
+            self._make_performance_dl_polarization()
         # Build Constraints
         @self.Constraint(
             self.flowsheet().time,
@@ -511,7 +511,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     * 0.5**-1
                     * (
                         self.concentrate.properties_in[t].elec_cond_phase["Liq"]
-                        + self.concentrate.properties_in[t].elec_cond_phase["Liq"]
+                        + self.concentrate.properties_out[t].elec_cond_phase["Liq"]
                     )
                     ** -1
                     + (
@@ -522,7 +522,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     * 0.5**-1
                     * (
                         self.diluate.properties_in[t].elec_cond_phase["Liq"]
-                        + self.diluate.properties_in[t].elec_cond_phase["Liq"]
+                        + self.diluate.properties_out[t].elec_cond_phase["Liq"]
                     )
                     ** -1
                 ) * self.cell_pair_num + self.electrodes_resistance
@@ -535,13 +535,13 @@ class Electrodialysis0DData(UnitModelBlockData):
                         0.5**-1
                         * (
                             self.concentrate.properties_in[t].elec_cond_phase["Liq"]
-                            + self.concentrate.properties_in[t].elec_cond_phase["Liq"]
+                            + self.concentrate.properties_out[t].elec_cond_phase["Liq"]
                         )
                         ** -1
                         + 0.5**-1
                         * (
                             self.diluate.properties_in[t].elec_cond_phase["Liq"]
-                            + self.diluate.properties_in[t].elec_cond_phase["Liq"]
+                            + self.diluate.properties_out[t].elec_cond_phase["Liq"]
                         )
                         ** -1
                     )
@@ -549,7 +549,9 @@ class Electrodialysis0DData(UnitModelBlockData):
             if self.config.has_nonohmic_potential_membrane:
                 if self.config.has_Nernst_diffusion_layer:
                     return (
-                        self.current[t] * total_areal_resistance
+                        self.current[t]
+                        * (self.cell_width * self.cell_length) ** -1
+                        * total_areal_resistance
                         + (
                             self.potential_ohm_dl_ioa["cem", t]
                             + self.potential_ohm_dl_ioa["aem", t]
@@ -559,22 +561,26 @@ class Electrodialysis0DData(UnitModelBlockData):
                             + self.potential_nonohm_membrane_ioa["aem", t]
                         )
                         * self.cell_pair_num
-                        == self.voltage[t] * self.cell_width * self.cell_length
+                        == self.voltage[t]
                     )
                 else:
                     return (
-                        self.current[t] * total_areal_resistance
+                        self.current[t]
+                        * (self.cell_width * self.cell_length) ** -1
+                        * total_areal_resistance
                         + (
                             +self.potential_nonohm_membrane_ioa["cem", t]
                             + self.potential_nonohm_membrane_ioa["aem", t]
                         )
                         * self.cell_pair_num
-                        == self.voltage[t] * self.cell_width * self.cell_length
+                        == self.voltage[t]
                     )
             else:
                 if self.config.has_Nernst_diffusion_layer:
                     return (
-                        self.current[t] * total_areal_resistance
+                        self.current[t]
+                        * (self.cell_width * self.cell_length) ** -1
+                        * total_areal_resistance
                         + (
                             self.potential_ohm_dl_ioa["cem", t]
                             + self.potential_ohm_dl_ioa["aem", t]
@@ -582,12 +588,14 @@ class Electrodialysis0DData(UnitModelBlockData):
                             + self.potential_nonohm_dl_ioa["aem", t]
                         )
                         * self.cell_pair_num
-                        == self.voltage[t] * self.cell_width * self.cell_length
+                        == self.voltage[t]
                     )
                 else:
                     return (
-                        self.current[t] * total_areal_resistance
-                        == self.voltage[t] * self.cell_width * self.cell_length
+                        self.current[t]
+                        * (self.cell_width * self.cell_length) ** -1
+                        * total_areal_resistance
+                        == self.voltage[t]
                     )
 
         @self.Constraint(
@@ -672,9 +680,19 @@ class Electrodialysis0DData(UnitModelBlockData):
                         + self.water_permeability_membrane["aem"]
                     ) * (
                         self.concentrate.properties_in[t].pressure_osm_phase[p]
-                        * (1 + self.current_density[t] / self.current_dens_lim_ioa[t])
+                        * (
+                            1
+                            + self.current[t]
+                            * (self.cell_width * self.cell_length) ** -1
+                            / self.current_dens_lim_ioa[t]
+                        )
                         - self.diluate.properties_in[t].pressure_osm_phase[p]
-                        * (1 - self.current_density[t] / self.current_dens_lim_ioa[t])
+                        * (
+                            1
+                            - self.current[t]
+                            * (self.cell_width * self.cell_length) ** -1
+                            / self.current_dens_lim_ioa[t]
+                        )
                     )
                 else:
                     return self.nonelec_flux_in[
@@ -693,16 +711,17 @@ class Electrodialysis0DData(UnitModelBlockData):
                 if self.config.has_Nernst_diffusion_layer:
                     return self.nonelec_flux_in[t, p, j] == -(
                         self.solute_diffusivity_membrane["cem", j]
-                        / self.membrane_thickness["cem"]
+                        * self.membrane_thickness["cem"] ** -1
                         * (
                             self.conc_mem_surf_mol_ioa["cem", "cathode_left", t, j]
                             - self.conc_mem_surf_mol_ioa["cem", "anode_right", t, j]
                         )
                         + self.solute_diffusivity_membrane["aem", j]
-                        / self.membrane_thickness["aem"]
-                    ) * (
-                        self.conc_mem_surf_mol_ioa["aem", "anode_right", t, j]
-                        - self.conc_mem_surf_mol_ioa["aem", "cathode_left", t, j]
+                        * self.membrane_thickness["aem"] ** -1
+                        * (
+                            self.conc_mem_surf_mol_ioa["aem", "anode_right", t, j]
+                            - self.conc_mem_surf_mol_ioa["aem", "cathode_left", t, j]
+                        )
                     )
 
                 else:
@@ -734,9 +753,19 @@ class Electrodialysis0DData(UnitModelBlockData):
                         + self.water_permeability_membrane["aem"]
                     ) * (
                         self.concentrate.properties_out[t].pressure_osm_phase[p]
-                        * (1 + self.current_density[t] / self.current_dens_lim_ioa[t])
+                        * (
+                            1
+                            + self.current[t]
+                            * (self.cell_width * self.cell_length) ** -1
+                            / self.current_dens_lim_ioa[t]
+                        )
                         - self.diluate.properties_out[t].pressure_osm_phase[p]
-                        * (1 - self.current_density[t] / self.current_dens_lim_ioa[t])
+                        * (
+                            1
+                            - self.current[t]
+                            * (self.cell_width * self.cell_length) ** -1
+                            / self.current_dens_lim_ioa[t]
+                        )
                     )
                 else:
                     return self.nonelec_flux_out[
@@ -755,16 +784,17 @@ class Electrodialysis0DData(UnitModelBlockData):
                 if self.config.has_Nernst_diffusion_layer:
                     return self.nonelec_flux_out[t, p, j] == -(
                         self.solute_diffusivity_membrane["cem", j]
-                        / self.membrane_thickness["cem"]
+                        * self.membrane_thickness["cem"] ** -1
                         * (
                             self.conc_mem_surf_mol_ioa["cem", "cathode_left", t, j]
                             - self.conc_mem_surf_mol_ioa["cem", "anode_right", t, j]
                         )
                         + self.solute_diffusivity_membrane["aem", j]
-                        / self.membrane_thickness["aem"]
-                    ) * (
-                        self.conc_mem_surf_mol_ioa["aem", "anode_right", t, j]
-                        - self.conc_mem_surf_mol_ioa["aem", "cathode_left", t, j]
+                        * self.membrane_thickness["aem"] ** -1
+                        * (
+                            self.conc_mem_surf_mol_ioa["aem", "anode_right", t, j]
+                            - self.conc_mem_surf_mol_ioa["aem", "cathode_left", t, j]
+                        )
                     )
 
                 else:
@@ -920,17 +950,15 @@ class Electrodialysis0DData(UnitModelBlockData):
                     mem == "aem" and side == "anode_right"
                 ):
                     return self.conc_mem_surf_mol_ioa[mem, side, t, j] == 0.5 * (
-                        self.concentrate.properties_in[t].conc_mol_phase_comp[
-                            t, "Liq", j
-                        ]
-                        + self.concentrate.properties_out.conc_mol_phase_comp[
-                            t, "Liq", j
+                        self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.concentrate.properties_out[t].conc_mol_phase_comp[
+                            "Liq", j
                         ]
                     )
                 else:
                     return self.conc_mem_surf_mol_ioa[mem, side, t, j] == 0.5 * (
-                        self.diluate.properties_in[t].conc_mol_phase_comp[t, "Liq", j]
-                        + self.diluate.properties_out.conc_mol_phase_comp[t, "Liq", j]
+                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
                     )
             else:
                 return Constraint.Skip
@@ -938,12 +966,11 @@ class Electrodialysis0DData(UnitModelBlockData):
         @self.Constraint(
             self.membrane_set,
             self.flowsheet().time,
-            self.diluate.length_domain,
             doc="Calculate the total non-ohmic potential across an iem; this takes account of diffusion and Donnan Potentials",
         )
-        def eq_potential_nonohm_membrane(self, mem, t):
+        def eq_potential_nonohm_membrane_ioa(self, mem, t):
 
-            return self.potential_nonohm_membrane[mem, t] == (
+            return self.potential_nonohm_membrane_ioa[mem, t] == (
                 Constants.gas_constant
                 * self.diluate.properties_in[t].temperature
                 / Constants.faraday_constant
@@ -1003,7 +1030,6 @@ class Electrodialysis0DData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().time,
-            self.diluate.length_domain,
             doc="Calculate length-indexed limitting current density",
         )
         def eq_current_dens_lim_ioa(self, t):
@@ -1022,7 +1048,7 @@ class Electrodialysis0DData(UnitModelBlockData):
                     * 0.5
                     * sum(
                         self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                        + self.diluate.properties_out.conc_mol_phase_comp["Liq", j]
+                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
                         for j in self.cation_set
                     )
                 )
@@ -1038,15 +1064,35 @@ class Electrodialysis0DData(UnitModelBlockData):
             if (mem == "cem" and side == "cathode_left") or (
                 mem == "aem" and side == "anode_right"
             ):
-                return self.conc_mem_surf_mol_ioa[mem, side, t, j] / 0.5 * (
-                    self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                    + self.concentrate.properties_out.conc_mol_phase_comp["Liq", j]
-                ) == (1 + self.current_density[t] / self.current_dens_lim_ioa[t])
+                return self.conc_mem_surf_mol_ioa[mem, side, t, j] / (
+                    0.5
+                    * (
+                        self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.concentrate.properties_out[t].conc_mol_phase_comp[
+                            "Liq", j
+                        ]
+                    )
+                ) == (
+                    1
+                    + self.current[t]
+                    * (self.cell_width * self.cell_length) ** -1
+                    / self.current_dens_lim_ioa[t]
+                )
             else:
-                return self.conc_mem_surf_mol_ioa[mem, side, t, j] / 0.5 * (
-                    self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                    + self.concentrate.properties_out.conc_mol_phase_comp["Liq", j]
-                ) == (1 - self.current_density[t] / self.current_dens_lim_ioa[t])
+                return self.conc_mem_surf_mol_ioa[mem, side, t, j] / (
+                    0.5
+                    * (
+                        self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.concentrate.properties_out[t].conc_mol_phase_comp[
+                            "Liq", j
+                        ]
+                    )
+                ) == (
+                    1
+                    - self.current[t]
+                    * (self.cell_width * self.cell_length) ** -1
+                    / self.current_dens_lim_ioa[t]
+                )
 
         @self.Constraint(
             self.membrane_set,
@@ -1772,7 +1818,9 @@ class Electrodialysis0DData(UnitModelBlockData):
                             for j in self.cation_set
                         )
                         ** 0.5
-                        * iscale.get_scaling_factor(self.current_density) ** -1
+                        * iscale.get_scaling_factor(self.current) ** -1
+                        * iscale.get_scaling_factor(self.cell_width)
+                        * iscale.get_scaling_factor(self.cell_length)
                     )
                     iscale.set_scaling_factor(self.dl_thickness_ioa[ind], sf)
 

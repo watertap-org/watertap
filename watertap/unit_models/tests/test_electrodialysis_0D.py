@@ -12,7 +12,10 @@
 ###############################################################################
 import pytest
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
-from watertap.unit_models.electrodialysis_0D import Electrodialysis0D
+from watertap.unit_models.electrodialysis_0D import (
+    ElectricalOperationMode,
+    Electrodialysis0D,
+)
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
     ConcreteModel,
@@ -74,10 +77,12 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_cell1):
         m = electrodialysis_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 7
+        assert len(m.fs.unit.config) == 11
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Voltage"
+        assert (
+            m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
+        )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -319,7 +324,7 @@ class TestElectrodialysisCurrentConst:
         }
         m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
         m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
-        m.fs.unit.config.operation_mode = "Constant_Current"
+        m.fs.unit.config.operation_mode = ElectricalOperationMode.Constant_Current
 
         # Adding costing at model construction for testing
         m.fs.costing = WaterTAPCosting()
@@ -338,10 +343,9 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 7
+        assert len(m.fs.unit.config) == 11
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Current"
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -552,7 +556,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit = Electrodialysis0D(
             default={
                 "property_package": m.fs.properties,
-                "operation_mode": "Constant_Current",
+                "operation_mode": ElectricalOperationMode.Constant_Current,
             }
         )
         return m
@@ -562,10 +566,12 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 7
+        assert len(m.fs.unit.config) == 11
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.operation_mode == "Constant_Current"
+        assert (
+            m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
+        )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
@@ -731,7 +737,7 @@ class TestElectrodialysis_withNeutralSPecies:
         ) == pytest.approx(1.459e-04, rel=5e-3)
         assert value(
             m.fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.673e-05, rel=5e-3)
+        ) == pytest.approx(7.277e-05, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
         ) == pytest.approx(0.2495, rel=5e-3)
@@ -743,7 +749,7 @@ class TestElectrodialysis_withNeutralSPecies:
         ) == pytest.approx(1.330e-3, rel=5e-3)
         assert value(
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
-        ) == pytest.approx(7.087e-05, rel=5e-3)
+        ) == pytest.approx(7.483e-05, rel=5e-3)
 
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_cell3):
