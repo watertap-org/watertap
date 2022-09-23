@@ -168,7 +168,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.mabr.air_flow_rate,
+        obj=fs.mabr.air_flow_rate[0],
         name="Air flow rate",
         ui_units=pyunits.m**3 / pyunits.hr / pyunits.m**2,
         display_units="m3 of air/h/m2",
@@ -181,8 +181,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.mabr.energy_electric_flow_vol_inlet,
         name="Blower specific power",
-        ui_units=pyunits.kW / pyunits.m**3,
-        display_units="kW/m3 of air",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3 of air",
         rounding=5,
         description="Blower specific power relating the power to the volume of the "
         "air",
@@ -193,7 +193,7 @@ def export_variables(flowsheet=None, exports=None):
 
     # Unit cost data, mabr
     exports.add(
-        obj=fs.costing.mabr.reactor_cost,
+        obj=fs.costing.mabr.reactor_cost[None],
         name="Reactor cost",
         ui_units=fs.costing.base_currency / pyunits.m**2,
         display_units="$/m2 of reactor",
@@ -204,7 +204,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.mabr.blower_cost,
+        obj=fs.costing.mabr.blower_cost[None],
         name="Blower cost",
         ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
         display_units="$/(m3/h)",
@@ -275,8 +275,8 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.dmbr.energy_electric_flow_vol_inlet,
         name="Electricity specific power",
-        ui_units=pyunits.kW / pyunits.m**3,
-        display_units="kW/m3 of reactor",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3 of reactor",
         rounding=2,
         description="Electricity specific power relating the power to the volume of the "
         "reactor",
@@ -287,7 +287,7 @@ def export_variables(flowsheet=None, exports=None):
 
     # Unit cost data, dmbr
     exports.add(
-        obj=fs.costing.dmbr.water_flux,
+        obj=fs.costing.dmbr.water_flux[None],
         name="Water flux",
         ui_units=pyunits.L / pyunits.m**2 / pyunits.hr,
         display_units="$/m2/h",
@@ -298,7 +298,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.dmbr.reactor_cost,
+        obj=fs.costing.dmbr.reactor_cost[None],
         name="Reactor cost",
         ui_units=fs.costing.base_currency / pyunits.m**2,
         display_units="$/m2 of reactor",
