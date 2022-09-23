@@ -92,7 +92,6 @@ from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .hrcs_zo import HRCSZO
-from .hrcs_separator_zo import HRCSSeparatorZO
 from .hydrothermal_gasification_zo import HTGZO
 from .magprex_zo import MagprexZO
 from .metab_zo import MetabZO

@@ -40,7 +40,7 @@ from watertap.unit_models.zero_order import (
     FeedZO,
     ClarifierZO,
     HRCSZO,
-    HRCSSeparatorZO,
+    PrimarySeparatorZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
@@ -105,7 +105,7 @@ def build():
     )
 
     # Separator for recycle loop
-    m.fs.sep = HRCSSeparatorZO(property_package=m.fs.prop, database=m.db)
+    m.fs.sep = PrimarySeparatorZO(property_package=m.fs.prop, database=m.db)
 
     # product and waste streams
     m.fs.product = Product(property_package=m.fs.prop)
@@ -158,6 +158,9 @@ def set_operating_conditions(m):
 
     # separator
     m.fs.sep.load_parameters_from_database(use_default_removal=True)
+    m.fs.sep.removal_frac_mass_comp[0, "tss"].fix(0.95)
+    m.fs.sep.removal_frac_mass_comp[0, "cod"].fix(0.95)
+    m.fs.sep.recovery_frac_mass_H2O[0].fix(0.05)
 
     assert_degrees_of_freedom(m, 0)
 
