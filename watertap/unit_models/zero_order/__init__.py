@@ -92,6 +92,7 @@ from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .hrcs_zo import HRCSZO
+from .hrcs_separator_zo import HRCSSeparatorZO
 from .hydrothermal_gasification_zo import HTGZO
 from .magprex_zo import MagprexZO
 from .metab_zo import MetabZO
@@ -100,8 +101,6 @@ from .paa_disinfection_zo import PeraceticAcidDisinfectionZO
 from .photothermal_membrane_zo import PhotothermalMembraneZO
 from .supercritical_salt_precipitation_zo import SaltPrecipitationZO
 from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
+from .struvite_classifier_zo import StruviteClassifierZO
 from .suboxic_activated_sludge_process_zo import SuboxicASMZO
 from .vfa_recovery_zo import VFARecoveryZO
-
-
-from .struvite_classifier_zo import StruviteClassifierZO

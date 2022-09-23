@@ -40,6 +40,7 @@ from watertap.unit_models.zero_order import (
     FeedZO,
     ClarifierZO,
     HRCSZO,
+    HRCSSeparatorZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
@@ -103,8 +104,12 @@ def build():
         process_subtype="HRCS_clarifier",
     )
 
+    # Separator for recycle loop
+    m.fs.sep = HRCSSeparatorZO(property_package=m.fs.prop, database=m.db)
+
     # product and waste streams
     m.fs.product = Product(property_package=m.fs.prop)
+    m.fs.WAS_product = Product(property_package=m.fs.prop)
     m.fs.disposal = Product(property_package=m.fs.prop)
 
     # connections
@@ -113,7 +118,9 @@ def build():
     m.fs.s03 = Arc(source=m.fs.HRCS.treated, destination=m.fs.clarifier.inlet)
     m.fs.s04 = Arc(source=m.fs.HRCS.byproduct, destination=m.fs.disposal.inlet)
     m.fs.s05 = Arc(source=m.fs.clarifier.treated, destination=m.fs.product.inlet)
-    m.fs.s06 = Arc(source=m.fs.clarifier.byproduct, destination=m.fs.mixer.inlet2)
+    m.fs.s06 = Arc(source=m.fs.clarifier.byproduct, destination=m.fs.sep.inlet)
+    m.fs.s07 = Arc(source=m.fs.sep.treated, destination=m.fs.WAS_product.inlet)
+    m.fs.s08 = Arc(source=m.fs.sep.byproduct, destination=m.fs.mixer.inlet2)
 
     # expand arcs
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -131,9 +138,7 @@ def set_operating_conditions(m):
     conc_mass_tss = 243 * pyunits.mg / pyunits.liter
     conc_mass_co2 = 0.001 * pyunits.mg / pyunits.liter
     mass_flow_cod = 336 * pyunits.ton / pyunits.day
-    mass_flow_oxygen = (
-        895.15 * pyunits.ton / pyunits.day
-    )  # equivalent to the number of moles of carbon being added
+    mass_flow_oxygen = 895.15 * pyunits.ton / pyunits.day
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
     m.fs.feed.conc_mass_comp[0, "carbon_dioxide"].fix(conc_mass_co2)
@@ -150,6 +155,9 @@ def set_operating_conditions(m):
     m.fs.clarifier.removal_frac_mass_comp[0, "tss"].fix(0.914)
     m.fs.clarifier.removal_frac_mass_comp[0, "cod"].fix(0.72)
     m.fs.clarifier.recovery_frac_mass_H2O[0].fix(1)
+
+    # separator
+    m.fs.sep.load_parameters_from_database(use_default_removal=True)
 
     assert_degrees_of_freedom(m, 0)
 
@@ -173,6 +181,10 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s05)
     m.fs.product.initialize()
     propagate_state(m.fs.s06)
+    m.fs.sep.initialize(optarg=optarg)
+    propagate_state(m.fs.s07)
+    m.fs.WAS_product.initialize()
+    propagate_state(m.fs.s08)
     m.fs.mixer.initialize(optarg=optarg)
 
 
@@ -183,18 +195,6 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
-
-
-def display_results(m):
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
-    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-    unit_list = ["feed", "HRCS", "clarifier"]
-    for u in unit_list:
-        m.fs.component(u).report()
-
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 def add_costing(m):
@@ -212,6 +212,7 @@ def add_costing(m):
 
     m.fs.HRCS.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.clarifier.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.sep.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
     m.fs.watertap_costing.cost_process()
@@ -298,7 +299,7 @@ def add_costing(m):
 
 
 def display_results(m):
-    unit_list = ["feed", "mixer", "HRCS", "clarifier"]
+    unit_list = ["feed", "HRCS", "clarifier", "sep", "mixer"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -313,20 +314,14 @@ def display_results(m):
     )
     print(f"Water Recovery: {sys_water_recovery*100 : .3f} %")
 
-    # Recycle stream messes with this value since it assumes 100% recycle
-    # carbon_capture = value(
-    #     (m.fs.clarifier.byproduct.flow_mass_comp[0,"cod"]()
-    #     + m.fs.product.flow_mass_comp[0,"cod"]()
-    #     )/ m.fs.feed.flow_mass_comp[0,"cod"]
-    # )
-    # print(f"Carbon Capture: {carbon_capture*100 : .3f} %")
-    # orthophosphate_removal = value(
-    #     pyunits.convert(
-    #         m.fs.product.conc_mass_comp[0, "tss"](),
-    #         to_units=pyunits.mg / pyunits.liter
-    #     )
-    # )
-    # print(f"Orthophosphate Removal: {orthophosphate_removal : .3f} mg/L")
+    carbon_capture = value(
+        (
+            m.fs.WAS_product.flow_mass_comp[0, "cod"]()
+            + m.fs.product.flow_mass_comp[0, "cod"]()
+        )
+        / m.fs.feed.flow_mass_comp[0, "cod"]
+    )
+    print(f"Carbon Capture (includes non-biomass COD): {carbon_capture*100 : .3f} %")
 
 
 def display_costing(m):
@@ -335,8 +330,15 @@ def display_costing(m):
     for u in m.fs.costing._registered_unit_costing:
         print(
             u.name,
-            " : {price:0.3f} $M".format(
-                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.MUSD_2018))
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
+            ),
+        )
+    for u in m.fs.watertap_costing._registered_unit_costing:
+        print(
+            u.name,
+            " : {price:0.3f} $".format(
+                price=value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018))
             ),
         )
 

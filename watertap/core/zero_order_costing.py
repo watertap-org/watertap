@@ -47,6 +47,7 @@ from watertap.unit_models.zero_order import (
     FixedBedZO,
     GACZO,
     HRCSZO,
+    HRCSSeparatorZO,
     HTGZO,
     IonExchangeZO,
     IronManganeseRemovalZO,
@@ -3107,6 +3108,53 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def cost_hrcs_separator(blk):
+        """
+        Method for costing high-rate contact stabilization separation unit.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        HRT, size_cost = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["HRT", "sizing_cost"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * HRT * size_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
     def cost_centrifuge(blk):
         """
         Method for costing centrifuge unit.
@@ -3161,7 +3209,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         General method for costing clarifiers. Costing is carried out
         using either the general_power_law form or the standard form which
-        computes HRT and sizing costs.
+        computes HRT, sizing costs, and chemical input costs.
         Args:
             number_of_parallel_units (int, optional) - cost this unit as
                         number_of_parallel_units parallel units (default: 1)
@@ -3477,6 +3525,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         MicrobialBatteryZO: cost_microbial_battery,
         VFARecoveryZO: cost_vfa_recovery,
         HRCSZO: cost_hrcs,
+        HRCSSeparatorZO: cost_hrcs_separator,
         MagprexZO: cost_magprex,
         CentrifugeZO: cost_centrifuge,
         StruviteClassifierZO: cost_struvite_classifier,
