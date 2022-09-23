@@ -8,10 +8,6 @@ __author__ = "Dan Gunter"
 import logging
 from collections import namedtuple
 from enum import Enum
-from glob import glob
-import importlib
-from pathlib import Path
-import re
 from typing import Callable, Optional, Dict, Union, TypeVar
 from uuid import uuid4
 
@@ -80,6 +76,7 @@ class FlowsheetExport(BaseModel):
     name: str = ""
     description: str = ""
     model_objects: Dict[str, ModelExport] = {}
+    version: int = 1
 
     # set name dynamically from object
     @validator("name", always=True)
