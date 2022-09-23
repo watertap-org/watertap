@@ -54,12 +54,17 @@ def main(
     n_steps = int(ndays * 24)
 
     if filename == "pricesignals_GOLETA_6_N200_20220601.csv":
-        carbon_cost = True
+        carbon_intensity = True
     else:
-        carbon_cost = False
+        carbon_intensity = False
 
     # get data
-    lmp, co2i = _get_lmp(n_steps, data_path, carbon_cost, price_multiplier)
+    lmp, co2i = _get_lmp(
+        time_steps=n_steps,
+        data_path=data_path,
+        carbon_intensity=carbon_intensity,
+        price_multiplier=price_multiplier,
+    )
 
     mp_swro = build_flowsheet(n_steps)
 
@@ -72,17 +77,18 @@ def main(
     return m, t_blocks, [lmp, co2i]
 
 
-def _get_lmp(time_steps, data_path, carbon_cost=False, price_multiplier=1):
+def _get_lmp(time_steps, data_path, carbon_intensity=False, price_multiplier=1):
     """
     Get price signals from data set
-    :param time_steps: Number of time steps considered in MP analysis
-    :param data_path: Price [$/kWh] on the same interval as time_steps
+    time_steps: Number of time steps considered in MP analysis
+    data_path: Price [$/kWh] on the same interval as time_steps
+    carbon_intensity: Boolean representing if the model should use carbon intensity data
     :return: reshaped data
     """
     # read data into array from file
     data = np.genfromtxt(data_path, delimiter=",")
 
-    if carbon_cost == True:
+    if carbon_intensity:
         lmp = data[:time_steps, 0]
         co2i = data[:time_steps, 1]
     else:
@@ -101,8 +107,13 @@ def build_flowsheet(n_steps):
 
 
 def initialize_system(m, fix_feedflow=False, fix_recovery=False):
-    print(f"\n----- Initializing Base Model -----")
-    # loop through each time step block and set values
+    """
+    # loop through each time step block and refixes values appropriately
+    m: model
+    fix_feedflow: Boolean for whether variables related to the feed flowrate should be fixed
+    fix_recovery: Boolean for whether variables related to the water recovery should be fixed
+    """
+
     t_blocks = m.get_active_process_blocks()
 
     for count, blk in enumerate(t_blocks):
@@ -135,12 +146,30 @@ def initialize_system(m, fix_feedflow=False, fix_recovery=False):
         )
 
 
-def set_objective(mp_swro, lmp, co2i, carbontax=0):
+def set_objective(
+    mp_swro,
+    lmp,
+    co2i,
+    carbontax=0,
+    permeate_tank_quality_constraint=False,
+    yield_equality_constraint=False,
+):
+    """
+    mp_swro: pyomo model
+    lmp: price signal
+    co2i: carbon intensity signal (default = 0)
+    carbontax: co2i cost weighting parameter
+    permeate_tank_quality_constraint: If true, activates a multi-time-step constraint for permeate quality
+    yield_equality_constraint: If true, fixes the daily permeate production in an equality constraint. This turns the
+    levelized cost optimization into an electricity cost optimization problem.
+    """
     # Retrieve pyomo model and active process blocks (i.e. time blocks)
     m = mp_swro.pyomo_model
     t_blocks = mp_swro.get_active_process_blocks()
-    daily_water_production = 38.52 * pyunits.m**3 / pyunits.day
-    fixed_hourly_cost = 0.6102
+    daily_water_production = (
+        38.52 * pyunits.m**3 / pyunits.day
+    )  # value taken from steady state RO flowsheet
+    fixed_hourly_cost = 0.6102  # value taken from steady state RO flowsheet
     peak_load_surcharge = 0.1 * pyunits.USD_2018 / pyunits.kWh
     load_shaving_benefit = (
         0.1 * pyunits.USD_2018 / pyunits.kW
@@ -149,22 +178,15 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         15,
         20,
     ]  # hours in the day where load needs to be shaved (4-9pm) starting at count=0
-    nominal_load = 4.31 * pyunits.kWh  # hourly load at steady conditions
+    nominal_load = (
+        4.31 * pyunits.kWh
+    )  # hourly load at steady conditions, value from steady state RO flowsheet
 
     on_peak_demand_charge = Param(
         default=10,
         mutable=True,
         units=t_blocks[0].ro_mp.fs.costing.base_currency / pyunits.kW,
     )
-    # base_costing_block = t_blocks[0].ro_mp.fs.costing
-    # fixed_hourly_cost = Expression(
-    #     expr= pyunits.convert(base_costing_block.total_investment_cost
-    #         * base_costing_block.factor_capital_annualization
-    #         + base_costing_block.maintenance_labor_chemical_operating_cost
-    #         + base_costing_block.aggregate_fixed_operating_cost,
-    #         to_units=pyunits.USD_2018 / pyunits.hr),
-    #     doc="Base cost of the plant as defined by the initialized model at t=0 [$/m3]"
-    # )
 
     # index the flowsheet for each timestep
     for count, blk in enumerate(t_blocks):
@@ -257,32 +279,37 @@ def set_objective(mp_swro, lmp, co2i, carbontax=0):
         doc="Daily cost to produce water",
     )
 
-    m.permeate_yield = Constraint(
-        expr=sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
-        doc="The water production over the day is fixed within a tolerance",
-    )
+    if yield_equality_constraint is True:
+        m.permeate_yield = Constraint(
+            expr=(
+                daily_water_production - 1e-5,
+                sum(blk.water_prod for blk in t_blocks),
+                daily_water_production + 1e-5,
+            ),
+            doc="The water production over the day is fixed within a tolerance",
+        )
 
-    # m.permeate_yield = Constraint(
-    #     expr=(
-    #         daily_water_production - 1e-5,
-    #         sum(blk.water_prod for blk in t_blocks),
-    #         daily_water_production + 1e-5,
-    #     ),
-    #     doc="The water production over the day is fixed within a tolerance",
-    # )
+    else:
+        m.permeate_yield = Constraint(
+            expr=sum(blk.water_prod for blk in t_blocks) <= daily_water_production,
+            doc="The water production over the day is fixed within a tolerance",
+        )
 
-    # m.permeate_quality_ub = Constraint(
-    #     expr=(
-    #         sum([blk.weighted_permeate_quality for blk in t_blocks])
-    #         <= 0.0005 * sum([blk.water_prod for blk in t_blocks])
-    #     ),
-    #     doc="Flow-averaged permeate quality must be less than 500 ppm",
-    # )
-    #
-    # m.permeate_quality_lb = Constraint(
-    #     expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
-    #     doc="Flow-averaged permeate quality must be greater than 0 ppm",
-    # )
+    if permeate_tank_quality_constraint is True:
+
+        m.permeate_quality_ub = Constraint(
+            expr=(
+                sum([blk.weighted_permeate_quality for blk in t_blocks])
+                <= 0.0005 * sum([blk.water_prod for blk in t_blocks])
+            ),
+            doc="Flow-averaged permeate quality must be less than 500 ppm",
+        )
+
+        m.permeate_quality_lb = Constraint(
+            expr=(sum([blk.weighted_permeate_quality for blk in t_blocks]) >= 0),
+            doc="Flow-averaged permeate quality must be greater than 0 ppm",
+        )
+
     # fix the initial pressure to default operating pressure at 1 kg/s and 50% recovery
     t_blocks[0].ro_mp.previous_pressure.fix(50e5)
 
@@ -297,6 +324,13 @@ def solve(m):
 
 
 def save_results(m, t_blocks, data, savepath=None):
+    """
+    Description: saves results as a dataframe
+    m: pyomo model
+    t_blocks: model block for each time step
+    data: price signal (comprised of LMP and CO2i
+    savepath: path to save results (in .csv format)
+    """
     time_step = np.array(range(len(t_blocks)))
     LCOW = value(m.obj)
 
