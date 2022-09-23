@@ -941,9 +941,7 @@ class DSPMDEStateBlockData(StateBlockData):
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b):
             if b.params.config.density_calculation == DensityCalculation.constant:
-                b.dens_mass_phase["Liq"].fix(1000)
-                return Constraint.Skip
-                # return b.dens_mass_phase["Liq"] == 1000 * pyunits.kg * pyunits.m**-3
+                return b.dens_mass_phase["Liq"] == 1000 * pyunits.kg * pyunits.m**-3
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
