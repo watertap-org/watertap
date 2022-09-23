@@ -55,7 +55,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 class LimitingCurrentDensityMethod(Enum):
-    Constant_input = 0
+    InitialValue = 0
     # Empirical = 1
     # Theoretical = 2 TODO: 1 and 2
 
@@ -125,18 +125,18 @@ class Electrodialysis1DData(UnitModelBlockData):
     CONFIG.declare(
         "limiting_current_density_method",
         ConfigValue(
-            default=LimitingCurrentDensityMethod.Constant_input,
+            default=LimitingCurrentDensityMethod.InitialValue,
             domain=In(LimitingCurrentDensityMethod),
             description="Configuration for method to compute the limiting current density",
             doc="""
-           **default** - ``LimitingCurrentDensityMethod.Constant_input``
+           **default** - ``LimitingCurrentDensityMethod.InitialValue``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``LimitingCurrentDensityMethod.Constant_input``", "A contant limiting current density is provided by the user"
-           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: "
-           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: "
+           "``LimitingCurrentDensityMethod.InitialValue``", "Limiting current is calculated from a single initial value of the feed solution tested by the user." 
+           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: TODO "
+           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: TODO "
        """,
         ),
     )
@@ -1193,7 +1193,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_current_dens_lim_x(self, t, x):
             if (
                 self.config.limiting_current_density_method
-                == LimitingCurrentDensityMethod.Constant_input
+                == LimitingCurrentDensityMethod.InitialValue
             ):
                 return self.current_dens_lim_x[t, x] == (
                     self.config.limiting_current_density_data
@@ -1880,7 +1880,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             if iscale.get_scaling_factor(self.current_dens_lim_x) is None:
                 if (
                     self.config.limiting_current_density_method
-                    == LimitingCurrentDensityMethod.Constant_input
+                    == LimitingCurrentDensityMethod.InitialValue
                 ):
                     for ind in self.current_dens_lim_x:
                         sf = (
