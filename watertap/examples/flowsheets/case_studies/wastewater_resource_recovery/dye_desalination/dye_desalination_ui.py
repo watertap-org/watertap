@@ -12,13 +12,12 @@
 ###############################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination import (
     build,
     set_operating_conditions,
     initialize_system,
     solve,
     add_costing,
-    adjust_default_parameters,
 )
 from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits, assert_optimal_termination
