@@ -147,29 +147,29 @@ class TestDMBRZO:
             model.fs.unit.properties_in[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(0.01675, rel=1e-2) == value(
+        assert pytest.approx(0.015, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(164.1791, rel=1e-5) == value(
+        assert pytest.approx(33.3333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(10.4478, rel=1e-5) == value(
+        assert pytest.approx(3.33333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(108.9552, rel=1e-5) == value(
+        assert pytest.approx(130, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(5e-3, rel=1e-2) == value(
+        assert pytest.approx(4.5e-3, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(8e-10, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.64, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
