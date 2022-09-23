@@ -40,87 +40,65 @@ from idaes.core.util.tables import (
 )
 
 from watertap.unit_models.cstr_injection import CSTR_Injection
-from watertap.property_models.activated_sludge.asm2d_properties import ASM2dParameterBlock
-from watertap.property_models.activated_sludge.asm2d_reactions import (
-    ASM2dReactionParameterBlock
+from watertap.property_models.activated_sludge.asm2d_properties import (
+    ASM2dParameterBlock,
 )
+from watertap.property_models.activated_sludge.asm2d_reactions import (
+    ASM2dReactionParameterBlock,
+)
+
+
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(dynamic = False)
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = ASM2dParameterBlock()
-    m.fs.rxn_props = ASM2dReactionParameterBlock(
-        property_package= m.fs.props
-    )
+    m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
 
     # Feed water stream
-    m.fs.FeedWater = Feed(
-        property_package= m.fs.props
-    )
+    m.fs.FeedWater = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(
-        property_package= m.fs.props,
-        inlet_list = ["feed_water", "recycle"]
-    )
+    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(
-        property_package = m.fs.props,
-        reaction_package = m.fs.rxn_props
-    )
+    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(
-        property_package= m.fs.props,
-        reaction_package = m.fs.rxn_props
-    )
+    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        property_package= m.fs.props,
-        reaction_package = m.fs.rxn_props
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        property_package= m.fs.props,
-        reaction_package = m.fs.rxn_props
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        property_package= m.fs.props,
-        reaction_package = m.fs.rxn_props
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     m.fs.SP5 = Separator(
-        property_package= m.fs.props,
-        outlet_list = ["underflow", "overflow"]
+        property_package=m.fs.props, outlet_list=["underflow", "overflow"]
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
     m.fs.CL1 = Separator(
-        property_package = m.fs.props,
-        outlet_list = ["underflow", "effluent"],
-        split_basis = SplittingType.componentFlow
+        property_package=m.fs.props,
+        outlet_list=["underflow", "effluent"],
+        split_basis=SplittingType.componentFlow,
     )
     # Sludge purge splitter
     m.fs.SP6 = Separator(
-        property_package = m.fs.props,
-        outlet_list = ["recycle", "waste"],
-        split_basis = SplittingType.totalFlow
+        property_package=m.fs.props,
+        outlet_list=["recycle", "waste"],
+        split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(
-        property_package = m.fs.props,
-        inlet_list = ["clarifier", "reactor"]
-    )
+    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
     # Product Blocks
-    m.fs.Treated = Product(
-        property_package= m.fs.props
-    )
-    m.fs.Sludge = Product(
-        property_package= m.fs.props
-    )
+    m.fs.Treated = Product(property_package=m.fs.props)
+    m.fs.Sludge = Product(property_package=m.fs.props)
     # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(
-        property_package= m.fs.props
-    )
+    m.fs.P1 = PressureChanger(property_package=m.fs.props)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)
@@ -160,6 +138,7 @@ def build_flowsheet():
     )
 
     m.fs.R3.Constraint(m.fs.time, doc="Mass transfer constraint for R3")
+
     def mass_transfer_R3(self, t):
         return pyo.units.convert(
             m.fs.R3.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -170,6 +149,7 @@ def build_flowsheet():
         )
 
     m.fs.R4.Constraint(m.fs.time, doc="Mass transfer constraint for R4")
+
     def mass_transfer_R4(self, t):
         return pyo.units.convert(
             m.fs.R4.injection[t, "Liq", "S_O2"], to_units=pyo.units.kg / pyo.units.hour
@@ -198,7 +178,9 @@ def build_flowsheet():
     m.fs.FeedWater.conc_mass_comp[0, "X_PP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_PHA"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_AUT"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
-    m.fs.FeedWater.conc_mass_comp[0, "X_MeOH"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
+    m.fs.FeedWater.conc_mass_comp[0, "X_MeOH"].fix(
+        1e-6 * pyo.units.g / pyo.units.m**3
+    )
     m.fs.FeedWater.conc_mass_comp[0, "X_MeP"].fix(1e-6 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.conc_mass_comp[0, "X_TSS"].fix(180 * pyo.units.g / pyo.units.m**3)
     m.fs.FeedWater.alkalinity.fix(7 * pyo.units.mol / pyo.units.m**3)
@@ -260,49 +242,49 @@ def build_flowsheet():
 
     def scale_variables(m):
         for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-            if 'flow_vol' in var.name:
+            if "flow_vol" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'temperature' in var.name:
+            if "temperature" in var.name:
                 iscale.set_scaling_factor(var, 1e-1)
-            if 'pressure' in var.name:
+            if "pressure" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if 'enth_mol' in var.name:
+            if "enth_mol" in var.name:
                 iscale.set_scaling_factor(var, 1e-4)
-            if 'conc_mass_comp[S_O2]' in var.name:
+            if "conc_mass_comp[S_O2]" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            if 'conc_mass_comp[S_F]' in var.name:
+            if "conc_mass_comp[S_F]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[S_A]' in var.name:
+            if "conc_mass_comp[S_A]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[S_NH4]' in var.name:
+            if "conc_mass_comp[S_NH4]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[S_NO3]' in var.name:
+            if "conc_mass_comp[S_NO3]" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            if 'conc_mass_comp[S_PO4]' in var.name:
+            if "conc_mass_comp[S_PO4]" in var.name:
                 iscale.set_scaling_factor(var, 1e3)
-            if 'conc_mass_comp[S_I]' in var.name:
+            if "conc_mass_comp[S_I]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[S_N2]' in var.name:
+            if "conc_mass_comp[S_N2]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[X_I]' in var.name:
+            if "conc_mass_comp[X_I]" in var.name:
                 iscale.set_scaling_factor(var, 1e0)
-            if 'conc_mass_comp[X_S]' in var.name:
+            if "conc_mass_comp[X_S]" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            if 'conc_mass_comp[X_H]' in var.name:
+            if "conc_mass_comp[X_H]" in var.name:
                 iscale.set_scaling_factor(var, 1e0)
-            if 'conc_mass_comp[X_PAO]' in var.name:
+            if "conc_mass_comp[X_PAO]" in var.name:
                 iscale.set_scaling_factor(var, 1e1)
-            if 'conc_mass_comp[X_PP]' in var.name:
+            if "conc_mass_comp[X_PP]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[X_PHA]' in var.name:
+            if "conc_mass_comp[X_PHA]" in var.name:
                 iscale.set_scaling_factor(var, 1e2)
-            if 'conc_mass_comp[X_AUT]' in var.name:
+            if "conc_mass_comp[X_AUT]" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            if 'conc_mass_comp[X_MeOH]' in var.name:
+            if "conc_mass_comp[X_MeOH]" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            if 'conc_mass_comp[X_MeP]' in var.name:
+            if "conc_mass_comp[X_MeP]" in var.name:
                 iscale.set_scaling_factor(var, 1e5)
-            if 'conc_mass_comp[X_TSS]' in var.name:
+            if "conc_mass_comp[X_TSS]" in var.name:
                 iscale.set_scaling_factor(var, 1e0)
 
     scale_variables(m)
@@ -346,7 +328,7 @@ def build_flowsheet():
             (0, "X_AUT"): 1e-6,
             (0, "X_MeOH"): 1e-6,
             (0, "X_MeP"): 1e-6,
-            (0, "X_TSS"): 0.366
+            (0, "X_TSS"): 0.366,
         },
         "alkalinity": {0: 7.2e-3},
         "temperature": {0: 298.15},
@@ -357,15 +339,16 @@ def build_flowsheet():
     seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO,optarg={"bound_push": 1e-8})
+        unit.initialize(outlvl=idaeslog.INFO, optarg={"bound_push": 1e-8})
 
     seq.run(m, function)
 
     solver = get_solver(options={"bound_push": 1e-4})
-    results = solver.solve(m,tee=False)
+    results = solver.solve(m, tee=False)
     pyo.assert_optimal_termination(results)
 
     return m, results
+
 
 if __name__ == "__main__":
     # This method builds and runs a steady state activated sludge
