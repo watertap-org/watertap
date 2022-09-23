@@ -15,7 +15,7 @@
 """
 
 # Some more information about this module
-__author__ = "Alejandro Garciadiego"
+__author__ = "Alejandro Garciadiego, Andrew Lee"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
@@ -313,7 +313,7 @@ def build_flowsheet():
     seq = SequentialDecomposition()
     seq.options.select_tear_method = "heuristic"
     seq.options.tear_method = "Wegstein"
-    seq.options.iterLim = 1
+    seq.options.iterLim = 0
 
     G = seq.create_graph(m)
 
@@ -348,7 +348,7 @@ def build_flowsheet():
             (0, "X_MeP"): 1e-6,
             (0, "X_TSS"): 0.366
         },
-        "alkalinity": {0: 7.3e-3},
+        "alkalinity": {0: 7.2e-3},
         "temperature": {0: 298.15},
         "pressure": {0: 101325},
     }
@@ -357,24 +357,12 @@ def build_flowsheet():
     seq.set_guesses_for(m.fs.R1.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=idaeslog.INFO_HIGH)
+        unit.initialize(outlvl=idaeslog.INFO,optarg={"bound_push": 1e-8})
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver(options={"bound_push": 1e-4})
     results = solver.solve(m,tee=False)
-
-    pyo.assert_optimal_termination(results)
-
-    # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
-    m.fs.R3.KLa.fix(3.4)
-    m.fs.R4.KLa.fix(1.8)
-    m.fs.R3.outlet.conc_mass_comp[:, "S_O2"].unfix()
-    m.fs.R4.outlet.conc_mass_comp[:, "S_O2"].unfix()
-
-    # Resolve with controls in place
-    solver = get_solver(options={"bound_push": 1e-8})
-    results = solver.solve(m, tee=False)
     pyo.assert_optimal_termination(results)
 
     return m, results
