@@ -1156,7 +1156,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         This method also registers the electricity demand as a costed flow.
         """
         t0 = blk.flowsheet().time.first()
-        byproduct_state = blk.unit_model.properties_byproduct[t0]
+        inlet_state = blk.unit_model.properties_in[t0]
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
@@ -1164,14 +1164,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, ref_state = _get_tech_parameters(
+        A, B = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
             [
                 "HRT",
                 "sizing_cost",
-                "reference_state",
             ],
         )
 
@@ -1187,7 +1186,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         expr = pyo.units.convert(
-            A * ref_state * B, to_units=blk.config.flowsheet_costing_block.base_currency
+            A * inlet_state.flow_vol * B,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
         if factor == "TPEC":
