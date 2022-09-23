@@ -69,7 +69,7 @@ def main():
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
     #m.fs.objective = Objective(expr=1)
     solver = get_solver()
-    results = solve(m,tee=True)
+    results = solve(m,tee=False)
     print('First solve - simulation')
     print(results.solver.termination_condition)
     if results.solver.termination_condition == "infeasible":
@@ -81,7 +81,7 @@ def main():
     m.fs.Q_ext[0].fix(0)
     del m.fs.objective
     set_up_optimization(m)
-    results = solve(m, tee=True)
+    results = solve(m, tee=False)
     print(results.solver.termination_condition)
     display_results(m)
     if results.solver.termination_condition == "infeasible":
@@ -532,9 +532,13 @@ def set_operating_conditions(m):
 
     # Costing
     m.fs.costing.factor_total_investment.fix(2)
-    m.fs.costing.heat_exchanger_unit_cost.fix(5000)
-    m.fs.costing.evaporator_unit_cost.fix(5000)
+    # m.fs.costing.electricity_base_cost = (0.25)
+    # print(value(m.fs.costing.electricity_base_cost))
+    # m.fs.costing.heat_exchanger_unit_cost.fix(1600)
+    # m.fs.costing.evaporator_unit_cost.fix(3200)
 
+    # Change upper bound of compressed vapor temperature
+    # m.fs.compressor.control_volume.properties_out[0].temperature.setub(450)
     # check degrees of freedom
     print("DOF after setting operating conditions: ", degrees_of_freedom(m))
 
@@ -689,7 +693,7 @@ def initialize_system(m, solver=None):
 
     # initialize compressor
     propagate_state(m.fs.s08)
-    m.fs.compressor.initialize()
+    m.fs.compressor.initialize_build()
 
     # initialize condenser
     propagate_state(m.fs.s09)
@@ -720,7 +724,7 @@ def fix_outlet_pressures(m):
     return
 
 def calculate_cost_sf(cost):
-    sf = 10**-(math.log10(cost.value))
+    sf = 10**-(math.log10(abs(cost.value)))
     iscale.set_scaling_factor(cost, sf)
 
 def scale_costs(m):
@@ -782,6 +786,32 @@ def sweep_solve(model, solver=None, tee=False, raise_on_failure=False):
         print(msg)
         return results
 
+def sweep_solve_fixed_brine_temp(model, solver=None, tee=False, raise_on_failure=False):
+    # ---solving---
+    if solver is None:
+        solver = get_solver()
+
+    # First simulate minimizing Q_ext
+    model.fs.objective = Objective(expr=model.fs.Q_ext[0])
+    results = solver.solve(model, tee=tee)
+
+    # Now optimize
+    model.fs.Q_ext[0].fix(0)
+    del model.fs.objective
+    set_up_optimization_fixed_brine_temp(model)
+    results = solve(model)
+
+    if check_optimal_termination(results):
+        return results
+    msg = (
+        "The current configuration is infeasible. Please adjust the decision variables."
+    )
+    if raise_on_failure:
+        raise RuntimeError(msg)
+    else:
+        print(msg)
+        return results
+
 def debug_infeasible(m, solver):
     print("\n---infeasible constraints---")
     infeas.log_infeasible_constraints(m)
@@ -803,6 +833,18 @@ def debug_infeasible(m, solver):
     dh.check_residuals(tol=1e-8)
     # dh.find_candidate_equations(verbose=True,tee=True)
     # dh.check_rank_equality_constraints()
+
+def set_up_optimization_fixed_brine_temp(m):
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+    m.fs.Q_ext[0].fix(0)
+    m.fs.evaporator.area.unfix()
+    # m.fs.evaporator.outlet_brine.temperature[0].unfix()
+    m.fs.compressor.pressure_ratio.unfix()
+    m.fs.hx_distillate.area.unfix()
+    m.fs.hx_brine.area.unfix()
+    m.fs.separator_feed.split_fraction[0, "hx_distillate_cold"].unfix()
+
+    print("DOF for optimization: ", degrees_of_freedom(m))
 
 def set_up_optimization(m):
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
