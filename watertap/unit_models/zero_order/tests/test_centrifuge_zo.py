@@ -174,11 +174,9 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["phosphates", "struvite"]}
-    )
+    m.fs.params = WaterParameterBlock(solute_list=["phosphates", "struvite"])
 
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

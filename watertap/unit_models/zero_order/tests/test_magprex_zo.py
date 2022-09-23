@@ -47,9 +47,7 @@ class TestMagprexZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["phosphates", "struvite"]}
-        )
+        m.fs.params = WaterParameterBlock(solute_list=["phosphates", "struvite"])
 
         m.fs.unit = MagprexZO(property_package=m.fs.params, database=m.db)
 
@@ -318,11 +316,9 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["phosphates", "struvite"]}
-    )
+    m.fs.params = WaterParameterBlock(solute_list=["phosphates", "struvite"])
 
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -337,9 +333,9 @@ def test_costing():
         "magprex_case_1575.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit = MagprexZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = MagprexZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(100)
     m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
