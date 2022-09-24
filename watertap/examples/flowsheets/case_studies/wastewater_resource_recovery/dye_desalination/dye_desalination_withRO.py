@@ -508,16 +508,16 @@ def add_costing(m):
     )
 
     # Combine results from costing packages and calculate overall metrics
-    @m.Expression()
-    def total_capital_cost(b, doc="Total capital cost of the treatment train"):
+    @m.Expression(doc="Total capital cost of the treatment train")
+    def total_capital_cost(b):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         ) + pyunits.convert(
             m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
         )
 
-    @m.Expression()
-    def total_operating_cost(b, doc="Total operating cost of the treatment train"):
+    @m.Expression(doc="Total operating cost of the treatment train")
+    def total_operating_cost(b):
         return (
             pyunits.convert(
                 m.fs.zo_costing.total_fixed_operating_cost,
@@ -533,10 +533,8 @@ def add_costing(m):
             )
         )
 
-    @m.Expression()
-    def total_externalities(
-        b, doc="Total cost of water/dye recovered and brine/sludge disposed"
-    ):
+    @m.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
+    def total_externalities(b):
         return pyunits.convert(
             m.fs.water_recovery_revenue
             + m.fs.dye_recovery_revenue
@@ -545,8 +543,10 @@ def add_costing(m):
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression()
-    def LCOT(b, doc="Levelized cost of treatment with respect to volumetric feed flow"):
+    @m.Expression(
+        doc="Levelized cost of treatment with respect to volumetric feed flow"
+    )
+    def LCOT(b):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
@@ -559,8 +559,25 @@ def add_costing(m):
             * b.fs.zo_costing.utilization_factor
         )
 
-    @m.Expression()
-    def LCOW(b, doc="Levelized cost of water with respect to volumetric permeate flow"):
+    @m.Expression(
+        doc="Levelized cost of treatment with respect to volumetric feed flow, not including externalities"
+    )
+    def LCOT_wo_revenue(b):
+        return (
+            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            + b.total_operating_cost
+        ) / (
+            pyunits.convert(
+                b.fs.feed.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.year,
+            )
+            * b.fs.zo_costing.utilization_factor
+        )
+
+    @m.Expression(
+        doc="Levelized cost of water with respect to volumetric permeate flow"
+    )
+    def LCOW(b):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
@@ -570,6 +587,21 @@ def add_costing(m):
                 - m.fs.sludge_disposal_cost,
                 to_units=pyunits.USD_2020 / pyunits.year,
             )
+        ) / (
+            pyunits.convert(
+                b.fs.permeate.properties[0].flow_vol,
+                to_units=pyunits.m**3 / pyunits.year,
+            )
+            * b.fs.zo_costing.utilization_factor
+        )
+
+    @m.Expression(
+        doc="Levelized cost of water with respect to volumetric permeate flow"
+    )
+    def LCOW_wo_revenue(b):
+        return (
+            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            + b.total_operating_cost
         ) / (
             pyunits.convert(
                 b.fs.permeate.properties[0].flow_vol,
@@ -762,8 +794,14 @@ def display_costing(m):
     )
 
     lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
+    lcot_wo_rev = value(
+        pyunits.convert(m.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
 
     lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
+    lcow_wo_rev = value(
+        pyunits.convert(m.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
 
     sec = m.fs.specific_energy_intensity()
 
@@ -787,9 +825,11 @@ def display_costing(m):
     print(f"\nTotal Annual Cost: {annual_investment : .4f} $/year")
     print(f"Normalized Capital Cost: {capex_norm:.4f} $/m3feed/hr")
     print(f"Opex Fraction of Annual Cost:{opex_fraction : .4f} %")
-    print(f"Levelized cost of treatment: {lcot:.4f} $/m3 feed")
 
-    print(f"Levelized cost of water: {lcow:.4f} $/m3 permeate")
+    print(f"Levelized cost of treatment with revenue: {lcot:.4f} $/m3 feed")
+    print(f"Levelized cost of water with revenue: {lcow:.4f} $/m3 permeate")
+    print(f"Levelized cost of treatment without revenue: {lcot_wo_rev:.4f} $/m3 feed")
+    print(f"Levelized cost of water without revenue: {lcow_wo_rev:.4f} $/m3 permeate")
 
     print(f"Specific energy intensity: {sec:.3f} kWh/m3 feed")
 
