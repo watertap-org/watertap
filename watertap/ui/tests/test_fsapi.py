@@ -11,6 +11,10 @@ from pyomo.environ import Var, value
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
 )
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
+    metab_ui as MU,
+)
+
 from watertap.ui import fsapi
 
 
@@ -67,14 +71,14 @@ def export_to_ui(flowsheet=None, exports=None):
     )
 
 
-def flowsheet_interface(exports=True):
+def flowsheet_interface(exports=True, solve_func=solve_ro):
     kwargs = {}
     if exports:
         kwargs["do_export"] = export_to_ui
     return fsapi.FlowsheetInterface(
         # leave out name and description to test auto-fill
         do_build=build_ro,
-        do_solve=solve_ro,
+        do_solve=solve_func,
         **kwargs,
     )
 
@@ -237,3 +241,32 @@ def test_export_values_build():
     # after build, new values should be exported to fsi.fs_exp
     d2 = fsi.dict()
     assert d1 != d2
+
+
+@pytest.mark.unit
+def test_empty_solve():
+    # try a fake solve
+    fsi = flowsheet_interface()
+    fsi.build()
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")
+
+
+@pytest.mark.unit
+def test_nonoptimal_termination():
+    fsi = MU.export_to_ui()
+    fsi.build()
+
+    # pick a crazy value
+    key = list(fsi.fs_exp.model_objects.keys())[0]
+    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    new_value = orig_value + 1e9
+    fsi.fs_exp.model_objects[key].obj.value = new_value
+    print(f"* orig_value = {orig_value}, new value = {new_value}")
+
+    # try to solve (for real)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")

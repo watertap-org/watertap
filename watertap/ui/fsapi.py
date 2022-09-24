@@ -211,6 +211,9 @@ class FlowsheetInterface:
 
         Returns:
             None
+
+        Raises:
+            RuntimeError: If the build fails
         """
         try:
             self.run_action(Actions.build, **kwargs)
@@ -226,12 +229,14 @@ class FlowsheetInterface:
 
         Returns:
             Return value of the underlying solve function
+
+        Raises:
+            RuntimeError: if the solver did not terminate in an optimal solution
         """
         try:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
-            _log.error(f"Solving flowsheet: {err}")
-            result = None
+            raise RuntimeError(f"Solving flowsheet: {err}")
         return result
 
     def dict(self) -> Dict:
@@ -289,7 +294,13 @@ class FlowsheetInterface:
         def action_wrapper(**kwargs):
             if action_name == Actions.build:
                 # set new model object from return value of build action
-                self.fs_exp.obj = action_func(**kwargs)
+                action_result = action_func(**kwargs)
+                if action_result is None:
+                    raise RuntimeError(
+                        f"Flowsheet `{Actions.build}` action failed. "
+                        f"See logs for details."
+                    )
+                self.fs_exp.obj = action_result
                 # [re-]create exports (new model object)
                 if Actions.export not in self._actions:
                     raise KeyError(
@@ -308,6 +319,13 @@ class FlowsheetInterface:
                 )
             else:
                 result = action_func(flowsheet=self.fs_exp.obj, **kwargs)
+                # Issue 755: Report optimization errors
+                if action_name == Actions.solve:
+                    _log.debug(f"Solve result: {result}")
+                    if result is None:
+                        raise RuntimeError("Solver did not return a result")
+                    if not pyo.check_optimal_termination(result):
+                        raise RuntimeError(f"Solve failed: {result}")
             # Sync model with exported values
             if action_name in (Actions.build, Actions.solve):
                 self.export_values()
@@ -330,6 +348,7 @@ class FlowsheetInterface:
         return self._actions[name]
 
     def run_action(self, name, **kwargs):
+        """Run the named action."""
         func = self.get_action(name)
         if name.startswith("_"):
             raise ValueError(
