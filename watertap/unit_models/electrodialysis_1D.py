@@ -603,8 +603,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.current_dens_lim_x = Var(
                 self.flowsheet().time,
                 self.diluate.length_domain,
-                initialize=1,
-                bounds=(0, 1000),
+                initialize=500,
+                bounds=(0, 10000),
                 units=pyunits.amp * pyunits.meter**-2,
                 doc="Limiting Current Density accross the membrane as a function of the normalized length",
             )

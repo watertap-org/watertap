@@ -1,9 +1,9 @@
 default: # dmbr for denitrification
   energy_electric_flow_vol_inlet:
-    value: 0
+    value: 0.1
     units: kWh/m^3
   recovery_frac_mass_H2O:
-    value: 0.9
+    value: 0.95
     units: dimensionless
   default_removal_frac_mass_comp:
     value: 0
@@ -29,7 +29,7 @@ default: # dmbr for denitrification
   reactions:
     nitrate_to_nitrogen:
       key_reactant: nitrate
-      conversion: 0.825
+      conversion: 0.95
       stoichiometry:
         nitrate:
           conversion_ratio: -1
@@ -37,7 +37,7 @@ default: # dmbr for denitrification
           conversion_ratio: 1
     BOD_usage:
       key_reactant: bod
-      conversion: 0.45
+      conversion: 0.9
       stoichiometry:
         bod:
           conversion_ratio: -1
