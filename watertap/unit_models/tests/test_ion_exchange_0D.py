@@ -14,20 +14,15 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     Var,
     Param,
-    Constraint,
+    Objective,
     units as pyunits,
     assert_optimal_termination,
 )
 from pyomo.network import Port
-from idaes.core import (
-    FlowsheetBlock,
-)
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEParameterBlock,
     DSPMDEStateBlock,
@@ -37,8 +32,9 @@ from watertap.unit_models.ion_exchange_0D import (
     IonExchangeType,
     RegenerantChem,
 )
-
+from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
+from watertap.core.util.infeasible import *
 
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
@@ -46,26 +42,22 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
-    get_scaling_factor,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
-    constraints_with_scale_factor_generator,
-    badly_scaled_var_generator,
     set_scaling_factor,
 )
 import idaes.logger as idaeslog
+from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
 
-def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.95, sf_mass=1e4, sf_inert=1e6):
+def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4, sf_inert=1e6):
 
     ix = m.fs.unit
     prop_in = ix.properties_in[0]
@@ -73,14 +65,10 @@ def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.95, sf_mass=1e4, sf_iner
     prop_regen = ix.properties_regen[0]
     target_ion = ix.config.target_ion
     ions = ix.config.property_package.ion_set
-    sf_flow_in = 1 / prop_in.flow_mol_phase_comp["Liq", "H2O"].value
-    sf_flow_out = 1 / (prop_in.flow_mol_phase_comp["Liq", "H2O"].value)
-    sf_flow_regen = 1 / (
-        prop_in.flow_mol_phase_comp["Liq", "H2O"].value * (1 - est_recov)
-    )
-    set_scaling_factor(prop_in.flow_mol_phase_comp["Liq", "H2O"], sf_flow_in)
-    set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", "H2O"], sf_flow_out)
-    set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", "H2O"], sf_flow_regen)
+    sf_flow = 1 / prop_in.flow_mol_phase_comp["Liq", "H2O"].value
+    set_scaling_factor(prop_in.flow_mol_phase_comp["Liq", "H2O"], sf_flow)
+    set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", "H2O"], sf_flow)
+    set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", "H2O"], sf)
     for ion in ions:
         set_scaling_factor(
             prop_in.flow_mol_phase_comp["Liq", ion],
@@ -90,16 +78,11 @@ def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.95, sf_mass=1e4, sf_iner
             sf_targ = 1 / (
                 prop_in.flow_mol_phase_comp["Liq", ion].value * (1 - est_removal)
             )
-            sf_targ_regen = 1 / (
-                prop_in.flow_mol_phase_comp["Liq", ion].value * (est_removal)
-            )
             set_scaling_factor(prop_out.flow_mol_phase_comp["Liq", ion], sf_targ)
             set_scaling_factor(prop_out.conc_equiv_phase_comp["Liq", ion], sf_targ)
             set_scaling_factor(prop_out.conc_mol_phase_comp["Liq", ion], sf_targ)
             set_scaling_factor(prop_out.conc_mass_phase_comp["Liq", ion], sf_targ)
-            set_scaling_factor(
-                prop_regen.flow_mol_phase_comp["Liq", ion], sf_targ_regen
-            )
+            set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf_targ)
         else:
             set_scaling_factor(
                 prop_out.flow_mol_phase_comp["Liq", ion],
@@ -159,7 +142,7 @@ class TestIonExchangeNoInert:
     @pytest.fixture(scope="class")
     def IX_frame_no_inert(self):
         target_ion = "Ca_2+"
-        mass_frac = 1.5e-4
+        mass_frac = 1e-4
         ions = [target_ion]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
@@ -171,7 +154,7 @@ class TestIonExchangeNoInert:
             "hazardous_waste": False,
         }
         ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
-        mass_flow_in = 5 * pyunits.kg / pyunits.s
+        mass_flow_in = 50 * pyunits.kg / pyunits.s
         ix_prop_in = {target_ion: mass_frac}
         for ion, x in ix_prop_in.items():
             mol_comp_flow = (
@@ -194,10 +177,10 @@ class TestIonExchangeNoInert:
         ix.inlet.pressure[0].fix(101325)
         ix.inlet.temperature[0].fix(298.15)
         ix.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
-        ix.langmuir[target_ion].fix(0.8)
-        ix.resin_max_capacity.fix(1.5)
-        ix.service_flow_rate.fix(10)
-        ix.number_columns.fix(5)
+        ix.langmuir[target_ion].fix(0.7)
+        ix.resin_max_capacity.fix(3)
+        ix.service_flow_rate.fix(15)
+        ix.number_columns.fix(4)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
@@ -219,7 +202,7 @@ class TestIonExchangeNoInert:
         ix.service_to_regen_flow_ratio.fix()
         ix.number_columns_redund.fix()
 
-        m = ix_scaling(m, sf=1, est_recov=0.99, est_removal=0.99, sf_mass=1e2)
+        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
 
         return m
 
@@ -390,7 +373,7 @@ class TestIonExchangeNoInert:
     def test_solve(self, IX_frame_no_inert):
         m = IX_frame_no_inert
         results = solver.solve(m)
-
+        assert_units_consistent(m)
         # Check for optimal solution
         assert_optimal_termination(results)
 
@@ -419,72 +402,72 @@ class TestIonExchangeNoInert:
         target_ion = ix.config.target_ion
 
         results_dict = {
-            "bed_depth_to_diam_ratio": 7.0246377079257325,
+            "bed_depth_to_diam_ratio": 2.3288548156661295,
             "bed_expansion_frac_A": -0.0123,
             "bed_expansion_frac_B": 0.102,
             "bed_expansion_frac_C": -0.00135,
             "p_drop_A": 0.609,
             "p_drop_B": 0.173,
             "p_drop_C": 0.000828,
-            "resin_max_capacity": 1.5,
-            "resin_eq_capacity": 0.8080397292955411,
-            "resin_unused_capacity": 0.691960270704459,
+            "resin_max_capacity": 3,
+            "resin_eq_capacity": 1.685707070386487,
+            "resin_unused_capacity": 1.314292929613513,
             "resin_diam": 0.0007,
             "resin_bulk_dens": 0.7,
             "resin_particle_dens": 1.4,
-            "langmuir": 0.8,
-            "separation_factor": 1.25,
+            "langmuir": 0.7,
+            "separation_factor": 1.4285714285714286,
             "resin_surf_per_vol": 4285.714285714286,
-            "bed_vol": 0.36,
-            "bed_vol_tot": 1.8,
-            "bed_depth": 1.7633544270675023,
+            "bed_vol": 2.9999999997950595,
+            "bed_vol_tot": 11.999999999680048,
+            "bed_depth": 1.7008652492732002,
             "bed_porosity": 0.5,
-            "col_height": 3.58146271350547,
-            "col_diam": 0.509843049907697,
-            "col_vol_per": 0.731178347966125,
-            "number_columns": 5,
+            "col_height": 3.4899816816735014,
+            "col_diam": 1.4985827618773468,
+            "col_vol_per": 6.155658156210497,
+            "number_columns": 4,
             "number_columns_redund": 1,
-            "partition_ratio": 75.4170414009172,
-            "fluid_mass_transfer_coeff": 4.32206105893926e-05,
-            "rate_coeff": 0.0002646159832003629,
-            "t_breakthru": 27330.134904330193,
-            "t_cycle": 30630.134904330196,
-            "t_contact": 180.0,
-            "t_waste": 3300.0,
-            "num_transfer_units": 66.68322776649146,
-            "HTU": 0.02644374734292022,
+            "partition_ratio": 235.99898985742448,
+            "fluid_mass_transfer_coeff": 4.88236238482453e-05,
+            "rate_coeff": 0.0002989201460096651,
+            "t_breakthru": 56759.757559858735,
+            "t_cycle": 59759.75755979875,
+            "t_contact": 119.99999998800233,
+            "t_waste": 2999.9999999400115,
+            "num_transfer_units": 50.218584526149264,
+            "HTU": 0.033869239153639555,
             "dimensionless_time": 1,
             "lh": 0,
-            "mass_in": 1024.8800589123816,
-            "mass_removed": 1018.1300589123816,
-            "mass_out": 6.749999999999946,
-            "vel_bed": 0.004898206741854173,
-            "vel_inter": 0.009796413483708346,
-            "holdup": 102.65685725360079,
-            "service_flow_rate": 10,
-            "pressure_drop": 6.907170449869965,
-            "Re": 3.428744719297921,
-            "Sc": 1086.9565217391305,
-            "Sh": 32.88524718758132,
-            "Pe_p": 0.0903305963042154,
-            "Pe_bed": 227.54979556097942,
-            "c_norm": 0.48299134878783684,
+            "mass_in": 14189.939389765037,
+            "mass_removed": 14159.939390279174,
+            "mass_out": 29.99999948586353,
+            "vel_bed": 0.007086938539128658,
+            "vel_inter": 0.014173877078681325,
+            "holdup": 111.55463750786649,
+            "service_flow_rate": 15,
+            "pressure_drop": 9.459703154786201,
+            "Re": 4.960856977390019,
+            "Sc": 1086.9565217391396,
+            "Sh": 37.14840944975185,
+            "Pe_p": 0.10785424012832263,
+            "Pe_bed": 262.0650414585449,
+            "c_norm": 0.4730788932825344,
             "service_to_regen_flow_ratio": 3,
             "regen_recycle": 1,
             "regen_dose": 300,
             "t_regen": 1800,
             "bw_rate": 5,
-            "bw_flow": 0.0014177524164314234,
+            "bw_flow": 0.009798934202836222,
             "t_bw": 600,
             "bed_expansion_frac": 0.46395000000000003,
-            "bed_expansion_h": 0.8181082864379677,
+            "bed_expansion_h": 0.7891164324003012,
             "rinse_bv": 5,
-            "rinse_flow": 0.005000000000000002,
-            "t_rinse": 900.0,
-            "main_pump_power": 0.2977217801537614,
-            "regen_pump_power": 0.09924059338462904,
-            "bw_pump_power": 0.08441915464745203,
-            "rinse_pump_power": 0.29772178015376144,
+            "rinse_flow": 0.05000000000004337,
+            "t_rinse": 599.9999999400117,
+            "main_pump_power": 4.077443409583269,
+            "regen_pump_power": 1.3591478031198694,
+            "bw_pump_power": 0.7990919937267928,
+            "rinse_pump_power": 4.077443409586832,
             "pump_efficiency": 0.8,
         }
 
@@ -851,3 +834,112 @@ class TestIonExchangeWithInert:
                 assert pytest.approx(val, rel=1e-3) == value(var[target_ion])
             else:
                 assert pytest.approx(val, rel=1e-3) == value(var)
+
+
+class TestIonExchangeCosting:
+    @pytest.fixture(scope="class")
+    def IX_frame_costing(self):
+        target_ion = "Ca_2+"
+        mass_frac = 1e-4
+        ions = [target_ion]
+        ix_in = get_ix_in(ions)
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        ix_unit_in = {
+            "property_package": m.fs.properties,
+            "target_ion": target_ion,
+            "hazardous_waste": False,
+        }
+        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        mass_flow_in = 50 * pyunits.kg / pyunits.s
+        ix_prop_in = {target_ion: mass_frac}
+        for ion, x in ix_prop_in.items():
+            mol_comp_flow = (
+                x
+                * pyunits.kg
+                / pyunits.kg
+                * mass_flow_in
+                / m.fs.unit.config.property_package.mw_comp[ion]
+            )
+            ix.inlet.flow_mol_phase_comp[0, "Liq", ion].fix(mol_comp_flow)
+        H2O_mass_frac = 1 - sum(x for x in ix_prop_in.values())
+        H2O_mol_comp_flow = (
+            H2O_mass_frac
+            * pyunits.kg
+            / pyunits.kg
+            * mass_flow_in
+            / m.fs.unit.config.property_package.mw_comp["H2O"]
+        )
+
+        ix.inlet.pressure[0].fix(101325)
+        ix.inlet.temperature[0].fix(298.15)
+        ix.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(H2O_mol_comp_flow)
+        ix.langmuir[target_ion].fix(0.7)
+        ix.resin_max_capacity.fix(3)
+        ix.service_flow_rate.fix(15)
+        ix.number_columns.fix(4)
+        ix.resin_diam.fix()
+        ix.resin_bulk_dens.fix()
+        ix.bed_porosity.fix()
+        ix.dimensionless_time.fix()
+        ix.lh.fix()
+        ix.regen_dose.fix()
+        ix.regen_recycle.fix()
+        ix.t_regen.fix()
+        ix.t_bw.fix()
+        ix.bw_rate.fix()
+        ix.rinse_bv.fix()
+        ix.pump_efficiency.fix()
+        ix.p_drop_A.fix()
+        ix.p_drop_B.fix()
+        ix.p_drop_C.fix()
+        ix.bed_expansion_frac_A.fix()
+        ix.bed_expansion_frac_B.fix()
+        ix.bed_expansion_frac_C.fix()
+        ix.service_to_regen_flow_ratio.fix()
+        ix.number_columns_redund.fix()
+
+        m.fs.costing = WaterTAPCosting()
+        ix.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": m.fs.costing}
+        )
+        m.fs.costing.cost_process()
+        m.fs.costing.add_LCOW(ix.properties_out[0].flow_vol_phase["Liq"])
+
+        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
+
+        return m
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_costing(self, IX_frame_costing):
+        m = IX_frame_costing
+        ix = m.fs.unit
+        target_ion = ix.config.target_ion
+        set_scaling_factor(
+            ix.properties_regen[0].flow_mol_phase_comp["Liq", target_ion], 1
+        )
+
+        initialization_tester(m)
+
+        def obj_rule(m):
+            return m.fs.costing.LCOW
+
+        m.obj = Objective(rule=obj_rule)
+
+        assert degrees_of_freedom(m) == 0
+
+        results = solver.solve(m, tee=False)
+        assert_optimal_termination(results)
+
+        assert pytest.approx(440372.278, rel=1e-5) == value(
+            m.fs.costing.total_capital_cost
+        )
+        assert pytest.approx(1023195.441, rel=1e-5) == value(
+            m.fs.costing.total_operating_cost
+        )
+        assert pytest.approx(880744.556, rel=1e-5) == value(
+            m.fs.costing.total_investment_cost
+        )
+        assert pytest.approx(0.78532, rel=1e-5) == value(m.fs.costing.LCOW)

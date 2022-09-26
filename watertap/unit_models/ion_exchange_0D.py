@@ -832,12 +832,14 @@ class IonExchangeODData(UnitModelBlockData):
 
         @self.Constraint(doc="Column holdup")
         def eq_holdup(b):
+            vel_bed_dimensionless = pyunits.convert(
+                pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
+                * (pyunits.s / pyunits.cm),
+                to_units=pyunits.dimensionless,
+            )
             return (
                 b.holdup
-                == b.holdup_A
-                + b.holdup_B
-                * pyunits.convert(b.vel_bed, to_units=pyunits.cm / pyunits.s)
-                ** b.holdup_exp
+                == b.holdup_A + b.holdup_B * vel_bed_dimensionless**b.holdup_exp
             )
 
         @self.Constraint(doc="Resin surface area per vol")
