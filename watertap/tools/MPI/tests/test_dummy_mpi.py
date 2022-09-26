@@ -11,16 +11,28 @@
 #
 ###############################################################################
 
-from .reverse_osmosis_0D import ReverseOsmosis0D
-from .reverse_osmosis_1D import ReverseOsmosis1D
-from .nanofiltration_0D import NanoFiltration0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
-from .pressure_exchanger import PressureExchanger
-from .pressure_changer import Pump, EnergyRecoveryDevice
-from .crystallizer import Crystallization
-from .uv_aop import Ultraviolet0D
-from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import Electrodialysis1D
-from .gac import GAC
-from .ion_exchange_0D import IonExchange0D
+import pytest
+import numpy as np
+from watertap.tools.MPI.dummy_mpi import DummyCOMM
+
+
+@pytest.mark.integration
+def test_dummy_mpi():
+    comm = DummyCOMM
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
+    n_arr = 3
+    dummy_array1 = np.arange(n_arr)
+    comm.Bcast(dummy_array1)
+    returned_array = comm.bcast(dummy_array1)
+    returned_list = comm.allgather(dummy_array1)
+    recvbuf = (np.zeros(n_arr), [n_arr])
+    comm.Gatherv(sendbuf=dummy_array1, recvbuf=recvbuf, root=0)
+
+    assert comm is DummyCOMM
+    assert rank == 0
+    assert size == 1
+    assert returned_array is dummy_array1
+    assert returned_list == [dummy_array1]
+    assert (recvbuf[0] == dummy_array1).all
