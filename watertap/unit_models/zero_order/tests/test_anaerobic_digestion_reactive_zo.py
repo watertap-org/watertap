@@ -41,7 +41,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 solver = get_solver()
 
 
-class TestAnaerobicDigestionReactive:
+class TestAnaerobicDigestionReactiveZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
