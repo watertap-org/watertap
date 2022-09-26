@@ -5,7 +5,13 @@ defined_flows:
     value: 0.08
     units: USD_2020/kWh
   magnesium_chloride:
-    value: 278
+    value: 0.0786     # $0.69/gal
+    units: USD_2020/kg
+  polymer:
+    value: 2.447      # $1.11/lb dry polymer
+    units: USD_2020/kg
+  struvite_product:
+    value: -0.1     # value from https://www.researchgate.net/figure/Estimating-cost-of-phosphorus-recovery-as-struvite-from-digester-supernatant_tbl1_7405260
     units: USD_2020/kg
 global_parameters:
   plant_lifetime:
@@ -27,7 +33,7 @@ global_parameters:
     value: 0
     units: dimensionless
   maintenance_costs_percent_FCI:
-    value: 0.02 #changed from 0 which was provided in 9/17 report.
+    value: 0.02
     units: 1/year
   laboratory_fees_percent_FCI:
     value: 0
@@ -45,5 +51,5 @@ global_parameters:
     units: dimensionless
   TIC:
     # Total Installed Cost
-    value: 2 #changed from 1.65 which was provided in 9/17 report.
+    value: 2
     units: dimensionless

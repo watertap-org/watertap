@@ -4,8 +4,8 @@ defined_flows:
   electricity:
     value: 0.08
     units: USD_2020/kWh
-  magnesium_chloride:
-    value: 278
+  ferric_chloride:
+    value: 0.27
     units: USD_2020/kg
 global_parameters:
   plant_lifetime:
@@ -27,7 +27,7 @@ global_parameters:
     value: 0
     units: dimensionless
   maintenance_costs_percent_FCI:
-    value: 0.02 #changed from 0 which was provided in 9/17 report.
+    value: 0.02
     units: 1/year
   laboratory_fees_percent_FCI:
     value: 0
@@ -45,5 +45,5 @@ global_parameters:
     units: dimensionless
   TIC:
     # Total Installed Cost
-    value: 2 #changed from 1.65 which was provided in 9/17 report.
+    value: 2
     units: dimensionless
