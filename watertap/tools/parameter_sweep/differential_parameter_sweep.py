@@ -16,10 +16,11 @@ from idaes.core.solvers import get_solver
 from idaes.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
+from pyomo.common.config import ConfigValue
 
-from watertap.tools.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.sampling_types import * # (SamplingType, LinearSample)
-from watertap.tools.parameter_sweep_class import (_ParameterSweepBase, ParameterSweep)
+from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
+from watertap.tools.parameter_sweep.sampling_types import * # (SamplingType, LinearSample)
+from watertap.tools.parameter_sweep.parameter_sweep import (_ParameterSweepBase, ParameterSweep)
 
 class DifferentialParameterSweep(_ParameterSweepBase):
 
@@ -34,6 +35,15 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         ),
     )
 
+    CONFIG.declare(
+        "guarantee_solves",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Guarantee a pre-specified number of solves.",
+        ),
+    )
+
     def __init__(self,
         # csv_results_file_name=None,
         # h5_results_file_name=None,
@@ -45,20 +55,14 @@ class DifferentialParameterSweep(_ParameterSweepBase):
     ):
 
         # Initialize the base Class
-        _ParameterSweepBase.__init__(self)
+        _ParameterSweepBase.__init__(options)
+
+        self.config 
 
         if guarantee_solves:
             raise NotImplementedError
 
         self.num_diff_samples = num_diff_samples
-
-        self.writer = ParameterSweepWriter(
-            self.comm,
-            csv_results_file_name=csv_results_file_name,
-            h5_results_file_name=h5_results_file_name,
-            debugging_data_dir=debugging_data_dir,
-            interpolate_nan_outputs=interpolate_nan_outputs
-        )
 
     def _create_differential_sweep_params(self, local_values, differential_sweep_specs):
 
