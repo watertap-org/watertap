@@ -143,6 +143,11 @@ setup(
         # add edb CLI commands
         "console_scripts": [
             "edb = watertap.edb.commands:command_base",
-        ]
+        ],
+        "watertap.flowsheets": [
+            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
+            "RO = watertap.examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination",
+            "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
+        ],
     },
 )
