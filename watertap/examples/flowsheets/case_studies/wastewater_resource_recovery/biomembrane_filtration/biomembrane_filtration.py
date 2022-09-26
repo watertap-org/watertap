@@ -101,21 +101,14 @@ def build():
             "database": m.db,
         },
     )
-    m.fs.P2 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
 
     m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
     m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.mabr.inlet)
-    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.P2.inlet)
-    m.fs.s04 = Arc(source=m.fs.P2.outlet, destination=m.fs.dmbr.inlet)
-    m.fs.s05 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s03 = Arc(source=m.fs.mabr.treated, destination=m.fs.dmbr.inlet)
+    m.fs.s04 = Arc(source=m.fs.dmbr.treated, destination=m.fs.product_H2O.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -147,9 +140,6 @@ def set_operating_conditions(m):
     m.fs.P1.load_parameters_from_database(use_default_removal=True)
     m.fs.P1.lift_height.fix(1)
 
-    m.fs.P2.load_parameters_from_database(use_default_removal=True)
-    m.fs.P2.lift_height.fix(1)
-
     # mabr
     m.fs.mabr.load_parameters_from_database(use_default_removal=True)
 
@@ -174,7 +164,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_reports(m):
-    unit_list = ["feed", "P1", "mabr", "P2", "dmbr"]
+    unit_list = ["feed", "P1", "mabr", "dmbr"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -190,7 +180,6 @@ def add_costing(m):
     m.fs.mabr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.dmbr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.P2.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
@@ -252,7 +241,6 @@ def display_metrics_results(m):
                 m.fs.mabr.costing.capital_cost
                 + m.fs.dmbr.costing.capital_cost
                 + m.fs.P1.costing.capital_cost
-                + m.fs.P2.costing.capital_cost
             )
             / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
@@ -383,9 +371,7 @@ def display_additional_results(m):
     print(f"MABR capital costs: {mabr_capital_costs:.4f} $M")
     dmbr_capital_costs = value(m.fs.dmbr.costing.capital_cost) / 1e6
     print(f"DMBR capital costs: {dmbr_capital_costs:.4f} $M")
-    pump_capital_costs = (
-        value(m.fs.P1.costing.capital_cost + m.fs.P2.costing.capital_cost) / 1e6
-    )
+    pump_capital_costs = value(m.fs.P1.costing.capital_cost) / 1e6
     print(f"Pump capital costs: {pump_capital_costs:.4f} $M")
 
     print("----------Operating costs----------")
