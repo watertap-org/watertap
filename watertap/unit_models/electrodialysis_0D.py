@@ -57,7 +57,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 class LimitingCurrentDensityMethod(Enum):
-    Constant_input = 0
+    InitialValue = 0
     # Empirical = 1
     # Theoretical = 2 TODO: 1 and 2
 
@@ -114,18 +114,18 @@ class Electrodialysis0DData(UnitModelBlockData):
     CONFIG.declare(
         "limiting_current_density_method",
         ConfigValue(
-            default=LimitingCurrentDensityMethod.Constant_input,
+            default=LimitingCurrentDensityMethod.InitialValue,
             domain=In(LimitingCurrentDensityMethod),
             description="Configuration for method to compute the limiting current density",
             doc="""
-           **default** - ``LimitingCurrentDensityMethod.Constant_input``
+           **default** - ``LimitingCurrentDensityMethod.InitialValue``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``LimitingCurrentDensityMethod.Constant_input``", "A contant limiting current density is provided by the user"
-           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: "
-           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: "
+           "``LimitingCurrentDensityMethod.InitialValue``", "Limiting current is calculated from a single initial value of the feed solution tested by the user."
+           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: TODO"
+           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: TODO"
        """,
         ),
     )
@@ -486,7 +486,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         if self.config.has_Nernst_diffusion_layer:
             self.current_dens_lim_ioa = Var(
                 self.flowsheet().time,
-                initialize=1,
+                initialize=500,
                 bounds=(0, 1000),
                 units=pyunits.amp * pyunits.meter**-2,
                 doc="Limiting Current Density accross the membrane as a function of the normalized length",
@@ -1035,7 +1035,7 @@ class Electrodialysis0DData(UnitModelBlockData):
         def eq_current_dens_lim_ioa(self, t):
             if (
                 self.config.limiting_current_density_method
-                == LimitingCurrentDensityMethod.Constant_input
+                == LimitingCurrentDensityMethod.InitialValue
             ):
                 return self.current_dens_lim_ioa[t] == (
                     self.config.limiting_current_density_data
@@ -1082,10 +1082,8 @@ class Electrodialysis0DData(UnitModelBlockData):
                 return self.conc_mem_surf_mol_ioa[mem, side, t, j] / (
                     0.5
                     * (
-                        self.concentrate.properties_in[t].conc_mol_phase_comp["Liq", j]
-                        + self.concentrate.properties_out[t].conc_mol_phase_comp[
-                            "Liq", j
-                        ]
+                        self.diluate.properties_in[t].conc_mol_phase_comp["Liq", j]
+                        + self.diluate.properties_out[t].conc_mol_phase_comp["Liq", j]
                     )
                 ) == (
                     1
@@ -1760,7 +1758,7 @@ class Electrodialysis0DData(UnitModelBlockData):
             if iscale.get_scaling_factor(self.current_dens_lim_ioa) is None:
                 if (
                     self.config.limiting_current_density_method
-                    == LimitingCurrentDensityMethod.Constant_input
+                    == LimitingCurrentDensityMethod.InitialValue
                 ):
                     sf = self.config.limiting_current_density_data**-1
                     iscale.set_scaling_factor(self.current_dens_lim_ioa, sf)
