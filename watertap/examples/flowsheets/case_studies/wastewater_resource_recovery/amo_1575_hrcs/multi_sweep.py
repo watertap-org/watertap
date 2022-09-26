@@ -12,11 +12,8 @@
 ###############################################################################
 import os
 import sys
-from watertap.tools.parameter_sweep import (
-    _init_mpi,
-    LinearSample,
-    parameter_sweep,
-)
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
+
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.hrcs as hrcs
 
 
