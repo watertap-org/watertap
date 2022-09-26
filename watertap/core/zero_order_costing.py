@@ -3426,6 +3426,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
 
         # Register flows
+        # TODO: Consider adding heat as a registered flow, since the inlet
+        #       stream to the membrane evaporator must be heated to ~37 C.
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
