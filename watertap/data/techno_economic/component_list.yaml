@@ -96,6 +96,8 @@ organic_liquid:
   constituent_longform: Organic Liquid
 organic_solid:
   constituent_longform: Organic Solid
+oxygen:
+  constituent_longform: Oxygen
 peracetic_acid:
   constituent_longform: Peracetic Acid
 perfluorooctane_sulfonate_pfos:
