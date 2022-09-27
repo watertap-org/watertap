@@ -40,7 +40,7 @@ def export_variables(flowsheet=None, exports=None):
         fs.feed.flow_mass_comp[0, "H2O"]
         + fs.feed.flow_mass_comp[0, "organic_solid"]
         + fs.feed.flow_mass_comp[0, "inorganic_solid"]
-        + fs.feed.flow_mass_comp[0, "organic_solid"]
+        + fs.feed.flow_mass_comp[0, "organic_liquid"]
         + fs.feed.flow_mass_comp[0, "carbon_dioxide"]
     )
     exports.add(
@@ -69,11 +69,11 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.feed.flow_mass_comp[0, "inorganic_solid"],
-        name="Inorganics(s) concentration",
+        name="Inorganics(s) mass flow",
         ui_units=pyunits.metric_ton / pyunits.day,
         display_units="ton/day",
         rounding=1,
-        description="Inlet inorganics(solid) concentration",
+        description="Inlet inorganics(solid) mass flow",
         is_input=True,
         input_category="Feed",
         is_output=True,
