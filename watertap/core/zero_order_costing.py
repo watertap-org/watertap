@@ -1205,6 +1205,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.MgCl2_flowrate[t0], "magnesium_chloride"
         )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties_byproduct[t0].flow_mass_comp["struvite"],
+            "struvite_product",
+        )
 
     def cost_fixed_bed(blk, number_of_parallel_units=1):
         """

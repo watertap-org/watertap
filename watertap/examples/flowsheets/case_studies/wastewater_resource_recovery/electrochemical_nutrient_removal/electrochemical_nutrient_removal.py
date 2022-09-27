@@ -69,27 +69,23 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["nitrogen", "phosphorus", "struvite"]}
+        solute_list=["nitrogen", "phosphorus", "struvite"]
     )
 
     # components
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
-    m.fs.product_struvite = Product(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
+    m.fs.product_struvite = Product(property_package=m.fs.prop)
     m.fs.pump = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "default",
-        }
+        property_package=m.fs.prop,
+        database=m.db,
+        process_subtype="default",
     )
     m.fs.electroNP = ElectroNPZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        }
+        property_package=m.fs.prop,
+        database=m.db,
     )
 
     # connections
@@ -135,15 +131,66 @@ def add_costing(m):
     )
 
     # add costing block
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    m.fs.electroNP.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.electroNP.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
 
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
+
+    m.fs.costing.annual_water_production = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.product_H2O.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.annual_water_inlet = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.total_annualized_cost = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+    )
+
+    m.fs.costing.LCOW_with_revenue = Expression(
+        expr=(
+            (
+                m.fs.costing.total_annualized_cost
+                + m.fs.costing.aggregate_flow_costs["struvite_product"]
+                + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
+            )
+            / m.fs.costing.annual_water_production
+        ),
+        doc="Levelized Cost of Water With Revenue",
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_water_inlet),
+        doc="Levelized Cost of Treatment Without Revenue",
+    )
+
+    m.fs.costing.LCOT_with_revenue = Expression(
+        expr=(
+            (
+                m.fs.costing.total_annualized_cost
+                + m.fs.costing.aggregate_flow_costs["struvite_product"]
+                + m.fs.costing.aggregate_flow_costs["magnesium_chloride"]
+            )
+            / m.fs.costing.annual_water_inlet
+        ),
+        doc="Levelized Cost of Treatment With Revenue",
+    )
 
     m.fs.costing.LCOS = Expression(
         expr=(
@@ -283,6 +330,24 @@ def display_costing(m):
         pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
     print(f"Levelized Cost of Water: {LCOW:.3f} $/m^3")
+    LCOW_with_revenue = value(
+        pyunits.convert(
+            m.fs.costing.LCOW_with_revenue,
+            to_units=m.fs.costing.base_currency / pyunits.m**3,
+        )
+    )
+    print(f"Levelized Cost of Water with Revenue: {LCOW_with_revenue:.4f} $/m3")
+
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Treatment: {LCOT:.3f} $/m^3")
+    LCOT_with_revenue = value(
+        pyunits.convert(
+            m.fs.costing.LCOT_with_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+        )
+    )
+    print(f"Levelized Cost of Treatment With Revenue: {LCOT_with_revenue:.3f} $/m^3")
 
     LCOS = value(
         pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2018 / pyunits.kg)
