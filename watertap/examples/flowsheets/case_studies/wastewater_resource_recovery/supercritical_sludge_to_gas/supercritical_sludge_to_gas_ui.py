@@ -61,7 +61,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.metric_ton / pyunits.day,
         display_units="ton/day",
         rounding=1,
-        description="Inlet organics(solid) concentration",
+        description="Inlet organics(solid) mass flow",
         is_input=True,
         input_category="Feed",
         is_output=True,
