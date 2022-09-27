@@ -45,7 +45,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=flow_mass,
-        name="Volumetric flow rate",
+        name="Mass flow rate",
         ui_units=pyunits.metric_ton / pyunits.day,
         display_units="ton/day",
         rounding=1,
