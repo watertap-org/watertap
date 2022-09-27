@@ -175,6 +175,7 @@ class TestAMO1690Flowsheet:
             0.179337, rel=1e-3
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame
