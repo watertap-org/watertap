@@ -361,11 +361,12 @@ class FlowsheetInterface:
     ) -> Dict[str, "FlowsheetInterface"]:
         """Get all flowsheet interfaces defined as entry points within the Python packages installed in the environment.
 
-        This uses the importlib ``metadata.entry_points()`` function to fetch the
-        list of flowsheets declared as part of a Python package distribution's entry_points section under the group ``group_name``.
+        This uses the :func:`importlib.metadata.entry_points` function to fetch the
+        list of flowsheets declared as part of a Python package distribution's `entry points <https://docs.python.org/3/library/importlib.metadata.html#entry-points>`_
+        under the group ``group_name``.
 
         To set up a flowsheet interface for discovery, locate your Python package distribution's file (normally
-        setup.py, pyproject.toml, or equivalent) and add an entry in the ``entry_points`` section.
+        :file:`setup.py`, :file:`pyproject.toml`, or equivalent) and add an entry in the ``entry_points`` section.
 
         For example, to add a flowsheet defined in :file:`watertap/examples/flowsheets/my_flowsheet.py`
         so that it can be discovered with the name ``my_flowsheet`` wherever the ``watertap`` package is installed,
@@ -377,7 +378,7 @@ class FlowsheetInterface:
                entry_points={
                    "watertap.flowsheets": [
                         # other flowsheet entry points
-                        "my_flowsheet = watertap.examples.flowsheets:my_flowsheet",
+                        "my_flowsheet = watertap.examples.flowsheets.my_flowsheet",
                    ]
                }
            )
