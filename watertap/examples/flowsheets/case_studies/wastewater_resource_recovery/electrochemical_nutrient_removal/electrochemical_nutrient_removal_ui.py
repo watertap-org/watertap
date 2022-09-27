@@ -282,6 +282,17 @@ def export_variables(flowsheet=None, exports=None):
         input_category="System costing",
         is_output=False,
     )
+    exports.add(
+        obj=fs.costing.struvite_product_cost,
+        name="Struvite cost",
+        ui_units=fs.costing.base_currency / pyunits.kg,
+        display_units="$/kg",
+        rounding=3,
+        description="Struvite cost is negative because it is sold",
+        is_input=True,
+        input_category="System costing",
+        is_output=False,
+    )
 
     # Outlets
     exports.add(
@@ -331,12 +342,45 @@ def export_variables(flowsheet=None, exports=None):
 
     # System metrics
     exports.add(
+        obj=fs.costing.LCOT,
+        name="LCOT",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of feed",
+        rounding=3,
+        description="Levelized cost of treatment including operating and capital costs",
+        is_input=False,
+        is_output=True,
+        output_category="Levelized cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.LCOT_with_revenue,
+        name="LCOT with revenue",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of feed",
+        rounding=3,
+        description="Levelized cost of treatment including revenue of struvite and disposal costs for MgCl2 and polymer",
+        is_input=False,
+        is_output=True,
+        output_category="Levelized cost metrics",
+    )
+    exports.add(
         obj=fs.costing.LCOW,
         name="LCOW",
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of centrate",
         rounding=3,
         description="Levelized cost of water including operating and capital costs",
+        is_input=False,
+        is_output=True,
+        output_category="Levelized cost metrics",
+    )
+    exports.add(
+        obj=fs.costing.LCOW_with_revenue,
+        name="LCOW with revenue",
+        ui_units=fs.costing.base_currency / pyunits.m**3,
+        display_units="$/m3 of centrate",
+        rounding=3,
+        description="Levelized cost of water including revenue of struvite and disposal costs for MgCl2 and polymer",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -351,8 +395,7 @@ def export_variables(flowsheet=None, exports=None):
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
-    )
-    # Normalized metrics
+    )  # Normalized metrics
     total_capital_norm = fs.costing.total_capital_cost / fs.feed.properties[0].flow_vol
     exports.add(
         obj=total_capital_norm,
@@ -535,7 +578,10 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # Revenue
-    total_revenue = -(fs.costing.aggregate_flow_costs["magnesium_chloride"])
+    total_revenue = -(
+        fs.costing.aggregate_flow_costs["struvite_product"]
+        + fs.costing.aggregate_flow_costs["magnesium_chloride"]
+    )
     exports.add(
         obj=total_revenue,
         name="Total",
@@ -543,6 +589,17 @@ def export_variables(flowsheet=None, exports=None):
         display_units="$/year",
         rounding=0,
         description="Total revenue - only includes the purchase of MgCl2 (not struvite revenue)",
+        is_input=False,
+        is_output=True,
+        output_category="Revenue",
+    )
+    exports.add(
+        obj=-fs.costing.aggregate_flow_costs["struvite_product"],
+        name="Struvite",
+        ui_units=fs.costing.base_currency / pyunits.year,
+        display_units="$/year",
+        rounding=0,
+        description="Revenue from selling struvite",
         is_input=False,
         is_output=True,
         output_category="Revenue",
