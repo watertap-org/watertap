@@ -173,7 +173,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.dimensionless,
         display_units="g MgCl2/g struvite",
         rounding=2,
-        description="MgCl2 Dosage per g of struvite product",
+        description="MgCl2 dosage per g of struvite product",
         is_input=True,
         input_category="ElectroNP",
         is_output=False,
