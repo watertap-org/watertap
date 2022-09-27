@@ -11,16 +11,31 @@
 #
 ###############################################################################
 
-from .reverse_osmosis_0D import ReverseOsmosis0D
-from .reverse_osmosis_1D import ReverseOsmosis1D
-from .nanofiltration_0D import NanoFiltration0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
-from .pressure_exchanger import PressureExchanger
-from .pressure_changer import Pump, EnergyRecoveryDevice
-from .crystallizer import Crystallization
-from .uv_aop import Ultraviolet0D
-from .electrodialysis_0D import Electrodialysis0D
-from .electrodialysis_1D import Electrodialysis1D
-from .gac import GAC
-from .ion_exchange_0D import IonExchange0D
+"""
+This module contains a zero-order representation of a cloth media filtration
+water treatment unit.
+"""
+
+from idaes.core import declare_process_block_class
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
+
+
+# Some more information about this module
+__author__ = "Travis Arnold"
+
+
+@declare_process_block_class("ClothMediaFiltrationZO")
+class ClothMediaFiltrationData(ZeroOrderBaseData):
+    """
+    Zero-Order model for a cloth media filtration water treatment unit.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "cloth_media_filtration"
+
+        build_sido(self)
+        constant_intensity(self)
