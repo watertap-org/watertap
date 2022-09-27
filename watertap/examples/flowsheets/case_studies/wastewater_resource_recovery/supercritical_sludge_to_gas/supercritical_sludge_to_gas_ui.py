@@ -133,7 +133,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.kWh / pyunits.metric_ton,
         display_units="kWh/ton of inlet flow rate",
         rounding=2,
-        description="Specific power relating the power to inlet mass flow rate",
+        description="Specific energy consumption with respect to influent mass",
         is_input=True,
         input_category="AT-HTL",
         is_output=False,
