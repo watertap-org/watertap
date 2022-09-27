@@ -145,6 +145,14 @@ def add_costing(m):
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
     m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
+    m.fs.costing.annual_water_inlet = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
     m.fs.costing.LCOS = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
