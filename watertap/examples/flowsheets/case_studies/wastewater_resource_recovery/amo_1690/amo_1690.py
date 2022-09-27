@@ -232,21 +232,21 @@ def display_results(m):
             m.fs.ad_byproduct.flow_mass_comp[0, "tss"], to_units=pyunits.kg / pyunits.hr
         )
     )
-    print(f"TSS byproduct production: {byproduct_tss_rate:.2f} m^3/hr")
+    print(f"TSS byproduct production: {byproduct_tss_rate:.2f} kg/hr")
 
     byproduct_cod_rate = value(
         pyunits.convert(
             m.fs.ad_byproduct.flow_mass_comp[0, "cod"], to_units=pyunits.kg / pyunits.hr
         )
     )
-    print(f"COD byproduct production: {byproduct_cod_rate:.2f} m^3/hr")
+    print(f"COD byproduct production: {byproduct_cod_rate:.2f} kg/hr")
 
     byproduct_tkn_rate = value(
         pyunits.convert(
             m.fs.ad_byproduct.flow_mass_comp[0, "tkn"], to_units=pyunits.kg / pyunits.hr
         )
     )
-    print(f"TKN byproduct production: {byproduct_tkn_rate:.2f} m^3/hr")
+    print(f"TKN byproduct production: {byproduct_tkn_rate:.2f} kg/hr")
 
 
 def add_costing(m):
