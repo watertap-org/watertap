@@ -57,7 +57,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.feed.flow_mass_comp[0, "organic_solid"],
-        name="Organics(s) concentration",
+        name="Organics(s) mass flow",
         ui_units=pyunits.metric_ton / pyunits.day,
         display_units="ton/day",
         rounding=1,
