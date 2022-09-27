@@ -42,19 +42,19 @@ def test_biomembrane_filtration():
 
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["H2O"]
-    ) == pytest.approx(104.226, rel=1e-3)
+    ) == pytest.approx(110.016, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["bod"]
-    ) == pytest.approx(6.562e-3, rel=1e-3)
+    ) == pytest.approx(1.193e-3, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["ammonium_as_nitrogen"]
     ) == pytest.approx(9.035e-4, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["nitrate"]
-    ) == pytest.approx(3.953e-4, rel=1e-3)
+    ) == pytest.approx(1.129e-4, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["tss"]
     ) == pytest.approx(2.317e-3, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.1229456, rel=1e-3)  # in M$/m**3
-    assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.01191, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.1604537, rel=1e-3)  # in M$/m**3
+    assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.11302, rel=1e-3)
