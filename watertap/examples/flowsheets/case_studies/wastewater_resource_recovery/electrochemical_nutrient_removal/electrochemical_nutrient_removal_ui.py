@@ -358,7 +358,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=3,
-        description="Levelized cost of treatment including revenue of struvite and consumption costs for MgCl2 and polymer",
+        description="Levelized cost of treatment including revenue of struvite and consumption costs for MgCl2",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
