@@ -206,14 +206,14 @@ def add_costing(m):
     )
 
     # combine results for system level costs - to be the same syntax as dye_desalination_withRO
-    @m.Expression()
-    def total_capital_cost(b, doc="Total capital cost"):
+    @m.Expression(doc="Total capital cost")
+    def total_capital_cost(b):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         )
 
-    @m.Expression()
-    def total_operating_cost(b, doc="Total operating cost"):
+    @m.Expression(doc="Total operating cost")
+    def total_operating_cost(b):
         return pyunits.convert(
             m.fs.zo_costing.total_fixed_operating_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
@@ -222,17 +222,17 @@ def add_costing(m):
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression()
-    def total_externalities(b, doc="Total cost of dye recovered and brine disposed"):
+    @m.Expression(doc="Total cost of dye recovered and brine disposed")
+    def total_externalities(b):
         return pyunits.convert(
             m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression()
-    def LCOT(
-        b, doc="Levelized cost of treatment with respect to volumetric feed flowrate"
-    ):
+    @m.Expression(
+        doc="Levelized cost of treatment with respect to volumetric feed flowrate"
+    )
+    def LCOT(b):
         return (
             b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
             + b.total_operating_cost
