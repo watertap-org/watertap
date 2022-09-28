@@ -48,8 +48,8 @@ Control Volumes
 
 This model has two control volumes for the concentrate and diluate channels.
 
-* Diluate_channel
-* Concentrate_channel
+* Diluate
+* Concentrate
 
 Ports
 -----
