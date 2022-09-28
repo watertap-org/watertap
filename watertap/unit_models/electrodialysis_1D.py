@@ -63,7 +63,6 @@ class LimitingCurrentDensityMethod(Enum):
 class ElectricalOperationMode(Enum):
     Constant_Current = 0
     Constant_Voltage = 1
-    # Theoretical = 2 TODO: 1 and 2
 
 
 # Name of the unit model
@@ -135,8 +134,8 @@ class Electrodialysis1DData(UnitModelBlockData):
            :header: "Configuration Options", "Description"
 
            "``LimitingCurrentDensityMethod.InitialValue``", "Limiting current is calculated from a single initial value of the feed solution tested by the user." 
-           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: TODO "
-           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: TODO "
+           "``LimitingCurrentDensityMethod.Empirical``", "Limiting current density is calculated from the empirical equation: TODO "
+           "``LimitingCurrentDensityMethod.Theoretical``", "Limiting current density is calculated from a theoretical equation: TODO "
        """,
         ),
     )
@@ -332,7 +331,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.membrane_set = Set(
             initialize=["cem", "aem"]
         )  #   cem = Cation-Exchange Membrane aem = Anion-Exchange Membrane
-        self.electrode_side = Set(initialize=["cathode_left", "anode_right"])
+        self.electrode_side_set = Set(initialize=["cathode_left", "anode_right"])
         # Length var for building 1D control volume
         self.cell_length = Var(
             initialize=0.5,
@@ -588,7 +587,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         ):
             self.conc_mem_surf_mol_x = Var(
                 self.membrane_set,
-                self.electrode_side,
+                self.electrode_side_set,
                 self.flowsheet().time,
                 self.diluate.length_domain,
                 self.config.property_package.ion_set,
@@ -1085,7 +1084,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         @self.Constraint(
             self.membrane_set,
-            self.electrode_side,
+            self.electrode_side_set,
             self.flowsheet().time,
             self.diluate.length_domain,
             self.ion_set,
@@ -1176,7 +1175,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         self.dl_thickness_x = Var(
             self.membrane_set,
-            self.electrode_side,
+            self.electrode_side_set,
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.0005,
@@ -1211,7 +1210,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         @self.Constraint(
             self.membrane_set,
-            self.electrode_side,
+            self.electrode_side_set,
             self.flowsheet().time,
             self.diluate.length_domain,
             self.config.property_package.ion_set,
@@ -1431,7 +1430,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         @self.Constraint(
             self.membrane_set,
-            self.electrode_side,
+            self.electrode_side_set,
             self.flowsheet().time,
             self.diluate.length_domain,
             doc="Calculate the total non-ohmic potential across the two diffusion layers of an iem.",
@@ -1636,7 +1635,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         )
                 if hasattr(blk[k], "conc_mem_surf_mol_x"):
                     for mem in blk[k].membrane_set:
-                        for side in blk[k].electrode_side:
+                        for side in blk[k].electrode_side_set:
                             for j in blk[k].ion_set:
                                 blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
                                     blk[k]
@@ -1690,7 +1689,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                         )
                 if hasattr(blk[k], "conc_mem_surf_mol_x"):
                     for mem in blk[k].membrane_set:
-                        for side in blk[k].electrode_side:
+                        for side in blk[k].electrode_side_set:
                             for j in blk[k].ion_set:
                                 blk[k].conc_mem_surf_mol_x[mem, side, set, j].set_value(
                                     blk[k]
