@@ -73,6 +73,17 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Feed",
     )
+    exports.add(
+        obj=fs.tb_nf_ro.properties_out[0].temperature,
+        name="Solution temperature",
+        ui_units=pyunits.K,
+        display_units="K",
+        rounding=2,
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
     # Unit model data, NF Pump
     exports.add(
         obj=fs.dye_separation.P1.eta_motor,
@@ -82,7 +93,7 @@ def export_variables(flowsheet=None, exports=None):
         rounding=2,
         description="NF pump- motor efficiency",
         is_input=True,
-        input_category="NF Pump",
+        input_category="rHGO Nanofiltration",
         is_output=False,
     )
     exports.add(
@@ -93,7 +104,7 @@ def export_variables(flowsheet=None, exports=None):
         rounding=2,
         description="NF pump efficiency",
         is_input=True,
-        input_category="NF Pump",
+        input_category="rHGO Nanofiltration",
         is_output=False,
     )
     # Unit model data, rHGO Nanofiltration
@@ -132,7 +143,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.dye_separation.nanofiltration.water_permeability_coefficient[0],
-        name="Water permeability Coefficient, A",
+        name="NF Water permeability Coefficient, A",
         ui_units=pyunits.L / pyunits.m**2 / pyunits.hour / pyunits.bar,
         display_units="LMH/bar",
         rounding=2,
@@ -153,6 +164,78 @@ def export_variables(flowsheet=None, exports=None):
         input_category="rHGO Nanofiltration",
         is_output=False,
     )
+
+    # Unit model, secondary WWTP
+    exports.add(
+        obj=fs.pretreatment.wwtp.energy_electric_flow_vol_inlet,
+        name="Specific energy consumption per inlet flow rate",
+        ui_units=pyunits.kWh / pyunits.m**3,
+        display_units="kWh/m3",
+        rounding=2,
+        description="Electrical energy consumption with respect to influent volumetric flow rate",
+        is_input=True,
+        input_category="Secondary Wastewater Treatment",
+        is_output=False,
+    )
+
+    # Unit model, RO
+    v = fs.desalination.RO.A_comp
+    exports.add(
+        obj=v[0, "H2O"],
+        name="RO Water permeability coefficient, A",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=12,
+        description="Membrane water permeability Coefficient, A",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
+    v = fs.desalination.RO.B_comp
+    exports.add(
+        obj=v[0, "TDS"],
+        name="RO Salt permeability coefficient, B",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=8,
+        description="Membrane salt permeability Coefficient, B",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.desalination.P2.efficiency_pump[0],
+        name="RO high-pressure pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="RO high-pressure pump efficiency",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.desalination.P3.efficiency_pump[0],
+        name="RO booster pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="RO booster pump efficiency",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.desalination.PXR.efficiency_pressure_exchanger[0],
+        name="Isobaric pressure exchanger efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Isobaric pressure exchanger efficiency",
+        is_input=True,
+        input_category="Reverse Osmosis",
+        is_output=False,
+    )
     # Unit cost data, NF pump
     exports.add(
         obj=fs.zo_costing.pump_electricity.pump_cost["default"],
@@ -162,7 +245,7 @@ def export_variables(flowsheet=None, exports=None):
         rounding=0,
         description="Pump capital cost parameter",
         is_input=True,
-        input_category="Pump costing",
+        input_category="rHGO NF costing",
         is_output=False,
     )
     # Unit cost data, NF
@@ -183,10 +266,103 @@ def export_variables(flowsheet=None, exports=None):
         name="NF membrane replacement rate",
         ui_units=getattr(pyunits, str(v._units)),
         display_units="fraction",
+        rounding=2,
         is_input=True,
         input_category="rHGO NF costing",
         is_output=False,
     )
+    # Unit cost data, RO
+    v = fs.ro_costing.reverse_osmosis.membrane_cost
+    exports.add(
+        obj=v,
+        name="RO membrane cost",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="RO costing",
+        is_output=False,
+    )
+    v = fs.ro_costing.reverse_osmosis.factor_membrane_replacement
+    exports.add(
+        obj=v,
+        name="RO membrane replacement rate",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units="fraction",
+        rounding=2,
+        is_input=True,
+        input_category="RO costing",
+        is_output=False,
+    )
+    v = fs.ro_costing.high_pressure_pump.cost
+    exports.add(
+        obj=v,
+        name="RO unit pump cost",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        description="Unit pump cost for high-pressure and booster pump",
+        is_input=True,
+        input_category="RO costing",
+        is_output=False,
+    )
+    v = fs.ro_costing.energy_recovery_device.pressure_exchanger_cost
+    exports.add(
+        obj=v,
+        name=v.doc,
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="RO costing",
+        is_output=False,
+    )
+    # System costs
+    v = fs.ro_costing.electricity_base_cost
+    exports.add(
+        obj=v,
+        name="Electricity cost",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="System Costs",
+        is_output=False,
+    )
+    v = fs.zo_costing.waste_disposal_cost
+    exports.add(
+        obj=v,
+        name="Waste disposal cost per volume",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="System Costs",
+        is_output=False,
+    )
+    v = fs.zo_costing.dye_mass_cost
+    exports.add(
+        obj=v,
+        name="Value of recovered dye",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="System Costs",
+        is_output=False,
+    )
+    v = fs.zo_costing.recovered_water_cost
+    exports.add(
+        obj=v,
+        name="Value of recovered water",
+        ui_units=getattr(pyunits, str(v._units)),
+        display_units=str(v._units),
+        rounding=2,
+        is_input=True,
+        input_category="System Costs",
+        is_output=False,
+    )
+    # NF Results for rejection and membrane area
     exports.add(
         obj=fs.dye_separation.nanofiltration.rejection_comp[0, "dye"],
         name="Solute Rejection- dye",
@@ -234,6 +410,28 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Outlets",
     )
     exports.add(
+        obj=fs.dye_retentate.properties[0].conc_mass_comp["dye"],
+        name="NF retentate concentration, dye",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="NF retentate concentration, total dissolved solids (TDS)",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.dye_retentate.properties[0].conc_mass_comp["tds"],
+        name="NF retentate concentration, tds",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="NF retentate concentration, total dissolved solids (TDS)",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
         obj=fs.permeate.properties[0].flow_vol,
         name="Volumetric RO permeate flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
@@ -245,12 +443,34 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Outlets",
     )
     exports.add(
+        obj=fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        name="RO permeate concentration, TDS",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="RO permeate concentration, total dissolved solids (TDS), including residual dye,",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
         obj=fs.brine.properties[0].flow_vol,
         name="Volumetric RO brine flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
         description="RO brine flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.brine.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        name="RO brine concentration, TDS",
+        ui_units=pyunits.kg / pyunits.m**3,
+        display_units="kg/m3",
+        rounding=2,
+        description="RO brine concentration, total dissolved solids (TDS), including residual dye,",
         is_input=False,
         is_output=True,
         output_category="Outlets",

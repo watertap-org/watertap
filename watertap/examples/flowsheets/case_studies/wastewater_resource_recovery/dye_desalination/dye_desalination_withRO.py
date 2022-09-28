@@ -436,7 +436,7 @@ def add_costing(m):
             "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
-
+    m.fs.ro_costing.electricity_base_cost = value(m.fs.zo_costing.electricity_cost)
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
     m.fs.ro_costing.cost_process()
