@@ -11,11 +11,12 @@
 #
 ###############################################################################
 import pytest
+from io import StringIO
 
-from pyomo.environ import ConcreteModel, assert_optimal_termination, value
+from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
@@ -50,22 +51,17 @@ def test_complete_condense():
     assert_units_consistent(m)
     assert degrees_of_freedom(m) == 0
 
-    m.fs.unit.initialize()
+    m.fs.unit.initialize_build()
 
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(-2.4358e6, rel=1e-4) == value(m.fs.unit.control_volume.heat[0])
-    assert pytest.approx(1.0, rel=1e-4) == value(
-        m.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+    # Check values
+    distillate_blk = m.fs.unit.control_volume.properties_out[0]
+    assert distillate_blk.flow_mass_phase_comp["Liq", "H2O"].value == pytest.approx(
+        1.0000, rel=1e-3
     )
-    assert pytest.approx(1e-10, rel=1e-4) == value(
-        m.fs.unit.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
-    )
-    assert pytest.approx(5.0e4, rel=1e-4) == value(m.fs.unit.outlet.pressure[0])
-
-    m.fs.unit.report()
-
-    perf_dict = m.fs.unit._get_performance_contents()
-    assert perf_dict == {"vars": {"Heat duty": m.fs.unit.control_volume.heat[0]}}
+    assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
+    assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
+    assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)

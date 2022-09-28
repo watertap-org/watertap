@@ -1,4 +1,7 @@
 default:
+  energy_electric_flow_vol_inlet:
+    value: 0.0
+    units: kWh/m^3
   air_temperature:
     value: 298
     units: kelvin
@@ -60,10 +63,10 @@ default:
     units: dimensionless
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
       Water Utilities (2008).
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0.98
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     aluminum:
       value: 0.98
       units: dimensionless

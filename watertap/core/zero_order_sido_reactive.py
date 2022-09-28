@@ -17,7 +17,7 @@ reactions.
 """
 
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
@@ -30,7 +30,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 # Set up logger
@@ -40,16 +40,16 @@ _log = idaeslog.getLogger(__name__)
 def build_sido_reactive(self):
     """
     Helper method for constructing material balances for zero-order type models
-    with one inlet and two outlets including chemcial reactions.
+    with one inlet and two outlets including chemical reactions.
 
     Three StateBlocks are added with corresponding Ports:
-        * properties_inlet
+        * properties_in
         * properties_treated
         * properties_byproduct
 
     Additional variables are:
         * recovery_vol (indexed by time)
-        * removal_frac_mass_solute (indexed by time and solute)
+        * removal_frac_mass_comp (indexed by time and component)
         * extent_of_reaction (indexed by time and reactions)
 
     Four additional constraints are added to represent the material balances
@@ -103,7 +103,11 @@ def build_sido_reactive(self):
     except KeyError:
         raise KeyError(
             f"{self.name} - database provided does not contain a list of "
-            f"reactions for this technology."
+            f"reactions for this technology. "
+            f"Tech type: {self._tech_type}, Process subtype: {self.config.process_subtype}"
+            f"Database Parameters: {dbparams}\n"
+            f"Datbase path: {self.config.database._dbpath}"
+            f"END"
         )
     # Create indexing set for reactions
     self.reaction_set = Set(initialize=rxn_ids)
@@ -114,10 +118,10 @@ def build_sido_reactive(self):
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        bounds=(1e-8, 1.0000001),
+        bounds=(0.0, 1.0000001),
         doc="Mass recovery fraction of water in the treated stream",
     )
-    self.removal_frac_mass_solute = Var(
+    self.removal_frac_mass_comp = Var(
         self.flowsheet().time,
         self.config.property_package.solute_set,
         domain=NonNegativeReals,
@@ -158,7 +162,7 @@ def build_sido_reactive(self):
     @self.Constraint(
         self.flowsheet().time,
         self.reaction_set,
-        doc="Calcuation of reaction extent from conversion",
+        doc="Calculation of reaction extent from conversion",
     )
     def reaction_extent_equation(b, t, r):
         # Get key reactant from database
@@ -293,7 +297,7 @@ def build_sido_reactive(self):
     )
     def solute_removal_equation(b, t, j):
         return (
-            b.removal_frac_mass_solute[t, j]
+            b.removal_frac_mass_comp[t, j]
             * (
                 b.properties_in[t].flow_mass_comp[j]
                 + sum(b.generation_rxn_comp[t, r, j] for r in self.reaction_set)
@@ -322,7 +326,7 @@ def build_sido_reactive(self):
     }
 
     self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
-    self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
+    self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
     self._perf_var_dict["Reaction Extent"] = self.extent_of_reaction
 
     self._get_Q = _get_Q_sidor

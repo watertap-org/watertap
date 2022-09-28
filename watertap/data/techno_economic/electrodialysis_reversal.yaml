@@ -1,7 +1,4 @@
 default:
-  energy_electric_flow_vol_inlet:
-    value: 0.0
-    units: kWh/m^3
   elec_coeff_1:
     value: 0.2534
     units: kWh/m^3
@@ -24,10 +21,10 @@ default:
     value: 0.9214
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     tds:
       value: 0.808696
       units: dimensionless

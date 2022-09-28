@@ -1,3 +1,5 @@
+acetic_acid:
+  constituent_longform: Acetic Acid
 aluminum:
   constituent_longform: Aluminum
 ammonia_as_nitrogen:
@@ -42,6 +44,8 @@ endothall:
   constituent_longform: Endothall
 endrin:
   constituent_longform: Endrin
+filtration_media:
+  constituent_longform: Filtration Media
 fluoride:
   constituent_longform: Fluoride
 giardia_lamblia:
@@ -54,6 +58,8 @@ hydroxide_alkalinity_as_caco3:
   constituent_longform: Hydroxide Alkalinity as CaCO3
 iron:
   constituent_longform: Iron
+inorganic_solid:
+  constituent_longform: Inorganic Solid
 lead:
   constituent_longform: Lead
 magnesium:
@@ -88,6 +94,14 @@ oil_and_grease:
   constituent_longform: Oil and Grease
 oily_matter:
   constituent_longform: Oily Matter
+organic_liquid:
+  constituent_longform: Organic Liquid
+organic_solid:
+  constituent_longform: Organic Solid
+oxygen:
+  constituent_longform: Oxygen
+peracetic_acid:
+  constituent_longform: Peracetic Acid
 perfluorooctane_sulfonate_pfos:
   constituent_longform: Perfluorooctane sulfonate (PFOS)
 perfluorootanoate_pfoa:
@@ -124,6 +138,8 @@ surfactants:
   consituent_longform: Surfactants
 tds:
   constituent_longform: Total Dissolved Solids (TDS)
+tkn:
+  constituent_longform: Total Kjeldahl Nitrogen (TKN)
 toc:
   constituent_longform: Total Organic Carbon (TOC)
 total_coliforms_fecal_ecoli:

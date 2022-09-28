@@ -40,7 +40,7 @@ from idaes.core import (
     MaterialFlowBasis,
 )
 from idaes.core.util.constants import Constants
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
@@ -307,7 +307,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         self.slope = Var(
             self.flowsheet().config.time,
             initialize=1.86,
-            bounds=(1e-8, 10),
+            bounds=(0.0, 10),
             domain=NonNegativeReals,
             units=pyunits.mg / pyunits.L,
             doc="Slope relation between TSS (mg/L) and Turbidity (NTU)",
@@ -686,7 +686,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
             )
             power_usage = pyunits.convert(
                 vel_grad**2
-                * self.control_volume.properties_out[t].visc_d["Liq"]
+                * self.control_volume.properties_out[t].visc_d_phase["Liq"]
                 * self.rapid_mixing_basin_vol[t]
                 * self.num_rapid_mixing_basins,
                 to_units=pyunits.kW,
@@ -1070,7 +1070,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf2 = 0
             for t in self.control_volume.properties_out:
                 sf1 += iscale.get_scaling_factor(
-                    self.control_volume.properties_out[t].visc_d["Liq"]
+                    self.control_volume.properties_out[t].visc_d_phase["Liq"]
                 )
             sf2 = iscale.get_scaling_factor(self.rapid_mixing_vel_grad)
             sf3 = iscale.get_scaling_factor(self.rapid_mixing_basin_vol)
@@ -1210,11 +1210,13 @@ class CoagulationFlocculationData(UnitModelBlockData):
                     self.control_volume.properties_out[t].dens_mass_phase, 1e-3
                 )
             if (
-                iscale.get_scaling_factor(self.control_volume.properties_out[t].visc_d)
+                iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].visc_d_phase
+                )
                 is None
             ):
                 iscale.set_scaling_factor(
-                    self.control_volume.properties_out[t].visc_d, 1e3
+                    self.control_volume.properties_out[t].visc_d_phase, 1e3
                 )
 
             # need to update scaling factors for TSS, Sludge, and TDS to account for the

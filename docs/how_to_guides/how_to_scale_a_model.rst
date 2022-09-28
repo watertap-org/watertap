@@ -37,10 +37,10 @@ This object is a Pyomo Suffix and can be displayed to show what variables have s
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
 
-   m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+   m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
    blk = m.fs.unit
 
@@ -93,7 +93,7 @@ A user can achieve this by setting the default scaling at the property Parameter
    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
 
    prop = m.fs.properties
@@ -165,7 +165,7 @@ The scaling factors are automatically passed-in when using the default WaterTAP 
 
 .. testcode:: [scaling_factor]
 
-    from idaes.core.util import get_solver
+    from idaes.core.solvers import get_solver
     # Create default WaterTAP solver object
     opt = get_solver()
     # Solve model m

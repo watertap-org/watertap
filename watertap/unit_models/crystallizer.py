@@ -39,7 +39,7 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
@@ -170,14 +170,14 @@ class CrystallizationData(UnitModelBlockData):
         self.crystallization_yield = Var(
             solute_set,
             initialize=0.5,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Crystallizer solids yield",
         )
 
         self.product_volumetric_solids_fraction = Var(
             initialize=0.25,
-            bounds=(1e-8, 1),
+            bounds=(0.0, 1),
             units=pyunits.dimensionless,
             doc="Volumetric fraction of solids in slurry product (i.e. solids-liquid mixture).",
         )
@@ -435,7 +435,7 @@ class CrystallizationData(UnitModelBlockData):
                 + self.work_mechanical[0]
                 - sum(
                     b.properties_solids[0].flow_mass_phase_comp["Sol", j]
-                    * b.properties_solids[0].dh_crystallization[j]
+                    * b.properties_solids[0].dh_crystallization_mass_comp[j]
                     for j in solute_set
                 )
                 == 0
@@ -475,10 +475,10 @@ class CrystallizationData(UnitModelBlockData):
             dens_cp_avg = self.approach_temperature_heat_exchanger * (
                 b.product_volumetric_solids_fraction
                 * b.properties_solids[0].dens_mass_solute["Sol"]
-                * b.properties_solids[0].cp_solute["Sol"]
+                * b.properties_solids[0].cp_mass_solute["Sol"]
                 + (1 - b.product_volumetric_solids_fraction)
                 * b.properties_out[0].dens_mass_phase["Liq"]
-                * b.properties_out[0].cp_phase["Liq"]
+                * b.properties_out[0].cp_mass_phase["Liq"]
             )
             return b.magma_circulation_flow_vol * dens_cp_avg == pyunits.convert(
                 b.work_mechanical[0], to_units=pyunits.J / pyunits.s
@@ -774,7 +774,7 @@ class CrystallizationData(UnitModelBlockData):
         var_dict["Operating Pressure (Pa)"] = self.pressure_operating
         var_dict["Magma density of solution (Kg/m**3)"] = self.dens_mass_magma
         var_dict["Slurry density (Kg/m3)"] = self.dens_mass_slurry
-        var_dict["Heat requirement (kW)"] = self.work_mechanical[time_point]
+        var_dict["Heat requirement"] = self.work_mechanical[time_point]
         var_dict["Crystallizer diameter (m)"] = self.diameter_crystallizer
         var_dict[
             "Magma circulation flow rate (m**3/s)"
@@ -782,7 +782,7 @@ class CrystallizationData(UnitModelBlockData):
         var_dict[
             "Vol. frac. of solids in suspension, 1-E"
         ] = self.product_volumetric_solids_fraction
-        var_dict["Residence time (h)"] = self.t_res
+        var_dict["Residence time"] = self.t_res
         var_dict["Crystallizer minimum active volume (m**3)"] = self.volume_suspension
         var_dict["Suspension height in crystallizer (m)"] = self.height_slurry
         var_dict["Crystallizer height (m)"] = self.height_crystallizer

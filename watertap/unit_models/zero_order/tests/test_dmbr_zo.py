@@ -28,10 +28,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import DMBRZO
 from watertap.core.wt_database import Database
@@ -90,12 +90,12 @@ class TestDMBRZO:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
-            if j not in data["removal_frac_mass_solute"].keys():
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            if j not in data["removal_frac_mass_comp"].keys():
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert (
@@ -147,29 +147,29 @@ class TestDMBRZO:
             model.fs.unit.properties_in[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(0.01675, rel=1e-2) == value(
+        assert pytest.approx(0.015, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(164.1791, rel=1e-5) == value(
+        assert pytest.approx(33.3333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(10.4478, rel=1e-5) == value(
+        assert pytest.approx(3.33333, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(108.9552, rel=1e-5) == value(
+        assert pytest.approx(130, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
         )
 
-        assert pytest.approx(5e-3, rel=1e-2) == value(
+        assert pytest.approx(4.5e-3, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(1.6e-7, rel=1e-5) == value(
+        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
-        assert pytest.approx(8e-10, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.64, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

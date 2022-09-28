@@ -17,10 +17,10 @@ default:
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     nonvolatile_toc:
       value: 0.5
       units: dimensionless
@@ -48,4 +48,4 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.998798
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and E. Coli)"
+      constituent_longform: Total Coliforms (including fecal coliform and E. Coli)

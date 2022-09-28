@@ -19,10 +19,10 @@ default:
     value: 0.85
     units: dimensionless
     reference: Based on Vogtle case study data.
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     ndma:
       value: 0.05
       units: dimensionless
@@ -112,14 +112,14 @@ rHGO_dye_rejection:
       units: USD_2018/m^2
     membrane_replacement_rate:
       value: 0.15
-      units: dimensionless
+      units: 1/year
   recovery_frac_mass_H2O:
     value: 0.75
     units: dimensionless
-  default_removal_frac_mass_solute:
+  default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
+  removal_frac_mass_comp:
     dye:
       value: 0.9839
       units: dimensionless

@@ -35,10 +35,11 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -214,13 +215,14 @@ class CompressorData(UnitModelBlockData):
         self.add_port(name="inlet", block=self.control_volume.properties_in)
         self.add_port(name="outlet", block=self.control_volume.properties_out)
 
-    def initialize(
+    def initialize_build(
         blk,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
         hold_state=False,
+        heat=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -234,7 +236,8 @@ class CompressorData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
-            hold_state: boolean indicating if the inlet conditions should stay fixed
+            hold_state : boolean indicating if the inlet conditions should stay fixed
+            heat : inital guess for heat transfer out of condenser (negative)
 
         Returns: None
         """
@@ -253,6 +256,24 @@ class CompressorData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # # ---------------------------------------------------------------------
+        # check if guess is needed for the heat based on degrees of freedom
+        has_guessed_heat = False
+        if degrees_of_freedom(blk) > 1:
+            raise RuntimeError(
+                "The model has {} degrees of freedom rather than 0 or 1 (with a guessed heat) for initialization."
+                " This error suggests that an outlet condition has not been fixed"
+                " for initialization.".format(degrees_of_freedom(blk))
+            )
+        elif degrees_of_freedom(blk) == 1:
+            if heat is not None:
+                blk.control_volume.heat.fix(heat)
+                has_guessed_heat = True
+            else:
+                raise RuntimeError(
+                    "The model has 1 degree of freedom rather than 0 for initialization."
+                    " A common error for this model is not providing a guess for heat in the initialization."
+                )
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -265,6 +286,8 @@ class CompressorData(UnitModelBlockData):
             # Release Inlet state
             blk.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        if has_guessed_heat:
+            blk.control_volume.heat.unfix()
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Heat duty": self.control_volume.heat[time_point]}

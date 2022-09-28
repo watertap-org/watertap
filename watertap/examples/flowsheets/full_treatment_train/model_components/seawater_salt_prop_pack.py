@@ -36,8 +36,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase
+from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -51,7 +51,7 @@ from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.util.misc import extract_data
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -277,7 +277,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=seawater_mass_frac_dict,
-            bounds=(1e-8, 100),
+            bounds=(0.0, 100),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -306,7 +306,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
@@ -325,7 +325,7 @@ class PropStateBlockData(StateBlockData):
     def _flow_vol(self):
         self.flow_vol = Var(
             initialize=1e-3,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -346,7 +346,7 @@ class PropStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(0.0, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate",
         )

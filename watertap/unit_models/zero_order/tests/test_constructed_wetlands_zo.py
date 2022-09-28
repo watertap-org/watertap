@@ -22,17 +22,20 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
+    Block,
 )
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import ConstructedWetlandsZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -71,12 +74,12 @@ class TestConstructedWetlandsZO_w_default_removal:
             == data["recovery_frac_mass_H2O"]["value"]
         )
 
-        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
             else:
-                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -118,3 +121,42 @@ class TestConstructedWetlandsZO_w_default_removal:
     def test_report(self, model):
 
         model.fs.unit.report()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={
+            "solute_list": [
+                "ammonium_as_nitrogen",
+            ]
+        }
+    )
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = ConstructedWetlandsZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
+    m.fs.unit1.inlet.flow_mass_comp[0, "ammonium_as_nitrogen"].fix(1.00625e-4)
+
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+
+    assert isinstance(m.fs.costing.constructed_wetlands, Block)
+    assert isinstance(m.fs.costing.constructed_wetlands.unit_capex, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0

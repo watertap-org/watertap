@@ -16,7 +16,7 @@ This module contains a zero-order representation of a CANDO+P reactor unit.
 
 from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
-from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
+from watertap.core import build_sido_reactive, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Travis Arnold"
@@ -86,7 +86,7 @@ class CANDOPData(ZeroOrderBaseData):
         self.oxygen_nitrogen_ratio = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Oxygen consumed / nitrogen reacted ratio",
+            doc="Oxygen consumed - nitrogen reacted ratio",
         )
         self._fixed_perf_vars.append(self.oxygen_nitrogen_ratio)
         self._perf_var_dict[

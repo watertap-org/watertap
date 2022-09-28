@@ -1,22 +1,24 @@
-WaterTAP User Interface
-========================
+.. _ref_ui-fsapi:
 
-API for WaterTAP User Interface
---------------------------------
-This is the Python API that will be called byt the UI backend to process
+WaterTAP User Interface API
+===========================
+This is the Python API that will be called by the UI backend to process
 changes from the UI front-end.
 
-Main API module
-^^^^^^^^^^^^^^^
+.. include:: <isonum.txt>
 
-.. automodule:: watertap.ui.api
-    :members:
-    :special-members: __init__, __eq__
-    :noindex:
+.. py:currentmodule:: watertap.ui.fsapi
 
-Utilities for the API
-^^^^^^^^^^^^^^^^^^^^^
+.. contents:: Contents
+    :depth: 1
+    :local:
 
-.. automodule:: watertap.ui.api_util
-    :members:
-    :noindex:
+Introduction
+------------
+
+This page describes an application programming interface (API) that is designed to help communicate information about a flowsheet and its variables to a user interface layer (or possibly several different kinds of user interface layers at the same time).
+The API also provides the ability, intended for the UI developer, to update the variable values and run "actions" such as building and solving the flowsheet.
+
+For how-to guides on specific tasks, see the :ref:`howto_ui-api`.
+
+The entire external-facing API is in :class:`FlowsheetInterface`.

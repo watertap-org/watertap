@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.12.0",  # from PyPI
+    "idaes-pse>=2.0.0a2",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/2.0.0.dev0.watertap.2022.05.18.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a3.zip"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.5.0dev",
+    version="0.6.0dev",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -101,12 +101,18 @@ setup(
         "scipy",
         # for parameter_sweep
         "h5py",
+        # for watertap.ui.api_model (though may be generally useful)
+        "pydantic",
+        "numpy",
+        # for importlib.metadata.entry_points()
+        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
             "pytest",
             "json-schema-for-humans",
             "mongomock",
+            "pandas",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
@@ -129,12 +135,20 @@ setup(
             "*.json",
             "*.yaml",
             "*.yml",
+            "*.csv",
+            "*.png",
         ],
     },
     entry_points={
         # add edb CLI commands
         "console_scripts": [
             "edb = watertap.edb.commands:command_base",
-        ]
+        ],
+        "watertap.flowsheets": [
+            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
+            "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
+            "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",
+            "biomembrane_filtration = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration_ui",
+        ],
     },
 )

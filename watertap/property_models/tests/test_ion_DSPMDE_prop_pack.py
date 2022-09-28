@@ -26,6 +26,7 @@ from idaes.core import (
     MaterialFlowBasis,
     MaterialBalanceType,
     AqueousPhase,
+    EnergyBalanceType,
 )
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
@@ -35,6 +36,9 @@ from watertap.property_models.ion_DSPMDE_prop_pack import (
     DSPMDEStateBlock,
     ActivityCoefficientModel,
     DensityCalculation,
+    ElectricalMobilityCalculation,
+    EquivalentConductivityCalculation,
+    TransportNumberCalculation,
 )
 from watertap.core.util.initialization import check_dof
 from idaes.core.util.model_statistics import *
@@ -43,20 +47,21 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+from idaes.core.util.exceptions import ConfigurationError
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 # Imports from idaes core
-from idaes.core.components import Solvent, Solute, Cation, Anion
-from idaes.core.phases import PhaseType as PT
+from idaes.core.base.components import Solvent, Solute, Cation, Anion
+from idaes.core.base.phases import PhaseType as PT
 
 # Imports from idaes generic models
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.state_definitions import FpcTP
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 # Import the idaes objects for Generic Properties
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 
@@ -79,11 +84,11 @@ def model():
                 ("Liq", "D"): 1e-11,
             },
             "mw_data": {"H2O": 18e-3, "A": 10e-3, "B": 25e-3, "C": 100e-3, "D": 125e-3},
-            "electrical_mobility_data": {
-                "A": 5.19e-8,
-                "B": 8.29e-8,
-                "C": 6.17e-8,
-                "D": 7.92e-8,
+            "elec_mobility_data": {
+                ("Liq", "A"): 5.19e-8,
+                ("Liq", "B"): 8.29e-8,
+                ("Liq", "C"): 6.17e-8,
+                ("Liq", "D"): 7.92e-8,
             },
             "stokes_radius_data": {"A": 1e-9, "B": 1e-9, "C": 1e-9, "D": 1e-10},
             "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
@@ -117,12 +122,6 @@ def test_parameter_block(model):
     assert model.fs.properties.mw_comp["C"].value == 100e-3
     assert model.fs.properties.mw_comp["D"].value == 125e-3
     assert model.fs.properties.mw_comp["H2O"].value == 18e-3
-
-    assert isinstance(model.fs.properties.electrical_mobility_comp, Param)
-    assert model.fs.properties.electrical_mobility_comp["A"].value == 5.19e-8
-    assert model.fs.properties.electrical_mobility_comp["B"].value == 8.29e-8
-    assert model.fs.properties.electrical_mobility_comp["C"].value == 6.17e-8
-    assert model.fs.properties.electrical_mobility_comp["D"].value == 7.92e-8
 
     assert isinstance(model.fs.properties.diffus_phase_comp, Param)
     assert model.fs.properties.diffus_phase_comp["Liq", "A"].value == 1e-9
@@ -163,12 +162,13 @@ def test_property_ions(model):
 
     m.fs.stream[0].flow_mass_phase_comp
 
-    m.fs.stream[0].molality_comp
+    m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
-    m.fs.stream[0].electrical_conductivity_phase
+    m.fs.stream[0].elec_cond_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
     m.fs.stream[0].act_coeff_phase_comp
+    m.fs.stream[0].trans_num_phase_comp
 
     calculate_scaling_factors(m.fs)
 
@@ -182,25 +182,26 @@ def test_property_ions(model):
     assert_optimal_termination(results)
 
     assert value(m.fs.stream[0].conc_mass_phase_comp["Liq", "A"]) == pytest.approx(
-        2.1288e-1, rel=1e-3
+        2.1206e-1, rel=1e-3
     )
 
     assert value(m.fs.stream[0].conc_mol_phase_comp["Liq", "A"]) == pytest.approx(
-        21.288, rel=1e-3
+        21.2055, rel=1e-3
     )
-    assert value(m.fs.stream[0].molality_comp["A"]) == pytest.approx(
+    assert value(m.fs.stream[0].molality_phase_comp["Liq", "A"]) == pytest.approx(
         2.2829e-2, rel=1e-3
     )
-    assert value(m.fs.stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        16.7, rel=1e-3
-    )
+    assert value(m.fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(15.5, rel=1e-3)
     assert value(m.fs.stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
-        60.546e5, rel=1e-3
+        2.812e6, rel=1e-3
     )
     assert value(m.fs.stream[0].dens_mass_phase["Liq"]) == pytest.approx(
-        1001.76, rel=1e-3
+        1000.0, rel=1e-3
     )
     assert value(m.fs.stream[0].act_coeff_phase_comp["Liq", "A"]) == 1
+    assert value(m.fs.stream[0].trans_num_phase_comp["Liq", "B"]) == pytest.approx(
+        0.563, rel=1e-3
+    )
 
 
 @pytest.fixture(scope="module")
@@ -209,14 +210,17 @@ def model2():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock(
-        default={"solute_list": ["A", "B", "C", "D"]}
+        default={
+            "solute_list": ["A", "B", "C", "D"],
+            "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
+        }
     )
 
     return m
 
 
 @pytest.mark.component
-def test_property_ions(model2):
+def test_property_ions_2(model2):
     m = model2
 
     stream = m.fs.stream = m.fs.properties.build_state_block(
@@ -247,24 +251,13 @@ def test_property_ions(model2):
     stream[0].radius_stokes_comp["C"] = 1e-9
     stream[0].radius_stokes_comp["D"] = 1e-10
 
-    stream[0].charge_comp["A"] = 1
-    stream[0].charge_comp["B"] = -2
-    stream[0].charge_comp["C"] = 2
-    stream[0].charge_comp["D"] = -1
-
-    stream[0].electrical_mobility_comp["A"] = 5.19e-8
-    stream[0].electrical_mobility_comp["B"] = 8.29e-8
-    stream[0].electrical_mobility_comp["C"] = 6.17e-8
-    stream[0].electrical_mobility_comp["D"] = 7.92e-8
-
     stream[0].assert_electroneutrality(defined_state=True, tol=1e-8)
 
     stream[0].mole_frac_phase_comp
 
     stream[0].flow_mass_phase_comp
 
-    stream[0].molality_comp
-    stream[0].electrical_conductivity_phase
+    stream[0].molality_phase_comp
     stream[0].pressure_osm_phase
     stream[0].dens_mass_phase
     stream[0].conc_mol_phase_comp
@@ -288,7 +281,18 @@ def model3():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.properties = DSPMDEParameterBlock(
-        default={"solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"]}
+        default={
+            "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+            "diffusivity_data": {
+                ("Liq", "Ca_2+"): 0.792e-9,
+                ("Liq", "SO4_2-"): 1.06e-9,
+                ("Liq", "Na_+"): 1.33e-9,
+                ("Liq", "Cl_-"): 2.03e-9,
+                ("Liq", "Mg_2+"): 0.706e-9,
+            },
+            "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
+            "charge": {"Ca_2+": 1, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        }
     )
 
     m.fs.stream = m.fs.properties.build_state_block(
@@ -309,7 +313,6 @@ def test_build(model3):
     # test state variables
     state_vars_list = ["flow_mol_phase_comp", "temperature", "pressure"]
     state_vars_dict = m.fs.stream[0].define_state_vars()
-    print("$$$$$$$$$$$$", state_vars_dict)
     assert len(state_vars_dict) == len(state_vars_list)
     for sv in state_vars_list:
         assert sv in state_vars_dict
@@ -346,8 +349,11 @@ def test_build(model3):
         "conc_mass_phase_comp",
         "flow_mass_phase_comp",
         "mole_frac_phase_comp",
-        "molality_comp",
-        "electrical_conductivity_phase",
+        "molality_phase_comp",
+        "elec_mobility_phase_comp",
+        "trans_num_phase_comp",
+        "equiv_conductivity_phase",
+        "elec_cond_phase",
         "pressure_osm_phase",
         "act_coeff_phase_comp",
     ]
@@ -359,8 +365,9 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 65
-    assert number_total_constraints(m) == 47
+    assert number_variables(m) == 87
+    assert number_total_constraints(m) == 69
+    [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
 
 
@@ -375,6 +382,7 @@ def test_general_methods(model3):
         m.fs.stream[0].default_material_balance_type()
         is MaterialBalanceType.componentTotal
     )
+    assert m.fs.stream[0].default_energy_balance_type() is EnergyBalanceType.none
 
     assert hasattr(m.fs.stream[0], "get_material_flow_basis")
     assert m.fs.stream[0].get_material_flow_basis() is MaterialFlowBasis.molar
@@ -387,10 +395,11 @@ def test_default_scaling(model3):
     assert hasattr(m.fs.properties, "default_scaling_factor")
     default_scaling_var_dict = {
         ("temperature", None): 1e-2,
-        ("pressure", None): 1e-6,
+        ("pressure", None): 1e-4,
         ("dens_mass_phase", "Liq"): 1e-3,
         ("visc_d_phase", "Liq"): 1e3,
         ("diffus_phase_comp", "Liq"): 1e10,
+        ("visc_k_phase", "Liq"): 1e6,
     }
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
@@ -402,6 +411,7 @@ def test_default_scaling(model3):
 @pytest.mark.unit
 def test_scaling(model3):
     m = model3
+    # m.fs.stream.initialize()
     metadata = m.fs.properties.get_metadata().properties
 
     for v_name in metadata:
@@ -413,10 +423,6 @@ def test_scaling(model3):
     unscaled_var_list = list(unscaled_variables_generator(m))
     [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
-
-    # check if any variables are badly scaled
-    badly_scaled_var_list = list(badly_scaled_var_generator(m))
-    assert len(badly_scaled_var_list) == 0
 
     # check that all constraints have been scaled
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
@@ -460,13 +466,6 @@ def test_seawater_data():
                 "Cl_-": 35e-3,
                 "SO4_2-": 96e-3,
             },
-            "electrical_mobility_data": {
-                "Na_+": 5.19e-8,
-                "Ca_2+": 6.17e-8,
-                "Mg_2+": 5.50e-8,
-                "Cl_-": 7.92e-8,
-                "SO4_2-": 8.29e-8,
-            },
             "stokes_radius_data": {
                 "Na_+": 0.184e-9,
                 "Ca_2+": 0.309e-9,
@@ -475,6 +474,7 @@ def test_seawater_data():
                 "SO4_2-": 0.230e-9,
             },
             "charge": {"Na_+": 1, "Ca_2+": 2, "Mg_2+": 2, "Cl_-": -1, "SO4_2-": -2},
+            "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
             "density_calculation": DensityCalculation.seawater,
             "activity_coefficient_model": ActivityCoefficientModel.davies,
         }
@@ -581,9 +581,7 @@ def test_seawater_data():
     assert value(stream[0].pressure_osm_phase["Liq"]) == pytest.approx(
         29.132e5, rel=1e-3
     )
-    assert value(stream[0].electrical_conductivity_phase["Liq"]) == pytest.approx(
-        8.08, rel=1e-3
-    )
+    assert value(stream[0].elec_cond_phase["Liq"]) == pytest.approx(8.066, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(
@@ -675,11 +673,41 @@ def test_seawater_data():
         1.394e-3, rel=1e-3
     )
 
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        5.177e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        7.901e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        6.165e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        8.251e-8, rel=1e-3
+    )
+    assert value(stream[0].elec_mobility_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        5.496e-8, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Na_+"]) == pytest.approx(
+        0.3066, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Cl_-"]) == pytest.approx(
+        0.5558, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Ca_2+"]) == pytest.approx(
+        0.01442, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "SO4_2-"]) == pytest.approx(
+        0.04497, rel=1e-3
+    )
+    assert value(stream[0].trans_num_phase_comp["Liq", "Mg_2+"]) == pytest.approx(
+        0.07820, rel=1e-3
+    )
+
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
-    assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)
+    assert value(stream[0].ionic_strength_molal) == pytest.approx(0.73467, rel=1e-3)
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
@@ -701,13 +729,6 @@ def test_assert_electroneutrality_get_property():
                 "Mg_2+": 24e-3,
                 "Cl_-": 35e-3,
                 "SO4_2-": 96e-3,
-            },
-            "electrical_mobility_data": {
-                "Na_+": 5.19e-8,
-                "Ca_2+": 6.17e-8,
-                "Mg_2+": 5.50e-8,
-                "Cl_-": 7.92e-8,
-                "SO4_2-": 8.29e-8,
             },
             "stokes_radius_data": {
                 "Na_+": 0.184e-9,
@@ -784,9 +805,8 @@ def test_assert_electroneutrality_get_property():
     assert not hasattr(stream, "charge_balance")
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
-def test_assert_electroneutrality_get_property():
+def test_assert_electroneutrality_get_property_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock(
@@ -846,8 +866,7 @@ def test_assert_electroneutrality_get_property():
     # check error when adjust_by_ion is not in solute list
     with pytest.raises(
         ValueError,
-        match="adjust_by_ion must be set to the name of an "
-        "ion in the list of solutes.",
+        match="adjust_by_ion must be set to the name of an ion in the ion_set.",
     ):
         stream[0].assert_electroneutrality(defined_state=True, adjust_by_ion="foo")
 
@@ -880,19 +899,15 @@ def test_assert_electroneutrality_get_property():
             defined_state=True, adjust_by_ion="Cl_-", get_property=1
         )
 
-    # check error when electroneutralit condition violated for stringent tolerance
+    # check error when electroneutrality condition violated for stringent tolerance
+    #   Changed the error message to look for the correct pattern instead of
+    #   exact match of the numeric value in the string
     stream[0].flow_mol_phase_comp.unfix()
     with pytest.raises(
         AssertionError,
-        match=re.escape(
-            "Electroneutrality condition violated in fs.stream[0]. "
-            "Ion concentrations should be adjusted to bring "
-            "the result of 9.09E-13 closer towards 0."
-        ),
+        match=re.escape("Electroneutrality condition violated in fs.stream[0]. "),
     ):
-        stream[0].assert_electroneutrality(
-            defined_state=False, adjust_by_ion="Cl_-", tol=1e-18
-        )
+        stream[0].assert_electroneutrality(defined_state=False, tol=1e-25)
 
 
 @pytest.fixture(scope="module")
@@ -918,11 +933,11 @@ def model4():
                 "D": 25e-3,
                 "E": 25e-3,
             },
-            "electrical_mobility_data": {
-                "A": 5.19e-8,
-                "B": 8.29e-8,
-                "C": 6.17e-8,
-                "D": 7.92e-8,
+            "elec_mobility_data": {
+                ("Liq", "A"): 5.19e-8,
+                ("Liq", "B"): 8.29e-8,
+                ("Liq", "C"): 6.17e-8,
+                ("Liq", "D"): 7.92e-8,
             },
             "stokes_radius_data": {
                 "A": 1e-9,
@@ -931,7 +946,7 @@ def model4():
                 "D": 1e-10,
                 "E": 1e-10,
             },
-            "charge": {"A": 1, "B": -2, "C": 2, "D": -1, "E": 0},
+            "charge": {"A": 1, "B": -2, "C": 2, "D": -1},
         }
     )
 
@@ -970,7 +985,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (10, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (
+                    "elec_mobility_phase_comp": (
                         5.19e-8,
                         pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
                     ),
@@ -995,7 +1010,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (
+                    "elec_mobility_phase_comp": (
                         8.29e-8,
                         pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
                     ),
@@ -1020,7 +1035,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (100, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (
+                    "elec_mobility_phase_comp": (
                         6.17e-8,
                         pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
                     ),
@@ -1045,7 +1060,7 @@ def model4():
                 "entr_mol_liq_comp": Constant,
                 "parameter_data": {
                     "mw": (25, pyunits.g / pyunits.mol),
-                    "electrical_mobility_comp": (
+                    "elec_mobility_phase_comp": (
                         7.92e-8,
                         pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
                     ),
@@ -1158,4 +1173,225 @@ def test_parameter_block_comparison(model4):
         m_ion.fs.properties.charge_comp["B"].value
         == m_generic.fs.properties.get_component("B").config.charge
     )
-    assert m_ion.fs.properties.electrical_mobility_comp["B"].value == 8.29e-8
+
+
+@pytest.fixture(scope="module")
+def model5():
+    dic0 = {
+        "solute_list": ["Na_+", "Cl_-", "N"],
+        "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
+        "charge": {"Na_+": 1, "Cl_-": -1},
+        "diffusivity_data": {
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+            ("Liq", "N"): 1.5e-9,
+        },
+        "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
+    }
+    dic_transnum = {"trans_num_data": {("Liq", "Na_+"): 0.4, ("Liq", "Cl_-"): 0.6}}
+    dic_equivcond = {"equiv_conductivity_phase_data": {"Liq": 0.01}}
+    dic_config = {
+        "equiv_conductivity_calculation": EquivalentConductivityCalculation.none,
+        "trans_num_calculation": TransportNumberCalculation.none,
+    }
+    dic1 = dic0.copy()
+    dic1.update(**dic_transnum, **dic_equivcond, **dic_config)
+    m1 = ConcreteModel()
+    m2 = ConcreteModel()
+    m1.fs = FlowsheetBlock(default={"dynamic": False})
+    m2.fs = FlowsheetBlock(default={"dynamic": False})
+    m1.fs.properties = DSPMDEParameterBlock(default=dic0)
+    m2.fs.properties = DSPMDEParameterBlock(default=dic1)
+    m1.fs.stream = m1.fs.properties.build_state_block(
+        [0], default={"defined_state": True}
+    )
+    m2.fs.stream = m2.fs.properties.build_state_block(
+        [0], default={"defined_state": True}
+    )
+    for m in (m1, m2):
+        m.fs.stream[0].pressure.fix(101325)
+        m.fs.stream[0].temperature.fix(298.15)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(2.40e-1)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(7.38e-4)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "N"].fix(7.38e-5)
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "N")
+        )
+        m.fs.stream[0].elec_mobility_phase_comp
+        m.fs.stream[0].trans_num_phase_comp
+        m.fs.stream[0].elec_cond_phase
+        m.fs.stream.initialize()
+        calculate_scaling_factors(m)
+    return (m1, m2)
+
+
+@pytest.mark.unit
+def test_elec_properties_robust(model5):
+    m = model5
+    badly_scaled_var_values_0 = {
+        var.name: val for (var, val) in badly_scaled_var_generator(m[0])
+    }
+    assert not badly_scaled_var_values_0
+    badly_scaled_var_values_1 = {
+        var.name: val for (var, val) in badly_scaled_var_generator(m[1])
+    }
+    assert not badly_scaled_var_values_1
+    assert value(
+        m[0].fs.stream[0].elec_mobility_phase_comp["Liq", "Na_+"]
+    ) == pytest.approx(5.177e-8, rel=1e-3)
+    assert value(
+        m[0].fs.stream[0].elec_mobility_phase_comp["Liq", "Cl_-"]
+    ) == pytest.approx(7.901e-8, rel=1e-3)
+    assert value(
+        m[0].fs.stream[0].trans_num_phase_comp["Liq", "Na_+"]
+    ) == pytest.approx(0.396, rel=1e-3)
+    assert value(
+        m[0].fs.stream[0].trans_num_phase_comp["Liq", "Cl_-"]
+    ) == pytest.approx(0.604, rel=1e-3)
+    assert value(m[0].fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(
+        2.134, rel=1e-3
+    )
+
+    assert value(
+        m[1].fs.stream[0].elec_mobility_phase_comp["Liq", "Na_+"]
+    ) == pytest.approx(5.177e-8, rel=1e-3)
+    assert value(
+        m[1].fs.stream[0].elec_mobility_phase_comp["Liq", "Cl_-"]
+    ) == pytest.approx(7.901e-8, rel=1e-3)
+    assert value(
+        m[1].fs.stream[0].trans_num_phase_comp["Liq", "Na_+"]
+    ) == pytest.approx(0.4, rel=1e-3)
+    assert value(
+        m[1].fs.stream[0].trans_num_phase_comp["Liq", "Cl_-"]
+    ) == pytest.approx(0.6, rel=1e-3)
+    assert value(m[1].fs.stream[0].elec_cond_phase["Liq"]) == pytest.approx(
+        1.691, rel=1e-3
+    )
+
+
+@pytest.fixture(scope="module")
+def model6():
+    dic0 = {
+        "solute_list": ["Na_+", "Cl_-", "N"],
+        "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
+    }
+
+    dic_charge = {"charge": {"Na_+": 1, "Cl_-": -1}}
+    dic_diffus = {
+        "diffusivity_data": {
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+            ("Liq", "N"): 1.5e-9,
+        }
+    }
+    dic_elec_mob = {
+        "elec_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+    }
+    dic_transnum = {"trans_num_data": {("Liq", "Na_+"): 0.4, ("Liq", "Cl_-"): 0.6}}
+    dic_equivcond = {"equiv_conductivity_phase_data": {"Liq": 0.01}}
+    dic_config = {
+        "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
+        "equiv_conductivity_calculation": EquivalentConductivityCalculation.none,
+        "trans_num_calculation": TransportNumberCalculation.none,
+    }
+    dic2 = dic0.copy()
+    dic2.update(**dic_charge)
+    dic3 = dic0.copy()
+    dic3.update(**dic_charge, **dic_diffus, **dic_config)
+    m1 = ConcreteModel()
+    m2 = ConcreteModel()
+    m3 = ConcreteModel()
+    m1.fs = FlowsheetBlock(default={"dynamic": False})
+    m2.fs = FlowsheetBlock(default={"dynamic": False})
+    m3.fs = FlowsheetBlock(default={"dynamic": False})
+    m2.fs.properties = DSPMDEParameterBlock(default=dic2)
+    m3.fs.properties = DSPMDEParameterBlock(default=dic3)
+    m2.fs.stream = m2.fs.properties.build_state_block(
+        [0], default={"defined_state": True}
+    )
+    m3.fs.stream = m3.fs.properties.build_state_block(
+        [0], default={"defined_state": True}
+    )
+    for m in (m2, m3):
+        m.fs.stream[0].pressure.fix(101325)
+        m.fs.stream[0].temperature.fix(298.15)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(2.40e-1)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(7.38e-4)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(7.38e-4)
+        m.fs.stream[0].flow_mol_phase_comp["Liq", "N"].fix(7.38e-5)
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "N")
+        )
+        m.fs.stream.initialize()
+        calculate_scaling_factors(m)
+    return (m1, m2, m3)
+
+
+@pytest.mark.unit
+def test_elec_properties_errormsg(model6):
+    m = model6
+    with pytest.raises(
+        ConfigurationError,
+        match="The charge property should not be assigned to the neutral component",
+    ):
+        m[0].fs.properties = DSPMDEParameterBlock(
+            default={
+                "solute_list": ["Na_+", "Cl_-", "N"],
+                "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
+                "charge": {"N": 0, "Na_+": 1, "Cl_-": -1},
+            }
+        )
+    m[0].fs.properties = DSPMDEParameterBlock(
+        default={
+            "solute_list": ["Na_+", "Cl_-", "N"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 10e-3},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+            "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
+        }
+    )
+    m[0].fs.stream = m[0].fs.properties.build_state_block(
+        [0], default={"defined_state": True}
+    )
+    with pytest.raises(
+        ConfigurationError,
+        match="""Missing a valid diffusivity_data configuration to use EinsteinRelation 
+                        to compute the "elec_mobility_phase_comp" """,
+    ):
+        m[0].fs.stream[0].elec_mobility_phase_comp
+
+    with pytest.raises(
+        ConfigurationError,
+        match="""Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
+                        and/or its derived variables""",
+    ):
+        m[1].fs.stream[0].elec_mobility_phase_comp
+    with pytest.raises(
+        ConfigurationError,
+        match="""Missing a valid equiv_conductivity_phase_data configuration to build 
+                        "equiv_conductivity_phase" and its derived variables""",
+    ):
+        m[2].fs.stream[0].equiv_conductivity_phase
+    with pytest.raises(
+        ConfigurationError,
+        match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
+    ):
+        m[2].fs.stream[0].trans_num_phase_comp

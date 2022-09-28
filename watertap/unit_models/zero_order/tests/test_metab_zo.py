@@ -27,10 +27,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MetabZO
 from watertap.core.wt_database import Database
@@ -442,10 +442,10 @@ class TestMetabZO_methane_cost:
     @pytest.mark.component
     def test_cost_solution(self, model):
         # unit model
-        assert pytest.approx(3.881e7, rel=1e-3) == value(
+        assert pytest.approx(3.856e7, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(63369162.086399995, rel=1e-3) == value(
+        assert pytest.approx(6.337e7, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -454,7 +454,7 @@ class TestMetabZO_methane_cost:
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
 
-        assert pytest.approx(64533387.715684555, rel=1e-3) == value(
+        assert pytest.approx(6.453e7, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
