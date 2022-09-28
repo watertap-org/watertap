@@ -84,7 +84,7 @@ from .surface_discharge_zo import SurfaceDischargeZO
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
-from .anaerobic_digestion_reactive import AnaerobicDigestionReactiveZO
+from .anaerobic_digestion_reactive_zo import AnaerobicDigestionReactiveZO
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
 from .CANDOP_zo import CANDOPZO
