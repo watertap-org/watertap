@@ -205,6 +205,9 @@ class FlowsheetInterface:
                 self.add_action(getattr(Actions, name), arg)
             else:
                 raise ValueError(f"'do_{name}' argument is required")
+        # store various objects to prevent them being garbage-collected,
+        # which would result in "dead" weakrefs in Pyomo objects
+        self._objects_to_keep_alive = []
 
     def build(self, **kwargs):
         """Build flowsheet
@@ -278,6 +281,10 @@ class FlowsheetInterface:
         if missing:
             raise self.MissingObjectError(missing)
 
+    def _ensure_references_keep_being_valid(self, obj: object) -> None:
+        "Ensure that references to ``obj`` (and its subcomponents) are kept valid by storing it so that it doesn't get garbage-collected."
+        self._objects_to_keep_alive.append(obj)
+
     def add_action(self, action_name: str, action_func: Callable):
         """Add an action for the flowsheet.
 
@@ -291,6 +298,10 @@ class FlowsheetInterface:
 
         def action_wrapper(**kwargs):
             if action_name == Actions.build:
+                # before setting the new flowsheet, we ensure that the references to the current (soon-to-be old) object
+                # will be still valid so that Pyomo objects in self.fs_exp.model_objects
+                # will be fully functional for the duration of this object's lifetime
+                self._ensure_references_keep_being_valid(self.fs_exp.obj)
                 # set new model object from return value of build action
                 self.fs_exp.obj = action_func(**kwargs)
                 # [re-]create exports (new model object)
