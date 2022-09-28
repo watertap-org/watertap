@@ -237,3 +237,11 @@ def test_export_values_build():
     # after build, new values should be exported to fsi.fs_exp
     d2 = fsi.dict()
     assert d1 != d2
+
+
+@pytest.mark.unit
+def test_has_version():
+    fsi = flowsheet_interface()
+    d = fsi.dict()
+    assert "version" in d
+    assert d["version"] > 0

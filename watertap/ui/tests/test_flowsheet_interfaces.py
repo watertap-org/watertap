@@ -1,0 +1,52 @@
+"""
+Essential tests targeting the flowsheet interfaces registered and discoverable
+through the standard mechanism (currently FlowsheetInterface.from_installed_packages()).
+"""
+
+
+import pytest
+from pyomo.environ import assert_optimal_termination
+
+from ..fsapi import FlowsheetInterface
+
+
+def pytest_generate_tests(metafunc):
+    if "fs_interface" in metafunc.fixturenames:
+        by_name = dict(FlowsheetInterface.from_installed_packages())
+        metafunc.parametrize(
+            "fs_interface",
+            list(by_name.values()),
+            ids=list(by_name.keys()),
+            scope="class",
+        )
+
+
+class TestFlowsheetInterface:
+    def test_basic_type(self, fs_interface):
+        assert isinstance(fs_interface, FlowsheetInterface)
+
+    @pytest.fixture
+    def data_post_build(self, fs_interface) -> dict:
+        fs_interface.build()
+        return fs_interface.dict()
+
+    def test_build(self, data_post_build):
+        data = data_post_build
+        assert data
+        assert "model_objects" in data
+
+    @pytest.fixture
+    def model_objects(self, data_post_build):
+        return data_post_build["model_objects"]
+
+    def test_model_objects(self, model_objects):
+        assert len(model_objects) > 0
+
+    @pytest.fixture
+    def solve_results(self, fs_interface, data_post_build):
+        res = fs_interface.solve()
+        return res
+
+    def test_solve(self, solve_results):
+        assert solve_results
+        assert_optimal_termination(solve_results)
