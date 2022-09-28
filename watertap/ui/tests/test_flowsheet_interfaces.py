@@ -2,6 +2,7 @@
 Essential tests targeting the flowsheet interfaces registered and discoverable
 through the standard mechanism (currently FlowsheetInterface.from_installed_packages()).
 """
+import gc
 
 
 import pytest
@@ -50,3 +51,12 @@ class TestFlowsheetInterface:
     def test_solve(self, solve_results):
         assert solve_results
         assert_optimal_termination(solve_results)
+
+
+@pytest.mark.parametrize("n_times", [2, 3], ids="{} times".format)
+def test_roundtrip_with_garbage_collection(fs_interface, n_times):
+    for attempt in range(n_times):
+        fs_interface.build()
+        data = fs_interface.dict()
+        fs_interface.load(data)
+        gc.collect()
