@@ -21,13 +21,10 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     RecursiveParameterSweep,
 )
 
-<<<<<<< HEAD
 from watertap.tools.parameter_sweep.differential_parameter_sweep import (
     DifferentialParameterSweep,
 )
 
-=======
->>>>>>> main
 # TODO: should this be removed?
 import numpy as _np
 

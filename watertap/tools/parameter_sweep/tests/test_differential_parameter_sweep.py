@@ -30,6 +30,7 @@ from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _optimization,
     _reinitialize,
 )
+import watertap.tools.MPI as MPI
 
 
 @pytest.fixture
@@ -94,6 +95,14 @@ def test_create_differential_sweep_params_sum(model):
 
 @pytest.mark.component
 def test_differential_parameter_sweep(model, tmp_path):
+
+    comm = MPI.COMM_WORLD
+    tmp_path = _get_rank0_path(comm, tmp_path)
+
+    results_fname = os.path.join(tmp_path, "global_results")
+    csv_results_file_name = str(results_fname) + ".csv"
+    h5_results_file_name = str(results_fname) + ".h5"
+
     m = model
 
     differential_sweep_specs = {
@@ -113,20 +122,24 @@ def test_differential_parameter_sweep(model, tmp_path):
     }
 
     ps = DifferentialParameterSweep(
-        csv_results_file_name=None,
-        h5_results_file_name=None,
-        debugging_data_dir=None,
+        comm=comm,
+        csv_results_file_name=csv_results_file_name,
+        h5_results_file_name=h5_results_file_name,
+        debugging_data_dir=tmp_path,
         interpolate_nan_outputs=True,
+        optimize_function=_optimization,
+        reinitialize_function=_reinitialize,
+        reinitialize_kwargs={"slack_penalty": 10.0},
     )
 
-    tmp_path = _get_rank0_path(ps.comm, tmp_path)
-    results_fname = os.path.join(tmp_path, "global_results")
-    csv_results_file_name = str(results_fname) + ".csv"
-    h5_results_file_name = str(results_fname) + ".h5"
+    # tmp_path = _get_rank0_path(ps.comm, tmp_path)
+    # results_fname = os.path.join(tmp_path, "global_results")
+    # csv_results_file_name = str(results_fname) + ".csv"
+    # h5_results_file_name = str(results_fname) + ".h5"
 
-    ps.writer.set_debugging_data_dir(tmp_path)
-    ps.writer.set_csv_results_filename(csv_results_file_name)
-    ps.writer.set_h5_results_file_name(h5_results_file_name)
+    # ps.writer.set_debugging_data_dir(tmp_path)
+    # ps.writer.set_csv_results_filename(csv_results_file_name)
+    # ps.writer.set_h5_results_file_name(h5_results_file_name)
 
     m = model
     m.fs.slack_penalty = 1000.0
@@ -142,9 +155,9 @@ def test_differential_parameter_sweep(model, tmp_path):
         sweep_params,
         differential_sweep_specs,
         outputs=None,
-        optimize_function=_optimization,
-        reinitialize_function=_reinitialize,
-        reinitialize_kwargs={"slack_penalty": 10.0},
+        # optimize_function=_optimization,
+        # reinitialize_function=_reinitialize,
+        # reinitialize_kwargs={"slack_penalty": 10.0},
         seed=0,
     )
 

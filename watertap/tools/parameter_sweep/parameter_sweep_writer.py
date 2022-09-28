@@ -152,6 +152,7 @@ class ParameterSweepWriter:
 
         self.comm.Barrier()
 
+        # self.config.display()
         # Handle values in the debugging data_directory
         if self.config["debugging_data_dir"] is not None:
             self._write_debug_data(
