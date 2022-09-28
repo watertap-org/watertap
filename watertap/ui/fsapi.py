@@ -9,7 +9,13 @@ import logging
 from collections import namedtuple
 from enum import Enum
 from typing import Callable, Optional, Dict, Union, TypeVar
+from types import ModuleType
 from uuid import uuid4
+
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 # third-party
 import idaes.logger as idaeslog
@@ -345,3 +351,93 @@ class FlowsheetInterface:
         u = pyo.units
         for key, mo in self.fs_exp.model_objects.items():
             mo.value = pyo.value(u.convert(mo.obj, to_units=mo.ui_units))
+
+    @classmethod
+    def from_installed_packages(
+        cls, group_name: str = "watertap.flowsheets"
+    ) -> Dict[str, "FlowsheetInterface"]:
+        """Get all flowsheet interfaces defined as entry points within the Python packages installed in the environment.
+
+        This uses the :func:`importlib.metadata.entry_points` function to fetch the
+        list of flowsheets declared as part of a Python package distribution's `entry points <https://docs.python.org/3/library/importlib.metadata.html#entry-points>`_
+        under the group ``group_name``.
+
+        To set up a flowsheet interface for discovery, locate your Python package distribution's file (normally
+        :file:`setup.py`, :file:`pyproject.toml`, or equivalent) and add an entry in the ``entry_points`` section.
+
+        For example, to add a flowsheet defined in :file:`watertap/examples/flowsheets/my_flowsheet.py`
+        so that it can be discovered with the name ``my_flowsheet`` wherever the ``watertap`` package is installed,
+        the following should be added to WaterTAP's :file:`setup.py`::
+
+           setup(
+               name="watertap",
+               # other setup() sections
+               entry_points={
+                   "watertap.flowsheets": [
+                        # other flowsheet entry points
+                        "my_flowsheet = watertap.examples.flowsheets.my_flowsheet",
+                   ]
+               }
+           )
+
+        Args:
+            group_name: The entry_points group from which the flowsheet interface modules will be populated.
+
+        Returns:
+            Mapping with keys the module names and values FlowsheetInterface objects
+        """
+        try:
+            entry_points = list(metadata.entry_points()[group_name])
+        except KeyError:
+            _log.error(f"No interfaces found for entry points group: {group_name}")
+            return {}
+
+        interfaces = {}
+        _log.debug(f"Loading {len(entry_points)} entry points")
+        for ep in entry_points:
+            _log.debug(f"ep = {ep}")
+            module_name = ep.value
+            try:
+                module = ep.load()
+            except ImportError as err:
+                _log.error(f"Cannot import module '{module_name}': {err}")
+                continue
+            interface = cls.from_module(module)
+            if interface:
+                interfaces[module_name] = interface
+
+        return interfaces
+
+    @classmethod
+    def from_module(
+        cls, module: Union[str, ModuleType]
+    ) -> Optional["FlowsheetInterface"]:
+        """Get a a flowsheet interface for module.
+
+        Args:
+            module: The module
+
+        Returns:
+            A flowsheet interface or None if it failed
+        """
+        if not isinstance(module, ModuleType):
+            module = importlib.import_module(module)
+
+        # Get function that creates the FlowsheetInterface
+        func = getattr(module, cls.UI_HOOK, None)
+        if func is None:
+            _log.warning(
+                f"Interface for module '{module}' is missing UI hook function: "
+                f"{cls.UI_HOOK}()"
+            )
+            return None
+        # Call the function that creates the FlowsheetInterface
+        try:
+            interface = func()
+        except Exception as err:
+            _log.error(
+                f"Cannot get FlowsheetInterface object for module '{module}': {err}"
+            )
+            return None
+        # Return created FlowsheetInterface
+        return interface

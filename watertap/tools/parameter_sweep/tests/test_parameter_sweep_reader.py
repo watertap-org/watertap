@@ -19,16 +19,14 @@ import yaml
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep_input_parser import (
-    _yaml_to_dict,
+from watertap.tools.parameter_sweep.parameter_sweep_reader import (
+    ParameterSweepReader,
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
 )
 
 # Imports for conditional fails
 from idaes.config import bin_directory as idaes_bin_directory
-
-# -----------------------------------------------------------------------------
 
 
 class TestInputParser:
@@ -142,7 +140,8 @@ class TestInputParser:
     def test_yaml_to_dict(self, get_simple_yaml_file):
         filename, truth_values = get_simple_yaml_file
 
-        values = _yaml_to_dict(filename)
+        psr = ParameterSweepReader()
+        values = psr._yaml_to_dict(filename)
 
         for key, truth_value in truth_values.items():
             assert key in values
@@ -150,8 +149,9 @@ class TestInputParser:
 
     @pytest.mark.unit
     def test_yaml_to_dict_error(self):
+        psr = ParameterSweepReader()
         with pytest.raises(Exception):
-            values = _yaml_to_dict("nonexistent_file.yaml")
+            values = psr._yaml_to_dict("nonexistent_file.yaml")
 
     @pytest.mark.unit
     def test_get_sweep_params_from_yaml(self, model, get_param_yaml_file):
@@ -168,8 +168,9 @@ class TestInputParser:
         m = model
         filename, truth_values = get_param_yaml_file_error
 
+        psr = ParameterSweepReader()
         with pytest.raises(ValueError):
-            get_sweep_params_from_yaml(m, filename)
+            psr.get_sweep_params_from_yaml(m, filename)
 
     @pytest.mark.unit
     def test_set_defaults_from_yaml(self, model, get_default_yaml_file):
@@ -190,7 +191,8 @@ class TestInputParser:
         m = model
         filename, truth_values = get_default_yaml_file_error
 
+        psr = ParameterSweepReader()
         with pytest.raises(ValueError):
-            set_defaults_from_yaml(m, filename)
+            psr.set_defaults_from_yaml(m, filename)
 
         os.remove(filename)

@@ -33,7 +33,7 @@ default:    # mabr for nitrification
         nitrate:
           conversion_ratio: 1
         BOD:
-          conversion_ratio: -2.5 # 2.5g-BOD/g-N
+          conversion_ratio: -2 # 2g-BOD/g-N
   capital_cost:
     cost_factor: None
     reactor_cost:
