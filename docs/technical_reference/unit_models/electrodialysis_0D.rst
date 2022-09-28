@@ -169,7 +169,7 @@ Additionally, several other equations are built to describe the electrochemical 
    :header: "Description", "Equation"
 
    "Current density", ":math:`i =  \frac{I}{bl}`"
-   "Ohm's Law", ":math:`U =  i r_{tot}}`"
+   "Ohm's Law", ":math:`U =  i r_{tot}`"
    "Resistance calculation", ":math:`r_{tot}=n\left(r^{cem}+r^{aem}+\frac{d}{\kappa^C}+\frac{d}{\kappa^D}\right)+r_{el}`"
    "Electrical power consumption", ":math:`P=UI`"
    "Water-production-specific power consumption", ":math:`P_Q=\frac{UI}{3.6\times 10^6 nQ_{out}^D}`"
