@@ -6,7 +6,7 @@ contains options that account for concentration polarization, the mass transfer 
 Example: Configure the RO model to account for concentration polarization and pressure drop
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block::
+.. testcode::
 
     #Import RO model and configuration classes
     from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,

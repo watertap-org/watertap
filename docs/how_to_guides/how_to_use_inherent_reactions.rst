@@ -41,7 +41,7 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. code-block::
+.. testcode::
 
     # Importing the object for units from pyomo
     from pyomo.environ import units as pyunits
@@ -215,7 +215,7 @@ For a detailed analysis of everything from above, see
 Example of a dummy **reaction_config**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block::
+.. testcode::
 
     # Importing the object for units from pyomo
     from pyomo.environ import units as pyunits
@@ -249,7 +249,7 @@ Recall, we had named our configuration dictionaries as ``thermo_config`` and
 ``reaction_config``. We will reference those dictionary names in the example
 code below.
 
-.. code-block::
+.. testcode::
 
     # Import specific pyomo objects
     from pyomo.environ import ConcreteModel
