@@ -1,12 +1,13 @@
 """
 Tests for fsapi module
 """
+from collections import OrderedDict
 import logging
-
 import pytest
 
 from pyomo.environ import units as pyunits
 from pyomo.environ import Var, value
+from pyomo.environ import SolverStatus, TerminationCondition
 
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
@@ -23,6 +24,16 @@ _log.setLevel(logging.DEBUG)
 
 ERD_TYPE = "pressure_exchanger"
 
+# Fake status=OK solver result
+
+
+class SOLVE_RESULT_OK:
+    class SOLVE_STATUS:
+        status = SolverStatus.ok
+        termination_condition = TerminationCondition.optimal
+
+    solver = SOLVE_STATUS
+
 
 def build_ro(**kwargs):
     model = RO.build_flowsheet(erd_type=ERD_TYPE)
@@ -31,6 +42,7 @@ def build_ro(**kwargs):
 
 def solve_ro(flowsheet=None):
     assert flowsheet
+    return {"solved": True}
 
 
 class InputCategory:
@@ -132,6 +144,7 @@ def test_actions():
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
         assert flowsheet == garbage
+        return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
         with pytest.raises(Exception):

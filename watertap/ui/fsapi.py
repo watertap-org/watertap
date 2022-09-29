@@ -105,23 +105,59 @@ class FlowsheetExport(BaseModel):
                 v = f"{values['name']} flowsheet"
         return v
 
-    def add(self, *args, data=None, **kwargs) -> object:
-        """Add a new variable (or other model object)."""
+    def add(self, *args, data: Union[dict, ModelExport] = None, **kwargs) -> object:
+        """Add a new variable (or other model object).
+
+        There are a few different ways of invoking this function. Users will
+        typically use this form::
+
+            add(obj=<pyomo object>, name="My value name", ..etc..)
+
+        If these same name/value pairs are already in a dictionary, this form is more
+        convenient::
+
+            add(data=my_dict_of_name_value_pairs)
+
+        If you have an existing ModelExport object, you can add it more directly with::
+
+            add(my_object)
+            # -- OR --
+            add(data=my_object)
+
+        Args:
+            *args: If present, should be a single non-named argument, which is a
+                 ModelExport object. Create by adding it.
+            data: If present, create from this argument. If it's a dict, create from
+                 its values just as from the kwargs. Otherwise it should be a
+                 ModelExport object, and create by adding it.
+            kwargs: Name/value pairs to create a ModelExport object.
+
+        Raises:
+            KeyError: If the name of the Pyomo object is the same as an existing one,
+                i.e. refuse to overwrite.
+        """
         if len(args) > 1:
             raise ValueError(f"At most one non-keyword arg allowed. Got: {args}")
-        id_ = uuid4().hex
         if len(args) == 1:
-            obj = args[0]
+            model_export = args[0]
         elif data is None:
             _log.debug(f"Create ModelExport from args: {kwargs}")
-            obj = ModelExport.parse_obj(kwargs)
+            model_export = ModelExport.parse_obj(kwargs)
         else:
             if isinstance(data, dict):
-                obj = ModelExport.parse_obj(data)
+                model_export = ModelExport.parse_obj(data)
             else:
-                obj = data
-        self.model_objects[id_] = obj
-        return obj
+                model_export = data
+
+        key = model_export.obj.name
+        if key in self.model_objects:
+            raise KeyError(f"Adding ModelExport object failed: duplicate name '{key}'")
+        if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
+            _log.debug(
+                f"Adding ModelExport object with key={key}: {model_export.dict()}"
+            )
+        self.model_objects[key] = model_export
+        return model_export
 
 
 class Actions(str, Enum):
@@ -312,7 +348,9 @@ class FlowsheetInterface:
                         "constructor or call `add_action(Actions.export, <function>)` "
                         "on FlowsheetInterface instance."
                     )
-                # run_action will refuse to call the export action directly
+                # clear model_objects dict, since duplicates not allowed
+                self.fs_exp.model_objects = {}
+                # use get_action() since run_action() will refuse to call it directly
                 self.get_action(Actions.export)(exports=self.fs_exp)
                 result = None
             elif self.fs_exp.obj is None:
