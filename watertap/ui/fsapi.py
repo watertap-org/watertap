@@ -349,7 +349,7 @@ class FlowsheetInterface:
                         "on FlowsheetInterface instance."
                     )
                 # clear model_objects dict, since duplicates not allowed
-                self.fs_exp.model_objects = {}
+                self.fs_exp.model_objects.clear()
                 # use get_action() since run_action() will refuse to call it directly
                 self.get_action(Actions.export)(exports=self.fs_exp)
                 result = None
