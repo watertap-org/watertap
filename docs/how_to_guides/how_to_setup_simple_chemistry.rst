@@ -426,7 +426,7 @@ code below.
     model = ConcreteModel()
 
     # Add an IDAES flowsheet to that model
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add a thermo parameter block to that flowsheet
     #   Here, we are passing our 'thermo_config' dictionary we created earlier
@@ -436,21 +436,19 @@ code below.
     #   Here, we are passing our thermo block created above as the property package
     #   and then giving our 'reaction_config' as the instructions for how the
     #   reactions will be constructed from the thermo package.
-    model.fs.rxn_params = GenericReactionParameterBlock(
-                default={"property_package": model.fs.thermo_params, **reaction_config})
+    model.fs.rxn_params = GenericReactionParameterBlock(property_package=model.fs.thermo_params, **reaction_config)
 
     # Add an EquilibriumReactor object as the unit model
     #   Here, we pass both the thermo package and reaction package, as well
     #   as a number of other arguments to help define how this unit process
     #   will behave.
-    model.fs.unit = EquilibriumReactor(default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": True,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False})
+    model.fs.unit = EquilibriumReactor(property_package=model.fs.thermo_params,
+                                       reaction_package=model.fs.rxn_params,
+                                       has_rate_reactions=False,
+                                       has_equilibrium_reactions=True,
+                                       has_heat_transfer=False,
+                                       has_heat_of_reaction=False,
+                                       has_pressure_change=False)
 
     # At this point, you can 'fix' your inlet/outlet state conditions,
     #     setup scaling factors, initialize the model, then solve the model
