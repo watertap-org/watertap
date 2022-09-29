@@ -38,10 +38,7 @@ from idaes.models.unit_models import Feed, Product, Separator
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
-from watertap.unit_models.electrodialysis_1D import (
-    ElectricalOperationMode,
-    Electrodialysis1D,
-)
+from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
@@ -118,13 +115,10 @@ class TestElectrodialysisVoltageConst:
 
         # Test the primary EDstack properties
         # test configrations
-        assert len(m.fs.EDstack.config) == 16
+        assert len(m.fs.EDstack.config) == 13
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup
-        assert (
-            m.fs.EDstack.config.operation_mode
-            == ElectricalOperationMode.Constant_Voltage
-        )
+        assert m.fs.EDstack.config.operation_mode == "Constant_Voltage"
         assert (
             m.fs.EDstack.config.material_balance_type == MaterialBalanceType.useDefault
         )
