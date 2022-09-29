@@ -149,6 +149,9 @@ setup(
             "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
             "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",
             "biomembrane_filtration = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration_ui",
+            "ENR = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal_ui",
+            "CANDO_P = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595_ui",
+            "supercritical_sludge_to_gas = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas.supercritical_sludge_to_gas_ui",
         ],
     },
 )
