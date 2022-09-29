@@ -156,6 +156,7 @@ setup(
             "AMO 1690 = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1690.amo_1690_ui",
             "HRCS = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.hrcs_ui",
             "groundwater_treatment = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_ui",
+            "dye_desalination = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
         ],
     },
 )
