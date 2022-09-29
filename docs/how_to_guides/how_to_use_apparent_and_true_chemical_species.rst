@@ -38,7 +38,7 @@ an ``"Apparent"`` species.
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. doctest::
+.. code-block::
 
   from pyomo.environ import units as pyunits
   from idaes.core import AqueousPhase

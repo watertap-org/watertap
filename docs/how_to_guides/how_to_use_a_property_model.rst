@@ -11,7 +11,7 @@ users to model the chemical and physical properties of simple systems without th
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. doctest::
+.. code-block::
 
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
