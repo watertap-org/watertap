@@ -42,7 +42,7 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: Optional[bool] = None
+    is_readonly: bool = None
     input_category: Optional[str]
     output_category: Optional[str]
     obj_key: str = None
@@ -81,10 +81,13 @@ class ModelExport(BaseModel):
             assert v.is_variable_type() or v.is_expression_type()
         return v
 
-    @validator("is_readonly", always=True)
+    @validator("is_readonly", always=True, pre=True)
     def set_readonly_default(cls, v, values):
         if v is None:
             obj = values["obj"]
+            assert (
+                obj is not None
+            ), "If ``is_readonly`` is not specified as a bool, then ``obj`` must be a Pyomo object"
             v = True if not obj.is_variable_type() else False
         return v
 
