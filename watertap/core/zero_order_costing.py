@@ -634,7 +634,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.flow_mass_in[t0], "catalyst_ATHTL"
+            blk.unit_model.catalyst_flow[t0], "catalyst_ATHTL"
         )
 
     def cost_brine_concentrator(blk):
@@ -1500,7 +1500,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
         blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.flow_mass_in[t0], "catalyst_HTG"
+            blk.unit_model.catalyst_flow[t0], "catalyst_HTG"
         )
 
     def cost_mabr(blk):
@@ -3285,6 +3285,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.disinfection_solution_flow_vol[t0], "disinfection_solution"
         )
 
     def cost_struvite_classifier(blk):
