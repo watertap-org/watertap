@@ -27,7 +27,7 @@ users to model the chemical and physical properties of simple systems without th
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
 
 
