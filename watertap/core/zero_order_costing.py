@@ -3286,6 +3286,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.disinfection_solution_flow_vol[t0], "disinfection_solution"
+        )
 
     def cost_struvite_classifier(blk):
         """
