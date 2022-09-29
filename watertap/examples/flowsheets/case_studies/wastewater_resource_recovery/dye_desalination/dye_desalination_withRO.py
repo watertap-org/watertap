@@ -437,6 +437,7 @@ def add_costing(m):
         }
     )
     m.fs.ro_costing.electricity_base_cost = value(m.fs.zo_costing.electricity_cost)
+    m.fs.ro_costing.base_currency = pyunits.USD_2020
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
     m.fs.ro_costing.cost_process()

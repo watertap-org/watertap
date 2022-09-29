@@ -490,11 +490,11 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.LCOT,
-        name="Net levelized cost of treatment with revenue",
+        name="Levelized cost of treatment w/revenue and disposal costs",
         ui_units=fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=2,
-        description="Net levelized cost of treatment wrt to influent flow accounting for revenue",
+        description="Net levelized cost of treatment wrt to influent flow accounting for revenue and disposal costs",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -512,11 +512,11 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.LCOW,
-        name="Net levelized cost of water with revenue",
+        name="Net levelized cost of water  w/revenue and disposal costs",
         ui_units=fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
-        description="Net levelized cost of water wrt to product flow accounting for revenue",
+        description="Net levelized cost of water wrt to product flow accounting for revenue and disposal costs",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
