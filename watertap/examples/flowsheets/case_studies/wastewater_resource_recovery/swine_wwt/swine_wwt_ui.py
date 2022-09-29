@@ -710,7 +710,7 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.product_phosphate.properties[0].flow_mass_comp["phosphates"],
         name="Phosphate product flow rate",
         ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-N/h",
+        display_units="kg-PO4/h",
         rounding=4,
         description="Outlet phosphate product flow rate",
         is_input=False,
