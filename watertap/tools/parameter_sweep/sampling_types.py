@@ -63,24 +63,24 @@ class FixedSample(_Sample):
 
 class LinearSample(FixedSample):
     def sample(self, num_samples):
-        return np.linspace(self.lower_limit, self.upper_limit, num_samples)
+        return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
-    def setup(self, lower_limit, upper_limit):
+    def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
-        # self.num_samples = num_samples
+        self.num_samples = num_samples
 
 
 class GeomSample(FixedSample):
     def sample(self, num_samples):
         return np.geomspace(
-            self.lower_limit, self.upper_limit, num_samples, endpoint=True
+            self.lower_limit, self.upper_limit, self.num_samples, endpoint=True
         )
 
-    def setup(self, lower_limit, upper_limit):
+    def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
-        # self.num_samples = num_samples
+        self.num_samples = num_samples
 
 
 class ReverseGeomSample(FixedSample):
@@ -88,14 +88,14 @@ class ReverseGeomSample(FixedSample):
         return (
             (self.upper_limit + self.lower_limit)
             - np.geomspace(
-                self.lower_limit, self.upper_limit, num_samples, endpoint=True
+                self.lower_limit, self.upper_limit, self.num_samples, endpoint=True
             )
         )[::-1]
 
-    def setup(self, lower_limit, upper_limit):
+    def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
-        # self.num_samples = num_samples
+        self.num_samples = num_samples
 
 
 class UniformSample(RandomSample):
