@@ -43,7 +43,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse @ https://github.com/watertap-org/idaes-pse/archive/2.0.0.dev3.watertap.22.08.11.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a3.zip"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -104,6 +104,8 @@ setup(
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic",
         "numpy",
+        # for importlib.metadata.entry_points()
+        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
@@ -141,6 +143,12 @@ setup(
         # add edb CLI commands
         "console_scripts": [
             "edb = watertap.edb.commands:command_base",
-        ]
+        ],
+        "watertap.flowsheets": [
+            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
+            "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
+            "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",
+            "biomembrane_filtration = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration_ui",
+        ],
     },
 )
