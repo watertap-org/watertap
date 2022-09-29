@@ -655,11 +655,11 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=total_revenue,
-        name="Total",
+        name="Net",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
-        description="Total revenue - including the sale of struvite and purchase of MgCl2 and dry polymer",
+        description="Net revenue - including the sale of struvite and purchase of MgCl2 and dry polymer",
         is_input=False,
         is_output=True,
         output_category="Revenue",
