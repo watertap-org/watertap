@@ -456,15 +456,15 @@ def display_costing(m):
     print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
 
     print(
-        f"Cloth media filtration capital cost: {value(pyunits.convert(m.fs.cmf.costing.capital_cost, to_units=pyunits.MUSD_2020)):.1f} M$"
+        f"Cloth media filtration capital cost: {value(pyunits.convert(m.fs.cmf.costing.capital_cost, to_units=pyunits.MUSD_2020)):.2f} M$"
     )
 
     print(
-        f"Anaerobic digester capital cost: {value(pyunits.convert(m.fs.ad.costing.capital_cost, to_units=pyunits.MUSD_2020)):.1f} M$"
+        f"Anaerobic digester capital cost: {value(pyunits.convert(m.fs.ad.costing.capital_cost, to_units=pyunits.MUSD_2020)):.2f} M$"
     )
 
     print(
-        f"Membrane evaporator capital cost: {value(pyunits.convert(m.fs.me.costing.capital_cost, to_units=pyunits.kUSD_2020)):.2f} k$"
+        f"Membrane evaporator capital cost: {value(pyunits.convert(m.fs.me.costing.capital_cost, to_units=pyunits.MUSD_2020)):.2f} M$"
     )
 
     print("\n------------- Operating costs -------------")
@@ -544,6 +544,16 @@ def display_costing(m):
     )
     print(f"Biogas recovery: {biogas_recovery:.0f} m^3/year")
 
+    biogas_recovery_normalized = value(
+        pyunits.convert(
+            m.fs.costing.biogas_recovery_volume / m.fs.costing.annual_water_inlet,
+            to_units=pyunits.dimensionless,
+        )
+    )
+    print(
+        f"Normalized biogas recovery: {biogas_recovery_normalized:.3f} m^3 biogas/m^3 feed water"
+    )
+
     biogas_revenue = value(
         pyunits.convert(
             m.fs.costing.value_biogas_recovery,
@@ -558,6 +568,16 @@ def display_costing(m):
         )
     )
     print(f"Fertilizer recovery: {fertilizer_recovery:.0f} kg/year")
+
+    fertilizer_recovery_normalized = value(
+        pyunits.convert(
+            m.fs.costing.fertilizer_recovery_mass / m.fs.costing.annual_water_inlet,
+            to_units=pyunits.kg / pyunits.m**3,
+        )
+    )
+    print(
+        f"Normalized fertilizer recovery: {fertilizer_recovery_normalized:.3f} kg fertilizer/m^3 feed water"
+    )
 
     fertilizer_revenue = value(
         pyunits.convert(
