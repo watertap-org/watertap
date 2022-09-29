@@ -143,9 +143,24 @@ def display_results(m):
     print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    unit_list = ["feed", "PAA"]
-    for u in unit_list:
-        m.fs.component(u).report()
+    m.fs.component("PAA").report()
+
+    print("\n---------- Feed volumetric flowrate ----------")
+    feed_vol_flow = value(
+        pyunits.convert(m.fs.feed.flow_vol[0], to_units=pyunits.m**3 / pyunits.hr)
+    )
+    print(f"{feed_vol_flow:.0f} m^3/hr")
+
+    print("\n---------- E. Coli MPN concentrations ----------")
+    ecoli_feed_MPN_conc = value(
+        pyunits.convert(m.fs.PAA.inlet_ecoli_conc[0], to_units=1 / pyunits.L)
+    )
+    print(f"Inlet: {ecoli_feed_MPN_conc:.1f} /L")
+
+    ecoli_outlet_MPN_conc = value(
+        pyunits.convert(m.fs.PAA.outlet_ecoli_conc[0], to_units=1 / pyunits.L)
+    )
+    print(f"Outlet: {ecoli_outlet_MPN_conc:.1f} /L")
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
@@ -157,46 +172,31 @@ def add_costing(m):
     )
 
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-
     m.fs.PAA.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
     m.fs.costing.cost_process()
-
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
 
-    m.fs.costing.PAA_mass = Expression(
+    m.fs.costing.annual_water_inlet = Expression(
         expr=m.fs.costing.utilization_factor
         * pyunits.convert(
-            m.fs.feed.flow_mass_comp[0, "peracetic_acid"],
-            to_units=pyunits.kg / m.fs.costing.base_period,
-        ),
-        doc="Mass of peracetic acid consumed per year (accounting for utilization factor)",
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
     )
 
     m.fs.costing.disinfection_solution_volume = Expression(
-        expr=pyunits.convert(
-            m.fs.costing.PAA_mass
-            / m.fs.PAA.disinfection_solution_wt_frac_PAA
-            / m.fs.PAA.disinfection_solution_density,
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.PAA.disinfection_solution_flow_vol[0],
             to_units=pyunits.gallon / m.fs.costing.base_period,
         ),
         doc="Volume of disinfection solution used per year (accounting for utilization factor)",
-    )
-
-    m.fs.costing.cost_disinfection_solution = Expression(
-        expr=pyunits.convert(
-            m.fs.costing.disinfection_solution_volume
-            * m.fs.costing.disinfection_solution_cost,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        ),
-        doc="Cost of disinfection solution used per year (accounting for utilization factor)",
     )
 
     m.fs.costing.LCOT = Expression(
         expr=(
             m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
             + m.fs.costing.total_operating_cost
-            + m.fs.costing.cost_disinfection_solution
         )
         / (
             pyunits.convert(
@@ -214,31 +214,67 @@ def display_costing(m):
     print("++++++++++++++++++++ DISPLAY COSTING ++++++++++++++++++++")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-    print("\n------------- Unit Capital Costs -------------")
-    for u in m.fs.costing._registered_unit_costing:
-        print(
-            f"{u.name} :   {value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2020)):.3f} $"
-        )
+    print("\n---------- Levelized cost ----------")
+    LCOT = value(
+        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized Cost of Treatment: {LCOT:.3f} $/m^3 feed water")
 
-    print("\n------------- Utility Costs -------------")
-    for f in m.fs.costing.flow_types:
-        print(
-            f"{f} :   {value(pyunits.convert(m.fs.costing.aggregate_flow_costs[f], to_units=pyunits.USD_2020 / pyunits.year)):.3f} $/year"
+    print("\n------------- Capital costs -------------")
+    DCC_normalized = value(
+        pyunits.convert(
+            m.fs.PAA.costing.capital_cost
+            / m.fs.costing.TIC
+            / m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.USD_2020 / (pyunits.m**3 / pyunits.hr),
         )
+    )
+    print(f"Normalized direct capital costs: {DCC_normalized:.1f} $/(m^3 feed/hr)")
 
-    print("\n---------------------------------------")
+    ICC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.total_capital_cost / m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.USD_2020 / (pyunits.m**3 / pyunits.hr),
+        )
+    )
+    print(f"Normalized total capital costs: {ICC_normalized:.1f} $/(m^3 feed/hr)")
 
     total_capital_cost = value(
         pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2020)
     )
-    print(f"\nTotal Capital Costs: {total_capital_cost:.3f} M$")
+    print(f"Total Capital Costs: {total_capital_cost:.3f} M$")
 
-    total_operating_cost = value(
+    print(
+        f"PAA capital cost: {value(pyunits.convert(m.fs.PAA.costing.capital_cost, to_units=pyunits.MUSD_2020)):.3f} M$"
+    )
+
+    print("\n------------- Operating costs -------------")
+    FMC_normalized = value(
         pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.costing.maintenance_cost / m.fs.costing.total_capital_cost,
+            to_units=1 / pyunits.year,
         )
     )
-    print(f"\nTotal Operating Costs: {total_operating_cost:.3f} M$/year")
+    print(f"Normalized maintenance costs: {FMC_normalized:.2f} 1/year")
+
+    OFOC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_fixed_operating_cost
+            / m.fs.costing.total_capital_cost,
+            to_units=1 / pyunits.year,
+        )
+    )
+    print(f"Normalized other fixed operating cost: {OFOC_normalized:.2f} 1/year")
+
+    EC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["electricity"]
+            * m.fs.costing.utilization_factor
+            / m.fs.costing.annual_water_inlet,
+            to_units=pyunits.USD_2020 / pyunits.m**3,
+        )
+    )
+    print(f"Normalized electricity cost: {EC_normalized:.5f} $/m^3 of feed")
 
     electricity_intensity = value(
         pyunits.convert(
@@ -246,43 +282,60 @@ def display_costing(m):
         )
     )
     print(
-        f"\nElectricity Intensity with respect to influent flowrate: {electricity_intensity:.3f} kWh/m^3"
+        f"Electricity Intensity with respect to influent flowrate: {electricity_intensity:.3f} kWh/m^3"
     )
 
-    PAA_mass = value(
+    total_operating_costs = value(
         pyunits.convert(
-            m.fs.costing.PAA_mass, to_units=pyunits.kg / m.fs.costing.base_period
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+        )
+    )
+    print(f"Total operating costs: {total_operating_costs:.3f} M$/year")
+
+    fixed_operating_costs = value(
+        pyunits.convert(
+            m.fs.costing.total_fixed_operating_cost,
+            to_units=pyunits.MUSD_2020 / pyunits.year,
+        )
+    )
+    print(f"Fixed operating costs: {fixed_operating_costs:.3f} M$/year")
+
+    variable_operating_costs = value(
+        pyunits.convert(
+            m.fs.costing.total_variable_operating_cost,
+            to_units=pyunits.MUSD_2020 / pyunits.year,
+        )
+    )
+    print(f"Variable operating costs: {variable_operating_costs:.3f} M$/year")
+
+    electricity_operating_costs = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["electricity"]
+            * m.fs.costing.utilization_factor,
+            to_units=pyunits.MUSD_2020 / pyunits.year,
+        )
+    )
+    print(f"Electricity operating costs: {electricity_operating_costs:.3f} M$/year")
+
+    disinfection_solution_operating_costs = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["disinfection_solution"]
+            * m.fs.costing.utilization_factor,
+            to_units=pyunits.MUSD_2020 / pyunits.year,
         )
     )
     print(
-        f"\nMass of peracetic acid consumed per year (accounting for utilization factor): {PAA_mass:.3f} kg/year"
+        f"Disinfection solution operating costs: {disinfection_solution_operating_costs:.3f} M$/year"
     )
 
     disinfection_solution_volume = value(
         pyunits.convert(
             m.fs.costing.disinfection_solution_volume,
-            to_units=pyunits.gallon / m.fs.costing.base_period,
+            to_units=pyunits.gallon / pyunits.year,
         )
     )
     print(
-        f"\nVolume of disinfection solution used per year (accounting for utilization factor): {disinfection_solution_volume:.3f} gal/year"
-    )
-
-    cost_disinfection_solution = value(
-        pyunits.convert(
-            m.fs.costing.cost_disinfection_solution,
-            to_units=m.fs.costing.base_currency / m.fs.costing.base_period,
-        )
-    )
-    print(
-        f"\nCost of disinfection solution used per year (accounting for utilization factor): {cost_disinfection_solution:.2f} $/year"
-    )
-
-    LCOT = value(
-        pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
-    )
-    print(
-        f"\nLevelized Cost of Treatment with respect to influent flowrate: {LCOT:.3f} $/m^3"
+        f"Volume of disinfection solution used per year (accounting for utilization factor): {disinfection_solution_volume:.0f} gal/year"
     )
 
     print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")

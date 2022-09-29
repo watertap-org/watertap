@@ -297,4 +297,4 @@ def test_costing():
     assert_optimal_termination(results)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert m.fs.unit.flow_mass_in[0] in m.fs.costing._registered_flows["catalyst_HTG"]
+    assert m.fs.unit.catalyst_flow[0] in m.fs.costing._registered_flows["catalyst_HTG"]

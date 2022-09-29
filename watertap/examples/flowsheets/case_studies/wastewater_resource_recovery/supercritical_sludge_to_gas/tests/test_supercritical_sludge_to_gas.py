@@ -39,7 +39,7 @@ class TestSupercritical_Sludge_to_GasFlowsheet:
     def test_build(self, system_frame):
         m = system_frame
         assert_units_consistent(m)
-        assert_degrees_of_freedom(m, 23)
+        assert_degrees_of_freedom(m, 25)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
@@ -101,10 +101,10 @@ class TestSupercritical_Sludge_to_GasFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(3537.28, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOG) == pytest.approx(23.7924, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOC) == pytest.approx(407.846, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOS) == pytest.approx(47.376, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOW) == pytest.approx(466.187, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOG) == pytest.approx(3.1357, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOC) == pytest.approx(53.751, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOS) == pytest.approx(6.2438, rel=1e-3)  # in $/kg
 
     @pytest.mark.component
     def test_display(self, system_frame):
