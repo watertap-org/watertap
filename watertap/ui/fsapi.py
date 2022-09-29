@@ -45,6 +45,7 @@ class ModelExport(BaseModel):
     is_readonly: Optional[bool] = None
     input_category: Optional[str]
     output_category: Optional[str]
+    obj_key: str = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -83,6 +84,16 @@ class ModelExport(BaseModel):
         if v is None:
             obj = values["obj"]
             v = True if not obj.is_variable_type() else False
+        return v
+
+    @validator("obj_key", always=True, pre=True)
+    def set_obj_key_default(cls, v, values):
+        if v is None:
+            obj = values["obj"]
+            assert (
+                obj is not None
+            ), "If ``obj_key`` is not specified, then ``obj`` must be a Pyomo object"
+            v = str(values["obj"])
         return v
 
 
@@ -159,10 +170,11 @@ class FlowsheetExport(BaseModel):
                 model_export = ModelExport.parse_obj(data)
             else:
                 model_export = data
-
-        key = str(model_export.obj)
+        key = model_export.obj_key
         if key in self.model_objects:
-            raise KeyError(f"Adding ModelExport object failed: duplicate name '{key}'")
+            raise KeyError(
+                f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
+            )
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
             _log.debug(
                 f"Adding ModelExport object with key={key}: {model_export.dict()}"
