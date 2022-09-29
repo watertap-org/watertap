@@ -61,22 +61,19 @@ def model():
 
 
 @pytest.mark.component
-def test_create_differential_sweep_params_sum(model):
+def test_create_differential_sweep_params_normal(model):
 
     m = model
 
     differential_sweep_specs = {
         "fs.a": {
-            "diff_mode": "sum",
             "diff_sample_type": NormalSample,
             "relative_std_dev": 0.01,
             "pyomo_object": m.fs.input["a"],
         },
         "fs.b": {
-            "diff_mode": "product",
-            "diff_sample_type": UniformSample,
-            "relative_lb": 0.01,
-            "relative_ub": 0.01,
+            "diff_sample_type": NormalSample,
+            "relative_std_dev": 0.5,
             "pyomo_object": m.fs.input["b"],
         },
     }
@@ -87,10 +84,55 @@ def test_create_differential_sweep_params_sum(model):
     diff_sweep_param_dict = ps._create_differential_sweep_params(
         local_values, differential_sweep_specs
     )
-    import pprint
 
-    print("diff_sweep_param_dict")
-    pprint.pprint(diff_sweep_param_dict)
+    expected_dict = {
+        "fs.a": NormalSample(m.fs.input["a"], 0.0, 0.01),
+        "fs.b": NormalSample(m.fs.input["b"], 1.0, 0.5),
+    }
+
+    for key, value in diff_sweep_param_dict.items():
+        print(value.mean)
+        assert value.mean == expected_dict[key].mean
+        assert value.sd == expected_dict[key].sd
+
+
+@pytest.mark.component
+def test_create_differential_sweep_params_others(model):
+
+    m = model
+
+    differential_sweep_specs = {
+        "fs.a": {
+            "diff_mode": "sum",
+            "diff_sample_type": GeomSample,
+            "relative_lb": 0.01,
+            "relative_ub": 10.0,
+            "pyomo_object": m.fs.input["a"],
+        },
+        "fs.b": {
+            "diff_mode": "product",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.01,
+            "relative_ub": 0.1,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    ps = DifferentialParameterSweep()
+    local_values = np.array([0.1, 1.0, 2.0])
+
+    diff_sweep_param_dict = ps._create_differential_sweep_params(
+        local_values, differential_sweep_specs
+    )
+
+    expected_dict = {
+        "fs.a": GeomSample(m.fs.input["a"], 0.099, 0.101, 1),
+        "fs.b": UniformSample(m.fs.input["b"], 0.01, 0.1),
+    }
+
+    for key, value in diff_sweep_param_dict.items():
+        assert value.lower_limit == expected_dict[key].lower_limit
+        assert value.upper_limit == expected_dict[key].upper_limit
 
 
 @pytest.mark.component
@@ -132,15 +174,6 @@ def test_differential_parameter_sweep(model, tmp_path):
         reinitialize_kwargs={"slack_penalty": 10.0},
     )
 
-    # tmp_path = _get_rank0_path(ps.comm, tmp_path)
-    # results_fname = os.path.join(tmp_path, "global_results")
-    # csv_results_file_name = str(results_fname) + ".csv"
-    # h5_results_file_name = str(results_fname) + ".h5"
-
-    # ps.writer.set_debugging_data_dir(tmp_path)
-    # ps.writer.set_csv_results_filename(csv_results_file_name)
-    # ps.writer.set_h5_results_file_name(h5_results_file_name)
-
     m = model
     m.fs.slack_penalty = 1000.0
     m.fs.slack.setub(0)
@@ -161,6 +194,11 @@ def test_differential_parameter_sweep(model, tmp_path):
         seed=0,
     )
 
+    import pprint
+
+    print()
+    pprint.pprint(global_results_dict)
+
     if ps.rank == 0:
         truth_dict = {
             "outputs": {
@@ -172,7 +210,7 @@ def test_differential_parameter_sweep(model, tmp_path):
                         [
                             0.2,
                             0.2,
-                            0.20000001,
+                            0.2,
                             1.0,
                             1.0,
                             1.0,
@@ -198,23 +236,23 @@ def test_differential_parameter_sweep(model, tmp_path):
                     "value": np.array(
                         [
                             0.0,
-                            7.50000000e-01,
+                            0.75,
                             1.0,
-                            9.99447596e-09,
-                            7.50000010e-01,
+                            9.98996974e-09,
+                            0.75,
                             1.0,
                             9.92236517e-09,
-                            7.50000010e-01,
+                            0.75,
                             1.0,
-                            3.00000000e-03,
-                            3.00000000e-03,
-                            3.00000976e-03,
+                            4.23516474e-22,
+                            7.50000000e-03,
                             1.50000098e-02,
+                            9.77884773e-09,
+                            7.50000977e-03,
                             1.50000098e-02,
+                            9.77884942e-09,
+                            7.50000977e-03,
                             1.50000098e-02,
-                            2.70000098e-02,
-                            2.70000098e-02,
-                            2.70000098e-02,
                         ]
                     ),
                 },
@@ -223,22 +261,22 @@ def test_differential_parameter_sweep(model, tmp_path):
                         [
                             0.2,
                             0.95,
-                            1.20000001,
+                            1.2,
                             1.0,
-                            1.75000001,
+                            1.75,
                             2.0,
                             1.0,
-                            1.75000001,
+                            1.75,
                             2.0,
-                            0.23828105,
-                            0.23828105,
-                            0.23828107,
+                            0.23528105,
+                            0.24278105,
+                            0.25028107,
+                            1.0,
+                            1.00750001,
                             1.01500001,
+                            1.0,
+                            1.00750001,
                             1.01500001,
-                            1.01500001,
-                            1.02700001,
-                            1.02700001,
-                            1.02700001,
                         ]
                     )
                 },
@@ -254,9 +292,9 @@ def test_differential_parameter_sweep(model, tmp_path):
                             0.0,
                             0.0,
                             0.0,
-                            0.79999999,
-                            0.79999999,
-                            0.79999999,
+                            0.8,
+                            0.8,
+                            0.8,
                             0.0,
                             0.0,
                             0.0,
@@ -277,13 +315,13 @@ def test_differential_parameter_sweep(model, tmp_path):
                         [
                             0.0,
                             0.0,
-                            0.49999999,
+                            0.5,
                             0.0,
                             0.0,
-                            0.49999999,
+                            0.5,
                             0.0,
                             0.0,
-                            0.49999999,
+                            0.5,
                             0.0,
                             0.0,
                             0.0,
@@ -303,20 +341,20 @@ def test_differential_parameter_sweep(model, tmp_path):
                             0.95,
                             -3.79999989,
                             1.0,
-                            1.75000001,
+                            1.75,
                             -2.9999999,
                             -6.99999989,
                             -6.24999989,
                             -10.9999998,
-                            0.23828105,
-                            0.23828105,
-                            0.23828107,
+                            0.23528105,
+                            0.24278105,
+                            0.25028107,
+                            0.64718964,
+                            0.65468964,
                             0.66218964,
-                            0.66218964,
-                            0.66218964,
-                            -7.32581036,
-                            -7.32581036,
-                            -7.32581036,
+                            -7.35281036,
+                            -7.34531036,
+                            -7.33781036,
                         ]
                     )
                 },
@@ -364,15 +402,15 @@ def test_differential_parameter_sweep(model, tmp_path):
                             0.0,
                             0.25,
                             0.5,
-                            0.001,
-                            0.001,
-                            0.001,
+                            0.0,
+                            0.0025,
                             0.005,
+                            0.0,
+                            0.0025,
                             0.005,
+                            0.0,
+                            0.0025,
                             0.005,
-                            0.009,
-                            0.009,
-                            0.009,
                         ]
                     ),
                 },

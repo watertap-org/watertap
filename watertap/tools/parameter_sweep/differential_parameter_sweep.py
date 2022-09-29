@@ -104,9 +104,15 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     ub = nominal_val * relative_ub
                 else:
                     raise NotImplementedError
-                diff_sweep_param[param] = specs["diff_sample_type"](
-                    pyomo_object, lb, ub
-                )
+                if specs["diff_sample_type"] == UniformSample:
+                    diff_sweep_param[param] = UniformSample(
+                        pyomo_object, lb, ub
+                    )
+                else:
+                    diff_sweep_param[param] = specs["diff_sample_type"](
+                        pyomo_object, lb, ub, self.config.num_diff_samples
+                    )
+            ctr += 1
 
         return diff_sweep_param
 
@@ -396,12 +402,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             differential_sweep_specs,
             outputs,
             local_values,
-            # optimize_function,
-            # optimize_kwargs,
-            # reinitialize_function,
-            # reinitialize_kwargs,
-            # reinitialize_before_sweep,
-            # probe_function,
         )
 
         # re-writing local_values
