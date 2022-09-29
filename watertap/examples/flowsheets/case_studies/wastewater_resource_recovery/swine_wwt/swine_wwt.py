@@ -748,15 +748,13 @@ def display_metrics_results(m):
         )
     )
     print(f"Levelized Cost of COD Removal: {LCOCOD_no_revenue:.2f} $/kg")
-    LCOT_no_revenue = value(
+    LCOT = value(
         pyunits.convert(
-            costing.levelized_costs.LCOT_no_revenue,
+            costing.levelized_costs.LCOT,
             to_units=m.fs.costing.base_currency / pyunits.m**3,
         )
     )
-    print(
-        f"Levelized Cost of Treatment with Revenue: {LCOT_no_revenue:.2f} $/m3 of feed"
-    )
+    print(f"Levelized Cost of Treatment with Revenue: {LCOT:.2f} $/m3 of feed")
     LCOW = value(
         pyunits.convert(
             costing.levelized_costs.LCOW,
@@ -1038,6 +1036,7 @@ def display_additional_results(m):
             + costing.annual_costs_revenues.annual_ammonia_revenue
             + costing.annual_costs_revenues.annual_phosphorus_revenue
             + costing.annual_costs_revenues.annual_vfa_revenue
+            + costing.annual_costs_revenues.annual_food_waste_revenue
         )
     )
     print(f"Total revenue: {total_revenue:.2f} $/year")

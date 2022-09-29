@@ -84,7 +84,7 @@ from .surface_discharge_zo import SurfaceDischargeZO
 # =========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
-from .anaerobic_digestion_reactive import AnaerobicDigestionReactiveZO
+from .anaerobic_digestion_reactive_zo import AnaerobicDigestionReactiveZO
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .autothermal_hydrothermal_liquefaction_zo import ATHTLZO
 from .CANDOP_zo import CANDOPZO
@@ -99,7 +99,7 @@ from .magprex_zo import MagprexZO
 from .membrane_evaporator import MembraneEvaporatorZO
 from .metab_zo import MetabZO
 from .microbial_battery_zo import MicrobialBatteryZO
-from .paa_disinfection_zo import PeraceticAcidDisinfectionZO
+from .peracetic_acid_disinfection_zo import PeraceticAcidDisinfectionZO
 from .photothermal_membrane_zo import PhotothermalMembraneZO
 from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
 from .struvite_classifier_zo import StruviteClassifierZO

@@ -26,7 +26,7 @@ __author__ = "Travis Arnold"
 
 
 @declare_process_block_class("AnaerobicDigestionReactiveZO")
-class AnaerobicDigestionReactiveData(ZeroOrderBaseData):
+class AnaerobicDigestionReactiveZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a reactive anaerobic digestion unit.
     """
