@@ -459,3 +459,10 @@ In the example code above, we show how to setup the thermo and reaction packages
 and place them into the `EquilibriumReactor` unit model, but do not go further.
 Additional instructions for setting up and solving unit models can be found at
 `IDAESWorkflow`_.
+
+.. testoutput::
+   :hide:
+   :options: +ELLIPSIS
+
+   WARNING: DEPRECATED: The default argument for the ProcessBlock class is
+       ...

@@ -36,6 +36,15 @@ Once this is done, we import the parameter sweep tool and two different random s
 
     from watertap.tools.parameter_sweep import parameter_sweep, UniformSample, NormalSample
 
+.. testoutput::
+   :hide:
+   :options: +ELLIPSIS
+
+   WARNING: DEPRECATED: The idaes.surrogate package has been moved to
+       ...
+   WARNING: DEPRECATED: The idaes.surrogate.pysmo.sampling module has been moved
+       ...
+
 The parameter sweep tool currently offers three random classes:
 
 * ``UniformSample``: Draw samples uniformly from a given upper and lower range.

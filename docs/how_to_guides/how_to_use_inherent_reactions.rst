@@ -299,3 +299,10 @@ code below.
     # At this point, you can 'fix' your inlet/outlet state conditions,
     #     setup scaling factors, initialize the model, then solve the model
     #     just as you would with any other IDAES flowsheet
+
+.. testoutput::
+   :hide:
+   :options: +ELLIPSIS
+
+   WARNING: DEPRECATED: The default argument for the ProcessBlock class is
+       ...
