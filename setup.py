@@ -152,6 +152,10 @@ setup(
             "ENR = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal_ui",
             "CANDO_P = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595_ui",
             "supercritical_sludge_to_gas = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas.supercritical_sludge_to_gas_ui",
+            "PAA = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection_ui",
+            "AMO 1690 = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1690.amo_1690_ui",
+            "HRCS = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.amo_1575_hrcs_ui",
+            "groundwater_treatment = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_ui",
         ],
     },
 )
