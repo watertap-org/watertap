@@ -516,7 +516,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=fs.zo_costing.base_currency / pyunits.m**3,
         display_units="$/m3 of product water",
         rounding=2,
-        description="Net levelized cost of water wrt to product flow accounting for revenue and disposal costs",
+        description="Net levelized cost of water wrt to product flow accounting for revenue and disposal costs`",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
