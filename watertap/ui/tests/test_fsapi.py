@@ -1,16 +1,21 @@
 """
 Tests for fsapi module
 """
+from collections import OrderedDict
 import logging
-
 import pytest
 
 from pyomo.environ import units as pyunits
 from pyomo.environ import Var, value
+from pyomo.environ import SolverStatus, TerminationCondition
 
 from watertap.examples.flowsheets.case_studies.seawater_RO_desalination import (
     seawater_RO_desalination as RO,
 )
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab import (
+    metab_ui as MU,
+)
+
 from watertap.ui import fsapi
 
 
@@ -18,6 +23,16 @@ _log = logging.getLogger("idaes.watertap.ui.fsapi")
 _log.setLevel(logging.DEBUG)
 
 ERD_TYPE = "pressure_exchanger"
+
+# Fake status=OK solver result
+
+
+class SOLVE_RESULT_OK:
+    class SOLVE_STATUS:
+        status = SolverStatus.ok
+        termination_condition = TerminationCondition.optimal
+
+    solver = SOLVE_STATUS
 
 
 def build_ro(**kwargs):
@@ -27,6 +42,7 @@ def build_ro(**kwargs):
 
 def solve_ro(flowsheet=None):
     assert flowsheet
+    return {"solved": True}
 
 
 class InputCategory:
@@ -67,14 +83,14 @@ def export_to_ui(flowsheet=None, exports=None):
     )
 
 
-def flowsheet_interface(exports=True):
+def flowsheet_interface(exports=True, solve_func=solve_ro):
     kwargs = {}
     if exports:
         kwargs["do_export"] = export_to_ui
     return fsapi.FlowsheetInterface(
         # leave out name and description to test auto-fill
         do_build=build_ro,
-        do_solve=solve_ro,
+        do_solve=solve_func,
         **kwargs,
     )
 
@@ -128,6 +144,7 @@ def test_actions():
     def fake_solve(flowsheet=None):
         # flowsheet passed in here should be what fake_build() returns
         assert flowsheet == garbage
+        return SOLVE_RESULT_OK
 
     def fake_export(flowsheet=None, exports=None):
         with pytest.raises(Exception):
@@ -237,3 +254,39 @@ def test_export_values_build():
     # after build, new values should be exported to fsi.fs_exp
     d2 = fsi.dict()
     assert d1 != d2
+
+
+@pytest.mark.unit
+def test_empty_solve():
+    # try a fake solve
+    fsi = flowsheet_interface()
+    fsi.build()
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")
+
+
+@pytest.mark.unit
+def test_nonoptimal_termination():
+    fsi = MU.export_to_ui()
+    fsi.build()
+
+    # pick a crazy value
+    key = list(fsi.fs_exp.model_objects.keys())[0]
+    orig_value = value(fsi.fs_exp.model_objects[key].obj)
+    new_value = orig_value + 1e9
+    fsi.fs_exp.model_objects[key].obj.value = new_value
+    print(f"* orig_value = {orig_value}, new value = {new_value}")
+
+    # try to solve (for real)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        fsi.solve()
+    print(f"* RuntimeError: {excinfo.value}")
+
+
+def test_has_version():
+    fsi = flowsheet_interface()
+    d = fsi.dict()
+    assert "version" in d
+    assert d["version"] > 0
