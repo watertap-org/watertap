@@ -270,3 +270,10 @@ def test_nonoptimal_termination():
     with pytest.raises(RuntimeError) as excinfo:
         fsi.solve()
     print(f"* RuntimeError: {excinfo.value}")
+
+
+def test_has_version():
+    fsi = flowsheet_interface()
+    d = fsi.dict()
+    assert "version" in d
+    assert d["version"] > 0
