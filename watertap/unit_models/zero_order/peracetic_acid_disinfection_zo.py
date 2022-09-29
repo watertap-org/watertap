@@ -81,6 +81,32 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
         ] = self.disinfection_solution_density
         self._fixed_perf_vars.append(self.disinfection_solution_density)
 
+        # Create variable for disinfection solution volumetric flowrate
+        self.disinfection_solution_flow_vol = Var(
+            self.flowsheet().time,
+            units=pyunits.L / pyunits.s,
+            bounds=(0, None),
+            doc="Volumetric flowrate of disinfection solution",
+        )
+        self._perf_var_dict[
+            "Disinfection solution volumetric flowrate"
+        ] = self.disinfection_solution_flow_vol
+
+        # Create constraint to calculate disinfection solution flowrate
+        @self.Constraint(
+            self.flowsheet().time, doc="Constraint for disinfection solution flowrate"
+        )
+        def disinfection_solution_flow_vol_rule(b, t):
+            return pyunits.convert(
+                b.inlet.flow_mass_comp[t, "peracetic_acid"],
+                to_units=pyunits.kg / pyunits.s,
+            ) == pyunits.convert(
+                b.disinfection_solution_flow_vol[t]
+                * b.disinfection_solution_density
+                * b.disinfection_solution_wt_frac_PAA,
+                to_units=pyunits.kg / pyunits.s,
+            )
+
         # Create reactor volume variable
         self.reactor_volume = Var(
             units=pyunits.m**3,
@@ -100,6 +126,7 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
 
         # Create variable for E. coli concentration at reactor inlet
         self.inlet_ecoli_conc = Var(
+            self.flowsheet().time,
             units=pyunits.liter**-1,
             bounds=(0, None),
             doc="Concentration of E. coli at reactor inlet",
@@ -108,18 +135,21 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
 
         # Create constraint relating E. coli inlet mass flow rate and
         # concentration
-        @self.Constraint(doc="Constraint for E. coli inlet concentration")
-        def ecoli_inlet_concentration_rule(b):
+        @self.Constraint(
+            self.flowsheet().time, doc="Constraint for E. coli inlet concentration"
+        )
+        def ecoli_inlet_concentration_rule(b, t):
             return pyunits.convert(
-                b.inlet.flow_mass_comp[0, "total_coliforms_fecal_ecoli"],
+                b.inlet.flow_mass_comp[t, "total_coliforms_fecal_ecoli"],
                 to_units=pyunits.kg / pyunits.s,
             ) == pyunits.convert(
-                b.inlet_ecoli_conc * b.ecoli_cell_mass * b.properties_in[0].flow_vol,
+                b.inlet_ecoli_conc[t] * b.ecoli_cell_mass * b.properties_in[t].flow_vol,
                 to_units=pyunits.kg / pyunits.s,
             )
 
         # Create variable for E. coli concentration at reactor outlet
         self.outlet_ecoli_conc = Var(
+            self.flowsheet().time,
             units=pyunits.liter**-1,
             bounds=(0, None),
             doc="Concentration of E. coli at reactor outlet",
@@ -128,14 +158,16 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
 
         # Create constraint relating E. coli outlet mass flow rate and
         # concentration
-        @self.Constraint(doc="Constraint for E. coli outlet concentration")
-        def ecoli_outlet_concentration_rule(b):
+        @self.Constraint(
+            self.flowsheet().time, doc="Constraint for E. coli outlet concentration"
+        )
+        def ecoli_outlet_concentration_rule(b, t):
             return pyunits.convert(
-                b.treated.flow_mass_comp[0, "total_coliforms_fecal_ecoli"],
+                b.treated.flow_mass_comp[t, "total_coliforms_fecal_ecoli"],
                 to_units=pyunits.kg / pyunits.s,
             ) == pyunits.convert(
-                b.outlet_ecoli_conc
+                b.outlet_ecoli_conc[t]
                 * b.ecoli_cell_mass
-                * b.properties_treated[0].flow_vol,
+                * b.properties_treated[t].flow_vol,
                 to_units=pyunits.kg / pyunits.s,
             )
