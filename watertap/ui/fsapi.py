@@ -76,8 +76,10 @@ class ModelExport(BaseModel):
         return v
 
     @validator("obj")
-    def ensure_obj_is_supported(cls, v):
-        assert v.is_variable_type() or v.is_expression_type()
+    def ensure_obj_is_supported(cls, v, values):
+        if v is not None:
+            assert v.is_variable_type() or v.is_expression_type()
+        return v
 
     @validator("is_readonly", always=True)
     def set_readonly_default(cls, v, values):
