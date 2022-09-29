@@ -149,7 +149,7 @@ class FlowsheetExport(BaseModel):
             else:
                 model_export = data
 
-        key = model_export.obj.name
+        key = str(model_export.obj)
         if key in self.model_objects:
             raise KeyError(f"Adding ModelExport object failed: duplicate name '{key}'")
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
