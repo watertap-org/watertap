@@ -42,7 +42,7 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: bool = False
+    is_readonly: Optional[bool] = None
     input_category: Optional[str]
     output_category: Optional[str]
 
@@ -72,6 +72,13 @@ class ModelExport(BaseModel):
                 v = values["obj"].name
             except AttributeError:
                 pass
+        return v
+
+    @validator("is_readonly", always=True)
+    def set_readonly_default(cls, v, values):
+        if v is None:
+            obj = values["obj"]
+            v = True if not obj.is_variable_type() else False
         return v
 
 
