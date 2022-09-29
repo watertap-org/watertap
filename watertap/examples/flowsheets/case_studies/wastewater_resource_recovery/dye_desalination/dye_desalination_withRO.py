@@ -373,7 +373,7 @@ def optimize_operation(m):
     # Permeate salt concentration constraint
     m.fs.permeate.properties[0].conc_mass_phase_comp["Liq", "TDS"].setub(0.5)
     m.fs.brine.properties[0].conc_mass_phase_comp
-    m.fs.objective = Objective(expr=m.LCOT)
+    m.fs.objective = Objective(expr=m.fs.LCOT)
     return
 
 
@@ -436,7 +436,8 @@ def add_costing(m):
             "costing_method_arguments": {"cost_electricity_flow": True},
         }
     )
-
+    m.fs.ro_costing.electricity_base_cost = value(m.fs.zo_costing.electricity_cost)
+    m.fs.ro_costing.base_currency = pyunits.USD_2020
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
     m.fs.ro_costing.cost_process()
@@ -508,7 +509,7 @@ def add_costing(m):
     )
 
     # Combine results from costing packages and calculate overall metrics
-    @m.Expression(doc="Total capital cost of the treatment train")
+    @m.fs.Expression(doc="Total capital cost of the treatment train")
     def total_capital_cost(b):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
@@ -516,7 +517,7 @@ def add_costing(m):
             m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
         )
 
-    @m.Expression(doc="Total operating cost of the treatment train")
+    @m.fs.Expression(doc="Total operating cost of the treatment train")
     def total_operating_cost(b):
         return (
             pyunits.convert(
@@ -533,7 +534,7 @@ def add_costing(m):
             )
         )
 
-    @m.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
+    @m.fs.Expression(doc="Total cost of water/dye recovered and brine/sludge disposed")
     def total_externalities(b):
         return pyunits.convert(
             m.fs.water_recovery_revenue
@@ -543,43 +544,43 @@ def add_costing(m):
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression(
+    @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow"
     )
     def LCOT(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - b.total_externalities
         ) / (
             pyunits.convert(
-                b.fs.feed.properties[0].flow_vol,
+                b.feed.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
-            * b.fs.zo_costing.utilization_factor
+            * b.zo_costing.utilization_factor
         )
 
-    @m.Expression(
+    @m.fs.Expression(
         doc="Levelized cost of treatment with respect to volumetric feed flow, not including externalities"
     )
     def LCOT_wo_revenue(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
         ) / (
             pyunits.convert(
-                b.fs.feed.properties[0].flow_vol,
+                b.feed.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
-            * b.fs.zo_costing.utilization_factor
+            * b.zo_costing.utilization_factor
         )
 
-    @m.Expression(
+    @m.fs.Expression(
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - pyunits.convert(
                 m.fs.dye_recovery_revenue
@@ -589,25 +590,25 @@ def add_costing(m):
             )
         ) / (
             pyunits.convert(
-                b.fs.permeate.properties[0].flow_vol,
+                b.permeate.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
-            * b.fs.zo_costing.utilization_factor
+            * b.zo_costing.utilization_factor
         )
 
-    @m.Expression(
+    @m.fs.Expression(
         doc="Levelized cost of water with respect to volumetric permeate flow"
     )
     def LCOW_wo_revenue(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
         ) / (
             pyunits.convert(
-                b.fs.permeate.properties[0].flow_vol,
+                b.permeate.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
-            * b.fs.zo_costing.utilization_factor
+            * b.zo_costing.utilization_factor
         )
 
     assert_units_consistent(m)
@@ -687,7 +688,7 @@ def display_results(m):
 
 
 def display_costing(m):
-    capex = value(pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020))
+    capex = value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2020))
     wwtp_capex = value(
         pyunits.convert(
             m.fs.pretreatment.wwtp.costing.capital_cost, to_units=pyunits.USD_2020
@@ -710,7 +711,7 @@ def display_costing(m):
 
     opex = value(
         pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
 
@@ -741,7 +742,7 @@ def display_costing(m):
 
     externalities = value(
         pyunits.convert(
-            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
     wrr = value(
@@ -772,14 +773,14 @@ def display_costing(m):
         )
     )
     capex_norm = (
-        value(pyunits.convert(m.total_capital_cost, to_units=pyunits.USD_2020))
+        value(pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.USD_2020))
         / feed_flowrate
     )
 
     annual_investment = value(
         pyunits.convert(
-            m.total_capital_cost * m.fs.zo_costing.capital_recovery_factor
-            + m.total_operating_cost,
+            m.fs.total_capital_cost * m.fs.zo_costing.capital_recovery_factor
+            + m.fs.total_operating_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         )
     )
@@ -787,20 +788,24 @@ def display_costing(m):
         100
         * value(
             pyunits.convert(
-                m.total_operating_cost, to_units=pyunits.USD_2020 / pyunits.year
+                m.fs.total_operating_cost, to_units=pyunits.USD_2020 / pyunits.year
             )
         )
         / annual_investment
     )
 
-    lcot = value(pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
+    lcot = value(pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcot_wo_rev = value(
-        pyunits.convert(m.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
+        pyunits.convert(
+            m.fs.LCOT_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+        )
     )
 
-    lcow = value(pyunits.convert(m.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
+    lcow = value(pyunits.convert(m.fs.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3))
     lcow_wo_rev = value(
-        pyunits.convert(m.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3)
+        pyunits.convert(
+            m.fs.LCOW_wo_revenue, to_units=pyunits.USD_2020 / pyunits.m**3
+        )
     )
 
     sec = m.fs.specific_energy_intensity()
