@@ -109,7 +109,7 @@ class FlowsheetExport(BaseModel):
     name: str = ""
     description: str = ""
     model_objects: Dict[str, ModelExport] = {}
-    version: int = 1
+    version: int = 2
     requires_idaes_solver: bool = False
 
     # set name dynamically from object
