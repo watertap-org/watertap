@@ -149,7 +149,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
-        Placeholder initialization routine, raises NotImplementedError
+        Passthrough initialization routine, raises NotImplementedError if
+        the unit model does not have an `_initialize` function.
         """
         if self._initialize is None or not callable(self._initialize):
             raise NotImplementedError()
