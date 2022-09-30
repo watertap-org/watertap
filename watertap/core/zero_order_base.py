@@ -155,7 +155,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
             raise NotImplementedError()
         else:
             self._initialize(
-                self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+                self, state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
             )
 
     def calculate_scaling_factors(self):
