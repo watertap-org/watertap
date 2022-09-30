@@ -35,6 +35,10 @@ def export_to_ui():
 
 def export_variables(flowsheet=None, exports=None):
     fs = flowsheet
+
+    def _base_curr(x):
+        return pyunits.convert(x, to_units=fs.costing.base_currency)
+
     # --- Input data ---
     # Feed conditions
     exports.add(
@@ -536,7 +540,8 @@ def export_variables(flowsheet=None, exports=None):
 
     # Normalized metrics
     total_capital_norm = (
-        fs.costing.total_capital_cost + fs.watertap_costing.total_capital_cost
+        fs.costing.total_capital_cost
+        + _base_curr(fs.watertap_costing.total_capital_cost)
     ) / fs.feed.properties[0].flow_vol
     exports.add(
         obj=total_capital_norm,
@@ -555,7 +560,7 @@ def export_variables(flowsheet=None, exports=None):
             fs.HRCS.costing.capital_cost
             + fs.clarifier.costing.capital_cost
             + fs.sep.costing.capital_cost
-            + fs.mixer.costing.capital_cost
+            + _base_curr(fs.mixer.costing.capital_cost)
         )
         / fs.costing.TIC
         / fs.feed.properties[0].flow_vol
@@ -654,8 +659,8 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # Capital costs
-    total_capital = (
-        fs.costing.total_capital_cost + fs.watertap_costing.total_capital_cost
+    total_capital = fs.costing.total_capital_cost + _base_curr(
+        fs.watertap_costing.total_capital_cost
     )
     exports.add(
         obj=total_capital,
@@ -703,7 +708,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.mixer.costing.capital_cost,
+        obj=_base_curr(fs.mixer.costing.capital_cost),
         name="Mixer",
         ui_units=fs.costing.base_currency,
         display_units="$",
@@ -718,7 +723,7 @@ def export_variables(flowsheet=None, exports=None):
     total_operating = (
         fs.costing.total_fixed_operating_cost
         + fs.costing.total_variable_operating_cost
-        + fs.watertap_costing.total_operating_cost
+        + _base_curr(fs.watertap_costing.total_operating_cost)
     )
     exports.add(
         obj=total_operating,

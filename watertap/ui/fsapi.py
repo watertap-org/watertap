@@ -42,9 +42,10 @@ class ModelExport(BaseModel):
     description: str = ""
     is_input: bool = True
     is_output: bool = True
-    is_readonly: bool = False
+    is_readonly: bool = None
     input_category: Optional[str]
     output_category: Optional[str]
+    obj_key: str = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -74,6 +75,32 @@ class ModelExport(BaseModel):
                 pass
         return v
 
+    @validator("obj")
+    def ensure_obj_is_supported(cls, v, values):
+        if v is not None:
+            assert v.is_variable_type() or v.is_expression_type()
+        return v
+
+    @validator("is_readonly", always=True, pre=True)
+    def set_readonly_default(cls, v, values):
+        if v is None:
+            obj = values["obj"]
+            assert (
+                obj is not None
+            ), "If ``is_readonly`` is not specified as a bool, then ``obj`` must be a Pyomo object"
+            v = True if not obj.is_variable_type() else False
+        return v
+
+    @validator("obj_key", always=True, pre=True)
+    def set_obj_key_default(cls, v, values):
+        if v is None:
+            obj = values["obj"]
+            assert (
+                obj is not None
+            ), "If ``obj_key`` is not specified, then ``obj`` must be a Pyomo object"
+            v = str(values["obj"])
+        return v
+
 
 class FlowsheetExport(BaseModel):
     """A flowsheet and its contained exported model objects."""
@@ -82,7 +109,8 @@ class FlowsheetExport(BaseModel):
     name: str = ""
     description: str = ""
     model_objects: Dict[str, ModelExport] = {}
-    version: int = 1
+    version: int = 2
+    requires_idaes_solver: bool = False
 
     # set name dynamically from object
     @validator("name", always=True)
@@ -148,10 +176,11 @@ class FlowsheetExport(BaseModel):
                 model_export = ModelExport.parse_obj(data)
             else:
                 model_export = data
-
-        key = model_export.obj.name
+        key = model_export.obj_key
         if key in self.model_objects:
-            raise KeyError(f"Adding ModelExport object failed: duplicate name '{key}'")
+            raise KeyError(
+                f"Adding ModelExport object failed: duplicate key '{key}' (model_export={model_export})"
+            )
         if _log.isEnabledFor(logging.DEBUG):  # skip except in debug mode
             _log.debug(
                 f"Adding ModelExport object with key={key}: {model_export.dict()}"
