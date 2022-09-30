@@ -3,6 +3,13 @@ How to setup a simple RO model
 
 The example below shows how to setup and initialize a simple RO unit model.
 
+.. testsetup::
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
 .. testcode::
 
    from pyomo.environ import ConcreteModel
