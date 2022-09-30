@@ -65,7 +65,6 @@ class LimitingCurrentDensityMethod(Enum):
 class ElectricalOperationMode(Enum):
     Constant_Current = 0
     Constant_Voltage = 1
-    # Theoretical = 2 TODO: 1 and 2
 
 
 # Name of the unit model
@@ -124,8 +123,8 @@ class Electrodialysis0DData(UnitModelBlockData):
            :header: "Configuration Options", "Description"
 
            "``LimitingCurrentDensityMethod.InitialValue``", "Limiting current is calculated from a single initial value of the feed solution tested by the user."
-           "``DensityCalculation.seawater``", "Limiting current density is caculated from the empirical equation: TODO"
-           "``DensityCalculation.laliberte``", "Limiting current density is calculated from a theoretical equation: TODO"
+           "``LimitingCurrentDensityMethod.Empirical``", "Limiting current density is caculated from the empirical equation: TODO"
+           "``LimitingCurrentDensityMethod.Theoretical``", "Limiting current density is calculated from a theoretical equation: TODO"
        """,
         ),
     )
