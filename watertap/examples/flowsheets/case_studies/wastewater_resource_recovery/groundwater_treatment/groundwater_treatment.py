@@ -347,6 +347,7 @@ def add_costing(m):
     m.fs.costing.cost_process()
 
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
     m.fs.costing.annual_water_inlet = Expression(
         expr=m.fs.costing.utilization_factor
@@ -382,6 +383,11 @@ def display_costing(m):
         pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(f"Levelized cost of treatment: {LCOT:.2f} $/m^3")
+
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized cost of water: {LCOW:.2f} $/m^3")
 
     print("\n------------- Capital costs -------------")
     DCC_normalized = value(

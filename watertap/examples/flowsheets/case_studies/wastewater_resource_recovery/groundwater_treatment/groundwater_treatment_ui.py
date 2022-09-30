@@ -12,7 +12,7 @@
 ###############################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex import (
+from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment import (
     build,
     set_operating_conditions,
     initialize_system,
@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 def export_to_ui():
     return FlowsheetInterface(
-        name="Magprex",
+        name="Groundwater treatment",
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,
@@ -50,207 +50,227 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "phosphates"],
-        name="OP concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Inlet orthophosphate concentration",
-        is_input=True,
-        input_category="Feed",
-        is_output=True,
-        output_category="Feed",
-    )
-    exports.add(
-        obj=fs.feed.conc_mass_comp[0, "struvite"],
-        name="Struvite concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Inlet struvite concentration",
-        is_input=True,
-        input_category="Feed",
-        is_output=True,
-        output_category="Feed",
-    )
-
-    # Unit model data, Magprex reactor
-    exports.add(
-        obj=fs.magprex.recovery_frac_mass_H2O[0],
-        name="Water recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
-        rounding=2,
-        description="Water recovery [g-H2O treated/g-H2O inlet]",
-        is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.magprex.reaction_conversion[0, "struvite_precip"],
-        name="OP conversion",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
-        rounding=2,
-        description="Orthophosphate conversion [g-OP reacted/g-OP inlet]",
-        is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.magprex.energy_electric_flow_vol_inlet,
-        name="Aeration energy",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Specific aeration energy relating the energy to the volume of struvite product",
-        is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.magprex.magnesium_chloride_dosage,
-        name="MgCl2 Dosage",
-        ui_units=pyunits.dimensionless,
-        display_units="kg MgCl2/kg struvite",
-        rounding=2,
-        description="MgCl2 Dosage per kg of struvite product",
-        is_input=True,
-        input_category="Magprex reactor",
-        is_output=False,
-    )
-
-    # Unit cost data, Magprex reactor
-    exports.add(
-        obj=fs.costing.magprex.HRT[None],
-        name="HRT",
-        ui_units=pyunits.hr,
-        display_units="h",
-        rounding=1,
-        description="Hydraulic retention time",
-        is_input=True,
-        input_category="Magprex reactor costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.magprex.sizing_cost[None],
-        name="Magprex reactor cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of reactor",
-        rounding=0,
-        description="Magprex reactor capital cost parameter",
-        is_input=True,
-        input_category="Magprex reactor costing",
-        is_output=False,
-    )
-
-    # Unit model data, centrifuge
-    exports.add(
-        obj=fs.centrifuge.recovery_frac_mass_H2O[0],
-        name="Water recovery",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
-        rounding=2,
-        description="Water recovery [g-H2O treated/g-H2O inlet]",
-        is_input=True,
-        input_category="Centrifuge",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.centrifuge.removal_frac_mass_comp[0, "phosphates"],
-        name="OP removal",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
-        rounding=2,
-        description="Orthophosphate removal [g-OP removed/g-OP inlet]",
-        is_input=True,
-        input_category="Centrifuge",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.centrifuge.energy_electric_flow_vol_inlet,
-        name="Specific power",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Centrifuge specific power relating the power to the volume of struvite product",
-        is_input=True,
-        input_category="Centrifuge",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.centrifuge.polymer_dose[0],
-        name="Polymer Dosage",
+        obj=fs.feed.conc_mass_comp[0, "arsenic"],
+        name="Arsenic concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
         rounding=2,
-        description="Polymer Dosage per liter of sludge treated",
+        description="Inlet arsenic concentration",
         is_input=True,
-        input_category="Centrifuge",
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.conc_mass_comp[0, "uranium"],
+        name="Uranium concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Inlet uranium concentration",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.conc_mass_comp[0, "nitrate"],
+        name="Nitrate concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Inlet nitrate concentration",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.conc_mass_comp[0, "phosphates"],
+        name="Phosphates concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Inlet phosphates concentration",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.conc_mass_comp[0, "iron"],
+        name="Iron concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Inlet iron concentration",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+    exports.add(
+        obj=fs.feed.conc_mass_comp[0, "filtration_media"],
+        name="Filtration media concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=2,
+        description="Inlet filtration media concentration",
+        is_input=True,
+        input_category="Feed",
+        is_output=True,
+        output_category="Feed",
+    )
+
+    # Unit model data, pump
+    exports.add(
+        obj=fs.pump.lift_height,
+        name="Lift height",
+        ui_units=pyunits.m,
+        display_units="m",
+        rounding=2,
+        description="Lift height for pump",
+        is_input=True,
+        input_category="Pump",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump.eta_pump,
+        name="Pump efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Efficiency of pump",
+        is_input=True,
+        input_category="Pump",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.pump.eta_motor,
+        name="Motor efficiency",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=2,
+        description="Efficiency of motor",
+        is_input=True,
+        input_category="Pump",
         is_output=False,
     )
 
-    # Unit cost data, centrifuge
+    # Unit cost data, pump
     exports.add(
-        obj=fs.costing.centrifuge.HRT[None],
-        name="HRT",
-        ui_units=pyunits.hr,
-        display_units="h",
-        rounding=1,
-        description="Hydraulic retention time",
-        is_input=True,
-        input_category="Centrifuge costing",
-        is_output=False,
-    )
-    exports.add(
-        obj=fs.costing.centrifuge.sizing_cost[None],
-        name="Centrifuge cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of centrifuge",
+        obj=fs.costing.pump_electricity.pump_cost[None],
+        name="Pump cost",
+        ui_units=fs.costing.base_currency / (pyunits.m**3 / pyunits.hr),
+        display_units="$/(m^3/hr)",
         rounding=0,
-        description="Centrifuge capital cost parameter",
+        description="Pump capital cost parameter",
         is_input=True,
-        input_category="Centrifuge costing",
+        input_category="Pump costing",
         is_output=False,
     )
 
-    # Unit model data, struvite classifier
+    # Unit model data, microbial battery
     exports.add(
-        obj=fs.classifier.energy_electric_flow_vol_inlet,
-        name="Specific power",
+        obj=fs.micbatt.recovery_frac_mass_H2O[0],
+        name="Water recovery",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Water recovery [g-H2O treated/g-H2O inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.reaction_conversion[0, "iron_precipitation"],
+        name="Iron conversion",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Iron conversion [g-Fe reacted/g-Fe inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.removal_frac_mass_comp[0, "arsenic"],
+        name="Arsenic removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Arsenic removal [g-As removed/g-As inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.removal_frac_mass_comp[0, "uranium"],
+        name="Uranium removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Uranium removal [g-U removed/g-U inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.removal_frac_mass_comp[0, "nitrate"],
+        name="Nitrate removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Nitrate removal [g-nitrate removed/g-nitrate inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.removal_frac_mass_comp[0, "phosphates"],
+        name="Phosphates removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",  # we should change to %
+        rounding=2,
+        description="Phosphates removal [g-P removed/g-P inlet]",
+        is_input=True,
+        input_category="Microbial battery",
+        is_output=False,
+    )
+    exports.add(
+        obj=fs.micbatt.energy_electric_flow_vol_inlet,
+        name="Electricity intensity",
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
         rounding=2,
-        description="Classifier specific power relating the power to the volume of struvite product",
+        description="Electricity intensity relating the intensity to the product volume",
         is_input=True,
-        input_category="Classifier",
+        input_category="Microbial battery",
         is_output=False,
     )
-
-    # Unit cost data, struvite classifier
     exports.add(
-        obj=fs.costing.struvite_classifier.HRT[None],
+        obj=fs.micbatt.HRT,
         name="HRT",
         ui_units=pyunits.hr,
         display_units="h",
         rounding=1,
         description="Hydraulic retention time",
         is_input=True,
-        input_category="Classifier costing",
+        input_category="Microbial battery",
         is_output=False,
     )
+    # Unit cost data, microbial battery
     exports.add(
-        obj=fs.costing.struvite_classifier.sizing_cost[None],
-        name="Classifier cost",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of classifier",
+        obj=fs.costing.microbial_battery.sizing_cost[None],
+        name="Microbial battery cost",
+        ui_units=(fs.costing.base_currency * pyunits.day) / pyunits.m**3,
+        display_units="($ * day)/m3 of microbial battery",
         rounding=0,
-        description="Classifier capital cost parameter",
+        description="Microbial battery capital cost parameter",
         is_input=True,
-        input_category="Classifier costing",
+        input_category="Microbial battery costing",
         is_output=False,
     )
-
     # System costing
     exports.add(
         obj=fs.costing.utilization_factor,
@@ -321,96 +341,138 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.magnesium_chloride_cost,
-        name="MgCl2 cost",
+        obj=fs.costing.filtration_media_cost,
+        name="Filtration media cost",
         ui_units=fs.costing.base_currency / pyunits.kg,
         display_units="$/kg",
         rounding=3,
-        description="Magnesium chloride cost",
+        description="Filtration media cost",
         is_input=True,
         input_category="System costing",
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.polymer_cost,
-        name="Polymer cost",
+        obj=fs.costing.filtration_media_disposal_cost,
+        name="Filtration media disposal cost",
         ui_units=fs.costing.base_currency / pyunits.kg,
         display_units="$/kg",
         rounding=3,
-        description="Dry Polymer cost",
+        description="Filtration media disposal cost",
         is_input=True,
         input_category="System costing",
         is_output=False,
     )
-    exports.add(
-        obj=fs.costing.struvite_product_cost,
-        name="Struvite cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg",
-        rounding=3,
-        description="Struvite cost is negative because it is sold",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
-
     # Outlets
     exports.add(
-        obj=fs.centrate.properties[0].flow_vol,
-        name="Centrate flow rate",
+        obj=fs.filtered_water.properties[0].flow_vol,
+        name="Filtered water flow rate",
         ui_units=pyunits.m**3 / pyunits.hr,
         display_units="m3/h",
         rounding=2,
-        description="Outlet centrate flow rate",
+        description="Outlet filtered water flow rate",
         is_input=False,
         is_output=True,
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.centrate.properties[0].conc_mass_comp["phosphates"],
-        name="Centrate OP concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=5,
-        description="Outlet centrate orthophosphate concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
-        obj=fs.centrate.properties[0].conc_mass_comp["H2O"],
-        name="Centrate H2O concentration",
-        ui_units=pyunits.g / pyunits.L,
-        display_units="g/L",
-        rounding=2,
-        description="Outlet product water concentration",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
-        obj=fs.biosolid_product.properties[0].flow_mass_comp["phosphates"],
-        name="Biosolid product flow rate",
-        ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-OP/h",
-        rounding=5,
-        description="Outlet orthophosphate biosolid product flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
-    exports.add(
-        obj=fs.struvite_product.properties[0].flow_mass_comp["struvite"],
-        name="Struvite product flow rate",
-        ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-struvite/h",
+        obj=fs.filtered_water.properties[0].conc_mass_comp["arsenic"],
+        name="Filtered water arsenic concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
         rounding=3,
-        description="Outlet struvite product flow rate",
+        description="Outlet filtered water arsenic concentration",
         is_input=False,
         is_output=True,
         output_category="Outlets",
     )
-
+    exports.add(
+        obj=fs.filtered_water.properties[0].conc_mass_comp["uranium"],
+        name="Filtered water uranium concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=3,
+        description="Outlet filtered water uranium concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.filtered_water.properties[0].conc_mass_comp["nitrate"],
+        name="Filtered water nitrate concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=3,
+        description="Outlet filtered water nitrate concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.filtered_water.properties[0].conc_mass_comp["phosphates"],
+        name="Filtered water phosphates concentration",
+        ui_units=pyunits.mg / pyunits.L,
+        display_units="mg/L",
+        rounding=3,
+        description="Outlet filtered water phosphates concentration",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.byproduct.properties[0].flow_mass_comp["arsenic"],
+        name="Byproduct arsenic flow rate",
+        ui_units=pyunits.mg / pyunits.day,
+        display_units="mg-arsenic/day",
+        rounding=5,
+        description="Outlet byproduct arsenic flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.byproduct.properties[0].flow_mass_comp["uranium"],
+        name="Byproduct uranium flow rate",
+        ui_units=pyunits.mg / pyunits.day,
+        display_units="mg-uranium/day",
+        rounding=5,
+        description="Outlet byproduct uranium flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.byproduct.properties[0].flow_mass_comp["nitrate"],
+        name="Byproduct nitrate flow rate",
+        ui_units=pyunits.mg / pyunits.day,
+        display_units="mg-nitrate/day",
+        rounding=5,
+        description="Outlet byproduct nitrate flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.byproduct.properties[0].flow_mass_comp["phosphates"],
+        name="Byproduct phosphates flow rate",
+        ui_units=pyunits.mg / pyunits.day,
+        display_units="mg-phosphates/day",
+        rounding=5,
+        description="Outlet byproduct phosphates flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
+    exports.add(
+        obj=fs.byproduct.properties[0].flow_mass_comp["filtration_media"],
+        name="Byproduct filtration media flow rate",
+        ui_units=pyunits.mg / pyunits.day,
+        display_units="mg-media/day",
+        rounding=5,
+        description="Outlet byproduct filtration media flow rate",
+        is_input=False,
+        is_output=True,
+        output_category="Outlets",
+    )
     # System metrics
     exports.add(
         obj=fs.costing.LCOT,
@@ -424,45 +486,12 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Levelized cost metrics",
     )
     exports.add(
-        obj=fs.costing.LCOT_with_revenue,
-        name="LCOT with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of feed",
-        rounding=3,
-        description="Levelized cost of treatment including revenue of struvite and consumption costs for MgCl2 and polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
         obj=fs.costing.LCOW,
         name="LCOW",
         ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of centrate",
+        display_units="$/m3 of treated water",
         rounding=3,
         description="Levelized cost of water including operating and capital costs",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOW_with_revenue,
-        name="LCOW with revenue",
-        ui_units=fs.costing.base_currency / pyunits.m**3,
-        display_units="$/m3 of centrate",
-        rounding=3,
-        description="Levelized cost of water including revenue of struvite and consumption costs for MgCl2 and polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Levelized cost metrics",
-    )
-    exports.add(
-        obj=fs.costing.LCOS,
-        name="Levelized cost of struvite",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg-struvite",
-        rounding=3,
-        description="Levelized cost of struvite including operating and capital costs",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -482,11 +511,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Normalized cost metrics",
     )
     direct_capital_norm = (
-        (
-            fs.magprex.costing.capital_cost
-            + fs.centrifuge.costing.capital_cost
-            + fs.classifier.costing.capital_cost
-        )
+        (fs.pump.costing.capital_cost + fs.micbatt.costing.capital_cost)
         / fs.costing.TIC
         / fs.feed.properties[0].flow_vol
     )
@@ -519,7 +544,9 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # performance metrics
-    recovery_vol = fs.centrate.properties[0].flow_vol / fs.feed.properties[0].flow_vol
+    recovery_vol = (
+        fs.filtered_water.properties[0].flow_vol / fs.feed.properties[0].flow_vol
+    )
     exports.add(
         obj=recovery_vol,
         name="Volumetric recovery",
@@ -531,38 +558,102 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    removal_OP = (
+    removal_arsenic = (
         1
-        - fs.centrate.properties[0].flow_mass_comp["phosphates"]
-        / fs.feed.properties[0].flow_mass_comp["phosphates"]
+        - fs.filtered_water.properties[0].flow_mass_comp["arsenic"]
+        / fs.feed.properties[0].flow_mass_comp["arsenic"]
     )
     exports.add(
-        obj=removal_OP,
-        name="OP removal",
+        obj=removal_arsenic,
+        name="Arsenic removal",
         ui_units=pyunits.dimensionless,
         display_units="fraction",
         rounding=3,
-        description="Orthophosphate removal fraction [1 - outlet OP flow/inlet OP flow]",
+        description="Arsenic removal fraction [1 - outlet As flow/inlet As flow]",
         is_input=False,
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    struvite_production = (
-        fs.struvite_product.properties[0].flow_mass_comp["struvite"]
-        / fs.feed.properties[0].flow_vol
+    removal_uranium = (
+        1
+        - fs.filtered_water.properties[0].flow_mass_comp["uranium"]
+        / fs.feed.properties[0].flow_mass_comp["uranium"]
     )
     exports.add(
-        obj=struvite_production,
-        name="Struvite production",
-        ui_units=pyunits.kg / pyunits.m**3,
-        display_units="kg-struvite/m3 of feed",
+        obj=removal_uranium,
+        name="Uranium removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
         rounding=3,
-        description="Struvite production [Struvite product flow rate/feed flow rate]",
+        description="Uranium removal fraction [1 - outlet U flow/inlet U flow]",
         is_input=False,
         is_output=True,
         output_category="Normalized performance metrics",
     )
-
+    removal_nitrate = (
+        1
+        - fs.filtered_water.properties[0].flow_mass_comp["nitrate"]
+        / fs.feed.properties[0].flow_mass_comp["nitrate"]
+    )
+    exports.add(
+        obj=removal_nitrate,
+        name="Nitrate removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="Nitrate removal fraction [1 - outlet NO3 flow/inlet NO3 flow]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+    removal_phosphates = (
+        1
+        - fs.filtered_water.properties[0].flow_mass_comp["phosphates"]
+        / fs.feed.properties[0].flow_mass_comp["phosphates"]
+    )
+    exports.add(
+        obj=removal_phosphates,
+        name="Phosphates removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="Phosphates removal fraction [1 - outlet P flow/inlet P flow]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+    removal_iron = (
+        1
+        - fs.filtered_water.properties[0].flow_mass_comp["iron"]
+        / fs.feed.properties[0].flow_mass_comp["iron"]
+    )
+    exports.add(
+        obj=removal_iron,
+        name="Iron removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="Iron removal fraction [1 - outlet Fe flow/inlet Fe flow]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
+    removal_filtration_media = (
+        1
+        - fs.filtered_water.properties[0].flow_mass_comp["filtration_media"]
+        / fs.feed.properties[0].flow_mass_comp["filtration_media"]
+    )
+    exports.add(
+        obj=removal_filtration_media,
+        name="Filtration media removal",
+        ui_units=pyunits.dimensionless,
+        display_units="fraction",
+        rounding=3,
+        description="Filtration media removal fraction [1 - outlet media flow/inlet media flow]",
+        is_input=False,
+        is_output=True,
+        output_category="Normalized performance metrics",
+    )
     # Capital costs
     exports.add(
         obj=fs.costing.total_capital_cost,
@@ -577,39 +668,27 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.magprex.costing.capital_cost,
-        name="Magprex reactor",
+        obj=fs.pump.costing.capital_cost,
+        name="Pump",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
-        description="Magprex reactor",
+        description="Pump",
         is_input=False,
         is_output=True,
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.centrifuge.costing.capital_cost,
-        name="Centrifuge",
+        obj=fs.micbatt.costing.capital_cost,
+        name="Microbial battery",
         ui_units=fs.costing.base_currency,
         display_units="$",
         rounding=0,
-        description="Centrifuge",
+        description="Microbial battery",
         is_input=False,
         is_output=True,
         output_category="Capital costs",
     )
-    exports.add(
-        obj=fs.classifier.costing.capital_cost,
-        name="Classifier",
-        ui_units=fs.costing.base_currency,
-        display_units="$",
-        rounding=0,
-        description="Classifier",
-        is_input=False,
-        is_output=True,
-        output_category="Capital costs",
-    )
-
     # Operating costs
     exports.add(
         obj=fs.costing.total_operating_cost,
@@ -645,58 +724,6 @@ def export_variables(flowsheet=None, exports=None):
         is_input=False,
         is_output=True,
         output_category="Operating costs",
-    )
-
-    # Revenue
-    total_revenue = -(
-        fs.costing.aggregate_flow_costs["struvite_product"]
-        + fs.costing.aggregate_flow_costs["magnesium_chloride"]
-        + fs.costing.aggregate_flow_costs["polymer"]
-    )
-    exports.add(
-        obj=total_revenue,
-        name="Net",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Net revenue - including the sale of struvite and purchase of MgCl2 and dry polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["struvite_product"],
-        name="Struvite",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Revenue from selling struvite",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["magnesium_chloride"],
-        name="Magnesium chloride",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Cost from buying magnesium chloride",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["polymer"],
-        name="Polymer",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Cost from buying polymer",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
     )
 
 
