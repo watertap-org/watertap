@@ -157,6 +157,7 @@ setup(
             "HRCS = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs.hrcs_ui",
             "groundwater_treatment = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_ui",
             "dye_desalination = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
+            "swine_wwt = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt_ui",
         ],
     },
 )
