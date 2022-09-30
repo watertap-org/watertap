@@ -104,6 +104,8 @@ setup(
         # for watertap.ui.api_model (though may be generally useful)
         "pydantic",
         "numpy",
+        # for importlib.metadata.entry_points()
+        "importlib_metadata; python_version < '3.8' ",
     ],
     extras_require={
         "testing": [
@@ -141,6 +143,12 @@ setup(
         # add edb CLI commands
         "console_scripts": [
             "edb = watertap.edb.commands:command_base",
-        ]
+        ],
+        "watertap.flowsheets": [
+            "metab = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab_ui",
+            "suboxic_ASM = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_ASM_ui",
+            "Magprex = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex_ui",
+            "biomembrane_filtration = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration_ui",
+        ],
     },
 )

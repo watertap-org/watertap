@@ -148,7 +148,7 @@ class FeedZOData(FeedData):
                 value(self.flow_vol[t] * 1000)
             )
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
