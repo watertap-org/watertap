@@ -207,7 +207,6 @@ def add_costing(m):
     )
 
     m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
-    m.fs.costing.base_currency = pyunits.USD_2018
     m.fs.watertap_costing = WaterTAPCosting()
 
     m.fs.mixer.costing = UnitModelCostingBlock(
