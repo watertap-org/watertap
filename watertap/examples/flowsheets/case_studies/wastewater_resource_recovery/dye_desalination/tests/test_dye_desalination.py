@@ -105,7 +105,7 @@ class TestDyeFlowsheet:
         assert_optimal_termination(results)
 
         # check values
-        assert pytest.approx(0.521616, rel=1e-3) == value(m.LCOT)
+        assert pytest.approx(0.521616, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):
