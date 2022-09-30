@@ -10,6 +10,23 @@ from pyomo.environ import assert_optimal_termination
 from ..fsapi import FlowsheetInterface
 
 
+MARKERS = {
+    "AMO 1690": [
+        pytest.mark.requires_idaes_solvers,
+    ],
+}
+
+
+@pytest.fixture(scope="class")
+def fs_interface(request) -> FlowsheetInterface:
+    fs_interface: FlowsheetInterface = request.param
+    key = fs_interface.fs_exp.name
+    markers_to_apply = MARKERS.get(key, [])
+    for marker in markers_to_apply:
+        request.applymarker(marker)
+    return fs_interface
+
+
 def pytest_generate_tests(metafunc):
     if "fs_interface" in metafunc.fixturenames:
         by_name = dict(FlowsheetInterface.from_installed_packages())
@@ -18,6 +35,7 @@ def pytest_generate_tests(metafunc):
             list(by_name.values()),
             ids=list(by_name.keys()),
             scope="class",
+            indirect=True,
         )
 
 
