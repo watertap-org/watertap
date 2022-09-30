@@ -134,8 +134,8 @@ def set_operating_conditions(m):
     conc_mass_tss = 500.0 * pyunits.mg / pyunits.L
     conc_mass_cod = 700.0 * pyunits.mg / pyunits.L
     conc_mass_tkn = 65 * pyunits.mg / pyunits.L
-    conc_mass_aa = 0.0 * pyunits.mg / pyunits.L
-    conc_mass_nh4 = 0.0 * pyunits.mg / pyunits.L
+    conc_mass_aa = 1e-8 * pyunits.mg / pyunits.L
+    conc_mass_nh4 = 1e-8 * pyunits.mg / pyunits.L
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
