@@ -281,7 +281,6 @@ Nomenclature
    ":math:`D_b`", "Diffusivity of the salt molecular in the bulk solution", ":math:`m^2 s^{-1}`"
    ":math:`i_{lim}`", "Limiting current density ", ":math:`A m^{-2}`"
    ":math:`\lambda`", "equivalent conductivity of the solution", ":math:`m^2 \Omega^{-1} mol^{-1}`"
-
    "**Subscripts and superscripts**"
    ":math:`C`", "Concentrate channel",
    ":math:`D`", "Diluate channel",
@@ -293,7 +292,6 @@ Nomenclature
    ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
    ":math:`L`", "The left side of a membrane, facing the cathode",
    ":math:`R`", "The right side of a membrane, facing the anode",
-   ":math:`iem`", "Ion exchange membrane, i.e., cem or aem",
    ":math:`s`", "location of the membrane surface",
    ":math:`b`", "location of bulk solution",
    ":math:`+` or :math:`-` ", "mono-cation or mono-anion",
