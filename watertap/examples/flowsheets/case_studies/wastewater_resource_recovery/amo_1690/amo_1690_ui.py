@@ -27,6 +27,7 @@ from pyomo.util.check_units import assert_units_consistent
 def export_to_ui():
     return FlowsheetInterface(
         name="AMO 1690",
+        requires_idaes_solver=True,
         do_export=export_variables,
         do_build=build_flowsheet,
         do_solve=solve_flowsheet,

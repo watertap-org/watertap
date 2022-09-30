@@ -110,6 +110,7 @@ class FlowsheetExport(BaseModel):
     description: str = ""
     model_objects: Dict[str, ModelExport] = {}
     version: int = 1
+    requires_idaes_solver: bool = False
 
     # set name dynamically from object
     @validator("name", always=True)
