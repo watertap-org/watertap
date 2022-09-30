@@ -65,13 +65,11 @@ class TestAMO1690Flowsheet:
         assert value(m.fs.feed.flow_mass_comp[0, "acetic_acid"]) < 1e-8
         assert value(m.fs.feed.flow_mass_comp[0, "ammonium_as_nitrogen"]) < 1e-8
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, system_frame):
         m = system_frame
         initialize_system(m)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, system_frame):
         m = system_frame
@@ -152,7 +150,6 @@ class TestAMO1690Flowsheet:
             m.fs.me_byproduct.properties[0].flow_mass_comp["ammonium_as_nitrogen"]
         ) == pytest.approx(0.045565, rel=1e-3)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, system_frame):
         m = system_frame
@@ -175,7 +172,6 @@ class TestAMO1690Flowsheet:
             0.179337, rel=1e-3
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_display(self, system_frame):
         m = system_frame

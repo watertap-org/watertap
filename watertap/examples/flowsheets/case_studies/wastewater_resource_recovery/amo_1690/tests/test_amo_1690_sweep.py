@@ -25,7 +25,6 @@ sweep_list = [
 ]
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.parametrize("case_num", sweep_list)
 @pytest.mark.integration
 def test_sweep(case_num, tmp_path):
