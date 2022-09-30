@@ -135,7 +135,7 @@ class TestHRCSFlowsheet:
 
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(
-            0.0124218, rel=1e-3
+            0.0125655, rel=1e-3
         )  # in $/m**3
 
     @pytest.mark.component
