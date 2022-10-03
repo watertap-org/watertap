@@ -38,27 +38,3 @@ class HRCSZOData(ZeroOrderBaseData):
 
         build_sido_reactive(self)
         constant_intensity(self)
-
-        self.ferric_chloride_dose = Var(
-            units=pyunits.kg / pyunits.m**3,
-            bounds=(0, None),
-            doc="Dosing rate of ferric chloride",
-        )
-
-        self._fixed_perf_vars.append(self.ferric_chloride_dose)
-
-        self.ferric_chloride_demand = Var(
-            self.flowsheet().time,
-            units=pyunits.kg / pyunits.hr,
-            bounds=(0, None),
-            doc="Consumption rate of ferric chloride",
-        )
-
-        self._perf_var_dict["Ferric Chloride Demand"] = self.ferric_chloride_demand
-
-        @self.Constraint(self.flowsheet().time, doc="Acetic acid demand constraint")
-        def ferric_chloride_demand_equation(b, t):
-            return b.ferric_chloride_demand[t] == pyunits.convert(
-                b.ferric_chloride_dose * b.properties_in[t].flow_vol,
-                to_units=pyunits.kg / pyunits.hr,
-            )
