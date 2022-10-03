@@ -74,10 +74,6 @@ class TestHRCSZO:
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
-        assert isinstance(model.fs.unit.ferric_chloride_dose, Var)
-        assert isinstance(model.fs.unit.ferric_chloride_demand, Var)
-        assert isinstance(model.fs.unit.ferric_chloride_demand_equation, Constraint)
-
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("hrcs")
@@ -229,10 +225,6 @@ class TestHRCSZO_w_default_removal:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
-
-        assert isinstance(model.fs.unit.ferric_chloride_dose, Var)
-        assert isinstance(model.fs.unit.ferric_chloride_demand, Var)
-        assert isinstance(model.fs.unit.ferric_chloride_demand_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
