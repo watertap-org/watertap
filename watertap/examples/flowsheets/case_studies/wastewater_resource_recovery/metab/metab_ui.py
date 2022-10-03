@@ -713,8 +713,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=pyunits.dimensionless,
         display_units="m3 of product/m3 of feed",
         rounding=3,
-        description="Normalized heating cost - [annual heating costs/annual feed "
-        "flow rate]",
+        description="Volumetric recovery of product water",
         is_input=False,
         is_output=True,
         output_category="Normalized performance metrics",
