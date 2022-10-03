@@ -68,3 +68,29 @@ class AnaerobicDigestionReactiveZOData(ZeroOrderBaseData):
                     to_units=pyunits.m**3 / pyunits.s,
                 )
             )
+
+        if self.config.process_subtype == "GLSD_anaerobic_digester":
+            self.HRT = Var(
+                units=pyunits.hour,
+                doc="Hydraulic retention time",
+            )
+
+            self._fixed_perf_vars.append(self.HRT)
+            self._perf_var_dict["Hydraulic retention time"] = self.HRT
+
+            self.reactor_volume = Var(
+                self.flowsheet().time,
+                units=pyunits.m**3,
+                doc="Reactor volume",
+            )
+
+            @self.Constraint(self.flowsheet().time, doc="Constraint for reactor volume")
+            def reactor_volume_cons(b, t):
+                return b.reactor_volume[t] == (
+                    pyunits.convert(
+                        b.HRT * b.properties_in[t].flow_vol,
+                        to_units=pyunits.m**3,
+                    )
+                )
+
+            self._perf_var_dict["Reactor volume"] = self.reactor_volume
