@@ -41,33 +41,40 @@ class AnaerobicDigestionReactiveZOData(ZeroOrderBaseData):
         build_sido_reactive(self)
         constant_intensity(self)
 
-        # Create water flux variable
-        self.biogas_tss_ratio = Var(
-            units=pyunits.m**3 / pyunits.kg,
-            bounds=(0, None),
-            doc="Ratio of m^3 biogas produced / kg TSS in influent",
-        )
-        self._perf_var_dict[
-            "Ratio of m^3 biogas produced / kg TSS in influent"
-        ] = self.biogas_tss_ratio
-        self._fixed_perf_vars.append(self.biogas_tss_ratio)
+        if (
+            self.config.process_subtype == "default"
+            or self.config.process_subtype is None
+        ):
 
-        self.biogas_production = Var(
-            self.flowsheet().time,
-            units=pyunits.m**3 / pyunits.s,
-            bounds=(0, None),
-            doc="Biogas production",
-        )
-        self._perf_var_dict["Biogas production"] = self.biogas_production
-
-        @self.Constraint(self.flowsheet().time, doc="Constraint for biogas production")
-        def biogas_prod(b, t):
-            return b.biogas_production[t] == (
-                pyunits.convert(
-                    b.biogas_tss_ratio * b.properties_in[t].flow_mass_comp["tss"],
-                    to_units=pyunits.m**3 / pyunits.s,
-                )
+            # Create water flux variable
+            self.biogas_tss_ratio = Var(
+                units=pyunits.m**3 / pyunits.kg,
+                bounds=(0, None),
+                doc="Ratio of m^3 biogas produced / kg TSS in influent",
             )
+            self._perf_var_dict[
+                "Ratio of m^3 biogas produced / kg TSS in influent"
+            ] = self.biogas_tss_ratio
+            self._fixed_perf_vars.append(self.biogas_tss_ratio)
+
+            self.biogas_production = Var(
+                self.flowsheet().time,
+                units=pyunits.m**3 / pyunits.s,
+                bounds=(0, None),
+                doc="Biogas production",
+            )
+            self._perf_var_dict["Biogas production"] = self.biogas_production
+
+            @self.Constraint(
+                self.flowsheet().time, doc="Constraint for biogas production"
+            )
+            def biogas_prod(b, t):
+                return b.biogas_production[t] == (
+                    pyunits.convert(
+                        b.biogas_tss_ratio * b.properties_in[t].flow_mass_comp["tss"],
+                        to_units=pyunits.m**3 / pyunits.s,
+                    )
+                )
 
         if self.config.process_subtype == "GLSD_anaerobic_digester":
             self.HRT = Var(
