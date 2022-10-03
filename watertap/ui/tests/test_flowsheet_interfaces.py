@@ -10,14 +10,40 @@ from pyomo.environ import assert_optimal_termination
 from ..fsapi import FlowsheetInterface
 
 
+@pytest.fixture(scope="class")
+def fs_interface(request) -> FlowsheetInterface:
+    fs_interface: FlowsheetInterface = request.param
+    fs_exp = fs_interface.fs_exp
+
+    markers_to_apply = []
+    # with this parametrization setup, ``request`` will be a SubRequest
+    # if we use request.applymarker(), the marker will be applied to the entire class
+    # using _parent_request (unfortunately private API) lets us target more precisely
+    # a single (test_function, param_value) combination
+    request_where_marker_should_be_applied = request._parent_request
+
+    if fs_exp.requires_idaes_solver:
+        markers_to_apply.append(pytest.mark.requires_idaes_solver)
+
+    for marker in markers_to_apply:
+        request_where_marker_should_be_applied.applymarker(marker)
+
+    return fs_interface
+
+
 def pytest_generate_tests(metafunc):
     if "fs_interface" in metafunc.fixturenames:
         by_name = dict(FlowsheetInterface.from_installed_packages())
+        # NOTE: with ``scope="class"``, a fresh, separate fixture instance will be created:
+        # - for each standalone (i.e. module-level) test function,
+        # - for each test class, once by the first test method in the class that requests it
+        # as a consequence, this means that all test methods within a test class operate on the same object
         metafunc.parametrize(
             "fs_interface",
             list(by_name.values()),
             ids=list(by_name.keys()),
             scope="class",
+            indirect=True,
         )
 
 
