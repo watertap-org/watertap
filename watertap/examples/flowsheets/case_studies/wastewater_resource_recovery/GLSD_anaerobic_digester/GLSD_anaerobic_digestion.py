@@ -114,10 +114,10 @@ def set_operating_conditions(m):
     # ---specifications---
     # feed
     flow_vol = 12.4 * pyunits.m**3 / pyunits.hr
-    flow_mass_tss = 768.8 * pyunits.kg / pyunits.hr
+    conc_mass_tss = 62 * pyunits.g / pyunits.L
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
-    m.fs.feed.flow_mass_comp[0, "tss"].fix(flow_mass_tss)
+    m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
     m.fs.feed.conc_mass_comp[0, "methane"].fix(1e-8)
     m.fs.feed.conc_mass_comp[0, "carbon_dioxide"].fix(1e-8)
     m.fs.feed.conc_mass_comp[0, "nitrogen"].fix(1e-8)
