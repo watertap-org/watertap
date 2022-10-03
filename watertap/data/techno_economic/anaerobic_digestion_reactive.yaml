@@ -70,7 +70,7 @@ default:
     capital_b_parameter:
       value: 0.6
       units: dimensionless
-GLSD_anaerobic_digester:
+GLSD_anaerobic_digester:  # AMO 1669 subtype
   biogas_tss_ratio: # keep from default
     value: 0 # unsure if applicable
     units: m^3/kg
