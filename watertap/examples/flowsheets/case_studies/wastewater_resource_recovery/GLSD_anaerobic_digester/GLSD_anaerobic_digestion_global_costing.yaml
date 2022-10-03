@@ -34,7 +34,7 @@ global_parameters:
     units: 1/year
   wacc:
     # Weighted Average Cost of Capital (WACC)
-    value: 0.08
+    value: 0.05
     units: dimensionless
   TPEC:
     # Total Purchased Equipment Cost
