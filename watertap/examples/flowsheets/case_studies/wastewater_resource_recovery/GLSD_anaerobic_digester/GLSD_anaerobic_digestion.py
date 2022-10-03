@@ -160,9 +160,8 @@ def add_costing(m):
     )
     m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
-    m.fs.AD.costing = UnitModelCostingBlock(**costing_kwargs)
-    m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
     m.fs.costing.add_electricity_intensity(m.fs.product_H2O.properties[0].flow_vol)
