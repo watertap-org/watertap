@@ -23,7 +23,7 @@ default:
       constituent_longform: Inorganic Liquid
   capital_cost:
     basis: flow_mass
-    cost_factor: None
+    cost_factor: TIC
     installation_factor:
       value: 2.1
       units: dimensionless
