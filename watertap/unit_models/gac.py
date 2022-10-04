@@ -794,6 +794,10 @@ class GACData(UnitModelBlockData):
         def eq_bed_area(b):
             return b.bed_area == np.pi * (b.bed_diameter**2) / 4
 
+        @self.Constraint(doc="Adsorber bed dimensions")
+        def eq_bed_dimensions(b):
+            return b.bed_volume == b.bed_area * b.bed_length
+
         @self.Constraint(doc="Total gac mass in the adsorbed bed")
         def eq_mass_gac_bed(b):
             return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
@@ -801,13 +805,6 @@ class GACData(UnitModelBlockData):
         @self.Constraint(doc="Relating velocities")
         def eq_velocity_relation(b):
             return b.velocity_int * b.bed_voidage == b.velocity_sup
-
-        @self.Constraint(doc="Adsorber bed area")
-        def eq_area_bed(b):
-            return (
-                b.bed_area * b.velocity_sup
-                == b.process_flow.properties_in[0].flow_vol_phase["Liq"]
-            )
 
         @self.Constraint(doc="Adsorber bed length")
         def eq_length_bed(b):
