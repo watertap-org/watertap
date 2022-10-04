@@ -56,5 +56,5 @@ def test_biomembrane_filtration():
         m.fs.dmbr.properties_treated[0].flow_mass_comp["tss"]
     ) == pytest.approx(2.317e-3, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.1604537, rel=1e-3)  # in M$/m**3
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.3118654, rel=1e-3)  # in M$/m**3
     assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.11302, rel=1e-3)
