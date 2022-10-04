@@ -9,7 +9,7 @@ global_parameters:
     value: 30
     units: year
   utilization_factor:
-    value: 0.9
+    value: 0.85
     units: dimensionless
   land_cost_percent_FCI:
     value: 0
