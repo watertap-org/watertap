@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+import numpy as np
 from pyomo.environ import (
     Var,
     Param,
@@ -315,7 +316,7 @@ class GACData(UnitModelBlockData):
 
         self.equil_conc = Var(
             initialize=1e-4,
-            bounds=(1e-8, None),
+            bounds=(1e-20, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Equilibrium concentration of adsorbed phase with liquid phase",
@@ -360,7 +361,15 @@ class GACData(UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
-            doc="Adsorber bed area",
+            doc="Adsorber bed area, single adsorber area or sum of areas for adsorbers in parallel",
+        )
+
+        self.bed_diameter = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Adsorber bed diameter, valid if considering only a single adsorber",
         )
 
         self.bed_length = Var(
@@ -781,6 +790,10 @@ class GACData(UnitModelBlockData):
                 == b.bed_volume
             )
 
+        @self.Constraint(doc="Adsorber bed area")
+        def eq_bed_area(b):
+            return b.bed_area == np.pi * (b.bed_diameter**2) / 4
+
         @self.Constraint(doc="Total gac mass in the adsorbed bed")
         def eq_mass_gac_bed(b):
             return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
@@ -901,12 +914,13 @@ class GACData(UnitModelBlockData):
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
         ):
+            # TODO check N_Re formulation for packed beds
             self.N_Re = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Reynolds number, Re < 2e4",  # TODO check N_Re formulation for packed beds
+                doc="Reynolds number, correlation using Schmidt number valid in Re < 2e4",
             )
 
             self.N_Sc = Var(
@@ -914,7 +928,7 @@ class GACData(UnitModelBlockData):
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Schmidt number, 0.7< Sc < 1e4",
+                doc="Schmidt number, correlation using Schmidt number valid in 0.7 < Sc < 1e4",
             )
 
             self.sphericity = Var(
@@ -1090,6 +1104,7 @@ class GACData(UnitModelBlockData):
         var_dict["Adsorber bed void fraction"] = self.bed_voidage
         var_dict["Adsorber bed volume"] = self.bed_volume
         var_dict["Adsorber bed area"] = self.bed_area
+        var_dict["Adsorber bed diameter"] = self.bed_diameter
         var_dict["Adsorber bed length"] = self.bed_length
         var_dict["Mass of fresh GAC in the adsorber bed"] = self.bed_mass_gac
         var_dict["Superficial velocity"] = self.velocity_sup
@@ -1237,6 +1252,9 @@ class GACData(UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
+
+        if iscale.get_scaling_factor(self.bed_diameter) is None:
+            iscale.set_scaling_factor(self.bed_diameter, sf_solvent * 1e2)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)
