@@ -253,3 +253,92 @@ def test_costing():
     assert isinstance(m.fs.costing.total_capital_cost, Var)
     assert isinstance(m.fs.costing.total_fixed_operating_cost, Var)
     assert isinstance(m.fs.costing.aggregate_flow_costs, Var)
+
+
+db = Database()
+params = db._get_technology("anaerobic_digestion_reactive")
+
+
+class TestAnaerobicDigestionReactivesubtype:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["tss", "cod", "tkn"]}
+        )
+
+        m.fs.unit = AnaerobicDigestionReactiveZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
+
+        return m
+
+    @pytest.mark.parametrize("subtype", [k for k in params.keys()])
+    @pytest.mark.component
+    def test_load_parameters(self, model, subtype):
+        model.fs.unit.config.process_subtype = subtype
+        data = db.get_unit_operation_parameters(
+            "anaerobic_digestion_reactive", subtype=subtype
+        )
+
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        for (t, j), v in model.fs.unit.removal_frac_mass_comp.items():
+            if j not in data["removal_frac_mass_comp"].keys():
+                assert v.value == data["default_removal_frac_mass_comp"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_comp"][j]["value"]
+
+
+@pytest.mark.component
+def test_costing_GLSD():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={
+            "solute_list": ["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
+        }
+    )
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = AnaerobicDigestionReactiveZO(
+        default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": "GLSD_anaerobic_digester",
+        }
+    )
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(10)
+    m.fs.unit1.inlet.flow_mass_comp[0, "methane"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "carbon_dioxide"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "oxygen"].fix(1)
+
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
+
+    assert isinstance(m.fs.costing.anaerobic_digestion_reactive, Block)
+    assert isinstance(
+        m.fs.costing.anaerobic_digestion_reactive.capital_a_parameter, Var
+    )
+    assert isinstance(
+        m.fs.costing.anaerobic_digestion_reactive.capital_b_parameter, Var
+    )
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
