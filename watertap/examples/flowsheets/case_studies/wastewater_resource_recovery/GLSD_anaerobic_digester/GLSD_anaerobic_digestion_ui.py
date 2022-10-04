@@ -136,7 +136,7 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.AD.HRT,
         name="HRT",
-        ui_units=pyunits.g / pyunits.m**2 / pyunits.day,
+        ui_units=pyunits.hr,
         display_units="h",
         rounding=0,
         description="Hydraulic retention time",
@@ -145,7 +145,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.mabr.energy_electric_flow_vol_inlet,
+        obj=fs.AD.energy_electric_flow_vol_inlet,
         name="Blower specific power",
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
