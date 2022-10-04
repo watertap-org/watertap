@@ -197,7 +197,7 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(2.3118, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(3.81444, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
 
