@@ -56,6 +56,7 @@ jobs:
           - '3.7'
           - '3.8'
           - '3.9'
+          - '3.10'
         os:
           - linux
           - win64
@@ -83,7 +84,7 @@ jobs:
     - name: Install dependencies
       run: |
         echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
+        conda install --quiet --yes pip setuptools wheel pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
@@ -154,7 +155,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
+          - '3.7'
+          - '3.10'
         os:
           - linux
           - win64

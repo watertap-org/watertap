@@ -67,7 +67,7 @@ def build():
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-        "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+        "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
     m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
@@ -270,7 +270,7 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.01)
-    m.fs.EDstack.voltage_applied[0].setub(60)
+    m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(1)
     m.fs.EDstack.cell_pair_num.setub(500)
 

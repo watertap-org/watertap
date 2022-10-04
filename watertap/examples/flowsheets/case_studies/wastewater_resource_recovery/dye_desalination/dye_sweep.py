@@ -16,7 +16,7 @@ import os
 import time
 
 from pyomo.environ import Constraint
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination as dye_desalination
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO as dye_desalination_withRO
 
@@ -25,11 +25,11 @@ def set_up_sensitivity(m, withRO):
     outputs = {}
 
     # LCOT is an output for both flowsheets
-    outputs["LCOT"] = m.LCOT
+    outputs["LCOT"] = m.fs.LCOT
 
     # choose the right flowsheet and if ro is enabled add lcow
     if withRO:
-        outputs["LCOW"] = m.LCOW
+        outputs["LCOW"] = m.fs.LCOW
         opt_function = dye_desalination_withRO.solve
     else:
         opt_function = dye_desalination.solve
@@ -65,9 +65,9 @@ def run_analysis(
     sweep_params = {}
 
     if case_num == 1:
-        m.fs.zo_costing.dye_retentate_cost.unfix()
-        sweep_params["dye_retentate_cost"] = LinearSample(
-            m.fs.zo_costing.dye_retentate_cost, 0.1, 5, nx
+        m.fs.zo_costing.dye_mass_cost.unfix()
+        sweep_params["dye_mass_cost"] = LinearSample(
+            m.fs.zo_costing.dye_mass_cost, 0.1, 5, nx
         )
 
     elif case_num == 2:
