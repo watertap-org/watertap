@@ -80,7 +80,9 @@ class TestGLSDAD:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(2.8917, rel=1e-3)  # in $/m**3
+        assert value(m.fs.costing.LCOW) == pytest.approx(
+            2.892803, rel=1e-3
+        )  # in $/m**3
 
     @pytest.mark.component
     def test_display(self, system_frame):

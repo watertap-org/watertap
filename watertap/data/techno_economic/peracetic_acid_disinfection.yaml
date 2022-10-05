@@ -41,7 +41,7 @@ default:
         total_coliforms_fecal_ecoli:
           conversion_ratio: -1
   capital_cost:
-    cost_factor: None
+    cost_factor: TIC
     sizing_cost:
       value: 20  # capital cost data is unavailable; this value is arbitrary
       units: (USD_2020 * day)/(m^3)

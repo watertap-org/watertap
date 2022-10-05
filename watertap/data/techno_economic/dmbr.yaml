@@ -42,7 +42,7 @@ default: # dmbr for denitrification
         bod:
           conversion_ratio: -1
   capital_cost:
-    cost_factor: None
+    cost_factor: TIC
     water_flux:
       value: 30
       units: L/m^2/hr
