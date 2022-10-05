@@ -523,9 +523,15 @@ class FlowsheetInterface:
         Returns:
             Mapping with keys the module names and values FlowsheetInterface objects
         """
+        eps = metadata.entry_points()
         try:
-            entry_points = list(metadata.entry_points()[group_name])
-        except KeyError:
+            # this happens for Python 3.7 (via importlib_metadata) and Python 3.10+
+            entry_points = list(eps.select(group=group_name))
+        except AttributeError:
+            # this will happen on Python 3.8 and 3.9, where entry_points() has dict-like group selection
+            entry_points = list(eps[group_name])
+
+        if not entry_points:
             _log.error(f"No interfaces found for entry points group: {group_name}")
             return {}
 
