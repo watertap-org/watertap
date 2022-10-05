@@ -103,6 +103,14 @@ class ModelExport(BaseModel):
         cls._ensure_supported_type(obj)
         return obj
 
+    # NOTE: IMPORTANT: all validators used to set a dynamic default value
+    # should have the `always=True` option, or the validator won't be called
+    # when the value for that field is not passed
+    # (which is precisely when we need the default value)
+    # additionally, `pre=True` should be given if the field can at any point
+    # have a value that doesn't match its type annotation
+    # (e.g. `None` for a strict (non-`Optional` `bool` field)
+
     # Get value from object
     @validator("value", always=True)
     def validate_value(cls, v, values):
@@ -120,7 +128,7 @@ class ModelExport(BaseModel):
         return v
 
     # set name dynamically from object
-    @validator("name")
+    @validator("name", always=True)
     def validate_name(cls, v, values):
         if not v:
             obj = cls._get_supported_obj(values, allow_none=False)
