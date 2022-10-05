@@ -286,7 +286,7 @@ class FlowsheetInterface:
         try:
             self.run_action(Actions.build, **kwargs)
         except Exception as err:
-            _log.error(f"Building flowsheet: {err}")
+            raise RuntimeError(f"Building flowsheet: {err!r}") from err
         return
 
     def solve(self, **kwargs):
@@ -304,7 +304,7 @@ class FlowsheetInterface:
         try:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
-            raise RuntimeError(f"Solving flowsheet: {err}")
+            raise RuntimeError(f"Solving flowsheet: {err:r}") from err
         return result
 
     def dict(self) -> Dict:
