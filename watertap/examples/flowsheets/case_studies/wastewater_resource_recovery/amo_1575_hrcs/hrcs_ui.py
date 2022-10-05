@@ -720,7 +720,10 @@ def export_variables(flowsheet=None, exports=None):
     total_operating = (
         fs.costing.total_fixed_operating_cost
         + fs.costing.total_variable_operating_cost
-        + _base_curr(fs.watertap_costing.total_operating_cost)
+        + pyunits.convert(
+            fs.watertap_costing.total_operating_cost,
+            to_units=fs.costing.base_currency / pyunits.year,
+        )
     )
     exports.add(
         obj=total_operating,
