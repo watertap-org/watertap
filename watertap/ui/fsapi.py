@@ -8,7 +8,7 @@ __author__ = "Dan Gunter"
 import logging
 from collections import namedtuple
 from enum import Enum
-from typing import Callable, Optional, Dict, Union, TypeVar
+from typing import Any, Callable, Optional, Dict, Union, TypeVar
 from types import ModuleType
 from uuid import uuid4
 
@@ -30,10 +30,35 @@ FSI = TypeVar("FSI", bound="FlowsheetInterface")
 _log = idaeslog.getLogger(__name__)
 
 
+class UnsupportedObjType(TypeError):
+    def __init__(
+        self,
+        obj: Any,
+        supported: Optional = None,
+    ):
+        msg = f"Object '{obj}' of type '{type(obj)}' is not supported."
+        if supported is not None:
+            msg += f"\nSupported: {supported}"
+        super().__init__(msg)
+        self.obj = obj
+        self.supported = supported
+
+
 class ModelExport(BaseModel):
     """A variable, expression, or parameter."""
 
-    obj: object = Field(default=None, exclude=True)
+    _SupportedObjType = Union[
+        pyo.Var,
+        pyo.Expression,
+        # pyo.Param,
+    ]
+    "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
+
+    # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
+    # pydantic will run the runtime instance check which is not what we want
+    # (as we want/need to use the pyomo is_xxx_type() methods instead)
+    # so we're using Optional[object] unless we find a way to tell pydantic to skip this check
+    obj: Optional[object] = Field(default=None, exclude=True)
     name: str = ""
     value: float = 0.0
     ui_units: object = Field(default=None, exclude=True)
@@ -61,17 +86,20 @@ class ModelExport(BaseModel):
         is_valid = (
             obj.is_variable_type()
             or obj.is_expression_type()
+            # or obj.is_parameter_type()
             # TODO: add support for numbers with pyo.numvalue.is_numeric_data()
         )
         if is_valid:
             return True
-        raise TypeError(f"Object '{obj}' (type: {type(obj)}) is not supported")
+        raise UnsupportedObjType(obj, supported=cls._SupportedObjType)
 
     @classmethod
-    def _get_supported_obj(cls, values: dict, allow_none: bool = False):
-        obj = values.get("obj", None)
+    def _get_supported_obj(
+        cls, values: dict, field_name: str = "obj", allow_none: bool = False
+    ):
+        obj = values.get(field_name, None)
         if not allow_none and obj is None:
-            raise TypeError(f"'{obj}' is None but allow_none is False")
+            raise TypeError(f"'{field_name}' is None but allow_none is False")
         cls._ensure_supported_type(obj)
         return obj
 
