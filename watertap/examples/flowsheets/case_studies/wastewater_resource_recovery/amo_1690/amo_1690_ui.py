@@ -261,17 +261,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.me.energy_electric_flow_vol_inlet,
-        name="Electricity intensity",
-        ui_units=pyunits.kWh / pyunits.m**3,
-        display_units="kWh/m3",
-        rounding=2,
-        description="Specific electricity intensity relating the intensity to the volume of product",
-        is_input=True,
-        input_category="Membrane evaporator",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.me.removal_frac_mass_comp[0, "ammonium_as_nitrogen"],
         name="NH4 removal",
         ui_units=pyunits.dimensionless,
