@@ -429,6 +429,18 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
+    def _add_cost_factor(blk, factor):
+        if factor == "TPEC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TPEC
+            )
+        elif factor == "TIC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TIC
+            )
+        else:
+            blk.cost_factor = pyo.Expression(expr=1.0)
+
     def cost_anaerobic_mbr_mec(blk):
         """
         Method for costing anaerobic membrane bioreactor integrated with
@@ -463,15 +475,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        if factor == "TPEC":
-            capex_expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            capex_expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == capex_expr
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
         # Add fixed operating cost variable and constraint
@@ -622,12 +631,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = reactor_cost + pump_cost + other_cost + solid_filter_cost + heat_cost
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -694,12 +704,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -810,12 +821,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -914,12 +926,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -959,15 +972,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        if factor == "TPEC":
-            capex_expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            capex_expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == capex_expr
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
         # Add fixed operating cost variable and constraint
@@ -1021,15 +1031,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        if factor == "TPEC":
-            capex_expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            capex_expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == capex_expr
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
     def cost_deep_well_injection(blk, number_of_parallel_units=1):
@@ -1135,14 +1142,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1175,9 +1181,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ],
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -1191,12 +1194,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        # Determine if a costing factor is required
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1272,9 +1277,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ["capital_a_parameter", "capital_b_parameter", "capital_c_parameter"],
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Call general power law costing method
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -1295,12 +1297,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1430,9 +1433,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=pyo.units.dimensionless,
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -1488,12 +1488,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             + heater_cost
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1546,15 +1546,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = DCC_reactor + DCC_blower
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -1692,15 +1690,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             + blk.DCC_vacuum
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Add fixed operating cost variable and constraint
         blk.fixed_operating_cost = pyo.Var(
@@ -1764,9 +1760,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 ],
             )
 
-            # Determine if a costing factor is required
-            factor = parameter_dict["capital_cost"]["cost_factor"]
-
             # Add cost variable and constraint
             blk.capital_cost = pyo.Var(
                 initialize=1,
@@ -1793,12 +1786,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 to_units=blk.config.flowsheet_costing_block.base_currency,
             )
 
-            if factor == "TPEC":
-                expr *= blk.config.flowsheet_costing_block.TPEC
-            elif factor == "TIC":
-                expr *= blk.config.flowsheet_costing_block.TIC
+            ZeroOrderCostingData._add_cost_factor(
+                blk, parameter_dict["capital_cost"]["cost_factor"]
+            )
 
-            blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+            blk.capital_cost_constraint = pyo.Constraint(
+                expr=blk.capital_cost == blk.cost_factor * expr
+            )
 
             # Register flows
             blk.config.flowsheet_costing_block.cost_flow(
@@ -1840,15 +1834,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
 
             # Determine if a costing factor is required
-            factor = parameter_dict["capital_cost"]["cost_factor"]
-
-            if factor == "TPEC":
-                capex_expr *= blk.config.flowsheet_costing_block.TPEC
-            elif factor == "TIC":
-                capex_expr *= blk.config.flowsheet_costing_block.TIC
+            ZeroOrderCostingData._add_cost_factor(
+                blk, parameter_dict["capital_cost"]["cost_factor"]
+            )
 
             blk.capital_cost_constraint = pyo.Constraint(
-                expr=blk.capital_cost == capex_expr
+                expr=blk.capital_cost == blk.cost_factor * capex_expr
             )
 
             # Add fixed operating cost variable and constraint
@@ -1984,14 +1975,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2064,15 +2054,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
 
             # Determine if a costing factor is required
-            factor = parameter_dict["capital_cost"]["cost_factor"]
-
-            if factor == "TPEC":
-                capex_expr *= blk.config.flowsheet_costing_block.TPEC
-            elif factor == "TIC":
-                capex_expr *= blk.config.flowsheet_costing_block.TIC
+            ZeroOrderCostingData._add_cost_factor(
+                blk, parameter_dict["capital_cost"]["cost_factor"]
+            )
 
             blk.capital_cost_constraint = pyo.Constraint(
-                expr=blk.capital_cost == capex_expr
+                expr=blk.capital_cost == blk.cost_factor * capex_expr
             )
 
             # Add fixed operating cost variable and constraint
@@ -2161,9 +2148,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ],
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -2189,12 +2173,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = aeration_basin_cost + other_equipment_cost + control_system_cost
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2227,9 +2212,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ],
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -2253,12 +2235,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2292,11 +2275,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Get costing term for ozone addition
         expr = ZeroOrderCostingData._get_ozone_capital_cost(blk, A, B, C, D)
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         # Add cost variable
         blk.capital_cost = pyo.Var(
@@ -2306,7 +2287,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Capital cost of unit operation",
         )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2393,9 +2376,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=pyo.units.dimensionless,
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -2409,12 +2389,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2455,14 +2436,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B)
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2501,13 +2481,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         expr += ZeroOrderCostingData._get_aop_capital_cost(blk, C, D)
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2691,9 +2671,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             ["capital_a_parameter", "capital_b_parameter", "pipe_cost_basis"],
         )
 
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -2717,12 +2694,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2796,14 +2774,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-        if factor == "TPEC":
-            capex_expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            capex_expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == capex_expr
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
         blk.variable_operating_cost_constraint = pyo.Constraint(
@@ -2852,14 +2828,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
     def cost_CANDOP(blk):
         """
@@ -2894,14 +2869,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2941,14 +2915,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2996,15 +2969,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        if factor == "TPEC":
-            capex_expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            capex_expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
         blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == capex_expr
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
         )
 
         # Register flows
@@ -3049,14 +3019,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3099,14 +3068,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3146,14 +3114,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3221,14 +3188,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3273,14 +3239,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3323,14 +3288,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3376,14 +3340,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
@@ -3423,14 +3386,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
         # Register flows
         # TODO: Consider adding heat as a registered flow, since the inlet
@@ -3533,12 +3495,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr *= number_of_parallel_units
 
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
+        ZeroOrderCostingData._add_cost_factor(blk, factor)
 
-        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
