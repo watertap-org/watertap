@@ -293,8 +293,6 @@ def test_costing():
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
-    results = solver.solve(m)
-    assert_optimal_termination(results)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert m.fs.unit.catalyst_flow[0] in m.fs.costing._registered_flows["catalyst_HTG"]
