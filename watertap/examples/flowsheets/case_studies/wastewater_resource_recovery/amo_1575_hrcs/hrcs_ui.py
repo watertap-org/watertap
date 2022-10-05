@@ -559,6 +559,7 @@ def export_variables(flowsheet=None, exports=None):
         fs.HRCS.costing.direct_capital_cost
         + fs.clarifier.costing.dirct_capital_cost
         + fs.sep.costing.direct_capital_cost
+        # In WaterTAPCosting package `capital_cost` doesn't have any adders
         + _base_curr(fs.mixer.costing.capital_cost)
     ) / fs.feed.properties[0].flow_vol
     exports.add(
