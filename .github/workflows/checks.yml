@@ -18,7 +18,7 @@ defaults:
 env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
-  PYTEST_ADDOPTS: "--color=yes --pyargs watertap"
+  PYTEST_ADDOPTS: "--color=yes --pyargs watertap.ui -v"
 
 jobs:
 
@@ -53,9 +53,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.7'
-          - '3.8'
-          - '3.9'
+          # - '3.7'
+          # - '3.8'
+          # - '3.9'
           - '3.10'
         os:
           - linux
