@@ -199,7 +199,7 @@ jobs:
         echo '::endgroup::'
     - name: Run pytest
       run: |
-        pytest --pyargs watertap
+        pytest
 
   macos:
     name: macOS setup (EXPERIMENTAL)
@@ -239,4 +239,4 @@ jobs:
         pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       run: |
-        pytest --pyargs watertap
+        pytest
