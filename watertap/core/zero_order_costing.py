@@ -440,7 +440,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         else:
             blk.cost_factor = pyo.Expression(expr=1.0)
-        blk.direct_capital_cost = pyo.Expression(expr=blk.capital_cost / blk.cost_factor)
+        blk.direct_capital_cost = pyo.Expression(
+            expr=blk.capital_cost / blk.cost_factor
+        )
 
     def cost_anaerobic_mbr_mec(blk):
         """
