@@ -422,11 +422,10 @@ def display_costing(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.pump.costing.capital_cost
-                + m.fs.photothermal.costing.capital_cost
-                + m.fs.candop.costing.capital_cost
+                m.fs.pump.costing.direct_capital_cost
+                + m.fs.photothermal.costing.direct_capital_cost
+                + m.fs.candop.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=pyunits.kUSD_2020 / (pyunits.m**3 / pyunits.hr),
         )
