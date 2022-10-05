@@ -482,14 +482,10 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Normalized cost metrics",
     )
     direct_capital_norm = (
-        (
-            fs.magprex.costing.capital_cost
-            + fs.centrifuge.costing.capital_cost
-            + fs.classifier.costing.capital_cost
-        )
-        / fs.costing.TIC
-        / fs.feed.properties[0].flow_vol
-    )
+        fs.magprex.costing.direct_capital_cost
+        + fs.centrifuge.costing.direct_capital_cost
+        + fs.classifier.costing.direct_capital_cost
+    ) / fs.feed.properties[0].flow_vol
     exports.add(
         obj=direct_capital_norm,
         name="Direct capital",
