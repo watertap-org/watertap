@@ -802,14 +802,13 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.mbr_mec.costing.capital_cost
-                + m.fs.vfa_recovery.costing.capital_cost
-                + m.fs.ion_exchange.costing.capital_cost
-                + m.fs.sedimentation.costing.capital_cost
-                + m.fs.cofermentation.costing.capital_cost
-                + m.fs.constructed_wetlands.costing.capital_cost
+                m.fs.mbr_mec.costing.direct_capital_cost
+                + m.fs.vfa_recovery.costing.direct_capital_cost
+                + m.fs.ion_exchange.costing.direct_capital_cost
+                + m.fs.sedimentation.costing.direct_capital_cost
+                + m.fs.cofermentation.costing.direct_capital_cost
+                + m.fs.constructed_wetlands.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

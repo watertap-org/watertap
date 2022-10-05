@@ -293,6 +293,7 @@ def test_costing():
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
+    solver.options["constr_viol_tol"] = 1e-7
     results = solver.solve(m)
     assert_optimal_termination(results)
 

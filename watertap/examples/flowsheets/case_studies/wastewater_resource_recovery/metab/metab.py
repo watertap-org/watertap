@@ -564,10 +564,9 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.metab_hydrogen.costing.capital_cost
-                + m.fs.metab_methane.costing.capital_cost
+                m.fs.metab_hydrogen.costing.direct_capital_cost
+                + m.fs.metab_methane.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

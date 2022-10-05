@@ -431,11 +431,10 @@ def display_costing(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.cmf.costing.capital_cost
-                + m.fs.ad.costing.capital_cost
-                + m.fs.me.costing.capital_cost
+                m.fs.cmf.costing.direct_capital_cost
+                + m.fs.ad.costing.direct_capital_cost
+                + m.fs.me.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=pyunits.kUSD_2020 / (pyunits.m**3 / pyunits.hr),
         )
