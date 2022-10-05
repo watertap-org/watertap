@@ -141,8 +141,10 @@ class ModelExport(BaseModel):
     @validator("is_readonly", always=True, pre=True)
     def set_readonly_default(cls, v, values):
         if v is None:
+            v = True
             obj = cls._get_supported_obj(values, allow_none=False)
-            v = True if not obj.is_variable_type() else False
+            if obj.is_variable_type() or (obj.is_parameter_type() and obj.mutable):
+                v = False
         return v
 
     @validator("obj_key", always=True, pre=True)
