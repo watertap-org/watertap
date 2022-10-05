@@ -50,7 +50,7 @@ class ModelExport(BaseModel):
     _SupportedObjType = Union[
         pyo.Var,
         pyo.Expression,
-        # pyo.Param,
+        pyo.Param,
     ]
     "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
 
@@ -86,7 +86,7 @@ class ModelExport(BaseModel):
         is_valid = (
             obj.is_variable_type()
             or obj.is_expression_type()
-            # or obj.is_parameter_type()
+            or obj.is_parameter_type()
             # TODO: add support for numbers with pyo.numvalue.is_numeric_data()
         )
         if is_valid:
