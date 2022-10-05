@@ -181,4 +181,4 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(4.719596, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(7.78733, rel=1e-5) == value(m.fs.unit.costing.capital_cost)

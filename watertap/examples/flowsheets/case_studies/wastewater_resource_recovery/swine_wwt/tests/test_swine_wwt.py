@@ -66,13 +66,13 @@ class Test_Swine_WWT_Flowsheet:
         assert_optimal_termination(results)
         # check costing
         lev_costs = {
-            "LCOW": 79.9767,
-            "LCOH2": 156.3806,
-            "LCON": 241.5425,
-            "LCOVFA": 28.0608,
-            "LCOP": 545.3874,
-            "LCOCOD": 10.1041,
-            "LCOT": 25.2441,
+            "LCOW": 105.5838,
+            "LCOH2": 205.8723,
+            "LCON": 318.6941,
+            "LCOVFA": 36.9335,
+            "LCOP": 707.4058,
+            "LCOCOD": 13.3432,
+            "LCOT": 33.3369,
         }
         for k, v in lev_costs.items():
             assert value(getattr(m.fs.costing.levelized_costs, k)) == pytest.approx(
