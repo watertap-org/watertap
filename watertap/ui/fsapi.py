@@ -50,12 +50,38 @@ class ModelExport(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @validator("obj", always=True, pre=True)
+    def ensure_obj_is_supported(cls, v):
+        if v is not None:
+            cls._ensure_supported_type(v)
+        return v
+
+    @classmethod
+    def _ensure_supported_type(cls, obj: object):
+        is_valid = (
+            obj.is_variable_type()
+            or obj.is_expression_type()
+            # TODO: add support for numbers with pyo.numvalue.is_numeric_data()
+        )
+        if is_valid:
+            return True
+        raise TypeError(f"Object '{obj}' (type: {type(obj)}) is not supported")
+
+    @classmethod
+    def _get_supported_obj(cls, values: dict, allow_none: bool = False):
+        obj = values.get("obj", None)
+        if not allow_none and obj is None:
+            raise TypeError(f"'{obj}' is None but allow_none is False")
+        cls._ensure_supported_type(obj)
+        return obj
+
     # Get value from object
     @validator("value", always=True)
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
-        return pyo.value(values["obj"])
+        obj = cls._get_supported_obj(values, allow_none=False)
+        return pyo.value(obj)
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
@@ -69,36 +95,25 @@ class ModelExport(BaseModel):
     @validator("name")
     def validate_name(cls, v, values):
         if not v:
+            obj = cls._get_supported_obj(values, allow_none=False)
             try:
-                v = values["obj"].name
+                v = obj.name
             except AttributeError:
                 pass
-        return v
-
-    @validator("obj")
-    def ensure_obj_is_supported(cls, v, values):
-        if v is not None:
-            assert v.is_variable_type() or v.is_expression_type()
         return v
 
     @validator("is_readonly", always=True, pre=True)
     def set_readonly_default(cls, v, values):
         if v is None:
-            obj = values["obj"]
-            assert (
-                obj is not None
-            ), "If ``is_readonly`` is not specified as a bool, then ``obj`` must be a Pyomo object"
+            obj = cls._get_supported_obj(values, allow_none=False)
             v = True if not obj.is_variable_type() else False
         return v
 
     @validator("obj_key", always=True, pre=True)
     def set_obj_key_default(cls, v, values):
         if v is None:
-            obj = values["obj"]
-            assert (
-                obj is not None
-            ), "If ``obj_key`` is not specified, then ``obj`` must be a Pyomo object"
-            v = str(values["obj"])
+            obj = cls._get_supported_obj(values, allow_none=False)
+            v = str(obj)
         return v
 
 
@@ -286,7 +301,7 @@ class FlowsheetInterface:
         try:
             self.run_action(Actions.build, **kwargs)
         except Exception as err:
-            raise RuntimeError(f"Building flowsheet: {err!r}") from err
+            raise RuntimeError(f"Building flowsheet: {err}") from err
         return
 
     def solve(self, **kwargs):
@@ -304,7 +319,7 @@ class FlowsheetInterface:
         try:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
-            raise RuntimeError(f"Solving flowsheet: {err:r}") from err
+            raise RuntimeError(f"Solving flowsheet: {err}") from err
         return result
 
     def dict(self) -> Dict:
