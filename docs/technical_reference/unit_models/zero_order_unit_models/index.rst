@@ -6,7 +6,9 @@ Zero-Order Unit Models
    aeration_basin_zo
    air_flotation_zo
    anaerobic_digestion_oxidation_zo
+   anaerobic_digestion_reactive_zo
    anaerobic_mbr_mec_zo
+   autothermal_hydrothermal_liquefaction_zo
    backwash_solids_handling_zo
    bio_active_filtration_zo
    bioreactor_zo
@@ -15,9 +17,11 @@ Zero-Order Unit Models
    buffer_tank_zo
    CANDOP_zo
    cartridge_filtration_zo
+   centrifuge_zo
    chemical_addition_zo
    chlorination_zo
    clarifier_zo
+   cloth_media_filtration_zo
    co2_addition_zo
    coag_and_floc_zo
    cofermentation_zo
@@ -40,15 +44,20 @@ Zero-Order Unit Models
    fixed_bed_zo
    gac_zo
    gas_sparged_membrane_zo
+   hrcs_zo
+   hydrothermal_gasification_zo
    injection_well_disposal_zo
    intrusion_mitigation_zo
    ion_exchange_zo
    iron_and_manganese_removal_zo
    landfill_zo
    mabr_zo
+   magprex_zo
    mbr_zo
    media_filtration_zo
+   membrane_evaporator_zo
    metab_zo
+   microbial_battery_zo
    microfiltration_zo
    microscreen_filtration_zo
    municipal_drinking_zo
@@ -56,6 +65,7 @@ Zero-Order Unit Models
    nanofiltration_zo
    ozone_aop_zo
    ozone_zo
+   peracetic_acid_disinfection_zo
    photothermal_membrane_zo
    primary_separator_zo
    pump_electricity_zo
@@ -68,6 +78,9 @@ Zero-Order Unit Models
    smp_zo
    static_mixer_zo
    storage_tank_zo
+   struvite_classifier_zo
+   suboxic_activated_sludge_process_zo
+   supercritical_salt_precipitation_zo
    surface_discharge_zo
    sw_onshore_intake_zo
    tramp_oil_tank_zo

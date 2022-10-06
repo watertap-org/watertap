@@ -96,7 +96,7 @@ from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .hrcs_zo import HRCSZO
 from .hydrothermal_gasification_zo import HTGZO
 from .magprex_zo import MagprexZO
-from .membrane_evaporator import MembraneEvaporatorZO
+from .membrane_evaporator_zo import MembraneEvaporatorZO
 from .metab_zo import MetabZO
 from .microbial_battery_zo import MicrobialBatteryZO
 from .peracetic_acid_disinfection_zo import PeraceticAcidDisinfectionZO
