@@ -310,7 +310,6 @@ for i, u in enumerate(unit_name_list):
             f.write("\n")
             f.write("=" * (5 + len(u)))
         f.write("\n")
-        count = 0
 
         if zo_name_list[i] == "feed_zo":
             f.write(
@@ -326,16 +325,14 @@ for i, u in enumerate(unit_name_list):
         f.write("-" * len("Model Type"))
         if not (zo_name_list[i] == "feed_zo"):
             # write Model Type section
-            f.write(f"\n{list[count]}")
-            count += 1
-            f.write(f"\n{list[count]}\n")
+            f.write(f"\n{list[0]}")
+            f.write(f"\n{list[1]}\n")
         else:
             f.write(
                 "\nThe Feed (ZO) block for zero-order flowsheets contains "
                 "methods for getting concentration data from the database, and it "
                 "has been created to work with the zero-order property package.\n"
             )
-        count += 1
 
         if not (zo_name_list[i] == "feed_zo") and not (
             zo_name_list[i] == "constructed_wetlands_zo"
@@ -360,10 +357,8 @@ for i, u in enumerate(unit_name_list):
                     f.write(
                         "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
                     )
-                count += 1
             else:
-                f.write(f"\n{list[count]}")
-                count += 1
+                f.write(f"\n{list[2]}")
                 f.write(
                     f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
                 )
@@ -374,10 +369,8 @@ for i, u in enumerate(unit_name_list):
             f.write("-" * len("Costing Method"))
             if not cost_func_list[i]:
                 f.write("\nThis unit does not include costing.\n")
-                count += 1
             else:
-                f.write(f"\n{list[count]}")
-                count += 1
+                f.write(f"\n{list[3]}")
                 f.write(
                     f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
                 )
@@ -446,13 +439,11 @@ for i, u in enumerate(unit_name_list):
 
         if not (zo_name_list[i] == "feed_zo"):
             f.write("\n.. index::")
-            f.write(f"\n{list[count]}\n")
-            count += 1
-            f.write(f"\n{list[count]}\n")
-            count += 1
+            f.write(f"\n{list[4]}\n")
+            f.write(f"\n{list[5]}\n")
             f.write("\nClass Documentation\n")
             f.write("-" * len("Class Documentation"))
-            f.write(f"\n\n{list[count]}\n")
+            f.write(f"\n\n{list[6]}\n")
             f.write("    :members:\n")
             f.write("    :noindex:\n")
         else:

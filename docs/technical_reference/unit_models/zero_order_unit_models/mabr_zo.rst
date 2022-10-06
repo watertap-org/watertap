@@ -24,8 +24,8 @@ Additional Variables
 
    "Nitrogen removal rate per day", "nitrogen_removal_rate", ":math:`g/d/m^2`"
    "Sizing variable for effective reactor area", "reactor_area", ":math:`m^2`"
-   "Air flow rate per area", "air_flow_rate", ":math:`m/h`"
-   "Volumetric air flow rate", "air_flow_vol", ":math:`m^3/h`"
+   "Air flow rate per area", "air_flow_rate", ":math:`m/hr`"
+   "Volumetric air flow rate", "air_flow_vol", ":math:`m^3/hr`"
 
 Additional Constraints
 ----------------------

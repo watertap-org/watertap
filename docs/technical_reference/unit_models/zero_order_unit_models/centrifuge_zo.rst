@@ -23,7 +23,7 @@ Additional Variables
    :header: "Description", "Variable Name", "Units"
 
    "Dosing rate of polymer", "polymer_dose", ":math:`mg/l`"
-   "Consumption rate of polymer", "polymer_demand", ":math:`kg/h`"
+   "Consumption rate of polymer", "polymer_demand", ":math:`kg/hr`"
 
 Additional Constraints
 ----------------------

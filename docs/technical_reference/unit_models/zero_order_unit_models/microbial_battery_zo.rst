@@ -22,7 +22,7 @@ Additional Variables
 .. csv-table::
    :header: "Description", "Variable Name", "Units"
 
-   "Hydraulic retention time of water treatment unit", "HRT", ":math:`h`"
+   "Hydraulic retention time of water treatment unit", "HRT", ":math:`hr`"
    "Volume of water treatment unit", "reactor_volume", ":math:`m^3`"
 
 Additional Constraints

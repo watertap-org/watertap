@@ -24,7 +24,7 @@ Additional Variables
    "Electricity consumption of unit", "electricity", ":math:`kW`"
    "Electricity intensity with respect to struvite byproduct flowrate of unit", "energy_electric_flow_mass", ":math:`kWh/kg`"
    "Dosage of magnesium chloride per struvite", "magnesium_chloride_dosage", ":math:`dimensionless`"
-   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/h`"
+   "Magnesium chloride flowrate", "MgCl2_flowrate", ":math:`kg/hr`"
 
 Additional Constraints
 ----------------------
