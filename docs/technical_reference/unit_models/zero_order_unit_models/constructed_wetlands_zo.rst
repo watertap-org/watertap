@@ -8,8 +8,6 @@ See documentation for :ref:`single-input, single-output Helper Methods<siso_meth
 
 Electricity Consumption
 -----------------------
-This unit does not include energy consumption.
-
 Costing Method
 --------------
 Costing is calculated using the **cost_constructed_wetlands** method in the zero-order costing package.

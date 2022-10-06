@@ -1,5 +1,5 @@
-Anaerobic Digestion (ZO)
-========================
+Anaerobic Digestion Oxidation (ZO)
+==================================
 
 Model Type
 ----------

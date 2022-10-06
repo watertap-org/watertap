@@ -31,15 +31,6 @@ from glob import glob
 
 
 sidor_db_path = os.path.dirname(os.path.abspath(__file__))
-# test_path = os.path.relpath(os.path.join('watertap','data','techno_economic'), os.getcwd())
-#
-# # os.chdir(test_path)
-# test_path = os.path.join(test_path,'*.yaml')
-# # file_types = [".yaml"]
-# fnames = []
-# # for ext in file_types:
-# for fname in glob(test_path):
-#     fnames.append(fname)
 
 
 def grab_unit_components(unit_class):
@@ -50,23 +41,27 @@ def grab_unit_components(unit_class):
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "toc",
-                "tss",
-                "cod",
-                "tds",
-                "nitrogen",
-                "phosphates",
-                "phosphorus",
-                "struvite",
-                "nonbiodegradable_cod",
-                "hydrogen",
-                "ammonium_as_nitrogen",
-                "nitrate",
-                "bod",
-            ]
-        }
+        solute_list=[
+            "toc",
+            "tss",
+            "tkn",
+            "cod",
+            "tds",
+            "nitrogen",
+            "phosphates",
+            "phosphorus",
+            "struvite",
+            "nonbiodegradable_cod",
+            "hydrogen",
+            "ammonium_as_nitrogen",
+            "nitrate",
+            "bod",
+            "organic_solid",
+            "organic_liquid",
+            "iron",
+            "peracetic_acid",
+            "total_coliforms_fecal_ecoli",
+        ]
     )
     unit = getattr(zo, unit_class)
     if unit_class == "MetabZO":
@@ -74,11 +69,9 @@ def grab_unit_components(unit_class):
     else:
         p_subtype = "default"
     m.fs.unit = unit(
-        default={
-            "property_package": m.fs.props,
-            "database": m.db,
-            "process_subtype": p_subtype,
-        }
+        property_package=m.fs.props,
+        database=m.db,
+        process_subtype=p_subtype,
     )
 
     if model_type_short_list[i] == "SIDO reactive":
@@ -86,11 +79,9 @@ def grab_unit_components(unit_class):
     else:
         zdb = m.db
     m.fs.zo_base = DerivedZOBase(
-        default={
-            "property_package": m.fs.props,
-            "database": zdb,
-            # "process_subtype": process_subtype,
-        }
+        property_package=m.fs.props,
+        database=zdb,
+        # process_subtype = process_subtype,
     )
 
     if model_type_short_list[i] == "PT":
@@ -173,7 +164,7 @@ def grab_unit_components_feed(unit_class):
     m.fs.props = WaterParameterBlock(
         solute_list=[
             "toc",
-            "tss",
+            "tkn" "tss",
             "cod",
             "tds",
             "nitrogen",
@@ -257,6 +248,7 @@ title_exceptions = {
     "co2_addition_zo": "CO2 Addition",
     "dmbr_zo": "Recirculating Dynamic Membrane Bioreactor",
     "gac_zo": "Granular Activated Carbon",
+    "hrcs_zo": "High-Rate Contact Stabilization",
     "mabr_zo": "Membrane Aerated Biofilm Reactor",
     "mbr_zo": "Membrane Bioreactor",
     "metab_zo": "Modular Encapsulated Two-stage Anaerobic Biological Reactor",
@@ -279,6 +271,45 @@ costing_exceptions = {}
 p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
+# Check that all ZO unit model .py files have an associated .rst file
+# ZO unit model file path
+ZO_unit_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "..",
+    "..",
+    "watertap",
+    "unit_models",
+    "zero_order",
+)
+ZO_unit_list = []
+exclude_ZO_files = ["__init__.py"]
+for f in os.listdir(ZO_unit_path):
+    filename = os.fsdecode(f)
+    if filename.endswith(".py") and filename not in exclude_ZO_files:
+        ZO_unit_list.append(filename[:-3])
+
+# rst file path
+rst_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+)
+rst_list = []
+exclude_rst_files = ["index.rst"]
+for f in os.listdir(rst_path):
+    filename = os.fsdecode(f)
+    if filename.endswith(".rst") and filename not in exclude_rst_files:
+        rst_list.append(filename[:-4])
+
+# print(f"List of zo unit models: {ZO_unit_list}")
+# print(f"List of rst files: {rst_list}")
+
+# Check if lists are equal
+if sorted(ZO_unit_list) == sorted(rst_list):
+    print("Documentation has successfully been created for all ZO unit models")
+else:
+    difference = sorted(list(set(ZO_unit_list) - set(rst_list)))
+    print(f"The following ZO unit model files do not have an rst file: {difference}")
 
 # Create index file for all zero order model docs
 with open("index.rst", "w") as f:
