@@ -337,7 +337,9 @@ for i, u in enumerate(unit_name_list):
             )
         count += 1
 
-        if not (zo_name_list[i] == "feed_zo"):
+        if not (zo_name_list[i] == "feed_zo") and not (
+            zo_name_list[i] == "constructed_wetlands_zo"
+        ):
             # write Electricity Consumption section
             f.write("\nElectricity Consumption\n")
             f.write("-" * len("Electricity Consumption"))
