@@ -440,6 +440,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         else:
             blk.cost_factor = pyo.Expression(expr=1.0)
+        blk.direct_capital_cost = pyo.Expression(
+            expr=blk.capital_cost / blk.cost_factor
+        )
 
     def cost_anaerobic_mbr_mec(blk):
         """
@@ -2274,10 +2277,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
         # Get costing term for ozone addition
         expr = ZeroOrderCostingData._get_ozone_capital_cost(blk, A, B, C, D)
-        # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
-            blk, parameter_dict["capital_cost"]["cost_factor"]
-        )
 
         # Add cost variable
         blk.capital_cost = pyo.Var(
@@ -2285,6 +2284,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             units=blk.config.flowsheet_costing_block.base_currency,
             bounds=(0, None),
             doc="Capital cost of unit operation",
+        )
+
+        # Determine if a costing factor is required
+        ZeroOrderCostingData._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
         blk.capital_cost_constraint = pyo.Constraint(

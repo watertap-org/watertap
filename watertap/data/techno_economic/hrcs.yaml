@@ -4,7 +4,7 @@ default:
     units: kWh/m^3
   capital_cost:
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TIC
     SRT: # Solids retention time
       value: 2.3
       units: hr

@@ -406,11 +406,10 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.ATHTL.costing.capital_cost
-                + m.fs.salt_precipitation.costing.capital_cost
-                + m.fs.HTG.costing.capital_cost
+                m.fs.ATHTL.costing.direct_capital_cost
+                + m.fs.salt_precipitation.costing.direct_capital_cost
+                + m.fs.HTG.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

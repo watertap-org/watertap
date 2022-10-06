@@ -248,7 +248,7 @@ def test_costing():
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    assert pytest.approx(4838408.6, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(9676817.28, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert (

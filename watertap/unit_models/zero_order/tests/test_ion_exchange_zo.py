@@ -123,13 +123,13 @@ class TestIonExchangeZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(10.00410, rel=1e-5) == value(
+        assert pytest.approx(10.005, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(9.99590e-3, rel=1e-5) == value(
+        assert pytest.approx(0.099950024, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(0.39984, rel=1e-5) == value(
+        assert pytest.approx(0.3998, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2899.6, rel=1e-5) == value(model.fs.unit.electricity[0])
