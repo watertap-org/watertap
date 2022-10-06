@@ -28,6 +28,7 @@ from watertap.core import pump_electricity, constant_intensity
 from pyomo.environ import Reference
 import os
 from glob import glob
+from pathlib import Path
 
 
 sidor_db_path = os.path.dirname(os.path.abspath(__file__))
@@ -164,7 +165,8 @@ def grab_unit_components_feed(unit_class):
     m.fs.props = WaterParameterBlock(
         solute_list=[
             "toc",
-            "tkn" "tss",
+            "tkn",
+            "tss",
             "cod",
             "tds",
             "nitrogen",
@@ -272,35 +274,14 @@ p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
 # Check that all ZO unit model .py files have an associated .rst file
-# ZO unit model file path
-ZO_unit_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "..",
-    "..",
-    "..",
-    "..",
-    "watertap",
-    "unit_models",
-    "zero_order",
-)
-ZO_unit_list = []
-exclude_ZO_files = ["__init__.py"]
-for f in os.listdir(ZO_unit_path):
-    filename = os.fsdecode(f)
-    if filename.endswith(".py") and filename not in exclude_ZO_files:
-        ZO_unit_list.append(filename[:-3])
-
-# rst file path
-rst_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-)
-rst_list = []
-exclude_rst_files = ["index.rst"]
-for f in os.listdir(rst_path):
-    filename = os.fsdecode(f)
-    if filename.endswith(".rst") and filename not in exclude_rst_files:
-        rst_list.append(filename[:-4])
-
+ZO_unit_path = Path(zo.__path__[0])
+ZO_unit_list = [
+    path.stem for path in ZO_unit_path.glob("*.py") if path.name not in {"__init__.py"}
+]
+rst_path = Path(__file__).parent
+rst_list = [
+    path.stem for path in rst_path.glob("*.rst") if path.name not in {"index.rst"}
+]
 # print(f"List of zo unit models: {ZO_unit_list}")
 # print(f"List of rst files: {rst_list}")
 
