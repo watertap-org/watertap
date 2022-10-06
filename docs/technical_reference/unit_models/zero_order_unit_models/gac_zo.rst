@@ -12,8 +12,7 @@ The constraint used to calculate energy consumption is described in the Addition
 
 Costing Method
 --------------
-Costing is calculated using the **cost_gac** method in the zero-order costing package.
-See documentation for the :ref:`zero-order costing package<zero_order_costing>`.
+This unit does not include costing.
 
 Additional Variables
 --------------------

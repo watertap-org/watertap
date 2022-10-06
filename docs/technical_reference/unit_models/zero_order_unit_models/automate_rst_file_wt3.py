@@ -273,24 +273,6 @@ costing_exceptions = {}
 p_subtype_exceptions = {"MetabZO": "hydrogen"}
 has_subtype = {}
 
-# Check that all ZO unit model .py files have an associated .rst file
-ZO_unit_path = Path(zo.__path__[0])
-ZO_unit_list = [
-    path.stem for path in ZO_unit_path.glob("*.py") if path.name not in {"__init__.py"}
-]
-rst_path = Path(__file__).parent
-rst_list = [
-    path.stem for path in rst_path.glob("*.rst") if path.name not in {"index.rst"}
-]
-# print(f"List of zo unit models: {ZO_unit_list}")
-# print(f"List of rst files: {rst_list}")
-
-# Check if lists are equal
-if sorted(ZO_unit_list) == sorted(rst_list):
-    print("Documentation has successfully been created for all ZO unit models")
-else:
-    difference = sorted(list(set(ZO_unit_list) - set(rst_list)))
-    print(f"The following ZO unit model files do not have an rst file: {difference}")
 
 # Create index file for all zero order model docs
 with open("index.rst", "w") as f:
