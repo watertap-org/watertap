@@ -5,12 +5,11 @@ coverage:
   status:
     patch:
       default:
-        target: auto
-        threshold: 10%
+        target: 60%
     project:
       default:
         target: auto
-        threshold: 1%
+        threshold: 0.1%
 codecov:
   require_ci_to_pass: false
   notify:
