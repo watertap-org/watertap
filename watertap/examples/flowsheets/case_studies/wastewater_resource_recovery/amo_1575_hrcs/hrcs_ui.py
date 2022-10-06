@@ -557,7 +557,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     direct_capital_norm = (
         fs.HRCS.costing.direct_capital_cost
-        + fs.clarifier.costing.dirct_capital_cost
+        + fs.clarifier.costing.direct_capital_cost
         + fs.sep.costing.direct_capital_cost
         # In WaterTAPCosting package `capital_cost` doesn't have any adders
         + _base_curr(fs.mixer.costing.capital_cost)
@@ -720,7 +720,10 @@ def export_variables(flowsheet=None, exports=None):
     total_operating = (
         fs.costing.total_fixed_operating_cost
         + fs.costing.total_variable_operating_cost
-        + _base_curr(fs.watertap_costing.total_operating_cost)
+        + pyunits.convert(
+            fs.watertap_costing.total_operating_cost,
+            to_units=fs.costing.base_currency / pyunits.year,
+        )
     )
     exports.add(
         obj=total_operating,
