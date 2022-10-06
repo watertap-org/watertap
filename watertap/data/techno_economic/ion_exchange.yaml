@@ -5,10 +5,9 @@ default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
   removal_frac_mass_comp:
     tds:
-      value: 0.9
+      value: 0
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
   NaCl_dose:
@@ -41,10 +40,9 @@ anion_exchange:  # TODO: add some differentiation between default, anion, and ca
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
   removal_frac_mass_comp:
     tds:
-      value: 0.9
+      value: 0
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
   NaCl_dose:
@@ -74,10 +72,9 @@ cation_exchange:
   default_removal_frac_mass_comp:
     value: 0
     units: dimensionless
-    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
   removal_frac_mass_comp:
     tds:
-      value: 0.9
+      value: 0
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
   NaCl_dose:
@@ -111,7 +108,7 @@ clinoptilolite: #AMO subtype
     ammonium_as_nitrogen:
       value: 0.999
       units: dimensionless
-      constituent_longform: Total Dissolved Solids (TDS)
+      constituent_longform: Ammonium as Nitrogen
   NaCl_dose:  # keep from default
     value: 0    # unsure if applicable
     units: kg/m^3
@@ -128,4 +125,4 @@ clinoptilolite: #AMO subtype
       units: USD_2020/m^3
   nitrogen_clay_ratio:
     units: dimensionless
-    value: .040
+    value: 0.040
