@@ -210,6 +210,7 @@ def set_operating_conditions(m):
 
     # anion exchange
     m.fs.anion_exchange.load_parameters_from_database(use_default_removal=True)
+    m.fs.anion_exchange.removal_frac_mass_comp[0, "tds"].fix(0.9)
 
     # chlorination
     m.fs.chlorination.load_parameters_from_database(use_default_removal=True)

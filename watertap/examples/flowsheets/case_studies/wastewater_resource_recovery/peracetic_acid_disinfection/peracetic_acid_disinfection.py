@@ -223,9 +223,7 @@ def display_costing(m):
     print("\n------------- Capital costs -------------")
     DCC_normalized = value(
         pyunits.convert(
-            m.fs.PAA.costing.capital_cost
-            / m.fs.costing.TIC
-            / m.fs.feed.properties[0].flow_vol,
+            m.fs.PAA.costing.direct_capital_cost / m.fs.feed.properties[0].flow_vol,
             to_units=pyunits.USD_2020 / (pyunits.m**3 / pyunits.hr),
         )
     )

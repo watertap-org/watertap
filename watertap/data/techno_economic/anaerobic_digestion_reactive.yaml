@@ -60,7 +60,7 @@ default:
   # anaerobic_digestion_oxidation model.
   capital_cost:
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TIC
     reference_state:
       value: 911.054
       units: m^3/hr

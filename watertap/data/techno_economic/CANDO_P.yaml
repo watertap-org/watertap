@@ -42,7 +42,7 @@ default:
         bioconcentrated_phosphorous:
           conversion_ratio: 1
   capital_cost:
-    cost_factor: None
+    cost_factor: TIC
     sizing_parameter:
       value: 24
       units: hr
