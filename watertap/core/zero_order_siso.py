@@ -67,16 +67,14 @@ def build_siso(self):
     tmp_dict["defined_state"] = True
 
     self.properties_in = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+        self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
     )
 
     tmp_dict_2 = dict(**tmp_dict)
     tmp_dict_2["defined_state"] = False
 
     self.properties_treated = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties of treated water",
-        default=tmp_dict_2,
+        self.flowsheet().time, doc="Material properties of treated water", **tmp_dict_2
     )
 
     # Create Ports

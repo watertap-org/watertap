@@ -47,14 +47,10 @@ class TestVFARecoveryZO_no_default:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
 
-        m.fs.unit = VFARecoveryZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1)
@@ -169,14 +165,10 @@ class TestVFARecoveryZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod", "foo"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod", "foo"])
 
-        m.fs.unit = VFARecoveryZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1)
@@ -307,14 +299,10 @@ class Test_VFARecovery_ZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nonbiodegradable_cod"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
 
-        m.fs.unit = VFARecoveryZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = VFARecoveryZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -336,15 +324,15 @@ def test_ffCOD_not_in_solute_list():
     model = ConcreteModel()
     model.db = Database()
 
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.params = WaterParameterBlock(solute_list=["cod"])
     with pytest.raises(
         ValueError,
         match="nonbiodegradable_cod must be included in the solute list since"
         " this unit model computes heat requirement based on it.",
     ):
         model.fs.unit = VFARecoveryZO(
-            default={"property_package": model.fs.params, "database": model.db}
+            property_package=model.fs.params, database=model.db
         )
 
 
@@ -352,21 +340,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "nonbiodegradable_cod",
-            ]
-        }
-    )
+    m.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = VFARecoveryZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = VFARecoveryZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
     m.fs.unit1.inlet.flow_mass_comp[0, "nonbiodegradable_cod"].fix(1e-20)
@@ -374,9 +354,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.vfa_recovery, Block)
     assert isinstance(m.fs.costing.vfa_recovery.unit_capex, Var)

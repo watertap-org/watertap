@@ -41,7 +41,7 @@ def test_build_and_scale_pretreatment_NF():
                     continue  # not a valid combination
 
                 m = ConcreteModel()
-                m.fs = FlowsheetBlock(default={"dynamic": False})
+                m.fs = FlowsheetBlock(dynamic=False)
                 property_models.build_prop(m, base=kwargs["NF_base"])
 
                 check_build(

@@ -73,30 +73,21 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": ["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
-        }
+        solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.AD = AnaerobicDigestionReactiveZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "GLSD_anaerobic_digester",
-        },
+        property_package=m.fs.prop,
+        database=m.db,
+        process_subtype="GLSD_anaerobic_digester",
     )
-    m.fs.P1 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.P1 = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
@@ -158,7 +149,7 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "GLSD_anaerobic_digestion_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
     m.fs.AD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)

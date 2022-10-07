@@ -689,21 +689,19 @@ class TestChlorination:
     @pytest.fixture(scope="class")
     def chlorination_obj(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": True,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=True,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
         model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)

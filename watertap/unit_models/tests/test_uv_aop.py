@@ -59,11 +59,11 @@ class TestUV:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NDMAParameterBlock()
 
-        m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
+        m.fs.unit = Ultraviolet0D(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1206.5 * pyunits.kg / pyunits.s
@@ -247,11 +247,7 @@ class TestUV:
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyunits.USD_2020
 
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
@@ -275,11 +271,11 @@ class TestUV_standard:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NDMAParameterBlock()
 
-        m.fs.unit = Ultraviolet0D(default={"property_package": m.fs.properties})
+        m.fs.unit = Ultraviolet0D(property_package=m.fs.properties)
 
         # Example system for verifying costing
         feed_flow_mass = 1026.5 * pyunits.kg / pyunits.s
@@ -469,11 +465,7 @@ class TestUV_standard:
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyunits.USD_2020
 
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
@@ -497,20 +489,16 @@ class TestUV_with_multiple_comps:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": ["NDMA", "DCE"],
-                "mw_data": {"H2O": 18e-3, "NDMA": 74.0819e-3, "DCE": 98.96e-3},
-            }
+            solute_list=["NDMA", "DCE"],
+            mw_data={"H2O": 0.018, "NDMA": 0.0740819, "DCE": 0.09896},
         )
 
         m.fs.unit = Ultraviolet0D(
-            default={
-                "property_package": m.fs.properties,
-                "energy_balance_type": EnergyBalanceType.none,
-                "target_species": ["NDMA", "DCE"],
-            }
+            property_package=m.fs.properties,
+            energy_balance_type=EnergyBalanceType.none,
+            target_species=["NDMA", "DCE"],
         )
 
         # fully specify system
@@ -719,11 +707,7 @@ class TestUV_with_multiple_comps:
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyunits.USD_2020
 
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
@@ -747,15 +731,12 @@ class TestUV_detailed:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NDMAParameterBlock()
 
         m.fs.unit = Ultraviolet0D(
-            default={
-                "property_package": m.fs.properties,
-                "uv_dose_type": UVDoseType.calculated,
-            }
+            property_package=m.fs.properties, uv_dose_type=UVDoseType.calculated
         )
 
         # Example system for verifying costing
@@ -955,11 +936,7 @@ class TestUV_detailed:
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyunits.USD_2020
 
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)
@@ -983,16 +960,11 @@ class TestUVAOP:
     @pytest.fixture(scope="class")
     def UV_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NDMAParameterBlock()
 
-        m.fs.unit = Ultraviolet0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_aop": True,
-            }
-        )
+        m.fs.unit = Ultraviolet0D(property_package=m.fs.properties, has_aop=True)
 
         # fully specify system
         feed_flow_mass = 1206.5 * pyunits.kg / pyunits.s
@@ -1188,11 +1160,7 @@ class TestUVAOP:
         m.fs.costing = WaterTAPCosting()
         m.fs.costing.base_currency = pyunits.USD_2020
 
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-            },
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(m.fs.unit.control_volume.properties_out[0].flow_vol)
         results = solver.solve(m)

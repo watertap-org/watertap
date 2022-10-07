@@ -127,7 +127,7 @@ def report(m, has_bypass=True):
 
 def solve_flowsheet(has_bypass=True):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, has_bypass=has_bypass)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

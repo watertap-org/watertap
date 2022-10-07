@@ -363,22 +363,20 @@ class TestWaterStoich(object):
     @pytest.fixture(scope="class")
     def water_stoich(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        m.fs.thermo_params = GenericParameterBlock(**thermo_config)
         m.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": m.fs.thermo_params, **reaction_config}
+            property_package=m.fs.thermo_params, **reaction_config
         )
 
         m.fs.unit = StoichiometricReactor(
-            default={
-                "property_package": m.fs.thermo_params,
-                "reaction_package": m.fs.rxn_params,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "energy_balance_type": EnergyBalanceType.none,
-                "has_pressure_change": False,
-            }
+            property_package=m.fs.thermo_params,
+            reaction_package=m.fs.rxn_params,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            energy_balance_type=EnergyBalanceType.none,
+            has_pressure_change=False,
         )
 
         m.fs.unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].fix(0.00003)

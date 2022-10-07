@@ -73,43 +73,31 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "arsenic",
-                "uranium",
-                "nitrate",
-                "phosphates",
-                "iron",
-                "filtration_media",
-            ]
-        }
+        solute_list=[
+            "arsenic",
+            "uranium",
+            "nitrate",
+            "phosphates",
+            "iron",
+            "filtration_media",
+        ]
     )
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # pump
-    m.fs.pump = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.pump = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
     # microbial battery
-    m.fs.micbatt = MicrobialBatteryZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.micbatt = MicrobialBatteryZO(property_package=m.fs.prop, database=m.db)
 
     # product streams
-    m.fs.filtered_water = Product(default={"property_package": m.fs.prop})
-    m.fs.byproduct = Product(default={"property_package": m.fs.prop})
+    m.fs.filtered_water = Product(property_package=m.fs.prop)
+    m.fs.byproduct = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
@@ -338,9 +326,9 @@ def add_costing(m):
         "groundwater_treatment_case_study.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.micbatt.costing = UnitModelCostingBlock(**costing_kwargs)
 
