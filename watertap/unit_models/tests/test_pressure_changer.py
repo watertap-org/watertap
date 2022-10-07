@@ -54,11 +54,11 @@ class TestPumpIsothermal:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.SeawaterParameterBlock()
 
-        m.fs.unit = Pump(default={"property_package": m.fs.properties})
+        m.fs.unit = Pump(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -214,11 +214,11 @@ class TestEnergyRecoveryDevice(TestPumpIsothermal):
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.SeawaterParameterBlock()
 
-        m.fs.unit = EnergyRecoveryDevice(default={"property_package": m.fs.properties})
+        m.fs.unit = EnergyRecoveryDevice(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -271,15 +271,13 @@ class TestPumpVariable_Flow:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.SeawaterParameterBlock()
 
         m.fs.unit = Pump(
-            default={
-                "property_package": m.fs.properties,
-                "variable_efficiency": VariableEfficiency.flow,
-            }
+            property_package=m.fs.properties,
+            variable_efficiency=VariableEfficiency.flow,
         )
         # fully specify system
         feed_flow_mass = 1
@@ -420,15 +418,11 @@ class TestPumpIsothermal_with_energybalancetype_none:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props2.DSPMDEParameterBlock(default={"solute_list": ["TDS"]})
+        m.fs.properties = props2.DSPMDEParameterBlock(solute_list=["TDS"])
 
-        m.fs.unit = Pump(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = Pump(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mol = 1

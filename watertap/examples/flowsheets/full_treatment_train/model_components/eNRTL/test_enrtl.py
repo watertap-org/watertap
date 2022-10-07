@@ -34,12 +34,10 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
 
 def simulate_enrtl_FTPx(state_var_args):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = GenericParameterBlock(default=entrl_config_FTPx.configuration)
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = GenericParameterBlock(**entrl_config_FTPx.configuration)
 
-    m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True}
-    )
+    m.fs.state = m.fs.params.build_state_block(m.fs.time, defined_state=True)
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
@@ -101,12 +99,10 @@ def test_enrtl_FTPx_1():
 
 def simulate_enrtl_FpcTP(state_var_args):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = GenericParameterBlock(default=entrl_config_FpcTP.configuration)
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = GenericParameterBlock(**entrl_config_FpcTP.configuration)
 
-    m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True}
-    )
+    m.fs.state = m.fs.params.build_state_block(m.fs.time, defined_state=True)
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)

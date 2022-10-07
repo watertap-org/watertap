@@ -29,9 +29,9 @@ solver = get_solver()
 @pytest.mark.component
 def test_complete_condense():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.WaterParameterBlock()
-    m.fs.unit = Condenser(default={"property_package": m.fs.properties})
+    m.fs.unit = Condenser(property_package=m.fs.properties)
 
     # scaling
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Vap", "H2O"))

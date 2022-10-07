@@ -26,10 +26,10 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -74,53 +74,38 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "nitrogen",
-                "phosphates",
-                "bioconcentrated_phosphorous",
-                "nitrous_oxide",
-            ]
-        }
+        solute_list=[
+            "nitrogen",
+            "phosphates",
+            "bioconcentrated_phosphorous",
+            "nitrous_oxide",
+        ]
     )
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # pump
-    m.fs.pump = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.pump = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
     # photothermal membrane
     m.fs.photothermal = PhotothermalMembraneZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
 
     # CANDO+P reactor
     # Note that CANDOPZO model electricity costing includes pumping costs for
     # the unit, so a pump has not been included in this flowsheet between the
     # photothermal membrane and CANDO+P units
-    m.fs.candop = CANDOPZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.candop = CANDOPZO(property_package=m.fs.prop, database=m.db)
 
     # product streams
-    m.fs.photothermal_water = Product(default={"property_package": m.fs.prop})
-    m.fs.candop_treated = Product(default={"property_package": m.fs.prop})
-    m.fs.candop_byproduct = Product(default={"property_package": m.fs.prop})
+    m.fs.photothermal_water = Product(property_package=m.fs.prop)
+    m.fs.candop_treated = Product(property_package=m.fs.prop)
+    m.fs.candop_byproduct = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
@@ -204,9 +189,9 @@ def add_costing(m):
         "amo_1595_case_study.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.photothermal.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.candop.costing = UnitModelCostingBlock(**costing_kwargs)

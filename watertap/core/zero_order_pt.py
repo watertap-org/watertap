@@ -53,7 +53,7 @@ def build_pt(self):
     tmp_dict["defined_state"] = True
 
     self.properties = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties in unit", default=tmp_dict
+        self.flowsheet().time, doc="Material properties in unit", **tmp_dict
     )
 
     # Create Ports

@@ -48,19 +48,17 @@ class TestATHTLZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "organic_solid",
-                    "organic_liquid",
-                    "inorganic_solid",
-                    "carbon_dioxide",
-                ]
-            }
+            solute_list=[
+                "organic_solid",
+                "organic_liquid",
+                "inorganic_solid",
+                "carbon_dioxide",
+            ]
         )
 
-        m.fs.unit = ATHTLZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = ATHTLZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
         m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(71.2)
@@ -195,17 +193,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-                "carbon_dioxide",
-            ]
-        }
+        solute_list=[
+            "organic_solid",
+            "organic_liquid",
+            "inorganic_solid",
+            "carbon_dioxide",
+        ]
     )
 
     source_file = os.path.join(
@@ -221,9 +217,9 @@ def test_costing():
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit = ATHTLZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = ATHTLZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
     m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(71.2)
@@ -233,9 +229,7 @@ def test_costing():
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.autothermal_hydrothermal_liquefaction, Block)
     assert isinstance(

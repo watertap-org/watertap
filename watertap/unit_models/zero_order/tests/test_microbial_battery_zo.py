@@ -46,23 +46,19 @@ class TestMicrobialBattery:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "arsenic",
-                    "uranium",
-                    "nitrate",
-                    "phosphates",
-                    "iron",
-                    "filtration_media",
-                ]
-            }
+            solute_list=[
+                "arsenic",
+                "uranium",
+                "nitrate",
+                "phosphates",
+                "iron",
+                "filtration_media",
+            ]
         )
 
-        m.fs.unit = MicrobialBatteryZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = MicrobialBatteryZO(property_package=m.fs.params, database=m.db)
 
         # Inlet mass flowrates in kg/s
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.01)
@@ -221,18 +217,16 @@ class TestMicrobialBattery:
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "arsenic",
-                "uranium",
-                "nitrate",
-                "phosphates",
-                "iron",
-                "filtration_media",
-            ]
-        }
+        solute_list=[
+            "arsenic",
+            "uranium",
+            "nitrate",
+            "phosphates",
+            "iron",
+            "filtration_media",
+        ]
     )
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -246,10 +240,8 @@ def test_costing():
         "groundwater_treatment",
         "groundwater_treatment_case_study.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
-    m.fs.unit = MicrobialBatteryZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.unit = MicrobialBatteryZO(property_package=m.fs.params, database=m.db)
 
     # Inlet mass flowrates in kg/s
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.01)
@@ -265,9 +257,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
 

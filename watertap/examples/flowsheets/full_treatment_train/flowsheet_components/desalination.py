@@ -96,7 +96,7 @@ def build_desalination(
                 "Unexpected model type {RO_type} provided to build_desalination when has_ERD is True"
                 "".format(RO_type=RO_type)
             )
-        m.fs.ERD = EnergyRecoveryDevice(default={"property_package": prop})
+        m.fs.ERD = EnergyRecoveryDevice(property_package=prop)
 
     # auxiliary units
     if RO_type == "Sep":
@@ -116,12 +116,10 @@ def build_desalination(
 
     elif RO_type == "0D" or RO_type == "1D":
         # build auxiliary units
-        m.fs.pump_RO = Pump(default={"property_package": prop})
+        m.fs.pump_RO = Pump(property_package=prop)
         if is_twostage:
-            m.fs.pump_RO2 = Pump(default={"property_package": prop})
-            m.fs.mixer_permeate = Mixer(
-                default={"property_package": prop, "inlet_list": ["RO", "RO2"]}
-            )
+            m.fs.pump_RO2 = Pump(property_package=prop)
+            m.fs.mixer_permeate = Mixer(property_package=prop, inlet_list=["RO", "RO2"])
 
         # connect models
         if has_desal_feed:
@@ -315,7 +313,7 @@ def display_desalination(m, **kwargs):
 
 def solve_desalination(**kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base="TDS")
     build_desalination(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)

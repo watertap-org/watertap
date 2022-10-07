@@ -146,14 +146,14 @@ class TestIonExchangeNoInert:
         ions = [target_ion]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = DSPMDEParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 50 * pyunits.kg / pyunits.s
         ix_prop_in = {target_ion: mass_frac}
         for ion, x in ix_prop_in.items():
@@ -488,15 +488,15 @@ class TestIonExchangeWithInert:
         ions = [target_ion] + [x for x in inert_ions.keys()]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = DSPMDEParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
 
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 5 * pyunits.kg / pyunits.s
         ix_prop_in = inert_ions
         ix_prop_in[target_ion] = mass_frac
@@ -844,14 +844,14 @@ class TestIonExchangeCosting:
         ions = [target_ion]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = DSPMDEParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 50 * pyunits.kg / pyunits.s
         ix_prop_in = {target_ion: mass_frac}
         for ion, x in ix_prop_in.items():
@@ -901,9 +901,7 @@ class TestIonExchangeCosting:
         ix.number_columns_redund.fix()
 
         m.fs.costing = WaterTAPCosting()
-        ix.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        ix.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(ix.properties_out[0].flow_vol_phase["Liq"])
 

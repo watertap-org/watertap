@@ -249,7 +249,7 @@ def optimize(m):
 
 def solve_flowsheet_mvp_NF(**kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build_flowsheet_mvp_NF(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

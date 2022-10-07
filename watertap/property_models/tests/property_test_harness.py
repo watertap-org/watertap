@@ -105,9 +105,9 @@ class PropertyTestHarness:
         m = ConcreteModel()
         self.configure_class(m)
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
-        m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
+        m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
 
         for (v_str, ind), sf in self.scaling_args.items():
             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
@@ -391,16 +391,14 @@ class PropertyTestHarness:
         m = ConcreteModel()
         self.configure_class(m)
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
 
         m.fs.cv = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": m.fs.properties,
-                "property_package_args": self.param_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=m.fs.properties,
+            property_package_args=self.param_args,
         )
         m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
         m.fs.cv.add_material_balances()
@@ -490,9 +488,9 @@ class PropertyRegressionTest:
 
         # create model
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
-        m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
+        m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
 
         # set default scaling
         for (v_str, ind), sf in self.scaling_args.items():
@@ -588,9 +586,9 @@ class PropertyCalculateStateTest:
 
         # create model
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = self.prop_pack()
-        m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
+        m.fs.stream = m.fs.properties.build_state_block([0], **self.param_args)
 
         # set default scaling
         for (v_str, ind), sf in self.scaling_args.items():

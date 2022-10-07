@@ -176,12 +176,10 @@ class CompressorData(UnitModelBlockData):
 
         # Build control volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
@@ -206,7 +204,7 @@ class CompressorData(UnitModelBlockData):
         self.properties_isentropic_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of isentropic outlet",
-            default=tmp_dict,
+            **tmp_dict
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
