@@ -281,7 +281,7 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
+        sapon.fs.unit.get_costing()  # TODO-DEPR: remove get_costing()
         assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
         sapon.fs.unit.diameter.fix(2)
         results = solver.solve(sapon)
