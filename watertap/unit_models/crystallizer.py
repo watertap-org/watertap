@@ -269,9 +269,7 @@ class CrystallizationData(UnitModelBlockData):
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True  # inlet block is an inlet
         self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,  # time domain for the state block, just 0 in this case
-            doc="Material properties of inlet",
-            default=tmp_dict,
+            self.flowsheet().config.time, doc="Material properties of inlet", **tmp_dict
         )
 
         # Add outlet and waste block
@@ -279,19 +277,19 @@ class CrystallizationData(UnitModelBlockData):
         self.properties_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of liquid outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         self.properties_solids = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of solid crystals at outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         self.properties_vapor = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of water vapour at outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks

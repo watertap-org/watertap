@@ -45,12 +45,10 @@ class TestBrineConcentratorZO_w_o_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-        m.fs.unit = BrineConcentratorZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(250)
@@ -157,12 +155,10 @@ class Testbrine_concentratorZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds", "foo"])
 
-        m.fs.unit = BrineConcentratorZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(250)
@@ -283,12 +279,10 @@ class Testbrine_concentratorZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds"])
 
-        m.fs.unit = BrineConcentratorZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -308,8 +302,8 @@ class Testbrine_concentratorZOsubtype:
 @pytest.mark.unit
 def test_no_tds_in_solute_list_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -317,9 +311,7 @@ def test_no_tds_in_solute_list_error():
         "determining electricity intensity and power "
         "consumption of the brine concentrator unit.",
     ):
-        m.fs.unit = BrineConcentratorZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = BrineConcentratorZO(property_package=m.fs.params, database=db)
 
 
 db = Database()
@@ -331,18 +323,14 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tds"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tds"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = BrineConcentratorZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -352,9 +340,7 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.brine_concentrator, Block)
     assert isinstance(m.fs.costing.brine_concentrator.capital_a_parameter, Var)

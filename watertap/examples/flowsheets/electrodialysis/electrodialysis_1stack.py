@@ -63,33 +63,29 @@ def main():
 def build():
     # ---building model---
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
-        default={
-            "property_package": m.fs.properties,
-            "outlet_list": ["inlet_diluate", "inlet_concentrate"],
-        }
+        property_package=m.fs.properties,
+        outlet_list=["inlet_diluate", "inlet_concentrate"],
     )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlets of the ED stack.
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
-        default={
-            "property_package": m.fs.properties,
-            "operation_mode": "Constant_Voltage",
-            "finite_elements": 20,
-        },
+        property_package=m.fs.properties,
+        operation_mode="Constant_Voltage",
+        finite_elements=20,
     )
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # Touching needed variables for initialization and displaying results
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
@@ -105,9 +101,7 @@ def build():
     m.fs.disposal.properties[0].flow_vol_phase[...]
 
     # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
