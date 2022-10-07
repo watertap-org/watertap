@@ -210,12 +210,10 @@ class GACData(UnitModelBlockData):
 
         # build control volume
         self.process_flow = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
         self.process_flow.add_state_blocks(has_phase_equilibrium=False)
         self.process_flow.add_material_balances(
@@ -240,7 +238,7 @@ class GACData(UnitModelBlockData):
         self.adsorbed_contam = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of spent gac",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         @self.Constraint(

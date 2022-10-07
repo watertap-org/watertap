@@ -47,21 +47,17 @@ class TestAnaerobicMBRMECZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "cod",
-                    "nonbiodegradable_cod",
-                    "ammonium_as_nitrogen",
-                    "phosphate_as_phosphorous",
-                ]
-            }
+            solute_list=[
+                "cod",
+                "nonbiodegradable_cod",
+                "ammonium_as_nitrogen",
+                "phosphate_as_phosphorous",
+            ]
         )
 
-        m.fs.unit = AnaerobicMBRMECZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = AnaerobicMBRMECZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
@@ -201,14 +197,10 @@ class Test_AnMBRMEC_ZO_subtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod", "nonbiodegradable_cod"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
 
-        m.fs.unit = AnaerobicMBRMECZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = AnaerobicMBRMECZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -230,15 +222,15 @@ def test_ffCOD_not_in_solute_list():
     model = ConcreteModel()
     model.db = Database()
 
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.params = WaterParameterBlock(solute_list=["cod"])
     with pytest.raises(
         ValueError,
         match="nonbiodegradable_cod must be included in the solute list since"
         " this unit model converts cod to nonbiodegradable_cod.",
     ):
         model.fs.unit = AnaerobicMBRMECZO(
-            default={"property_package": model.fs.params, "database": model.db}
+            property_package=model.fs.params, database=model.db
         )
 
 
@@ -247,17 +239,15 @@ def test_COD_not_in_solute_list():
     model = ConcreteModel()
     model.db = Database()
 
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.params = WaterParameterBlock(
-        default={"solute_list": ["nonbiodegradable_cod"]}
-    )
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.params = WaterParameterBlock(solute_list=["nonbiodegradable_cod"])
     with pytest.raises(
         ValueError,
         match="fs.unit - key_reactant cod for reaction cod_to_nonbiodegradable_cod "
         "is not in the component list used by the assigned property package.",
     ):
         model.fs.unit = AnaerobicMBRMECZO(
-            default={"property_package": model.fs.params, "database": model.db}
+            property_package=model.fs.params, database=model.db
         )
 
 
@@ -265,24 +255,20 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "cod",
-                "nonbiodegradable_cod",
-                "ammonium_as_nitrogen",
-                "phosphate_as_phosphorous",
-            ]
-        }
+        solute_list=[
+            "cod",
+            "nonbiodegradable_cod",
+            "ammonium_as_nitrogen",
+            "phosphate_as_phosphorous",
+        ]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = AnaerobicMBRMECZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = AnaerobicMBRMECZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
     m.fs.unit1.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
@@ -293,9 +279,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.anaerobic_mbr_mec, Block)
     assert isinstance(m.fs.costing.anaerobic_mbr_mec.unit_capex, Var)

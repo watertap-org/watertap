@@ -523,14 +523,12 @@ class BoronRemovalData(UnitModelBlockData):
 
         # Build control volume for feed side
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": None,
-                "reaction_package_args": None,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=None,
+            reaction_package_args=None,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)

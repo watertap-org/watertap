@@ -290,24 +290,14 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 elif self.config.charge[j] > 0:
                     self.add_component(
                         str(j),
-                        Cation(
-                            default={
-                                "charge": self.config.charge[j],
-                                "_electrolyte": True,
-                            }
-                        ),
+                        Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
                     self.component_list.add(str(j))
                     self.ion_set.add(str(j))
                 else:
                     self.add_component(
                         str(j),
-                        Anion(
-                            default={
-                                "charge": self.config.charge[j],
-                                "_electrolyte": True,
-                            }
-                        ),
+                        Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
                     self.component_list.add(str(j))
                     self.ion_set.add(str(j))

@@ -264,13 +264,11 @@ class TestAnaerobicDigestionReactivesubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss", "cod", "tkn"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss", "cod", "tkn"])
 
         m.fs.unit = AnaerobicDigestionReactiveZO(
-            default={"property_package": m.fs.params, "database": db}
+            property_package=m.fs.params, database=db
         )
 
         return m
@@ -297,22 +295,18 @@ def test_costing_GLSD():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": ["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
-        }
+        solute_list=["tss", "methane", "carbon_dioxide", "nitrogen", "oxygen"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = AnaerobicDigestionReactiveZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "GLSD_anaerobic_digester",
-        }
+        property_package=m.fs.params,
+        database=m.db,
+        process_subtype="GLSD_anaerobic_digester",
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -325,9 +319,7 @@ def test_costing_GLSD():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.anaerobic_digestion_reactive, Block)
     assert isinstance(
