@@ -320,7 +320,7 @@ see reaction package for documentation.}""",
         "FlowsheetCostingBlock tools.",
         version="TBD",
     )
-    def get_costing(self, year=None, module=costing, **kwargs):
+    def get_costing(self, year=None, module=costing, **kwargs):  # TODO-DEPR: remove
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
