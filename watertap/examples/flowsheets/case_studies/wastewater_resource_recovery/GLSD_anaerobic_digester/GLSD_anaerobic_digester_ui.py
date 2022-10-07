@@ -136,7 +136,7 @@ def export_variables(flowsheet=None, exports=None):
     exports.add(
         obj=fs.AD.HRT,
         name="HRT",
-        ui_units=pyunits.g / pyunits.m**2 / pyunits.day,
+        ui_units=pyunits.hr,
         display_units="h",
         rounding=0,
         description="Hydraulic retention time",
