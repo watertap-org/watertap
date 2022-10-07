@@ -363,7 +363,7 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-1.755e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(7.992e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -504,7 +504,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(4.841e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -631,7 +631,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.449e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -755,7 +755,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.792e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -881,7 +881,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.383e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -1009,7 +1009,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-8.000e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(2.249e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -1138,7 +1138,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-6.2436e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(2.278e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]

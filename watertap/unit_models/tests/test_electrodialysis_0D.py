@@ -38,7 +38,7 @@ from idaes.core import (
     MomentumBalanceType,
     EnergyBalanceType,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
