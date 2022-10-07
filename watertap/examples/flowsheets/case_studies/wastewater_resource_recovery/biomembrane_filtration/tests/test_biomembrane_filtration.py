@@ -45,7 +45,7 @@ def test_biomembrane_filtration():
     ) == pytest.approx(110.016, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["bod"]
-    ) == pytest.approx(1.193e-3, rel=1e-3)
+    ) == pytest.approx(7.714e-4, rel=1e-3)
     assert value(
         m.fs.dmbr.properties_treated[0].flow_mass_comp["ammonium_as_nitrogen"]
     ) == pytest.approx(9.035e-4, rel=1e-3)

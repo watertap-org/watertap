@@ -134,13 +134,13 @@ class TestMABRZO:
             model.fs.unit.properties_in[0].conc_mass_comp["nitrate"]
         )
 
-        assert pytest.approx(0.023, rel=1e-2) == value(
+        assert pytest.approx(0.0202, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(217.3913, rel=1e-5) == value(
+        assert pytest.approx(108.9109, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(104.3478, rel=1e-5) == value(
+        assert pytest.approx(118.8119, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
         )
 
