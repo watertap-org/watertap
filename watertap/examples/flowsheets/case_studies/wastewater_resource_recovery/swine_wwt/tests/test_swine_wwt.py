@@ -12,7 +12,7 @@
 ###############################################################################
 
 import pytest
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.environ import value, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from watertap.core.util.initialization import assert_degrees_of_freedom
