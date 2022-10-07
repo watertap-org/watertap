@@ -146,7 +146,7 @@ def export_variables(flowsheet=None, exports=None):
     )
     exports.add(
         obj=fs.AD.energy_electric_flow_vol_inlet,
-        name="Blower specific power",
+        name="Specific power",
         ui_units=pyunits.kWh / pyunits.m**3,
         display_units="kWh/m3",
         rounding=2,
