@@ -48,11 +48,9 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
             m.fs,
             name_str,
             ReverseOsmosis0D(
-                default={
-                    "property_package": prop,
-                    "mass_transfer_coefficient": MassTransferCoefficient.none,
-                    "concentration_polarization_type": ConcentrationPolarizationType.none,
-                }
+                property_package=prop,
+                mass_transfer_coefficient=MassTransferCoefficient.none,
+                concentration_polarization_type=ConcentrationPolarizationType.none,
             ),
         )
         blk = getattr(m.fs, name_str)
@@ -69,13 +67,11 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
             m.fs,
             name_str,
             ReverseOsmosis0D(
-                default={
-                    "property_package": prop,
-                    "has_pressure_change": True,
-                    "pressure_change_type": PressureChangeType.calculated,
-                    "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                    "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                }
+                property_package=prop,
+                has_pressure_change=True,
+                pressure_change_type=PressureChangeType.calculated,
+                mass_transfer_coefficient=MassTransferCoefficient.calculated,
+                concentration_polarization_type=ConcentrationPolarizationType.calculated,
             ),
         )
         blk = getattr(m.fs, name_str)
@@ -97,7 +93,7 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
 
 def solve_RO(base="TDS", level="simple"):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base="TDS")
 
     build_RO(m, base=base, level=level)

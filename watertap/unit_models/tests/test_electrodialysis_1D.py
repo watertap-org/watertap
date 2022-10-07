@@ -37,14 +37,14 @@ from idaes.core import (
     MaterialBalanceType,
     MomentumBalanceType,
     EnergyBalanceType,
+    UnitModelCostingBlock,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 import re
 
 __author__ = "Xiangyu Bi"
@@ -57,20 +57,18 @@ class TestElectrodialysisVoltageConst:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell1(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Voltage,
-                "finite_elements": 20,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=20,
         )
         return m
 
@@ -279,10 +277,8 @@ class TestElectrodialysisVoltageConst:
         m.fs.costing = WaterTAPCosting()
 
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"cost_electricity_flow": True},
-            },
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_electricity_flow": True},
         )
         m.fs.costing.cost_process()
 
@@ -308,20 +304,18 @@ class TestElectrodialysisCurrentConst:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell2(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Current,
-                "finite_elements": 20,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Current,
+            finite_elements=20,
         )
         return m
 
@@ -521,20 +515,18 @@ class TestElectrodialysis_withNeutralSPecies:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell3(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Current,
-                "finite_elements": 20,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Current,
+            finite_elements=20,
         )
         return m
 
@@ -751,21 +743,19 @@ class Test_ED_MembNonohm_On_ConstV:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell4(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Voltage,
-                "finite_elements": 10,
-                "has_nonohmic_potential_membrane": True,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
         )
         return m
 
@@ -975,23 +965,21 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell5(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Voltage,
-                "finite_elements": 10,
-                "has_nonohmic_potential_membrane": True,
-                "has_Nernst_diffusion_layer": True,
-                "limiting_current_density_data": 800,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_data=800,
         )
         return m
 
@@ -1187,23 +1175,21 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell6(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Current,
-                "finite_elements": 10,
-                "has_nonohmic_potential_membrane": True,
-                "has_Nernst_diffusion_layer": True,
-                "limiting_current_density_data": 800,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Current,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_data=800,
         )
         return m
 

@@ -308,12 +308,10 @@ class NanofiltrationData(UnitModelBlockData):
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
@@ -338,12 +336,12 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             doc="Material properties of permeate along permeate channel",
-            default=tmp_dict,
+            **tmp_dict,
         )
         self.mixed_permeate = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add Ports
@@ -357,7 +355,7 @@ class NanofiltrationData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 io_list,
                 doc="Material properties of feed-side membrane interface",
-                default=tmp_dict,
+                **tmp_dict,
             )
         )
         # Pore entrance: indexed state block
@@ -365,14 +363,14 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             doc="Fluid properties within the membrane pore entrance",
-            default=tmp_dict,
+            **tmp_dict,
         )
         # Pore exit: indexed state block
         self.pore_exit = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             io_list,
             doc="Fluid properties within the membrane pore exit",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # References for control volume

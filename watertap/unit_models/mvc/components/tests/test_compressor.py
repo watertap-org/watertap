@@ -29,9 +29,9 @@ solver = get_solver()
 @pytest.mark.component
 def test_compressor():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.WaterParameterBlock()
-    m.fs.compressor = Compressor(default={"property_package": m.fs.properties})
+    m.fs.compressor = Compressor(property_package=m.fs.properties)
     # m.fs.compressor.control_volume.display()
 
     # scaling

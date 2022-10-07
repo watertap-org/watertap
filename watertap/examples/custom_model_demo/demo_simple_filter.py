@@ -13,11 +13,11 @@ from watertap.examples.custom_model_demo.simple_filter import Filtration
 def main():
     # create model, flowsheet
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
     m.fs.properties = props.PropParameterBlock()
     # build the unit model
-    m.fs.filter = Filtration(default={"property_package": m.fs.properties})
+    m.fs.filter = Filtration(property_package=m.fs.properties)
 
     # display model
     # note that there are the recovery and removal fraction variables are on m.fs.filter

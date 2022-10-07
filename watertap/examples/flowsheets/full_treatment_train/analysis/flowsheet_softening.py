@@ -94,7 +94,7 @@ def report(m):
 
 def solve_flowsheet():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

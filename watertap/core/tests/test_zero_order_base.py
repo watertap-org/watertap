@@ -33,10 +33,10 @@ class DerivedZOBaseData(ZeroOrderBaseData):
 @pytest.mark.unit
 def test_private_attributes():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
 
-    m.fs.unit = DerivedZOBase(default={"property_package": m.fs.params})
+    m.fs.unit = DerivedZOBase(property_package=m.fs.params)
 
     assert m.fs.unit._tech_type is None
     assert m.fs.unit._has_recovery_removal is False
@@ -52,8 +52,8 @@ class TestZOBase:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
 
         m.fs.params.del_component(m.fs.params.phase_list)
         m.fs.params.del_component(m.fs.params.solvent_set)
@@ -72,7 +72,7 @@ class TestZOBase:
             "package. Zero-order models only support property "
             "packages with a single phase named 'Liq'.",
         ):
-            model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+            model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
     @pytest.mark.unit
     def test_no_solvent_set(self, model):
@@ -84,7 +84,7 @@ class TestZOBase:
             "package. Zero-order models only support property "
             "packages which include 'H2O' as the only Solvent.",
         ):
-            model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+            model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
     @pytest.mark.unit
     def test_invalid_solvent_set(self, model):
@@ -97,7 +97,7 @@ class TestZOBase:
             "package. Zero-order models only support property "
             "packages which include 'H2O' as the only Solvent.",
         ):
-            model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+            model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
     @pytest.mark.unit
     def test_no_solute_set(self, model):
@@ -111,7 +111,7 @@ class TestZOBase:
             "packages to declare all dissolved species as "
             "Solutes.",
         ):
-            model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+            model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
     @pytest.mark.unit
     def test_non_solvent_or_solute(self, model):
@@ -126,7 +126,7 @@ class TestZOBase:
             "package. Zero-order models only support `H2O` as "
             "a solvent and all other species as Solutes.",
         ):
-            model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+            model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
     @pytest.mark.unit
     def test_load_parameters_from_database(self, model):
@@ -135,7 +135,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         with pytest.raises(NotImplementedError):
             model.fs.unit.load_parameters_from_database()
@@ -151,7 +151,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.recovery_vol = Var(model.fs.time)
 
@@ -172,7 +172,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.recovery_vol = Var(model.fs.time)
 
@@ -190,7 +190,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.recovery_vol = Var(model.fs.time)
 
@@ -210,7 +210,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.recovery_vol = Var(model.fs.time)
 
@@ -230,7 +230,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
@@ -252,7 +252,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
@@ -277,7 +277,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.test = Var()
 
@@ -302,7 +302,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
@@ -328,7 +328,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
@@ -355,7 +355,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.removal_frac_mass_comp = Var(
             model.fs.time, model.fs.params.solute_set
@@ -409,7 +409,7 @@ class TestZOBase:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedZOBase(default={"property_package": model.fs.params})
+        model.fs.unit = DerivedZOBase(property_package=model.fs.params)
 
         model.fs.unit.port_properties = model.fs.params.build_state_block(
             model.fs.time, doc="test"
