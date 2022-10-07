@@ -47,20 +47,12 @@ class TestDMBRZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "bod",
-                    "tss",
-                    "ammonium_as_nitrogen",
-                    "nitrate",
-                    "nitrogen",
-                ]
-            }
+            solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
         )
 
-        m.fs.unit = DMBRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = DMBRZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -198,15 +190,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate"]}
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = DMBRZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit1 = DMBRZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10)
     m.fs.unit1.inlet.flow_mass_comp[0, "bod"].fix(5)
@@ -216,9 +208,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.dmbr, Block)
     assert isinstance(m.fs.costing.dmbr.water_flux, Var)

@@ -80,7 +80,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, **desal_kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

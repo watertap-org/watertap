@@ -70,21 +70,16 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["bod", "tss", "tkn", "phosphorus"]}
+        solute_list=["bod", "tss", "tkn", "phosphorus"]
     )
 
     # components
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
-    m.fs.suboxicASM = SuboxicASMZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        }
-    )
+    m.fs.suboxicASM = SuboxicASMZO(property_package=m.fs.prop, database=m.db)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.suboxicASM.inlet)
@@ -143,9 +138,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "suboxic_activated_sludge_process_global.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.suboxicASM.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()

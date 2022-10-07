@@ -439,12 +439,10 @@ class Electrodialysis0DData(UnitModelBlockData):
 
         # Build control volume for the dilute channel
         self.diluate = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
         self.diluate.add_state_blocks(has_phase_equilibrium=False)
         self.diluate.add_material_balances(
@@ -457,12 +455,10 @@ class Electrodialysis0DData(UnitModelBlockData):
 
         # Build control volume for the concentrate channel
         self.concentrate = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
         self.concentrate.add_state_blocks(has_phase_equilibrium=False)
         self.concentrate.add_material_balances(

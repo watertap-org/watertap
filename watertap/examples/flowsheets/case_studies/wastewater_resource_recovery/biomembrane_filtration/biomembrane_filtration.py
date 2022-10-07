@@ -74,35 +74,18 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": ["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
-        }
+        solute_list=["bod", "tss", "ammonium_as_nitrogen", "nitrate", "nitrogen"]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.mabr = MABRZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.dmbr = DMBRZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.P1 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.mabr = MABRZO(property_package=m.fs.prop, database=m.db)
+    m.fs.dmbr = DMBRZO(property_package=m.fs.prop, database=m.db)
+    m.fs.P1 = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
@@ -174,9 +157,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "biomembrane_filtration_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.mabr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.dmbr.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.P1.costing = UnitModelCostingBlock(**costing_kwargs)

@@ -39,22 +39,14 @@ class TestDefaultNaClwaterProperty:
 
     # Create block and stream for running default tests
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock(
-        default={
-            "heat_of_crystallization_model": props.HeatOfCrystallizationModel.constant
-        }
+        heat_of_crystallization_model=props.HeatOfCrystallizationModel.constant
     )
-    m.fs.stream = m.fs.properties.build_state_block(
-        [0], default={"defined_state": True}
-    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "property_package": m.fs.properties,
-        }
+        dynamic=False, has_holdup=False, property_package=m.fs.properties
     )
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances()
