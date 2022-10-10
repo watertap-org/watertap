@@ -29,7 +29,7 @@ from idaes.core import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 import watertap.property_models.seawater_prop_pack as props
-import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
+import examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
 from watertap.property_models.seawater_ion_generic import configuration
 
 from idaes.core.util.model_statistics import (
