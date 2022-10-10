@@ -24,6 +24,7 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
 )
+from watertap.tools.MPI.dummy_mpi import DummyCOMM
 
 
 class DifferentialParameterSweep(_ParameterSweepBase):
@@ -238,6 +239,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Broadcast the number of global samples to all ranks
         num_global_samples = len(global_results_dict["solve_successful"])
+        # print(f"comm= {self.rank}, num_global_samples = {num_global_samples}")
         num_global_samples = self.comm.bcast(num_global_samples, root=0)
 
         global_results_arr = self._aggregate_results_arr(
@@ -261,12 +263,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         differential_sweep_specs,
         outputs,
         local_values,
-        # optimize_function,
-        # optimize_kwargs,
-        # reinitialize_function,
-        # reinitialize_kwargs,
-        # reinitialize_before_sweep,
-        # probe_function,
     ):
 
         # Initialize space to hold results
@@ -276,8 +272,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         local_output_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, local_num_cases
         )
-
-        # local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
 
         local_solve_successful_list = []
 
@@ -303,11 +297,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             if self.config.probe_function is None or probe_function(model):
                 run_successful = self._param_sweep_kernel(
                     model,
-                    # optimize_function,
-                    # optimize_kwargs,
-                    # reinitialize_before_sweep,
-                    # reinitialize_function,
-                    # reinitialize_kwargs,
                     reinitialize_values,
                 )
             else:
@@ -326,27 +315,24 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_solve_successful_list.append(run_successful)
 
             # Step 2: Run differential case
-            # self.diff_ps_dict[counter] = ParamweterSweep()
             diff_sweep_param_dict = self._create_differential_sweep_params(
                 local_values[k, :], differential_sweep_specs
             )
+
+            # We want this instance of the parameter sweep to run in serial
             diff_ps = ParameterSweep(
                 optimize_function=self.config.optimize_function,  # self._default_optimize,
                 optimize_kwargs=self.config.optimize_kwargs,
                 reinitialize_function=self.config.reinitialize_function,
                 reinitialize_kwargs=self.config.reinitialize_kwargs,
                 reinitialize_before_sweep=self.config.reinitialize_before_sweep,
+                comm=DummyCOMM,
             )
 
             _, differential_sweep_output_dict[k] = diff_ps.parameter_sweep(
                 model,
                 diff_sweep_param_dict,
                 outputs=outputs,
-                # optimize_function=optimize_function, # self._default_optimize,
-                # optimize_kwargs=optimize_kwargs,
-                # reinitialize_function=reinitialize_function,
-                # reinitialize_kwargs=None,
-                # reinitialize_before_sweep=reinitialize_before_sweep,
                 num_samples=self.config.num_diff_samples,
                 seed=self.seed,
             )
@@ -366,12 +352,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         sweep_params,
         differential_sweep_specs,
         outputs=None,
-        # optimize_function=None,
-        # optimize_kwargs=None,
-        # reinitialize_function=None,
-        # reinitialize_kwargs=None,
-        # reinitialize_before_sweep=False,
-        # probe_function=None,
         num_samples=None,
         seed=None,
     ):

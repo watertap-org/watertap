@@ -13,15 +13,18 @@
 
 import pytest
 import os
+import copy
 import numpy as np
 import pyomo.environ as pyo
-import ast
 
 from pyomo.environ import value
 
-from watertap.tools.parameter_sweep.sampling_types import *
+from watertap.tools.parameter_sweep.sampling_types import (
+    NormalSample,
+    GeomSample,
+    UniformSample
+)
 from watertap.tools.parameter_sweep import DifferentialParameterSweep
-from watertap.tools.parameter_sweep.parameter_sweep_writer import *
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _read_output_h5,
     _get_rank0_path,
@@ -91,7 +94,6 @@ def test_create_differential_sweep_params_normal(model):
     }
 
     for key, value in diff_sweep_param_dict.items():
-        print(value.mean)
         assert value.mean == expected_dict[key].mean
         assert value.sd == expected_dict[key].sd
 
@@ -196,10 +198,10 @@ def test_differential_parameter_sweep(model, tmp_path):
 
     import pprint
 
-    print()
-    pprint.pprint(global_results_dict)
-
     if ps.rank == 0:
+        # print()
+        # pprint.pprint(global_results_dict)
+
         truth_dict = {
             "outputs": {
                 "fs.output[c]": {
@@ -417,6 +419,23 @@ def test_differential_parameter_sweep(model, tmp_path):
             },
         }
 
+        sorted_truth_dict = sort_output_dict(truth_dict)
+
+        # Compare the sorted dictionary
         read_dict = _read_output_h5(h5_results_file_name)
-        _assert_dictionary_correctness(truth_dict, read_dict)
+        sorted_read_dict = sort_output_dict(global_results_dict)
+        _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+
+
+def sort_output_dict(input_dict):
+
+    sorted_dict = copy.deepcopy(input_dict)
+    for key, item in input_dict.items():
+        if key != "solve_successful":
+            for subkey, subitem in item.items():
+                sorted_dict[key][subkey]["value"] = np.sort(subitem["value"])
+        elif key == "solve_successful":
+            sorted_dict["solve_successful"] = np.sort(input_dict[key])
+
+    return sorted_dict
