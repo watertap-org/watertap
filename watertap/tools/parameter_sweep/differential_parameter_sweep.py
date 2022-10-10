@@ -239,7 +239,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Broadcast the number of global samples to all ranks
         num_global_samples = len(global_results_dict["solve_successful"])
-        # print(f"comm= {self.rank}, num_global_samples = {num_global_samples}")
         num_global_samples = self.comm.bcast(num_global_samples, root=0)
 
         global_results_arr = self._aggregate_results_arr(

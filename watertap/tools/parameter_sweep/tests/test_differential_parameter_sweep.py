@@ -22,7 +22,7 @@ from pyomo.environ import value
 from watertap.tools.parameter_sweep.sampling_types import (
     NormalSample,
     GeomSample,
-    UniformSample
+    UniformSample,
 )
 from watertap.tools.parameter_sweep import DifferentialParameterSweep
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
@@ -419,16 +419,21 @@ def test_differential_parameter_sweep(model, tmp_path):
             },
         }
 
-        sorted_truth_dict = sort_output_dict(truth_dict)
-
-        # Compare the sorted dictionary
         read_dict = _read_output_h5(h5_results_file_name)
-        sorted_read_dict = sort_output_dict(global_results_dict)
-        _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+        if ps.num_procs > 1:
+            # Compare the sorted dictionary. We need to work with a sorted dictionary
+            # because the differential parameter sweep produces a global dictionary
+            # that is jumbled by the number of procs.
+            sorted_truth_dict = sort_output_dict(truth_dict)
+            sorted_read_dict = sort_output_dict(global_results_dict)
+            _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+        else:
+            _assert_dictionary_correctness(truth_dict, read_dict)
 
 
 def sort_output_dict(input_dict):
+    """Simple utility function to sort all values in ascending order"""
 
     sorted_dict = copy.deepcopy(input_dict)
     for key, item in input_dict.items():
