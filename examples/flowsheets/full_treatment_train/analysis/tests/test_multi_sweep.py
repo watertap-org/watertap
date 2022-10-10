@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import pytest
-from watertap.examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
+from examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
 
 pytest_parameterize_list = []
 # We are skipping cases 5 & 7 in order to keep the pytests times in check

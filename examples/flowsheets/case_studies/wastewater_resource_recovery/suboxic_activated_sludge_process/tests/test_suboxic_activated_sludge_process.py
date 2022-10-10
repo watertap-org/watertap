@@ -13,7 +13,7 @@
 
 import pytest
 from pyomo.environ import value, assert_optimal_termination
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_activated_sludge_process import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_activated_sludge_process import (
     main,
 )
 

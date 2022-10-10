@@ -13,7 +13,7 @@
 
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_sweep import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_sweep import (
     run_analysis,
 )
 

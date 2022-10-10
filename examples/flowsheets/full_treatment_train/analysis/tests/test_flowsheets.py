@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from watertap.examples.flowsheets.full_treatment_train.analysis import (
+from examples.flowsheets.full_treatment_train.analysis import (
     flowsheet_NF,
     flowsheet_NF_no_bypass,
     flowsheet_single_stage,

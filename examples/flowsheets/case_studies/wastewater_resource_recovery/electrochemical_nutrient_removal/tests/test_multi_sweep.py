@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal import (
     multi_sweep,
 )
 

@@ -16,7 +16,7 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt as swine_wwt
+import examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt as swine_wwt
 
 
 def set_up_sensitivity(m):

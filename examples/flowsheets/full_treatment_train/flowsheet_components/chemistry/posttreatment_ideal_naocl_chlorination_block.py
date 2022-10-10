@@ -78,11 +78,11 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
 from idaes.core.solvers import get_solver
@@ -100,7 +100,7 @@ from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the Mixer unit model
 from idaes.models.unit_models import Mixer
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     costing,
 )
 
@@ -115,13 +115,13 @@ from pyomo.environ import log10
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors,
     calculate_chemical_scaling_factors_for_energy_balances,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
+from examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction,
     zero_out_non_H2O_molefractions,
     fix_all_molefractions,
@@ -129,7 +129,7 @@ from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util i
     seq_decomp_initializer,
 )
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     desalination,
 )
 from idaes.core.util.initialization import propagate_state

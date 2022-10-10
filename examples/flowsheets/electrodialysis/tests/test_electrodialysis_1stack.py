@@ -51,7 +51,7 @@ from watertap.costing.watertap_costing_package import (
     make_capital_cost_var,
 )
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
-import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
+import examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
 
 __author__ = "Xiangyu Bi"
 

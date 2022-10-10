@@ -13,7 +13,7 @@
 import pytest
 import os
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_sweep import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_sweep import (
     run_analysis,
 )
 

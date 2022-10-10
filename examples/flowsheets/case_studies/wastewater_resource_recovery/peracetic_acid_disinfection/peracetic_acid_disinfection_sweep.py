@@ -15,7 +15,7 @@ import os, sys
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection as peracetic_acid_disinfection
+import examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection as peracetic_acid_disinfection
 
 
 def set_up_sensitivity(m):

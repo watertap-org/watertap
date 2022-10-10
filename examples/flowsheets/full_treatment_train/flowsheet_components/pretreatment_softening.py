@@ -23,10 +23,10 @@ from idaes.core.util.scaling import (
     get_scaling_factor,
 )
 from idaes.core.util.initialization import propagate_state
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry import (
+from examples.flowsheets.full_treatment_train.flowsheet_components.chemistry import (
     pretreatment_stoich_softening_block as pssb,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )

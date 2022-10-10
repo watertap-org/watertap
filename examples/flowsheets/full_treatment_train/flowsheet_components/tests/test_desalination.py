@@ -13,13 +13,13 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     desalination,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     check_build,
     check_scaling,
 )

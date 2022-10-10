@@ -19,7 +19,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
-from watertap.examples.custom_model_demo.demo_simple_filter import main
+from examples.custom_model_demo.demo_simple_filter import main
 
 solver = get_solver()
 

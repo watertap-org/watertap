@@ -32,15 +32,15 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.initialization import propagate_state
 from watertap.unit_models.pressure_changer import Pump
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     unit_separator,
     unit_ZONF,
     property_models,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )

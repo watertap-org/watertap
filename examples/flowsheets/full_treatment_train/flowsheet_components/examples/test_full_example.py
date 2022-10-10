@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.examples import (
+from examples.flowsheets.full_treatment_train.flowsheet_components.examples import (
     full_example,
 )
 

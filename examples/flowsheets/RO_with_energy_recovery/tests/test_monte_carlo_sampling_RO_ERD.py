@@ -14,7 +14,7 @@ import pytest
 import os
 import numpy as np
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
+from examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import (
     run_parameter_sweep,
 )
 

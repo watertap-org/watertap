@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
 from watertap.unit_models.reverse_osmosis_1D import (
@@ -25,7 +25,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )

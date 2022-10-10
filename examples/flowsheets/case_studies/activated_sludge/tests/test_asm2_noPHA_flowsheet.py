@@ -24,7 +24,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from watertap.examples.flowsheets.case_studies.activated_sludge.ASM2D_flowsheet_noPHA import (
+from examples.flowsheets.case_studies.activated_sludge.ASM2D_flowsheet_noPHA import (
     build_flowsheet,
 )
 

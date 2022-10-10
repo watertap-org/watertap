@@ -20,7 +20,7 @@
 """
 import pytest
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import (
+from examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import (
     run_stoich_softening_mixer_example,
     run_stoich_softening_reactor_example,
     run_stoich_softening_separator_example,

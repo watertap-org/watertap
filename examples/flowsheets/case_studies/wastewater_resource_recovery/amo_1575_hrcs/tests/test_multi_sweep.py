@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_hrcs import (
     multi_sweep,
 )
 

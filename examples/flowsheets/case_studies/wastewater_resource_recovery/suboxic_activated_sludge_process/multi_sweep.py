@@ -16,7 +16,7 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_activated_sludge_process as suboxic_activated_sludge_process
+import examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process.suboxic_activated_sludge_process as suboxic_activated_sludge_process
 
 
 def set_up_sensitivity(m):

@@ -30,17 +30,17 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_NF,
     desalination,
     gypsum_saturation_index,
     translator_block,
     costing,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )

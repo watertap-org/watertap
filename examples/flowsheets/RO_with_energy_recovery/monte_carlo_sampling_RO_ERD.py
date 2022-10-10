@@ -19,7 +19,7 @@ from watertap.tools.parameter_sweep import (
     parameter_sweep,
 )
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+from examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     build,
     set_operating_conditions,
     initialize_system,

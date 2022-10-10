@@ -20,10 +20,10 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     constraint_scaling_transform,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )

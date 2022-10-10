@@ -13,7 +13,7 @@
 
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.suboxic_activated_sludge_process import (
     multi_sweep,
 )
 

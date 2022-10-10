@@ -15,7 +15,7 @@ import sys
 
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1690.amo_1690 as amo_1690
+import examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1690.amo_1690 as amo_1690
 
 
 def set_up_sensitivity(m):

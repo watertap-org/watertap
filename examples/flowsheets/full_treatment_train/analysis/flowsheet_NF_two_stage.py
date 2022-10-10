@@ -20,13 +20,13 @@ from pyomo.environ import ConcreteModel, TransformationFactory, Constraint, Para
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
 
-import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF
-import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
+import examples.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF
+import examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
 
 
 def build(m, **kwargs):

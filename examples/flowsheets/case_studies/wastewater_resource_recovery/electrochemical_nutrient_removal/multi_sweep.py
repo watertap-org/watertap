@@ -16,7 +16,7 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal as electrochemical_nutrient_removal
+import examples.flowsheets.case_studies.wastewater_resource_recovery.electrochemical_nutrient_removal.electrochemical_nutrient_removal as electrochemical_nutrient_removal
 
 
 def set_up_sensitivity(m):

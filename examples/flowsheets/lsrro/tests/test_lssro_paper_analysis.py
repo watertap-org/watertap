@@ -23,7 +23,7 @@ import pandas as pd
 
 from pyomo.environ import check_optimal_termination, value
 
-from watertap.examples.flowsheets.lsrro.lsrro import (
+from examples.flowsheets.lsrro.lsrro import (
     ACase,
     BCase,
     ABTradeoff,

@@ -40,7 +40,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab import (
     main,
     build,
     set_operating_conditions,

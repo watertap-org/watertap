@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas import (
     multi_sweep,
 )
 

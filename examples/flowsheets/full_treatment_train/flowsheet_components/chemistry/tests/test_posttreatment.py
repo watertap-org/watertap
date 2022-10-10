@@ -20,20 +20,20 @@
 """
 import pytest
 
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.posttreatment_ideal_naocl_chlorination_block import (
+from examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.posttreatment_ideal_naocl_chlorination_block import (
     run_ideal_naocl_mixer_example,
     run_ideal_naocl_chlorination_example,
     run_chlorination_block_example,
     build_translator_from_RO_to_chlorination_block,
     unfix_ideal_naocl_mixer_inlet_stream,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     desalination,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import check_dof
+from examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 

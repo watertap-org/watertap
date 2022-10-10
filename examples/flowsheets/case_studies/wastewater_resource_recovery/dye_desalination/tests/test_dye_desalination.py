@@ -18,7 +18,7 @@ from pyomo.environ import (
 from idaes.core.solvers import get_solver
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination import (
     build,
     set_operating_conditions,
     initialize_system,

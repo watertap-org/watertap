@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection_sweep import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.peracetic_acid_disinfection.peracetic_acid_disinfection_sweep import (
     run_analysis,
 )
 

@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP import (
     amo_1595_sweep,
 )
 

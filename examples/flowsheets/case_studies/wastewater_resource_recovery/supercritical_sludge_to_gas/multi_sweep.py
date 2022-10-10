@@ -16,7 +16,7 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas.supercritical_sludge_to_gas as supercritical_sludge_to_gas
+import examples.flowsheets.case_studies.wastewater_resource_recovery.supercritical_sludge_to_gas.supercritical_sludge_to_gas as supercritical_sludge_to_gas
 
 
 def set_up_sensitivity(m):

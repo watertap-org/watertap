@@ -12,7 +12,7 @@
 ###############################################################################
 import os
 import pytest
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.multi_sweep import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.metab.multi_sweep import (
     main,
 )
 

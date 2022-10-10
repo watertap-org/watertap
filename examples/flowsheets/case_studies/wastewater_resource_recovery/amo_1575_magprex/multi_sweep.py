@@ -13,7 +13,7 @@
 import os
 import sys
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex as magprex
+import examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex as magprex
 
 
 def set_up_sensitivity(m):

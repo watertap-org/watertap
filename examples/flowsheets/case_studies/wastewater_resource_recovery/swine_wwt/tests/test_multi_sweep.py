@@ -14,7 +14,7 @@
 import os
 import pytest
 import tempfile
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt import (
     multi_sweep,
 )
 

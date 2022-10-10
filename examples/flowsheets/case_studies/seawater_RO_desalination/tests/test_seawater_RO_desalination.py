@@ -13,7 +13,7 @@
 
 import pytest
 from pyomo.environ import value
-from watertap.examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination import (
+from examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination import (
     main,
 )
 

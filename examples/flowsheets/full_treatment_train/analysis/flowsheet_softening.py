@@ -12,7 +12,7 @@
 ###############################################################################
 
 from idaes.core.util.scaling import calculate_scaling_factors
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_softening,
     costing,
 )
@@ -20,7 +20,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
 # Added import statements for testing.
 #       Need the pretreatment_stoich_softening_block functions to setup
 #       flowsheet to solve for lime dosage
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import *
+from examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import *
 
 
 def build_components(m):

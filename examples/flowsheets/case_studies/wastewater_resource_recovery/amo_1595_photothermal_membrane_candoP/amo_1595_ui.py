@@ -12,7 +12,7 @@
 ###############################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595 import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595 import (
     build,
     set_operating_conditions,
     initialize_system,

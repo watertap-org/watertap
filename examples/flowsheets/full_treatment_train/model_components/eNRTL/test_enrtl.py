@@ -22,11 +22,11 @@ from idaes.core.util.scaling import (
     constraint_scaling_transform,
 )
 from idaes.core.solvers import get_solver
-from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import (
+from examples.flowsheets.full_treatment_train.model_components.eNRTL import (
     entrl_config_FTPx,
     entrl_config_FpcTP,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import (
+from examples.flowsheets.full_treatment_train.util import (
     check_scaling,
     solve_block,
 )

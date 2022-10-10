@@ -12,7 +12,7 @@
 ###############################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt import (
+from examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt import (
     build,
     set_operating_conditions,
     initialize_system,

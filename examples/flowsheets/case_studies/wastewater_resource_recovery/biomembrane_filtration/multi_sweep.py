@@ -16,7 +16,7 @@ from watertap.tools.parameter_sweep import (
     LinearSample,
     parameter_sweep,
 )
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration as biomembrane_filtration
+import examples.flowsheets.case_studies.wastewater_resource_recovery.biomembrane_filtration.biomembrane_filtration as biomembrane_filtration
 
 
 def set_up_sensitivity(m):

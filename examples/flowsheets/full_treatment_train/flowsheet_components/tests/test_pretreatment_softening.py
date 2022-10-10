@@ -13,10 +13,10 @@
 import pytest
 from pyomo.environ import ConcreteModel, value, TransformationFactory
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+from examples.flowsheets.full_treatment_train.flowsheet_components import (
     pretreatment_softening,
 )
-from watertap.examples.flowsheets.full_treatment_train.util import check_dof
+from examples.flowsheets.full_treatment_train.util import check_dof
 
 
 @pytest.mark.component

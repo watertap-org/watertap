@@ -17,7 +17,7 @@ import pytest
 
 import pandas as pd
 
-from watertap.examples.flowsheets.lsrro.multi_sweep import run_case
+from examples.flowsheets.lsrro.multi_sweep import run_case
 
 _this_file_path = os.path.dirname(os.path.abspath(__file__))
 

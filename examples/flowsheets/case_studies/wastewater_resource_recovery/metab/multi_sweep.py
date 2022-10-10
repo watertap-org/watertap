@@ -5,7 +5,7 @@ import time
 from pyomo.environ import Constraint
 from watertap.tools.parameter_sweep import LinearSample, parameter_sweep
 import watertap.tools.MPI as MPI
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab as metab
+import examples.flowsheets.case_studies.wastewater_resource_recovery.metab.metab as metab
 
 
 def set_up_sensitivity(m):
