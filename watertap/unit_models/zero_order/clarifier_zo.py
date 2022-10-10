@@ -63,7 +63,9 @@ class ClarifierZOData(ZeroOrderBaseData):
             )
             self._perf_var_dict["Ferric Chloride Demand"] = self.ferric_chloride_demand
 
-            @self.Constraint(self.flowsheet().time, doc="Acetic acid demand constraint")
+            @self.Constraint(
+                self.flowsheet().time, doc="ferric chloride demand constraint"
+            )
             def ferric_chloride_demand_equation(b, t):
                 return b.ferric_chloride_demand[t] == pyunits.convert(
                     b.ferric_chloride_dose[t] * b.properties_in[t].flow_vol,

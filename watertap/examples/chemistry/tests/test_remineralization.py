@@ -750,22 +750,20 @@ class TestRemineralization:
     @pytest.fixture(scope="class")
     def remineralization_appr_equ(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-                "energy_balance_type": EnergyBalanceType.none,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
+            energy_balance_type=EnergyBalanceType.none,
         )
 
         model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)
@@ -1674,21 +1672,19 @@ class TestRemineralizationCSTR:
     @pytest.fixture(scope="class")
     def remineralization_cstr_kin(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config_cstr)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_config_cstr)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config_cstr}
+            property_package=model.fs.thermo_params, **reaction_config_cstr
         )
         model.fs.unit = CSTR(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-                "energy_balance_type": EnergyBalanceType.none,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
+            energy_balance_type=EnergyBalanceType.none,
         )
 
         model.fs.unit.inlet.pressure.fix(101325.0)

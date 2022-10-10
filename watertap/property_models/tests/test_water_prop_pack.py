@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 import watertap.property_models.water_prop_pack as props
-from idaes.generic_models.properties.tests.test_harness import (
+from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
 from watertap.property_models.tests.property_test_harness import (

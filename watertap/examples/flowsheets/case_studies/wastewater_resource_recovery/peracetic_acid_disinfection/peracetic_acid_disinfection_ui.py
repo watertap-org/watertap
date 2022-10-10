@@ -322,9 +322,9 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized cost metrics",
     )
-    direct_capital_norm = (
-        (fs.PAA.costing.capital_cost) / fs.costing.TIC / fs.feed.properties[0].flow_vol
-    )
+    direct_capital_norm = (fs.PAA.costing.direct_capital_cost) / fs.feed.properties[
+        0
+    ].flow_vol
     exports.add(
         obj=direct_capital_norm,
         name="Direct capital",

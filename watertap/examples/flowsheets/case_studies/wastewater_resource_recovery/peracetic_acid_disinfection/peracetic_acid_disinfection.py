@@ -223,9 +223,7 @@ def display_costing(m):
     print("\n------------- Capital costs -------------")
     DCC_normalized = value(
         pyunits.convert(
-            m.fs.PAA.costing.capital_cost
-            / m.fs.costing.TIC
-            / m.fs.feed.properties[0].flow_vol,
+            m.fs.PAA.costing.direct_capital_cost / m.fs.feed.properties[0].flow_vol,
             to_units=pyunits.USD_2020 / (pyunits.m**3 / pyunits.hr),
         )
     )
@@ -275,6 +273,18 @@ def display_costing(m):
         )
     )
     print(f"Normalized electricity cost: {EC_normalized:.5f} $/m^3 of feed")
+
+    disinfection_cost_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["disinfection_solution"]
+            * m.fs.costing.utilization_factor
+            / m.fs.costing.annual_water_inlet,
+            to_units=pyunits.USD_2020 / pyunits.m**3,
+        )
+    )
+    print(
+        f"Normalized disinfection solution cost: {disinfection_cost_normalized:.5f} $/m^3 of feed"
+    )
 
     electricity_intensity = value(
         pyunits.convert(

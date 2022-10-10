@@ -70,33 +70,25 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(default={"solute_list": ["dye", "tds"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["dye", "tds"])
 
     # unit model
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # define block to integrate with dye_desalination_withRO
     dye_sep = m.fs.dye_separation = Block()
 
     dye_sep.P1 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "default",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="default"
     )
 
     dye_sep.nanofiltration = NanofiltrationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "rHGO_dye_rejection",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="rHGO_dye_rejection"
     )
 
-    m.fs.permeate = Product(default={"property_package": m.fs.prop})
-    m.fs.dye_retentate = Product(default={"property_package": m.fs.prop})
+    m.fs.permeate = Product(property_package=m.fs.prop)
+    m.fs.dye_retentate = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
@@ -167,9 +159,9 @@ def add_costing(m):
     )
 
     # zero order costing
-    m.fs.zo_costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.zo_costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.zo_costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.zo_costing}
 
     # create costing blocks
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -206,43 +198,43 @@ def add_costing(m):
     )
 
     # combine results for system level costs - to be the same syntax as dye_desalination_withRO
-    @m.Expression()
-    def total_capital_cost(b, doc="Total capital cost"):
+    @m.fs.Expression(doc="Total capital cost")
+    def total_capital_cost(b):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         )
 
-    @m.Expression()
-    def total_operating_cost(b, doc="Total operating cost"):
+    @m.fs.Expression(doc="Total operating cost")
+    def total_operating_cost(b):
         return pyunits.convert(
-            m.fs.zo_costing.total_fixed_operating_cost,
+            b.zo_costing.total_fixed_operating_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         ) + pyunits.convert(
-            m.fs.zo_costing.total_variable_operating_cost,
+            b.zo_costing.total_variable_operating_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression()
-    def total_externalities(b, doc="Total cost of dye recovered and brine disposed"):
+    @m.fs.Expression(doc="Total cost of dye recovered and brine disposed")
+    def total_externalities(b):
         return pyunits.convert(
-            m.fs.dye_recovery_revenue - m.fs.brine_disposal_cost,
+            b.dye_recovery_revenue - b.brine_disposal_cost,
             to_units=pyunits.USD_2020 / pyunits.year,
         )
 
-    @m.Expression()
-    def LCOT(
-        b, doc="Levelized cost of treatment with respect to volumetric feed flowrate"
-    ):
+    @m.fs.Expression(
+        doc="Levelized cost of treatment with respect to volumetric feed flowrate"
+    )
+    def LCOT(b):
         return (
-            b.total_capital_cost * b.fs.zo_costing.capital_recovery_factor
+            b.total_capital_cost * b.zo_costing.capital_recovery_factor
             + b.total_operating_cost
             - b.total_externalities
         ) / (
             pyunits.convert(
-                b.fs.feed.properties[0].flow_vol,
+                b.feed.properties[0].flow_vol,
                 to_units=pyunits.m**3 / pyunits.year,
             )
-            * b.fs.zo_costing.utilization_factor
+            * b.zo_costing.utilization_factor
         )
 
     assert_units_consistent(m)
@@ -268,26 +260,26 @@ def display_costing(m):
 
     print("\nSystem Costs")
     total_capital_cost = value(
-        pyunits.convert(m.total_capital_cost, to_units=pyunits.MUSD_2020)
+        pyunits.convert(m.fs.total_capital_cost, to_units=pyunits.MUSD_2020)
     )
     print(f"Total Capital Costs: {total_capital_cost:.4f} M$")
 
     total_operating_cost = value(
         pyunits.convert(
-            m.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_operating_cost, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
     print(f"Total Operating Costs: {total_operating_cost:.4f} M$/year")
 
     total_externalities = value(
         pyunits.convert(
-            m.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
+            m.fs.total_externalities, to_units=pyunits.MUSD_2020 / pyunits.year
         )
     )
     print(f"Total Externalities: {total_externalities:.4f} M$/year")
 
     levelized_cost_treatment = value(
-        pyunits.convert(m.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
+        pyunits.convert(m.fs.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(
         f"Levelized Cost of Treatment (LCOT): {levelized_cost_treatment:.2f} $/m3 feed"

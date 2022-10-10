@@ -11,11 +11,11 @@ import watertap.examples.custom_model_demo.simple_prop_pack as props
 def main():
     # create model, flowsheet
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
     m.fs.properties = props.PropParameterBlock()
     # build a state block, must specify a time which by convention for steady state models is just 0
-    m.fs.stream = m.fs.properties.build_state_block([0], default={})
+    m.fs.stream = m.fs.properties.build_state_block([0])
 
     # display the state block, it only has the state variables and they are all unfixed
     print("\n---first display---")

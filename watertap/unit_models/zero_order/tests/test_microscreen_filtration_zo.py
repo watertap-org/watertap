@@ -46,12 +46,10 @@ class TestMicroscreenFiltrationZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss"])
 
-        m.fs.unit = MicroscreenFiltrationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = MicroscreenFiltrationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -158,12 +156,10 @@ class TestMicroscreenFiltrationZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss", "foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss", "foo"])
 
-        m.fs.unit = MicroscreenFiltrationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = MicroscreenFiltrationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -279,15 +275,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = MicroscreenFiltrationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = MicroscreenFiltrationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -296,9 +290,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.microscreen_filtration, Block)
     assert isinstance(m.fs.costing.microscreen_filtration.capital_a_parameter, Var)

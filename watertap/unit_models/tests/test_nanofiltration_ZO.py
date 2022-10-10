@@ -58,9 +58,9 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.PropParameterBlock()
-    m.fs.unit = NanofiltrationZO(default={"property_package": m.fs.properties})
+    m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 8
 
@@ -76,10 +76,10 @@ def test_config():
 @pytest.mark.unit
 def test_option_has_pressure_change():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.PropParameterBlock()
     m.fs.unit = NanofiltrationZO(
-        default={"property_package": m.fs.properties, "has_pressure_change": True}
+        property_package=m.fs.properties, has_pressure_change=True
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
@@ -90,11 +90,11 @@ class TestNanofiltration:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.PropParameterBlock()
 
-        m.fs.unit = NanofiltrationZO(default={"property_package": m.fs.properties})
+        m.fs.unit = NanofiltrationZO(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -267,10 +267,10 @@ class TestNanofiltration:
     @pytest.mark.component
     def test_NF_with_generic_property_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = GenericParameterBlock(default=configuration)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = GenericParameterBlock(**configuration)
         m.fs.unit = NanofiltrationZO(
-            default={"property_package": m.fs.properties, "has_pressure_change": False}
+            property_package=m.fs.properties, has_pressure_change=False
         )
 
         # fully specify system

@@ -626,7 +626,7 @@ class MembraneChannelMixin:
             self.flowsheet().config.time,
             self.length_domain,
             doc="Material properties of feed-side membrane interface",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
     def _add_calculated_pressure_change(self):

@@ -75,7 +75,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         tmp_dict["defined_state"] = True
 
         self.properties_in = self.config.property_package.build_state_block(
-            self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+            self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
         )
 
         tmp_dict_2 = dict(**tmp_dict)
@@ -84,12 +84,12 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self.properties_treated = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of treated water",
-            default=tmp_dict_2,
+            **tmp_dict_2
         )
         self.properties_byproduct = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of byproduct stream",
-            default=tmp_dict_2,
+            **tmp_dict_2
         )
 
         # Create Ports

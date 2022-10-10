@@ -51,12 +51,12 @@ class TestGasSpargedMembraneZO:
     def model(self):
         m = ConcreteModel()
         m.db = Database()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["cod"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["cod"])
 
         m.fs.unit = GasSpargedMembraneZO(
-            default={"property_package": m.fs.water_props, "database": m.db}
+            property_package=m.fs.water_props, database=m.db
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
