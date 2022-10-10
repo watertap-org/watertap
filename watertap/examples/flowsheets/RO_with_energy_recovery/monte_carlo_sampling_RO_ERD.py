@@ -95,7 +95,7 @@ def run_parameter_sweep(
     num_samples = 10
 
     # Run the parameter sweep
-    global_results = parameter_sweep(
+    global_results_arr, _ = parameter_sweep(
         m,
         sweep_params,
         outputs,
@@ -107,7 +107,7 @@ def run_parameter_sweep(
         seed=seed,
     )
 
-    return global_results
+    return global_results_arr
 
 
 if __name__ == "__main__":
