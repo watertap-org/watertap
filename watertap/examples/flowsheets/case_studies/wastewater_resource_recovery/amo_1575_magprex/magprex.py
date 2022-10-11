@@ -257,12 +257,6 @@ def add_costing(m):
     )
 
 
-def display_results(m):
-    unit_list = ["feed", "magprex", "centrifuge", "classifier"]
-    for u in unit_list:
-        m.fs.component(u).report()
-
-
 def display_costing(m):
     print("\n----------Unit Capital Costs----------\n")
     for u in m.fs.costing._registered_unit_costing:
