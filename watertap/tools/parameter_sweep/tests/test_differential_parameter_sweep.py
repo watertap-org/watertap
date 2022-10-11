@@ -422,7 +422,6 @@ def test_differential_parameter_sweep(model, tmp_path):
 
         read_dict = _read_output_h5(h5_results_file_name)
         _assert_h5_csv_agreement(csv_results_file_name, read_dict)
-        _assert_dictionary_correctness(global_results_dict, read_dict)
         if ps.num_procs > 1:
             # Compare the sorted dictionary. We need to work with a sorted dictionary
             # because the differential parameter sweep produces a global dictionary
