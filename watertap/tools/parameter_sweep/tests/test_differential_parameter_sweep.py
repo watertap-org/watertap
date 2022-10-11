@@ -190,17 +190,10 @@ def test_differential_parameter_sweep(model, tmp_path):
         sweep_params,
         differential_sweep_specs,
         outputs=None,
-        # optimize_function=_optimization,
-        # reinitialize_function=_reinitialize,
-        # reinitialize_kwargs={"slack_penalty": 10.0},
         seed=0,
     )
 
-    import pprint
-
     if ps.rank == 0:
-        # print()
-        # pprint.pprint(global_results_dict)
 
         truth_dict = {
             "outputs": {

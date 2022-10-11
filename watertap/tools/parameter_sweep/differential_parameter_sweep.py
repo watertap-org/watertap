@@ -106,9 +106,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 else:
                     raise NotImplementedError
                 if specs["diff_sample_type"] == UniformSample:
-                    diff_sweep_param[param] = UniformSample(
-                        pyomo_object, lb, ub
-                    )
+                    diff_sweep_param[param] = UniformSample(pyomo_object, lb, ub)
                 else:
                     diff_sweep_param[param] = specs["diff_sample_type"](
                         pyomo_object, lb, ub, self.config.num_diff_samples
@@ -225,8 +223,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             ):
                 global_values[:, i] = item["value"]
 
-        if self.num_procs > 1:  # pragma: no cover
-            self.comm.Bcast(global_values, root=0)
+        self.comm.Bcast(global_values, root=0)
 
         return global_values
 
@@ -293,7 +290,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             # Update the model values with a single combination from the parameter space
             self._update_model_values(model, sweep_params, local_values[k, :])
 
-            if self.config.probe_function is None or probe_function(model):
+            if self.config.probe_function is None:
                 run_successful = self._param_sweep_kernel(
                     model,
                     reinitialize_values,
