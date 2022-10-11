@@ -345,7 +345,7 @@ def build_flowsheet():
 
     solver = get_solver(options={"bound_push": 1e-4})
     results = solver.solve(m, tee=False)
-    pyo.assert_optimal_termination(results)
+    pyo.check_optimal_termination(results)
 
     return m, results
 

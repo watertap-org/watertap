@@ -16,7 +16,7 @@ import os
 from pyomo.environ import (
     ConcreteModel,
     units as pyunits,
-    assert_optimal_termination,
+    check_optimal_termination,
     Expression,
     value,
     TransformationFactory,
@@ -53,7 +53,7 @@ def main():
     initialize_system(m)
 
     results = solve(m)
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
     display_results(m)
 
     add_costing(m)
@@ -62,7 +62,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
     results = solve(m)
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
     display_costing(m)
 
     return m, results
@@ -134,7 +134,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        assert_optimal_termination(results)
+        check_optimal_termination(results)
     return results
 
 

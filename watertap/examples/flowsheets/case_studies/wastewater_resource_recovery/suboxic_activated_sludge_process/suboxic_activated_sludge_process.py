@@ -19,7 +19,7 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
+    check_optimal_termination,
 )
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
@@ -50,7 +50,7 @@ def main():
     initialize_system(m)
 
     results = solve(m)
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
     # display_reports(m)
 
     add_costing(m)
@@ -59,7 +59,7 @@ def main():
     assert_units_consistent(m)
 
     results = solve(m)
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -123,7 +123,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        assert_optimal_termination(results)
+        check_optimal_termination(results)
     return results
 
 

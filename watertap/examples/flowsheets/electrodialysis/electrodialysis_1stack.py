@@ -18,7 +18,7 @@ from pyomo.environ import (
     Constraint,
     Objective,
     TransformationFactory,
-    assert_optimal_termination,
+    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.network import Arc
@@ -224,7 +224,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=True)
     if check_termination:
-        assert_optimal_termination(results)
+        check_optimal_termination(results)
     return results
 
 
@@ -276,7 +276,7 @@ def optimize_system(m, solver=None):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
 
 
 def display_model_metrics(m):

@@ -15,7 +15,7 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
+    check_optimal_termination,
     Block,
 )
 from pyomo.network import Arc
@@ -546,7 +546,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        assert_optimal_termination(results)
+        check_optimal_termination(results)
     return results
 
 

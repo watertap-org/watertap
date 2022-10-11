@@ -293,7 +293,7 @@ def build_flowsheet():
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m)
 
-    pyo.assert_optimal_termination(results)
+    pyo.check_optimal_termination(results)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R3.KLa.fix(10)
@@ -303,7 +303,7 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
-    pyo.assert_optimal_termination(results)
+    pyo.check_optimal_termination(results)
 
     return m, results
 

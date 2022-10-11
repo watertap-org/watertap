@@ -21,7 +21,7 @@ from pyomo.environ import (
     Param,
     TransformationFactory,
     units as pyunits,
-    assert_optimal_termination,
+    check_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -334,7 +334,7 @@ def calculate_operating_pressure(
     t.brine[0].pressure_osm_phase
     # solve state block
     results = solve_indexed_blocks(solver, [t.brine])
-    assert_optimal_termination(results)
+    check_optimal_termination(results)
 
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
@@ -344,7 +344,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        assert_optimal_termination(results)
+        check_optimal_termination(results)
     return results
 
 
