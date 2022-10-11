@@ -1,12 +1,6 @@
 import numpy as np
 import pyomo.environ as pyo
-import sys
-import os
-import itertools
-import warnings
-import copy, pprint
-import h5py
-import pathlib
+import copy
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -19,7 +13,7 @@ from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 
 from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.parameter_sweep.sampling_types import *  # (SamplingType, LinearSample)
+from watertap.tools.parameter_sweep.sampling_types import NormalSample, UniformSample
 from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
@@ -51,12 +45,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
     def __init__(
         self,
-        # csv_results_file_name=None,
-        # h5_results_file_name=None,
-        # debugging_data_dir = None,
-        # interpolate_nan_outputs = False,
-        # guarantee_solves=False,
-        # num_diff_samples=1,
         **options,
     ):
 
@@ -65,8 +53,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         if self.config.guarantee_solves:
             raise NotImplementedError
-
-        # self.num_diff_samples = num_diff_samples
 
     def _create_differential_sweep_params(self, local_values, differential_sweep_specs):
 
