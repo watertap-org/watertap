@@ -32,8 +32,8 @@ default:    # mabr for nitrification
           conversion_ratio: -1
         nitrate:
           conversion_ratio: 1
-        BOD:
-          conversion_ratio: -2 # 2g-BOD/g-N
+        bod:
+          conversion_ratio: -2.0 # 2.0g-BOD/g-N
   capital_cost:
     cost_factor: TIC
     reactor_cost:
