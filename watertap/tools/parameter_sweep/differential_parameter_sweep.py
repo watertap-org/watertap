@@ -293,7 +293,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             # Update the model values with a single combination from the parameter space
             self._update_model_values(model, sweep_params, local_values[k, :])
 
-            if self.config.probe_function is None or probe_function(model):
+            if self.config.probe_function is None:
                 run_successful = self._param_sweep_kernel(
                     model,
                     reinitialize_values,
