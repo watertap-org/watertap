@@ -361,6 +361,7 @@ def test_differential_parameter_sweep(model, tmp_path):
                     )
                 },
             },
+            "solve_successful": [True] * 18,
             "sweep_params": {
                 "fs.input[a]": {
                     "lower bound": 0,
@@ -426,7 +427,7 @@ def test_differential_parameter_sweep(model, tmp_path):
             # because the differential parameter sweep produces a global dictionary
             # that is jumbled by the number of procs.
             sorted_truth_dict = sort_output_dict(truth_dict)
-            sorted_read_dict = sort_output_dict(global_results_dict)
+            sorted_read_dict = sort_output_dict(read_dict)
             _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
         else:
             _assert_dictionary_correctness(truth_dict, read_dict)
@@ -441,6 +442,6 @@ def sort_output_dict(input_dict):
             for subkey, subitem in item.items():
                 sorted_dict[key][subkey]["value"] = np.sort(subitem["value"])
         elif key == "solve_successful":
-            sorted_dict["solve_successful"] = np.sort(input_dict[key])
+            sorted_dict["solve_successful"] = np.sort(input_dict[key]).tolist()
 
     return sorted_dict
