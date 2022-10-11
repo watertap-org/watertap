@@ -195,7 +195,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 )
 
                 if self.rank == 0:
-                    global_output_dict[key] = global_solve_successful
+                    global_output_dict[key] = global_solve_successful.tolist()
 
         return global_output_dict
 

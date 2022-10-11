@@ -1598,6 +1598,8 @@ def _bad_test_function(m):
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
 
+    assert truth_dict.keys() == test_dict.keys()
+
     for key, item in truth_dict.items():
         if key != "solve_successful":
             for subkey, subitem in item.items():
