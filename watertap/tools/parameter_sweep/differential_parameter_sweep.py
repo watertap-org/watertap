@@ -85,7 +85,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 relative_ub = specs["relative_ub"]
                 if specs["diff_mode"] == "sum":
                     lb = nominal_val * (1 - relative_lb)
-                    ub = nominal_val * (1 + relative_lb)
+                    ub = nominal_val * (1 + relative_ub)
                 elif specs["diff_mode"] == "product":
                     lb = nominal_val * relative_lb
                     ub = nominal_val * relative_ub
