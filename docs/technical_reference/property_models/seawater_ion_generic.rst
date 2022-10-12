@@ -32,12 +32,6 @@ Properties
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
-
-
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable", "Index", "Units"
-
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
 
 
