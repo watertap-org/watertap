@@ -128,7 +128,7 @@ def test_create_differential_sweep_params_others(model):
     )
 
     expected_dict = {
-        "fs.a": GeomSample(m.fs.input["a"], 0.099, 0.101, 1),
+        "fs.a": GeomSample(m.fs.input["a"], 0.099, 1.1, 1),
         "fs.b": UniformSample(m.fs.input["b"], 0.01, 0.1),
     }
 
