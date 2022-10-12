@@ -47,7 +47,7 @@ Relationships
 
 Scaling
 -------
-This artificial seawater property package includes support for scaling, such as providing default or calculating scaling factors for all variables.
+This artificial seawater property package includes support for scaling, such as default or user-supplied scaling factors for all variables.
 
 The default scaling factors are as follows:
 
