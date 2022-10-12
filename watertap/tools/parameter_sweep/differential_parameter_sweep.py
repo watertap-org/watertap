@@ -72,7 +72,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         diff_sweep_param = {}
         ctr = 0
-        for param, specs in differential_sweep_specs.items():
+        for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
             nominal_val = local_values[ctr]
             pyomo_object = specs["pyomo_object"]
             if specs["diff_sample_type"] == NormalSample:
