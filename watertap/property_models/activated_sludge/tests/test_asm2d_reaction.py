@@ -12,13 +12,17 @@
 #################################################################################
 """
 Tests for ASM2d reaction package.
-Authors: Andrew Lee
+Authors: Andrew Lee, Alejandro Garciadiego
 
-Reference:
+References:
 
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
 Van Loosdrecht, M.C.M., "Activated Sludge Model No.2D, ASM2D", 1999,
 Wat. Sci. Tech. Vol. 39, No. 1, pp. 165-182
+
+[2] Flores-Alsina X., Gernaey K.V. and Jeppsson, U. "Benchmarking biological
+nutrient removal in wastewater treatment plants: influence of mathematical model
+assumptions", 2012, Wat. Sci. Tech., Vol. 65 No. 8, pp. 1496-1505
 """
 import pytest
 
@@ -605,4 +609,304 @@ class TestAnoxic:
         )
         assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
             5.0916e-3, rel=1e-4
+        )
+
+
+class TestAerobic15C:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM2dParameterBlock()
+        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
+        m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
+        m.fs.rxn_props.q_fe.fix(2.25 * 1 / units.day)
+        m.fs.rxn_props.b_H.fix(0.3 * 1 / units.day)
+        m.fs.rxn_props.q_PHA.fix(2.5 * 1 / units.day)
+        m.fs.rxn_props.q_PP.fix(1.25 * 1 / units.day)
+        m.fs.rxn_props.mu_PAO.fix(0.88 * 1 / units.day)
+        m.fs.rxn_props.b_PAO.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.b_PP.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.b_PHA.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.mu_AUT.fix(0.675 * 1 / units.day)
+        m.fs.rxn_props.b_AUT.fix(0.1 * 1 / units.day)
+
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+
+        iscale.calculate_scaling_factors(m.fs)
+
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
+
+        # Feed conditions based on manual mass balance of inlet and recycle streams
+        m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(298.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O2"].fix(7.9707 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(29.0603 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(8.0209 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NO3"].fix(6.6395 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_PO4"].fix(7.8953 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(0.4748 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(0.0336 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1695.7695 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(68.2975 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(1855.5067 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PAO"].fix(214.5319 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(63.5316 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(2.7381 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+        # No data on TSS from EXPOsan at this point
+        # However, TSS is needed for this reaction
+        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        # Alkalinity was given in mg/L based on C
+        m.fs.R1.inlet.alkalinity[0].fix(4.6663 * units.mmol / units.liter)
+
+        m.fs.R1.volume.fix(1000 * units.m**3)
+
+        return m
+
+    @pytest.mark.component
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+
+        solver = get_solver()
+        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
+        results = solver.solve(model, tee=True)
+
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        # EXPOsan calculations appear to be slightly off from this implementation
+        # It is supected that this is due to an error in the EXPOsan stoichiometric
+        # coefficient for alkalinity
+        assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.06747, rel=1e-3)
+
+        assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
+            4.6374e-5, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
+            4.555e-4, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
+            30e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
+            29.748e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
+            6.8070e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
+            7.273e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O2"]) == pytest.approx(
+            1.210e-4, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
+            7.4478e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
+            118.547e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.8554, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            1.6964, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
+            214.821e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
+            1.668e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
+            64.001e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            64.513e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
+            3.524, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
+            4.5433e-3, rel=1e-4
+        )
+
+
+class TestAnoxicPHA:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.props = ASM2dParameterBlock()
+        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
+
+        m.fs.rxn_props.K_H.fix(2.5 * 1 / units.day)
+        m.fs.rxn_props.mu_H.fix(4.5 * 1 / units.day)
+        m.fs.rxn_props.q_fe.fix(2.25 * 1 / units.day)
+        m.fs.rxn_props.b_H.fix(0.3 * 1 / units.day)
+        m.fs.rxn_props.q_PHA.fix(2.5 * 1 / units.day)
+        m.fs.rxn_props.q_PP.fix(1.25 * 1 / units.day)
+        m.fs.rxn_props.mu_PAO.fix(0.88 * 1 / units.day)
+        m.fs.rxn_props.b_PAO.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.b_PP.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.b_PHA.fix(0.15 * 1 / units.day)
+        m.fs.rxn_props.mu_AUT.fix(0.675 * 1 / units.day)
+        m.fs.rxn_props.b_AUT.fix(0.1 * 1 / units.day)
+
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+
+        iscale.calculate_scaling_factors(m.fs)
+
+        # NOTE: Concentrations of exactly 0 result in singularities, use EPS instead
+        EPS = 1e-8
+
+        # Feed conditions based on manual mass balance of inlet and recycle streams
+        m.fs.R1.inlet.flow_vol.fix(36892 * units.m**3 / units.day)
+        m.fs.R1.inlet.temperature.fix(298.15 * units.K)
+        m.fs.R1.inlet.pressure.fix(1 * units.atm)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_O2"].fix(0.0041 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_N2"].fix(20.2931 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NH4"].fix(21.4830 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_NO3"].fix(0.2331 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_PO4"].fix(10.3835 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_F"].fix(2.9275 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_A"].fix(4.9273 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(30 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(1686.7928 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_S"].fix(141.1854 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_H"].fix(1846.1747 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PAO"].fix(210.1226 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PP"].fix(60.6935 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_PHA"].fix(6.4832 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(115.4611 * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
+        m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
+        # No data on TSS from EXPOsan at this point
+        # However, TSS is needed for this reaction
+        m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
+
+        # Alkalinity was given in mg/L based on C
+        m.fs.R1.inlet.alkalinity[0].fix(5.980 * units.mmol / units.liter)
+
+        m.fs.R1.volume.fix(1000 * units.m**3)
+
+        return m
+
+    @pytest.mark.component
+    def test_dof(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        model.fs.R1.initialize(optarg={"bound_push": 1e-8, "mu_init": 1e-8})
+
+        solver = get_solver()
+        solver.options = {"bound_push": 1e-8, "mu_init": 1e-8}
+        results = solver.solve(model, tee=True)
+
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        # EXPOsan calculations appear to be slightly off from this implementation
+        # It is supected that this is due to an error in the EXPOsan stoichiometric
+        # coefficient for alkalinity
+        assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.4266, rel=1e-3)
+
+        assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
+            298.15, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_A"]) == pytest.approx(
+            15.592e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_F"]) == pytest.approx(
+            1.0699e-3, rel=1e-2
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_I"]) == pytest.approx(
+            30e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_N2"]) == pytest.approx(
+            20.524e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
+            22.821e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_NO3"]) == pytest.approx(
+            4.3e-5, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_O2"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_PO4"]) == pytest.approx(
+            15.23e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_AUT"]) == pytest.approx(
+            115.149e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.8323, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
+            1.6883, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeOH"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_MeP"]) == pytest.approx(
+            0, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PAO"]) == pytest.approx(
+            209.312e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PHA"]) == pytest.approx(
+            17.074e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_PP"]) == pytest.approx(
+            56.310e-3, abs=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_S"]) == pytest.approx(
+            134.494e-3, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
+            3.500, rel=1e-4
+        )
+        assert value(model.fs.R1.outlet.alkalinity[0]) == pytest.approx(
+            6.188e-3, rel=1e-4
         )

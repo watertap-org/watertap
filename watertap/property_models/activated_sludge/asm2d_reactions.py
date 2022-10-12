@@ -237,7 +237,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
 
         # Kinetic Parameters
         self.K_H = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Hydrolysis rate constant",
@@ -274,13 +274,13 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_H = pyo.Var(
-            initialize=6,
+            initialize=6.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate on substrate, [kg X_S/kg X_H/day]",
         )
         self.q_fe = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum rate for fermentation, [kg S_F/kg X_H/day]",
@@ -329,19 +329,19 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.q_PHA = pyo.Var(
-            initialize=3,
+            initialize=3.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PHA (base Xpp), [kg PHA/kg PAO/day]",
         )
         self.q_PP = pyo.Var(
-            initialize=1.5,
+            initialize=1.50,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Rate constant for storage of X_PP, [kg PP/kg PAO/day]",
         )
         self.mu_PAO = pyo.Var(
-            initialize=1,
+            initialize=1.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of PAO",
@@ -396,7 +396,7 @@ class ASM2dReactionParameterData(ReactionParameterBlock):
         )
 
         self.mu_AUT = pyo.Var(
-            initialize=1,
+            initialize=1.0,
             units=1 / pyo.units.day,
             domain=pyo.NonNegativeReals,
             doc="Maximum growth rate of X_AUT",
@@ -1467,15 +1467,9 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R18":
-                    # R18: Aerobic growth of X_AUT
-                    return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.mu_AUT * b.conc_mass_comp_ref["X_AUT"],
-                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
-                    )
-                elif r == "R19":
                     # R19: Lysis of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
-                        b.params.b_AUT
+                        b.params.mu_AUT
                         * (
                             b.conc_mass_comp_ref["S_O2"]
                             / (b.params.K_O2 + b.conc_mass_comp_ref["S_O2"])
@@ -1488,7 +1482,17 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                             b.conc_mass_comp_ref["S_PO4"]
                             / (b.params.K_P + b.conc_mass_comp_ref["S_PO4"])
                         )
+                        * (
+                            b.state_ref.alkalinity
+                            / (b.params.K_ALK + b.state_ref.alkalinity)
+                        )
                         * b.conc_mass_comp_ref["X_AUT"],
+                        to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
+                    )
+                elif r == "R19":
+                    # R18: Aerobic growth of X_AUT
+                    return b.reaction_rate[r] == pyo.units.convert(
+                        b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R20":
