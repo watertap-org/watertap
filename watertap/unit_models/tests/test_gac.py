@@ -60,18 +60,16 @@ class TestGACSimplified:
     @pytest.fixture(scope="class")
     def gac_frame_simplified(self):
         ms = ConcreteModel()
-        ms.fs = FlowsheetBlock(default={"dynamic": False})
+        ms.fs = FlowsheetBlock(dynamic=False)
 
         ms.fs.properties = DSPMDEParameterBlock(
-            default={"solute_list": ["DCE"], "mw_data": {"H2O": 18e-3, "DCE": 98.96e-3}}
+            solute_list=["DCE"], mw_data={"H2O": 0.018, "DCE": 0.09896}
         )
 
         ms.fs.unit = GAC(
-            default={
-                "property_package": ms.fs.properties,
-                "film_transfer_coefficient_type": "fixed",
-                "surface_diffusion_coefficient_type": "fixed",
-            }
+            property_package=ms.fs.properties,
+            film_transfer_coefficient_type="fixed",
+            surface_diffusion_coefficient_type="fixed",
         )
 
         # feed specifications
@@ -220,18 +218,16 @@ class TestGACRobust:
     @pytest.fixture(scope="class")
     def gac_frame_robust(self):
         mr = ConcreteModel()
-        mr.fs = FlowsheetBlock(default={"dynamic": False})
+        mr.fs = FlowsheetBlock(dynamic=False)
 
         mr.fs.properties = DSPMDEParameterBlock(
-            default={"solute_list": ["TCE"], "mw_data": {"H2O": 18e-3, "TCE": 131.4e-3}}
+            solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
         )
 
         mr.fs.unit = GAC(
-            default={
-                "property_package": mr.fs.properties,
-                "film_transfer_coefficient_type": "calculated",
-                "surface_diffusion_coefficient_type": "calculated",
-            }
+            property_package=mr.fs.properties,
+            film_transfer_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="calculated",
         )
 
         # feed specifications
@@ -395,9 +391,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
         results = solver.solve(mr)
@@ -442,9 +436,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
 
@@ -483,9 +475,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
         # not necessarily an optimum solution because poor scaling but just checking the conditional
@@ -505,31 +495,27 @@ class TestGACMulti:
     @pytest.fixture(scope="class")
     def gac_frame_multi(self):
         mm = ConcreteModel()
-        mm.fs = FlowsheetBlock(default={"dynamic": False})
+        mm.fs = FlowsheetBlock(dynamic=False)
 
         # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
         mm.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": ["TCE", "BGSOL", "BGCAT", "BGAN"],
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "TCE": 131.4e-3,
-                    "BGSOL": 0.1,
-                    "BGCAT": 0.1,
-                    "BGAN": 0.1,
-                },
-                "charge": {"TCE": 0, "BGSOL": 0, "BGCAT": 1, "BGAN": -2},
-            }
+            solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+            mw_data={
+                "H2O": 0.018,
+                "TCE": 0.1314,
+                "BGSOL": 0.1,
+                "BGCAT": 0.1,
+                "BGAN": 0.1,
+            },
+            charge={"BGCAT": 1, "BGAN": -2},
         )
 
         # testing target_species arg
         mm.fs.unit = GAC(
-            default={
-                "property_package": mm.fs.properties,
-                "film_transfer_coefficient_type": "calculated",
-                "surface_diffusion_coefficient_type": "calculated",
-                "target_species": {"TCE"},
-            }
+            property_package=mm.fs.properties,
+            film_transfer_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="calculated",
+            target_species={"TCE"},
         )
 
         # feed specifications

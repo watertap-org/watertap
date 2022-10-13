@@ -67,107 +67,53 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 def build_flowsheet():
     m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = ASM1ParameterBlock()
-    m.fs.rxn_props = ASM1ReactionParameterBlock(
-        default={"property_package": m.fs.props}
-    )
+    m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
     # Feed water stream
-    m.fs.FeedWater = Feed(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.FeedWater = Feed(property_package=m.fs.props)
     # Mixer for feed water and recycled sludge
-    m.fs.MX1 = Mixer(
-        default={
-            "property_package": m.fs.props,
-            "inlet_list": ["feed_water", "recycle"],
-        }
-    )
+    m.fs.MX1 = Mixer(property_package=m.fs.props, inlet_list=["feed_water", "recycle"])
     # First reactor (anoxic) - standard CSTR
-    m.fs.R1 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Second reactor (anoxic) - standard CSTR
-    m.fs.R2 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
     # Third reactor (aerobic) - CSTR with injection
     m.fs.R3 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fourth reactor (aerobic) - CSTR with injection
     m.fs.R4 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     # Fifth reactor (aerobic) - CSTR with injection
     m.fs.R5 = CSTR_Injection(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
+        property_package=m.fs.props, reaction_package=m.fs.rxn_props
     )
     m.fs.SP5 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["underflow", "overflow"],
-        }
+        property_package=m.fs.props, outlet_list=["underflow", "overflow"]
     )
     # Clarifier
     # TODO: Replace with more detailed model when available
     m.fs.CL1 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["underflow", "effluent"],
-            "split_basis": SplittingType.componentFlow,
-        }
+        property_package=m.fs.props,
+        outlet_list=["underflow", "effluent"],
+        split_basis=SplittingType.componentFlow,
     )
     # Sludge purge splitter
     m.fs.SP6 = Separator(
-        default={
-            "property_package": m.fs.props,
-            "outlet_list": ["recycle", "waste"],
-            "split_basis": SplittingType.totalFlow,
-        }
+        property_package=m.fs.props,
+        outlet_list=["recycle", "waste"],
+        split_basis=SplittingType.totalFlow,
     )
     # Mixing sludge recycle and R5 underflow
-    m.fs.MX6 = Mixer(
-        default={
-            "property_package": m.fs.props,
-            "inlet_list": ["clarifier", "reactor"],
-        }
-    )
+    m.fs.MX6 = Mixer(property_package=m.fs.props, inlet_list=["clarifier", "reactor"])
     # Product Blocks
-    m.fs.Treated = Product(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
-    m.fs.Sludge = Product(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.Treated = Product(property_package=m.fs.props)
+    m.fs.Sludge = Product(property_package=m.fs.props)
     # Recycle pressure changer - use a simple isothermal unit for now
-    m.fs.P1 = PressureChanger(
-        default={
-            "property_package": m.fs.props,
-        }
-    )
+    m.fs.P1 = PressureChanger(property_package=m.fs.props)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.FeedWater.outlet, destination=m.fs.MX1.feed_water)

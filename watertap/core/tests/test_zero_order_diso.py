@@ -55,11 +55,11 @@ class TestDISO:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
-        m.fs.unit = DerivedDISO(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedDISO(property_package=m.fs.water_props)
 
         m.fs.unit.inlet1.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet1.flow_mass_comp[0, "A"].fix(10)

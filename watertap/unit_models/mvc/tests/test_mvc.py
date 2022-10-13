@@ -12,6 +12,7 @@
 ###############################################################################
 import sys
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     ConcreteModel,
@@ -31,6 +32,7 @@ from idaes.core.util.initialization import propagate_state
 # Import components
 from watertap.unit_models.mvc.components import Evaporator
 from watertap.unit_models.mvc.components import Compressor
+from watertap.unit_models.mvc.components import Condenser
 
 # Import property packages
 import watertap.property_models.seawater_prop_pack as props_sw
@@ -44,22 +46,22 @@ def build(m):
 
     # Evaporator
     m.fs.evaporator = Evaporator(
-        default={
-            "property_package_feed": m.fs.properties_feed,
-            "property_package_vapor": m.fs.properties_vapor,
-        }
+        property_package_feed=m.fs.properties_feed,
+        property_package_vapor=m.fs.properties_vapor,
     )
     # Compressor
-    m.fs.compressor = Compressor(default={"property_package": m.fs.properties_vapor})
+    m.fs.compressor = Compressor(property_package=m.fs.properties_vapor)
+
+    # Condenser
+    m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
 
     # Connections
     m.fs.s01 = Arc(
         source=m.fs.evaporator.outlet_vapor, destination=m.fs.compressor.inlet
     )
-    m.fs.s02 = Arc(
-        source=m.fs.compressor.outlet, destination=m.fs.evaporator.inlet_condenser
-    )
+    m.fs.s02 = Arc(source=m.fs.compressor.outlet, destination=m.fs.condenser.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
+    m.fs.evaporator.connect_to_condenser(m.fs.condenser)
 
 
 def scale(m):
@@ -75,57 +77,66 @@ def scale(m):
     m.fs.properties_vapor.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
     )
+
     # Evaporator
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_out, 1e-1)
     iscale.set_scaling_factor(m.fs.evaporator.lmtd, 1e-1)
-    # iscale.set_scaling_factor(m.fs.evaporator.heat_transfer, 1e-6)
+
     # Compressor
     iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
+
+    # Condenser
+    iscale.set_scaling_factor(m.fs.condenser.control_volume.heat, 1e-6)
 
     iscale.calculate_scaling_factors(m)
 
 
 def specify(m):
-    # state variables
     # Feed inlet
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
+    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
     m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.05)
     m.fs.evaporator.inlet_feed.temperature[0].fix(273.15 + 50.52)  # K
     m.fs.evaporator.inlet_feed.pressure[0].fix(1e5)  # Pa
 
-    m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
+    # Evaporator
+    # m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
+    m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
-    m.fs.evaporator.area.fix(100)  # m^2
+    m.fs.evaporator.area.fix(400)  # m^2
 
-    m.fs.compressor.pressure_ratio.fix(2)
+    # Compressor
+    m.fs.compressor.pressure_ratio = 2
+    m.fs.compressor.control_volume.work.fix(5.8521e05)
     m.fs.compressor.efficiency.fix(0.8)
 
 
-def initialize(m):
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
-    m.fs.evaporator.inlet_condenser.temperature[0].fix(400)  # K
-    m.fs.evaporator.inlet_condenser.pressure[0].fix(0.5e5)  # Pa
+def initialize(m, solver=None):
+    if solver is None:
+        solver = get_solver()
+    optarg = solver.options
 
-    m.fs.evaporator.initialize(outlvl=idaeslog.INFO_HIGH)
+    # initialize evaporator
+    m.fs.evaporator.initialize_build(
+        delta_temperature_in=30, delta_temperature_out=5, outlvl=idaeslog.INFO_HIGH
+    )
 
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Vap", "H2O"].unfix()
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Liq", "H2O"].unfix()
-    m.fs.evaporator.inlet_condenser.temperature[0].unfix()  # K
-    m.fs.evaporator.inlet_condenser.pressure[0].unfix()  # Pa
-
+    # initialize compressor
     propagate_state(m.fs.s01)
     m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
+
+    # initialize condenser
+    propagate_state(m.fs.s02)
+    m.fs.condenser.initialize_build(heat=-m.fs.evaporator.heat_transfer.value)
 
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_mvc():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     build(m)
     assert_units_consistent(m)
@@ -133,34 +144,32 @@ def test_mvc():
     specify(m)
     assert degrees_of_freedom(m) == 0
 
-    initialize(m)
-
     solver = get_solver()
+    initialize(m, solver=solver)
+
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
     m.fs.compressor.report()
-    m.fs.evaporator.condenser.report()
+    m.fs.condenser.report()
     m.fs.evaporator.display()
-    brine_blk = m.fs.evaporator.feed_side.properties_brine[0]
+    brine_blk = m.fs.evaporator.properties_brine[0]
     # evaporator values
-    assert brine_blk.pressure.value == pytest.approx(2.2738e4, rel=1e-3)
-    assert m.fs.evaporator.lmtd.value == pytest.approx(12.30, rel=1e-3)
-    assert m.fs.evaporator.feed_side.heat_transfer.value == pytest.approx(
-        1.231e6, rel=1e-3
-    )
+    assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(30.44, rel=1e-3)
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.2176e7, rel=1e-3)
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
-        5.843e4, rel=1e-3
+        5.8521e5, rel=1e-3
     )
-    assert compressed_blk.pressure.value == pytest.approx(4.548e4, rel=1e-3)
-    assert compressed_blk.temperature.value == pytest.approx(412.98, rel=1e-3)
+    assert compressed_blk.pressure.value == pytest.approx(3.9720e4, rel=1e-3)
+    assert compressed_blk.temperature.value == pytest.approx(407.70, rel=1e-3)
 
     # condenser values
-    condensed_blk = m.fs.evaporator.condenser.control_volume.properties_out[0]
-    assert m.fs.evaporator.condenser.control_volume.heat[0].value == pytest.approx(
-        -1.231e6, rel=1e-3
+    condensed_blk = m.fs.condenser.control_volume.properties_out[0]
+    assert m.fs.condenser.control_volume.heat[0].value == pytest.approx(
+        -1.2176e7, rel=1e-3
     )
-    assert condensed_blk.temperature.value == pytest.approx(337.95, rel=1e-3)
+    assert condensed_blk.temperature.value == pytest.approx(342.20, rel=1e-3)

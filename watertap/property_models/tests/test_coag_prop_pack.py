@@ -52,7 +52,7 @@ class TestCoagulationPropPack:
     @pytest.fixture(scope="class")
     def coag_obj(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
 
         return model
@@ -90,7 +90,7 @@ class TestCoagulationPropPack:
         model = coag_obj
 
         # Create the state block and pull in the default metadata
-        model.fs.stream = model.fs.properties.build_state_block([0], default={})
+        model.fs.stream = model.fs.properties.build_state_block([0])
         metadata = model.fs.properties.get_metadata().properties
 
         # check that properties are not built if not demanded
@@ -284,7 +284,7 @@ class TestCoagulationPropPackFailures:
     @pytest.fixture(scope="class")
     def coag_obj_fail(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
 
         return model
@@ -293,7 +293,7 @@ class TestCoagulationPropPackFailures:
     def test_default_scaling(self, coag_obj_fail):
         model = coag_obj_fail
 
-        model.fs.stream = model.fs.properties.build_state_block([0], default={})
+        model.fs.stream = model.fs.properties.build_state_block([0])
 
         # call scaling without setting defaults
         iscale.calculate_scaling_factors(model.fs)

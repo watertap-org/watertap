@@ -56,5 +56,5 @@ def test_suboxicASM():
         m.fs.suboxicASM.properties_treated[0].flow_mass_comp["phosphorus"]
     ) == pytest.approx(0.0003556, rel=1e-3)
 
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.27737, rel=1e-3)  # in $/m**3
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.660649, rel=1e-3)  # in $/m**3
     assert value(m.fs.costing.electricity_intensity) == pytest.approx(0.5003, rel=1e-3)

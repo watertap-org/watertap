@@ -176,12 +176,10 @@ class CompressorData(UnitModelBlockData):
 
         # Build control volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
@@ -206,24 +204,12 @@ class CompressorData(UnitModelBlockData):
         self.properties_isentropic_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of isentropic outlet",
-            default=tmp_dict,
+            **tmp_dict
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
         self.add_port(name="inlet", block=self.control_volume.properties_in)
         self.add_port(name="outlet", block=self.control_volume.properties_out)
-
-        # References for control volume
-        # pressure change
-        # if (self.config.has_pressure_change is True and
-        #         self.config.momentum_balance_type != 'none'):
-        #     self.deltaP = Reference(self.control_volume.deltaP)
-
-        # Add constraints
-        # @self.Constraint(self.config.property_package.phase_list, doc="Mass balance for inlet/outlet")
-        # def eq_mass_balance(b, p):
-        #     return (b.control_volume.properties_in[0].flow_mass_phase_comp[p, 'H2O']
-        #             == b.control_volume.properties_out[0].flow_mass_phase_comp[p, 'H2O'])
 
         @self.Constraint(
             self.config.property_package.phase_list,
@@ -272,7 +258,7 @@ class CompressorData(UnitModelBlockData):
                 - b.control_volume.properties_in[0].enth_mass_phase["Vap"]
             )
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """

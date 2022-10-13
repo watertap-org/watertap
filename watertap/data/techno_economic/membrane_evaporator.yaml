@@ -1,0 +1,25 @@
+default:
+  water_flux:
+    value: 0.001
+    units: m/hr
+  energy_electric_flow_vol_inlet:
+    value: 0.2 # Electricity usage data is unavailable; this value is arbitrary
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 0.975
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    ammonium_as_nitrogen:
+      value: 0.8
+      units: dimensionless
+    acetic_acid:
+      value: 0.8
+      units: dimensionless
+  capital_cost:
+    cost_factor: TIC
+    membrane_cost:
+      value: 50
+      units: USD_2020/m^2

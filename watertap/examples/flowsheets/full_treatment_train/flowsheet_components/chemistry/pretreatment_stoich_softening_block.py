@@ -486,22 +486,18 @@ solver = get_solver()
 
 def build_stoich_softening_prop(model):
     model.fs.stoich_softening_thermo_params = GenericParameterBlock(
-        default=stoich_softening_thermo_config
+        **stoich_softening_thermo_config
     )
     model.fs.stoich_softening_rxn_params = GenericReactionParameterBlock(
-        default={
-            "property_package": model.fs.stoich_softening_thermo_params,
-            **stoich_softening_reaction_config,
-        }
+        property_package=model.fs.stoich_softening_thermo_params,
+        **stoich_softening_reaction_config
     )
 
 
 def build_stoich_softening_mixer_unit(model):
     model.fs.stoich_softening_mixer_unit = Mixer(
-        default={
-            "property_package": model.fs.stoich_softening_thermo_params,
-            "inlet_list": ["inlet_stream", "lime_stream"],
-        }
+        property_package=model.fs.stoich_softening_thermo_params,
+        inlet_list=["inlet_stream", "lime_stream"],
     )
 
     # add new constraint for dosing rate
@@ -534,13 +530,11 @@ def build_stoich_softening_reactor_unit(
     model, frac_excess_lime=0.01, frac_used_for_Ca_removal=0.99
 ):
     model.fs.stoich_softening_reactor_unit = StoichiometricReactor(
-        default={
-            "property_package": model.fs.stoich_softening_thermo_params,
-            "reaction_package": model.fs.stoich_softening_rxn_params,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-        }
+        property_package=model.fs.stoich_softening_thermo_params,
+        reaction_package=model.fs.stoich_softening_rxn_params,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
     )
     set_stoich_softening_reactor_extents(
         model, frac_excess_lime, frac_used_for_Ca_removal
@@ -549,12 +543,10 @@ def build_stoich_softening_reactor_unit(
 
 def build_stoich_softening_separator_unit(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit = Separator(
-        default={
-            "property_package": model.fs.stoich_softening_thermo_params,
-            "outlet_list": ["waste_stream", "outlet_stream"],
-            "split_basis": SplittingType.componentFlow,
-            "energy_split_basis": EnergySplittingType.equal_temperature,
-        }
+        property_package=model.fs.stoich_softening_thermo_params,
+        outlet_list=["waste_stream", "outlet_stream"],
+        split_basis=SplittingType.componentFlow,
+        energy_split_basis=EnergySplittingType.equal_temperature,
     )
 
     total_molar_density = (
@@ -1458,7 +1450,7 @@ def build_stoich_softening_block(
 
 def run_stoich_softening_mixer_example():
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add properties to model
     build_stoich_softening_prop(model)
@@ -1493,7 +1485,7 @@ def run_stoich_softening_mixer_example():
 
 def run_stoich_softening_reactor_example():
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add properties to model
     build_stoich_softening_prop(model)
@@ -1538,7 +1530,7 @@ def run_stoich_softening_reactor_example():
 
 def run_stoich_softening_separator_example():
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add properties to model
     build_stoich_softening_prop(model)
@@ -1571,7 +1563,7 @@ def run_stoich_softening_separator_example():
 
 def run_softening_block_example(include_feed=False, fix_hardness=False):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     build_stoich_softening_block(model, include_feed=include_feed, expand_arcs=True)
 

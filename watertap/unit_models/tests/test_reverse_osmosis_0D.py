@@ -63,9 +63,9 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+    m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 12
 
@@ -89,10 +89,10 @@ def test_config():
 @pytest.mark.unit
 def test_option_has_pressure_change():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(
-        default={"property_package": m.fs.properties, "has_pressure_change": True}
+        property_package=m.fs.properties, has_pressure_change=True
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
@@ -102,15 +102,13 @@ def test_option_has_pressure_change():
 @pytest.mark.unit
 def test_option_concentration_polarization_type_fixed():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.fixed,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.fixed,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
     )
 
     assert (
@@ -123,15 +121,13 @@ def test_option_concentration_polarization_type_fixed():
 @pytest.mark.unit
 def test_option_concentration_polarization_type_calculated_kf_fixed():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.fixed,
     )
 
     assert (
@@ -145,15 +141,13 @@ def test_option_concentration_polarization_type_calculated_kf_fixed():
 @pytest.mark.unit
 def test_option_concentration_polarization_type_calculated_kf_calculated():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
     )
 
     assert (
@@ -177,16 +171,14 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
 @pytest.mark.unit
 def test_option_pressure_change_calculated():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.none,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-            "pressure_change_type": PressureChangeType.calculated,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
+        pressure_change_type=PressureChangeType.calculated,
     )
 
     assert (
@@ -209,17 +201,15 @@ class TestReverseOsmosis:
     @pytest.fixture(scope="class")
     def RO_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.fixed,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.fixed,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
         )
 
         # fully specify system
@@ -392,17 +382,15 @@ class TestReverseOsmosis:
         mass transfer coefficients at the channel inlet and outlet.
         """
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.fixed,
         )
 
         # fully specify system
@@ -512,17 +500,15 @@ class TestReverseOsmosis:
         option enabled.
         """
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
         )
 
         # fully specify system
@@ -631,18 +617,16 @@ class TestReverseOsmosis:
     def test_Pdrop_calculation(self):
         """Testing 0D-RO with PressureChangeType.calculated option."""
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "pressure_change_type": PressureChangeType.calculated,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
         )
 
         # fully specify system
@@ -756,18 +740,16 @@ class TestReverseOsmosis:
     def test_Pdrop_fixed_per_unit_length(self):
         """Testing 0D-RO with PressureChangeType.fixed_per_unit_length option."""
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "pressure_change_type": PressureChangeType.fixed_per_unit_length,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.fixed_per_unit_length,
         )
 
         # fully specify system

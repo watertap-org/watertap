@@ -24,10 +24,10 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -74,46 +74,31 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-                "carbon_dioxide",
-            ]
-        }
+        solute_list=[
+            "organic_solid",
+            "organic_liquid",
+            "inorganic_solid",
+            "carbon_dioxide",
+        ]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.ATHTL = ATHTLZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.ATHTL = ATHTLZO(property_package=m.fs.prop, database=m.db)
     m.fs.salt_precipitation = SaltPrecipitationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
-    m.fs.HTG = HTGZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.HTG = HTGZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
     # CO2 from ATHTL to sulfer conversion unit, final product should be solid sulfer, H2 and CO2
-    m.fs.product_CO2 = Product(default={"property_package": m.fs.prop})
+    m.fs.product_CO2 = Product(property_package=m.fs.prop)
     # sulfates, nitrates & phosphates (organics & inorganics) from salt precipitation unit
-    m.fs.product_salts = Product(default={"property_package": m.fs.prop})
+    m.fs.product_salts = Product(property_package=m.fs.prop)
     # CO2 from HTG for renewable natural gas product
-    m.fs.product_natural_gas = Product(default={"property_package": m.fs.prop})
+    m.fs.product_natural_gas = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.ATHTL.inlet)
@@ -186,9 +171,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.ATHTL.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.salt_precipitation.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.HTG.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -406,11 +391,10 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.ATHTL.costing.capital_cost
-                + m.fs.salt_precipitation.costing.capital_cost
-                + m.fs.HTG.costing.capital_cost
+                m.fs.ATHTL.costing.direct_capital_cost
+                + m.fs.salt_precipitation.costing.direct_capital_cost
+                + m.fs.HTG.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

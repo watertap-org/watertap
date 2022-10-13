@@ -211,7 +211,7 @@ def optimize(m, check_termination=True):
 
 def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, **desal_kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

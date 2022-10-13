@@ -87,9 +87,7 @@ def build_prop(m, base="TDS"):
         )
 
     elif base == "eNRTL":
-        m.fs.prop_eNRTL = GenericParameterBlock(
-            default=entrl_config_FpcTP.configuration
-        )
+        m.fs.prop_eNRTL = GenericParameterBlock(**entrl_config_FpcTP.configuration)
 
         # default scaling in config file
 
@@ -167,14 +165,14 @@ def specify_feed(sb, base="TDS"):
 def solve_specify_feed(base):
     # build state block
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build_prop(m, base=base)
     if base == "TDS":
-        m.fs.stream = m.fs.prop_TDS.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_TDS.build_state_block([0])
     elif base == "ion":
-        m.fs.stream = m.fs.prop_ion.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_ion.build_state_block([0])
     elif base == "salt":
-        m.fs.stream = m.fs.prop_salt.build_state_block([0], default={})
+        m.fs.stream = m.fs.prop_salt.build_state_block([0])
     specify_feed(m.fs.stream[0], base=base)
 
     m.fs.stream[

@@ -30,7 +30,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 # Set up logger
@@ -40,10 +40,10 @@ _log = idaeslog.getLogger(__name__)
 def build_sido_reactive(self):
     """
     Helper method for constructing material balances for zero-order type models
-    with one inlet and two outlets including chemcial reactions.
+    with one inlet and two outlets including chemical reactions.
 
     Three StateBlocks are added with corresponding Ports:
-        * properties_inlet
+        * properties_in
         * properties_treated
         * properties_byproduct
 
@@ -72,21 +72,19 @@ def build_sido_reactive(self):
     tmp_dict["defined_state"] = True
 
     self.properties_in = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+        self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
     )
 
     tmp_dict_2 = dict(**tmp_dict)
     tmp_dict_2["defined_state"] = False
 
     self.properties_treated = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties of treated water",
-        default=tmp_dict_2,
+        self.flowsheet().time, doc="Material properties of treated water", **tmp_dict_2
     )
     self.properties_byproduct = self.config.property_package.build_state_block(
         self.flowsheet().time,
         doc="Material properties of byproduct stream",
-        default=tmp_dict_2,
+        **tmp_dict_2,
     )
 
     # Create Ports
@@ -162,7 +160,7 @@ def build_sido_reactive(self):
     @self.Constraint(
         self.flowsheet().time,
         self.reaction_set,
-        doc="Calcuation of reaction extent from conversion",
+        doc="Calculation of reaction extent from conversion",
     )
     def reaction_extent_equation(b, t, r):
         # Get key reactant from database

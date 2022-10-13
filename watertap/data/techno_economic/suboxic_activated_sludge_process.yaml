@@ -27,7 +27,7 @@ default:
       constituent_longform: Phosphorus
   capital_cost: # TODO: add baffle walls and membrane diffusers costs
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TIC
     reference_state:
       value: 1280
       units: m^3/hr
