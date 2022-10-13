@@ -89,7 +89,7 @@ def test_cost_crystallizer_configuration_error():
 @pytest.mark.component
 def test_lazy_flow_costing():
     m = pyo.ConcreteModel()
-    m.fs = idc.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idc.FlowsheetBlock(dynamic=False)
 
     m.fs.costing = WaterTAPCosting()
     # electricity should not be pre-registered

@@ -278,12 +278,10 @@ class NanofiltrationData(UnitModelBlockData):
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
@@ -311,7 +309,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.properties_permeate = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of permeate",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add Ports

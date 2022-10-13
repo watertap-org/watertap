@@ -3,6 +3,7 @@ default:
     value: 0.0
     units: kWh/m^3
   capital_cost:
+    cost_method: cost_power_law_flow
     basis: flow_vol
     cost_factor: None
     reference_state:
@@ -28,3 +29,37 @@ default:
       value: 0.990826
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
+
+HRCS_clarifier:
+  energy_electric_flow_vol_inlet:
+    value: 0.0
+    units: kWh/m^3
+  capital_cost:
+    cost_method: cost_HRCS_clarifier
+    basis: flow_vol
+    cost_factor: TIC
+    HRT: # Hydraulic retention time
+      value: 3
+      units: hr
+    sizing_cost:
+      value: 1
+      units: USD_2020/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 0.914
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    cod:
+      value: 0.72
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+  ferric_chloride_dose:
+    value: 21.57 # mg/L sludge treated
+    units: mg/L
+    constituent_longform: Ferric Chloride Dosage

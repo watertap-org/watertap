@@ -50,7 +50,7 @@ def test_build_and_scale_desalination():
                                 continue  # not a supported combination
 
                             m = ConcreteModel()
-                            m.fs = FlowsheetBlock(default={"dynamic": False})
+                            m.fs = FlowsheetBlock(dynamic=False)
                             property_models.build_prop(m, base=kwargs["RO_base"])
 
                             check_build(

@@ -121,10 +121,14 @@ class TestAmo1595Flowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.27056, rel=1e-3)
-        assert value(m.fs.costing.LCOW_with_revenue) == pytest.approx(0.18056, rel=1e-3)
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.2435, rel=1e-3)
-        assert value(m.fs.costing.LCOT_with_revenue) == pytest.approx(0.1625, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.53053616, rel=1e-3)
+        assert value(m.fs.costing.LCOW_with_revenue) == pytest.approx(
+            0.440532469, rel=1e-3
+        )
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.477462970, rel=1e-3)
+        assert value(m.fs.costing.LCOT_with_revenue) == pytest.approx(
+            0.396462967, rel=1e-3
+        )
 
     @pytest.mark.component
     def test_display(self, system_frame):

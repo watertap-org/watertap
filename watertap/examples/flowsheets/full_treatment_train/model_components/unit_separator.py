@@ -44,12 +44,10 @@ def build_SepRO(m, base="TDS"):
     prop = property_models.get_prop(m, base=base)
 
     m.fs.RO = Separator(
-        default={
-            "property_package": prop,
-            "outlet_list": ["retentate", "permeate"],
-            "split_basis": SplittingType.componentFlow,
-            "energy_split_basis": EnergySplittingType.equal_temperature,
-        }
+        property_package=prop,
+        outlet_list=["retentate", "permeate"],
+        split_basis=SplittingType.componentFlow,
+        energy_split_basis=EnergySplittingType.equal_temperature,
     )
 
     # specify
@@ -78,12 +76,10 @@ def build_SepNF(m, base="ion"):
     prop = property_models.get_prop(m, base=base)
 
     m.fs.NF = Separator(
-        default={
-            "property_package": prop,
-            "outlet_list": ["retentate", "permeate"],
-            "split_basis": SplittingType.componentFlow,
-            "energy_split_basis": EnergySplittingType.equal_temperature,
-        }
+        property_package=prop,
+        outlet_list=["retentate", "permeate"],
+        split_basis=SplittingType.componentFlow,
+        energy_split_basis=EnergySplittingType.equal_temperature,
     )
 
     # specify
@@ -132,7 +128,7 @@ def build_SepNF(m, base="ion"):
 
 def solve_SepRO(base="TDS"):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base=base)
     build_SepRO(m, base=base)
     property_models.specify_feed(m.fs.RO.mixed_state[0], base=base)
@@ -150,7 +146,7 @@ def solve_SepRO(base="TDS"):
 
 def solve_SepNF(base="ion"):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     property_models.build_prop(m, base=base)
     build_SepNF(m, base=base)
     property_models.specify_feed(m.fs.NF.mixed_state[0], base=base)

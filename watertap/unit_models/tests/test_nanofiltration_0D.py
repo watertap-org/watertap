@@ -54,15 +54,12 @@ class TestNanoFiltration:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = NanoFiltration0D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties, has_pressure_change=True
         )
 
         # fully specify system

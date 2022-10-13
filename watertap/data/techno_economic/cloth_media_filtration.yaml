@@ -1,0 +1,25 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0.2  # Electricity usage data is unavailable; this value is arbitrary
+    units: kWh/m^3
+  recovery_frac_mass_H2O:
+    value: 0.9
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 0.8
+      units: dimensionless
+    cod:
+      value: 0.5
+      units: dimensionless
+    tkn:
+      value: 0.15
+      units: dimensionless
+  capital_cost:
+    cost_factor: TIC
+    sizing_cost:
+      value: 0.1  # Costing data is unavailable; this value is arbitrary
+      units: (USD_2020 * day) / gal

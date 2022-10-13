@@ -222,7 +222,7 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_feed = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of feed inlet",
-            default=tmp_dict,
+            **tmp_dict
         )
 
         # Brine state block
@@ -230,7 +230,7 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_brine = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of brine outlet",
-            default=tmp_dict,
+            **tmp_dict
         )
 
         # Vapor state block
@@ -241,7 +241,7 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_vapor = self.config.property_package_vapor.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of vapor outlet",
-            default=tmp_dict,
+            **tmp_dict
         )
 
         # Add block for condenser constraints

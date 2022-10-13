@@ -38,7 +38,7 @@ default:
           conversion_ratio: 0.0546
   capital_cost:
     basis: flow_mass
-    cost_factor: None
+    cost_factor: TIC
     installation_factor_reactor:
       value: 2.1
       units: dimensionless

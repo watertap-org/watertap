@@ -163,12 +163,12 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.length_domain,
             doc="Material properties of permeate along permeate channel",
-            default=tmp_dict,
+            **tmp_dict,
         )
         self.mixed_permeate = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add Ports

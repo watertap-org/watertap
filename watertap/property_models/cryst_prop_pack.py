@@ -116,17 +116,13 @@ class NaClParameterData(PhysicalParameterBlock):
         self._state_block_class = NaClStateBlock
 
         # Component
-        self.H2O = Solvent(
-            default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]}
-        )
-        self.NaCl = Solute(
-            default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]}
-        )
+        self.H2O = Solvent(valid_phase_types=[PT.liquidPhase, PT.vaporPhase])
+        self.NaCl = Solute(valid_phase_types=[PT.liquidPhase, PT.solidPhase])
 
         # Phases
-        self.Liq = LiquidPhase(default={"component_list": ["H2O", "NaCl"]})
-        self.Vap = VaporPhase(default={"component_list": ["H2O"]})
-        self.Sol = SolidPhase(default={"component_list": ["NaCl"]})
+        self.Liq = LiquidPhase(component_list=["H2O", "NaCl"])
+        self.Vap = VaporPhase(component_list=["H2O"])
+        self.Sol = SolidPhase(component_list=["NaCl"])
 
         """
        References

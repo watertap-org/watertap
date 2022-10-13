@@ -203,12 +203,10 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Build control volume for high pressure side
         self.high_pressure_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.high_pressure_side.add_state_blocks(has_phase_equilibrium=False)
@@ -231,12 +229,10 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Build control volume for low pressure side
         self.low_pressure_side = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.low_pressure_side.add_state_blocks(has_phase_equilibrium=False)

@@ -33,9 +33,9 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import CSTR
+from idaes.models.unit_models import CSTR
 from idaes.core import MaterialFlowBasis
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.property_models.activated_sludge.asm2d_properties import (
@@ -57,9 +57,7 @@ class TestParamBlock(object):
     def model(self):
         model = ConcreteModel()
         model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(
-            default={"property_package": model.pparams}
-        )
+        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
 
         return model
 
@@ -300,15 +298,11 @@ class TestReactionBlock(object):
     def model(self):
         model = ConcreteModel()
         model.pparams = ASM2dParameterBlock()
-        model.rparams = ASM2dReactionParameterBlock(
-            default={"property_package": model.pparams}
-        )
+        model.rparams = ASM2dReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
 
-        model.rxns = model.rparams.build_reaction_block(
-            [1], default={"state_block": model.props}
-        )
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
 
         return model
 
@@ -341,19 +335,12 @@ class TestAerobic:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(
-            default={"property_package": m.fs.props}
-        )
+        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
 
-        m.fs.R1 = CSTR(
-            default={
-                "property_package": m.fs.props,
-                "reaction_package": m.fs.rxn_props,
-            }
-        )
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
         iscale.calculate_scaling_factors(m.fs)
 
@@ -489,19 +476,12 @@ class TestAnoxic:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = ASM2dParameterBlock()
-        m.fs.rxn_props = ASM2dReactionParameterBlock(
-            default={"property_package": m.fs.props}
-        )
+        m.fs.rxn_props = ASM2dReactionParameterBlock(property_package=m.fs.props)
 
-        m.fs.R1 = CSTR(
-            default={
-                "property_package": m.fs.props,
-                "reaction_package": m.fs.rxn_props,
-            }
-        )
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
         iscale.calculate_scaling_factors(m.fs)
 

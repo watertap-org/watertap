@@ -493,22 +493,18 @@ solver = get_solver(options={"tol": 1e-11})
 
 def build_ideal_naocl_prop(model):
     model.fs.ideal_naocl_thermo_params = GenericParameterBlock(
-        default=ideal_naocl_thermo_config
+        **ideal_naocl_thermo_config
     )
     model.fs.ideal_naocl_rxn_params = GenericReactionParameterBlock(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            **ideal_naocl_reaction_config,
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        **ideal_naocl_reaction_config
     )
 
 
 def build_ideal_naocl_mixer_unit(model):
     model.fs.ideal_naocl_mixer_unit = Mixer(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            "inlet_list": ["inlet_stream", "naocl_stream"],
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        inlet_list=["inlet_stream", "naocl_stream"],
     )
 
     # add new constraint for dosing rate (deactivate constraint for OCl_-)
@@ -539,15 +535,13 @@ def build_ideal_naocl_mixer_unit(model):
 
 def build_ideal_naocl_chlorination_unit(model):
     model.fs.ideal_naocl_chlorination_unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.ideal_naocl_thermo_params,
-            "reaction_package": model.fs.ideal_naocl_rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-        }
+        property_package=model.fs.ideal_naocl_thermo_params,
+        reaction_package=model.fs.ideal_naocl_rxn_params,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=True,
+        has_heat_transfer=False,
+        has_heat_of_reaction=False,
+        has_pressure_change=False,
     )
 
     # new var includes an initial calculation (will be overwritten later)
@@ -833,10 +827,8 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
 def build_translator_from_RO_to_chlorination_block(model):
     # Translator inlet from RO and outlet goes to chlorination
     model.fs.RO_to_Chlor = Translator(
-        default={
-            "inlet_property_package": model.fs.prop_TDS,
-            "outlet_property_package": model.fs.ideal_naocl_thermo_params,
-        }
+        inlet_property_package=model.fs.prop_TDS,
+        outlet_property_package=model.fs.ideal_naocl_thermo_params,
     )
 
     # Add constraints to define how the translator will function
@@ -895,7 +887,7 @@ def build_translator_from_RO_to_chlorination_block(model):
 
 def run_ideal_naocl_mixer_example(fixed_dosage=False):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Add properties to model
     build_ideal_naocl_prop(model)
@@ -928,7 +920,7 @@ def run_ideal_naocl_mixer_example(fixed_dosage=False):
 
 def run_ideal_naocl_chlorination_example():
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # add properties to model
     build_ideal_naocl_prop(model)
@@ -967,7 +959,7 @@ def run_ideal_naocl_chlorination_example():
 
 def run_chlorination_block_example(fix_free_chlorine=False):
     model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs = FlowsheetBlock(dynamic=False)
 
     # Build the partial flowsheet of a mixer and chlorination unit
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)

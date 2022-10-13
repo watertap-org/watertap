@@ -88,67 +88,51 @@ def main(erd_type=ERDtype.pressure_exchanger):
 def build(erd_type=ERDtype.pressure_exchanger):
     # flowsheet set up
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # --- Main pump ---
-    m.fs.P1 = Pump(default={"property_package": m.fs.properties})
-    m.fs.P1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.P1 = Pump(property_package=m.fs.properties)
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "pressure_change_type": PressureChangeType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        pressure_change_type=PressureChangeType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
     )
-    m.fs.RO.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pressure_exchanger:
-        m.fs.S1 = Separator(
-            default={"property_package": m.fs.properties, "outlet_list": ["P1", "PXR"]}
-        )
+        m.fs.S1 = Separator(property_package=m.fs.properties, outlet_list=["P1", "PXR"])
 
-        m.fs.PXR = PressureExchanger(default={"property_package": m.fs.properties})
-        m.fs.P2 = Pump(default={"property_package": m.fs.properties})
+        m.fs.PXR = PressureExchanger(property_package=m.fs.properties)
+        m.fs.P2 = Pump(property_package=m.fs.properties)
         m.fs.M1 = Mixer(
-            default={
-                "property_package": m.fs.properties,
-                "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-                "inlet_list": ["P1", "P2"],
-            }
+            property_package=m.fs.properties,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["P1", "P2"],
         )
 
         # add costing for PX and recirculation pump
-        m.fs.PXR.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
-        m.fs.P2.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        m.fs.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         # mixer and separator have no associated costing
     elif erd_type == ERDtype.pump_as_turbine:
         # add energy recovery turbine block
-        m.fs.ERD = EnergyRecoveryDevice(default={"property_package": m.fs.properties})
+        m.fs.ERD = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
-        m.fs.ERD.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        m.fs.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
@@ -227,7 +211,6 @@ def set_operating_conditions(
 
     if solver is None:
         solver = get_solver()
-
     # ---specifications---
     # feed
     # state variables
@@ -331,7 +314,7 @@ def calculate_operating_pressure(
     """
     t = ConcreteModel()  # create temporary model
     prop = feed_state_block.config.parameters
-    t.brine = prop.build_state_block([0], default={})
+    t.brine = prop.build_state_block([0])
 
     # specify state block
     t.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
@@ -460,7 +443,7 @@ def initialize_pump_as_turbine(m, optarg):
 
 
 def optimize_set_up(m):
-    # objective
+    # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # unfix decision variables and add bounds
