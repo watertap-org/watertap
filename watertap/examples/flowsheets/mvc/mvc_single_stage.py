@@ -86,59 +86,8 @@ def main():
     display_results(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
-    assert False
-    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_1.csv"
-    save_results(m,filename=filename)
-    # assert False
 
-    print('Third solve - optimize again')
-    # m.fs.recovery[0].fix(0.45)
-    results = solve(m)
-    print(results.solver.termination_condition)
-    display_results(m)
-    if results.solver.termination_condition == "infeasible":
-        debug_infeasible(m.fs, solver)
-    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_2.csv"
-    save_results(m,filename=filename)
-
-    print('Fourth solve - optimize again')
-    # m.fs.recovery[0].fix(0.45)
-    results = solve(m)
-    print(results.solver.termination_condition)
-    display_results(m)
-    if results.solver.termination_condition == "infeasible":
-        debug_infeasible(m.fs, solver)
-    filename = "C:/Users/carso/Documents/MVC/watertap_results/wf_50_rr_50_6000_4800_solve_3.csv"
-    save_results(m, filename=filename)
-    assert False
-
-    # Display all states
-    print('\n0f')
-    display_seawater_states(m.fs.feed.properties[0])
-    print('\n1f')
-    display_seawater_states(m.fs.pump_feed.control_volume.properties_out[0])
-    print('\n1fb')
-    display_seawater_states(m.fs.hx_brine.cold.properties_out[0])
-    print('\n1fd')
-    display_seawater_states(m.fs.hx_distillate.cold.properties_out[0])
-    print('\n2f')
-    display_seawater_states(m.fs.mixer_feed.mixed_state[0])
-    print('\n1v')
-    display_water_states(m.fs.evaporator.properties_vapor[0])
-    print('\n2v')
-    display_water_states(m.fs.compressor.control_volume.properties_out[0])
-    print('\n1b')
-    display_seawater_states(m.fs.evaporator.properties_brine[0])
-    print('\n2b')
-    display_seawater_states(m.fs.pump_brine.control_volume.properties_out[0])
-    print('\n3b')
-    display_seawater_states(m.fs.brine.properties[0])
-    print('\n1d')
-    display_water_states(m.fs.condenser.control_volume.properties_out[0])
-    print('\n2d')
-    display_seawater_states(m.fs.pump_distillate.control_volume.properties_out[0])
-    print('\n3d')
-    display_seawater_states(m.fs.distillate.properties[0])
+    return m
 
 def build():
     # flowsheet set up
@@ -185,11 +134,11 @@ def build():
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
-    add_pressure_drop_to_hx(m.fs.hx_brine, m.fs.config.time)
     # Set lower bound of approach temperatures
     m.fs.hx_brine.delta_temperature_in.setlb(0)
     m.fs.hx_brine.delta_temperature_out.setlb(0)
     m.fs.hx_brine.area.setlb(10)
+    add_pressure_drop_to_hx(m.fs.hx_brine, m.fs.config.time)
 
     m.fs.mixer_feed = Mixer(
         default={
@@ -479,13 +428,13 @@ def add_pressure_drop_to_hx(hx_blk, time_point):
 
 def set_operating_conditions(m):
     # Feed inlet
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.075)
+    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].fix(0.1)
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(40)
     #m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].fix(2)
     m.fs.feed.properties[0].temperature.fix(273.15 + 25)
     m.fs.feed.properties[0].pressure.fix(101325)
 
-    m.fs.recovery[0].fix(0.6)
+    m.fs.recovery[0].fix(0.5)
 
     # Feed pump
     m.fs.pump_feed.efficiency_pump.fix(0.8)
@@ -532,10 +481,10 @@ def set_operating_conditions(m):
 
     # Costing
     m.fs.costing.factor_total_investment.fix(2)
-    # m.fs.costing.electricity_base_cost = (0.25)
+    m.fs.costing.electricity_base_cost = 0.15
     # print(value(m.fs.costing.electricity_base_cost))
-    # m.fs.costing.heat_exchanger_unit_cost.fix(1600)
-    # m.fs.costing.evaporator_unit_cost.fix(3200)
+    m.fs.costing.heat_exchanger_unit_cost.fix(2000)
+    m.fs.costing.evaporator_unit_cost.fix(3000)
 
     # Change upper bound of compressed vapor temperature
     # m.fs.compressor.control_volume.properties_out[0].temperature.setub(450)
@@ -862,6 +811,7 @@ def display_results(m):
     print("Feed flow rate:                          ", m.fs.feed.properties[0].flow_mass_phase_comp['Liq','H2O'].value+
           m.fs.feed.properties[0].flow_mass_phase_comp['Liq','TDS'].value)
     print("Feed mass fraction:                      ", m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'TDS'].value)
+    print("Brine salinity: ", m.fs.brine.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3," g/kg")
     print("Vapor flow rate:                         ", m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value)
     print('Recovery:                                ', m.fs.recovery[0].value)
     print('Distillate preheater area:               ', m.fs.hx_distillate.area.value)
@@ -1081,4 +1031,4 @@ def display_water_states(state_blk):
 
 
 if __name__ == "__main__":
-    main()
+    m = main()
