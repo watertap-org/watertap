@@ -394,7 +394,7 @@ def build_flowsheet():
 
     seq.run(m, function)
 
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
     results = solver.solve(m, tee=False)
 
     pyo.assert_optimal_termination(results)
@@ -408,7 +408,7 @@ def build_flowsheet():
     m.fs.R7.outlet.conc_mass_comp[:, "S_O2"].unfix()
 
     # Resolve with controls in place
-    solver = get_solver(options={"bound_push": 1e-8})
+    solver = get_solver()
     results = solver.solve(m, tee=False)
 
     pyo.assert_optimal_termination(results)
