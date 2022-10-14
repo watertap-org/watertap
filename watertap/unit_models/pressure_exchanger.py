@@ -16,6 +16,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import (
     Block,
     Var,
+    check_optimal_termination,
     Suffix,
     NonNegativeReals,
     Reals,
@@ -36,7 +37,7 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
@@ -335,6 +336,7 @@ class PressureExchangerData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for pressure exchanger initialization routine
@@ -447,11 +449,23 @@ class PressureExchangerData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
 
         # release state of fixed variables
         self.low_pressure_side.properties_in.release_state(flags_low_in)
         self.high_pressure_side.properties_in.release_state(flags_high_in)
+
+        if not check_optimal_termination(res):
+            if raise_on_failure:
+                raise InitializationError(
+                    f"Unit model {self.name} failed to initialize"
+                )
 
         # reactivate volumetric flow constraint
         self.eq_equal_flow_vol.activate()

@@ -602,7 +602,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         if not check_optimal_termination(res):
             if raise_on_failure:
                 raise InitializationError(
-                    f"Unit model {self.name} failed to initailize"
+                    f"Unit model {self.name} failed to initialize"
                 )
 
     def _get_stream_table_contents(self, time_point=0):

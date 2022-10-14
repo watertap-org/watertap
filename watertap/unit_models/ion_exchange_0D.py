@@ -18,6 +18,7 @@ from pyomo.environ import (
     Block,
     Set,
     Var,
+    check_optimal_termination,
     Param,
     Constraint,
     Suffix,
@@ -47,7 +48,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import StrEnum
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -1143,7 +1144,12 @@ class IonExchangeODData(UnitModelBlockData):
             return b.number_columns * b.col_vol_per
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for initialization routines
@@ -1235,11 +1241,21 @@ class IonExchangeODData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {blk.name}, trying one more time"
+                )
+                res = opt.solve(blk, tee=slc.tee)
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            if raise_on_failure:
+                raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
