@@ -39,7 +39,6 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialFlowBasis,
-    components,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
