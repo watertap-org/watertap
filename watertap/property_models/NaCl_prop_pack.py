@@ -515,15 +515,15 @@ class NaClStateBlockData(StateBlockData):
             doc="Mass fraction",
         )
 
-        def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
-                "Liq", j
-            ] / sum(
-                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
+        def rule_mass_frac_phase_comp(b, p, j):
+            return b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / sum(
+                b.flow_mass_phase_comp[p, j] for j in self.params.component_list
             )
 
         self.eq_mass_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mass_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mass_frac_phase_comp,
         )
 
     def _dens_mass_phase(self):
@@ -535,14 +535,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b):  # density, eq. 4 in Bartholomew
+        def rule_dens_mass_phase(b, p):  # density, eq. 4 in Bartholomew
             return (
-                b.dens_mass_phase["Liq"]
-                == b.params.dens_mass_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
+                b.dens_mass_phase[p]
+                == b.params.dens_mass_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
                 + b.params.dens_mass_param["0"]
             )
 
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        self.eq_dens_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_dens_mass_phase
+        )
 
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
@@ -553,16 +555,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Volumetric flow rate",
         )
 
-        def rule_flow_vol_phase(b):
+        def rule_flow_vol_phase(b, p):
             return (
-                b.flow_vol_phase["Liq"]
-                == sum(
-                    b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
-                )
-                / b.dens_mass_phase["Liq"]
+                b.flow_vol_phase[p]
+                == sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                / b.dens_mass_phase[p]
             )
 
-        self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+        self.eq_flow_vol_phase = Constraint(
+            self.params.phase_list, rule=rule_flow_vol_phase
+        )
 
     def _flow_vol(self):
         def rule_flow_vol(b):
@@ -580,14 +582,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Mass concentration",
         )
 
-        def rule_conc_mass_phase_comp(b, j):
+        def rule_conc_mass_phase_comp(b, p, j):
             return (
-                b.conc_mass_phase_comp["Liq", j]
-                == b.dens_mass_phase["Liq"] * b.mass_frac_phase_comp["Liq", j]
+                b.conc_mass_phase_comp[p, j]
+                == b.dens_mass_phase[p] * b.mass_frac_phase_comp[p, j]
             )
 
         self.eq_conc_mass_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_mass_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_conc_mass_phase_comp,
         )
 
     def _flow_mol_phase_comp(self):
@@ -600,14 +604,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Molar flowrate",
         )
 
-        def rule_flow_mol_phase_comp(b, j):
+        def rule_flow_mol_phase_comp(b, p, j):
             return (
-                b.flow_mol_phase_comp["Liq", j]
-                == b.flow_mass_phase_comp["Liq", j] / b.params.mw_comp[j]
+                b.flow_mol_phase_comp[p, j]
+                == b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
             )
 
         self.eq_flow_mol_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_mol_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_flow_mol_phase_comp,
         )
 
     def _mole_frac_phase_comp(self):
@@ -620,13 +626,15 @@ class NaClStateBlockData(StateBlockData):
             doc="Mole fraction",
         )
 
-        def rule_mole_frac_phase_comp(b, j):
-            return b.mole_frac_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] / sum(b.flow_mol_phase_comp["Liq", j] for j in b.params.component_list)
+        def rule_mole_frac_phase_comp(b, p, j):
+            return b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / sum(
+                b.flow_mol_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_mole_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mole_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mole_frac_phase_comp,
         )
 
     def _molality_phase_comp(self):
@@ -639,16 +647,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_phase_comp(b, j):
+        def rule_molality_phase_comp(b, p, j):
             return (
-                self.molality_phase_comp["Liq", j]
-                == b.mass_frac_phase_comp["Liq", j]
-                / (1 - b.mass_frac_phase_comp["Liq", j])
+                self.molality_phase_comp[p, j]
+                == b.mass_frac_phase_comp[p, j]
+                / (1 - b.mass_frac_phase_comp[p, j])
                 / b.params.mw_comp[j]
             )
 
         self.eq_molality_phase_comp = Constraint(
-            ["NaCl"], rule=rule_molality_phase_comp
+            self.params.phase_list, ["NaCl"], rule=rule_molality_phase_comp
         )
 
     def _visc_d_phase(self):
@@ -660,14 +668,16 @@ class NaClStateBlockData(StateBlockData):
             doc="Viscosity",
         )
 
-        def rule_visc_d_phase(b):  # dynamic viscosity, eq 5 in Bartholomew
+        def rule_visc_d_phase(b, p):  # dynamic viscosity, eq 5 in Bartholomew
             return (
-                b.visc_d_phase["Liq"]
-                == b.params.visc_d_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
+                b.visc_d_phase[p]
+                == b.params.visc_d_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
                 + b.params.visc_d_param["0"]
             )
 
-        self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
+        self.eq_visc_d_phase = Constraint(
+            self.params.phase_list, rule=rule_visc_d_phase
+        )
 
     def _diffus_phase_comp(self):
         self.diffus_phase_comp = Var(
@@ -679,18 +689,18 @@ class NaClStateBlockData(StateBlockData):
             doc="Diffusivity",
         )
 
-        def rule_diffus_phase_comp(b, j):  # diffusivity, eq 6 in Bartholomew
-            return b.diffus_phase_comp["Liq", j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp["Liq", "NaCl"] ** 4
-                + b.params.diffus_param["3"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 3
-                + b.params.diffus_param["2"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
+        def rule_diffus_phase_comp(b, p, j):  # diffusivity, eq 6 in Bartholomew
+            return b.diffus_phase_comp[p, j] == (
+                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
+                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
+                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
                 + b.params.diffus_param["0"]
             )
 
-        self.eq_diffus_phase_comp = Constraint(["NaCl"], rule=rule_diffus_phase_comp)
+        self.eq_diffus_phase_comp = Constraint(
+            self.params.phase_list, ["NaCl"], rule=rule_diffus_phase_comp
+        )
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -702,9 +712,8 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_osm_coeff(b):
             return b.osm_coeff == (
-                b.params.osm_coeff_param["2"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
-                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
+                b.params.osm_coeff_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
                 + b.params.osm_coeff_param["0"]
             )
 
@@ -728,7 +737,7 @@ class NaClStateBlockData(StateBlockData):
                 b.pressure_osm_phase[p]
                 == i
                 * b.osm_coeff
-                * b.molality_phase_comp["Liq", "NaCl"]
+                * b.molality_phase_comp[p, "NaCl"]
                 * rhow
                 * Constants.gas_constant
                 * b.temperature
@@ -748,12 +757,12 @@ class NaClStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(
-            b,
+            b, p
         ):  # specific enthalpy, eq. 55 and 43 in Sharqawy  # TODO: remove enthalpy when all units can be isothermal
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp["Liq", "NaCl"]
+            S = b.mass_frac_phase_comp[p, "NaCl"]
             h_w = (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
@@ -770,9 +779,11 @@ class NaClStateBlockData(StateBlockData):
                 * pyunits.J
                 / pyunits.kg
             )
-            return b.enth_mass_phase["Liq"] == h_sw
+            return b.enth_mass_phase[p] == h_sw
 
-        self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
+        self.eq_enth_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_enth_mass_phase
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
@@ -1003,8 +1014,8 @@ class NaClStateBlockData(StateBlockData):
         ):
             if self.is_property_constructed(v_str):
                 v_comp = self.component(v_str)
-                for j, c in self.component("eq_" + v_str).items():
+                for p, j, c in self.component("eq_" + v_str).items():
                     sf = iscale.get_scaling_factor(
-                        v_comp["Liq", j], default=1, warning=True
+                        v_comp[p, j], default=1, warning=True
                     )
                     iscale.constraint_scaling_transform(c, sf)
