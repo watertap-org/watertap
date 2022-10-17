@@ -790,8 +790,8 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
             return (
-                sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
-                * b.enth_mass_phase["Liq"]
+                sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
+                * b.enth_mass_phase[p]
             )
 
         self.enth_flow = Expression(rule=rule_enth_flow)
