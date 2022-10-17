@@ -431,15 +431,15 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mass fraction",
         )
 
-        def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
-                "Liq", j
-            ] / sum(
-                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
+        def rule_mass_frac_phase_comp(b, p, j):
+            return b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / sum(
+                b.flow_mass_phase_comp[p, j] for j in self.params.component_list
             )
 
         self.eq_mass_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mass_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mass_frac_phase_comp,
         )
 
     def _dens_mass_phase(self):
@@ -451,11 +451,13 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mass density",
         )
 
-        def rule_dens_mass_phase(b):
+        def rule_dens_mass_phase(b, p):
             # constant density, NDMA concentration is always minimal
-            return b.dens_mass_phase["Liq"] == b.params.dens_mass
+            return b.dens_mass_phase[p] == b.params.dens_mass
 
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        self.eq_dens_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_dens_mass_phase
+        )
 
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
@@ -466,16 +468,16 @@ class NDMAStateBlockData(StateBlockData):
             doc="Volumetric flow rate",
         )
 
-        def rule_flow_vol_phase(b):
+        def rule_flow_vol_phase(b, p):
             return (
-                b.flow_vol_phase["Liq"]
-                == sum(
-                    b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
-                )
-                / b.dens_mass_phase["Liq"]
+                b.flow_vol_phase[p]
+                == sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                / b.dens_mass_phase[p]
             )
 
-        self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+        self.eq_flow_vol_phase = Constraint(
+            self.params.phase_list, rule=rule_flow_vol_phase
+        )
 
     def _flow_vol(self):
         def rule_flow_vol(b):
@@ -493,14 +495,16 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mass concentration",
         )
 
-        def rule_conc_mass_phase_comp(b, j):
+        def rule_conc_mass_phase_comp(b, p, j):
             return (
-                b.conc_mass_phase_comp["Liq", j]
-                == b.dens_mass_phase["Liq"] * b.mass_frac_phase_comp["Liq", j]
+                b.conc_mass_phase_comp[p, j]
+                == b.dens_mass_phase[p] * b.mass_frac_phase_comp[p, j]
             )
 
         self.eq_conc_mass_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_mass_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_conc_mass_phase_comp,
         )
 
     def _flow_mol_phase_comp(self):
@@ -513,14 +517,16 @@ class NDMAStateBlockData(StateBlockData):
             doc="Molar flowrate",
         )
 
-        def rule_flow_mol_phase_comp(b, j):
+        def rule_flow_mol_phase_comp(b, p, j):
             return (
-                b.flow_mol_phase_comp["Liq", j]
-                == b.flow_mass_phase_comp["Liq", j] / b.params.mw_comp[j]
+                b.flow_mol_phase_comp[p, j]
+                == b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
             )
 
         self.eq_flow_mol_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_mol_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_flow_mol_phase_comp,
         )
 
     def _mole_frac_phase_comp(self):
@@ -533,13 +539,15 @@ class NDMAStateBlockData(StateBlockData):
             doc="Mole fraction",
         )
 
-        def rule_mole_frac_phase_comp(b, j):
-            return b.mole_frac_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] / sum(b.flow_mol_phase_comp["Liq", j] for j in b.params.component_list)
+        def rule_mole_frac_phase_comp(b, p, j):
+            return b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / sum(
+                b.flow_mol_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_mole_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mole_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mole_frac_phase_comp,
         )
 
     def _molality_phase_comp(self):
@@ -552,16 +560,16 @@ class NDMAStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_phase_comp(b, j):
+        def rule_molality_phase_comp(b, p, j):
             return (
-                self.molality_phase_comp["Liq", j]
-                == b.mass_frac_phase_comp["Liq", j]
-                / (1 - b.mass_frac_phase_comp["Liq", j])
+                self.molality_phase_comp[p, j]
+                == b.mass_frac_phase_comp[p, j]
+                / (1 - b.mass_frac_phase_comp[p, j])
                 / b.params.mw_comp[j]
             )
 
         self.eq_molality_phase_comp = Constraint(
-            ["NDMA"], rule=rule_molality_phase_comp
+            self.params.phase_list, ["NDMA"], rule=rule_molality_phase_comp
         )
 
     # TODO: check enthalpy

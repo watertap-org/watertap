@@ -691,7 +691,7 @@ class WaterStateBlockData(StateBlockData):
                     + b.params.dens_mass_param_A4 * t**3
                     + b.params.dens_mass_param_A5 * t**4
                 )
-                return b.dens_mass_phase["Liq"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
             else:  # phase == 'Vap'
                 dens_mass = (
                     b.params.dens_mass_param_mw
@@ -699,7 +699,7 @@ class WaterStateBlockData(StateBlockData):
                     / b.params.dens_mass_param_R
                     / b.temperature
                 )
-                return b.dens_mass_phase["Vap"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
 
         self.eq_dens_mass_phase = Constraint(
             self.params.phase_list, rule=rule_dens_mass_phase
@@ -796,12 +796,12 @@ class WaterStateBlockData(StateBlockData):
             )
 
             if phase == "Liq":
-                return b.enth_mass_phase["Liq"] == h_w
+                return b.enth_mass_phase[phase] == h_w
             else:  # phase == 'Vap'
                 # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
                 #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
                 # h_vap = h_w + dh_vap_w
-                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass
+                return b.enth_mass_phase[phase] == h_w + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -882,13 +882,13 @@ class WaterStateBlockData(StateBlockData):
                     b.params.cp_phase_param_D1
                 )  # + b.params.cp_phase_param_D2 * s + b.params.cp_phase_param_D3 * s ** 2
                 return (
-                    b.cp_mass_phase["Liq"]
+                    b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             else:  # phase == 'Vap'
                 t = b.temperature / 1000
                 return (
-                    b.cp_mass_phase["Vap"]
+                    b.cp_mass_phase[phase]
                     == b.params.cp_vap_param_A
                     + b.params.cp_vap_param_B * t
                     + b.params.cp_vap_param_C * t**2
