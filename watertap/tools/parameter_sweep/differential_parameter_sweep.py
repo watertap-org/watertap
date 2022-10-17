@@ -75,7 +75,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             nominal_val = local_values[ctr]
             pyomo_object = specs["pyomo_object"]
             if specs["diff_sample_type"] == NormalSample:
-                std_dev = specs["relative_std_dev"]
+                std_dev = specs["std_dev"]
                 diff_sweep_param[param] = NormalSample(
                     pyomo_object, nominal_val, std_dev
                 )

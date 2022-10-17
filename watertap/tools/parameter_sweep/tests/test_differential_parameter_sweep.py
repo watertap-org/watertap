@@ -71,12 +71,12 @@ def test_create_differential_sweep_params_normal(model):
     differential_sweep_specs = {
         "fs.a": {
             "diff_sample_type": NormalSample,
-            "relative_std_dev": 0.01,
+            "std_dev": 0.01,
             "pyomo_object": m.fs.input["a"],
         },
         "fs.b": {
             "diff_sample_type": NormalSample,
-            "relative_std_dev": 0.5,
+            "std_dev": 0.5,
             "pyomo_object": m.fs.input["b"],
         },
     }
@@ -153,7 +153,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         "fs.a": {
             "diff_mode": "sum",
             "diff_sample_type": NormalSample,
-            "relative_std_dev": 0.01,
+            "std_dev": 0.01,
             "pyomo_object": m.fs.input["a"],
         },
         "fs.b": {
