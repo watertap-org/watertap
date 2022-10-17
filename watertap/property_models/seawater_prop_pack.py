@@ -991,13 +991,15 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Mass fraction",
         )
 
-        def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
-                "Liq", j
-            ] / sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+        def rule_mass_frac_phase_comp(b, p, j):
+            return b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / sum(
+                b.flow_mass_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_mass_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mass_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mass_frac_phase_comp,
         )
 
     def _dens_mass_phase(self):
@@ -1009,9 +1011,9 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Mass density of seawater",
         )
 
-        def rule_dens_mass_phase(b):  # density, eq. 8 in Sharqawy
+        def rule_dens_mass_phase(b, p):  # density, eq. 8 in Sharqawy
             t = b.temperature - 273.15 * pyunits.K
-            s = b.mass_frac_phase_comp["Liq", "TDS"]
+            s = b.mass_frac_phase_comp[p, "TDS"]
             dens_mass = (
                 b.dens_mass_solvent
                 + b.params.dens_mass_param_B1 * s
@@ -1020,9 +1022,11 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.dens_mass_param_B4 * s * t**3
                 + b.params.dens_mass_param_B5 * s**2 * t**2
             )
-            return b.dens_mass_phase["Liq"] == dens_mass
+            return b.dens_mass_phase[p] == dens_mass
 
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        self.eq_dens_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_dens_mass_phase
+        )
 
     def _dens_mass_solvent(self):
         self.dens_mass_solvent = Var(
@@ -1054,16 +1058,16 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Volumetric flow rate",
         )
 
-        def rule_flow_vol_phase(b):
+        def rule_flow_vol_phase(b, p):
             return (
-                b.flow_vol_phase["Liq"]
-                == sum(
-                    b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list
-                )
-                / b.dens_mass_phase["Liq"]
+                b.flow_vol_phase[p]
+                == sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
+                / b.dens_mass_phase[p]
             )
 
-        self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+        self.eq_flow_vol_phase = Constraint(
+            self.params.phase_list, rule=rule_flow_vol_phase
+        )
 
     def _flow_vol(self):
         def rule_flow_vol(b):
@@ -1081,14 +1085,16 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Mass concentration",
         )
 
-        def rule_conc_mass_phase_comp(b, j):
+        def rule_conc_mass_phase_comp(b, p, j):
             return (
-                b.conc_mass_phase_comp["Liq", j]
-                == b.dens_mass_phase["Liq"] * b.mass_frac_phase_comp["Liq", j]
+                b.conc_mass_phase_comp[p, j]
+                == b.dens_mass_phase[p] * b.mass_frac_phase_comp[p, j]
             )
 
         self.eq_conc_mass_phase_comp = Constraint(
-            self.params.component_list, rule=rule_conc_mass_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_conc_mass_phase_comp,
         )
 
     def _flow_mol_phase_comp(self):
@@ -1101,14 +1107,16 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Molar flowrate",
         )
 
-        def rule_flow_mol_phase_comp(b, j):
+        def rule_flow_mol_phase_comp(b, p, j):
             return (
-                b.flow_mol_phase_comp["Liq", j]
-                == b.flow_mass_phase_comp["Liq", j] / b.params.mw_comp[j]
+                b.flow_mol_phase_comp[p, j]
+                == b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j]
             )
 
         self.eq_flow_mol_phase_comp = Constraint(
-            self.params.component_list, rule=rule_flow_mol_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_flow_mol_phase_comp,
         )
 
     def _mole_frac_phase_comp(self):
@@ -1121,13 +1129,15 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Mole fraction",
         )
 
-        def rule_mole_frac_phase_comp(b, j):
-            return b.mole_frac_phase_comp["Liq", j] == b.flow_mol_phase_comp[
-                "Liq", j
-            ] / sum(b.flow_mol_phase_comp["Liq", j] for j in b.params.component_list)
+        def rule_mole_frac_phase_comp(b, p, j):
+            return b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / sum(
+                b.flow_mol_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_mole_frac_phase_comp = Constraint(
-            self.params.component_list, rule=rule_mole_frac_phase_comp
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_mole_frac_phase_comp,
         )
 
     def _molality_phase_comp(self):
@@ -1140,15 +1150,17 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Molality",
         )
 
-        def rule_molality_phase_comp(b, j):
+        def rule_molality_phase_comp(b, p, j):
             return (
-                self.molality_phase_comp["Liq", j]
-                == b.mass_frac_phase_comp["Liq", j]
-                / (1 - b.mass_frac_phase_comp["Liq", j])
+                self.molality_phase_comp[p, j]
+                == b.mass_frac_phase_comp[p, j]
+                / (1 - b.mass_frac_phase_comp[p, j])
                 / b.params.mw_comp[j]
             )
 
-        self.eq_molality_phase_comp = Constraint(["TDS"], rule=rule_molality_phase_comp)
+        self.eq_molality_phase_comp = Constraint(
+            self.params.phase_list, ["TDS"], rule=rule_molality_phase_comp
+        )
 
     def _visc_d_phase(self):
         self.visc_d_phase = Var(
@@ -1159,11 +1171,11 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Viscosity",
         )
 
-        def rule_visc_d_phase(b):  # dynamic viscosity, eq. 22 and 23 in Sharqawy
+        def rule_visc_d_phase(b, p):  # dynamic viscosity, eq. 22 and 23 in Sharqawy
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits are K
-            s = b.mass_frac_phase_comp["Liq", "TDS"]
+            s = b.mass_frac_phase_comp[p, "TDS"]
             mu_w = (
                 b.params.visc_d_param_muw_A
                 + (
@@ -1182,9 +1194,11 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.visc_d_param_B_2 * t
                 + b.params.visc_d_param_B_3 * t**2
             )
-            return b.visc_d_phase["Liq"] == mu_w * (1 + A * s + B * s**2)
+            return b.visc_d_phase[p] == mu_w * (1 + A * s + B * s**2)
 
-        self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
+        self.eq_visc_d_phase = Constraint(
+            self.params.phase_list, rule=rule_visc_d_phase
+        )
 
     def _diffus_phase_comp(
         self,
@@ -1199,17 +1213,19 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_diffus_phase_comp(
-            b, j
+            b, p, j
         ):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
-            return b.diffus_phase_comp["Liq", j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 4
-                + b.params.diffus_param["3"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 3
-                + b.params.diffus_param["2"] * b.mass_frac_phase_comp["Liq", "TDS"] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp["Liq", "TDS"]
+            return b.diffus_phase_comp[p, j] == (
+                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, "TDS"] ** 4
+                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, "TDS"] ** 3
+                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, "TDS"] ** 2
+                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, "TDS"]
                 + b.params.diffus_param["0"]
             )
 
-        self.eq_diffus_phase_comp = Constraint(["TDS"], rule=rule_diffus_phase_comp)
+        self.eq_diffus_phase_comp = Constraint(
+            self.params.phase_list, ["TDS"], rule=rule_diffus_phase_comp
+        )
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -1257,7 +1273,7 @@ class SeawaterStateBlockData(StateBlockData):
             return (
                 b.pressure_osm_phase[p]
                 == b.osm_coeff
-                * b.molality_phase_comp["Liq", "TDS"]
+                * b.molality_phase_comp[p, "TDS"]
                 * rhow
                 * Constants.gas_constant
                 * b.temperature
@@ -1276,11 +1292,11 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Specific enthalpy",
         )
 
-        def rule_enth_mass_phase(b):  # specific enthalpy, eq. 55 and 43 in Sharqawy
+        def rule_enth_mass_phase(b, p):  # specific enthalpy, eq. 55 and 43 in Sharqawy
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            S = b.mass_frac_phase_comp[p, "TDS"]
             h_w = (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
@@ -1299,9 +1315,11 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.enth_mass_param_B9 * S**2 * t
                 + b.params.enth_mass_param_B10 * S * t**2
             )
-            return b.enth_mass_phase["Liq"] == h_sw
+            return b.enth_mass_phase[p] == h_sw
 
-        self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
+        self.eq_enth_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_enth_mass_phase
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
@@ -1351,10 +1369,10 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Specific heat capacity",
         )
 
-        def rule_cp_mass_phase(b):  # specific heat, eq. 9 in Sharqawy et al. (2010)
+        def rule_cp_mass_phase(b, p):  # specific heat, eq. 9 in Sharqawy et al. (2010)
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
             t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
-            s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
+            s = b.mass_frac_phase_comp[p, "TDS"] * 1000 * pyunits.g / pyunits.kg
             A = (
                 b.params.cp_phase_param_A1
                 + b.params.cp_phase_param_A2 * s
@@ -1375,11 +1393,11 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.cp_phase_param_D2 * s
                 + b.params.cp_phase_param_D3 * s**2
             )
-            return (
-                b.cp_mass_phase["Liq"] == (A + B * t + C * t**2 + D * t**3) * 1000
-            )
+            return b.cp_mass_phase[p] == (A + B * t + C * t**2 + D * t**3) * 1000
 
-        self.eq_cp_mass_phase = Constraint(rule=rule_cp_mass_phase)
+        self.eq_cp_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_cp_mass_phase
+        )
 
     def _therm_cond_phase(self):
         self.therm_cond_phase = Var(
@@ -1391,11 +1409,11 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_therm_cond_phase(
-            b,
+            b, p
         ):  # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
             t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (1 - 0.00025)
-            s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
+            s = b.mass_frac_phase_comp[p, "TDS"] * 1000 * pyunits.g / pyunits.kg
             log10_ksw = log10(
                 b.params.therm_cond_phase_param_1
                 + b.params.therm_cond_phase_param_2 * s
@@ -1417,11 +1435,13 @@ class SeawaterStateBlockData(StateBlockData):
                 1 / 3
             )
             return (
-                b.therm_cond_phase["Liq"]
+                b.therm_cond_phase[p]
                 == 10**log10_ksw * 1e-3 * pyunits.W / pyunits.m / pyunits.K
             )
 
-        self.eq_therm_cond_phase = Constraint(rule=rule_therm_cond_phase)
+        self.eq_therm_cond_phase = Constraint(
+            self.params.phase_list, rule=rule_therm_cond_phase
+        )
 
     def _dh_vap_mass(self):
         self.dh_vap_mass = Var(

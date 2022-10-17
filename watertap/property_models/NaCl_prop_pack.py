@@ -712,8 +712,9 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_osm_coeff(b):
             return b.osm_coeff == (
-                b.params.osm_coeff_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
-                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                b.params.osm_coeff_param["2"]
+                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
+                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
                 + b.params.osm_coeff_param["0"]
             )
 
@@ -790,8 +791,8 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
             return (
-                sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
-                * b.enth_mass_phase[p]
+                sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * b.enth_mass_phase["Liq"]
             )
 
         self.enth_flow = Expression(rule=rule_enth_flow)
