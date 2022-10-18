@@ -25,7 +25,7 @@ from pyomo.environ import (
     exp,
     units as pyunits,
 )
-from idaes.core import UnitModelBlockData
+from idaes.core import UnitModelBlockData, FlowDirection
 from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -92,11 +92,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         # Raise exception if any of configuration arguments are provided incorrectly
         validate_membrane_config_args(self)
 
-        #TODO: method on 0D and 1D RO models; reconsider this for OARO 0D and 1D but keep for now
-        #Maybe generalize this to _add_membrane_channel_and_geometry, where name (e.g., feed_side, permeate_side)
-        #is passed as an arg
-
-        self._add_feed_side_membrane_channel_and_geometry()
+        #--------------------------------------------------------------
+        # Add feed side MembraneChannel Control Volume and setup
+        self._add_membrane_channel_and_geometry(side='feed_side',
+                                                flow_direction=FlowDirection.forward)
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 
@@ -133,42 +132,59 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
         self.feed_side.add_expressions()
 
+        #--------------------------------------------------------------
+        # Add permeate side MembraneChannel Control Volume and setup
+        self._add_membrane_channel_and_geometry(side='permeate_side',
+                                                flow_direction=FlowDirection.backward)
+
+        self.permeate_side.add_state_blocks(has_phase_equilibrium=False)
+
+        self.permeate_side.add_material_balances(
+            balance_type=self.config.material_balance_type, has_mass_transfer=True
+        )
+
+        self.permeate_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
+        )
+
+        self.permeate_side.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            pressure_change_type=self.config.pressure_change_type,
+            has_pressure_change=self.config.has_pressure_change,
+        )
+
+        # Add constraint for equal temperature between bulk and interface
+        self.permeate_side.add_isothermal_conditions()
+
+        # Add constraint for volumetric flow equality between interface and bulk
+        self.permeate_side.add_extensive_flow_to_interface()
+
+        # Concentration polarization constraint is not accounted for in the below method; it is
+        # written later in the base model (eq_concentration_polarization)
+        self.permeate_side.add_concentration_polarization(
+            concentration_polarization_type=self.config.concentration_polarization_type,
+            mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+        )
+
+        # Pass in 0D, applied in 1D
+        self.permeate_side.apply_transformation()
+
+        self.permeate_side.add_expressions()
+
         add_object_reference(self, "length_domain", self.feed_side.length_domain)
         add_object_reference(
             self, "difference_elements", self.feed_side.difference_elements
         )
         add_object_reference(self, "first_element", self.feed_side.first_element)
+        add_object_reference(self, "last_element", self.permeate_side.last_element)
         add_object_reference(self, "nfe", self.feed_side.nfe)
 
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["defined_state"] = False  # these blocks are not inlets or outlets
-        self.permeate_side = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Material properties of permeate along permeate channel",
-            **tmp_dict,
-        )
-        self.mixed_permeate = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
-            doc="Material properties of mixed permeate exiting the module",
-            **tmp_dict,
-        )
-
         # Add Ports
-        self.add_inlet_port(name="inlet", block=self.feed_side)
-        self.add_outlet_port(name="retentate", block=self.feed_side)
-        self.add_port(name="permeate", block=self.mixed_permeate)
+        self.add_inlet_port(name="feed_inlet", block=self.feed_side)
+        self.add_outlet_port(name="feed_outlet", block=self.feed_side)
+        self.add_inlet_port(name="permeate_inlet", block=self.permeate_side)
+        self.add_outlet_port(name="permeate_outlet", block=self.permeate_side)
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isobaric assumption for permeate out",
-        )
-
-        # Add other equations
-        def eq_permeate_outlet_isobaric(b, t, x):
-            return b.permeate_side[t, x].pressure == b.mixed_permeate[t].pressure
 
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
@@ -180,20 +196,11 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         def eq_permeate_isothermal(b, t, x):
             return (
                 b.feed_side.properties[t, x].temperature
-                == b.permeate_side[t, x].temperature
+                == b.permeate_side.properties[t, x].temperature
             )
 
         # ==========================================================================
-        # isothermal conditions at permeate outlet
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for permeate out"
-        )
-        def eq_permeate_outlet_isothermal(b, t):
-            return (
-                b.feed_side.properties[t, b.length_domain.last()].temperature
-                == b.mixed_permeate[t].temperature
-            )
-
+        # Volumetric Recovery rate
         self.recovery_vol_phase = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -204,13 +211,13 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         )
 
         # ==========================================================================
-        # Volumetric Recovery rate
         @self.Constraint(self.flowsheet().config.time)
         def eq_recovery_vol_phase(b, t):
             return (
                 b.recovery_vol_phase[t, "Liq"]
-                == b.mixed_permeate[t].flow_vol_phase["Liq"]
-                / b.feed_side.properties[t, self.first_element].flow_vol_phase["Liq"]
+                == (b.permeate_side.properties[t, b.permeate_side.last_element].flow_vol_phase["Liq"]
+                    - b.permeate_side.properties[t, b.permeate_side.first_element].flow_vol_phase["Liq"])
+                / b.feed_side.properties[t, self.feed_side.first_element].flow_vol_phase["Liq"]
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -246,25 +253,29 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         def eq_recovery_mass_phase_comp(b, t, j):
             return (
                 b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
+                * b.feed_side.properties[t, b.feed_side.first_element].flow_mass_phase_comp[
                     "Liq", j
                 ]
-                == b.mixed_permeate[t].flow_mass_phase_comp["Liq", j]
+                == b.permeate_side.properties[t, b.permeate_side.last_element].flow_mass_phase_comp["Liq", j]
+                - b.permeate_side.properties[t, b.permeate_side.first_element].flow_mass_phase_comp["Liq", j]
             )
 
         # rejection
+        #TODO: consider importance of rejection in OARO; for now,
+        # using outlet permeate concentration in the constraint; could calculate
+        # as a function of length but need to decide on whether that's overkill
         @self.Constraint(self.flowsheet().config.time, solute_set)
         def eq_rejection_phase_comp(b, t, j):
             return b.rejection_phase_comp[t, "Liq", j] == 1 - (
-                b.mixed_permeate[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties[t, self.first_element].conc_mass_phase_comp[
+                b.permeate_side.properties[t, b.permeate_side.last_element].conc_mass_phase_comp["Liq", j]
+                / b.feed_side.properties[t, b.feed_side.first_element].conc_mass_phase_comp[
                     "Liq", j
                 ]
             )
 
         self._add_flux_balance()
-        if self.config.has_pressure_change:
-            self._add_deltaP()
+        # if self.config.has_pressure_change:
+        #     self._add_deltaP()
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -369,8 +380,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         )
         def eq_flux_mass(b, t, x, p, j):
             prop_feed = b.feed_side.properties[t, x]
-            prop_perm = b.permeate_side[t, x]
-            interface = b.feed_side.properties_interface[t, x]
+            prop_perm = b.permeate_side.properties[t, x]
+            interface_feed = b.feed_side.properties_interface[t, x]
+            interface_perm = b.permeate_side.properties_interface[t, x]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[
@@ -378,14 +390,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                 ] * b.dens_solvent * (
                     (prop_feed.pressure - prop_perm.pressure)
                     - (
-                        interface.pressure_osm_phase[p]
-                        - prop_perm.pressure_osm_phase[p]
+                        interface_feed.pressure_osm_phase[p]
+                        - interface_perm.pressure_osm_phase[p]
                     )
                 )
             elif comp.is_solute():
                 return b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j] * (
-                    interface.conc_mass_phase_comp[p, j]
-                    - prop_perm.conc_mass_phase_comp[p, j]
+                    interface_feed.conc_mass_phase_comp[p, j]
+                    - interface_perm.conc_mass_phase_comp[p, j]
                 )
 
         @self.Expression(
@@ -411,89 +423,108 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.difference_elements,
                 solute_set,
-                doc="Concentration polarization",
+                doc="External Concentration polarization in feed side",
             )
-            def eq_concentration_polarization(b, t, x, j):
+            def eq_concentration_polarization_feed(b, t, x, j):
                 jw = b.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
                 js = b.flux_mass_phase_comp[t, x, "Liq", j]
+                exponent = jw / self.feed_side.K[t, x, j]
                 return b.feed_side.properties_interface[t, x].conc_mass_phase_comp[
                     "Liq", j
-                ] == b.feed_side.properties[t, x].conc_mass_phase_comp["Liq", j] * exp(
-                    jw / self.feed_side.K[t, x, j]
-                ) - js / jw * (
-                    exp(jw / self.feed_side.K[t, x, j]) - 1
-                )
+                ] == b.feed_side.properties[t, x].conc_mass_phase_comp["Liq", j] \
+                       * exp(exponent) - js / jw * (exp(exponent) - 1)
+
+            self.structural_parameter = Var(initialize=1200e-6,
+                                            units=pyunits.m
+                                            )
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.difference_elements,
+                solute_set,
+                doc="Internal Concentration polarization in permeate side",
+            )
+            def eq_concentration_polarization_permeate(b, t, x, j):
+                jw = b.flux_mass_phase_comp[t, x, "Liq", "H2O"] / self.dens_solvent
+                js = b.flux_mass_phase_comp[t, x, "Liq", j]
+                exponent = (-jw
+                            * (b.structural_parameter
+                               / b.permeate_side.properties[t, x].diffus_phase_comp["Liq", j]
+                               + 1 / b.permeate_side.K[t, x, j]))
+                return b.permeate_side.properties_interface[t, x].conc_mass_phase_comp[
+                    "Liq", j
+                ] == b.permeate_side.properties[t, x].conc_mass_phase_comp["Liq", j] \
+                       * exp(exponent) + js / jw * (1 - exp(exponent))
+
+
 
         return self.eq_flux_mass
 
-    def _get_state_args_permeate(self, initialize_guess, state_args):
-        """
-        Arguments:
-            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
-                               and cp_modulus. These guesses offset the initial values
-                               for the retentate, permeate, and membrane interface
-                               state blocks from the inlet feed
-                               (default =
-                               {'deltaP': -1e4,
-                               'solvent_recovery': 0.5,
-                               'solute_recovery': 0.01,
-                               'cp_modulus': 1.1})
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for the inlet
-                         feed side state block (see documentation of the specific
-                         property package).
-        """
-
-        source = self.feed_side.properties[
-            self.flowsheet().config.time.first(), self.first_element
-        ]
-        mixed_permeate_properties = self.mixed_permeate[
-            self.flowsheet().config.time.first()
-        ]
-
-        # assumptions
-        if initialize_guess is None:
-            initialize_guess = {}
-        if "solvent_recovery" not in initialize_guess:
-            initialize_guess["solvent_recovery"] = 0.5
-        if "solute_recovery" not in initialize_guess:
-            initialize_guess["solute_recovery"] = 0.01
-
-        if state_args is None:
-            state_args = {}
-            state_dict = source.define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-
-        if "flow_mass_phase_comp" not in state_args.keys():
-            raise ConfigurationError(
-                f"{self.__class__.__name__} initialization routine expects "
-                "flow_mass_phase_comp as a state variable. Check "
-                "that the property package supports this state "
-                "variable or that the state_args provided to the "
-                "initialize call includes this state variable"
-            )
-
-        # slightly modify initial values for other state blocks
-        state_args_permeate = deepcopy(state_args)
-
-        state_args_permeate["pressure"] = mixed_permeate_properties.pressure.value
-        for j in self.config.property_package.solvent_set:
-            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
-                "solvent_recovery"
-            ]
-        for j in self.config.property_package.solute_set:
-            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
-                "solute_recovery"
-            ]
-
-        return state_args_permeate
+    # def _get_state_args_permeate(self, initialize_guess, state_args):
+    #     """
+    #     Arguments:
+    #         initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+    #                            and cp_modulus. These guesses offset the initial values
+    #                            for the retentate, permeate, and membrane interface
+    #                            state blocks from the inlet feed
+    #                            (default =
+    #                            {'deltaP': -1e4,
+    #                            'solvent_recovery': 0.5,
+    #                            'solute_recovery': 0.01,
+    #                            'cp_modulus': 1.1})
+    #         state_args : a dict of arguments to be passed to the property
+    #                      package(s) to provide an initial state for the inlet
+    #                      feed side state block (see documentation of the specific
+    #                      property package).
+    #     """
+    #
+    #     source = self.feed_side.properties[
+    #         self.flowsheet().config.time.first(), self.feed_side.first_element
+    #     ]
+    #
+    #     # assumptions
+    #     if initialize_guess is None:
+    #         initialize_guess = {}
+    #     if "solvent_recovery" not in initialize_guess:
+    #         initialize_guess["solvent_recovery"] = 0.5
+    #     if "solute_recovery" not in initialize_guess:
+    #         initialize_guess["solute_recovery"] = 0.01
+    #
+    #     if state_args is None:
+    #         state_args = {}
+    #         state_dict = source.define_port_members()
+    #
+    #         for k in state_dict.keys():
+    #             if state_dict[k].is_indexed():
+    #                 state_args[k] = {}
+    #                 for m in state_dict[k].keys():
+    #                     state_args[k][m] = state_dict[k][m].value
+    #             else:
+    #                 state_args[k] = state_dict[k].value
+    #
+    #     if "flow_mass_phase_comp" not in state_args.keys():
+    #         raise ConfigurationError(
+    #             f"{self.__class__.__name__} initialization routine expects "
+    #             "flow_mass_phase_comp as a state variable. Check "
+    #             "that the property package supports this state "
+    #             "variable or that the state_args provided to the "
+    #             "initialize call includes this state variable"
+    #         )
+    #
+    #     # slightly modify initial values for other state blocks
+    #     state_args_permeate = deepcopy(state_args)
+    #
+    #     state_args_permeate["pressure"] = mixed_permeate_properties.pressure.value
+    #     for j in self.config.property_package.solvent_set:
+    #         state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+    #             "solvent_recovery"
+    #         ]
+    #     for j in self.config.property_package.solute_set:
+    #         state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+    #             "solute_recovery"
+    #         ]
+    #
+    #     return state_args_permeate
 
     def initialize_build(
         self,
@@ -548,22 +579,15 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
-        state_args_permeate = self._get_state_args_permeate(
-            initialize_guess, state_args
-        )
+        # state_args_permeate = self._get_state_args_permeate(
+        #     initialize_guess, state_args
+        # )
 
         self.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate,
-        )
-
-        self.mixed_permeate.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_permeate,
+            state_args=state_args,
         )
 
         # Create solver
@@ -586,30 +610,37 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         if not check_optimal_termination(res):
             if raise_on_failure:
                 raise InitializationError(
-                    f"Unit model {self.name} failed to initailize"
+                    f"Unit model {self.name} failed to initialize"
                 )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Feed Inlet": self.inlet,
-                "Feed Outlet": self.retentate,
-                "Permeate Outlet": self.permeate,
+                "Feed Inlet": self.feed_inlet,
+                "Feed Outlet": self.feed_outlet,
+                "Permeate Inlet": self.permeate_inlet,
+                "Permeate Outlet": self.permeate_outlet,
+
             },
             time_point=time_point,
         )
-
+    #TODO: sort out first/last element for feed/permeate
     def _get_performance_contents(self, time_point=0):
         x_in = self.first_element
         x_interface_in = self.difference_elements.first()
         x_out = self.length_domain.last()
         feed_inlet = self.feed_side.properties[time_point, x_in]
         feed_outlet = self.feed_side.properties[time_point, x_out]
-        interface_inlet = self.feed_side.properties_interface[
+        feed_interface_inlet = self.feed_side.properties_interface[
             time_point, x_interface_in
         ]
-        interface_outlet = self.feed_side.properties_interface[time_point, x_out]
-        permeate = self.mixed_permeate[time_point]
+        feed_interface_outlet = self.feed_side.properties_interface[time_point, x_out]
+        permeate_inlet = self.permeate_side.properties[time_point, x_in]
+        permeate_outlet = self.permeate_side.properties[time_point, x_out]
+        permeate_interface_inlet = self.permeate_side.properties_interface[
+            time_point, x_interface_in
+        ]
+        permeate_interface_outlet = self.permeate_side.properties_interface[time_point, x_out]
         var_dict = {}
         expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[
@@ -633,87 +664,110 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             var_dict["Velocity @Outlet"] = self.feed_side.velocity[time_point, x_out]
         for j in self.config.property_package.solute_set:
             if (
-                interface_inlet.is_property_constructed("conc_mass_phase_comp")
+                feed_interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
                 var_dict[
-                    f"{j} Concentration @Inlet,Membrane-Interface "
-                ] = interface_inlet.conc_mass_phase_comp["Liq", j]
+                    f"{j} Feed Concentration @Inlet,Membrane-Interface "
+                ] = feed_interface_inlet.conc_mass_phase_comp["Liq", j]
             if (
-                interface_outlet.is_property_constructed("conc_mass_phase_comp")
+                feed_interface_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
                 var_dict[
-                    f"{j} Concentration @Outlet,Membrane-Interface "
-                ] = interface_outlet.conc_mass_phase_comp["Liq", j]
+                    f"{j} Feed Concentration @Outlet,Membrane-Interface "
+                ] = feed_interface_outlet.conc_mass_phase_comp["Liq", j]
             if (
                 feed_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
                 var_dict[
-                    f"{j} Concentration @Inlet,Bulk"
+                    f"{j} Feed Concentration @Inlet,Bulk"
                 ] = feed_inlet.conc_mass_phase_comp["Liq", j]
             if (
                 feed_outlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
                 var_dict[
-                    f"{j} Concentration @Outlet,Bulk"
+                    f"{j} Feed Concentration @Outlet,Bulk"
                 ] = feed_outlet.conc_mass_phase_comp["Liq", j]
             if (
-                permeate.is_property_constructed("conc_mass_phase_comp")
+                permeate_interface_inlet.is_property_constructed("conc_mass_phase_comp")
                 and self.config.has_full_reporting
             ):
-                var_dict[f"{j} Permeate Concentration"] = permeate.conc_mass_phase_comp[
-                    "Liq", j
-                ]
+                var_dict[
+                    f"{j} Permeate Concentration @Inlet,Membrane-Interface "
+                ] = permeate_interface_inlet.conc_mass_phase_comp["Liq", j]
+            if (
+                permeate_interface_outlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Permeate Concentration @Outlet,Membrane-Interface "
+                ] = permeate_interface_outlet.conc_mass_phase_comp["Liq", j]
+            if (
+                permeate_inlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Permeate Concentration @Inlet,Bulk"
+                ] = permeate_inlet.conc_mass_phase_comp["Liq", j]
+            if (
+                permeate_outlet.is_property_constructed("conc_mass_phase_comp")
+                and self.config.has_full_reporting
+            ):
+                var_dict[
+                    f"{j} Permeate Concentration @Outlet,Bulk"
+                ] = permeate_outlet.conc_mass_phase_comp["Liq", j]
         if (
-            interface_outlet.is_property_constructed("pressure_osm_phase")
+            feed_interface_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
             var_dict[
-                "Osmotic Pressure @Outlet,Membrane-Interface "
-            ] = interface_outlet.pressure_osm_phase["Liq"]
+                "Feed Osmotic Pressure @Outlet,Membrane-Interface "
+            ] = feed_interface_outlet.pressure_osm_phase["Liq"]
         if (
-            feed_outlet.is_property_constructed("pressure_osm_phase")
+            permeate_outlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase[
+            var_dict["Feed Osmotic Pressure @Outlet,Bulk"] = feed_outlet.pressure_osm_phase[
                 "Liq"
             ]
         if (
-            interface_inlet.is_property_constructed("pressure_osm_phase")
+            feed_interface_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
             var_dict[
-                "Osmotic Pressure @Inlet,Membrane-Interface"
-            ] = interface_inlet.pressure_osm_phase["Liq"]
+                "Feed Osmotic Pressure @Inlet,Membrane-Interface"
+            ] = feed_interface_inlet.pressure_osm_phase["Liq"]
         if (
             feed_inlet.is_property_constructed("pressure_osm_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase[
+            var_dict["Feed Osmotic Pressure @Inlet,Bulk"] = feed_inlet.pressure_osm_phase[
                 "Liq"
             ]
+        #TODO: add all corresponding values for permeate side for relevant
+        # vars/expressions from osmotic pressure and whatever is below
         if (
             feed_inlet.is_property_constructed("flow_vol_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Volumetric Flowrate @Inlet"] = feed_inlet.flow_vol_phase["Liq"]
+            var_dict["Feed Volumetric Flowrate @Inlet"] = feed_inlet.flow_vol_phase["Liq"]
         if (
             feed_outlet.is_property_constructed("flow_vol_phase")
             and self.config.has_full_reporting
         ):
-            var_dict["Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
+            var_dict["Feed Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
         if hasattr(self.feed_side, "dh") and self.config.has_full_reporting:
-            var_dict["Hydraulic Diameter"] = self.feed_side.dh
+            var_dict["Feed-side Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
             expr_dict["Average Solvent Flux (LMH)"] = (
                 self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
             )
             if hasattr(self.feed_side, "N_Re_avg"):
-                expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
+                expr_dict["Average Feed-side Reynolds Number"] = self.feed_side.N_Re_avg[
                     time_point
                 ]
             for j in self.config.property_package.solute_set:
@@ -721,7 +775,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
                 )
                 if hasattr(self.feed_side, "K_avg"):
-                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
+                    expr_dict[f"{j} Average Feed-side Mass Transfer Coefficient (mm/h)"] = (
                         self.feed_side.K_avg[time_point, j] * 3.6e6
                     )
 
@@ -768,7 +822,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         if not hasattr(self, "_permeate_scaled_properties"):
             self._permeate_scaled_properties = ComponentSet()
 
-        for sb in (self.permeate_side, self.mixed_permeate):
+        for sb in self.permeate_side:
             for blk in sb.values():
                 for j in self.config.property_package.solute_set:
                     self._rescale_permeate_variable(blk.flow_mass_phase_comp["Liq", j])

@@ -26,6 +26,7 @@ from idaes.core import (
     FlowDirection,
 )
 from idaes.core.util import scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
