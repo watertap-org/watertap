@@ -58,11 +58,6 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-def _add_object_reference_if_exists(dest_block, dest_name, source_block, source_name):
-    if hasattr(source_block, source_name):
-        add_object_reference(dest_block, dest_name, getattr(source_block, source_name))
-
-
 class ReverseOsmosisBaseData(UnitModelBlockData):
     """
     Reverse Osmosis base class
@@ -131,30 +126,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         )
         add_object_reference(self, "first_element", self.feed_side.first_element)
         add_object_reference(self, "nfe", self.feed_side.nfe)
-
-        _add_object_reference_if_exists(self, "dP_dx", self.feed_side, "dP_dx")
-        _add_object_reference_if_exists(self, "area_cross", self.feed_side, "area")
-
-        _add_object_reference_if_exists(
-            self, "cp_modulus", self.feed_side, "cp_modulus"
-        )
-        _add_object_reference_if_exists(self, "Kf", self.feed_side, "K")
-        _add_object_reference_if_exists(self, "Kf_avg", self.feed_side, "K_avg")
-        _add_object_reference_if_exists(
-            self, "channel_height", self.feed_side, "channel_height"
-        )
-        _add_object_reference_if_exists(self, "dh", self.feed_side, "dh")
-        _add_object_reference_if_exists(
-            self, "spacer_porosity", self.feed_side, "spacer_porosity"
-        )
-        _add_object_reference_if_exists(self, "N_Re", self.feed_side, "N_Re")
-        _add_object_reference_if_exists(self, "N_Re_avg", self.feed_side, "N_Re_avg")
-        _add_object_reference_if_exists(self, "N_Sc", self.feed_side, "N_Sc")
-        _add_object_reference_if_exists(self, "N_Sh", self.feed_side, "N_Sh")
-        _add_object_reference_if_exists(self, "velocity", self.feed_side, "velocity")
-        _add_object_reference_if_exists(
-            self, "friction_factor_darcy", self.feed_side, "friction_factor_darcy"
-        )
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -641,12 +612,12 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP") and self.config.has_full_reporting:
             var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "N_Re") and self.config.has_full_reporting:
-            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
-            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity") and self.config.has_full_reporting:
-            var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
-            var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
+        if hasattr(self.feed_side, "N_Re") and self.config.has_full_reporting:
+            var_dict["Reynolds Number @Inlet"] = self.feed_side.N_Re[time_point, x_in]
+            var_dict["Reynolds Number @Outlet"] = self.feed_side.N_Re[time_point, x_out]
+        if hasattr(self.feed_side, "velocity") and self.config.has_full_reporting:
+            var_dict["Velocity @Inlet"] = self.feed_side.velocity[time_point, x_in]
+            var_dict["Velocity @Outlet"] = self.feed_side.velocity[time_point, x_out]
         for j in self.config.property_package.solute_set:
             if (
                 interface_inlet.is_property_constructed("conc_mass_phase_comp")
@@ -721,21 +692,25 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             and self.config.has_full_reporting
         ):
             var_dict["Volumetric Flowrate @Outlet"] = feed_outlet.flow_vol_phase["Liq"]
-        if hasattr(self, "dh") and self.config.has_full_reporting:
-            var_dict["Hydraulic Diameter"] = self.dh
+        if hasattr(self.feed_side, "dh") and self.config.has_full_reporting:
+            var_dict["Hydraulic Diameter"] = self.feed_side.dh
 
         if self.config.has_full_reporting:
             expr_dict["Average Solvent Flux (LMH)"] = (
                 self.flux_mass_phase_comp_avg[time_point, "Liq", "H2O"] * 3.6e3
             )
-            expr_dict["Average Reynolds Number"] = self.N_Re_avg[time_point]
+            if hasattr(self.feed_side, "N_Re_avg"):
+                expr_dict["Average Reynolds Number"] = self.feed_side.N_Re_avg[
+                    time_point
+                ]
             for j in self.config.property_package.solute_set:
                 expr_dict[f"{j} Average Solute Flux (GMH)"] = (
                     self.flux_mass_phase_comp_avg[time_point, "Liq", j] * 3.6e6
                 )
-                expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
-                    self.Kf_avg[time_point, j] * 3.6e6
-                )
+                if hasattr(self.feed_side, "K_avg"):
+                    expr_dict[f"{j} Average Mass Transfer Coefficient (mm/h)"] = (
+                        self.feed_side.K_avg[time_point, j] * 3.6e6
+                    )
 
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
