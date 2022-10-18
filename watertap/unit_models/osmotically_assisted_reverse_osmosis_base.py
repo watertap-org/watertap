@@ -91,9 +91,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                     [p for p in self.config.property_package.phase_list]
                 )
             )
-
+        # Raise exception if any of configuration arguments are provided incorrectly
         validate_membrane_config_args(self)
 
+        #TODO: method on 0D and 1D RO models; reconsider this for OARO 0D and 1D but keep for now
         self._add_feed_side_membrane_channel_and_geometry()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
@@ -111,9 +112,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
         )
-
+        # Add constraint for equal temperature between bulk and interface
         self.feed_side.add_isothermal_conditions()
 
+        # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
 
         self.feed_side.add_concentration_polarization(
@@ -121,6 +123,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
         )
 
+        # Pass in 0D, applied in 1D
         self.feed_side.apply_transformation()
 
         self.feed_side.add_expressions()
