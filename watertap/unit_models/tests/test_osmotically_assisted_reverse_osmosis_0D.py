@@ -96,7 +96,6 @@ def test_option_has_pressure_change():
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
-    assert isinstance(m.fs.unit.deltaP, Var)
 
 
 @pytest.mark.unit
@@ -188,7 +187,6 @@ def test_option_pressure_change_calculated():
     assert m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.none
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.calculated
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
-    assert isinstance(m.fs.unit.deltaP, Var)
     assert isinstance(m.fs.unit.feed_side.channel_height, Var)
     assert isinstance(m.fs.unit.width, Var)
     assert isinstance(m.fs.unit.length, Var)
@@ -225,19 +223,18 @@ class TestReverseOsmosis:
         concentration_polarization_modulus = 1.1
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.feed_side.cp_modulus.fix(concentration_polarization_modulus)
         return m
 
@@ -406,19 +403,19 @@ class TestReverseOsmosis:
         kf = 2e-5
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.structural_parameter.fix(1200e-6)
         m.fs.unit.feed_side.K[0, 0.0, "NaCl"].fix(kf)
         m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
 
@@ -524,19 +521,18 @@ class TestReverseOsmosis:
         B = 3.5e-8
         pressure_atmospheric = 101325
 
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
 
         m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)
@@ -640,18 +636,18 @@ class TestReverseOsmosis:
         B = 3.5e-8
         pressure_atmospheric = 101325
 
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.feed_side.channel_height.fix(0.001)
         m.fs.unit.feed_side.spacer_porosity.fix(0.97)
         m.fs.unit.length.fix(16)
@@ -765,18 +761,18 @@ class TestReverseOsmosis:
         pressure_atmospheric = 101325
         membrane_pressure_drop = 3e5
 
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
-        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
             feed_flow_mass * feed_mass_frac_H2O
         )
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
 
         m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)

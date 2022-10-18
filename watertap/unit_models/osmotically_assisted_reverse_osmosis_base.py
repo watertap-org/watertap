@@ -435,7 +435,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                        * exp(exponent) - js / jw * (exp(exponent) - 1)
 
             self.structural_parameter = Var(initialize=1200e-6,
-                                            units=pyunits.m
+                                            units=pyunits.m,
+                                            domain=NonNegativeReals,
+                                            doc="Membrane structural parameter (i.e., effective thickness)"
                                             )
 
             @self.Constraint(
