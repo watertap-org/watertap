@@ -95,6 +95,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         validate_membrane_config_args(self)
 
         #TODO: method on 0D and 1D RO models; reconsider this for OARO 0D and 1D but keep for now
+        #Maybe generalize this to _add_membrane_channel_and_geometry, where name (e.g., feed_side, permeate_side)
+        #is passed as an arg
         self._add_feed_side_membrane_channel_and_geometry()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
@@ -118,6 +120,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
 
+        # Concentration polarization constraint is not accounted for in the below method; it is
+        # written later in the base model (eq_concentration_polarization)
         self.feed_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
