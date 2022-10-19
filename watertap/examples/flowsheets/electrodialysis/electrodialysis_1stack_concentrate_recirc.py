@@ -27,15 +27,20 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
+#from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics, variables_set
+import idaes.core.util.model_statistics as mstat
+from pyomo.core.expr.current import identify_variables
 from idaes.models.unit_models import Feed, Product, Separator, Mixer
+from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
+from pytest import approx
 from watertap.core.util.initialization import check_dof
-from watertap.unit_models.electrodialysis_0D import ElectricalOperationMode
+from watertap.unit_models.electrodialysis_1D import ElectricalOperationMode
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import (
+    MixerType,
     WaterTAPCosting,
 )
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
@@ -51,15 +56,67 @@ def main():
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
     solve(m, solver=solver)
+    '''
+    # Temperature and Pressure var diagnositcs 
+    count1=0
+    count2=0
+    count3=0
+    ct1=0
+    ct2=0
+    ct3=0
+    
+    for k in mstat.variables_set(m):
+        if "temperature" in k.name:
+            print("ALL T:",type(k), k.name)
+            ct1+=1
+    print("NUM of ALL T", ct1)
 
+    for k in mstat.fixed_variables_generator(m):
+        if "temperature" in k.name:
+            print("FIXED T:", k)
+            ct3+=1
+    print("NUM of FIXED T", ct3)       
+    for k in mstat.activated_equalities_generator(m):
+        for l in identify_variables(k.body):
+            if "temperature" in l.name and "pressure" not in k.name and"dens" not in k.name:
+                print("CONSTR of T:", k)
+                ct2+=1
+                break
+    print("NUM of Constr T", ct2)
+            #for j in mstat.activated_constraints_generator(m):
+             ##      if k.name == l:
+               #         print("Constraints of T:", j.body)
+
+    
+
+    for k in mstat.variables_set(m):
+        if "pressure" in k.name and "pressure_" not in k.name and "_pressure" not in k.name:
+            print("ALL P:", k.name)
+            count1+=1
+    print("NUM of ALL P", count1)
+
+    for k in mstat.fixed_variables_generator(m):
+        if "pressure" in k.name and "pressure_" not in k.name and "_pressure" not in k.name:
+            print("FIXED P:", k.name)
+            count2+=1
+    print("NUM of fixed P", count2)
+
+    for k in mstat.activated_equalities_generator(m):
+        for l in identify_variables(k.body):
+            if "pressure" in l.name and "pressure_" not in l.name and "_pressure" not in l.name:
+                print("CONSTR of P:", k)
+                count3+=1
+                break
+    print("NUM of Constr P", count3)
+    '''
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
-    initialize_system(m, solver=solver)
+    #initialize_system(m, solver=solver)
     #optimize_system(m, solver=solver)
-    print("\n***---Optimization results---***")
-    display_model_metrics(m)
+    #print("\n***---Optimization results---***")
+    #display_model_metrics(m)
 
 
 def build():
@@ -79,7 +136,7 @@ def build():
         property_package=m.fs.properties,
         outlet_list=["to_dil", "to_conc_in0"],
     ) 
-    m.fs.mix0 = Mixer(property_package=m.fs.properties,
+    m.fs.mix0 = Mixer(property_package=m.fs.properties, energy_mixing_type = MixingType.none, momentum_mixing_type = MomentumMixingType.none,
         inlet_list=["from_feed", "from_conc_out"])
 
     # Add electrodialysis (ED) stacks
@@ -90,7 +147,7 @@ def build():
     )
     m.fs.sepa1 = Separator(
         property_package=m.fs.properties,
-        outlet_list=["to_prod", "to_conc_in1"],
+        outlet_list=["to_disp", "to_conc_in1"],
     ) 
     m.fs.prod = Product(property_package=m.fs.properties)
     m.fs.disp = Product(property_package=m.fs.properties)
@@ -99,7 +156,7 @@ def build():
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
     m.fs.sepa0.to_dil_state[0].conc_mass_phase_comp[...]
     m.fs.sepa0.to_conc_in0_state[0].conc_mass_phase_comp[...]
-    m.fs.sepa1.to_prod_state[0].conc_mass_phase_comp[...]
+    m.fs.sepa1.to_disp_state[0].conc_mass_phase_comp[...]
     m.fs.sepa1.to_conc_in1_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_feed_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_conc_out_state[0].conc_mass_phase_comp[...]
@@ -109,12 +166,18 @@ def build():
     m.fs.feed.properties[0].flow_vol_phase[...]
     m.fs.sepa0.to_dil_state[0].flow_vol_phase[...]
     m.fs.sepa0.to_conc_in0_state[0].flow_vol_phase[...]
-    m.fs.sepa1.to_prod_state[0].flow_vol_phase[...]
+    m.fs.sepa1.to_disp_state[0].flow_vol_phase[...]
     m.fs.sepa1.to_conc_in1_state[0].flow_vol_phase[...]
     m.fs.mix0.from_feed_state[0].flow_vol_phase[...]
     m.fs.mix0.from_conc_out_state[0].flow_vol_phase[...]
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
+    m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
+    m.fs.EDstack.concentrate.properties[...].flow_vol_phase[...]
+
+
+    #m.fs.EDstack.inlet_diluate.flow_vol_phase[...]
+    #m.fs.EDstack.inlet_concentrate.flow_vol_phase[...]
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -150,10 +213,10 @@ def build():
     m.fs.eq_recovery_volume_H2O = Constraint(
         expr=m.fs.recovery_volume_H2O == 
         m.fs.prod.properties[0].flow_vol_phase['Liq']
-        * m.fs.feed.outlet[0].flow_vol_phase['Liq']**-1
+        * m.fs.feed.properties[0].flow_vol_phase['Liq']**-1
     )
     m.fs.eq_electrodialysis_equal_flow =  Constraint(
-        expr=m.fs.EDstack.inlet_diluate.flow_vol_phase["Liq"]==m.fs.EDstack.inlet_concentrate.flow_vol_phase["Liq"]
+        expr=m.fs.EDstack.diluate.properties[0,0].flow_vol_phase["Liq"]==m.fs.EDstack.concentrate.properties[0,0].flow_vol_phase["Liq"]
     )
     
     m.fs.eq_product_salinity = Constraint(
@@ -195,7 +258,7 @@ def build():
         source=m.fs.EDstack.outlet_concentrate, destination=m.fs.sepa1.inlet
     )
     m.fs.arc6 = Arc(
-        source=m.fs.sepa1.to_prod, destination=m.fs.disp.inlet
+        source=m.fs.sepa1.to_disp, destination=m.fs.disp.inlet
     )
     m.fs.arc7 = Arc(
         source=m.fs.sepa1.to_conc_in1, destination=m.fs.mix0.from_conc_out
@@ -223,11 +286,13 @@ def set_operating_conditions(m):
     # ---specifications---
     # Fix state variables at the origin
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
+    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
+    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
+    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(4.8)
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(1.476e-2)
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(1.476e-2)
-
+    m.fs.recovery_volume_H2O.fix(0.5)
     # Fix separator's split_fraction to 0.5, i.e., equal flows into the diluate and concentrate channels
     #m.fs.sepa0.split_fraction[0, "inlet_diluate"].fix(0.5)
 
@@ -258,7 +323,10 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
 
     # check zero degrees of freedom
+    mstat.report_statistics(m)
     check_dof(m)
+    
+
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -283,15 +351,17 @@ def initialize_system(m, solver=None):
     m.fs.sepa0.initialize(optarg=optarg)
     propagate_state(m.fs.arc1)
     propagate_state(m.fs.arc2)
-    m.fs.mix0.initialize(optarg=optarg)
-    propagate_state(m.fs.arc3)
+    propagate_state(destination=m.fs.EDstack.inlet_concentrate,source=m.fs.EDstack.inlet_diluate)
     m.fs.EDstack.initialize(optarg=optarg)
+    propagate_state(m.fs.arc3,direction="backward")
     propagate_state(m.fs.arc4)
     propagate_state(m.fs.arc5)
     m.fs.prod.initialize()
+    m.fs.sepa1.split_fraction[0,"to_conc_in1"].set_value(max(2-value(m.fs.recovery_volume_H2O)**-1, 1e-8))#2-value(m.fs.recovery_volume_H2O)**-1
     m.fs.sepa1.initialize(optarg=optarg)
     propagate_state(m.fs.arc6)
     propagate_state(m.fs.arc7)
+    m.fs.mix0.initialize(optarg=optarg)
     m.fs.disp.initialize()
     m.fs.costing.initialize()
 
