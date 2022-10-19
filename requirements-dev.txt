@@ -1,4 +1,0 @@
-black==22.3.0
-pre-commit
-# Defer to setup.py contents
--e .[dev]
