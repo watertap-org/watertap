@@ -344,7 +344,7 @@ class _ParameterSweepBase(ABC):
             for label in output_dict["outputs"].keys():
                 output_dict["outputs"][label]["value"][case_number] = np.nan
 
-    def _create_global_output(self, local_output_dict, req_num_samples):
+    def _create_global_output(self, local_output_dict, req_num_samples=None):
 
         # Before we can create the global dictionary, we need to delete the pyomo
         # object contained within the dictionary
@@ -388,10 +388,10 @@ class _ParameterSweepBase(ABC):
                         root=0,
                     )
 
-                    # Trim to the exact number
-                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
-                        subkey
-                    ]["value"][0:req_num_samples]
+                    if req_num_samples is not None:  # Trim to the exact number
+                        global_output_dict[key][subkey]["value"] = global_output_dict[
+                            key
+                        ][subkey]["value"][0:req_num_samples]
 
             elif key == "solve_successful":
                 local_solve_successful = np.fromiter(
@@ -409,7 +409,8 @@ class _ParameterSweepBase(ABC):
                     root=0,
                 )
 
-                if self.rank == 0:
+                if self.rank == 0 and req_num_samples is not None:
+                    # Trim to the exact number
                     global_output_dict[key] = global_solve_successful[0:req_num_samples]
 
         return global_output_dict
@@ -520,16 +521,17 @@ class _ParameterSweepBase(ABC):
             local_solve_successful_list.append(run_successful)
 
             if self.config.run_differential_sweep:
-                differential_sweep_output_dict[k] = self._run_differential_sweep(model, local_values[k, :], outputs)
+                differential_sweep_output_dict[k] = self._run_differential_sweep(
+                    model, local_values[k, :], outputs
+                )
 
         local_output_dict["solve_successful"] = local_solve_successful_list
-        
+
         if self.config.run_differential_sweep:
             # Now append the outputs of the differential solves
             self._append_differential_results(
                 local_output_dict, differential_sweep_output_dict
             )
-
 
         return local_output_dict
 

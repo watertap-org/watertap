@@ -123,74 +123,74 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                             (local_output_dict[key][subkey]["value"], subitem["value"])
                         )
 
-    def _create_global_output(self, local_output_dict):
-        # Before we can create the global dictionary, we need to delete the pyomo
-        # object contained within the dictionary
-        for key, val in local_output_dict.items():
-            if key != "solve_successful":
-                for subval in val.values():
-                    if "_pyo_obj" in subval:
-                        del subval["_pyo_obj"]
+    # def _create_global_output(self, local_output_dict):
+    #     # Before we can create the global dictionary, we need to delete the pyomo
+    #     # object contained within the dictionary
+    #     for key, val in local_output_dict.items():
+    #         if key != "solve_successful":
+    #             for subval in val.values():
+    #                 if "_pyo_obj" in subval:
+    #                     del subval["_pyo_obj"]
 
-        # We make the assumption that the parameter sweep is running the same
-        # flowsheet num_samples number of times, i.e., the structure of the
-        # local_output_dict remains the same across all mpi_ranks
-        local_num_cases = len(local_output_dict["solve_successful"])
+    #     # We make the assumption that the parameter sweep is running the same
+    #     # flowsheet num_samples number of times, i.e., the structure of the
+    #     # local_output_dict remains the same across all mpi_ranks
+    #     local_num_cases = len(local_output_dict["solve_successful"])
 
-        # Gather the size of the value array on each MPI rank
-        sample_split_arr = self.comm.allgather(local_num_cases)
-        num_total_samples = sum(sample_split_arr)
+    #     # Gather the size of the value array on each MPI rank
+    #     sample_split_arr = self.comm.allgather(local_num_cases)
+    #     num_total_samples = sum(sample_split_arr)
 
-        # Create the global value array on rank 0
-        if self.rank == 0:
-            global_output_dict = copy.deepcopy(local_output_dict)
-            # Create a global value array of inputs in the dictionary
-            for key, item in global_output_dict.items():
-                if key != "solve_successful":
-                    for subkey, subitem in item.items():
-                        subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
+    #     # Create the global value array on rank 0
+    #     if self.rank == 0:
+    #         global_output_dict = copy.deepcopy(local_output_dict)
+    #         # Create a global value array of inputs in the dictionary
+    #         for key, item in global_output_dict.items():
+    #             if key != "solve_successful":
+    #                 for subkey, subitem in item.items():
+    #                     subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
 
-        else:
-            global_output_dict = local_output_dict
+    #     else:
+    #         global_output_dict = local_output_dict
 
-        # Finally collect the values
-        for key, item in local_output_dict.items():
-            if key != "solve_successful":
-                for subkey, subitem in item.items():
-                    self.comm.Gatherv(
-                        sendbuf=subitem["value"],
-                        recvbuf=(
-                            global_output_dict[key][subkey]["value"],
-                            sample_split_arr,
-                        ),
-                        root=0,
-                    )
+    #     # Finally collect the values
+    #     for key, item in local_output_dict.items():
+    #         if key != "solve_successful":
+    #             for subkey, subitem in item.items():
+    #                 self.comm.Gatherv(
+    #                     sendbuf=subitem["value"],
+    #                     recvbuf=(
+    #                         global_output_dict[key][subkey]["value"],
+    #                         sample_split_arr,
+    #                     ),
+    #                     root=0,
+    #                 )
 
-                    # Trim to the exact number
-                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
-                        subkey
-                    ]["value"]
+    #                 # Trim to the exact number
+    #                 global_output_dict[key][subkey]["value"] = global_output_dict[key][
+    #                     subkey
+    #                 ]["value"]
 
-            elif key == "solve_successful":
-                local_solve_successful = np.fromiter(
-                    item, dtype=np.bool, count=len(item)
-                )
+    #         elif key == "solve_successful":
+    #             local_solve_successful = np.fromiter(
+    #                 item, dtype=np.bool, count=len(item)
+    #             )
 
-                if self.rank == 0:
-                    global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
-                else:
-                    global_solve_successful = None
+    #             if self.rank == 0:
+    #                 global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
+    #             else:
+    #                 global_solve_successful = None
 
-                self.comm.Gatherv(
-                    sendbuf=local_solve_successful,
-                    recvbuf=(global_solve_successful, sample_split_arr),
-                    root=0,
-                )
+    #             self.comm.Gatherv(
+    #                 sendbuf=local_solve_successful,
+    #                 recvbuf=(global_solve_successful, sample_split_arr),
+    #                 root=0,
+    #             )
 
-                if self.rank == 0:
-                    global_output_dict[key] = global_solve_successful.tolist()
+    #             if self.rank == 0:
+    #                 global_output_dict[key] = global_solve_successful.tolist()
 
-        return global_output_dict
+    #     return global_output_dict
 
     def _collect_local_inputs(self, local_results_dict):
 
@@ -325,8 +325,8 @@ class DifferentialParameterSweep(_ParameterSweepBase):
     def _run_differential_sweep(self, model, local_value, outputs):
 
         diff_sweep_param_dict = self._create_differential_sweep_params(
-                local_value, self.config.differential_sweep_specs
-            )
+            local_value, self.config.differential_sweep_specs
+        )
 
         # We want this instance of the parameter sweep to run in serial
         diff_ps = ParameterSweep(
