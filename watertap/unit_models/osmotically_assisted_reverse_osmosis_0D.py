@@ -75,7 +75,8 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            self._add_length_and_width()
+            if not hasattr(self, 'length') and not hasattr(self, 'width'):
+                self._add_length_and_width()
             mem_side.add_geometry(length_var=self.length, width_var=self.width, flow_direction=flow_direction)
             self._add_area(include_constraint=True)
         else:

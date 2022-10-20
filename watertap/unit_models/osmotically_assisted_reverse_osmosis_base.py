@@ -305,14 +305,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
     def _add_area(self, include_constraint=True):
         units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        self.area = Var(
-            initialize=10,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta("length") ** 2,
-            doc="Total Membrane area",
-        )
+        if not hasattr(self, 'area'):
+            self.area = Var(
+                initialize=10,
+                bounds=(1e-1, 1e3),
+                domain=NonNegativeReals,
+                units=units_meta("length") ** 2,
+                doc="Total Membrane area",
+            )
 
         if include_constraint:
             # Membrane area equation
@@ -362,9 +362,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
+            bounds=lambda b, t, x, p, j: (0, 3e-2)
             if j in solvent_set
-            else (1e-8, 1e-3),
+            else (0, 1e-3),
             units=units_meta("mass")
             * units_meta("length") ** -2
             * units_meta("time") ** -1,
@@ -584,13 +584,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         # state_args_permeate = self._get_state_args_permeate(
         #     initialize_guess, state_args
         # )
-
-        self.permeate_side.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-        )
+        # print("DOF before permeate side init",degrees_of_freedom(self))
+        # self.permeate_side.initialize(
+        #     outlvl=outlvl,
+        #     optarg=optarg,
+        #     solver=solver,
+        #     state_args=state_args,
+        # )
+        # print("DOF after permeate side init",degrees_of_freedom(self))
 
         # Create solver
         opt = get_solver(solver, optarg)
@@ -598,15 +599,20 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            print("DOF after 1st solve", degrees_of_freedom(self))
+
             # occasionally it might be worth retrying a solve
             if not check_optimal_termination(res):
                 init_log.warning(
                     f"Trouble solving unit model {self.name}, trying one more time"
                 )
                 res = opt.solve(self, tee=slc.tee)
+                print("DOF after 2nd solve", degrees_of_freedom(self))
 
         # release inlet state, in case this error is caught
         self.feed_side.release_state(source_flags, outlvl)
+        print("DOF after release state", degrees_of_freedom(self))
+
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
@@ -821,29 +827,33 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
 
-        if not hasattr(self, "_permeate_scaled_properties"):
-            self._permeate_scaled_properties = ComponentSet()
+        if hasattr(self, 'structural_parameter'):
+            if iscale.get_scaling_factor(self.structural_parameter) is None:
+                # Structural parameter expected to be ~ 1200 microns
+                iscale.set_scaling_factor(self.structural_parameter, 1e3)
+        # if not hasattr(self, "_permeate_scaled_properties"):
+        #     self._permeate_scaled_properties = ComponentSet()
 
-        for sb in self.permeate_side:
-            for blk in sb.values():
-                for j in self.config.property_package.solute_set:
-                    self._rescale_permeate_variable(blk.flow_mass_phase_comp["Liq", j])
-                    if blk.is_property_constructed("mass_frac_phase_comp"):
-                        self._rescale_permeate_variable(
-                            blk.mass_frac_phase_comp["Liq", j]
-                        )
-                    if blk.is_property_constructed("conc_mass_phase_comp"):
-                        self._rescale_permeate_variable(
-                            blk.conc_mass_phase_comp["Liq", j]
-                        )
-                    if blk.is_property_constructed("mole_frac_phase_comp"):
-                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
-                    if blk.is_property_constructed("molality_phase_comp"):
-                        self._rescale_permeate_variable(
-                            blk.molality_phase_comp["Liq", j]
-                        )
-                if blk.is_property_constructed("pressure_osm_phase"):
-                    self._rescale_permeate_variable(blk.pressure_osm_phase["Liq"])
+        # for sb in self.permeate_side:
+        #     for blk in sb.values():
+        #         for j in self.config.property_package.solute_set:
+        #             self._rescale_permeate_variable(blk.flow_mass_phase_comp["Liq", j])
+        #             if blk.is_property_constructed("mass_frac_phase_comp"):
+        #                 self._rescale_permeate_variable(
+        #                     blk.mass_frac_phase_comp["Liq", j]
+        #                 )
+        #             if blk.is_property_constructed("conc_mass_phase_comp"):
+        #                 self._rescale_permeate_variable(
+        #                     blk.conc_mass_phase_comp["Liq", j]
+        #                 )
+        #             if blk.is_property_constructed("mole_frac_phase_comp"):
+        #                 self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+        #             if blk.is_property_constructed("molality_phase_comp"):
+        #                 self._rescale_permeate_variable(
+        #                     blk.molality_phase_comp["Liq", j]
+        #                 )
+        #         if blk.is_property_constructed("pressure_osm_phase"):
+        #             self._rescale_permeate_variable(blk.pressure_osm_phase["Liq"])
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:

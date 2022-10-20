@@ -78,8 +78,9 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 "argument. Must be a FlowDirection Enum.".format(self.name)
             )
 
-        self._add_var_reference(length_var, "length", "length_var")
-        self._add_var_reference(width_var, "width", "width_var")
+        if not hasattr(self, 'length') and not hasattr(self, 'width'):
+            self._add_var_reference(length_var, "length", "length_var")
+            self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(self, has_phase_equilibrium=None):
         """
