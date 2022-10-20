@@ -56,28 +56,36 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
     CONFIG = CONFIG_Template()
 
     _add_has_full_reporting(CONFIG)
-    #TODO: add a test for this exception
-    def _add_membrane_channel_and_geometry(self, side='feed_side', flow_direction=FlowDirection.forward):
+    # TODO: add a test for this exception
+    def _add_membrane_channel_and_geometry(
+        self, side="feed_side", flow_direction=FlowDirection.forward
+    ):
         if not isinstance(side, str):
-            raise TypeError(f'{side} is not a string. Please provide a string.')
+            raise TypeError(f"{side} is not a string. Please provide a string.")
 
         # Build membrane channel control volume
-        setattr(self,
-                side,
-                MembraneChannel0DBlock(dynamic=False,
-                                       has_holdup=False,
-                                       property_package=self.config.property_package,
-                                       property_package_args=self.config.property_package_args,
-                                       )
-                )
+        setattr(
+            self,
+            side,
+            MembraneChannel0DBlock(
+                dynamic=False,
+                has_holdup=False,
+                property_package=self.config.property_package,
+                property_package_args=self.config.property_package_args,
+            ),
+        )
         mem_side = getattr(self, side)
 
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            if not hasattr(self, 'length') and not hasattr(self, 'width'):
+            if not hasattr(self, "length") and not hasattr(self, "width"):
                 self._add_length_and_width()
-            mem_side.add_geometry(length_var=self.length, width_var=self.width, flow_direction=flow_direction)
+            mem_side.add_geometry(
+                length_var=self.length,
+                width_var=self.width,
+                flow_direction=flow_direction,
+            )
             self._add_area(include_constraint=True)
         else:
             mem_side.add_geometry(length_var=None, width_var=None)
@@ -144,18 +152,19 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
             )
 
         # Different expression in 1DRO
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     self.config.property_package.component_list,
-        #     doc="Permeate production",
-        # )
-        # def eq_permeate_production(b, t, p, j):
-        #     return (
-        #         b.mixed_permeate[t].get_material_flow_terms(p, j)
-        #         == b.area * b.flux_mass_phase_comp_avg[t, p, j]
-        #     )
-        #------------------------------------------------------------------------------------------------
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc="Permeate production",
+        )
+        def eq_permeate_production(b, t, p, j):
+            return (
+                b.mixed_permeate[t].get_material_flow_terms(p, j)
+                == b.area * b.flux_mass_phase_comp_avg[t, p, j]
+            )
+
+        # ------------------------------------------------------------------------------------------------
         # Not in 1DRO
         @self.Constraint(
             self.flowsheet().config.time,
