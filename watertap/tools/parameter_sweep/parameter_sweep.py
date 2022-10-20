@@ -362,6 +362,8 @@ class _ParameterSweepBase(ABC):
         # Gather the size of the value array on each MPI rank
         sample_split_arr = self.comm.allgather(local_num_cases)
         num_total_samples = sum(sample_split_arr)
+        if req_num_samples is None:
+            req_num_samples = num_total_samples
 
         # Create the global value array on rank 0
         if self.rank == 0:
@@ -388,10 +390,10 @@ class _ParameterSweepBase(ABC):
                         root=0,
                     )
 
-                    if req_num_samples is not None:  # Trim to the exact number
-                        global_output_dict[key][subkey]["value"] = global_output_dict[
-                            key
-                        ][subkey]["value"][0:req_num_samples]
+                    # Trim to the exact number
+                    global_output_dict[key][subkey]["value"] = global_output_dict[
+                        key
+                    ][subkey]["value"][0:req_num_samples]
 
             elif key == "solve_successful":
                 local_solve_successful = np.fromiter(
@@ -409,9 +411,9 @@ class _ParameterSweepBase(ABC):
                     root=0,
                 )
 
-                if self.rank == 0 and req_num_samples is not None:
+                if self.rank == 0:
                     # Trim to the exact number
-                    global_output_dict[key] = global_solve_successful[0:req_num_samples]
+                    global_output_dict[key] = list(global_solve_successful[0:req_num_samples])
 
         return global_output_dict
 
