@@ -155,7 +155,7 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
         #         b.mixed_permeate[t].get_material_flow_terms(p, j)
         #         == b.area * b.flux_mass_phase_comp_avg[t, p, j]
         #     )
-
+        #------------------------------------------------------------------------------------------------
         # Not in 1DRO
         @self.Constraint(
             self.flowsheet().config.time,
