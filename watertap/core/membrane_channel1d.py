@@ -11,16 +11,10 @@
 #
 ###############################################################################
 
-from pyomo.common.config import Bool, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from pyomo.environ import (
     Constraint,
-    NonNegativeReals,
-    NegativeReals,
-    Param,
-    Set,
-    Var,
-    value,
-    units as pyunits,
+    Set
 )
 from idaes.core import (
     declare_process_block_class,

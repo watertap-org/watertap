@@ -19,11 +19,8 @@ from pyomo.environ import (
     Constraint,
     Expression,
     Param,
-    NegativeReals,
     NonNegativeReals,
     Var,
-    check_optimal_termination,
-    exp,
     units as pyunits,
 )
 
@@ -36,7 +33,7 @@ from idaes.core import (
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 
 
