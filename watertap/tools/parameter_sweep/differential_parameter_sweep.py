@@ -123,75 +123,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                             (local_output_dict[key][subkey]["value"], subitem["value"])
                         )
 
-    # def _create_global_output(self, local_output_dict):
-    #     # Before we can create the global dictionary, we need to delete the pyomo
-    #     # object contained within the dictionary
-    #     for key, val in local_output_dict.items():
-    #         if key != "solve_successful":
-    #             for subval in val.values():
-    #                 if "_pyo_obj" in subval:
-    #                     del subval["_pyo_obj"]
-
-    #     # We make the assumption that the parameter sweep is running the same
-    #     # flowsheet num_samples number of times, i.e., the structure of the
-    #     # local_output_dict remains the same across all mpi_ranks
-    #     local_num_cases = len(local_output_dict["solve_successful"])
-
-    #     # Gather the size of the value array on each MPI rank
-    #     sample_split_arr = self.comm.allgather(local_num_cases)
-    #     num_total_samples = sum(sample_split_arr)
-
-    #     # Create the global value array on rank 0
-    #     if self.rank == 0:
-    #         global_output_dict = copy.deepcopy(local_output_dict)
-    #         # Create a global value array of inputs in the dictionary
-    #         for key, item in global_output_dict.items():
-    #             if key != "solve_successful":
-    #                 for subkey, subitem in item.items():
-    #                     subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
-
-    #     else:
-    #         global_output_dict = local_output_dict
-
-    #     # Finally collect the values
-    #     for key, item in local_output_dict.items():
-    #         if key != "solve_successful":
-    #             for subkey, subitem in item.items():
-    #                 self.comm.Gatherv(
-    #                     sendbuf=subitem["value"],
-    #                     recvbuf=(
-    #                         global_output_dict[key][subkey]["value"],
-    #                         sample_split_arr,
-    #                     ),
-    #                     root=0,
-    #                 )
-
-    #                 # Trim to the exact number
-    #                 global_output_dict[key][subkey]["value"] = global_output_dict[key][
-    #                     subkey
-    #                 ]["value"]
-
-    #         elif key == "solve_successful":
-    #             local_solve_successful = np.fromiter(
-    #                 item, dtype=np.bool, count=len(item)
-    #             )
-
-    #             if self.rank == 0:
-    #                 global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
-    #             else:
-    #                 global_solve_successful = None
-
-    #             self.comm.Gatherv(
-    #                 sendbuf=local_solve_successful,
-    #                 recvbuf=(global_solve_successful, sample_split_arr),
-    #                 root=0,
-    #             )
-
-    #             if self.rank == 0:
-    #                 global_output_dict[key] = global_solve_successful.tolist()
-
-    #     return global_output_dict
-
     def _collect_local_inputs(self, local_results_dict):
 
         num_local_samples = len(local_results_dict["solve_successful"])
@@ -224,8 +155,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
     def _aggregate_results(self, local_output_dict):
 
-        num_local_samples = len(local_output_dict["solve_successful"])
-
         # Create the global results dictionary
         global_results_dict = self._create_global_output(local_output_dict)
 
@@ -246,81 +175,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             global_input_values,
             num_global_samples,
         )
-
-    # def _do_param_sweep(
-    #     self,
-    #     model,
-    #     sweep_params,
-    #     differential_sweep_specs,
-    #     outputs,
-    #     local_values,
-    # ):
-
-    #     # Initialize space to hold results
-    #     local_num_cases = np.shape(local_values)[0]
-
-    #     # Create the output skeleton for storing detailed data
-    #     local_output_dict = self._create_local_output_skeleton(
-    #         model, sweep_params, outputs, local_num_cases
-    #     )
-
-    #     local_solve_successful_list = []
-
-    #     if self.config.reinitialize_function is not None:
-    #         reinitialize_values = ComponentMap()
-    #         for v in model.component_data_objects(pyo.Var):
-    #             reinitialize_values[v] = v.value
-    #     else:
-    #         reinitialize_values = None
-
-    #     # ================================================================
-    #     # Run all optimization cases
-    #     # ================================================================
-
-    #     differential_sweep_output_dict = {}
-
-    #     for k in range(local_num_cases):
-
-    #         # Step 1 : Run baseline/nominal case
-    #         # Update the model values with a single combination from the parameter space
-    #         self._update_model_values(model, sweep_params, local_values[k, :])
-
-    #         if self.config.probe_function is None:
-    #             run_successful = self._param_sweep_kernel(
-    #                 model,
-    #                 reinitialize_values,
-    #             )
-    #         else:
-    #             run_successful = False
-
-    #         # Update the loop based on the reinitialization for baseline values
-    #         self._update_local_output_dict(
-    #             model,
-    #             sweep_params,
-    #             k,
-    #             local_values[k, :],
-    #             run_successful,
-    #             local_output_dict,
-    #         )
-
-    #         local_solve_successful_list.append(run_successful)
-
-    #         # Step 2: Run differential case
-    #         differential_sweep_output_dict[k] = self._run_differential_sweep(
-    #                 model,
-    #                 local_values[k, :],
-    #                 differential_sweep_specs,
-    #                 outputs
-    #             )
-
-    #     local_output_dict["solve_successful"] = local_solve_successful_list
-
-    #     # Now append the outputs of the differential solves
-    #     self._append_differential_results(
-    #         local_output_dict, differential_sweep_output_dict
-    #     )
-
-    #     return local_output_dict
 
     def _run_differential_sweep(self, model, local_value, outputs):
 
@@ -345,10 +199,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
-
-        # import pprint
-        # print("\ndifferential_sweep_output_dict = ")
-        # print(differential_sweep_output_dict)
 
         return differential_sweep_output_dict
 
