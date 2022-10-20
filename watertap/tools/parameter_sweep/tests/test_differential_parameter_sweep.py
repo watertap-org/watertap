@@ -174,6 +174,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         optimize_function=_optimization,
         reinitialize_function=_reinitialize,
         reinitialize_kwargs={"slack_penalty": 10.0},
+        differential_sweep_specs=differential_sweep_specs,
     )
 
     m = model
@@ -188,7 +189,7 @@ def test_differential_parameter_sweep(model, tmp_path):
     global_results_dict, _ = ps.parameter_sweep(
         m,
         sweep_params,
-        differential_sweep_specs,
+        # differential_sweep_specs,
         outputs=None,
         seed=0,
     )

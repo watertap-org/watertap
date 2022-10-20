@@ -43,6 +43,17 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         ),
     )
 
+    CONFIG.run_differential_sweep = True
+
+    CONFIG.declare(
+        "differential_sweep_specs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Dictionary containing the specifications for the differential sweep",
+        ),
+    )
+
     def __init__(
         self,
         **options,
@@ -236,101 +247,116 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             num_global_samples,
         )
 
-    def _do_param_sweep(
-        self,
-        model,
-        sweep_params,
-        differential_sweep_specs,
-        outputs,
-        local_values,
-    ):
+    # def _do_param_sweep(
+    #     self,
+    #     model,
+    #     sweep_params,
+    #     differential_sweep_specs,
+    #     outputs,
+    #     local_values,
+    # ):
 
-        # Initialize space to hold results
-        local_num_cases = np.shape(local_values)[0]
+    #     # Initialize space to hold results
+    #     local_num_cases = np.shape(local_values)[0]
 
-        # Create the output skeleton for storing detailed data
-        local_output_dict = self._create_local_output_skeleton(
-            model, sweep_params, outputs, local_num_cases
+    #     # Create the output skeleton for storing detailed data
+    #     local_output_dict = self._create_local_output_skeleton(
+    #         model, sweep_params, outputs, local_num_cases
+    #     )
+
+    #     local_solve_successful_list = []
+
+    #     if self.config.reinitialize_function is not None:
+    #         reinitialize_values = ComponentMap()
+    #         for v in model.component_data_objects(pyo.Var):
+    #             reinitialize_values[v] = v.value
+    #     else:
+    #         reinitialize_values = None
+
+    #     # ================================================================
+    #     # Run all optimization cases
+    #     # ================================================================
+
+    #     differential_sweep_output_dict = {}
+
+    #     for k in range(local_num_cases):
+
+    #         # Step 1 : Run baseline/nominal case
+    #         # Update the model values with a single combination from the parameter space
+    #         self._update_model_values(model, sweep_params, local_values[k, :])
+
+    #         if self.config.probe_function is None:
+    #             run_successful = self._param_sweep_kernel(
+    #                 model,
+    #                 reinitialize_values,
+    #             )
+    #         else:
+    #             run_successful = False
+
+    #         # Update the loop based on the reinitialization for baseline values
+    #         self._update_local_output_dict(
+    #             model,
+    #             sweep_params,
+    #             k,
+    #             local_values[k, :],
+    #             run_successful,
+    #             local_output_dict,
+    #         )
+
+    #         local_solve_successful_list.append(run_successful)
+
+    #         # Step 2: Run differential case
+    #         differential_sweep_output_dict[k] = self._run_differential_sweep(
+    #                 model,
+    #                 local_values[k, :],
+    #                 differential_sweep_specs,
+    #                 outputs
+    #             )
+
+    #     local_output_dict["solve_successful"] = local_solve_successful_list
+
+    #     # Now append the outputs of the differential solves
+    #     self._append_differential_results(
+    #         local_output_dict, differential_sweep_output_dict
+    #     )
+
+    #     return local_output_dict
+
+    def _run_differential_sweep(self, model, local_value, outputs):
+
+        diff_sweep_param_dict = self._create_differential_sweep_params(
+                local_value, self.config.differential_sweep_specs
+            )
+
+        # We want this instance of the parameter sweep to run in serial
+        diff_ps = ParameterSweep(
+            optimize_function=self.config.optimize_function,
+            optimize_kwargs=self.config.optimize_kwargs,
+            reinitialize_function=self.config.reinitialize_function,
+            reinitialize_kwargs=self.config.reinitialize_kwargs,
+            reinitialize_before_sweep=self.config.reinitialize_before_sweep,
+            comm=DummyCOMM,
         )
 
-        local_solve_successful_list = []
-
-        if self.config.reinitialize_function is not None:
-            reinitialize_values = ComponentMap()
-            for v in model.component_data_objects(pyo.Var):
-                reinitialize_values[v] = v.value
-        else:
-            reinitialize_values = None
-
-        # ================================================================
-        # Run all optimization cases
-        # ================================================================
-        counter = 0
-        differential_sweep_output_dict = {}
-
-        for k in range(local_num_cases):
-
-            # Step 1 : Run baseline/nominal case
-            # Update the model values with a single combination from the parameter space
-            self._update_model_values(model, sweep_params, local_values[k, :])
-
-            if self.config.probe_function is None:
-                run_successful = self._param_sweep_kernel(
-                    model,
-                    reinitialize_values,
-                )
-            else:
-                run_successful = False
-
-            # Update the loop based on the reinitialization for baseline values
-            self._update_local_output_dict(
-                model,
-                sweep_params,
-                k,
-                local_values[k, :],
-                run_successful,
-                local_output_dict,
-            )
-
-            local_solve_successful_list.append(run_successful)
-
-            # Step 2: Run differential case
-            diff_sweep_param_dict = self._create_differential_sweep_params(
-                local_values[k, :], differential_sweep_specs
-            )
-
-            # We want this instance of the parameter sweep to run in serial
-            diff_ps = ParameterSweep(
-                optimize_function=self.config.optimize_function,  # self._default_optimize,
-                optimize_kwargs=self.config.optimize_kwargs,
-                reinitialize_function=self.config.reinitialize_function,
-                reinitialize_kwargs=self.config.reinitialize_kwargs,
-                reinitialize_before_sweep=self.config.reinitialize_before_sweep,
-                comm=DummyCOMM,
-            )
-
-            _, differential_sweep_output_dict[k] = diff_ps.parameter_sweep(
-                model,
-                diff_sweep_param_dict,
-                outputs=outputs,
-                num_samples=self.config.num_diff_samples,
-                seed=self.seed,
-            )
-
-        local_output_dict["solve_successful"] = local_solve_successful_list
-
-        # Now append the outputs of the differential solves
-        self._append_differential_results(
-            local_output_dict, differential_sweep_output_dict
+        _, differential_sweep_output_dict = diff_ps.parameter_sweep(
+            model,
+            diff_sweep_param_dict,
+            outputs=outputs,
+            num_samples=self.config.num_diff_samples,
+            seed=self.seed,
         )
 
-        return local_output_dict
+        # import pprint
+        # print("\ndifferential_sweep_output_dict = ")
+        # print(differential_sweep_output_dict)
+
+        return differential_sweep_output_dict
 
     def parameter_sweep(
         self,
         model,
         sweep_params,
-        differential_sweep_specs,
+        # differential_sweep_specs,
         outputs=None,
         num_samples=None,
         seed=None,
@@ -359,7 +385,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         local_results_dict = self._do_param_sweep(
             model,
             sweep_params,
-            differential_sweep_specs,
+            # differential_sweep_specs,
             outputs,
             local_values,
         )

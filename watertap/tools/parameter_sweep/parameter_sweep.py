@@ -102,8 +102,16 @@ class _ParameterSweepBase(ABC):
         "probe_function",
         ConfigValue(
             default=None,
-            # domain=function,
             description="Function to probe if a flowsheet configuration will work",
+        ),
+    )
+
+    CONFIG.declare(
+        "run_differential_sweep",
+        ConfigValue(
+            default=False,
+            domain=bool,
+            description="Bool option to run run a differential parameter sweep at a value.",
         ),
     )
 
@@ -485,6 +493,8 @@ class _ParameterSweepBase(ABC):
         # Run all optimization cases
         # ================================================================
 
+        differential_sweep_output_dict = {}
+
         for k in range(local_num_cases):
             # Update the model values with a single combination from the parameter space
             self._update_model_values(model, sweep_params, local_values[k, :])
@@ -509,7 +519,17 @@ class _ParameterSweepBase(ABC):
 
             local_solve_successful_list.append(run_successful)
 
+            if self.config.run_differential_sweep:
+                differential_sweep_output_dict[k] = self._run_differential_sweep(model, local_values[k, :], outputs)
+
         local_output_dict["solve_successful"] = local_solve_successful_list
+        
+        if self.config.run_differential_sweep:
+            # Now append the outputs of the differential solves
+            self._append_differential_results(
+                local_output_dict, differential_sweep_output_dict
+            )
+
 
         return local_output_dict
 
