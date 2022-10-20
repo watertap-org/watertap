@@ -14,7 +14,7 @@
 from pyomo.common.config import ConfigValue, In
 from pyomo.environ import (
     Constraint,
-    Set
+    Set,
 )
 from idaes.core import (
     declare_process_block_class,

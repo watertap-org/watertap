@@ -14,11 +14,11 @@
 from pyomo.environ import (
     NegativeReals,
     Set,
-    Var
+    Var,
 )
 from idaes.core import (
     declare_process_block_class,
-    FlowDirection
+    FlowDirection,
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
@@ -27,7 +27,7 @@ import idaes.logger as idaeslog
 
 from watertap.core.membrane_channel_base import (
     MembraneChannelMixin,
-    PressureChangeType
+    PressureChangeType,
 )
 
 
