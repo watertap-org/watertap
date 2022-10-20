@@ -30,11 +30,11 @@ When either the ``watertap`` package or one of its dependencies are installed, i
 
         pip uninstall watertap
 
-#. Run the ``pip install`` command targeting the ``requirements.txt`` file.
+#. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
 
     .. code-block:: shell
 
-        pip --no-cache-dir install -r requirements.txt
+        pip --no-cache-dir install -r requirements-dev.txt
 
     .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
         which would cause the wrong (outdated) version to be present in the environment after installation.

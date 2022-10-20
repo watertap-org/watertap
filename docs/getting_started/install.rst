@@ -214,11 +214,11 @@ If you plan to modify or contribute to WaterTAP's codebase, choose this option.
 
 		git clone https://github.com/watertap-org/watertap && cd watertap
 
-#. Install WaterTAP and the development dependencies using ``pip`` and the ``requirements.txt`` file:
+#. Install WaterTAP and the development dependencies using ``pip`` and the ``requirements-dev.txt`` file:
 
 	.. code-block:: shell
 
-		pip install -r requirements.txt
+		pip install -r requirements-dev.txt
 
 #. If needed, follow the steps described in the ":ref:`install-idaes-ext`" section above to install solvers distributed through IDAES Extensions.
 

@@ -43,7 +43,7 @@ jobs:
       run: |
         conda install --quiet --yes -c conda-forge mpi4py
         python -m pip install --progress-bar off --upgrade pip
-        pip install --progress-bar off -r requirements.txt
+        pip install --progress-bar off -r requirements-dev.txt
         idaes get-extensions --verbose
     - name: Conda info
       run: conda info
