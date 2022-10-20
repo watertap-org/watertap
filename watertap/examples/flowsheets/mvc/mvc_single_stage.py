@@ -57,28 +57,29 @@ import math
 import pandas as pd
 
 def main():
-    # build
+    # build and initialize
     m = build()
     add_Q_ext(m, time_point=m.fs.config.time)
     set_operating_conditions(m)
     initialize_system(m)
+    # rescale costs after initialization because scaling depends on flow rates
     scale_costs(m)
     fix_outlet_pressures(m)
 
-    print('DOF after initialization: ', degrees_of_freedom(m))
+    # set up for minimizing Q_ext
+    print('DOF after initialization: ', degrees_of_freedom(m)) # should be 1 because Q_ext is unfixed
     m.fs.objective = Objective(expr=m.fs.Q_ext[0])
-    #m.fs.objective = Objective(expr=1)
+
+    print('First solve - simulation')
     solver = get_solver()
     results = solve(m,tee=False)
-    print('First solve - simulation')
     print(results.solver.termination_condition)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
     display_results(m)
 
     print('Second solve - optimize')
-    # m.fs.recovery[0].fix(0.7)
-    m.fs.Q_ext[0].fix(0)
+    m.fs.Q_ext[0].fix(0) # no longer want external heating in evaporator
     del m.fs.objective
     set_up_optimization(m)
     results = solve(m, tee=False)
@@ -100,7 +101,9 @@ def build():
 
     # Unit models
     m.fs.feed = Feed(default={"property_package": m.fs.properties_feed})
+
     m.fs.pump_feed = Pump(default={"property_package": m.fs.properties_feed})
+
     m.fs.separator_feed = Separator(
         default={
             "property_package": m.fs.properties_feed,
@@ -108,6 +111,7 @@ def build():
             "split_basis": SplittingType.totalFlow,
         }
     )
+
     m.fs.hx_distillate = HeatExchanger(
         default={
             "hot_side_name": "hot",
@@ -147,7 +151,6 @@ def build():
             "inlet_list": ["hx_distillate_cold", "hx_brine_cold"],
         }
     )
-
     m.fs.mixer_feed.pressure_equality_constraints[0,2].deactivate()
 
     m.fs.evaporator = Evaporator(
@@ -402,13 +405,6 @@ def add_costing(m):
     m.fs.costing.LCOW_percentage["capital_costs"] = (m.fs.costing.total_investment_cost*m.fs.costing.factor_capital_annualization/m.fs.costing.annual_operating_costs)
     m.fs.costing.LCOW_percentage["operating_costs"] = (m.fs.costing.total_operating_cost/m.fs.costing.annual_operating_costs)
 
-    # m.fs.costing.LCOW_constraint.pprint()
-    # m.fs.costing.total_operating_cost_constraint.pprint()
-    # m.fs.costing.aggregate_fixed_operating_cost_constraint.pprint()
-    # m.fs.costing.aggregate_variable_operating_cost_constraint.pprint()
-    # m.fs.costing.aggregate_flow_electricity_constraint.pprint()
-    # m.fs.costing.aggregate_flow_costs_constraint.pprint()
-    # m.fs.costing.aggregate_capital_cost_constraint.pprint()
 
 def add_pressure_drop_to_hx(hx_blk, time_point):
     # input: hx_blk - heat exchanger block
@@ -664,11 +660,11 @@ def initialize_system(m, solver=None):
 def fix_outlet_pressures(m):
     # unfix pump heads
     m.fs.pump_brine.control_volume.deltaP[0].unfix()
-    m.fs.pump_distillate.control_volume.deltaP[0].unfix()
+    # m.fs.pump_distillate.control_volume.deltaP[0].unfix()
 
     # Fix outlet pressures
     m.fs.brine.properties[0].pressure.fix(101325)
-    m.fs.distillate.properties[0].pressure.fix(101325)
+    # m.fs.distillate.properties[0].pressure.fix(101325)
 
     return
 
@@ -814,7 +810,6 @@ def display_results(m):
     print("Brine salinity: ", m.fs.brine.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3," g/kg")
     print("Vapor flow rate:                         ", m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].value)
     print('Recovery:                                ', m.fs.recovery[0].value)
-    print('Distillate preheater area:               ', m.fs.hx_distillate.area.value)
     print("Preheated feed temperature:              ", m.fs.evaporator.properties_feed[0].temperature.value)
     print("Evaporator temperature:                  ", m.fs.evaporator.properties_brine[0].temperature.value)
     print("Compressed vapor temperature:            ", m.fs.compressor.control_volume.properties_out[0].temperature.value)
@@ -967,67 +962,6 @@ def save_results(m,filename=None):
     df = df.set_index('Feed concentration').T
 
     df.to_csv(filename,index=False)
-
-def display_system(m):
-    recovery = m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp[
-        "Vap", "H2O"
-    ].value / (
-        m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "TDS"].value
-        + m.fs.evaporator.properties_feed[0].flow_mass_phase_comp["Liq", "H2O"].value
-    )
-    print(
-        "Feed salinity: ",
-        m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3,
-        " g/kg",
-    )
-    print(
-        "Brine salinity: ",
-        m.fs.brine.properties[0].mass_frac_phase_comp["Liq", "TDS"].value * 1e3,
-        " g/kg",
-    )
-    print("Recovery: ", recovery)
-    # print('\nSplitter')
-    print("\nDistillate heat exchanger")
-    print("Area: ", m.fs.hx_distillate.area.value, " m^2")
-    print(
-        "U: ", m.fs.hx_distillate.overall_heat_transfer_coefficient[0].value, " W/m^2-K"
-    )
-    print("Heat transfer: ", m.fs.hx_distillate.heat_duty[0].value, " W")
-    print("\nBrine heat exchanger")
-    print("\nMixed feed")
-    print("\nEvaporator")
-    print(
-        "Temperature: ", m.fs.evaporator.properties_brine[0].temperature.value, " K"
-    )  # , ', Fixed? ',  m.fs.evaporator.outlet_brine.temperature[0].fixed())
-    print("Pressure: ", m.fs.evaporator.properties_brine[0].pressure.value, " Pa")
-    print(
-        "Area: ", m.fs.evaporator.area.value, " m^2"
-    )  # , ', Fixed? ', m.fs.evaporator.area.isfixed())
-    print(
-        "U: ", m.fs.evaporator.U.value, " W/m^2-K"
-    )  # , ', Fixed? ', m.fs.evaporator.U.isfixed())
-    print("heat transfer: ", m.fs.evaporator.heat_transfer.value, " W")
-    print("\nCompressor")
-    print("Work: ", m.fs.compressor.control_volume.work[0].value, " W")
-    print("Pressure ratio: ", m.fs.compressor.pressure_ratio.value)
-    print("Efficiency: ", m.fs.compressor.efficiency.value)
-    print("\nCondenser")
-    print("Heat transfer: ", m.fs.condenser.control_volume.heat[0].value, " W")
-
-def display_seawater_states(state_blk):
-    print("water mass flow ", state_blk.flow_mass_phase_comp["Liq", "H2O"].value)
-    print("TDS mass flow   ", state_blk.flow_mass_phase_comp["Liq", "TDS"].value)
-    print("temperature     ", state_blk.temperature.value)
-    print("pressure        ", state_blk.pressure.value)
-    print("specific enthalpy", value(state_blk.enth_flow))
-
-def display_water_states(state_blk):
-    print("Liquid mass flow ", state_blk.flow_mass_phase_comp["Liq", "H2O"].value)
-    print("Vapor mass flow  ", state_blk.flow_mass_phase_comp["Vap", "H2O"].value)
-    print("temperature      ", state_blk.temperature.value)
-    print("pressure         ", state_blk.pressure.value)
-    print("specific enthalpy vapor", state_blk.enth_flow_phase['Vap'].value)
-    print("specific enthalpy liquid", state_blk.enth_flow_phase['Liq'].value)
 
 
 if __name__ == "__main__":

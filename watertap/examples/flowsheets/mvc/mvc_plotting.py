@@ -28,12 +28,15 @@ def main():
     cases['cv_temp_max'] = [475]
     cases['comp_cost_factor'] = [1]
 
+    dir = "C:/Users/carso/Documents/MVC/watertap_results/full_parameter_sweeps_distillate_hx_only"
     dir = "C:/Users/carso/Documents/MVC/watertap_results/full_parameter_sweeps"
+    dir = "C:/Users/carso/Documents/MVC/watertap_results/full_parameter_sweeps_P_out_unfixed"
     map_dir = dir + "/evap_3000_hx_2000/elec_0.15/cv_temp_max_450/comp_cost_1"
     save_dir = map_dir + '/figures'
 
     make_maps(map_dir, save_dir)
 
+    assert False
     filename_1 = dir + "/evap_2000_hx_2000/elec_0.15/cv_temp_max_450/comp_cost_1"
     filename_2 = dir + "/evap_2000_hx_2000/elec_0.15/cv_temp_max_450/comp_cost_2"
     filename_3 = dir + "/evap_4000_hx_4000/elec_0.3/cv_temp_max_500/comp_cost_1"
@@ -218,26 +221,17 @@ def plot_2D_heat_map_subplots(map_dir, title_list, save_dir, param, param_label,
     fig.savefig(save_dir + '/' + param + '.png', bbox_inches='tight', dpi=300)
 
 def make_maps(map_dir, save_dir):
-    df_rr = pd.read_csv(map_dir + '/recovery.csv')
+    var = 'Distillate hx LMTD'
+    label = r'Distillate HX LMTD (K)'
+    vmin = 0
+    vmax = 10
+    ticks = [0, 10]
+    fmt = '.0f'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
-    df_feed_mass_flow_water = pd.read_csv(map_dir +'/Feed mass flow water.csv')
-    df_feed_mass_flow_salt = pd.read_csv(map_dir + '/Feed mass flow salt.csv')
-    df_feed_mass_flow_total = df_feed_mass_flow_water+df_feed_mass_flow_salt
-    Q_distillate_hx_file = map_dir + '/Distillate hx heat transfer.csv'
-    Q_brine_hx_file = map_dir + '/Brine hx heat transfer.csv'
-    df_Q_distillate_hx = pd.read_csv(Q_distillate_hx_file)
-    df_Q_brine_hx = pd.read_csv(Q_brine_hx_file)
-    df_Q_distillate_hx = df_Q_distillate_hx / 1e3
-    df_Q_brine_hx = df_Q_brine_hx / 1e3
-    pd.DataFrame(df_Q_distillate_hx).to_csv(map_dir + '/Distillate hx heat transfer kW.csv', index=False)
-    pd.DataFrame(df_Q_brine_hx).to_csv(map_dir + '/Brine hx heat transfer kW.csv', index=False)
-    df_distillate_hx_feed_flow = df_feed_mass_flow_total * df_rr
-    df_brine_hx_feed_flow = df_feed_mass_flow_total - df_distillate_hx_feed_flow
-    df_q_distillate = df_Q_distillate_hx / df_distillate_hx_feed_flow
-    df_q_brine = df_Q_brine_hx / df_brine_hx_feed_flow
-    pd.DataFrame(df_q_distillate).to_csv(map_dir + '/Normalized distillate hx heat transfer kJ per kg.csv', index=False)
-    pd.DataFrame(df_q_brine).to_csv(map_dir + '/Normalized brine hx heat transfer kJ per kg.csv', index=False)
-
+    var = 'Brine hx LMTD'
+    label = r'Brine HX LMTD (K)'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     var = 'Distillate hx heat transfer kW'
     label = r'Distillate HX Q [kW]'
@@ -255,10 +249,10 @@ def make_maps(map_dir, save_dir):
     label = r'Distillate HX normalized q [kJ/kg-feed]'
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
-    var = 'Normalized brine hx heat transfer kJ per kg'
-    label = r'Brine HX normalized q [kJ/kg-feed]'
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
-    assert False
+    # var = 'Normalized brine hx heat transfer kJ per kg'
+    # label = r'Brine HX normalized q [kJ/kg-feed]'
+    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
     var = 'LCOW'
     label = r'LCOW [\$/$\rmm^3$ of product]'
     vmin = 2.8  # minimum cost on bar, $/m3
@@ -323,13 +317,13 @@ def make_maps(map_dir, save_dir):
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
-    var = 'Preheater split ratio'
-    label = 'Preheater split ratio [C]'
-    vmin = 0.4  # minimum cost on bar, $/m3
-    vmax = 1  # maximum cost on bar, $/m3
-    ticks = [0.4, 0.6, 0.8]  # tick marks on bar
-    fmt = '.2f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    # var = 'Preheater split ratio'
+    # label = 'Preheater split ratio [C]'
+    # vmin = 0.4  # minimum cost on bar, $/m3
+    # vmax = 1  # maximum cost on bar, $/m3
+    # ticks = [0.4, 0.6, 0.8]  # tick marks on bar
+    # fmt = '.2f'  # format of annotation
+    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Distillate hx area'
     label = r'Distillate preheater area [$\rmm^2$]'
@@ -339,13 +333,13 @@ def make_maps(map_dir, save_dir):
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
-    var = 'Brine hx area'
-    label = r'Brine preheater area [$\rmm^2$]'
-    vmin = 0  # minimum cost on bar, $/m3
-    vmax = 1001  # maximum cost on bar, $/m3
-    ticks = [250, 500, 750]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    # var = 'Brine hx area'
+    # label = r'Brine preheater area [$\rmm^2$]'
+    # vmin = 0  # minimum cost on bar, $/m3
+    # vmax = 1001  # maximum cost on bar, $/m3
+    # ticks = [250, 500, 750]  # tick marks on bar
+    # fmt = '.0f'  # format of annotation
+    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator area'
     label = r'Evaporator area [$\rmm^2$]'
