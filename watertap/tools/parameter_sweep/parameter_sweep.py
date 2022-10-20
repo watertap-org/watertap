@@ -391,9 +391,9 @@ class _ParameterSweepBase(ABC):
                     )
 
                     # Trim to the exact number
-                    global_output_dict[key][subkey]["value"] = global_output_dict[
-                        key
-                    ][subkey]["value"][0:req_num_samples]
+                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
+                        subkey
+                    ]["value"][0:req_num_samples]
 
             elif key == "solve_successful":
                 local_solve_successful = np.fromiter(
@@ -413,7 +413,9 @@ class _ParameterSweepBase(ABC):
 
                 if self.rank == 0:
                     # Trim to the exact number
-                    global_output_dict[key] = list(global_solve_successful[0:req_num_samples])
+                    global_output_dict[key] = list(
+                        global_solve_successful[0:req_num_samples]
+                    )
 
         return global_output_dict
 
