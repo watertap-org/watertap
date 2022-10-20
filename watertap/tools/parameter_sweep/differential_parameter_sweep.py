@@ -51,6 +51,37 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             default=dict(),
             domain=dict,
             description="Dictionary containing the specifications for the differential sweep",
+            doc="""
+            A specification dictionary that contains details for how to construct the parameter sweep dictionary for differential sweep.
+            This is a nested dictionary where the first level denotes the variable names for which the differential sweep needs to be carried out.
+            The second level denotes various options to be used for wach variable.
+            The number of samples for each differential sweep is specified while initializing the DifferentialParameterSweep object wsing the keyword `num_diff_samples`
+            e.g.
+            
+            {
+                "fs.a": {
+                    "diff_mode": "sum",
+                    "diff_sample_type": NormalSample,
+                    "std_dev": 0.01,
+                    "pyomo_object": m.fs.input["a"],
+                },
+                "fs.b": {
+                    "diff_mode": "product",
+                    "diff_sample_type": UniformSample,
+                    "relative_lb": 0.01,
+                    "relative_ub": 0.01,
+                    "pyomo_object": m.fs.input["b"],
+                },
+                "fs.c": {
+                    "diff_mode": "sum",
+                    "diff_sample_type": GeomSample,
+                    "relative_lb": 0.01,
+                    "relative_ub": 10.0,
+                    "pyomo_object": m.fs.input["c"],
+                },
+            }
+
+            """,
         ),
     )
 
@@ -66,20 +97,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             raise NotImplementedError
 
     def _create_differential_sweep_params(self, local_values, differential_sweep_specs):
-
-        # Assume that we have local values and example differential sweep_info
-        # local_values = np.array([4.0e-12, 3.5e-8, 0.95])
-        # differential_sweep_info = {
-        #     # "n_differential_samples" = same across everything
-        #     "A_comp" : { "diff_mode" : sum/product ,
-        #                  "diff_sample_type": Anything of the Sampling types,
-        #                  "relative_lb" : For linear/geometric sampling,
-        #                  "relative_ub" : For linear/geometric sampling,
-        #                  "relative_std_dev" : For normal sampling
-        #                 },
-        #     "B_comp" : {},
-        #     "Spacer_porosity"  : {},
-        # }
 
         diff_sweep_param = {}
         for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
@@ -206,7 +223,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         self,
         model,
         sweep_params,
-        # differential_sweep_specs,
         outputs=None,
         num_samples=None,
         seed=None,
@@ -226,7 +242,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # divide the workload between processors
         local_values = self._divide_combinations(global_values)
-        local_num_cases = np.shape(local_values)[0]
 
         # Create a dictionary to store all the differential ps_objects
         self.diff_ps_dict = {}
@@ -235,7 +250,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         local_results_dict = self._do_param_sweep(
             model,
             sweep_params,
-            # differential_sweep_specs,
             outputs,
             local_values,
         )

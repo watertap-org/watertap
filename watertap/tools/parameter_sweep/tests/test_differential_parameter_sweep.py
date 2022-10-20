@@ -189,7 +189,6 @@ def test_differential_parameter_sweep(model, tmp_path):
     global_results_dict, _ = ps.parameter_sweep(
         m,
         sweep_params,
-        # differential_sweep_specs,
         outputs=None,
         seed=0,
     )
