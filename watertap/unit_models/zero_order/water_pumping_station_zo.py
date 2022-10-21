@@ -14,7 +14,7 @@
 This module contains a zero-order representation of a water pumping station.
 """
 
-from pyomo.environ import Reference, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from watertap.core import build_pt, ZeroOrderBaseData
