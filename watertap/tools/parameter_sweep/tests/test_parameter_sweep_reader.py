@@ -69,8 +69,9 @@ class TestInputParser:
                 "param": "fs.a",
                 "lower_limit": 10,
                 "upper_limit": 20,
+                "num_samples": 5,
             },
-            "c_val": {"type": "NormalSample", "param": "fs.a", "mean": 10, "std": 2},
+            "c_val": {"type": "NormalSample", "param": "fs.a", "mean": 10, "std": 2, "num_samples": 5,},
             "d_val": {
                 "type": "LatinHypercubeSample",
                 "param": "fs.a",

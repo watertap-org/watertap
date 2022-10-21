@@ -696,12 +696,8 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
     @staticmethod
     def _update_sweep_params(sweep_params, num_total_samples):
-
         for obj in sweep_params.values():
-            print("\nobj.num_samples = ", obj.num_samples)
-            print("num_total_samples = ", num_total_samples)
             obj.num_samples = num_total_samples
-            print("obj.num_samples, after = ", obj.num_samples)
 
     def parameter_sweep(
         self,
