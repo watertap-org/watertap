@@ -128,6 +128,7 @@ class LatinHypercubeSample(_Sample):
     def sample(self):
         return [self.lower_limit, self.upper_limit]
 
-    def setup(self, lower_limit, upper_limit):
+    def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
+        self.num_samples = num_samples

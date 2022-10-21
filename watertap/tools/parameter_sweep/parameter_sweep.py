@@ -161,7 +161,7 @@ class _ParameterSweepBase(ABC):
                 lb = [val[0] for val in param_values]
                 ub = [val[1] for val in param_values]
                 lhs = sampling.LatinHypercubeSampling(
-                    [lb, ub], number_of_samples=num_samples, sampling_type="creation"
+                    [lb, ub], number_of_samples=v.num_samples, sampling_type="creation"
                 )
                 global_combo_array = lhs.sample_points()
                 sorting = np.argsort(global_combo_array[:, 0])
@@ -184,7 +184,7 @@ class _ParameterSweepBase(ABC):
                 sampling_type == SamplingType.RANDOM
                 or sampling_type == SamplingType.RANDOM_LHS
             ):
-                nx = num_samples
+                nx = v.num_samples
             else:
                 raise ValueError(f"Unknown sampling type: {sampling_type}")
 

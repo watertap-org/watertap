@@ -482,7 +482,7 @@ class TestParallelManager:
         }
 
         sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
-        
+
         # Get the globale sweep param values
         global_values = ps._build_combinations(
             sweep_params, sampling_type, global_num_cases

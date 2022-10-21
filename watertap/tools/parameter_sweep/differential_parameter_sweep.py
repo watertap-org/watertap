@@ -125,8 +125,8 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 #         pyomo_object, lb, ub, self.config.num_diff_samples
                 #     )
                 diff_sweep_param[param] = specs["diff_sample_type"](
-                        pyomo_object, lb, ub, self.config.num_diff_samples
-                    )
+                    pyomo_object, lb, ub, self.config.num_diff_samples
+                )
 
         return diff_sweep_param
 

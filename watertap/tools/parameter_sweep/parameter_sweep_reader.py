@@ -138,12 +138,18 @@ class ParameterSweepReader:
                 )
             elif values["type"] == "UniformSample":
                 sweep_params[param] = UniformSample(
-                    component, values["lower_limit"], values["upper_limit"], values["num_samples"],
+                    component,
+                    values["lower_limit"],
+                    values["upper_limit"],
+                    values["num_samples"],
                 )
 
             elif values["type"] == "NormalSample":
                 sweep_params[param] = NormalSample(
-                    component, values["mean"], values["std"], values["num_samples"],
+                    component,
+                    values["mean"],
+                    values["std"],
+                    values["num_samples"],
                 )
 
             elif values["type"] == "LatinHypercubeSample":

@@ -189,7 +189,7 @@ def test_recursive_parameter_sweep(model, tmp_path):
     outputs["x_val"] = m.fs.x
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
-    
+
     seed = 0
 
     # Run the parameter sweep
