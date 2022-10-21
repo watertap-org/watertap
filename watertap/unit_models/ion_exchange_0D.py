@@ -1149,7 +1149,6 @@ class IonExchangeODData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        raise_on_failure=True,
     ):
         """
         General wrapper for initialization routines
@@ -1250,12 +1249,11 @@ class IonExchangeODData(UnitModelBlockData):
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl=outlvl)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        try:
+            blk.properties_in.release_state(flags, outlvl=outlvl)
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        except InitializationError:
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

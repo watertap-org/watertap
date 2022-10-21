@@ -717,7 +717,6 @@ class BoronRemovalData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        raise_on_failure=True,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -782,12 +781,11 @@ class BoronRemovalData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl + 1)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        try:
+            blk.control_volume.release_state(flags, outlvl + 1)
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        except InitializationError:
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
         # Rescale internal variables
         for t in blk.flowsheet().config.time:

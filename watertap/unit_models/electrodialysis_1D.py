@@ -1567,7 +1567,6 @@ class Electrodialysis1DData(UnitModelBlockData):
         optarg=None,
         fail_on_warning=False,
         ignore_dof=False,
-        raise_on_failure=True,
     ):
         """
         General wrapper for electrodialysis_1D initialization routines
@@ -1749,13 +1748,12 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         # ---------------------------------------------------------------------
         # Release state
-        blk.diluate.release_state(flags_diluate, outlvl)
-        blk.concentrate.release_state(flags_concentrate, outlvl)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        try:
+            blk.diluate.release_state(flags_diluate, outlvl)
+            blk.concentrate.release_state(flags_concentrate, outlvl)
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        except InitializationError:
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

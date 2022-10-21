@@ -336,7 +336,6 @@ class PressureExchangerData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        raise_on_failure=True,
     ):
         """
         General wrapper for pressure exchanger initialization routine
@@ -458,14 +457,11 @@ class PressureExchangerData(UnitModelBlockData):
         init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
 
         # release state of fixed variables
-        self.low_pressure_side.properties_in.release_state(flags_low_in)
-        self.high_pressure_side.properties_in.release_state(flags_high_in)
-
-        if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(
-                    f"Unit model {self.name} failed to initialize"
-                )
+        try:
+            self.low_pressure_side.properties_in.release_state(flags_low_in)
+            self.high_pressure_side.properties_in.release_state(flags_high_in)
+        except InitializationError:
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         # reactivate volumetric flow constraint
         self.eq_equal_flow_vol.activate()

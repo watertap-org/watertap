@@ -457,7 +457,6 @@ class NanofiltrationData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        raise_on_failure=True,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -527,12 +526,11 @@ class NanofiltrationData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        try:
+            blk.feed_side.release_state(flags, outlvl + 1)
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        except InitializationError:
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         for k in ("ion_set", "solute_set"):
