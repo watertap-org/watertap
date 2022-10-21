@@ -559,6 +559,12 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
 
         # release inlet state, in case this error is caught
         try:
