@@ -89,8 +89,8 @@ def test_create_differential_sweep_params_normal(model):
     )
 
     expected_dict = {
-        "fs.a": NormalSample(m.fs.input["a"], 0.0, 0.01),
-        "fs.b": NormalSample(m.fs.input["b"], 1.0, 0.5),
+        "fs.a": NormalSample(m.fs.input["a"], 0.0, 0.01, 1),
+        "fs.b": NormalSample(m.fs.input["b"], 1.0, 0.5, 1),
     }
 
     for key, value in diff_sweep_param_dict.items():
@@ -129,7 +129,7 @@ def test_create_differential_sweep_params_others(model):
 
     expected_dict = {
         "fs.a": GeomSample(m.fs.input["a"], 0.099, 1.1, 1),
-        "fs.b": UniformSample(m.fs.input["b"], 0.01, 0.1),
+        "fs.b": UniformSample(m.fs.input["b"], 0.01, 0.1, 1),
     }
 
     for key, value in diff_sweep_param_dict.items():

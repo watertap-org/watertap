@@ -105,7 +105,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             if specs["diff_sample_type"] == NormalSample:
                 std_dev = specs["std_dev"]
                 diff_sweep_param[param] = NormalSample(
-                    pyomo_object, nominal_val, std_dev
+                    pyomo_object, nominal_val, std_dev, self.config.num_diff_samples
                 )
             else:
                 relative_lb = specs["relative_lb"]
@@ -118,10 +118,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     ub = nominal_val * relative_ub
                 else:
                     raise NotImplementedError
-                if specs["diff_sample_type"] == UniformSample:
-                    diff_sweep_param[param] = UniformSample(pyomo_object, lb, ub)
-                else:
-                    diff_sweep_param[param] = specs["diff_sample_type"](
+                # if specs["diff_sample_type"] == UniformSample:
+                #     diff_sweep_param[param] = UniformSample(pyomo_object, lb, ub)
+                # else:
+                #     diff_sweep_param[param] = specs["diff_sample_type"](
+                #         pyomo_object, lb, ub, self.config.num_diff_samples
+                #     )
+                diff_sweep_param[param] = specs["diff_sample_type"](
                         pyomo_object, lb, ub, self.config.num_diff_samples
                     )
 

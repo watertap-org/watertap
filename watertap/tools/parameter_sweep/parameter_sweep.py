@@ -143,7 +143,8 @@ class _ParameterSweepBase(ABC):
 
             for k, v in d.items():
                 # Build a vector of discrete values for this parameter
-                p = v.sample(num_samples)
+                # p = v.sample(num_samples)
+                p = v.sample()
                 param_values.append(p)
 
             if sampling_type == SamplingType.FIXED:
@@ -693,6 +694,15 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         return global_filtered_dict, global_filtered_results, global_filtered_values
 
+    @staticmethod
+    def _update_sweep_params(sweep_params, num_total_samples):
+
+        for obj in sweep_params.values():
+            print("\nobj.num_samples = ", obj.num_samples)
+            print("num_total_samples = ", num_total_samples)
+            obj.num_samples = num_total_samples
+            print("obj.num_samples, after = ", obj.num_samples)
+
     def parameter_sweep(
         self,
         model,
@@ -714,6 +724,11 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         local_output_collection = {}
         loop_ctr = 0
         while n_samples_remaining > 0 and loop_ctr < 10:
+
+            if loop_ctr > 1:
+                # We need to rebuild the sweep_params since these are single use objects
+                self._update_sweep_params(sweep_params, num_total_samples)
+
             # Enumerate/Sample the parameter space
             global_values = self._build_combinations(
                 sweep_params, sampling_type, num_total_samples

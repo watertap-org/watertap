@@ -62,7 +62,7 @@ class FixedSample(_Sample):
 
 
 class LinearSample(FixedSample):
-    def sample(self, num_samples):
+    def sample(self):
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
     def setup(self, lower_limit, upper_limit, num_samples):
@@ -72,7 +72,7 @@ class LinearSample(FixedSample):
 
 
 class GeomSample(FixedSample):
-    def sample(self, num_samples):
+    def sample(self):
         return np.geomspace(
             self.lower_limit, self.upper_limit, self.num_samples, endpoint=True
         )
@@ -84,7 +84,7 @@ class GeomSample(FixedSample):
 
 
 class ReverseGeomSample(FixedSample):
-    def sample(self, num_samples):
+    def sample(self):
         return (
             (self.upper_limit + self.lower_limit)
             - np.geomspace(
@@ -99,27 +99,33 @@ class ReverseGeomSample(FixedSample):
 
 
 class UniformSample(RandomSample):
-    def sample(self, num_samples):
-        return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
+    # def sample(self, num_samples):
+    #     return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
+    def sample(self):
+        return np.random.uniform(self.lower_limit, self.upper_limit, self.num_samples)
 
-    def setup(self, lower_limit, upper_limit):
+    def setup(self, lower_limit, upper_limit, num_samples):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
+        self.num_samples = num_samples
 
 
 class NormalSample(RandomSample):
-    def sample(self, num_samples):
-        return np.random.normal(self.mean, self.sd, num_samples)
+    # def sample(self, num_samples):
+    #     return np.random.normal(self.mean, self.sd, num_samples)
+    def sample(self):
+        return np.random.normal(self.mean, self.sd, self.num_samples)
 
-    def setup(self, mean, sd):
+    def setup(self, mean, sd, num_samples):
         self.mean = mean
         self.sd = sd
+        self.num_samples = num_samples
 
 
 class LatinHypercubeSample(_Sample):
     sampling_type = SamplingType.RANDOM_LHS
 
-    def sample(self, num_samples):
+    def sample(self):
         return [self.lower_limit, self.upper_limit]
 
     def setup(self, lower_limit, upper_limit):
