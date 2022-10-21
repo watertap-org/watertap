@@ -771,12 +771,6 @@ class BoronRemovalData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {blk.name}, trying one more time"
-                )
-                res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
