@@ -725,7 +725,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         loop_ctr = 0
         while n_samples_remaining > 0 and loop_ctr < 10:
 
-            if loop_ctr > 1:
+            if loop_ctr > 0:
                 # We need to rebuild the sweep_params since these are single use objects
                 self._update_sweep_params(sweep_params, num_total_samples)
 
