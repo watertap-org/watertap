@@ -28,6 +28,7 @@ from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 from watertap.core import (
+    ConcentrationPolarizationType,
     MembraneChannel1DBlock,
     PressureChangeType,
 )
