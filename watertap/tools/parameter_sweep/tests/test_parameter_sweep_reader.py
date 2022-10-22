@@ -83,6 +83,7 @@ class TestInputParser:
                 "param": "fs.a",
                 "lower_limit": 10,
                 "upper_limit": 20,
+                "num_samples": 5,
             },
             "e_val": {
                 "type": "GeomSample",

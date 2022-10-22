@@ -154,7 +154,10 @@ class ParameterSweepReader:
 
             elif values["type"] == "LatinHypercubeSample":
                 sweep_params[param] = LatinHypercubeSample(
-                    component, values["lower_limit"], values["upper_limit"]
+                    component,
+                    values["lower_limit"],
+                    values["upper_limit"],
+                    values["num_samples"],
                 )
 
         return sweep_params
