@@ -29,6 +29,7 @@ import idaes.logger as idaeslog
 
 from watertap.core import (
     ConcentrationPolarizationType,
+    MassTransferCoefficient,
     MembraneChannel1DBlock,
     PressureChangeType,
 )
