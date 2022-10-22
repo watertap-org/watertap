@@ -86,13 +86,14 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
                 width_var=self.width,
                 flow_direction=flow_direction,
             )
-            self._add_area(include_constraint=True)
+            if not hasattr(self, "eq_area"):
+                add_eq_area = True
+            else:
+                add_eq_area = False
+            self._add_area(include_constraint=add_eq_area)
         else:
             mem_side.add_geometry(length_var=None, width_var=None)
             self._add_area(include_constraint=False)
-
-    # def _add_deltaP(self):
-    #     add_object_reference(self, "deltaP", self.feed_side.deltaP)
 
     def _add_mass_transfer(self):
 
@@ -151,7 +152,23 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
                 == -b.feed_side.mass_transfer_term[t, p, j]
             )
 
-        # Different expression in 1DRO
+        # ------------------------------------------------------------------------------------------------
+        # # Not in 1DRO
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     self.length_domain,
+        #     self.config.property_package.solute_set,
+        #     doc="Permeate mass fraction",
+        # )
+        # def eq_mass_frac_permeate(b, t, x, j):
+        #     return (
+        #         b.permeate_side.properties[t, x].mass_frac_phase_comp["Liq", j]
+        #         * sum(
+        #             self.flux_mass_phase_comp[t, x, "Liq", jj]
+        #             for jj in self.config.property_package.component_list
+        #         )
+        #         == self.flux_mass_phase_comp[t, x, "Liq", j]
+        #     )
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -160,26 +177,8 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
         )
         def eq_permeate_production(b, t, p, j):
             return (
-                b.mixed_permeate[t].get_material_flow_terms(p, j)
+                b.permeate_side.mass_transfer_term[t, p, j]
                 == b.area * b.flux_mass_phase_comp_avg[t, p, j]
-            )
-
-        # ------------------------------------------------------------------------------------------------
-        # Not in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.solute_set,
-            doc="Permeate mass fraction",
-        )
-        def eq_mass_frac_permeate(b, t, x, j):
-            return (
-                b.permeate_side.properties[t, x].mass_frac_phase_comp["Liq", j]
-                * sum(
-                    self.flux_mass_phase_comp[t, x, "Liq", jj]
-                    for jj in self.config.property_package.component_list
-                )
-                == self.flux_mass_phase_comp[t, x, "Liq", j]
             )
 
     def calculate_scaling_factors(self):
@@ -198,6 +197,9 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
             v = self.feed_side.mass_transfer_term[t, p, j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.permeate_side.mass_transfer_term[t, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 

@@ -398,7 +398,7 @@ class MembraneChannelMixin:
             self.length_domain,
             solute_set,
             initialize=1.1,
-            bounds=(0.1, 3),
+            bounds=(0, 3),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Concentration polarization modulus",
@@ -429,7 +429,7 @@ class MembraneChannelMixin:
                 self.length_domain,
                 solute_set,
                 initialize=5e-5,
-                bounds=(1e-6, 1e-3),
+                bounds=(1e-10, 1e-3),
                 domain=NonNegativeReals,
                 units=units_meta("length") * units_meta("time") ** -1,
                 doc="Membrane channel mass transfer coefficient",
@@ -568,7 +568,7 @@ class MembraneChannelMixin:
 
         self.spacer_porosity = Var(
             initialize=0.95,
-            bounds=(0.1, 0.99),
+            # bounds=(0.1, 0.99),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="membrane-channel spacer porosity",
