@@ -184,7 +184,7 @@ class _ParameterSweepBase(ABC):
                 sampling_type == SamplingType.RANDOM
                 or sampling_type == SamplingType.RANDOM_LHS
             ):
-                nx = v.num_samples
+                nx = num_samples
             else:
                 raise ValueError(f"Unknown sampling type: {sampling_type}")
 
@@ -196,6 +196,7 @@ class _ParameterSweepBase(ABC):
             global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
 
         ### Broadcast the array to all processes
+        self.comm.Barrier()
         if self.num_procs > 1:
             self.comm.Bcast(global_combo_array, root=0)
 
