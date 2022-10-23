@@ -68,10 +68,11 @@ Once the model has been setup, we specify the variables to randomly sample using
 
 .. testcode::
 
+    num_samples = 25
     sweep_params = dict()
-    sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99)
-    sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-    sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+    sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99, num_samples)
+    sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12, num_samples)
+    sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8, num_samples)
 
 where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
 
@@ -88,7 +89,7 @@ With the flowsheet defined and suitably initialized, along with the definitions 
 
     # Define the local results directory, num_samples, and seed (if desired)
     debugging_data_dir = 'local_results'
-    num_samples = 25
+    # Recall that num_samples = 25
     seed = None
 
     # Run the parameter sweep
