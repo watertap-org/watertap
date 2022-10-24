@@ -568,7 +568,7 @@ class MembraneChannelMixin:
 
         self.spacer_porosity = Var(
             initialize=0.95,
-            # bounds=(0.1, 0.99),
+            bounds=(0.1, 0.99),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="membrane-channel spacer porosity",
