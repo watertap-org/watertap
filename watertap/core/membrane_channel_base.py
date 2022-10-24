@@ -398,7 +398,7 @@ class MembraneChannelMixin:
             self.length_domain,
             solute_set,
             initialize=1.1,
-            bounds=(0, 3),
+            bounds=(0.1, 3),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Concentration polarization modulus",
