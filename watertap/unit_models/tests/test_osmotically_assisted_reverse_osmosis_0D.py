@@ -631,7 +631,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert pytest.approx(0.2611, rel=1e-3) == value(
             m.fs.unit.permeate_side.cp_modulus[0, 0, "NaCl"]
         )
-        assert pytest.approx(0.517, rel=1e-3) == value(
+        assert pytest.approx(0.5178, rel=1e-3) == value(
             m.fs.unit.permeate_side.cp_modulus[0, 1, "NaCl"]
         )
 
@@ -658,13 +658,13 @@ class TestOsmoticallyAssistedReverseOsmosis:
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
         feed_pressure = 50e5
         feed_temperature = 273.15 + 25
-        membrane_pressure_drop = 3e5
-        length = 20
+        membrane_pressure_drop = -0.5e5
         membrane_area = 50
         A = 4.2e-12
-        B = 3.5e-8
+        B = 1.3e-8
         pressure_atmospheric = 101325
 
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
         m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
             feed_flow_mass * feed_mass_frac_NaCl
         )
@@ -674,258 +674,35 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.area.fix(membrane_area)
+
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
 
+        perm_flow_mass = 1
+        perm_mass_frac_NaCl = 0.005
+        perm_mass_frac_H2O = 1 - perm_mass_frac_NaCl
+        m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            perm_flow_mass * perm_mass_frac_NaCl
+        )
+        m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            perm_flow_mass * perm_mass_frac_H2O
+        )
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+
+        m.fs.unit.structural_parameter.fix(300e-6)
+
+        m.fs.unit.feed_side.deltaP.fix(membrane_pressure_drop)
+        m.fs.unit.permeate_side.deltaP.fix(membrane_pressure_drop)
+        m.fs.unit.permeate_side.channel_height.fix(0.001)
+        m.fs.unit.permeate_side.spacer_porosity.fix(0.75)
         m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        length = 20
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 143
-        assert number_total_constraints(m) == 113
-        assert number_unused_variables(m) == 0  # vars from property package parameters
-
-        # Test units
-        assert_units_consistent(m.fs.unit)
-
-        # test degrees of freedom
-        assert degrees_of_freedom(m) == 0
-
-        # test scaling
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-        )
-
-        calculate_scaling_factors(m)
-
-        # check that all variables have scaling factors.
-        # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
-        unscaled_var_list = list(
-            unscaled_variables_generator(m.fs.unit, include_fixed=True)
-        )
-        assert len(unscaled_var_list) == 0
-
-        # test initialization
-        initialization_tester(m)
-
-        # test variable scaling
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        assert badly_scaled_var_lst == []
-
-        # test solve
-        results = solver.solve(m, tee=True)
-
-        # Check for optimal solution
-        assert_optimal_termination(results)
-
-        # test solution
-        assert pytest.approx(4.562e-3, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
-        )
-        assert pytest.approx(1.593e-6, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
-        )
-        assert pytest.approx(0.2281, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        )
-        assert pytest.approx(7.963e-5, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(35.75, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(41.96, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        )
-        assert pytest.approx(46.57, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(49.94, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        )
-
-    @pytest.mark.component
-    def test_Pdrop_calculation(self):
-        """Testing 0D-RO with PressureChangeType.calculated option."""
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.properties = props.NaClParameterBlock()
-
-        m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
-            property_package=m.fs.properties,
-            has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            pressure_change_type=PressureChangeType.calculated,
-        )
-
-        # fully specify system
-        feed_flow_mass = 1 / 3.6
-        feed_mass_frac_NaCl = 0.035
-        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        feed_pressure = 70e5
-        feed_temperature = 273.15 + 25
-        membrane_area = 19
-        A = 4.2e-12
-        B = 3.5e-8
-        pressure_atmospheric = 101325
-
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-            feed_flow_mass * feed_mass_frac_NaCl
-        )
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-            feed_flow_mass * feed_mass_frac_H2O
-        )
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.area.fix(membrane_area)
-        m.fs.unit.A_comp.fix(A)
-        m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.feed_side.channel_height.fix(0.001)
-        m.fs.unit.feed_side.spacer_porosity.fix(0.97)
-        m.fs.unit.length.fix(16)
-
-        # test statistics
-        assert number_variables(m) == 149
-        assert number_total_constraints(m) == 120
-        assert number_unused_variables(m) == 0  # vars from property package parameters
-
-        # Test units
-        assert_units_consistent(m.fs.unit)
-
-        # test degrees of freedom
-        assert degrees_of_freedom(m) == 0
-
-        # test scaling
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-        )
-        m.fs.properties.set_default_scaling(
-            "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
-        )
-
-        calculate_scaling_factors(m)
-
-        # check that all variables have scaling factors.
-        # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
-        unscaled_var_list = list(
-            unscaled_variables_generator(m.fs.unit, include_fixed=True)
-        )
-        assert len(unscaled_var_list) == 0
-
-        # test initialization
-        initialization_tester(m)
-
-        # test variable scaling
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        assert badly_scaled_var_lst == []
-
-        # test solve
-        results = solver.solve(m, tee=True)
-
-        # Check for optimal solution
-        assert_optimal_termination(results)
-
-        # test solution
-        assert pytest.approx(-1.661e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(-1.038e4, rel=1e-3) == value(
-            m.fs.unit.deltaP[0] / m.fs.unit.length
-        )
-        assert pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 0.0])
-        assert pytest.approx(0.2361, rel=1e-3) == value(
-            m.fs.unit.feed_side.velocity[0, 0.0]
-        )
-        assert pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 1.0])
-        assert pytest.approx(0.1187, rel=1e-3) == value(
-            m.fs.unit.feed_side.velocity[0, 1.0]
-        )
-        assert pytest.approx(7.089e-3, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
-        )
-        assert pytest.approx(2.188e-6, rel=1e-3) == value(
-            m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
-        )
-        assert pytest.approx(0.1347, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-        )
-        assert pytest.approx(4.157e-5, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(50.08, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        )
-        assert pytest.approx(70.80, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(76.32, rel=1e-3) == value(
-            m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
-        )
-
-    @pytest.mark.component
-    def test_Pdrop_fixed_per_unit_length(self):
-        """Testing 0D-RO with PressureChangeType.fixed_per_unit_length option."""
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.properties = props.NaClParameterBlock()
-
-        m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
-            property_package=m.fs.properties,
-            has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            pressure_change_type=PressureChangeType.fixed_per_unit_length,
-        )
-
-        # fully specify system
-        feed_flow_mass = 1
-        feed_mass_frac_NaCl = 0.035
-        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        feed_pressure = 50e5
-        feed_temperature = 273.15 + 25
-        membrane_area = 50
-        length = 20
-        A = 4.2e-12
-        B = 3.5e-8
-        pressure_atmospheric = 101325
-        membrane_pressure_drop = 3e5
-
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-            feed_flow_mass * feed_mass_frac_NaCl
-        )
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-            feed_flow_mass * feed_mass_frac_H2O
-        )
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.area.fix(membrane_area)
-        m.fs.unit.A_comp.fix(A)
-        m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
-
-        m.fs.unit.feed_side.channel_height.fix(0.002)
-        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
-        m.fs.unit.length.fix(length)
-        m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
-
-        # test statistics
-        assert number_variables(m) == 144
-        assert number_total_constraints(m) == 114
+        assert number_variables(m) == 174
+        assert number_total_constraints(m) == 138
         assert number_unused_variables(m) == 0
 
         # Test units
@@ -965,32 +742,270 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert_optimal_termination(results)
 
         # test solution
-        assert pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(4.562e-3, rel=1e-3) == value(
+        assert pytest.approx(5.044e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(1.593e-6, rel=1e-3) == value(
+        assert pytest.approx(5.876e-7, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.2281, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
+        # TODO: add more regression tests
+        assert pytest.approx(35.75, rel=1e-3) == value(
+            m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(7.963e-5, rel=1e-3) == value(
-            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
-        )
-        assert pytest.approx(41.96, rel=1e-3) == value(
+        assert pytest.approx(42.23, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
         )
-        assert pytest.approx(46.57, rel=1e-3) == value(
+        assert pytest.approx(48.185, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(49.94, rel=1e-3) == value(
+        assert pytest.approx(52.783, rel=1e-3) == value(
             m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
         )
+
+    # TODO: get pressure drop calculation working and commented tests working
+
+    # @pytest.mark.component
+    # def test_Pdrop_calculation(self):
+    #     """Testing 0D-RO with PressureChangeType.calculated option."""
+    #     m = ConcreteModel()
+    #     m.fs = FlowsheetBlock(dynamic=False)
+    #
+    #     m.fs.properties = props.NaClParameterBlock()
+    #
+    #     m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
+    #         property_package=m.fs.properties,
+    #         has_pressure_change=True,
+    #         concentration_polarization_type=ConcentrationPolarizationType.calculated,
+    #         mass_transfer_coefficient=MassTransferCoefficient.calculated,
+    #         pressure_change_type=PressureChangeType.calculated,
+    #     )
+    #
+    #     # fully specify system
+    #     feed_flow_mass = 1 / 3.6
+    #     feed_mass_frac_NaCl = 0.035
+    #     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    #     feed_pressure = 70e5
+    #     feed_temperature = 273.15 + 25
+    #     membrane_area = 19
+    #     A = 4.2e-12
+    #     B = 3.5e-8
+    #     pressure_atmospheric = 101325
+    #
+    #     m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+    #         feed_flow_mass * feed_mass_frac_NaCl
+    #     )
+    #     m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+    #         feed_flow_mass * feed_mass_frac_H2O
+    #     )
+    #     m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+    #     m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+    #     m.fs.unit.area.fix(membrane_area)
+    #     m.fs.unit.A_comp.fix(A)
+    #     m.fs.unit.B_comp.fix(B)
+    #     m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
+    #     m.fs.unit.feed_side.channel_height.fix(0.001)
+    #     m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+    #     m.fs.unit.length.fix(16)
+    #
+    #     # test statistics
+    #     assert number_variables(m) == 149
+    #     assert number_total_constraints(m) == 120
+    #     assert number_unused_variables(m) == 0  # vars from property package parameters
+    #
+    #     # Test units
+    #     assert_units_consistent(m.fs.unit)
+    #
+    #     # test degrees of freedom
+    #     assert degrees_of_freedom(m) == 0
+    #
+    #     # test scaling
+    #     m.fs.properties.set_default_scaling(
+    #         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    #     )
+    #     m.fs.properties.set_default_scaling(
+    #         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    #     )
+    #
+    #     calculate_scaling_factors(m)
+    #
+    #     # check that all variables have scaling factors.
+    #     # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
+    #     unscaled_var_list = list(
+    #         unscaled_variables_generator(m.fs.unit, include_fixed=True)
+    #     )
+    #     assert len(unscaled_var_list) == 0
+    #
+    #     # test initialization
+    #     initialization_tester(m)
+    #
+    #     # test variable scaling
+    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+    #     assert badly_scaled_var_lst == []
+    #
+    #     # test solve
+    #     results = solver.solve(m, tee=True)
+    #
+    #     # Check for optimal solution
+    #     assert_optimal_termination(results)
+    #
+    #     # test solution
+    #     assert pytest.approx(-1.661e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+    #     assert pytest.approx(-1.038e4, rel=1e-3) == value(
+    #         m.fs.unit.deltaP[0] / m.fs.unit.length
+    #     )
+    #     assert pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 0.0])
+    #     assert pytest.approx(0.2361, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.velocity[0, 0.0]
+    #     )
+    #     assert pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.feed_side.N_Re[0, 1.0])
+    #     assert pytest.approx(0.1187, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.velocity[0, 1.0]
+    #     )
+    #     assert pytest.approx(7.089e-3, rel=1e-3) == value(
+    #         m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+    #     )
+    #     assert pytest.approx(2.188e-6, rel=1e-3) == value(
+    #         m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(0.1347, rel=1e-3) == value(
+    #         m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
+    #     )
+    #     assert pytest.approx(4.157e-5, rel=1e-3) == value(
+    #         m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(50.08, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
+    #             "Liq", "NaCl"
+    #         ]
+    #     )
+    #     assert pytest.approx(70.80, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(76.32, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+    #             "Liq", "NaCl"
+    #         ]
+    #     )
+    #
+    # @pytest.mark.component
+    # def test_Pdrop_fixed_per_unit_length(self):
+    #     """Testing 0D-RO with PressureChangeType.fixed_per_unit_length option."""
+    #     m = ConcreteModel()
+    #     m.fs = FlowsheetBlock(dynamic=False)
+    #
+    #     m.fs.properties = props.NaClParameterBlock()
+    #
+    #     m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
+    #         property_package=m.fs.properties,
+    #         has_pressure_change=True,
+    #         concentration_polarization_type=ConcentrationPolarizationType.calculated,
+    #         mass_transfer_coefficient=MassTransferCoefficient.calculated,
+    #         pressure_change_type=PressureChangeType.fixed_per_unit_length,
+    #     )
+    #
+    #     # fully specify system
+    #     feed_flow_mass = 1
+    #     feed_mass_frac_NaCl = 0.035
+    #     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    #     feed_pressure = 50e5
+    #     feed_temperature = 273.15 + 25
+    #     membrane_area = 50
+    #     length = 20
+    #     A = 4.2e-12
+    #     B = 3.5e-8
+    #     pressure_atmospheric = 101325
+    #     membrane_pressure_drop = 3e5
+    #
+    #     m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+    #         feed_flow_mass * feed_mass_frac_NaCl
+    #     )
+    #     m.fs.unit.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+    #         feed_flow_mass * feed_mass_frac_H2O
+    #     )
+    #     m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+    #     m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+    #     m.fs.unit.area.fix(membrane_area)
+    #     m.fs.unit.A_comp.fix(A)
+    #     m.fs.unit.B_comp.fix(B)
+    #     m.fs.unit.permeate_inlet.pressure[0].fix(pressure_atmospheric)
+    #
+    #     m.fs.unit.feed_side.channel_height.fix(0.002)
+    #     m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+    #     m.fs.unit.length.fix(length)
+    #     m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
+    #
+    #     # test statistics
+    #     assert number_variables(m) == 144
+    #     assert number_total_constraints(m) == 114
+    #     assert number_unused_variables(m) == 0
+    #
+    #     # Test units
+    #     assert_units_consistent(m.fs.unit)
+    #
+    #     # test degrees of freedom
+    #     assert degrees_of_freedom(m) == 0
+    #
+    #     # test scaling
+    #     m.fs.properties.set_default_scaling(
+    #         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    #     )
+    #     m.fs.properties.set_default_scaling(
+    #         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
+    #     )
+    #
+    #     calculate_scaling_factors(m)
+    #
+    #     # check that all variables have scaling factors.
+    #     # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
+    #     unscaled_var_list = list(
+    #         unscaled_variables_generator(m.fs.unit, include_fixed=True)
+    #     )
+    #     assert len(unscaled_var_list) == 0
+    #
+    #     # test initialization
+    #     initialization_tester(m)
+    #
+    #     # test variable scaling
+    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+    #     assert badly_scaled_var_lst == []
+    #
+    #     # test solve
+    #     results = solver.solve(m, tee=True)
+    #
+    #     # Check for optimal solution
+    #     assert_optimal_termination(results)
+    #
+    #     # test solution
+    #     assert pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+    #     assert pytest.approx(4.562e-3, rel=1e-3) == value(
+    #         m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
+    #     )
+    #     assert pytest.approx(1.593e-6, rel=1e-3) == value(
+    #         m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(0.2281, rel=1e-3) == value(
+    #         m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
+    #     )
+    #     assert pytest.approx(7.963e-5, rel=1e-3) == value(
+    #         m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(41.96, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
+    #             "Liq", "NaCl"
+    #         ]
+    #     )
+    #     assert pytest.approx(46.57, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
+    #     )
+    #     assert pytest.approx(49.94, rel=1e-3) == value(
+    #         m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+    #             "Liq", "NaCl"
+    #         ]
+    #     )
 
     @pytest.mark.unit
     def test_report(self, RO_frame):

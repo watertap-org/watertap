@@ -141,21 +141,22 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
         self.permeate_side.add_state_blocks(has_phase_equilibrium=False)
         # TODO: throwing this code in here to set the reference;
-        # unsure why it's not working inside add_state_blocks
-        add_object_reference(
-            self.permeate_side,
-            "properties",
-            {
-                **{
-                    (t, 0): self.permeate_side.properties_out[t]
-                    for t in self.permeate_side.flowsheet().config.time
+        #  unsure why it's not working inside add_state_blocks
+        if self.permeate_side._flow_direction == FlowDirection.backward:
+            add_object_reference(
+                self.permeate_side,
+                "properties",
+                {
+                    **{
+                        (t, 0): self.permeate_side.properties_out[t]
+                        for t in self.permeate_side.flowsheet().config.time
+                    },
+                    **{
+                        (t, 1): self.permeate_side.properties_in[t]
+                        for t in self.permeate_side.flowsheet().config.time
+                    },
                 },
-                **{
-                    (t, 1): self.permeate_side.properties_in[t]
-                    for t in self.permeate_side.flowsheet().config.time
-                },
-            },
-        )
+            )
         self.permeate_side.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
@@ -489,6 +490,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
         return self.eq_flux_mass
 
+    # TODO: cleanup commented out code once finished with revisions
+
     # def _get_state_args_permeate(self, initialize_guess, state_args):
     #     """
     #     Arguments:
@@ -787,7 +790,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                 "Feed Osmotic Pressure @Inlet,Bulk"
             ] = feed_inlet.pressure_osm_phase["Liq"]
         # TODO: add all corresponding values for permeate side for relevant
-        # vars/expressions from osmotic pressure and whatever is below
+        #  vars/expressions from osmotic pressure and whatever is below
         if (
             feed_inlet.is_property_constructed("flow_vol_phase")
             and self.config.has_full_reporting
