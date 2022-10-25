@@ -92,7 +92,9 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
                 add_eq_area = False
             self._add_area(include_constraint=add_eq_area)
         else:
-            mem_side.add_geometry(length_var=None, width_var=None)
+            mem_side.add_geometry(
+                length_var=None, width_var=None, flow_direction=flow_direction
+            )
             self._add_area(include_constraint=False)
 
     def _add_mass_transfer(self):

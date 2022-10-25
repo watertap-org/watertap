@@ -140,23 +140,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         )
 
         self.permeate_side.add_state_blocks(has_phase_equilibrium=False)
-        # TODO: throwing this code in here to set the reference;
-        #  unsure why it's not working inside add_state_blocks
-        if self.permeate_side._flow_direction == FlowDirection.backward:
-            add_object_reference(
-                self.permeate_side,
-                "properties",
-                {
-                    **{
-                        (t, 0): self.permeate_side.properties_out[t]
-                        for t in self.permeate_side.flowsheet().config.time
-                    },
-                    **{
-                        (t, 1): self.permeate_side.properties_in[t]
-                        for t in self.permeate_side.flowsheet().config.time
-                    },
-                },
-            )
+
         self.permeate_side.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
@@ -490,74 +474,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
         return self.eq_flux_mass
 
-    # TODO: cleanup commented out code once finished with revisions
-
-    # def _get_state_args_permeate(self, initialize_guess, state_args):
-    #     """
-    #     Arguments:
-    #         initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
-    #                            and cp_modulus. These guesses offset the initial values
-    #                            for the retentate, permeate, and membrane interface
-    #                            state blocks from the inlet feed
-    #                            (default =
-    #                            {'deltaP': -1e4,
-    #                            'solvent_recovery': 0.5,
-    #                            'solute_recovery': 0.01,
-    #                            'cp_modulus': 1.1})
-    #         state_args : a dict of arguments to be passed to the property
-    #                      package(s) to provide an initial state for the inlet
-    #                      feed side state block (see documentation of the specific
-    #                      property package).
-    #     """
-    #
-    #     source = self.feed_side.properties[
-    #         self.flowsheet().config.time.first(), self.feed_side.first_element
-    #     ]
-    #
-    #     # assumptions
-    #     if initialize_guess is None:
-    #         initialize_guess = {}
-    #     if "solvent_recovery" not in initialize_guess:
-    #         initialize_guess["solvent_recovery"] = 0.5
-    #     if "solute_recovery" not in initialize_guess:
-    #         initialize_guess["solute_recovery"] = 0.01
-    #
-    #     if state_args is None:
-    #         state_args = {}
-    #         state_dict = source.define_port_members()
-    #
-    #         for k in state_dict.keys():
-    #             if state_dict[k].is_indexed():
-    #                 state_args[k] = {}
-    #                 for m in state_dict[k].keys():
-    #                     state_args[k][m] = state_dict[k][m].value
-    #             else:
-    #                 state_args[k] = state_dict[k].value
-    #
-    #     if "flow_mass_phase_comp" not in state_args.keys():
-    #         raise ConfigurationError(
-    #             f"{self.__class__.__name__} initialization routine expects "
-    #             "flow_mass_phase_comp as a state variable. Check "
-    #             "that the property package supports this state "
-    #             "variable or that the state_args provided to the "
-    #             "initialize call includes this state variable"
-    #         )
-    #
-    #     # slightly modify initial values for other state blocks
-    #     state_args_permeate = deepcopy(state_args)
-    #
-    #     state_args_permeate["pressure"] = mixed_permeate_properties.pressure.value
-    #     for j in self.config.property_package.solvent_set:
-    #         state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
-    #             "solvent_recovery"
-    #         ]
-    #     for j in self.config.property_package.solute_set:
-    #         state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
-    #             "solute_recovery"
-    #         ]
-    #
-    #     return state_args_permeate
-
     def initialize_build(
         self,
         initialize_guess=None,
@@ -610,18 +526,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
                 f"{self.name} degrees of freedom were not 0 at the beginning "
                 f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
-
-        # state_args_permeate = self._get_state_args_permeate(
-        #     initialize_guess, state_args
-        # )
-        # print("DOF before permeate side init",degrees_of_freedom(self))
-        # self.permeate_side.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        # )
-        # print("DOF after permeate side init",degrees_of_freedom(self))
 
         # Create solver
         opt = get_solver(solver, optarg)
