@@ -11,12 +11,8 @@
 #
 ###############################################################################
 
-from copy import deepcopy
-from enum import Enum, auto
-from pyomo.common.collections import ComponentSet
 from pyomo.common.config import Bool, ConfigValue
 from pyomo.environ import (
-    Block,
     NonNegativeReals,
     Param,
     Suffix,
@@ -36,7 +32,6 @@ import idaes.logger as idaeslog
 
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
-    CONFIG_Template,
     ConcentrationPolarizationType,
 )
 
@@ -274,8 +269,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             )
 
         self._add_flux_balance()
-        # if self.config.has_pressure_change:
-        #     self._add_deltaP()
+
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -732,13 +726,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
 
-    # permeate properties need to rescale solute values by 100
-    def _rescale_permeate_variable(self, var, factor=100):
-        if var not in self._permeate_scaled_properties:
-            sf = iscale.get_scaling_factor(var)
-            iscale.set_scaling_factor(var, sf * factor)
-            self._permeate_scaled_properties.add(var)
-
     def calculate_scaling_factors(self):
 
         super().calculate_scaling_factors()
@@ -773,29 +760,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
             if iscale.get_scaling_factor(self.structural_parameter) is None:
                 # Structural parameter expected to be ~ 1200 microns
                 iscale.set_scaling_factor(self.structural_parameter, 1e3)
-        # if not hasattr(self, "_permeate_scaled_properties"):
-        #     self._permeate_scaled_properties = ComponentSet()
-
-        # for sb in self.permeate_side:
-        #     for blk in sb.values():
-        #         for j in self.config.property_package.solute_set:
-        #             self._rescale_permeate_variable(blk.flow_mass_phase_comp["Liq", j])
-        #             if blk.is_property_constructed("mass_frac_phase_comp"):
-        #                 self._rescale_permeate_variable(
-        #                     blk.mass_frac_phase_comp["Liq", j]
-        #                 )
-        #             if blk.is_property_constructed("conc_mass_phase_comp"):
-        #                 self._rescale_permeate_variable(
-        #                     blk.conc_mass_phase_comp["Liq", j]
-        #                 )
-        #             if blk.is_property_constructed("mole_frac_phase_comp"):
-        #                 self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
-        #             if blk.is_property_constructed("molality_phase_comp"):
-        #                 self._rescale_permeate_variable(
-        #                     blk.molality_phase_comp["Liq", j]
-        #                 )
-        #         if blk.is_property_constructed("pressure_osm_phase"):
-        #             self._rescale_permeate_variable(blk.pressure_osm_phase["Liq"])
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:

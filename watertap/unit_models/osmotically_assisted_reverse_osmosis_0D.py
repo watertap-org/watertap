@@ -14,22 +14,15 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Set,
     NonNegativeReals,
     NegativeReals,
-    Reference,
-    units as pyunits,
-    exp,
     value,
-    check_optimal_termination,
 )
 
 from idaes.core import declare_process_block_class, FlowDirection
 from idaes.core.util import scaling as iscale
-from idaes.core.util.misc import add_object_reference
 from watertap.core import (
     MembraneChannel0DBlock,
-    ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
@@ -38,7 +31,6 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
     OsmoticallyAssistedReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
-import idaes.logger as idaeslog
 
 
 __author__ = "Adam Atia, Chenyu Wang"
@@ -154,23 +146,6 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
                 == -b.feed_side.mass_transfer_term[t, p, j]
             )
 
-        # ------------------------------------------------------------------------------------------------
-        # # Not in 1DRO
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     self.length_domain,
-        #     self.config.property_package.solute_set,
-        #     doc="Permeate mass fraction",
-        # )
-        # def eq_mass_frac_permeate(b, t, x, j):
-        #     return (
-        #         b.permeate_side.properties[t, x].mass_frac_phase_comp["Liq", j]
-        #         * sum(
-        #             self.flux_mass_phase_comp[t, x, "Liq", jj]
-        #             for jj in self.config.property_package.component_list
-        #         )
-        #         == self.flux_mass_phase_comp[t, x, "Liq", j]
-        #     )
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
