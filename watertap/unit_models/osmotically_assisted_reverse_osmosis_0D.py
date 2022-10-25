@@ -48,7 +48,7 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
     CONFIG = CONFIG_Template()
 
     _add_has_full_reporting(CONFIG)
-    # TODO: add a test for this exception
+
     def _add_membrane_channel_and_geometry(
         self, side="feed_side", flow_direction=FlowDirection.forward
     ):
