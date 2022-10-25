@@ -15,9 +15,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Param,
     Var,
-    Expression,
     Constraint,
     assert_optimal_termination,
 )
@@ -33,9 +31,6 @@ from idaes.core import (
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
-    ConcentrationPolarizationType,
-    MassTransferCoefficient,
-    PressureChangeType,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -54,7 +49,12 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 
-from watertap.core import MembraneChannel0DBlock
+from watertap.core import (
+    MembraneChannel0DBlock,
+    ConcentrationPolarizationType,
+    MassTransferCoefficient,
+    PressureChangeType,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1111,7 +1111,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
                 "Liq", "NaCl"
             ]
         )
-
         assert pytest.approx(4.994, rel=1e-3) == value(
             m.fs.unit.permeate_side.properties_out[0].conc_mass_phase_comp[
                 "Liq", "NaCl"
@@ -1128,6 +1127,29 @@ class TestOsmoticallyAssistedReverseOsmosis:
         calculate_scaling_factors(RO_frame)
         for _ in badly_scaled_var_generator(RO_frame):
             assert False
+
+    @pytest.mark.unit
+    def test_exception_add_membrane_channel_and_geometry(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="0 is not a string. Please provide a string for the side argument.",
+        ):
+            m.fs.unit._add_membrane_channel_and_geometry(
+                side=0, flow_direction=FlowDirection.backward
+            )
 
     @pytest.mark.unit
     def test_add_membrane_channel_and_geometry(self):

@@ -53,7 +53,9 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
         self, side="feed_side", flow_direction=FlowDirection.forward
     ):
         if not isinstance(side, str):
-            raise TypeError(f"{side} is not a string. Please provide a string.")
+            raise TypeError(
+                f"{side} is not a string. Please provide a string for the side argument."
+            )
 
         # Build membrane channel control volume
         setattr(
