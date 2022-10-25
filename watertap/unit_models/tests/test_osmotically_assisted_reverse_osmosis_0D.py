@@ -228,6 +228,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             has_pressure_change=True,
             concentration_polarization_type=ConcentrationPolarizationType.fixed,
             mass_transfer_coefficient=MassTransferCoefficient.none,
+            has_full_reporting=True,
         )
 
         # fully specify system
