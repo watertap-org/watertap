@@ -269,25 +269,25 @@ def run_case(number_of_stages, nx, output_filename=None):
     )
     outputs.update(
         {
-            f"Inlet Reynolds Number-Stage {idx}": stage.N_Re[0, 0]
+            f"Inlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 0]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Outlet Reynolds Number-Stage {idx}": stage.N_Re[0, 1]
+            f"Outlet Reynolds Number-Stage {idx}": stage.feed_side.N_Re[0, 1]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Inlet Crossflow Velocity-Stage {idx}": stage.velocity[0, 0]
+            f"Inlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 0]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
     outputs.update(
         {
-            f"Outlet Crossflow Velocity-Stage {idx}": stage.velocity[0, 1]
+            f"Outlet Crossflow Velocity-Stage {idx}": stage.feed_side.velocity[0, 1]
             for idx, stage in m.fs.ROUnits.items()
         }
     )
