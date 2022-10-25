@@ -99,6 +99,7 @@ def test_option_has_pressure_change():
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
+    assert isinstance(m.fs.unit.permeate_side.deltaP, Var)
 
 
 @pytest.mark.unit
@@ -118,6 +119,7 @@ def test_option_concentration_polarization_type_fixed():
         == ConcentrationPolarizationType.fixed
     )
     assert isinstance(m.fs.unit.feed_side.cp_modulus, Var)
+    assert isinstance(m.fs.unit.permeate_side.cp_modulus, Var)
 
 
 @pytest.mark.unit
@@ -138,6 +140,7 @@ def test_option_concentration_polarization_type_calculated_kf_fixed():
     )
     assert m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.fixed
     assert isinstance(m.fs.unit.feed_side.K, Var)
+    assert isinstance(m.fs.unit.permeate_side.K, Var)
 
 
 @pytest.mark.unit
@@ -290,10 +293,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         # test statistics
         assert number_variables(m) == 139
         assert number_total_constraints(m) == 105
-        from idaes.core.util.model_statistics import unused_variables_set
-
-        [print(i) for i in unused_variables_set(m)]
-        assert number_unused_variables(m) == 7  # vars from property package parameters
+        assert number_unused_variables(m) == 7
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -792,8 +792,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
             m.fs.unit.permeate_side.properties_in[0].conc_mass_phase_comp["Liq", "NaCl"]
         )
 
-    # TODO: get pressure drop calculation working and commented tests working
-
     @pytest.mark.component
     def test_Pdrop_calculation(self):
         """Testing 0D-OARO with PressureChangeType.calculated option."""
@@ -874,7 +872,6 @@ class TestOsmoticallyAssistedReverseOsmosis:
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors.
-        # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(
             unscaled_variables_generator(m.fs.unit, include_fixed=True)
         )
@@ -1131,3 +1128,39 @@ class TestOsmoticallyAssistedReverseOsmosis:
         calculate_scaling_factors(RO_frame)
         for _ in badly_scaled_var_generator(RO_frame):
             assert False
+
+    @pytest.mark.unit
+    def test_add_membrane_channel_and_geometry(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = OsmoticallyAssistedReverseOsmosis0D(
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
+        )
+
+        m.fs.unit._add_membrane_channel_and_geometry(
+            side="foo", flow_direction=FlowDirection.backward
+        )
+
+        assert hasattr(m.fs.unit, "foo")
+        assert isinstance(m.fs.unit.foo, MembraneChannel0DBlock)
+
+        m.fs.unit.foo.add_state_blocks(has_phase_equilibrium=False)
+
+        m.fs.unit.foo.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"].fix(0)
+        m.fs.unit.foo.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].fix(1)
+
+        assert (
+            m.fs.unit.foo.properties[0, 1].flow_mass_phase_comp["Liq", "NaCl"]
+            == m.fs.unit.foo.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"]
+        )
+        assert (
+            m.fs.unit.foo.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"]
+            == m.fs.unit.foo.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"]
+        )

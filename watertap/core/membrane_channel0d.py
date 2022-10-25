@@ -117,10 +117,6 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 },
             )
         elif self._flow_direction == FlowDirection.backward:
-            # TODO: added this more explicit conditional as a sanity check,
-            # but it seems the intended referencing below does not work, i.e.,
-            # properties_in[0] == properties[0, 0] (what's actually happening)
-            # instead of properties_in[0] == properties[0, 1] (intended but not happening)
             add_object_reference(
                 self,
                 "properties",
@@ -137,7 +133,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             )
         else:
             raise ConfigurationError(
-                "FlowDirection must be set to forward or backward."
+                "FlowDirection must be set to FlowDirection.forward or FlowDirection.backward."
             )
 
         self._add_interface_stateblock(has_phase_equilibrium)
