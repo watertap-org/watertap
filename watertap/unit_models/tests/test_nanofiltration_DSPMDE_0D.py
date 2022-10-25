@@ -12,11 +12,10 @@
 ###############################################################################
 
 import pytest
+import numpy as np
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     Var,
     units as pyunits,
@@ -27,7 +26,6 @@ from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
@@ -46,11 +44,9 @@ from watertap.core.util.initialization import check_dof
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import ConfigurationError
@@ -58,10 +54,8 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     unscaled_constraints_generator,
-    constraints_with_scale_factor_generator,
     badly_scaled_var_generator,
 )
-import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1725,3 +1719,85 @@ def test_mass_transfer_CP_config_errors():
             mass_transfer_coefficient=MassTransferCoefficient.spiral_wound,
             concentration_polarization_type=ConcentrationPolarizationType.none,
         )
+
+
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
+def test_pressure_step_up():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = DSPMDEParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+        stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+        density_calculation=DensityCalculation.constant,
+    )
+
+    m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
+
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(47.356)
+
+    # Fix other inlet state variables
+    m.fs.unit.inlet.temperature[0].fix(298.15)
+    m.fs.unit.inlet.pressure[0].fix(4e5)
+
+    # Fix the membrane variables that are usually fixed for the DSPM-DE model
+    m.fs.unit.radius_pore.fix(0.5e-9)
+    m.fs.unit.membrane_thickness_effective.fix(1.33e-6)
+    m.fs.unit.membrane_charge_density.fix(-27)
+    m.fs.unit.dielectric_constant_pore.fix(41.3)
+
+    # Fix final permeate pressure to be ~atmospheric
+    m.fs.unit.mixed_permeate[0].pressure.fix(101325)
+
+    m.fs.unit.spacer_porosity.fix(0.85)
+    m.fs.unit.channel_height.fix(5e-4)
+    m.fs.unit.velocity[0, 0].fix(0.25)
+    m.fs.unit.area.fix(50)
+    # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
+    m.fs.unit.spacer_mixing_efficiency.fix()
+    m.fs.unit.spacer_mixing_length.fix()
+
+    check_dof(m, fail_flag=True)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
+    )
+
+    calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
+    assert len(unscaled_var_list) == 0
+
+    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    assert len(badly_scaled_var_lst) == 0
+
+    # not all constraints have scaling factor so skipping the check for unscaled constraints
+    unscaled_con_lst = list(unscaled_constraints_generator(m))
+    assert len(unscaled_con_lst) == 0
+
+    initialization_tester(m)
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)
+
+    pressure_steps = np.linspace(1.8e5, 20e5, 10)
+
+    for p in pressure_steps:
+        m.fs.unit.inlet.pressure[0].fix(p)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
