@@ -1490,7 +1490,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R19":
-                    # R18: Aerobic growth of X_AUT
+                    # R19: Aerobic growth of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.b_AUT * b.conc_mass_comp_ref["X_AUT"],
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
