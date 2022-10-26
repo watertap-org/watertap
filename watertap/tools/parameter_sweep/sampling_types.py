@@ -99,8 +99,6 @@ class ReverseGeomSample(FixedSample):
 
 
 class UniformSample(RandomSample):
-    # def sample(self, num_samples):
-    #     return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
     def sample(self):
         return np.random.uniform(self.lower_limit, self.upper_limit, self.num_samples)
 
@@ -111,8 +109,6 @@ class UniformSample(RandomSample):
 
 
 class NormalSample(RandomSample):
-    # def sample(self, num_samples):
-    #     return np.random.normal(self.mean, self.sd, num_samples)
     def sample(self):
         return np.random.normal(self.mean, self.sd, self.num_samples)
 

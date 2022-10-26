@@ -143,7 +143,6 @@ class _ParameterSweepBase(ABC):
 
             for k, v in d.items():
                 # Build a vector of discrete values for this parameter
-                # p = v.sample(num_samples)
                 p = v.sample()
                 param_values.append(p)
 
