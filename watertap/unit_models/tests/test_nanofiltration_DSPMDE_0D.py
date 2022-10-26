@@ -1721,7 +1721,8 @@ def test_mass_transfer_CP_config_errors():
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-def test_pressure_step_up_2_ions():
+def test_pressure_recovery_step_2_ions():
+    "Test optimal termination across a range of pressures and recovery rates for 2 ion system"
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
@@ -1796,6 +1797,15 @@ def test_pressure_step_up_2_ions():
         results = solver.solve(m)
         assert_optimal_termination(results)
 
+    m.fs.unit.inlet.pressure[0].fix(10e5)
+    m.fs.unit.area.unfix()
+
+    for r in np.linspace(0.05, 0.97, 10):
+        m.fs.unit.recovery_vol_phase.fix(r)
+        print(r)
+        res = solver.solve(m, tee=True)
+        assert_optimal_termination(res)
+
 
 def calc_scale(value):
     return -1 * floor(log(value, 10))
@@ -1803,7 +1813,8 @@ def calc_scale(value):
 
 @pytest.mark.requires_idaes_solver
 @pytest.mark.component
-def test_pressure_step_5_ions():
+def test_pressure_recovery_step_5_ions():
+    "Test optimal termination across a range of pressures and recovery rates for 5 ion system"
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     default = {
@@ -1934,8 +1945,7 @@ def test_pressure_step_5_ions():
 
     m.fs.feed.properties[0].pressure.fix(10e5)
 
-    for r in np.linspace(0.05, 0.98, 10):
+    for r in np.linspace(0.05, 0.97, 10):
         m.fs.nfUnit.recovery_vol_phase.fix(r)
-        print(r)
         res = solver.solve(m, tee=True)
         assert_optimal_termination(res)
