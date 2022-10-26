@@ -15,7 +15,10 @@ from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,
 )
-from watertap.tools.parameter_sweep.parameter_sweep_differential import DifferentialParameterSweep
+from watertap.tools.parameter_sweep.parameter_sweep_differential import (
+    DifferentialParameterSweep,
+)
+
 
 def parameter_sweep(
     model,
@@ -291,6 +294,7 @@ def recursive_parameter_sweep(
         model, sweep_params, outputs=outputs, req_num_samples=req_num_samples, seed=seed
     )
 
+
 def differential_parameter_sweep(
     model,
     sweep_params,
@@ -334,7 +338,7 @@ def differential_parameter_sweep(
             The second level denotes various options to be used for wach variable.
             The number of samples for each differential sweep is specified while initializing the DifferentialParameterSweep object wsing the keyword `num_diff_samples`
             e.g.
-            
+
             {
                 "fs.a": {
                     "diff_mode": "sum",

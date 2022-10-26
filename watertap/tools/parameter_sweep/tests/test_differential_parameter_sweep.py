@@ -24,7 +24,10 @@ from watertap.tools.parameter_sweep.sampling_types import (
     GeomSample,
     UniformSample,
 )
-from watertap.tools.parameter_sweep import DifferentialParameterSweep, differential_parameter_sweep
+from watertap.tools.parameter_sweep import (
+    DifferentialParameterSweep,
+    differential_parameter_sweep,
+)
 from watertap.tools.parameter_sweep.tests.test_parameter_sweep import (
     _read_output_h5,
     _get_rank0_path,
@@ -426,6 +429,7 @@ def test_differential_parameter_sweep(model, tmp_path):
         else:
             _assert_dictionary_correctness(truth_dict, read_dict)
 
+
 @pytest.mark.component
 def test_differential_parameter_sweep_function(model, tmp_path):
 
@@ -454,18 +458,6 @@ def test_differential_parameter_sweep_function(model, tmp_path):
         },
     }
 
-    # ps = DifferentialParameterSweep(
-    #     comm=comm,
-    #     csv_results_file_name=csv_results_file_name,
-    #     h5_results_file_name=h5_results_file_name,
-    #     debugging_data_dir=tmp_path,
-    #     interpolate_nan_outputs=True,
-    #     optimize_function=_optimization,
-    #     reinitialize_function=_reinitialize,
-    #     reinitialize_kwargs={"slack_penalty": 10.0},
-    #     differential_sweep_specs=differential_sweep_specs,
-    # )
-
     m = model
     m.fs.slack_penalty = 1000.0
     m.fs.slack.setub(0)
@@ -475,27 +467,21 @@ def test_differential_parameter_sweep_function(model, tmp_path):
     sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     # Call the parameter_sweep function
-    global_results_dict, _ = differential_parameter_sweep(model,
-                                sweep_params,
-                                differential_sweep_specs,
-                                outputs=None,
-                                mpi_comm=comm,
-                                csv_results_file_name=csv_results_file_name,
-                                h5_results_file_name=h5_results_file_name,
-                                debugging_data_dir=tmp_path,
-                                interpolate_nan_outputs=True,
-                                optimize_function=_optimization,
-                                reinitialize_function=_reinitialize,
-                                reinitialize_kwargs={"slack_penalty": 10.0},
-                                seed=0,
-                                )
-
-    # global_results_dict, _ = ps.parameter_sweep(
-    #     m,
-    #     sweep_params,
-    #     outputs=None,
-    #     seed=0,
-    # )
+    global_results_dict, _ = differential_parameter_sweep(
+        model,
+        sweep_params,
+        differential_sweep_specs,
+        outputs=None,
+        mpi_comm=comm,
+        csv_results_file_name=csv_results_file_name,
+        h5_results_file_name=h5_results_file_name,
+        debugging_data_dir=tmp_path,
+        interpolate_nan_outputs=True,
+        optimize_function=_optimization,
+        reinitialize_function=_reinitialize,
+        reinitialize_kwargs={"slack_penalty": 10.0},
+        seed=0,
+    )
 
     if comm.rank == 0:
 

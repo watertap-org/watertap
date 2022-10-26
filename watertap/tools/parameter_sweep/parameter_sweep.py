@@ -183,6 +183,9 @@ class _ParameterSweepBase(ABC):
                 sampling_type == SamplingType.RANDOM
                 or sampling_type == SamplingType.RANDOM_LHS
             ):
+                # Make sure num_samples are the same here and across the SamplingTypes
+                for k, v in d.items():
+                    assert v.num_samples == num_samples
                 nx = num_samples
             else:
                 raise ValueError(f"Unknown sampling type: {sampling_type}")
