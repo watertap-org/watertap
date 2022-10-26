@@ -577,10 +577,10 @@ class NDMAStateBlockData(StateBlockData):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         temperature_ref = 273.15 * pyunits.K
 
-        def rule_enth_flow(b):  # enthalpy flow [J/s]
+        def rule_enth_flow(b, p):  # enthalpy flow [J/s]
             return (
                 b.params.cp
-                * sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
                 * (b.temperature - temperature_ref)
             )
 
@@ -762,27 +762,14 @@ class NDMAStateBlockData(StateBlockData):
             )  # temperature change on the order of 1e1
             iscale.set_scaling_factor(self.enth_flow, sf)
 
-        # property relationships with phase index, but simple constraint
-        v_str_lst_simple = ["dens_mass_phase", "flow_vol_phase"]
-        for v_str in v_str_lst_simple:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships indexed by component and phase
-        for v_str in (
-            "mass_frac_phase_comp",
-            "conc_mass_phase_comp",
-            "flow_mol_phase_comp",
-            "mole_frac_phase_comp",
-            "molality_phase_comp",
-        ):
-            if self.is_property_constructed(v_str):
-                v_comp = self.component(v_str)
-                for j, c in self.component("eq_" + v_str).items():
-                    sf = iscale.get_scaling_factor(
-                        v_comp["Liq", j], default=1, warning=True
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
+        # transforming constraints
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic["name"]
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
+            ):
+                var = getattr(self, var_str)
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(con[ind], sf)

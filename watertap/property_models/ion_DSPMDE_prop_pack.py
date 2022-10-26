@@ -922,21 +922,21 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
-            ["Liq"],
+            self.params.phase_list,
             initialize=1e3,
             bounds=(5e2, 2e3),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density",
         )
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
-        def rule_dens_mass_phase(b):
+        def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
-                return b.dens_mass_phase["Liq"] == 1000 * pyunits.kg * pyunits.m**-3
+                return b.dens_mass_phase[p] == 1000 * pyunits.kg * pyunits.m**-3
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K
                 s = sum(
-                    b.mass_frac_phase_comp["Liq", j]
+                    b.mass_frac_phase_comp[p, j]
                     for j in b.params.ion_set | b.params.solute_set
                 )
                 dens_mass = (
@@ -947,9 +947,11 @@ class DSPMDEStateBlockData(StateBlockData):
                     + b.params.dens_mass_param_B4 * s * t**3
                     + b.params.dens_mass_param_B5 * s**2 * t**2
                 )
-                return b.dens_mass_phase["Liq"] == dens_mass
+                return b.dens_mass_phase[p] == dens_mass
 
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        self.eq_dens_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_dens_mass_phase
+        )
 
     def _dens_mass_solvent(self):
         self.dens_mass_solvent = Var(
@@ -1158,20 +1160,19 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _visc_k_phase(self):
         self.visc_k_phase = Var(
-            ["Liq"],
+            self.params.phase_list,
             initialize=1e-6,
             bounds=(9e-7, 5e-2),
             units=pyunits.m**2 / pyunits.s,
             doc="Kinematic Viscosity",
         )
 
-        def rule_visc_k_phase(b):
-            return (
-                b.visc_d_phase["Liq"]
-                == b.visc_k_phase["Liq"] * b.dens_mass_phase["Liq"]
-            )
+        def rule_visc_k_phase(b, p):
+            return b.visc_d_phase[p] == b.visc_k_phase[p] * b.dens_mass_phase[p]
 
-        self.eq_visc_k_phase = Constraint(rule=rule_visc_k_phase)
+        self.eq_visc_k_phase = Constraint(
+            self.params.phase_list, rule=rule_visc_k_phase
+        )
 
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
@@ -1298,19 +1299,22 @@ class DSPMDEStateBlockData(StateBlockData):
     # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
+            self.params.phase_list,
             initialize=1,
             domain=NonNegativeReals,
             units=pyunits.mol / pyunits.kg,
             doc="Molal ionic strength",
         )
 
-        def rule_ionic_strength_molal(b):
+        def rule_ionic_strength_molal(b, p):
             return b.ionic_strength_molal == 0.5 * sum(
-                b.charge_comp[j] ** 2 * b.molality_phase_comp["Liq", j]
+                b.charge_comp[j] ** 2 * b.molality_phase_comp[p, j]
                 for j in self.params.ion_set | self.params.solute_set
             )
 
-        self.eq_ionic_strength_molal = Constraint(rule=rule_ionic_strength_molal)
+        self.eq_ionic_strength_molal = Constraint(
+            self.params.phase_list, rule=rule_ionic_strength_molal
+        )
 
     def _debye_huckel_constant(self):
         self.debye_huckel_constant = Var(
@@ -1958,55 +1962,13 @@ class DSPMDEStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(self.ionic_strength_molal, sf)
 
         # transforming constraints
-        # property relationships with no index, simple constraint
-        for v_str in ["dens_mass_solvent"]:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # # property relationships with phase index, but simple constraint
-        for v_str in [
-            "pressure_osm_phase",
-            "flow_vol_phase",
-            "dens_mass_phase",
-            "equiv_conductivity_phase",
-            "elec_cond_phase",
-            "visc_k_phase",
-        ]:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships indexed by component and phase
-        v_str_lst_phase_comp = [
-            "mass_frac_phase_comp",
-            "conc_mass_phase_comp",
-            "flow_mass_phase_comp",
-            "flow_equiv_phase_comp",
-            "mole_frac_phase_comp",
-            "conc_mol_phase_comp",
-            "conc_equiv_phase_comp",
-            "act_coeff_phase_comp",
-            "molality_phase_comp",
-            "elec_mobility_phase_comp",
-            "trans_num_phase_comp",
-        ]
-        for v_str in v_str_lst_phase_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(
-                        v_comp["Liq", j], default=1, warning=True
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
-
-        if self.is_property_constructed("debye_huckel_constant"):
-            iscale.constraint_scaling_transform(self.eq_debye_huckel_constant, 10)
-
-        if self.is_property_constructed("ionic_strength_molal"):
-            iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic["name"]
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
+            ):
+                var = getattr(self, var_str)
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(con[ind], sf)

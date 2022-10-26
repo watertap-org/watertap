@@ -1216,10 +1216,10 @@ class SeawaterStateBlockData(StateBlockData):
             b, p, j
         ):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
             return b.diffus_phase_comp[p, j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, "TDS"] ** 4
-                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, "TDS"] ** 3
-                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, "TDS"] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, "TDS"]
+                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
+                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, j] ** 3
+                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, j] ** 2
+                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, j]
                 + b.params.diffus_param["0"]
             )
 
@@ -1229,14 +1229,15 @@ class SeawaterStateBlockData(StateBlockData):
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
+            self.params.phase_list,
             initialize=1,
             bounds=(0.0, 10),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
 
-        def rule_osm_coeff(b):  # osmotic coefficient, eq. 49 in Sharqawy
-            s = b.mass_frac_phase_comp["Liq", "TDS"]
+        def rule_osm_coeff(b, p):  # osmotic coefficient, eq. 49 in Sharqawy
+            s = b.mass_frac_phase_comp[p, "TDS"]
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits are still K
@@ -1254,7 +1255,7 @@ class SeawaterStateBlockData(StateBlockData):
             )
             return b.osm_coeff == osm_coeff
 
-        self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
+        self.eq_osm_coeff = Constraint(self.params.phase_list, rule=rule_osm_coeff)
 
     def _pressure_osm_phase(self):
         self.pressure_osm_phase = Var(
@@ -1324,24 +1325,28 @@ class SeawaterStateBlockData(StateBlockData):
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
 
-        def rule_enth_flow(b):  # enthalpy flow [J/s]
+        def rule_enth_flow(b, p):  # enthalpy flow [J/s]
             return (
-                sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
-                * b.enth_mass_phase["Liq"]
+                sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
+                * b.enth_mass_phase[p]
             )
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
     def _pressure_sat(self):
         self.pressure_sat = Var(
-            initialize=1e3, bounds=(1, 1e8), units=pyunits.Pa, doc="Vapor pressure"
+            self.params.phase_list,
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Vapor pressure",
         )
 
         def rule_pressure_sat(
-            b,
+            b, p
         ):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
-            s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
+            s = b.mass_frac_phase_comp[p, "TDS"] * 1000 * pyunits.g / pyunits.kg
             psatw = (
                 exp(
                     b.params.pressure_sat_param_psatw_A1 * t**-1
@@ -1358,7 +1363,9 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.pressure_sat_param_B2 * s**2
             )
 
-        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+        self.eq_pressure_sat = Constraint(
+            self.params.phase_list, rule=rule_pressure_sat
+        )
 
     def _cp_mass_phase(self):
         self.cp_mass_phase = Var(
@@ -1445,6 +1452,7 @@ class SeawaterStateBlockData(StateBlockData):
 
     def _dh_vap_mass(self):
         self.dh_vap_mass = Var(
+            self.params.phase_list,
             initialize=2.4e3,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
@@ -1452,10 +1460,10 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_dh_vap_mass(
-            b,
+            b, p
         ):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
-            s = b.mass_frac_phase_comp["Liq", "TDS"]
+            s = b.mass_frac_phase_comp[p, "TDS"]
             dh_vap_mass_w = (
                 b.params.dh_vap_w_param_0
                 + b.params.dh_vap_w_param_1 * t
@@ -1465,7 +1473,7 @@ class SeawaterStateBlockData(StateBlockData):
             )
             return b.dh_vap_mass == dh_vap_mass_w * (1 - s)
 
-        self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
+        self.eq_dh_vap_mass = Constraint(self.params.phase_list, rule=rule_dh_vap_mass)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1647,57 +1655,13 @@ class SeawaterStateBlockData(StateBlockData):
             )
 
         # transforming constraints
-        # property relationships with no index, simple constraint
-        v_str_lst_simple = [
-            "dens_mass_solvent",
-            "osm_coeff",
-            "pressure_sat",
-            "dh_vap_mass",
-        ]
-        for v_str in v_str_lst_simple:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        if self.is_property_constructed("pressure_osm_phase"):
-            sf = iscale.get_scaling_factor(
-                self.pressure_osm_phase["Liq"], default=1, warning=True
-            )
-            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
-
-        # property relationships with phase index, but simple constraint
-        v_str_lst_phase = [
-            "dens_mass_phase",
-            "flow_vol_phase",
-            "visc_d_phase",
-            "enth_mass_phase",
-            "cp_mass_phase",
-            "therm_cond_phase",
-        ]
-        for v_str in v_str_lst_phase:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v["Liq"], default=1, warning=True)
-                c = getattr(self, "eq_" + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships indexed by component and phase
-        v_str_lst_phase_comp = [
-            "mass_frac_phase_comp",
-            "conc_mass_phase_comp",
-            "flow_mol_phase_comp",
-            "mole_frac_phase_comp",
-            "molality_phase_comp",
-            "diffus_phase_comp",
-        ]
-        for v_str in v_str_lst_phase_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, "eq_" + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(
-                        v_comp["Liq", j], default=1, warning=True
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic["name"]
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
+            ):
+                var = getattr(self, var_str)
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(con[ind], sf)

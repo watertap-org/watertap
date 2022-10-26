@@ -691,10 +691,10 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_diffus_phase_comp(b, p, j):  # diffusivity, eq 6 in Bartholomew
             return b.diffus_phase_comp[p, j] == (
-                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, "NaCl"] ** 4
-                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, "NaCl"] ** 3
-                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
-                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
+                b.params.diffus_param["4"] * b.mass_frac_phase_comp[p, j] ** 4
+                + b.params.diffus_param["3"] * b.mass_frac_phase_comp[p, j] ** 3
+                + b.params.diffus_param["2"] * b.mass_frac_phase_comp[p, j] ** 2
+                + b.params.diffus_param["1"] * b.mass_frac_phase_comp[p, j]
                 + b.params.diffus_param["0"]
             )
 
@@ -704,21 +704,21 @@ class NaClStateBlockData(StateBlockData):
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
+            self.params.phase_list,
             initialize=1,
             bounds=(0.5, 2),
             units=pyunits.dimensionless,
             doc="Osmotic coefficient",
         )
 
-        def rule_osm_coeff(b):
+        def rule_osm_coeff(b, p):
             return b.osm_coeff == (
-                b.params.osm_coeff_param["2"]
-                * b.mass_frac_phase_comp["Liq", "NaCl"] ** 2
-                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp["Liq", "NaCl"]
+                b.params.osm_coeff_param["2"] * b.mass_frac_phase_comp[p, "NaCl"] ** 2
+                + b.params.osm_coeff_param["1"] * b.mass_frac_phase_comp[p, "NaCl"]
                 + b.params.osm_coeff_param["0"]
             )
 
-        self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
+        self.eq_osm_coeff = Constraint(self.params.phase_list, rule=rule_osm_coeff)
 
     def _pressure_osm_phase(self):
         self.pressure_osm_phase = Var(
@@ -978,45 +978,15 @@ class NaClStateBlockData(StateBlockData):
                 iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
                 * iscale.get_scaling_factor(self.enth_mass_phase["Liq"]),
             )
+
         # transforming constraints
-        if self.is_property_constructed("pressure_osm_phase"):
-            sf = iscale.get_scaling_factor(
-                self.pressure_osm_phase["Liq"], default=1, warning=True
-            )
-            iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
-        if self.is_property_constructed("osm_coeff"):
-            sf = iscale.get_scaling_factor(self.osm_coeff, default=1, warning=True)
-            iscale.constraint_scaling_transform(self.eq_osm_coeff, sf)
-
-        # property relationships with phase index, but simple constraint
-        for v_str in (
-            "visc_d_phase",
-            "enth_mass_phase",
-            "flow_vol_phase",
-        ):
-            if self.is_property_constructed(v_str):
-                sf = iscale.get_scaling_factor(
-                    self.component(v_str)["Liq"], default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(self.component("eq_" + v_str), sf)
-
-        if self.is_property_constructed("dens_mass_phase"):
-            sf = iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
-            iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
-
-        # property relationships indexed by component and phase
-        for v_str in (
-            "mass_frac_phase_comp",
-            "conc_mass_phase_comp",
-            "flow_mol_phase_comp",
-            "mole_frac_phase_comp",
-            "molality_phase_comp",
-            "diffus_phase_comp",
-        ):
-            if self.is_property_constructed(v_str):
-                v_comp = self.component(v_str)
-                for p, j, c in self.component("eq_" + v_str).items():
-                    sf = iscale.get_scaling_factor(
-                        v_comp[p, j], default=1, warning=True
-                    )
-                    iscale.constraint_scaling_transform(c, sf)
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic["name"]
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
+            ):
+                var = getattr(self, var_str)
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(con[ind], sf)
