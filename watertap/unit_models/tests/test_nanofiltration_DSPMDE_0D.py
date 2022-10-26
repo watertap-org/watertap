@@ -310,13 +310,13 @@ class TestNanoFiltration_with_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -334,26 +334,24 @@ class TestNanoFiltration_with_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -575,13 +573,13 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -599,26 +597,24 @@ class TestNanoFiltration_without_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -831,26 +827,24 @@ class TestNanoFiltration_with_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1068,26 +1062,24 @@ class TestNanoFiltration_without_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1301,13 +1293,13 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -1325,26 +1317,24 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -1469,14 +1459,14 @@ def test_inverse_solve():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+    badly_scaled_var_lst = list(
+        badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+    )
+    for var, val in badly_scaled_var_lst:
+        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
-
-    # not all constraints have scaling factor so skipping the check for unscaled constraints
-    unscaled_con_lst = list(unscaled_constraints_generator(m))
-    assert len(unscaled_con_lst) == 0
-
-    initialization_tester(m)
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].unfix()
@@ -1490,7 +1480,7 @@ def test_inverse_solve():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m)
+    results = solver.solve(m, tee=True)
 
     # Check for optimal solution
     assert_optimal_termination(results)
@@ -1602,14 +1592,14 @@ def test_mass_transfer_coeff_fixed():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+    badly_scaled_var_lst = list(
+        badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+    )
+    for var, val in badly_scaled_var_lst:
+        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
-
-    # not all constraints have scaling factor so skipping the check for unscaled constraints
-    unscaled_con_lst = list(unscaled_constraints_generator(m))
-    assert len(unscaled_con_lst) == 0
-
-    initialization_tester(m)
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].unfix()
@@ -1623,7 +1613,7 @@ def test_mass_transfer_coeff_fixed():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m)
+    results = solver.solve(m, tee=True)
 
     # Check for optimal solution
     assert_optimal_termination(results)

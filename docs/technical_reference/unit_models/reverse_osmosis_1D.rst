@@ -29,8 +29,8 @@ Typically, the following variables are fixed, in addition to state variables at 
 
 Model Structure
 ------------------
-This RO model consists of 1 ControlVolume1DBlock for the feed-side (feed_side.properties[t, x]), a StateBlock indexed by time and space for the permeate-side (permeate_side[t, x]),
-and a StateBlock for the final permeate at the outlet (permeate_out).
+This RO model consists of 1 MembraneChannel1DBlock for the feed-side (feed_side.properties[t, x]), a StateBlock indexed by time and space for the permeate-side (permeate_side[t, x]),
+and a StateBlock for the final permeate at the outlet (mixed_permeate).
 
 Sets
 ----

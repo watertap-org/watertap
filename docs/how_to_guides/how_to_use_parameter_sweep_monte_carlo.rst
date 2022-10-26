@@ -69,7 +69,7 @@ Once the model has been setup, we specify the variables to randomly sample using
 .. testcode::
 
     sweep_params = dict()
-    sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+    sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99)
     sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
     sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
 
