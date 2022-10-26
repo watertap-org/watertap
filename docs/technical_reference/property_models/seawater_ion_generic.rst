@@ -9,6 +9,10 @@ This artificial seawater property package:
    * is formulated on a molar basis
    * does not support dynamics
 
+This package uses the eNRTL equation of state and has been used to predict mineral scaling in full treatment
+where reverse osmosis is the primary desalination technology. Additionally, this property package is
+formulated as an extension of `IDAES's modular property framework <https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/index.html#generic-property-package-framework>`_ (GenericParameterBlock).
+
 Sets
 ----
 .. csv-table::
