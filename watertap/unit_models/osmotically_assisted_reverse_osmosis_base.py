@@ -215,8 +215,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             return (
                 b.recovery_vol_phase[t, "Liq"]
                 == (
-                    b.permeate_side.properties_out[t].flow_vol_phase["Liq"]
-                    - b.permeate_side.properties_in[t].flow_vol_phase["Liq"]
+                    b.permeate_side.properties[t, 0].flow_vol_phase["Liq"]
+                    - b.permeate_side.properties[t, 1].flow_vol_phase["Liq"]
                 )
                 / b.feed_side.properties[
                     t, self.feed_side.first_element
@@ -256,9 +256,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         def eq_recovery_mass_phase_comp(b, t, j):
             return (
                 b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", j]
-                == b.permeate_side.properties_out[t].flow_mass_phase_comp["Liq", j]
-                - b.permeate_side.properties_in[t].flow_mass_phase_comp["Liq", j]
+                * b.feed_side.properties[t, 0].flow_mass_phase_comp["Liq", j]
+                == b.permeate_side.properties[t, 0].flow_mass_phase_comp["Liq", j]
+                - b.permeate_side.properties[t, 1].flow_mass_phase_comp["Liq", j]
             )
 
         # rejection
@@ -268,12 +268,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         @self.Constraint(self.flowsheet().config.time, solute_set)
         def eq_rejection_phase_comp(b, t, j):
             return b.rejection_phase_comp[t, "Liq", j] == 1 - (
-                b.permeate_side.properties_out[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties_in[t].conc_mass_phase_comp["Liq", j]
+                b.permeate_side.properties[t, 0].conc_mass_phase_comp["Liq", j]
+                / b.feed_side.properties[t, 0].conc_mass_phase_comp["Liq", j]
             )
 
         self._add_flux_balance()
-
+        if self.config.has_pressure_change:
+            self._add_deltaP(side="feed_side")
+            self._add_deltaP(side="permeate_side")
         self._add_mass_transfer()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
