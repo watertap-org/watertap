@@ -21,6 +21,7 @@ from idaes.core import (
     FlowDirection,
 )
 from idaes.core.util import scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
 import idaes.logger as idaeslog
@@ -71,8 +72,9 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 "argument. Must be a FlowDirection Enum.".format(self.name)
             )
 
-        self._add_var_reference(length_var, "length", "length_var")
-        self._add_var_reference(width_var, "width", "width_var")
+        if not hasattr(self, "length") and not hasattr(self, "width"):
+            self._add_var_reference(length_var, "length", "length_var")
+            self._add_var_reference(width_var, "width", "width_var")
 
     def add_state_blocks(self, has_phase_equilibrium=None):
         """
@@ -108,20 +110,24 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                     },
                 },
             )
-        else:
+        elif self._flow_direction == FlowDirection.backward:
             add_object_reference(
                 self,
                 "properties",
                 {
                     **{
-                        (t, 0.0): self.properties_out[t]
+                        (t, 0): self.properties_out[t]
                         for t in self.flowsheet().config.time
                     },
                     **{
-                        (t, 1.0): self.properties_in[t]
+                        (t, 1): self.properties_in[t]
                         for t in self.flowsheet().config.time
                     },
                 },
+            )
+        else:
+            raise ConfigurationError(
+                "FlowDirection must be set to FlowDirection.forward or FlowDirection.backward."
             )
 
         self._add_interface_stateblock(has_phase_equilibrium)
