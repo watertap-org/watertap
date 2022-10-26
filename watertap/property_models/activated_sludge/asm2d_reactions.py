@@ -1467,7 +1467,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
                         to_units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
                     )
                 elif r == "R18":
-                    # R19: Lysis of X_AUT
+                    # R18: Lysis of X_AUT
                     return b.reaction_rate[r] == pyo.units.convert(
                         b.params.mu_AUT
                         * (
