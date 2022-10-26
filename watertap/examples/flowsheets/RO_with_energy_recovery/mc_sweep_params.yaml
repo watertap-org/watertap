@@ -11,6 +11,6 @@ B_comp:
   std: 0.5e-8
 Spacer_porosity:
   type: UniformSample
-  param: fs.RO.spacer_porosity
+  param: fs.RO.feed_side.spacer_porosity
   lower_limit: 0.95
   upper_limit: 0.99
