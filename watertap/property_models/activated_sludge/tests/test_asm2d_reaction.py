@@ -407,9 +407,7 @@ class TestAerobic:
 
     @pytest.mark.component
     def test_solution(self, model):
-        # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due to an error in the EXPOsan stoichiometric
-        # coefficient for alkalinity
+
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.21350, rel=1e-4)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
@@ -663,8 +661,7 @@ class TestAerobic15C:
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(118.3582 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS from EXPOsan at this point
-        # However, TSS is needed for this reaction
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
@@ -694,9 +691,7 @@ class TestAerobic15C:
 
     @pytest.mark.component
     def test_solution(self, model):
-        # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due to an error in the EXPOsan stoichiometric
-        # coefficient for alkalinity
+
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(1.06747, rel=1e-3)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
@@ -813,8 +808,7 @@ class TestAnoxicPHA:
         m.fs.R1.inlet.conc_mass_comp[0, "X_AUT"].fix(115.4611 * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeOH"].fix(EPS * units.mg / units.liter)
         m.fs.R1.inlet.conc_mass_comp[0, "X_MeP"].fix(EPS * units.mg / units.liter)
-        # No data on TSS from EXPOsan at this point
-        # However, TSS is needed for this reaction
+
         m.fs.R1.inlet.conc_mass_comp[0, "X_TSS"].fix(3525.429 * units.mg / units.liter)
 
         # Alkalinity was given in mg/L based on C
@@ -844,9 +838,7 @@ class TestAnoxicPHA:
 
     @pytest.mark.component
     def test_solution(self, model):
-        # EXPOsan calculations appear to be slightly off from this implementation
-        # It is supected that this is due to an error in the EXPOsan stoichiometric
-        # coefficient for alkalinity
+
         assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(0.4266, rel=1e-3)
 
         assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
