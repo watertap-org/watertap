@@ -21,6 +21,7 @@ from pyomo.environ import (
 
 from idaes.core import declare_process_block_class, FlowDirection
 from idaes.core.util import scaling as iscale
+from idaes.core.util.misc import add_object_reference
 from watertap.core import (
     MembraneChannel0DBlock,
     MassTransferCoefficient,
@@ -90,6 +91,12 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
                 length_var=None, width_var=None, flow_direction=flow_direction
             )
             self._add_area(include_constraint=False)
+
+    def _add_deltaP(self, **args):
+        add_object_reference(self.feed_side, "deltaP_stage", self.feed_side.deltaP)
+        add_object_reference(
+            self.permeate_side, "deltaP_stage", self.permeate_side.deltaP
+        )
 
     def _add_mass_transfer(self):
 
