@@ -1934,7 +1934,8 @@ def test_pressure_step_5_ions():
 
     m.fs.feed.properties[0].pressure.fix(10e5)
 
-    for r in np.linspace(0.05, 0.95, 10):
+    for r in np.linspace(0.05, 0.98, 10):
         m.fs.nfUnit.recovery_vol_phase.fix(r)
+        print(r)
         res = solver.solve(m, tee=True)
         assert_optimal_termination(res)
