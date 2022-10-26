@@ -53,62 +53,10 @@ def main():
     solver = get_solver()
     # Simulate a fully defined operation
     m = build()
-    set_operating_conditions(m)
+    #set_operating_conditions(m)
+    simu_scenario1(m)
     initialize_system(m, solver=solver)
     solve(m, solver=solver)
-    '''
-    # Temperature and Pressure var diagnositcs 
-    count1=0
-    count2=0
-    count3=0
-    ct1=0
-    ct2=0
-    ct3=0
-    
-    for k in mstat.variables_set(m):
-        if "temperature" in k.name:
-            print("ALL T:",type(k), k.name)
-            ct1+=1
-    print("NUM of ALL T", ct1)
-
-    for k in mstat.fixed_variables_generator(m):
-        if "temperature" in k.name:
-            print("FIXED T:", k)
-            ct3+=1
-    print("NUM of FIXED T", ct3)       
-    for k in mstat.activated_equalities_generator(m):
-        for l in identify_variables(k.body):
-            if "temperature" in l.name and "pressure" not in k.name and"dens" not in k.name:
-                print("CONSTR of T:", k)
-                ct2+=1
-                break
-    print("NUM of Constr T", ct2)
-            #for j in mstat.activated_constraints_generator(m):
-             ##      if k.name == l:
-               #         print("Constraints of T:", j.body)
-
-    
-
-    for k in mstat.variables_set(m):
-        if "pressure" in k.name and "pressure_" not in k.name and "_pressure" not in k.name:
-            print("ALL P:", k.name)
-            count1+=1
-    print("NUM of ALL P", count1)
-
-    for k in mstat.fixed_variables_generator(m):
-        if "pressure" in k.name and "pressure_" not in k.name and "_pressure" not in k.name:
-            print("FIXED P:", k.name)
-            count2+=1
-    print("NUM of fixed P", count2)
-
-    for k in mstat.activated_equalities_generator(m):
-        for l in identify_variables(k.body):
-            if "pressure" in l.name and "pressure_" not in l.name and "_pressure" not in l.name:
-                print("CONSTR of P:", k)
-                count3+=1
-                break
-    print("NUM of Constr P", count3)
-    '''
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
@@ -275,13 +223,95 @@ def build():
     )
     iscale.set_scaling_factor(m.fs.EDstack.cell_width, 10)
     iscale.set_scaling_factor(m.fs.EDstack.cell_length, 10)
+    iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 0.01)
     iscale.calculate_scaling_factors(m)
     return m
+'''
+def simu_var_wr_fc(m):
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
+    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
+    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
+
+    feed_in_Na_conc=(3.931623932, 3.145299145, 2.358974359, 1.572649573,0.786324786,0.393162393)
+    feed_in_Cl_conc=(6.068376068,	4.854700855,	3.641025641,	2.427350427,	1.213675214,	0.606837607)
+    #for i in feed_in_Na_conc
+@build()
+def simu_var_WatRec_FeedConc(m,wr_args=None,in_conc_args=None):
+    """
+        Method to simulate scenarios where water recovery and feed water ion
+        concentrations are input variables.
+
+        Keyword Arguments:
+            wr_args : dict containing a series of water recovery values. 
+            in_conc_args: dict containing inlet ion concentration values
+        """
+    
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
+    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
+    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
+    
+    for ind, val in in_conc_args.items():
+        m.fs.feed.properties.calculate_state({
+            ("flow_vol_phase","Liq"):4e-3,
+            ("conc_mass_phase_comp",ind):val,
+            ("conc_mass_phase_comp",("Liq","Cl_-")):1.214})
+
+'''
+def simu_scenario1(m):
+
+    # ---specifications---
+    # Here is simulated a scenario of a defined EDstack and 
+    # specific water recovery and product salinity.
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
+    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
+    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
+    
+    m.fs.feed.properties.calculate_state({
+            ("flow_vol_phase","Liq"):4e-3,
+            ("conc_mass_phase_comp",("Liq","Na_+")):3.932,
+            ("conc_mass_phase_comp",("Liq","Cl_-")):6.068},
+            hold_state=True)
+    '''
+
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(221.78)
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.137)
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.137)
+    '''
+    m.fs.recovery_volume_H2O.fix(0.5) 
+    #m.fs.prod_salinity.fix(0.5) 
+    # Set ED unit vars
+    m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
+    m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
+    m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
+    m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
+    m.fs.EDstack.electrodes_resistance.fix(0)
+    m.fs.EDstack.cell_pair_num.fix(250)
+    m.fs.EDstack.current_utilization.fix(1)
+    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
+    m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
+    m.fs.EDstack.cell_width.fix(0.42)
+    m.fs.EDstack.cell_length.fix(0.73)
+    m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
+    m.fs.EDstack.membrane_thickness["cem"].fix(1.3e-4)
+    m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(1.8e-10)
+    m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(1.25e-10)
+    m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(1.8e-10)
+    m.fs.EDstack.solute_diffusivity_membrane["aem", "Cl_-"].fix(1.25e-10)
+    m.fs.EDstack.ion_trans_number_membrane["cem", "Na_+"].fix(1)
+    m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
+    m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
+    m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+
+    #set initial values of to-be-computed vars 
+    m.fs.EDstack.voltage_applied[0].fix(88.5)
+    mstat.report_statistics(m)
 
 
 def set_operating_conditions(m):
-
-    solver = get_solver()
 
     # ---specifications---
     # Fix state variables at the origin
@@ -433,6 +463,7 @@ def display_model_metrics(m):
             value(m.fs.mem_area),
             value(m.fs.EDstack.voltage_applied[0]),
             value(m.fs.costing.specific_energy_consumption),
+            value(m.fs.EDstack.specific_power_electrical[0]),
             value(m.fs.costing.LCOW),
         ],
         columns=["value"],
@@ -441,6 +472,7 @@ def display_model_metrics(m):
             "Total membrane area (aem or cem), m2",
             "Operation Voltage, V",
             "Specific energy consumption, kWh/m3",
+            "Specific energy consumption by unit model, kWh/m3",
             "Levelized cost of water, $/m3",
         ],
     )
