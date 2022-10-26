@@ -41,7 +41,7 @@ class TestGroundwaterTreatmentFlowsheet:
     @pytest.mark.unit
     def test_build(self, system_frame):
         m = system_frame
-        assert_degrees_of_freedom(m, 9)
+        assert_degrees_of_freedom(m, 11)
         assert_units_consistent(m)
 
     @pytest.mark.component
@@ -95,14 +95,10 @@ class TestGroundwaterTreatmentFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.PAA_mass) == pytest.approx(134119.8, rel=1e-3)
         assert value(m.fs.costing.disinfection_solution_volume) == pytest.approx(
             208109.9, rel=1e-3
         )
-        assert value(m.fs.costing.cost_disinfection_solution) == pytest.approx(
-            1040549.3, rel=1e-3
-        )
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.013965, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.032923, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

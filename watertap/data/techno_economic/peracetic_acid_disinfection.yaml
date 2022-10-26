@@ -12,7 +12,7 @@ default:
     value: 1.135
     units: kg/liter
   energy_electric_flow_vol_inlet:
-    value: 0.0
+    value: 0.1  # electricity demand data is unavailable; this value is arbitrary
     units: kWh/m^3
   recovery_frac_mass_H2O:
     value: 1
@@ -41,7 +41,7 @@ default:
         total_coliforms_fecal_ecoli:
           conversion_ratio: -1
   capital_cost:
-    cost_factor: None
+    cost_factor: TIC
     sizing_cost:
-      value: 0  # capital cost is unknown, so use 0 for now
+      value: 20  # capital cost data is unavailable; this value is arbitrary
       units: (USD_2020 * day)/(m^3)

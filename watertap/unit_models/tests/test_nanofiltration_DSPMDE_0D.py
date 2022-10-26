@@ -71,14 +71,12 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config_with_CP():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
-        default={
-            "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
-            "charge": {"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
-        }
+        solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+        charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
     )
-    m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
+    m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
     # check unit config arguments
     assert len(m.fs.unit.config) == 9
@@ -116,19 +114,15 @@ def test_config_with_CP():
 @pytest.mark.unit
 def test_config_without_CP():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
-        default={
-            "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
-            "charge": {"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
-        }
+        solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+        charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
     )
     m.fs.unit = NanofiltrationDSPMDE0D(
-        default={
-            "property_package": m.fs.properties,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-            "concentration_polarization_type": ConcentrationPolarizationType.none,
-        }
+        property_package=m.fs.properties,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
     )
 
     # check unit config arguments
@@ -165,55 +159,37 @@ class TestNanoFiltration_with_CP_5ions:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": [
-                    "Ca_2+",
-                    "SO4_2-",
-                    "Mg_2+",
-                    "Na_+",
-                    "Cl_-",
-                ],
-                "diffusivity_data": {
-                    ("Liq", "Ca_2+"): 9.2e-10,
-                    ("Liq", "SO4_2-"): 1.06e-9,
-                    ("Liq", "Mg_2+"): 0.706e-9,
-                    ("Liq", "Na_+"): 1.33e-9,
-                    ("Liq", "Cl_-"): 2.03e-9,
-                },
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "Ca_2+": 40e-3,
-                    "Mg_2+": 24e-3,
-                    "SO4_2-": 96e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                },
-                "stokes_radius_data": {
-                    "Ca_2+": 0.309e-9,
-                    "Mg_2+": 0.347e-9,
-                    "SO4_2-": 0.230e-9,
-                    "Cl_-": 0.121e-9,
-                    "Na_+": 0.184e-9,
-                },
-                "charge": {
-                    "Ca_2+": 2,
-                    "Mg_2+": 2,
-                    "SO4_2-": -2,
-                    "Na_+": 1,
-                    "Cl_-": -1,
-                },
-                "activity_coefficient_model": ActivityCoefficientModel.davies,
-                "density_calculation": DensityCalculation.constant,
-            }
+            solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
+            diffusivity_data={
+                ("Liq", "Ca_2+"): 9.2e-10,
+                ("Liq", "SO4_2-"): 1.06e-09,
+                ("Liq", "Mg_2+"): 7.06e-10,
+                ("Liq", "Na_+"): 1.33e-09,
+                ("Liq", "Cl_-"): 2.03e-09,
+            },
+            mw_data={
+                "H2O": 0.018,
+                "Ca_2+": 0.04,
+                "Mg_2+": 0.024,
+                "SO4_2-": 0.096,
+                "Na_+": 0.023,
+                "Cl_-": 0.035,
+            },
+            stokes_radius_data={
+                "Ca_2+": 3.09e-10,
+                "Mg_2+": 3.47e-10,
+                "SO4_2-": 2.3e-10,
+                "Cl_-": 1.21e-10,
+                "Na_+": 1.84e-10,
+            },
+            charge={"Ca_2+": 2, "Mg_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1},
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+            density_calculation=DensityCalculation.constant,
         )
 
-        m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
         b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
         feed_mass_frac = {
@@ -446,56 +422,40 @@ class TestNanoFiltration_without_CP_5ions:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": [
-                    "Ca_2+",
-                    "SO4_2-",
-                    "Mg_2+",
-                    "Na_+",
-                    "Cl_-",
-                ],
-                "diffusivity_data": {
-                    ("Liq", "Ca_2+"): 9.2e-10,
-                    ("Liq", "SO4_2-"): 1.06e-9,
-                    ("Liq", "Mg_2+"): 0.706e-9,
-                    ("Liq", "Na_+"): 1.33e-9,
-                    ("Liq", "Cl_-"): 2.03e-9,
-                },
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "Ca_2+": 40e-3,
-                    "Mg_2+": 24e-3,
-                    "SO4_2-": 96e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                },
-                "stokes_radius_data": {
-                    "Ca_2+": 0.309e-9,
-                    "Mg_2+": 0.347e-9,
-                    "SO4_2-": 0.230e-9,
-                    "Cl_-": 0.121e-9,
-                    "Na_+": 0.184e-9,
-                },
-                "charge": {
-                    "Ca_2+": 2,
-                    "Mg_2+": 2,
-                    "SO4_2-": -2,
-                    "Na_+": 1,
-                    "Cl_-": -1,
-                },
-                "activity_coefficient_model": ActivityCoefficientModel.davies,
-                "density_calculation": DensityCalculation.constant,
-            }
+            solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
+            diffusivity_data={
+                ("Liq", "Ca_2+"): 9.2e-10,
+                ("Liq", "SO4_2-"): 1.06e-09,
+                ("Liq", "Mg_2+"): 7.06e-10,
+                ("Liq", "Na_+"): 1.33e-09,
+                ("Liq", "Cl_-"): 2.03e-09,
+            },
+            mw_data={
+                "H2O": 0.018,
+                "Ca_2+": 0.04,
+                "Mg_2+": 0.024,
+                "SO4_2-": 0.096,
+                "Na_+": 0.023,
+                "Cl_-": 0.035,
+            },
+            stokes_radius_data={
+                "Ca_2+": 3.09e-10,
+                "Mg_2+": 3.47e-10,
+                "SO4_2-": 2.3e-10,
+                "Cl_-": 1.21e-10,
+                "Na_+": 1.84e-10,
+            },
+            charge={"Ca_2+": 2, "Mg_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1},
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+            density_calculation=DensityCalculation.constant,
         )
 
         m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-                "concentration_polarization_type": ConcentrationPolarizationType.none,
-            }
+            property_package=m.fs.properties,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
         )
         b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
@@ -727,40 +687,18 @@ class TestNanoFiltration_with_CP_2ions:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": [
-                    "Na_+",
-                    "Cl_-",
-                ],
-                "diffusivity_data": {
-                    ("Liq", "Na_+"): 1.33e-9,
-                    ("Liq", "Cl_-"): 2.03e-9,
-                },
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                },
-                "stokes_radius_data": {
-                    "Cl_-": 0.121e-9,
-                    "Na_+": 0.184e-9,
-                },
-                "charge": {
-                    "Na_+": 1,
-                    "Cl_-": -1,
-                },
-                "activity_coefficient_model": ActivityCoefficientModel.davies,
-                "density_calculation": DensityCalculation.constant,
-            }
+            solute_list=["Na_+", "Cl_-"],
+            diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+            stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+            charge={"Na_+": 1, "Cl_-": -1},
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+            density_calculation=DensityCalculation.constant,
         )
 
-        m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
         b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
         feed_mass_frac = {
@@ -984,41 +922,21 @@ class TestNanoFiltration_without_CP_2ions:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": [
-                    "Na_+",
-                    "Cl_-",
-                ],
-                "diffusivity_data": {
-                    ("Liq", "Na_+"): 1.33e-9,
-                    ("Liq", "Cl_-"): 2.03e-9,
-                },
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                },
-                "stokes_radius_data": {
-                    "Cl_-": 0.121e-9,
-                    "Na_+": 0.184e-9,
-                },
-                "charge": {
-                    "Na_+": 1,
-                    "Cl_-": -1,
-                },
-                "activity_coefficient_model": ActivityCoefficientModel.davies,
-                "density_calculation": DensityCalculation.constant,
-            }
+            solute_list=["Na_+", "Cl_-"],
+            diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+            stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+            charge={"Na_+": 1, "Cl_-": -1},
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+            density_calculation=DensityCalculation.constant,
         )
 
         m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-                "concentration_polarization_type": ConcentrationPolarizationType.none,
-            }
+            property_package=m.fs.properties,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
         )
         b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
@@ -1232,55 +1150,37 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
     @pytest.fixture(scope="class")
     def NF_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": [
-                    "Ca_2+",
-                    "SO4_2-",
-                    "Mg_2+",
-                    "Na_+",
-                    "Cl_-",
-                ],
-                "diffusivity_data": {
-                    ("Liq", "Ca_2+"): 9.2e-10,
-                    ("Liq", "SO4_2-"): 1.06e-9,
-                    ("Liq", "Mg_2+"): 0.706e-9,
-                    ("Liq", "Na_+"): 1.33e-9,
-                    ("Liq", "Cl_-"): 2.03e-9,
-                },
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "Ca_2+": 40e-3,
-                    "Mg_2+": 24e-3,
-                    "SO4_2-": 96e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                },
-                "stokes_radius_data": {
-                    "Ca_2+": 0.309e-9,
-                    "Mg_2+": 0.347e-9,
-                    "SO4_2-": 0.230e-9,
-                    "Cl_-": 0.121e-9,
-                    "Na_+": 0.184e-9,
-                },
-                "charge": {
-                    "Ca_2+": 2,
-                    "Mg_2+": 2,
-                    "SO4_2-": -2,
-                    "Na_+": 1,
-                    "Cl_-": -1,
-                },
-                "activity_coefficient_model": ActivityCoefficientModel.davies,
-                "density_calculation": DensityCalculation.constant,
-            }
+            solute_list=["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"],
+            diffusivity_data={
+                ("Liq", "Ca_2+"): 9.2e-10,
+                ("Liq", "SO4_2-"): 1.06e-09,
+                ("Liq", "Mg_2+"): 7.06e-10,
+                ("Liq", "Na_+"): 1.33e-09,
+                ("Liq", "Cl_-"): 2.03e-09,
+            },
+            mw_data={
+                "H2O": 0.018,
+                "Ca_2+": 0.04,
+                "Mg_2+": 0.024,
+                "SO4_2-": 0.096,
+                "Na_+": 0.023,
+                "Cl_-": 0.035,
+            },
+            stokes_radius_data={
+                "Ca_2+": 3.09e-10,
+                "Mg_2+": 3.47e-10,
+                "SO4_2-": 2.3e-10,
+                "Cl_-": 1.21e-10,
+                "Na_+": 1.84e-10,
+            },
+            charge={"Ca_2+": 2, "Mg_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1},
+            activity_coefficient_model=ActivityCoefficientModel.davies,
+            density_calculation=DensityCalculation.constant,
         )
 
-        m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
         b = m.fs.unit
         mass_flow_in = 1 * pyunits.kg / pyunits.s
         feed_mass_frac = {
@@ -1513,40 +1413,18 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
 @pytest.mark.component
 def test_inverse_solve():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
-        default={
-            "solute_list": [
-                "Na_+",
-                "Cl_-",
-            ],
-            "diffusivity_data": {
-                ("Liq", "Na_+"): 1.33e-9,
-                ("Liq", "Cl_-"): 2.03e-9,
-            },
-            "mw_data": {
-                "H2O": 18e-3,
-                "Na_+": 23e-3,
-                "Cl_-": 35e-3,
-            },
-            "stokes_radius_data": {
-                "Cl_-": 0.121e-9,
-                "Na_+": 0.184e-9,
-            },
-            "charge": {
-                "Na_+": 1,
-                "Cl_-": -1,
-            },
-            "activity_coefficient_model": ActivityCoefficientModel.davies,
-            "density_calculation": DensityCalculation.constant,
-        }
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+        stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+        density_calculation=DensityCalculation.constant,
     )
 
-    m.fs.unit = NanofiltrationDSPMDE0D(
-        default={
-            "property_package": m.fs.properties,
-        }
-    )
+    m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.429868)
@@ -1665,40 +1543,20 @@ def test_inverse_solve():
 @pytest.mark.component
 def test_mass_transfer_coeff_fixed():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
-        default={
-            "solute_list": [
-                "Na_+",
-                "Cl_-",
-            ],
-            "diffusivity_data": {
-                ("Liq", "Na_+"): 1.33e-9,
-                ("Liq", "Cl_-"): 2.03e-9,
-            },
-            "mw_data": {
-                "H2O": 18e-3,
-                "Na_+": 23e-3,
-                "Cl_-": 35e-3,
-            },
-            "stokes_radius_data": {
-                "Cl_-": 0.121e-9,
-                "Na_+": 0.184e-9,
-            },
-            "charge": {
-                "Na_+": 1,
-                "Cl_-": -1,
-            },
-            "activity_coefficient_model": ActivityCoefficientModel.davies,
-            "density_calculation": DensityCalculation.constant,
-        }
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+        stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+        density_calculation=DensityCalculation.constant,
     )
 
     m.fs.unit = NanofiltrationDSPMDE0D(
-        default={
-            "property_package": m.fs.properties,
-            "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-        }
+        property_package=m.fs.properties,
+        mass_transfer_coefficient=MassTransferCoefficient.fixed,
     )
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
@@ -1815,33 +1673,15 @@ def test_mass_transfer_coeff_fixed():
 @pytest.mark.unit
 def test_mass_transfer_CP_config_errors():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = DSPMDEParameterBlock(
-        default={
-            "solute_list": [
-                "Na_+",
-                "Cl_-",
-            ],
-            "diffusivity_data": {
-                ("Liq", "Na_+"): 1.33e-9,
-                ("Liq", "Cl_-"): 2.03e-9,
-            },
-            "mw_data": {
-                "H2O": 18e-3,
-                "Na_+": 23e-3,
-                "Cl_-": 35e-3,
-            },
-            "stokes_radius_data": {
-                "Cl_-": 0.121e-9,
-                "Na_+": 0.184e-9,
-            },
-            "charge": {
-                "Na_+": 1,
-                "Cl_-": -1,
-            },
-            "activity_coefficient_model": ActivityCoefficientModel.davies,
-            "density_calculation": DensityCalculation.constant,
-        }
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+        stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+        density_calculation=DensityCalculation.constant,
     )
 
     with pytest.raises(
@@ -1853,11 +1693,9 @@ def test_mass_transfer_CP_config_errors():
         "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
     ):
         m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-                "concentration_polarization_type": ConcentrationPolarizationType.none,
-            }
+            property_package=m.fs.properties,
+            mass_transfer_coefficient=MassTransferCoefficient.fixed,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
         )
 
     with pytest.raises(
@@ -1869,11 +1707,9 @@ def test_mass_transfer_CP_config_errors():
         "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
     ):
         m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            }
+            property_package=m.fs.properties,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
         )
 
     with pytest.raises(
@@ -1885,9 +1721,7 @@ def test_mass_transfer_CP_config_errors():
         "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated",
     ):
         m.fs.unit = NanofiltrationDSPMDE0D(
-            default={
-                "property_package": m.fs.properties,
-                "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound,
-                "concentration_polarization_type": ConcentrationPolarizationType.none,
-            }
+            property_package=m.fs.properties,
+            mass_transfer_coefficient=MassTransferCoefficient.spiral_wound,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
         )

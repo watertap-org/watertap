@@ -59,7 +59,7 @@ def build(m):
 
 
 def build_feed_block(m):
-    m.fs.feed = Feed(default={"property_package": m.fs.stoich_softening_thermo_params})
+    m.fs.feed = Feed(property_package=m.fs.stoich_softening_thermo_params)
 
     comp_list = ["Na", "Ca", "Mg", "SO4", "Cl"]
     feed_flow_mass = 1  # kg/s
@@ -111,10 +111,8 @@ def build_feed_block(m):
 def build_tb(m):
     # build translator block
     m.fs.tb_pretrt_to_desal = Translator(
-        default={
-            "inlet_property_package": m.fs.stoich_softening_thermo_params,
-            "outlet_property_package": m.fs.prop_TDS,
-        }
+        inlet_property_package=m.fs.stoich_softening_thermo_params,
+        outlet_property_package=m.fs.prop_TDS,
     )
     blk = m.fs.tb_pretrt_to_desal
 
@@ -218,7 +216,7 @@ def display(m):
 
 def solve():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

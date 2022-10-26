@@ -62,9 +62,9 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config_no_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={"property_package": m.fs.properties})
+    m.fs.unit = PressureExchanger(property_package=m.fs.properties)
 
     # check unit config arguments
     assert len(m.fs.unit.config) == 8
@@ -83,10 +83,10 @@ def test_config_no_mass_transfer():
 @pytest.mark.unit
 def test_config_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(
-        default={"property_package": m.fs.properties, "has_mass_transfer": True}
+        property_package=m.fs.properties, has_mass_transfer=True
     )
     # check mass_transfer is added
     assert m.fs.unit.config.has_mass_transfer
@@ -95,13 +95,10 @@ def test_config_mass_transfer():
 @pytest.mark.unit
 def test_build(has_mass_transfer=False, extra_variables=0, extra_constraint=0):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(
-        default={
-            "property_package": m.fs.properties,
-            "has_mass_transfer": has_mass_transfer,
-        }
+        property_package=m.fs.properties, has_mass_transfer=has_mass_transfer
     )
 
     # test ports and state variables
@@ -206,10 +203,10 @@ class TestPressureExchanger:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = props.SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(
-            default={"property_package": m.fs.properties, "has_mass_transfer": True}
+            property_package=m.fs.properties, has_mass_transfer=True
         )
 
         # Specify inlet conditions
@@ -371,10 +368,10 @@ class TestPressureExchanger_with_ion_prop_pack:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = property_seawater_ions.PropParameterBlock()
         m.fs.unit = PressureExchanger(
-            default={"property_package": m.fs.properties, "has_mass_transfer": True}
+            property_package=m.fs.properties, has_mass_transfer=True
         )
 
         # Specify inlet conditions

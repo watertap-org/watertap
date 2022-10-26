@@ -15,7 +15,7 @@
 Tests for zero-order peracetic acid disinfection model
 """
 
-import pytest
+import pytest, os
 
 from pyomo.environ import (
     Block,
@@ -47,13 +47,13 @@ class TestPeraceticAcidDisinfection:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["peracetic_acid", "total_coliforms_fecal_ecoli"]}
+            solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
         )
 
         m.fs.unit = PeraceticAcidDisinfectionZO(
-            default={"property_package": m.fs.params, "database": m.db}
+            property_package=m.fs.params, database=m.db
         )
 
         # Inlet mass flowrates in kg/s
@@ -73,6 +73,8 @@ class TestPeraceticAcidDisinfection:
         assert isinstance(model.fs.unit.ecoli_cell_mass, Var)
         assert isinstance(model.fs.unit.disinfection_solution_wt_frac_PAA, Var)
         assert isinstance(model.fs.unit.disinfection_solution_density, Var)
+        assert isinstance(model.fs.unit.disinfection_solution_flow_vol, Var)
+        assert isinstance(model.fs.unit.disinfection_solution_flow_vol_rule, Constraint)
         assert isinstance(model.fs.unit.reactor_volume, Var)
         assert isinstance(model.fs.unit.reactor_volume_rule, Constraint)
         assert isinstance(model.fs.unit.inlet_ecoli_conc, Var)
@@ -143,6 +145,9 @@ class TestPeraceticAcidDisinfection:
         assert pytest.approx(6552, rel=1e-3) == value(
             model.fs.unit.reactor_volume  # m3
         )
+        assert pytest.approx(0.029369, rel=1e-3) == value(
+            model.fs.unit.disinfection_solution_flow_vol[0]  # L/s
+        )
 
         assert pytest.approx(2.8, rel=1e-3) == value(
             model.fs.unit.properties_in[0].flow_vol  # m3/s
@@ -156,7 +161,7 @@ class TestPeraceticAcidDisinfection:
             ]  # kg/m3
         )
         assert pytest.approx(198571, rel=1e-3) == value(
-            model.fs.unit.inlet_ecoli_conc  # 1/L
+            model.fs.unit.inlet_ecoli_conc[0]  # 1/L
         )
 
         assert pytest.approx(2.8, rel=1e-3) == value(
@@ -173,7 +178,7 @@ class TestPeraceticAcidDisinfection:
             ]  # kg/m3
         )
         assert pytest.approx(992.857, rel=1e-3) == value(
-            model.fs.unit.outlet_ecoli_conc  # 1/L
+            model.fs.unit.outlet_ecoli_conc[0]  # 1/L
         )
 
     @pytest.mark.solver
@@ -201,14 +206,24 @@ class TestPeraceticAcidDisinfection:
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["peracetic_acid", "total_coliforms_fecal_ecoli"]}
+        solute_list=["peracetic_acid", "total_coliforms_fecal_ecoli"]
     )
-    m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = PeraceticAcidDisinfectionZO(
-        default={"property_package": m.fs.params, "database": m.db}
+    source_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "examples",
+        "flowsheets",
+        "case_studies",
+        "wastewater_resource_recovery",
+        "peracetic_acid_disinfection",
+        "peracetic_acid_case_study.yaml",
     )
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.unit = PeraceticAcidDisinfectionZO(property_package=m.fs.params, database=m.db)
 
     # Inlet mass flowrates in kg/s
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(2800)
@@ -219,9 +234,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.peracetic_acid_disinfection, Block)
     assert isinstance(m.fs.costing.peracetic_acid_disinfection.sizing_cost, Var)
@@ -232,7 +245,13 @@ def test_costing():
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
-    assert pytest.approx(0.0, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(9676817.28, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
+    assert (
+        m.fs.unit.disinfection_solution_flow_vol[0]
+        in m.fs.costing._registered_flows["disinfection_solution"]
+    )

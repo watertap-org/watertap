@@ -26,10 +26,10 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -73,43 +73,31 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "arsenic",
-                "uranium",
-                "nitrate",
-                "phosphates",
-                "iron",
-                "filtration_media",
-            ]
-        }
+        solute_list=[
+            "arsenic",
+            "uranium",
+            "nitrate",
+            "phosphates",
+            "iron",
+            "filtration_media",
+        ]
     )
 
     # unit models
     # feed
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # pump
-    m.fs.pump = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.pump = PumpElectricityZO(property_package=m.fs.prop, database=m.db)
 
     # microbial battery
-    m.fs.micbatt = MicrobialBatteryZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.micbatt = MicrobialBatteryZO(property_package=m.fs.prop, database=m.db)
 
     # product streams
-    m.fs.filtered_water = Product(default={"property_package": m.fs.prop})
-    m.fs.byproduct = Product(default={"property_package": m.fs.prop})
+    m.fs.filtered_water = Product(property_package=m.fs.prop)
+    m.fs.byproduct = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.pump.inlet)
@@ -338,15 +326,16 @@ def add_costing(m):
         "groundwater_treatment_case_study.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.pump.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.micbatt.costing = UnitModelCostingBlock(**costing_kwargs)
 
     m.fs.costing.cost_process()
 
     m.fs.costing.add_electricity_intensity(m.fs.feed.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.feed.properties[0].flow_vol)
 
     m.fs.costing.annual_water_inlet = Expression(
         expr=m.fs.costing.utilization_factor
@@ -382,6 +371,11 @@ def display_costing(m):
         pyunits.convert(m.fs.costing.LCOT, to_units=pyunits.USD_2020 / pyunits.m**3)
     )
     print(f"Levelized cost of treatment: {LCOT:.2f} $/m^3")
+
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2020 / pyunits.m**3)
+    )
+    print(f"Levelized cost of water: {LCOW:.2f} $/m^3")
 
     print("\n------------- Capital costs -------------")
     DCC_normalized = value(

@@ -50,9 +50,7 @@ class TestParamBlock(object):
     def model(self):
         model = ConcreteModel()
         model.pparams = ASM1ParameterBlock()
-        model.rparams = ASM1ReactionParameterBlock(
-            default={"property_package": model.pparams}
-        )
+        model.rparams = ASM1ReactionParameterBlock(property_package=model.pparams)
 
         return model
 
@@ -131,15 +129,11 @@ class TestReactionBlock(object):
     def model(self):
         model = ConcreteModel()
         model.pparams = ASM1ParameterBlock()
-        model.rparams = ASM1ReactionParameterBlock(
-            default={"property_package": model.pparams}
-        )
+        model.rparams = ASM1ReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
 
-        model.rxns = model.rparams.build_reaction_block(
-            [1], default={"state_block": model.props}
-        )
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
 
         return model
 
@@ -172,19 +166,12 @@ class TestReactor:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = ASM1ParameterBlock()
-        m.fs.rxn_props = ASM1ReactionParameterBlock(
-            default={"property_package": m.fs.props}
-        )
+        m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
 
-        m.fs.R1 = CSTR(
-            default={
-                "property_package": m.fs.props,
-                "reaction_package": m.fs.rxn_props,
-            }
-        )
+        m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
         # Feed conditions based on manual mass balance of inlet and recycle streams
         m.fs.R1.inlet.flow_vol.fix(92230 * units.m**3 / units.day)

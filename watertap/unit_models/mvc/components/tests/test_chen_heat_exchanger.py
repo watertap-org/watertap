@@ -36,17 +36,15 @@ solver = get_solver()
 @pytest.mark.component
 def test_heat_exchanger():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side_name": "hot",
-            "cold_side_name": "cold",
-            "hot": {"property_package": m.fs.properties},
-            "cold": {"property_package": m.fs.properties},
-            "delta_temperature_callback": delta_temperature_chen_callback,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-        }
+        hot_side_name="hot",
+        cold_side_name="cold",
+        hot={"property_package": m.fs.properties},
+        cold={"property_package": m.fs.properties},
+        delta_temperature_callback=delta_temperature_chen_callback,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
 
     # scaling

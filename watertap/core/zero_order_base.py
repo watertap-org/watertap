@@ -149,13 +149,14 @@ class ZeroOrderBaseData(UnitModelBlockData):
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
-        Placeholder initialization routine, raises NotImplementedError
+        Passthrough initialization routine, raises NotImplementedError if
+        the unit model does not have an `_initialize` function.
         """
         if self._initialize is None or not callable(self._initialize):
             raise NotImplementedError()
         else:
             self._initialize(
-                self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+                self, state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
             )
 
     def calculate_scaling_factors(self):

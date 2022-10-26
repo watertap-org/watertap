@@ -29,7 +29,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------

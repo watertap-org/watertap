@@ -25,11 +25,11 @@ def set_up_sensitivity(m, withRO):
     outputs = {}
 
     # LCOT is an output for both flowsheets
-    outputs["LCOT"] = m.LCOT
+    outputs["LCOT"] = m.fs.LCOT
 
     # choose the right flowsheet and if ro is enabled add lcow
     if withRO:
-        outputs["LCOW"] = m.LCOW
+        outputs["LCOW"] = m.fs.LCOW
         opt_function = dye_desalination_withRO.solve
     else:
         opt_function = dye_desalination.solve
@@ -161,7 +161,7 @@ def run_analysis(
     elif case_num == 12:
         desal = m.fs.desalination
         desal.RO.recovery_vol_phase[0, "Liq"].unfix()
-        desal.RO.velocity[0, 0].unfix()
+        desal.RO.feed_side.velocity[0, 0].unfix()
 
         desal.P2.control_volume.properties_out[0].pressure.unfix()
         desal.P2.control_volume.properties_out[0].pressure.setub(8300000)

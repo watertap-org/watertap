@@ -39,7 +39,7 @@ class TestHRCSFlowsheet:
     def test_build(self, system_frame):
         m = system_frame
         assert_units_consistent(m)
-        assert_degrees_of_freedom(m, 25)
+        assert_degrees_of_freedom(m, 24)
 
     @pytest.mark.component
     def test_set_operating_conditions(self, system_frame):
@@ -135,7 +135,7 @@ class TestHRCSFlowsheet:
 
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(
-            0.0124218, rel=1e-3
+            0.01340267, rel=1e-3
         )  # in $/m**3
 
     @pytest.mark.component

@@ -18,7 +18,7 @@ import copy, pprint
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver
 
-from idaes.surrogate.pysmo import sampling
+from idaes.core.surrogate.pysmo import sampling
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue

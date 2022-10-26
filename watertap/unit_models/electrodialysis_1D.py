@@ -342,16 +342,14 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Control Volume for the Diluate channel:
         self.diluate = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
         self.diluate.add_geometry(length_var=self.cell_length)
         self.diluate.add_state_blocks(has_phase_equilibrium=False)
@@ -392,16 +390,14 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Control volume for the Concentrate channel
         self.concentrate = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
         self.concentrate.add_geometry(length_var=self.cell_length)
         self.concentrate.add_state_blocks(has_phase_equilibrium=False)

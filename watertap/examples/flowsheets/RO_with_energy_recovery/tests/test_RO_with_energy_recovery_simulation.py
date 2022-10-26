@@ -187,10 +187,10 @@ class TestROwithPX:
         assert value(m.fs.RO.A_comp[0, "H2O"]) == 4.2e-12
         assert m.fs.RO.B_comp[0, "NaCl"].is_fixed()
         assert value(m.fs.RO.B_comp[0, "NaCl"]) == 3.5e-8
-        assert m.fs.RO.channel_height.is_fixed()
-        assert value(m.fs.RO.channel_height) == 1e-3
-        assert m.fs.RO.spacer_porosity.is_fixed()
-        assert value(m.fs.RO.spacer_porosity) == 0.97
+        assert m.fs.RO.feed_side.channel_height.is_fixed()
+        assert value(m.fs.RO.feed_side.channel_height) == 1e-3
+        assert m.fs.RO.feed_side.spacer_porosity.is_fixed()
+        assert value(m.fs.RO.feed_side.spacer_porosity) == 0.97
         assert m.fs.RO.permeate.pressure[0].is_fixed()
         assert value(m.fs.RO.permeate.pressure[0]) == 101325
         assert m.fs.RO.width.is_fixed()
