@@ -14,6 +14,7 @@
 import pytest
 import numpy as np
 from math import log
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -60,7 +61,6 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.initialization import propagate_state
 from idaes.generic_models.unit_models import Feed
-import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
