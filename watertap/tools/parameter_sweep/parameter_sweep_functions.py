@@ -341,20 +341,20 @@ def differential_parameter_sweep(
 
         .. highlight::
 
-            {"fs.a": {"diff_mode": "sum",
-                      "diff_sample_type": NormalSample,
-                      "std_dev": 0.01,
-                      "pyomo_object": m.fs.input["a"]},
-             "fs.b": {"diff_mode": "product",
-                      "diff_sample_type": UniformSample,
-                      "relative_lb": 0.01,
-                      "relative_ub": 0.01,
-                      "pyomo_object": m.fs.input["b"]},
-             "fs.c": {"diff_mode": "sum",
-                      "diff_sample_type": GeomSample,
-                      "relative_lb": 0.01,
-                      "relative_ub": 10.0,
-                      "pyomo_object": m.fs.input["c"]}}
+            {"fs.a": {"diff_mode": "sum", \
+                      "diff_sample_type": NormalSample, \
+                      "std_dev": 0.01, \
+                      "pyomo_object": m.fs.input["a"]}, \
+             "fs.b": {"diff_mode": "product", \
+                      "diff_sample_type": UniformSample, \
+                      "relative_lb": 0.01, \
+                      "relative_ub": 0.01, \
+                      "pyomo_object": m.fs.input["b"]}, \
+             "fs.c": {"diff_mode": "sum", \
+                      "diff_sample_type": GeomSample, \
+                      "relative_lb": 0.01, \
+                      "relative_ub": 10.0, \
+                      "pyomo_object": m.fs.input["c"]}} \
 
         outputs (optional) : An optional dictionary containing "short names" as keys and and Pyomo objects
                   on ``model`` whose values to report as values. E.g.,
