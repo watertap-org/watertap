@@ -290,6 +290,7 @@ class MembraneChannelMixin:
             add_object_reference(self, reference_name, pyomo_var)
 
     def _set_nfe(self):
+        # TODO: should this change based on flow direction?
         self.first_element = self.length_domain.first()
         self.last_element = self.length_domain.last()
 
@@ -335,7 +336,7 @@ class MembraneChannelMixin:
             self.length_domain,
             doc="Temperature at interface",
         )
-        def eq_equal_temp_interface(b, t, x):
+        def eq_bulk_interface_isothermal(b, t, x):
             if b._skip_element(x):
                 return Constraint.Skip
             return (

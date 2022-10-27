@@ -183,15 +183,25 @@ class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
 
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     self.length_domain,
+        #     doc="Isothermal assumption for permeate",
+        # )
+        # def eq_permeate_isothermal(b, t, x):
+        #     return (
+        #         b.feed_side.properties[t, x].temperature
+        #         == b.permeate_side.properties[t, x].temperature
+        #     )
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isothermal assumption for permeate",
+            # self.length_domain,
+            doc="Isothermal assumption for permeate and feed",
         )
-        def eq_permeate_isothermal(b, t, x):
+        def eq_isothermal(b, t):
             return (
-                b.feed_side.properties[t, x].temperature
-                == b.permeate_side.properties[t, x].temperature
+                b.feed_side.properties[t, 1].temperature
+                == b.permeate_side.properties[t, 1].temperature
             )
 
         # ==========================================================================

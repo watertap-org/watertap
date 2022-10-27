@@ -180,9 +180,9 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         @self.Constraint(
             self.flowsheet().config.time,
             self.length_domain,
-            doc="Isothermal assumption for feed channel",
+            doc="Isothermal assumption for channel",
         )
-        def eq_feed_isothermal(b, t, x):
+        def eq_channel_isothermal(b, t, x):
             if self._skip_element(x):
                 return Constraint.Skip
             return (
