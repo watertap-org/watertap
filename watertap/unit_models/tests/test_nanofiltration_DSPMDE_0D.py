@@ -336,7 +336,6 @@ class TestNanoFiltration_with_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
@@ -349,7 +348,6 @@ class TestNanoFiltration_with_CP_5ions:
             print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -358,7 +356,6 @@ class TestNanoFiltration_with_CP_5ions:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -382,7 +379,6 @@ class TestNanoFiltration_with_CP_5ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -599,7 +595,6 @@ class TestNanoFiltration_without_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
@@ -612,7 +607,6 @@ class TestNanoFiltration_without_CP_5ions:
             print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -621,7 +615,6 @@ class TestNanoFiltration_without_CP_5ions:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -645,7 +638,6 @@ class TestNanoFiltration_without_CP_5ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -829,7 +821,6 @@ class TestNanoFiltration_with_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
@@ -842,7 +833,6 @@ class TestNanoFiltration_with_CP_2ions:
             print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -851,7 +841,6 @@ class TestNanoFiltration_with_CP_2ions:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -875,7 +864,6 @@ class TestNanoFiltration_with_CP_2ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1064,7 +1052,6 @@ class TestNanoFiltration_without_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
@@ -1077,7 +1064,6 @@ class TestNanoFiltration_without_CP_2ions:
             print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -1086,7 +1072,6 @@ class TestNanoFiltration_without_CP_2ions:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -1110,7 +1095,6 @@ class TestNanoFiltration_without_CP_2ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1319,7 +1303,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
@@ -1332,7 +1315,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
             print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -1341,7 +1323,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -1365,7 +1346,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1401,7 +1381,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         NF_frame.fs.unit.report()
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_inverse_solve():
     m = ConcreteModel()
@@ -1531,7 +1510,6 @@ def test_inverse_solve():
     m.fs.unit.report()
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_mass_transfer_coeff_fixed():
     m = ConcreteModel()
@@ -1719,7 +1697,6 @@ def test_mass_transfer_CP_config_errors():
         )
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_pressure_recovery_step_2_ions():
     "Test optimal termination across a range of pressures and recovery rates for 2 ion system"
@@ -1811,7 +1788,6 @@ def calc_scale(value):
     return -1 * log(value, 10)
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_pressure_recovery_step_5_ions():
     "Test optimal termination across a range of pressures and recovery rates for 5 ion system"
