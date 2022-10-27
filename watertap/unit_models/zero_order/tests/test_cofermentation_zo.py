@@ -121,16 +121,16 @@ class TestCofermentationZO:
         assert pytest.approx(4.3692908e-5, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(5.0314895e-8, rel=1e-5) == value(
+        assert pytest.approx(5.0312500e-8, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(4.347069, rel=1e-5) == value(
+        assert pytest.approx(4.3470000, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+        assert pytest.approx(2.3979758e-9, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_treated[0].flow_mass_comp[
                     "nonbiodegradable_cod"
@@ -138,13 +138,13 @@ class TestCofermentationZO:
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+        assert pytest.approx(2.3979758e-9, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_byproduct[0].flow_mass_comp["cod"],
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(4.347069, rel=1e-5) == value(
+        assert pytest.approx(4.347000, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_byproduct[0].flow_mass_comp[
                     "nonbiodegradable_cod"
