@@ -13,7 +13,8 @@
 
 import pytest
 import numpy as np
-from math import log, floor
+from math import log
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -56,7 +57,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
