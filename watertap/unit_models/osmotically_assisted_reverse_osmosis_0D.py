@@ -22,6 +22,7 @@ from pyomo.environ import (
 from idaes.core import declare_process_block_class, FlowDirection
 from idaes.core.util import scaling as iscale
 from watertap.core import (
+    ConcentrationPolarizationType,
     MembraneChannel0DBlock,
     MassTransferCoefficient,
     PressureChangeType,
