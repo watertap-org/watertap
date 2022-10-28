@@ -14,40 +14,32 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Set,
     NonNegativeReals,
     NegativeReals,
-    Reference,
-    units as pyunits,
-    exp,
     value,
-    check_optimal_termination,
 )
 
-from idaes.core import declare_process_block_class
+from idaes.core import declare_process_block_class, FlowDirection
 from idaes.core.util import scaling as iscale
-from idaes.core.util.misc import add_object_reference
 from watertap.core import (
     MembraneChannel0DBlock,
-    ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
 from watertap.core.membrane_channel0d import CONFIG_Template
-from watertap.unit_models.reverse_osmosis_base import (
-    ReverseOsmosisBaseData,
+from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
+    OsmoticallyAssistedReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
-import idaes.logger as idaeslog
 
 
-__author__ = "Tim Bartholomew, Adam Atia"
+__author__ = "Adam Atia, Chenyu Wang"
 
 
-@declare_process_block_class("ReverseOsmosis0D")
-class ReverseOsmosisData(ReverseOsmosisBaseData):
+@declare_process_block_class("OsmoticallyAssistedReverseOsmosis0D")
+class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBaseData):
     """
-    Standard RO Unit Model Class:
+    Standard OARO Unit Model Class:
     - zero dimensional model
     - steady state only
     - single liquid phase only
@@ -57,27 +49,47 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
     _add_has_full_reporting(CONFIG)
 
-    def _add_feed_side_membrane_channel_and_geometry(self):
+    def _add_membrane_channel_and_geometry(
+        self, side="feed_side", flow_direction=FlowDirection.forward
+    ):
+        if not isinstance(side, str):
+            raise TypeError(
+                f"{side} is not a string. Please provide a string for the side argument."
+            )
+
         # Build membrane channel control volume
-        self.feed_side = MembraneChannel0DBlock(
-            dynamic=False,
-            has_holdup=False,
-            property_package=self.config.property_package,
-            property_package_args=self.config.property_package_args,
+        setattr(
+            self,
+            side,
+            MembraneChannel0DBlock(
+                dynamic=False,
+                has_holdup=False,
+                property_package=self.config.property_package,
+                property_package_args=self.config.property_package_args,
+            ),
         )
+        mem_side = getattr(self, side)
 
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            self._add_length_and_width()
-            self.feed_side.add_geometry(length_var=self.length, width_var=self.width)
-            self._add_area(include_constraint=True)
+            if not hasattr(self, "length") and not hasattr(self, "width"):
+                self._add_length_and_width()
+            mem_side.add_geometry(
+                length_var=self.length,
+                width_var=self.width,
+                flow_direction=flow_direction,
+            )
+            if not hasattr(self, "eq_area"):
+                add_eq_area = True
+            else:
+                add_eq_area = False
+            self._add_area(include_constraint=add_eq_area)
         else:
-            self.feed_side.add_geometry(length_var=None, width_var=None)
+            mem_side.add_geometry(
+                length_var=None, width_var=None, flow_direction=flow_direction
+            )
             self._add_area(include_constraint=False)
-
-    def _add_deltaP(self):
-        add_object_reference(self, "deltaP", self.feed_side.deltaP)
 
     def _add_mass_transfer(self):
 
@@ -85,29 +97,11 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
 
         # not in 1DRO
         @self.Constraint(
-            self.flowsheet().config.time, self.length_domain, doc="Permeate flowrate"
-        )
-        def eq_flow_vol_permeate(b, t, x):
-            return (
-                b.permeate_side[t, x].flow_vol_phase["Liq"]
-                == b.mixed_permeate[t].flow_vol_phase["Liq"]
-            )
-
-        # not in 1DRO
-        @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
-        def over_pressure_ratio(b, t):
-            return (
-                b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
-                - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
-            ) / b.feed_side.properties_out[t].pressure
-
-        # not in 1DRO
-        @self.Constraint(
             self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
         )
         def eq_connect_enthalpy_transfer(b, t):
             return (
-                b.mixed_permeate[t].get_enthalpy_flow_terms("Liq")
+                b.permeate_side.enthalpy_transfer[t]
                 == -b.feed_side.enthalpy_transfer[t]
             )
 
@@ -150,11 +144,10 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         )
         def eq_connect_mass_transfer(b, t, p, j):
             return (
-                b.mixed_permeate[t].get_material_flow_terms(p, j)
+                b.permeate_side.mass_transfer_term[t, p, j]
                 == -b.feed_side.mass_transfer_term[t, p, j]
             )
 
-        # Different expression in 1DRO
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -163,25 +156,8 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         )
         def eq_permeate_production(b, t, p, j):
             return (
-                b.mixed_permeate[t].get_material_flow_terms(p, j)
+                b.permeate_side.mass_transfer_term[t, p, j]
                 == b.area * b.flux_mass_phase_comp_avg[t, p, j]
-            )
-
-        # Not in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.solute_set,
-            doc="Permeate mass fraction",
-        )
-        def eq_mass_frac_permeate(b, t, x, j):
-            return (
-                b.permeate_side[t, x].mass_frac_phase_comp["Liq", j]
-                * sum(
-                    self.flux_mass_phase_comp[t, x, "Liq", jj]
-                    for jj in self.config.property_package.component_list
-                )
-                == self.flux_mass_phase_comp[t, x, "Liq", j]
             )
 
     def calculate_scaling_factors(self):
@@ -200,6 +176,9 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
             v = self.feed_side.mass_transfer_term[t, p, j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.permeate_side.mass_transfer_term[t, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 

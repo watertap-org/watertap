@@ -12,22 +12,23 @@
 ###############################################################################
 
 import pytest
+import numpy as np
+from math import log, floor
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
-    TerminationCondition,
-    SolverStatus,
     value,
     Var,
     units as pyunits,
     assert_optimal_termination,
+    TransformationFactory,
 )
+from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Port
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
-    EnergyBalanceType,
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
@@ -46,11 +47,9 @@ from watertap.core.util.initialization import check_dof
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import ConfigurationError
@@ -58,8 +57,11 @@ from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
     unscaled_constraints_generator,
-    constraints_with_scale_factor_generator,
     badly_scaled_var_generator,
+)
+from idaes.core.util.initialization import propagate_state
+from idaes.generic_models.unit_models import (
+    Feed,
 )
 import idaes.logger as idaeslog
 
@@ -310,13 +312,13 @@ class TestNanoFiltration_with_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -334,31 +336,26 @@ class TestNanoFiltration_with_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
+
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -382,7 +379,6 @@ class TestNanoFiltration_with_CP_5ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -575,13 +571,13 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -599,31 +595,26 @@ class TestNanoFiltration_without_CP_5ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
+
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -647,7 +638,6 @@ class TestNanoFiltration_without_CP_5ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -831,31 +821,26 @@ class TestNanoFiltration_with_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
+
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -879,7 +864,6 @@ class TestNanoFiltration_with_CP_2ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1068,31 +1052,26 @@ class TestNanoFiltration_without_CP_2ions:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
+
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -1116,7 +1095,6 @@ class TestNanoFiltration_without_CP_2ions:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1301,13 +1279,13 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Mg_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
@@ -1325,31 +1303,26 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
-        assert len(badly_scaled_var_lst) == 0
-
-        # not all constraints have scaling factor so skipping the check for unscaled constraints
-        unscaled_con_lst = list(unscaled_constraints_generator(m))
-        assert len(unscaled_con_lst) == 0
-
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m = NF_frame
-        # Using the 'initialize' function so that I can view the logs on failure
-        # m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
+        badly_scaled_var_lst = list(
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+        )
+        for var, val in badly_scaled_var_lst:
+            print(var.name, val)
+        assert len(badly_scaled_var_lst) == 0
+
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
@@ -1373,7 +1346,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
@@ -1409,7 +1381,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         NF_frame.fs.unit.report()
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_inverse_solve():
     m = ConcreteModel()
@@ -1469,14 +1440,14 @@ def test_inverse_solve():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+    badly_scaled_var_lst = list(
+        badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+    )
+    for var, val in badly_scaled_var_lst:
+        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
-
-    # not all constraints have scaling factor so skipping the check for unscaled constraints
-    unscaled_con_lst = list(unscaled_constraints_generator(m))
-    assert len(unscaled_con_lst) == 0
-
-    initialization_tester(m)
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].unfix()
@@ -1490,7 +1461,7 @@ def test_inverse_solve():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m)
+    results = solver.solve(m, tee=True)
 
     # Check for optimal solution
     assert_optimal_termination(results)
@@ -1539,7 +1510,6 @@ def test_inverse_solve():
     m.fs.unit.report()
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_mass_transfer_coeff_fixed():
     m = ConcreteModel()
@@ -1602,14 +1572,14 @@ def test_mass_transfer_coeff_fixed():
     unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
     assert len(unscaled_var_list) == 0
 
-    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+    badly_scaled_var_lst = list(
+        badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+    )
+    for var, val in badly_scaled_var_lst:
+        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
-
-    # not all constraints have scaling factor so skipping the check for unscaled constraints
-    unscaled_con_lst = list(unscaled_constraints_generator(m))
-    assert len(unscaled_con_lst) == 0
-
-    initialization_tester(m)
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].unfix()
@@ -1623,7 +1593,7 @@ def test_mass_transfer_coeff_fixed():
     m.fs.unit.retentate.temperature[0].fix(298.15)
     m.fs.unit.retentate.pressure[0].fix(4e5)
 
-    results = solver.solve(m)
+    results = solver.solve(m, tee=True)
 
     # Check for optimal solution
     assert_optimal_termination(results)
@@ -1725,3 +1695,233 @@ def test_mass_transfer_CP_config_errors():
             mass_transfer_coefficient=MassTransferCoefficient.spiral_wound,
             concentration_polarization_type=ConcentrationPolarizationType.none,
         )
+
+
+@pytest.mark.component
+def test_pressure_recovery_step_2_ions():
+    "Test optimal termination across a range of pressures and recovery rates for 2 ion system"
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = DSPMDEParameterBlock(
+        solute_list=["Na_+", "Cl_-"],
+        diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
+        mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
+        stokes_radius_data={"Cl_-": 1.21e-10, "Na_+": 1.84e-10},
+        charge={"Na_+": 1, "Cl_-": -1},
+        activity_coefficient_model=ActivityCoefficientModel.davies,
+        density_calculation=DensityCalculation.constant,
+    )
+
+    m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
+
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(0.429868)
+    m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(47.356)
+
+    # Fix other inlet state variables
+    m.fs.unit.inlet.temperature[0].fix(298.15)
+    m.fs.unit.inlet.pressure[0].fix(4e5)
+
+    # Fix the membrane variables that are usually fixed for the DSPM-DE model
+    m.fs.unit.radius_pore.fix(0.5e-9)
+    m.fs.unit.membrane_thickness_effective.fix(1.33e-6)
+    m.fs.unit.membrane_charge_density.fix(-27)
+    m.fs.unit.dielectric_constant_pore.fix(41.3)
+
+    # Fix final permeate pressure to be ~atmospheric
+    m.fs.unit.mixed_permeate[0].pressure.fix(101325)
+
+    m.fs.unit.spacer_porosity.fix(0.85)
+    m.fs.unit.channel_height.fix(5e-4)
+    m.fs.unit.velocity[0, 0].fix(0.25)
+    m.fs.unit.area.fix(50)
+    # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
+    m.fs.unit.spacer_mixing_efficiency.fix()
+    m.fs.unit.spacer_mixing_length.fix()
+
+    check_dof(m, fail_flag=True)
+
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
+    )
+
+    calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
+    assert len(unscaled_var_list) == 0
+
+    badly_scaled_var_lst = list(badly_scaled_var_generator(m.fs.unit))
+    assert len(badly_scaled_var_lst) == 0
+
+    initialization_tester(m)
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert_optimal_termination(results)
+
+    pressure_steps = np.linspace(1.8e5, 20e5, 10)
+
+    for p in pressure_steps:
+        m.fs.unit.inlet.pressure[0].fix(p)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+    m.fs.unit.inlet.pressure[0].fix(10e5)
+    m.fs.unit.area.unfix()
+
+    for r in np.linspace(0.05, 0.97, 10):
+        m.fs.unit.recovery_vol_phase.fix(r)
+        print(r)
+        res = solver.solve(m, tee=True)
+        assert_optimal_termination(res)
+
+
+def calc_scale(value):
+    return -1 * log(value, 10)
+
+
+@pytest.mark.component
+def test_pressure_recovery_step_5_ions():
+    "Test optimal termination across a range of pressures and recovery rates for 5 ion system"
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    default = {
+        "solute_list": [
+            "Ca_2+",
+            "SO4_2-",
+            "HCO3_-",
+            "Na_+",
+            "Cl_-",
+        ],
+        "diffusivity_data": {
+            ("Liq", "Ca_2+"): 9.2e-10,
+            ("Liq", "SO4_2-"): 1.06e-9,
+            ("Liq", "HCO3_-"): 1.19e-9,
+            ("Liq", "Na_+"): 1.33e-9,
+            ("Liq", "Cl_-"): 2.03e-9,
+        },
+        "mw_data": {
+            "H2O": 18e-3,
+            "Ca_2+": 40e-3,
+            "HCO3_-": 61.0168e-3,
+            "SO4_2-": 96e-3,
+            "Na_+": 23e-3,
+            "Cl_-": 35e-3,
+        },
+        "stokes_radius_data": {
+            "Ca_2+": 0.309e-9,
+            "HCO3_-": 2.06e-10,
+            "SO4_2-": 0.230e-9,
+            "Cl_-": 0.121e-9,
+            "Na_+": 0.184e-9,
+        },
+        "charge": {
+            "Ca_2+": 2,
+            "HCO3_-": -1,
+            "SO4_2-": -2,
+            "Na_+": 1,
+            "Cl_-": -1,
+        },
+        "activity_coefficient_model": ActivityCoefficientModel.ideal,
+        "density_calculation": DensityCalculation.constant,
+    }
+
+    m.fs.properties = DSPMDEParameterBlock(default=default)
+
+    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+
+    m.fs.nfUnit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
+
+    m.fs.feed_to_nf = Arc(source=m.fs.feed.outlet, destination=m.fs.nfUnit.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    feed_mass_frac = {
+        "Ca_2+": 4.0034374454637006e-04,
+        "HCO3_-": 0.00022696833343821863,
+        "SO4_2-": 0.00020497140244420624,
+        "Cl_-": 0.0004559124032433401,
+        "Na_+": 0.00043333830389924205,
+    }
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    for ion, x in feed_mass_frac.items():
+        mol_comp_flow = (
+            x
+            * pyunits.kg
+            / pyunits.kg
+            * mass_flow_in
+            / m.fs.feed.properties[0].mw_comp[ion]
+        )
+        m.fs.feed.properties[0].flow_mol_phase_comp["Liq", ion].fix(mol_comp_flow)
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+    H2O_mol_comp_flow = (
+        H2O_mass_frac
+        * pyunits.kg
+        / pyunits.kg
+        * mass_flow_in
+        / m.fs.feed.properties[0].mw_comp["H2O"]
+    )
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(H2O_mol_comp_flow)
+
+    for index in m.fs.feed.properties[0].flow_mol_phase_comp:
+        scale = calc_scale(m.fs.feed.properties[0].flow_mol_phase_comp[index].value)
+        print(f"{index} flow_mol_phase_comp scaling factor = {10 ** (scale)}")
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 10 ** (scale), index=index
+        )
+    m.fs.feed.properties[0].assert_electroneutrality(
+        defined_state=True,
+        adjust_by_ion="Cl_-",
+        get_property="flow_mol_phase_comp",
+    )
+
+    m.fs.feed.properties[0].temperature.fix(298.15)
+
+    calculate_scaling_factors(m.fs)
+
+    m.fs.feed.initialize(optarg=solver.options)
+    m.fs.feed.properties[0].pressure.fix(1.5 * 1e5)
+    propagate_state(m.fs.feed_to_nf)
+    m.fs.nfUnit.recovery_vol_phase.fix(0.1)
+
+    m.fs.nfUnit.spacer_porosity.fix(0.85)
+    m.fs.nfUnit.channel_height.fix(1e-3)
+    m.fs.nfUnit.velocity[0, 0].fix(0.25)
+    m.fs.nfUnit.spacer_mixing_efficiency.fix()
+    m.fs.nfUnit.spacer_mixing_length.fix()
+
+    m.fs.nfUnit.radius_pore.fix(0.5e-9)
+    m.fs.nfUnit.membrane_thickness_effective.fix(8.598945196055952e-07)
+    m.fs.nfUnit.membrane_charge_density.fix(-680)
+    m.fs.nfUnit.dielectric_constant_pore.fix(41.3)
+    m.fs.nfUnit.mixed_permeate[0].pressure.fix(101325)
+
+    check_dof(m, fail_flag=True)
+
+    m.fs.nfUnit.initialize(
+        optarg=solver.options,
+        automate_rescale=False,
+    )
+
+    res = solver.solve(m, tee=True)
+    assert_optimal_termination(res)
+
+    for k in np.linspace(2, 20, 10):
+        m.fs.feed.properties[0].pressure.fix(k * 1e5)
+        res = solver.solve(m, tee=True)
+        assert_optimal_termination(res)
+
+    m.fs.feed.properties[0].pressure.fix(10e5)
+
+    for r in np.linspace(0.05, 0.97, 10):
+        m.fs.nfUnit.recovery_vol_phase.fix(r)
+        res = solver.solve(m, tee=True)
+        assert_optimal_termination(res)
