@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from pyomo.environ import Var, units as pyunits, Expr_if, value
 
 from enum import Enum, auto
@@ -19,7 +19,6 @@ from enum import Enum, auto
 # Import IDAES cores
 from idaes.models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
-from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
