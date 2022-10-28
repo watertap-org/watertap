@@ -50,7 +50,9 @@ After installing WaterTAP, the IDAES Extensions command can be used to automatic
 Install on Mac (Intel)
 ----------------------
 
-This section is for Apple's Mac computers with Intel processors. To check if your Mac is using an Intel processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer. Intel Mac support is currently experimental; therefore, some WaterTAP features may not work.
+.. warning:: Intel Mac support is currently experimental; therefore, some WaterTAP features may not work.
+
+This section is for Apple's Mac computers with Intel processors. To check if your Mac is using an Intel processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer.
 
 Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
