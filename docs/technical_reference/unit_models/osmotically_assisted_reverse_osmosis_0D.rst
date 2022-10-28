@@ -60,7 +60,7 @@ Sets
 
 \*Solute depends on the imported property model; example shown here is for the NaCl property model.
 
-.. _0dro_variables:
+.. _0doaro_variables:
 
 Variables
 ----------
@@ -158,7 +158,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Permeate-channel velocity", ":math:`v_p`", "permeate_side.velocity", "[t, x]", ":math:`\text{m/s}`"
    "Pressure drop per unit length of permeate channel at inlet/outlet", ":math:`(ΔP/Δx)_p`", "permeate_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
-.. _0dro_equations:
+.. _0doaro_equations:
 
 Equations
 -----------
