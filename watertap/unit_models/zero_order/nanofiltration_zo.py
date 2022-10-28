@@ -16,7 +16,7 @@ operation.
 """
 
 from idaes.core import declare_process_block_class
-from pyomo.environ import Var, Constraint, units as pyunits
+from pyomo.environ import Var, units as pyunits
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module

@@ -17,7 +17,7 @@ for wastewater resource recovery flowsheets.
 
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, ZeroOrderBaseData, pump_electricity
-from pyomo.environ import Var, Constraint, units as pyunits, Reference
+from pyomo.environ import Reference
 
 # Some more information about this module
 __author__ = "Adam Atia"

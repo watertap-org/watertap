@@ -14,10 +14,10 @@
 This module contains a zero-order representation of an electrodialysis reversal unit.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
+from watertap.core import build_sido, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
