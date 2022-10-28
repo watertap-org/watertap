@@ -38,7 +38,7 @@ Properties
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Interaction parameter", ":math:`τ`", "Liq_tau", "[j_1, j_2, j_3]", ":math:`\text{dimensionless}`"
-   "Component molar volume", ":math:`V_j`, "vol_mol_liq_comp", "[j]", ":math:`\text{m}^3\text{/mole}
+   "Component molar volume", ":math:`V_j`, "vol_mol_liq_comp", "[j]", ":math:`\text{m}^3\text{/mole}`"
 
 Relationships
 -------------
