@@ -12,6 +12,39 @@ Using Conda environments is not mandatory to be able to install and use WaterTAP
 
 .. _install:
 
+Install on Linux and Windows
+----------------------------
+
+Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
+
+.. code-block:: shell
+
+   conda create --name watertap --yes python=3.8 pip=21.1
+
+Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
+
+.. code-block:: shell
+
+   conda activate watertap
+
+Install WaterTAP in the Conda environment using ``pip``:
+
+.. code-block:: shell
+
+   pip install watertap
+
+(Optional) See the :ref:`running-test-suite` section, if you want to verify that the installation was successful.
+
+After installing WaterTAP, the IDAES Extensions command can be used to automatically install the solvers distributed as part of the IDAES Extensions. Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_. From the same environment where WaterTAP was installed, run:
+
+.. code-block:: shell
+
+   idaes get-extensions
+
+.. important:: The ``conda activate`` command described above must be run each time a new terminal/console session is started.
+
+.. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
+
 Install on macOS
 ----------------
 
@@ -67,39 +100,6 @@ Next, we can obtain Ipopt and CBC from conda-forge:
 .. important:: The ``conda activate`` command described above must be run each time a new terminal/console session is started.
 
 .. note:: The ``pyomo build-extensions`` command only needs to be run once for each system as it builds and installs the required libraries into a common, system-wide location. After building PyNumero, you should not need cmake. You can remove it by running ``conda uninstall cmake``.
-
-Install on Linux and Windows
-----------------------------
-
-Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
-
-.. code-block:: shell
-
-   conda create --name watertap --yes python=3.8 pip=21.1
-
-Activate the ``watertap`` environment using the command given below. If the environment was activated successfully, the environment's name will be displayed in the terminal prompt such as ``(watertap) project-directory $``.
-
-.. code-block:: shell
-
-   conda activate watertap
-
-Install WaterTAP in the Conda environment using ``pip``:
-
-.. code-block:: shell
-
-   pip install watertap
-
-(Optional) See the :ref:`running-test-suite` section, if you want to verify that the installation was successful.
-
-After installing WaterTAP, the IDAES Extensions command can be used to automatically install the solvers distributed as part of the IDAES Extensions. Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_. From the same environment where WaterTAP was installed, run:
-
-.. code-block:: shell
-
-   idaes get-extensions
-
-.. important:: The ``conda activate`` command described above must be run each time a new terminal/console session is started.
-
-.. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
 
 .. _running-test-suite:
 
