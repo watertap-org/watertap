@@ -16,8 +16,6 @@ operation.
 """
 
 from pyomo.environ import units as pyunits, Var
-from pyomo.common.config import ConfigValue, In
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 

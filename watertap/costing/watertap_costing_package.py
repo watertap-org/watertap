@@ -11,8 +11,6 @@
 #
 ###############################################################################
 
-from enum import Enum
-
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint

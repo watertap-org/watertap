@@ -49,7 +49,6 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     set_scaling_factor,
 )
-import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------

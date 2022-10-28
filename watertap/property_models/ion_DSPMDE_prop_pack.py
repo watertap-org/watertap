@@ -20,7 +20,6 @@ Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 #  -add viscosity as func of temp and concentration
 
 # Import Python libraries
-from sysconfig import is_python_build
 import idaes.logger as idaeslog
 
 from enum import Enum, auto
@@ -52,15 +51,15 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
-from idaes.core.base.phases import LiquidPhase, AqueousPhase
+from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
