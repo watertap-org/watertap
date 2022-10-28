@@ -25,14 +25,10 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
-# From watertap
-from watertap.unit_models.mvc.components.complete_condenser import Condenser
 
 
 _log = idaeslog.getLogger(__name__)
