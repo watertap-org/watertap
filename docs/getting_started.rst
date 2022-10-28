@@ -15,7 +15,7 @@ Using Conda environments is not mandatory to be able to install and use WaterTAP
 Install on Linux, Windows, and Mac (ARM)
 ----------------------------------------
 
-For Mac users, this section is for Apple's Mac computers with ARM processors (also referred to as Apple Silicon, M1, or M2). To check if your Mac is using an ARM processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer.
+Mac users, this section is for Apple computers with ARM processors (also known as Apple Silicon, M1, or M2). To check if your Mac is using an ARM processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer.
 
 Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
@@ -50,7 +50,7 @@ After installing WaterTAP, the IDAES Extensions command can be used to automatic
 Install on Mac (Intel)
 ----------------------
 
-This section is for Apple's Mac computers with Intel processors. To check if your Mac is using an Intel processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer.
+This section is for Apple's Mac computers with Intel processors. To check if your Mac is using an Intel processor, click the apple icon in the upper left corner of your screen. Then select the About This Mac item to view the type of processor in your computer. Intel Mac support is currently experimental; therefore, some WaterTAP features may not work.
 
 Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
