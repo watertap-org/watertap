@@ -25,7 +25,7 @@ try:
 except ImportError:
     certifi = None
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
+from pymongo.errors import ConnectionFailure
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
