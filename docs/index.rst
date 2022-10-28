@@ -25,7 +25,6 @@ Content
    :maxdepth: 2
 
    getting_started
-   electrolyte_database
    tutorials/index
    how_to_guides/index
    technical_reference/index

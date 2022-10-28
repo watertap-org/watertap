@@ -1,7 +1,7 @@
 .. _install-edb:
 
-Electrolyte Database
-====================
+How to install the Electrolyte Database (EDB)
+=============================================
 
 To install the Electrolyte Database (EDB), follow the steps discussed below.
 
@@ -42,18 +42,18 @@ The result should be a bunch of text that resembles the following:
 
 .. _screenshot-mongodb-download:
 
-.. figure:: _static/mongodb-download-page.*
+.. figure:: ../_static/mongodb-download-page.*
 
    Download page for MongoDB community server (9/2021)
 
 .. _screenshot-mongodb-compass-initial:
 
-.. figure:: _static/mongodb-compass-initial.*
+.. figure:: ../_static/mongodb-compass-initial.*
 
    MongoDB Compass Initial Screen (9/2021)
 
 .. _screenshot-mongodb-compass-edb:
 
-.. figure:: _static/mongodb-compass-electrolytedb.*
+.. figure:: ../_static/mongodb-compass-electrolytedb.*
 
    MongoDB Compass electrolytedb Collections (9/2021)
