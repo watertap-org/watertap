@@ -768,7 +768,7 @@ def display_costing(m):
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.zo_costing.flow_types:
+    for f in m.fs.zo_costing.used_flows:
         print(
             f,
             " :   ",
