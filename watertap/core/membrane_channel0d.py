@@ -12,23 +12,17 @@
 ###############################################################################
 
 from pyomo.environ import (
-    NonNegativeReals,
     NegativeReals,
-    Param,
     Set,
     Var,
-    value,
-    units as pyunits,
 )
 from idaes.core import (
     declare_process_block_class,
-    EnergyBalanceType,
     FlowDirection,
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
 import idaes.logger as idaeslog
 
