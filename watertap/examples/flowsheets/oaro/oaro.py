@@ -80,13 +80,13 @@ def main(erd_type=ERDtype.pump_as_turbine):
     # optimize_set_up(m)
     # solve(m, solver=solver, tee=True)
 
-    print("\n***---Simulation results---***")
-    display_system(m)
-    display_design(m)
-    if erd_type == ERDtype.pump_as_turbine:
-        display_state(m)
-    else:
-        pass
+    # print("\n***---Simulation results---***")
+    # display_system(m)
+    # display_design(m)
+    # if erd_type == ERDtype.pump_as_turbine:
+    #     display_state(m)
+    # else:
+    #     pass
 
     return m
 
@@ -121,6 +121,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
         pressure_change_type=PressureChangeType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        has_full_reporting=True,
     )
     m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
@@ -131,6 +132,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
         pressure_change_type=PressureChangeType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        has_full_reporting=True,
     )
     # m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
@@ -195,8 +197,8 @@ def build(erd_type=ERDtype.pump_as_turbine):
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P3.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    iscale.set_scaling_factor(m.fs.OARO.area, 1e-2)
+    # iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
+    # iscale.set_scaling_factor(m.fs.OARO.area, 1e-2)
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
     if erd_type == ERDtype.pump_as_turbine:
@@ -304,7 +306,7 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    # m.fs.P2.control_volume.properties_out[0].pressure.fix(operating_pressure)
+    m.fs.P2.control_volume.properties_out[0].pressure = operating_pressure
     print("Degrees of Freedom of P2 after fixed:", degrees_of_freedom(m.fs.P2))
 
     print("Degrees of Freedom of RO before fixed:", degrees_of_freedom(m.fs.RO))
@@ -329,8 +331,8 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    # m.fs.P3.control_volume.properties_out[0].pressure.fix(operating_pressure)
-
+    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 3e5
+    m.fs.P3.control_volume.properties_out[0].pressure.setub(5e5)
     # initialize RO
     # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
     #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
@@ -350,9 +352,14 @@ def set_operating_conditions(
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
         m.fs.ERD1.efficiency_pump.fix(0.95)
-        # m.fs.ERD1.control_volume.properties_out[0].pressure.fix(101325)
+        m.fs.ERD1.deltaP.setub(0)
+
+        m.fs.ERD1.control_volume.properties_out[0].pressure = 101325
         m.fs.ERD2.efficiency_pump.fix(0.95)
-        # m.fs.ERD2.control_volume.properties_out[0].pressure.fix(101325)
+        m.fs.ERD2.deltaP.setub(0)
+
+        m.fs.ERD2.control_volume.properties_out[0].pressure = 101325
+        m.fs.ERD2.control_volume.properties_out[0].pressure.setub(101325)
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -364,7 +371,7 @@ def set_operating_conditions(
     # m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
 
     # check degrees of freedom
-    check_dof(m)
+    check_dof(m, fail_flag=True)
     # if degrees_of_freedom(m) != 0:
     #     raise RuntimeError(
     #         "The set_operating_conditions function resulted in {} "
@@ -444,8 +451,7 @@ def initialize_system(m, solver=None):
     m.fs.P1.initialize(optarg=optarg)
     propagate_state(m.fs.s02)
 
-    # ---initialize OARO---
-    m.fs.OARO.initialize(optarg=optarg)
+    # propagate state from oaro perm outlet to pump 2
     propagate_state(m.fs.s05)
 
     # ---initialize Pump 2---
@@ -454,6 +460,14 @@ def initialize_system(m, solver=None):
 
     # ---initialize RO---
     m.fs.RO.initialize(optarg=optarg)
+
+    propagate_state(m.fs.s07)
+    propagate_state(m.fs.s08)
+    propagate_state(m.fs.s09)
+    propagate_state(m.fs.s10)
+
+    # ---initialize OARO---
+    m.fs.OARO.initialize(optarg=optarg)
 
     # --- initialize ERD ---
     if m.fs.erd_type == ERDtype.pump_as_turbine:
