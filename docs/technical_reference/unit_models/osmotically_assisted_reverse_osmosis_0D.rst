@@ -78,8 +78,7 @@ Variables
    "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Membrane structural parameter", ":math:`S`", "structural_parameter", "[None]", ":math:`\text{m}`"
    "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
-   "Solute diffusion coefficient", ":math:`D`", "D_comp", "[t, j]", ":math:`\text{m/}\text{s}^2`"
-   "Osmotic pressure", ":math:`π`", "pressure_osm_phase", "[t, p]", ":math:`\text{Pa}`"
+
 
 The following variables are only built when specific configuration key-value pairs are selected.
 
