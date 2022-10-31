@@ -79,6 +79,7 @@ Variables
    "Membrane structural parameter", ":math:`S`", "structural_parameter", "[None]", ":math:`\text{m}`"
    "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
    "Solute diffusion coefficient", ":math:`D`", "D_comp", "[t, j]", ":math:`\text{m/}\text{s}^2`"
+   "Osmotic pressure", ":math:`π`", "pressure_osm_phase", "[t, p]", ":math:`\text{Pa}`"
 
 The following variables are only built when specific configuration key-value pairs are selected.
 
@@ -95,7 +96,7 @@ if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Concentration polarization modulus in feed channel", ":math:`CP_{mod,f}`", "feed_side.cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
-   "Concentration polarization modulus in permeate channel", ":math:`CP_{mod,s}`", "permeate_side.cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
+   "Concentration polarization modulus in permeate channel", ":math:`CP_{mod,p}`", "permeate_side.cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
 
 if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
 
@@ -103,7 +104,7 @@ if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Mass transfer coefficient in feed channel", ":math:`k_f`", "feed_side.K", "[t, x, j]", ":math:`\text{m/s}`"
-   "Mass transfer coefficient in permeate channel", ":math:`k_s`", "permeate_side.K", "[t, x, j]", ":math:`\text{m/s}`"
+   "Mass transfer coefficient in permeate channel", ":math:`k_p`", "permeate_side.K", "[t, x, j]", ":math:`\text{m/s}`"
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
 or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
@@ -115,10 +116,10 @@ or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Hydraulic diameter", ":math:`d_{h,f}`", "feed_side.dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp,f}`", "feed_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
    "Reynolds number", ":math:`Re_{f}`", "feed_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"
-   "Permeate-channel height", ":math:`h_{ch,s}`", "permeate_side.channel_height", "None", ":math:`\text{m}`"
-   "Hydraulic diameter", ":math:`d_{h,s}`", "permeate_side.dh", "None", ":math:`\text{m}`"
-   "Spacer porosity", ":math:`\epsilon_{sp,s}`", "permeate_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
-   "Reynolds number", ":math:`Re_{s}`", "permeate_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"
+   "Permeate-channel height", ":math:`h_{ch,p}`", "permeate_side.channel_height", "None", ":math:`\text{m}`"
+   "Hydraulic diameter", ":math:`d_{h,p}`", "permeate_side.dh", "None", ":math:`\text{m}`"
+   "Spacer porosity", ":math:`\epsilon_{sp,p}`", "permeate_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
+   "Reynolds number", ":math:`Re_{p}`", "permeate_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"
 
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
@@ -128,8 +129,8 @@ if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated`
 
    "Schmidt number", ":math:`Sc_f`", "feed_side.N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
    "Sherwood number", ":math:`Sh_f`", "feed_side.N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
-   "Schmidt number", ":math:`Sc_s`", "permeate_side.N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
-   "Sherwood number", ":math:`Sh_s`", "permeate_side.N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
+   "Schmidt number", ":math:`Sc_p`", "permeate_side.N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
+   "Sherwood number", ":math:`Sh_p`", "permeate_side.N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
 or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
@@ -146,7 +147,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Average pressure drop per unit length of feed channel", ":math:`(\frac{ΔP}{Δx})_{avg,f}`", "feed_side.dP_dx", "[t]", ":math:`\text{Pa/m}`"
-   "Average pressure drop per unit length of permate channel", ":math:`(\frac{ΔP}{Δx})_{avg,s}`", "permeate_side.dP_dx", "[t]", ":math:`\text{Pa/m}`"
+   "Average pressure drop per unit length of permate channel", ":math:`(\frac{ΔP}{Δx})_{avg,p}`", "permeate_side.dP_dx", "[t]", ":math:`\text{Pa/m}`"
 
 if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 
@@ -156,8 +157,8 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Feed-channel velocity", ":math:`v_f`", "feed_side.velocity", "[t, x]", ":math:`\text{m/s}`"
    "Friction factor", ":math:`f`", "feed_side.friction_factor_darcy", "[t, x]", ":math:`\text{dimensionless}`"
    "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`(ΔP/Δx)_f`", "feed_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
-   "Permeate-channel velocity", ":math:`v_s`", "permeate_side.velocity", "[t, x]", ":math:`\text{m/s}`"
-   "Pressure drop per unit length of permeate channel at inlet/outlet", ":math:`(ΔP/Δx)_s`", "permeate_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
+   "Permeate-channel velocity", ":math:`v_p`", "permeate_side.velocity", "[t, x]", ":math:`\text{m/s}`"
+   "Pressure drop per unit length of permeate channel at inlet/outlet", ":math:`(ΔP/Δx)_p`", "permeate_side.dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
 .. _0doaro_equations:
 
@@ -173,7 +174,7 @@ Equations
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
    "Permeate-side solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
    "Feed-side membrane-interface solute concentration", ":math:`C_{interface,f} = CP_{mod,f}C_{bulk,f}=C_{bulk,f}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
-   "Permeate-side membrane-interface solute concentration", ":math:`C_{interface,s} = CP_{mod,s}C_{bulk,s}=C_{bulk,s}\exp(-J_{solvent}(\frac{S}{D} + \frac{1}{k_s})) + \frac{J_{solute}}{J{solvent}}(1-\exp(-J_{solvent}(\frac{S}{D} + \frac{1}{k_s})))`"
+   "Permeate-side membrane-interface solute concentration", ":math:`C_{interface,p} = CP_{mod,p}C_{bulk,p}=C_{bulk,p}\exp(-J_{solvent}(\frac{S}{D} + \frac{1}{k_p})) + \frac{J_{solute}}{J{solvent}}(1-\exp(-J_{solvent}(\frac{S}{D} + \frac{1}{k_p})))`"
    "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
    "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
    "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
