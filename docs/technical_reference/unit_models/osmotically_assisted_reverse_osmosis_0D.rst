@@ -164,9 +164,6 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 Equations
 -----------
 
-Equations
------------
-
 .. csv-table::
    :header: "Description", "Equation"
 
