@@ -23,6 +23,7 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     assert_optimal_termination,
+    SolverFactory,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -53,6 +54,8 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
+from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util.scaling import *
 
 
 class ERDtype(StrEnum):
@@ -76,10 +79,20 @@ def main(erd_type=ERDtype.pump_as_turbine):
     initialize_system(m, solver=solver)
     # except:
     #     pass
+
+    # Use of Degeneracy Hunter for troubleshooting model.
+    m.fs.dummy_objective = Objective(expr=0)
+    solver.options["max_iter"] = 0
+    solver.solve(m, tee=True)
+    dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
+    dh.check_residuals(tol=0.1)
+
     # optimize and display
     # optimize_set_up(m)
-    # solve(m, solver=solver, tee=True)
-
+    try:
+        solve(m, solver=solver, tee=True)
+    except:
+        print("Solve Failed...")
     # print("\n***---Simulation results---***")
     # display_system(m)
     # display_design(m)
@@ -251,7 +264,7 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
     print("Degrees of Freedom of P1 after fixed:", degrees_of_freedom(m.fs.P1))
 
     # OARO
@@ -306,7 +319,7 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    m.fs.P2.control_volume.properties_out[0].pressure = operating_pressure
+    m.fs.P2.control_volume.properties_out[0].pressure = 50e5
     print("Degrees of Freedom of P2 after fixed:", degrees_of_freedom(m.fs.P2))
 
     print("Degrees of Freedom of RO before fixed:", degrees_of_freedom(m.fs.RO))
@@ -331,7 +344,7 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 3e5
+    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 1e5
     m.fs.P3.control_volume.properties_out[0].pressure.setub(5e5)
     # initialize RO
     # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
