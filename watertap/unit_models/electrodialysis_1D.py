@@ -65,6 +65,25 @@ class ElectricalOperationMode(Enum):
     Constant_Voltage = 1
 
 
+class PressureDropMethod(Enum):
+    none = 0
+    Experimental = 1
+    Darcy_Weisbach = 2
+
+
+class FrictionFactorMethod(Enum):
+    defined = 0
+    Ponzio = 1
+    Gurreri = 2
+    Kuroda = 3
+
+
+class HydraulicDiameterMethod(Enum):
+    defined = 0
+    spacer_specific_area_known = 1
+    conventional = 2
+
+
 # Name of the unit model
 @declare_process_block_class("Electrodialysis1D")
 class Electrodialysis1DData(UnitModelBlockData):
@@ -111,6 +130,61 @@ class Electrodialysis1DData(UnitModelBlockData):
     **Valid values:** {
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}""",
+        ),
+    )
+    CONFIG.declare(
+        "pressure_drop_method",
+        ConfigValue(
+            default=PressureDropMethod.none,
+            domain=In(PressureDropMethod),
+            description="Method to account for pressure in the electrodialysis stack channels",
+            doc="""
+     **default** - ``PressureDropMethod.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``PressureDropMethod.none``", "The pressure drop in the electrodialysis channels is neglected" 
+           "``PressureDropMethod.Experimental``", "The pressure drop is calculated by an experimental parameter of pressure per unit lenght per channel"
+           "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "friction_factor_method",
+        ConfigValue(
+            default=FrictionFactorMethod.defined,
+            domain=In(FrictionFactorMethod),
+            description="Method to calculate the Darcy's friction factor",
+            doc="""
+     **default** - ``FrictionFactorMethod.defined``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``FrictionFactorMethod.defined``", "Friction factor is defined and fixed by users" 
+           "``FrictionFactorMethod.Ponzio``", "Frction factor evaluated based on Pazio's work"
+           "``FrictionFactorMethod.Gurreri``", "Frction factor evaluated based on Gurreri's work"
+           "``FrictionFactorMethod.Kuroda``", "Frction factor evaluated based on Kuroda's work"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "hydraulic_diameter_method",
+        ConfigValue(
+            default=HydraulicDiameterMethod.conventional,
+            domain=In(HydraulicDiameterMethod),
+            description="Method to calculate the hydraulic diameter of a rectangular channel in ED",
+            doc="""
+     **default** - ``HydraulicDiameterMethod.conventional``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+           "``HydraulicDiameterMethod.defined``", "Hydraulic diameter is defined and fixed by users" 
+           "``HydraulicDiameterMethod.conventional``", "Conventional method for a rectangular channel with spacer porosity considered" 
+           "``HydraulicDiameterMethod.spacer_specific_area_known``", "A method for spacer-filled channel requiring the spapcer specific area data"
+       """,
         ),
     )
     CONFIG.declare(
@@ -328,6 +402,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             self, "cation_set", self.config.property_package.cation_set
         )
         add_object_reference(self, "anion_set", self.config.property_package.anion_set)
+
         self.membrane_set = Set(
             initialize=["cem", "aem"]
         )  #   cem = Cation-Exchange Membrane aem = Anion-Exchange Membrane
@@ -383,6 +458,12 @@ class Electrodialysis1DData(UnitModelBlockData):
             self.diluate.power_electrical_x,
             wrt=self.diluate.length_domain,
             units=pyunits.watt,
+        )
+        add_object_reference(
+            self, "dens_mass", self.diluate.properties[0, 0].dens_mass_phase["Liq"]
+        )
+        add_object_reference(
+            self, "visc_d", self.diluate.properties[0, 0].visc_d_phase["Liq"]
         )
 
         # Apply the discretization transformation (Pyomo DAE) to the diluate block
@@ -440,10 +521,16 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.meter,
             doc="The width of the electrodialysis cell, parallel to the current/ion flux direction",
         )
-        self.spacer_thickness = Var(
+        self.channel_height = Var(
             initialize=0.0001,
             units=pyunits.meter,
             doc="The distance between consecutive aem and cem",
+        )
+        self.spacer_porosity = Var(
+            initialize=0.7,
+            bounds=(0.01, 1),
+            units=pyunits.dimensionless,
+            doc='The prosity of spacer in the ED channels. This is also referred to elsewhere as "void fraction" or "volume parameters"',
         )
 
         # Material and Operational properties
@@ -573,6 +660,20 @@ class Electrodialysis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="water recovery ratio calculated by mass",
         )
+        self.velocity_D = Var(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            initialize=0.01,
+            units=pyunits.meter * pyunits.second**-1,
+            doc="Linear velocity of flow",
+        )
+        self.velocity_C = Var(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            initialize=0.01,
+            units=pyunits.meter * pyunits.second**-1,
+            doc="Linear velocity of flow",
+        )
         # TODO: consider adding more performance as needed.
         self._make_performance()
 
@@ -604,6 +705,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                 doc="Limiting Current Density accross the membrane as a function of the normalized length",
             )
             self._make_performance_dl_polarization()
+        if not self.config.pressure_drop_method == PressureDropMethod.none:
+            self._pressure_drop_calculation()
         # To require H2O must be in the component
         if "H2O" not in self.component_set:
             raise ConfigurationError(
@@ -650,6 +753,36 @@ class Electrodialysis1DData(UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
+            doc="Calculate flow velocity in a single diluate channel",
+        )
+        def eq_get_velocity_D(self, t, x):
+            return (
+                self.velocity_D[t, x]
+                * self.cell_width
+                * self.channel_height
+                * self.spacer_porosity
+                * self.cell_pair_num
+                == self.diluate.properties[t, x].flow_vol_phase["Liq"]
+            )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            self.diluate.length_domain,
+            doc="Calculate flow velocity in a single concentrate channel",
+        )
+        def eq_get_velocity_C(self, t, x):
+            return (
+                self.velocity_C[t, x]
+                * self.cell_width
+                * self.channel_height
+                * self.spacer_porosity
+                * self.cell_pair_num
+                == self.concentrate.properties[t, x].flow_vol_phase["Liq"]
+            )
+
+        @self.Constraint(
+            self.flowsheet().time,
+            self.diluate.length_domain,
             doc="Calculate the total areal resistance of a stack",
         )
         def eq_get_total_areal_resistance_x(self, t, x):
@@ -659,13 +792,13 @@ class Electrodialysis1DData(UnitModelBlockData):
                         self.membrane_areal_resistance["aem"]
                         + self.membrane_areal_resistance["cem"]
                         + (
-                            self.spacer_thickness
+                            self.channel_height
                             - self.dl_thickness_x["cem", "cathode_left", t, x]
                             - self.dl_thickness_x["aem", "anode_right", t, x]
                         )
                         * self.concentrate.properties[t, x].elec_cond_phase["Liq"] ** -1
                         + (
-                            self.spacer_thickness
+                            self.channel_height
                             - self.dl_thickness_x["cem", "anode_right", t, x]
                             - self.dl_thickness_x["aem", "cathode_left", t, x]
                         )
@@ -679,7 +812,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     (
                         self.membrane_areal_resistance["aem"]
                         + self.membrane_areal_resistance["cem"]
-                        + self.spacer_thickness
+                        + self.channel_height
                         * (
                             self.concentrate.properties[t, x].elec_cond_phase["Liq"]
                             ** -1
@@ -1557,6 +1690,170 @@ class Electrodialysis1DData(UnitModelBlockData):
                     * self.current_dens_lim_x[t, x] ** -1
                 )
 
+    def _get_fluid_dimensionless_quantities(self):
+        self.general_mass_diffusivity = Var(
+            initialize=1e-9,
+            bounds=(1e-16, 1e-6),
+            units=pyunits.meter**2 * pyunits.second**-1,
+            doc="The mass diffusivity of the solute as molecules (not individual ions)",
+        )
+        self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
+        self.Re = Var(
+            initialize=100, units=pyunits.dimensionless, doc="Reynolds Number"
+        )
+        self.Sc = Var(
+            initialize=2000, units=pyunits.dimensionless, doc="Schmidt Number"
+        )
+        self.Sh = Var(
+            initialize=100, units=pyunits.dimensionless, doc="Sherwood Number"
+        )
+
+        if self.config.hydraulic_diameter_method == HydraulicDiameterMethod.defined:
+            _log.warning("Do not forget to FIX the channel hydraulic diameter in [m]!")
+        else:
+
+            @self.Constraint(
+                doc="To calculate hydraulic diameter",
+            )
+            def eq_hydraulic_diameter(self):
+                if (
+                    self.config.hydraulic_diameter_method
+                    == HydraulicDiameterMethod.conventional
+                ):
+                    return (
+                        self.hydraulic_diameter
+                        == 2
+                        * self.channel_height
+                        * self.cell_width
+                        * self.spacer_porosity
+                        * (self.channel_height + self.cell_width) ** -1
+                    )
+                else:
+                    self.spacer_specific_area = Var(
+                        initialize=1e4, units=pyunits.meter**-1
+                    )
+                    return (
+                        self.hydraulic_diameter
+                        == 4
+                        * self.spacer_porosity
+                        * (
+                            2 * self.channel_height**-1
+                            + (1 - self.spacer_porosity) * self.spacer_specific_area
+                        )
+                        ** -1
+                    )
+
+        @self.Constraint(
+            doc="To calculate Re",
+        )
+        def eq_Re(self):
+
+            return (
+                self.Re
+                == self.dens_mass
+                * self.velocity_D[0, 0]
+                * self.hydraulic_diameter
+                * self.visc_d**-1
+            )
+
+        @self.Constraint(
+            doc="To calculate Sc",
+        )
+        def eq_Sc(self):
+
+            return (
+                self.Sc
+                == self.visc_d
+                * self.dens_mass**-1
+                * self.general_mass_diffusivity**-1
+            )
+
+        @self.Constraint(
+            doc="To calculate Sc",
+        )
+        def eq_Sh(self):
+
+            return self.Sh == 0.29 * self.Re**0.5 * self.Sc**0.33
+
+    def _pressure_drop_calculation(self):
+        self.pressure_drop = Var(
+            self.flowsheet().time,
+            initialize=1e4,
+            units=pyunits.pascal * pyunits.meter**-1,
+            doc="pressure drop per unit of length in a single ED channel",
+        )
+        self.pressure_drop_total = Var(
+            self.flowsheet().time,
+            initialize=1e6,
+            units=pyunits.pascal,
+            doc="pressure drop over an entire ED stack",
+        )
+        self.friction_factor = Var(
+            initialize=10,
+            units=pyunits.dimensionless,
+            doc="friction factor of the channel fluid",
+        )
+
+        if self.config.pressure_drop_method == PressureDropMethod.Experimental:
+            _log.warning(
+                "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
+            )
+        else:  # PressureDropMethod.Darcy_Weisbach is used
+            self._get_fluid_dimensionless_quantities()
+
+            @self.Constraint(
+                self.flowsheet().time,
+                doc="To calculate pressure drop per unit length in a single channel",
+            )
+            def eq_pressure_drop(self, t):
+                return (
+                    self.pressure_drop[t]
+                    == self.dens_mass
+                    * self.friction_factor
+                    * self.velocity_D[0, 0] ** 2
+                    * 0.5
+                    * self.hydraulic_diameter**-1
+                )
+
+            if self.config.friction_factor_method == FrictionFactorMethod.defined:
+                _log.warning("Do not forget to FIX the Darcy's friction factor value!")
+            else:
+
+                @self.Constraint(
+                    doc="To calculate friction factor",
+                )
+                def eq_friction_factor(self):
+                    if (
+                        self.config.friction_factor_method
+                        == FrictionFactorMethod.Ponzio
+                    ):
+                        if value(self.Re) < 61:
+                            return self.friction_factor == 1400 * self.Re**-1
+                        else:
+                            return self.friction_factor == 104.5 * self.Re**-0.37
+                    elif (
+                        self.config.friction_factor_method
+                        == FrictionFactorMethod.Gurreri
+                    ):
+                        return (
+                            self.friction_factor
+                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.Re**-1
+                        )
+                    elif (
+                        self.config.friction_factor_method
+                        == FrictionFactorMethod.Kuroda
+                    ):
+                        return self.friction_factor == 4 * 9.6 * self.Re**-0.5
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="To calculate total pressure drop over a stack",
+        )
+        def eq_pressure_drop_total(self, t):
+            return (
+                self.pressure_drop_total[t] == self.pressure_drop[t] * self.cell_length
+            )
+
     # Intialization routines
     def initialize_build(
         blk,
@@ -1696,7 +1993,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     (
                         blk[k].membrane_areal_resistance["aem"]
                         + blk[k].membrane_areal_resistance["cem"]
-                        + blk[k].spacer_thickness
+                        + blk[k].channel_height
                         * (
                             blk[k].concentrate.properties[set].elec_cond_phase["Liq"]
                             ** -1
@@ -1774,16 +2071,26 @@ class Electrodialysis1DData(UnitModelBlockData):
         ):
             iscale.set_scaling_factor(self.solute_diffusivity_membrane, 1e10)
 
+        if hasattr(self, "general_mass_diffusivity") and (
+            iscale.get_scaling_factor(self.general_mass_diffusivity, warning=True)
+            is None
+        ):
+            iscale.set_scaling_factor(self.general_mass_diffusivity, 1e9)
+
         if (
             iscale.get_scaling_factor(self.water_permeability_membrane, warning=True)
             is None
         ):
             iscale.set_scaling_factor(self.water_permeability_membrane, 1e4)
 
-        if iscale.get_scaling_factor(self.spacer_thickness, warning=True) is None:
-            iscale.set_scaling_factor(self.spacer_thickness, 1e4)
+        if iscale.get_scaling_factor(self.channel_height, warning=True) is None:
+            iscale.set_scaling_factor(self.channel_height, 1e4)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
+        if iscale.get_scaling_factor(self.velocity_D, warning=True) is None:
+            iscale.set_scaling_factor(self.velocity_D, 1e2)
+        if iscale.get_scaling_factor(self.velocity_C, warning=True) is None:
+            iscale.set_scaling_factor(self.velocity_C, 1e2)
         if hasattr(self, "voltage_applied") and (
             iscale.get_scaling_factor(self.voltage_applied, warning=True) is None
         ):
@@ -1792,6 +2099,58 @@ class Electrodialysis1DData(UnitModelBlockData):
             iscale.get_scaling_factor(self.current_applied, warning=True) is None
         ):
             iscale.set_scaling_factor(self.current_applied, 1)
+        if hasattr(self, "friction_factor") and (
+            iscale.get_scaling_factor(self.friction_factor, warning=True) is None
+        ):
+            iscale.set_scaling_factor(self.friction_factor, 0.1)
+        if hasattr(self, "hydraulic_diameter") and (
+            iscale.get_scaling_factor(self.hydraulic_diameter, warning=True) is None
+        ):
+            iscale.set_scaling_factor(self.hydraulic_diameter, 1e3)
+        if hasattr(self, "spacer_specific_area") and (
+            iscale.get_scaling_factor(self.spacer_specific_area, warning=True) is None
+        ):
+            iscale.set_scaling_factor(self.spacer_specific_area, 1e-4)
+        if hasattr(self, "Re") and (
+            iscale.get_scaling_factor(self.Re, warning=True) is None
+        ):
+            iscale.set_scaling_factor(self.Re, 0.01)
+        if hasattr(self, "Sc") and (
+            iscale.get_scaling_factor(self.Sc, warning=True) is None
+        ):
+            sf = (
+                iscale.get_scaling_factor(self.visc_d)
+                * iscale.get_scaling_factor(self.dens_mass) ** -1
+                * iscale.get_scaling_factor(self.general_mass_diffusivity) ** -1
+            )
+            iscale.set_scaling_factor(self.Sc, sf)
+        if hasattr(self, "Sh") and (
+            iscale.get_scaling_factor(self.Sh, warning=True) is None
+        ):
+            sf = (
+                10
+                * iscale.get_scaling_factor(self.Re) ** 0.5
+                * iscale.get_scaling_factor(self.Sc) ** 0.33
+            )
+            iscale.set_scaling_factor(self.Sh, sf)
+        if hasattr(self, "pressure_drop") and (
+            iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
+        ):
+            sf = (
+                0.004
+                * iscale.get_scaling_factor(self.friction_factor)
+                * iscale.get_scaling_factor(self.cell_length)
+                * iscale.get_scaling_factor(self.velocity_D) ** 2
+                * iscale.get_scaling_factor(self.channel_height) ** -1
+            )
+            iscale.set_scaling_factor(self.pressure_drop, sf)
+        if hasattr(self, "pressure_drop_total") and (
+            iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
+        ):
+            sf = iscale.get_scaling_factor(
+                self.pressure_drop
+            ) * iscale.get_scaling_factor(self.cell_length)
+            iscale.set_scaling_factor(self.pressure_drop_total, sf)
 
         # For vars below, the users can choose but not required to provide scaling factors.
         # No warnings if no providing.
@@ -1805,7 +2164,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             ):
                 sf = (
                     iscale.get_scaling_factor(self.membrane_areal_resistance) ** 2
-                    + iscale.get_scaling_factor(self.spacer_thickness) ** 2
+                    + iscale.get_scaling_factor(self.channel_height) ** 2
                     * (
                         iscale.get_scaling_factor(
                             self.diluate.properties[ind].elec_cond_phase["Liq"]
@@ -1846,7 +2205,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                     self.current_density_x[ind]
                 ) * iscale.get_scaling_factor(self.total_areal_resistance_x[ind])
                 iscale.set_scaling_factor(self.voltage_x[ind], sf)
-
+        if iscale.get_scaling_factor(self.spacer_porosity, warning=False) is None:
+            iscale.set_scaling_factor(self.spacer_porosity, 1)
         if hasattr(self, "conc_mem_surf_mol_x"):
             for ind in self.conc_mem_surf_mol_x:
                 if iscale.get_scaling_factor(self.conc_mem_surf_mol_x[ind]) is None:
@@ -2019,6 +2379,52 @@ class Electrodialysis1DData(UnitModelBlockData):
         for ind, c in self.eq_get_voltage_x.items():
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.voltage_x[ind])
+            )
+        for ind, c in self.eq_get_velocity_D.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.diluate.properties[ind].flow_vol_phase["Liq"]
+                ),
+            )
+        for ind, c in self.eq_get_velocity_C.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.concentrate.properties[ind].flow_vol_phase["Liq"]
+                ),
+            )
+
+        if hasattr(self, "eq_Re"):
+            iscale.constraint_scaling_transform(
+                self.eq_Re, iscale.get_scaling_factor(self.Re)
+            )
+        if hasattr(self, "eq_Sc"):
+            iscale.constraint_scaling_transform(
+                self.eq_Sc, iscale.get_scaling_factor(self.Sc)
+            )
+        if hasattr(self, "eq_Sh"):
+            iscale.constraint_scaling_transform(
+                self.eq_Sh, iscale.get_scaling_factor(self.Sh)
+            )
+        if hasattr(self, "eq_pressure_drop"):
+            for i, c in self.eq_pressure_drop.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.pressure_drop)
+                )
+        if hasattr(self, "eq_hydraulic_diameter"):
+            for i, c in self.eq_hydraulic_diameter.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.hydraulic_diameter)
+                )
+        if hasattr(self, "eq_pressure_drop_total"):
+            for i, c in self.eq_pressure_drop_total.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.pressure_drop_total)
+                )
+        if hasattr(self, "eq_friction_factor"):
+            iscale.constraint_scaling_transform(
+                self.eq_friction_factor, iscale.get_scaling_factor(self.friction_factor)
             )
         if hasattr(self, "eq_potential_nonohm_membrane_x"):
             for ind, c in self.eq_potential_nonohm_membrane_x.items():
