@@ -713,8 +713,10 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         num_total_samples = req_num_samples
 
         local_output_collection = {}
-        loop_ctr = 0
-        while n_samples_remaining > 0 and loop_ctr < 10:
+        for loop_ctr in range(10):
+
+            if n_samples_remaining <= 0:
+                break
 
             if loop_ctr > 0:
                 # We need to rebuild the sweep_params since these are single use objects
@@ -770,7 +772,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
             scale_factor = 2.0 / max(success_prob, 0.10)
             num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
-            loop_ctr += 1
 
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.
