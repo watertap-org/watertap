@@ -1,19 +1,7 @@
 import numpy as np
-import pyomo.environ as pyo
-import copy
-
-from scipy.interpolate import griddata
-from enum import Enum, auto
-from abc import abstractmethod, ABC
-from idaes.core.solvers import get_solver
-
-from idaes.surrogate.pysmo import sampling
-from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.common.tee import capture_output
 from pyomo.common.config import ConfigValue
 
-from watertap.tools.parameter_sweep.parameter_sweep_writer import ParameterSweepWriter
-from watertap.tools.parameter_sweep.sampling_types import NormalSample, UniformSample
+from watertap.tools.parameter_sweep.sampling_types import NormalSample
 from watertap.tools.parameter_sweep.parameter_sweep import (
     _ParameterSweepBase,
     ParameterSweep,
