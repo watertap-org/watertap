@@ -43,8 +43,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         ),
     )
 
-    CONFIG.run_differential_sweep = True
-
     CONFIG.declare(
         "differential_sweep_specs",
         ConfigValue(
@@ -216,6 +214,44 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         return differential_sweep_output_dict
 
+    def _run_sample(
+        self,
+        model,
+        reinitialize_values,
+        local_value_k,
+        k,
+        sweep_params,
+        local_output_dict,
+    ):
+
+        run_successful = super()._run_sample(
+            model,
+            reinitialize_values,
+            local_value_k,
+            k,
+            sweep_params,
+            local_output_dict,
+        )
+        self.differential_sweep_output_dict[k] = self._run_differential_sweep(
+            model, local_value_k, self.outputs
+        )
+
+        return run_successful
+
+    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
+        self.differential_sweep_output_dict = {}
+
+        local_output_dict = super()._do_param_sweep(
+            model, sweep_params, outputs, local_values
+        )
+
+        # Now append the outputs of the differential solves
+        self._append_differential_results(
+            local_output_dict, self.differential_sweep_output_dict
+        )
+
+        return local_output_dict
+
     def parameter_sweep(
         self,
         model,
@@ -227,6 +263,8 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Create a base sweep_params
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
+
+        self.outputs = outputs
 
         # Set the seed before sampling
         self.seed = seed

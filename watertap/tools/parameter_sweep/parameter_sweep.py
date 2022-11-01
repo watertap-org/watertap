@@ -106,15 +106,6 @@ class _ParameterSweepBase(ABC):
         ),
     )
 
-    CONFIG.declare(
-        "run_differential_sweep",
-        ConfigValue(
-            default=False,
-            domain=bool,
-            description="Bool option to run run a differential parameter sweep at a value.",
-        ),
-    )
-
     def __init__(
         self,
         **options,
@@ -328,7 +319,7 @@ class _ParameterSweepBase(ABC):
         return comp_dict
 
     def _update_local_output_dict(
-        self, model, sweep_params, case_number, sweep_vals, run_successful, output_dict
+        self, sweep_params, case_number, run_successful, output_dict
     ):
 
         # Get the inputs
@@ -474,10 +465,37 @@ class _ParameterSweepBase(ABC):
 
         return run_successful
 
-    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
+    def _run_sample(
+        self,
+        model,
+        reinitialize_values,
+        local_value_k,
+        k,
+        sweep_params,
+        local_output_dict,
+    ):
+        # Update the model values with a single combination from the parameter space
+        self._update_model_values(model, sweep_params, local_value_k)
 
-        # Create easy to read variables for configurations
-        probe_function = self.config["probe_function"]
+        if self.config.probe_function is None or self.config.probe_function(model):
+            run_successful = self._param_sweep_kernel(
+                model,
+                reinitialize_values,
+            )
+        else:
+            run_successful = False
+
+        # Update the loop based on the reinitialization
+        self._update_local_output_dict(
+            sweep_params,
+            k,
+            run_successful,
+            local_output_dict,
+        )
+
+        return run_successful
+
+    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
@@ -486,8 +504,6 @@ class _ParameterSweepBase(ABC):
         local_output_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, local_num_cases
         )
-
-        local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
 
         local_solve_successful_list = []
 
@@ -502,44 +518,18 @@ class _ParameterSweepBase(ABC):
         # Run all optimization cases
         # ================================================================
 
-        differential_sweep_output_dict = {}
-
         for k in range(local_num_cases):
-            # Update the model values with a single combination from the parameter space
-            self._update_model_values(model, sweep_params, local_values[k, :])
-
-            if probe_function is None or probe_function(model):
-                run_successful = self._param_sweep_kernel(
-                    model,
-                    reinitialize_values,
-                )
-            else:
-                run_successful = False
-
-            # Update the loop based on the reinitialization
-            self._update_local_output_dict(
+            run_successful = self._run_sample(
                 model,
-                sweep_params,
-                k,
+                reinitialize_values,
                 local_values[k, :],
-                run_successful,
+                k,
+                sweep_params,
                 local_output_dict,
             )
-
             local_solve_successful_list.append(run_successful)
 
-            if self.config.run_differential_sweep:
-                differential_sweep_output_dict[k] = self._run_differential_sweep(
-                    model, local_values[k, :], outputs
-                )
-
         local_output_dict["solve_successful"] = local_solve_successful_list
-
-        if self.config.run_differential_sweep:
-            # Now append the outputs of the differential solves
-            self._append_differential_results(
-                local_output_dict, differential_sweep_output_dict
-            )
 
         return local_output_dict
 
