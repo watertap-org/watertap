@@ -176,7 +176,10 @@ class _ParameterSweepBase(ABC):
             ):
                 # Make sure num_samples are the same here and across the SamplingTypes
                 for k, v in d.items():
-                    assert v.num_samples == num_samples
+                    if v.num_samples != num_samples:
+                        raise RuntimeError(
+                            "The number of samples should be the same across all sweep parameters."
+                        )
                 nx = num_samples
             else:
                 raise ValueError(f"Unknown sampling type: {sampling_type}")
