@@ -30,20 +30,15 @@ from idaes.core import (
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 import watertap.property_models.seawater_prop_pack as props
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
-from watertap.property_models.seawater_ion_generic import configuration
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
-    fixed_variables_set,
-    activated_constraints_set,
     number_unused_variables,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
