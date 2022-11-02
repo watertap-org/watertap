@@ -30,7 +30,7 @@ Typically, the following variables are fixed for the OARO model, in addition to 
     * structural parameter
 
 On the other hand, configuring the OARO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 7 additional degrees of freedom. In this case, in addition to the
+coefficient, and pressure drop would result in 6 additional degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
     * feed-spacer porosity
@@ -38,7 +38,6 @@ previously fixed variables, we typically fix the following variables to fully sp
     * feed-velocity
     * permeate-space porosity
     * permeate-channel height
-    * permeate-side velocity
     * membrane length *or* membrane width *or* inlet Reynolds number
 
 Model Structure
