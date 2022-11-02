@@ -180,6 +180,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
        .. csv-table::
            :header: "Configuration Options", "Description"
+           
            "``HydraulicDiameterMethod.defined``", "Hydraulic diameter is defined and fixed by users" 
            "``HydraulicDiameterMethod.conventional``", "Conventional method for a rectangular channel with spacer porosity considered" 
            "``HydraulicDiameterMethod.spacer_specific_area_known``", "A method for spacer-filled channel requiring the spapcer specific area data"
