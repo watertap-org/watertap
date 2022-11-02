@@ -11,6 +11,8 @@
 #
 ###############################################################################
 
+import functools
+
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -70,6 +72,69 @@ class CrystallizerCostType(StrEnum):
     volume_basis = "volume_basis"
 
 
+def build_reverse_osmosis_cost_param_block(blk):
+
+    print("IN build_reverse_osmosis_cost_param_block")
+
+    costing = blk.parent_block()
+
+    blk.factor_membrane_replacement = pyo.Var(
+        initialize=0.2,
+        doc="Membrane replacement factor [fraction of membrane replaced/year]",
+        units=pyo.units.year**-1,
+    )
+    blk.membrane_cost = pyo.Var(
+        initialize=30,
+        doc="Membrane cost",
+        units=costing.base_currency / (pyo.units.meter**2),
+    )
+    blk.high_pressure_membrane_cost = pyo.Var(
+        initialize=75,
+        doc="Membrane cost",
+        units=costing.base_currency / (pyo.units.meter**2),
+    )
+
+
+# @staticmethod
+# TODO: move back into WaterTAPCosting class as a static method
+def register_costing_parameter_block(build_rule, parameter_block_name):
+    def register_costing_parameter_block_decorator(func):
+        @functools.wraps(func)
+        def add_costing_parameter_block(blk, *args, **kwargs):
+            parameter_block = blk.costing_package.component(parameter_block_name)
+            if parameter_block is None:
+                parameter_block = pyo.Block(rule=build_rule)
+                blk.costing_package.add_component(parameter_block_name, parameter_block)
+                blk.costing_package.parameter_block_builders[
+                    parameter_block_name
+                ] = func
+                # fix the parameters
+                for var in parameter_block.component_objects(
+                    pyo.Var, descend_into=True
+                ):
+                    var.fix()
+            elif (
+                parameter_block_name not in blk.costing_package.parameter_block_builders
+            ):
+                raise RuntimeError(
+                    f"Use the register_costing_parameter_block decorator for specifying costing-package-level parameters"
+                )
+            elif (
+                blk.costing_package.parameter_block_builders[parameter_block_name]
+                is not func
+            ):
+                raise RuntimeError(
+                    f"Attempting to add identically named costing parameter blocks to the costing package {blk.costing_package}."
+                    f"Parameter block named {parameter_block_name} was previously added by function {func.__name__} from module {func.__module__}"
+                )
+            # else we pass
+            return func(blk, *args, **kwargs)
+
+        return add_costing_parameter_block
+
+    return register_costing_parameter_block_decorator
+
+
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     def build(self):
@@ -85,6 +150,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.base_currency = pyo.units.USD_2018
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
+
+        # Define the registered functions on this block
+        self.parameter_block_builders = {}
 
         # Define standard material flows and costs
         # The WaterTAP costing package creates flows
@@ -131,28 +199,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Grid carbon intensity [kgCO2_eq/kWh]",
             units=pyo.units.kg / pyo.units.kWh,
         )
-
-        def build_reverse_osmosis_cost_param_block(blk):
-
-            costing = blk.parent_block()
-
-            blk.factor_membrane_replacement = pyo.Var(
-                initialize=0.2,
-                doc="Membrane replacement factor [fraction of membrane replaced/year]",
-                units=pyo.units.year**-1,
-            )
-            blk.membrane_cost = pyo.Var(
-                initialize=30,
-                doc="Membrane cost",
-                units=costing.base_currency / (pyo.units.meter**2),
-            )
-            blk.high_pressure_membrane_cost = pyo.Var(
-                initialize=75,
-                doc="Membrane cost",
-                units=costing.base_currency / (pyo.units.meter**2),
-            )
-
-        self.reverse_osmosis = pyo.Block(rule=build_reverse_osmosis_cost_param_block)
 
         def build_nanofiltration_cost_param_block(blk):
 
@@ -912,6 +958,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
+    @register_costing_parameter_block(
+        build_rule=build_reverse_osmosis_cost_param_block,
+        parameter_block_name="reverse_osmosis",
+    )
     def cost_reverse_osmosis(blk, ro_type=ROType.standard):
         """
         Reverse osmosis costing method
@@ -1476,6 +1526,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.costing_package.cost_flow(electricity_flow, "electricity")
         blk.costing_package.cost_flow(regen_soln_flow, blk.unit_model.regen_chem)
 
+    @staticmethod
     def cost_gac(blk):
         """
         3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
