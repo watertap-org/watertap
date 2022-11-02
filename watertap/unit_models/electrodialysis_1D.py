@@ -66,7 +66,7 @@ class ElectricalOperationMode(Enum):
 
 class PressureDropMethod(Enum):
     none = 0
-    Experimental = 1
+    experimental = 1
     Darcy_Weisbach = 2
 
 
@@ -136,16 +136,16 @@ class Electrodialysis1DData(UnitModelBlockData):
         ConfigValue(
             default=PressureDropMethod.none,
             domain=In(PressureDropMethod),
-            description="Method to account for pressure in the electrodialysis stack channels",
+            description="Method to calculate the frictional pressure drop in electrodialysis channels",
             doc="""
      **default** - ``PressureDropMethod.none``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``PressureDropMethod.none``", "The pressure drop in the electrodialysis channels is neglected" 
-           "``PressureDropMethod.Experimental``", "The pressure drop is calculated by an experimental parameter of pressure per unit lenght per channel"
-           "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation"
+           "``PressureDropMethod.none``", "The frictional pressure drop is neglected." 
+           "``PressureDropMethod.experimental``", "The pressure drop is calculated by an experimental data as pressure drop per unit lenght."
+           "``PressureDropMethod.Darcy_Weisbach``", "The pressure drop is calculated by the Darcy-Weisbach equation."
        """,
         ),
     )
@@ -174,7 +174,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         ConfigValue(
             default=HydraulicDiameterMethod.conventional,
             domain=In(HydraulicDiameterMethod),
-            description="Method to calculate the hydraulic diameter of a rectangular channel in ED",
+            description="Method to calculate the hydraulic diameter for a rectangular channel in ED",
             doc="""
      **default** - ``HydraulicDiameterMethod.conventional``
 
@@ -1793,7 +1793,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="friction factor of the channel fluid",
         )
 
-        if self.config.pressure_drop_method == PressureDropMethod.Experimental:
+        if self.config.pressure_drop_method == PressureDropMethod.experimental:
             _log.warning(
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )

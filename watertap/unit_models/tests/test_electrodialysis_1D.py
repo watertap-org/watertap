@@ -1396,7 +1396,7 @@ class Test_ED_pressure_drop_components:
             finite_elements=10,
             has_nonohmic_potential_membrane=False,
             has_Nernst_diffusion_layer=False,
-            pressure_drop_method=PressureDropMethod.Experimental,
+            pressure_drop_method=PressureDropMethod.experimental,
         )
         return m
 
