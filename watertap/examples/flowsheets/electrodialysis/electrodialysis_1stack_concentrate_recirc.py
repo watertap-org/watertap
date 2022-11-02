@@ -30,7 +30,7 @@ from idaes.core.util.initialization import propagate_state
 #from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics, variables_set
 import idaes.core.util.model_statistics as mstat
 from pyomo.core.expr.current import identify_variables
-from idaes.models.unit_models import Feed, Product, Separator, Mixer
+from idaes.models.unit_models import Feed, Product, Separator, Mixer, Pump
 from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
@@ -86,6 +86,9 @@ def build():
     ) 
     m.fs.mix0 = Mixer(property_package=m.fs.properties, energy_mixing_type = MixingType.none, momentum_mixing_type = MomentumMixingType.none,
         inlet_list=["from_feed", "from_conc_out"])
+
+    m.fs.pump0 = Pump(property_package=m.fs.properties)
+    m.fs.pump1 = Pump(property_package=m.fs.properties)
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
@@ -290,7 +293,7 @@ def simu_scenario1(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(250)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.42)
@@ -305,6 +308,7 @@ def simu_scenario1(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(0.8)
 
     #set initial values of to-be-computed vars 
     m.fs.EDstack.voltage_applied[0].fix(88.5)
@@ -336,7 +340,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.1)
@@ -351,6 +355,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(0.8)
 
     # check zero degrees of freedom
     mstat.report_statistics(m)
