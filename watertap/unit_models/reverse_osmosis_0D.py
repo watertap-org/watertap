@@ -14,22 +14,16 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Set,
     NonNegativeReals,
-    NegativeReals,
-    Reference,
-    units as pyunits,
-    exp,
     value,
-    check_optimal_termination,
 )
 
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from watertap.core import (
-    MembraneChannel0DBlock,
     ConcentrationPolarizationType,
+    MembraneChannel0DBlock,
     MassTransferCoefficient,
     PressureChangeType,
 )
@@ -37,9 +31,7 @@ from watertap.core.membrane_channel0d import CONFIG_Template
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
-    _add_object_reference_if_exists,
 )
-import idaes.logger as idaeslog
 
 
 __author__ = "Tim Bartholomew, Adam Atia"
