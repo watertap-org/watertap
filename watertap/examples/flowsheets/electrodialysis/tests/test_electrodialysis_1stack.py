@@ -118,7 +118,7 @@ class TestElectrodialysisVoltageConst:
 
         # Test the primary EDstack properties
         # test configrations
-        assert len(m.fs.EDstack.config) == 16
+        assert len(m.fs.EDstack.config) == 19
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup
         assert (
