@@ -25,9 +25,11 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
+    unused_variables_set,
 )
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
@@ -59,11 +61,11 @@ class TestLTMED:
         sys_capacity = 2000  # m3/day
         recovery_rate = 0.5  # dimentionless
 
-        m.fs.lt_med.feed_props[0].conc_mass_phase_comp["Liq", "TDS"].fix(feed_salinity)
-        m.fs.lt_med.feed_props[0].temperature.fix(feed_temperature + 273.15)
-        m.fs.lt_med.steam_props[0].temperature.fix(steam_temperature + 273.15)
-        m.fs.lt_med.Capacity.fix(sys_capacity)
-        m.fs.lt_med.RR.fix(recovery_rate)
+        m.fs.unit.feed_props[0].conc_mass_phase_comp["Liq", "TDS"].fix(feed_salinity)
+        m.fs.unit.feed_props[0].temperature.fix(feed_temperature + 273.15)
+        m.fs.unit.steam_props[0].temperature.fix(steam_temperature + 273.15)
+        m.fs.unit.Capacity.fix(sys_capacity)
+        m.fs.unit.RR.fix(recovery_rate)
 
         return m
 
@@ -88,12 +90,12 @@ class TestLTMED:
             port = getattr(m.fs.unit, port_str)
             assert isinstance(port, Port)
             # number of state variables for seawater property package
-            assert len(port.vars) == 0
+            assert len(port.vars) == 3
 
         # test statistics
-        assert number_variables(m) == 52
+        assert number_variables(m) == 181
         assert number_total_constraints(m) == 52
-        assert number_unused_variables(m) == 7  # vars from property package parameters
+        assert number_unused_variables(m) == 95  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, LT_MED_frame):

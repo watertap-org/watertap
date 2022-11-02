@@ -62,6 +62,7 @@ def BPE(dT, dS):
 
 # TO-DO:
 # Add constraints to the input variables
+# Make aliaes local
 
 
 @declare_process_block_class("LT_MED_surrogate")
@@ -164,7 +165,7 @@ class LTMEDData(UnitModelBlockData):
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False
+        tmp_dict["defined_state"] = True
 
         self.feed_props = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
@@ -269,12 +270,7 @@ class LTMEDData(UnitModelBlockData):
         def T_b_cal(b):
             return (
                 b.brine_props[0].temperature
-                == b.T_d
-                + (
-                    273.15
-                    + BPE(b.T_d, b.brine_props[0].conc_mass_phase_comp["Liq", "TDS"])
-                )
-                * pyunits.K
+                == b.T_d + (273.15 + b.brine_props[0].bpe_phase["Liq"]) * pyunits.K
             )
 
         # Set alias for brine temperature and convert to deg C
@@ -288,6 +284,7 @@ class LTMEDData(UnitModelBlockData):
             self.brine_props[0].flow_mass_phase_comp["Liq", j]
             for j in self.brine_props.component_list
         )
+
         self.q_b = pyunits.convert(
             self.brine_props[0].flow_vol_phase["Liq"],
             to_units=pyunits.m**3 / pyunits.hour,
@@ -330,10 +327,10 @@ class LTMEDData(UnitModelBlockData):
         )
 
         """
-        Add block for heating steam
+        Add block for heating steam 
         """
         tmp_dict["parameters"] = self.config.property_package2
-        tmp_dict["defined_state"] = True
+        tmp_dict["defined_state"] = False
 
         self.steam_props = self.config.property_package2.state_block_class(
             self.flowsheet().config.time,
@@ -342,6 +339,9 @@ class LTMEDData(UnitModelBlockData):
         )
 
         # Set alias for temperature and convert to degree C for surrogate model
+        # Add object reference
+        # add_object_reference(self, "Ts", )
+        # pyunits
         self.Ts = self.steam_props[0].temperature - 273.15 * pyunits.K
 
         # All in steam
@@ -408,13 +408,6 @@ class LTMEDData(UnitModelBlockData):
             bounds=(0, None),
             units=pyunits.kg / pyunits.kg,
             doc="Gained output ratio (kg of distillate water per kg of heating steam",
-        )
-
-        self.qs = Var(
-            initialize=2,
-            bounds=(0, None),
-            units=pyunits.kg / pyunits.h,
-            doc="Steam flow rate (kg/h)",
         )
 
         """
@@ -1030,5 +1023,5 @@ class LTMEDData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.GOR) is None:
             iscale.set_scaling_factor(self.GOR, 1e-1)
 
-        if iscale.get_scaling_factor(self.qs) is None:
-            iscale.set_scaling_factor(self.qs, 1e-2)
+        # if iscale.get_scaling_factor(self.qs) is None:
+        #     iscale.set_scaling_factor(self.qs, 1e-2)
