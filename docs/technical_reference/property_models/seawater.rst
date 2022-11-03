@@ -50,7 +50,7 @@ Properties
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
    "Diffusivity", ":math:`D`", "diffus_phase", "[p]", ":math:`\text{m}^2\text{/s}`"
-   "Boiling point elevation", ":math:`BPE`", "bpe_phase", "[p]", ":math:`\text{K}`"
+   "Boiling point elevation", ":math:`BPE`", "boiling_point_elevation_phase", "[p]", ":math:`\text{K}`"
 
 
 **The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
