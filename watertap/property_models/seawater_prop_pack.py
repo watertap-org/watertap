@@ -676,7 +676,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("diffus_phase_comp", 1e9)
-        self.set_default_scaling("bpe", 1e0)
+        self.set_default_scaling("boiling_point_elevation_phase", 1e0)
 
     @classmethod
     def define_metadata(cls, obj):
