@@ -1462,7 +1462,9 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_boiling_point_elevation_phase(
             b,
+            p,
         ):  # boiling point elevation of seawater from eq. 36 in Sharqawy et al. (2010)
+
             t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_phase_comp["Liq", "TDS"]
             A = b.params.bpe_A0 + b.params.bpe_A1 * t + b.params.bpe_A2 * t**2
@@ -1470,7 +1472,7 @@ class SeawaterStateBlockData(StateBlockData):
             return b.boiling_point_elevation_phase["Liq"] == A * s**2 + B * s
 
         self.eq_boiling_point_elevation_phase = Constraint(
-            rule=rule_boiling_point_elevation_phase
+            self.params.phase_list, rule=rule_boiling_point_elevation_phase
         )
 
     # -----------------------------------------------------------------------------
