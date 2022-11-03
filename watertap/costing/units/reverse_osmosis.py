@@ -23,8 +23,6 @@ class ROType(StrEnum):
 
 def build_reverse_osmosis_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
     blk.factor_membrane_replacement = pyo.Var(
         initialize=0.2,
         doc="Membrane replacement factor [fraction of membrane replaced/year]",
@@ -33,12 +31,12 @@ def build_reverse_osmosis_cost_param_block(blk):
     blk.membrane_cost = pyo.Var(
         initialize=30,
         doc="Membrane cost",
-        units=costing.base_currency / (pyo.units.meter**2),
+        units=pyo.units.USD_2018 / (pyo.units.meter**2),
     )
     blk.high_pressure_membrane_cost = pyo.Var(
         initialize=75,
         doc="Membrane cost",
-        units=costing.base_currency / (pyo.units.meter**2),
+        units=pyo.units.USD_2018 / (pyo.units.meter**2),
     )
 
 
