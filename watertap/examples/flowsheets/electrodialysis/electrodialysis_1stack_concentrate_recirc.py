@@ -111,6 +111,10 @@ def build():
     m.fs.sepa1.to_conc_in1_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_feed_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_conc_out_state[0].conc_mass_phase_comp[...]
+    m.fs.pump0.from_feed_state[0].conc_mass_phase_comp[...]
+    m.fs.pump0.from_conc_out_state[0].conc_mass_phase_comp[...]
+    m.fs.pump1.from_feed_state[0].conc_mass_phase_comp[...]
+    m.fs.pump1.from_conc_out_state[0].conc_mass_phase_comp[...]
     m.fs.prod.properties[0].conc_mass_phase_comp[...]
     m.fs.disp.properties[0].conc_mass_phase_comp[...]
 
@@ -121,6 +125,10 @@ def build():
     m.fs.sepa1.to_conc_in1_state[0].flow_vol_phase[...]
     m.fs.mix0.from_feed_state[0].flow_vol_phase[...]
     m.fs.mix0.from_conc_out_state[0].flow_vol_phase[...]
+    m.fs.pump0.from_feed_state[0].flow_vol_phase[...]
+    m.fs.pump0.from_conc_out_state[0].flow_vol_phase[...]
+    m.fs.pump1.from_feed_state[0].flow_vol_phase[...]
+    m.fs.pump1.from_conc_out_state[0].flow_vol_phase[...]
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
     m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
@@ -194,14 +202,17 @@ def build():
 
     # Add Arcs
     m.fs.arc0 = Arc(source=m.fs.feed.outlet, destination=m.fs.sepa0.inlet)
-    m.fs.arc1 = Arc(
-        source=m.fs.sepa0.to_dil, destination=m.fs.EDstack.inlet_diluate
+    m.fs.arc1b = Arc(
+        source=m.fs.sepa0.to_dil, destination=m.fs.pump1.inlet)
+    m.fs.arc1f = Arc(source=m.fs.pump1.outlet,
+        destination = m.fs.EDstack.inlet_diluate
     )
     m.fs.arc2 = Arc(
         source=m.fs.sepa0.to_conc_in0,
         destination=m.fs.mix0.from_feed,
     )
-    m.fs.arc3 = Arc(source=m.fs.mix0.outlet, destination=m.fs.EDstack.inlet_concentrate)
+    m.fs.arc3b = Arc(source=m.fs.mix0.outlet, destination=m.fs.pump0.inlet)
+    m.fs.arc3f = Arc(source=m.fs.pump0.outlet, destination=m.fs.EDstack.inlet_concentrate)
     m.fs.arc4 = Arc(
         source=m.fs.EDstack.outlet_diluate, destination=m.fs.prod.inlet
     )
@@ -268,9 +279,14 @@ def simu_scenario1(m):
     # Here is simulated a scenario of a defined EDstack and 
     # specific water recovery and product salinity.
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
-    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
-    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
+    m.fs.feed.properties[0].temperature.fix(298.15)
+    m.fs.pump1.properties_in[0].pressure.fix(101325)  # feed temperature [K]
+    m.fs.pump1.properties_in[0].temperature.fix(298.15)
+    m.fs.prod.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.prod.properties[0].temperature.fix(298.15)
+    m.fs.disp.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.disp.properties[0].temperature.fix(298.15)
+
     
     m.fs.feed.properties.calculate_state({
             ("flow_vol_phase","Liq"):4e-3,
@@ -384,20 +400,24 @@ def initialize_system(m, solver=None):
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.arc0)
     m.fs.sepa0.initialize(optarg=optarg)
-    propagate_state(m.fs.arc1)
+    propagate_state(m.fs.arc1b)
+    m.fs.pump1.initialize(optarg=optarg)
+    propagate_state(m.fs.arc1f)
+    m.fs.prod.initialize(optarg=optarg)
+    propagate_state(m.fs.arc4, direction="backward")
     propagate_state(m.fs.arc2)
-    propagate_state(destination=m.fs.EDstack.inlet_concentrate,source=m.fs.EDstack.inlet_diluate)
+    propagate_state( destination=m.fs.pump0.inlet, source=m.fs.pump1.inlet)
+    m.fs.pump0.initalize(optarg=optarg)
+    propagate_state(m.fs.arc3f)
     m.fs.EDstack.initialize(optarg=optarg)
-    propagate_state(m.fs.arc3,direction="backward")
-    propagate_state(m.fs.arc4)
     propagate_state(m.fs.arc5)
-    m.fs.prod.initialize()
-    m.fs.sepa1.split_fraction[0,"to_conc_in1"].set_value(max(2-value(m.fs.recovery_volume_H2O)**-1, 1e-8))#2-value(m.fs.recovery_volume_H2O)**-1
+    m.fs.sepa1.split_fraction[0,"to_conc_in1"].set_value(max(2-value(m.fs.recovery_volume_H2O)**-1, 1e-8))
     m.fs.sepa1.initialize(optarg=optarg)
     propagate_state(m.fs.arc6)
-    propagate_state(m.fs.arc7)
-    m.fs.mix0.initialize(optarg=optarg)
     m.fs.disp.initialize()
+    propagate_state(m.fs.arc7)
+    propagate_state(m.fs.arc3b,direction="backward")
+    m.fs.mix0.initialize(optarg=optarg)
     m.fs.costing.initialize()
 
 '''
