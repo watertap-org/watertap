@@ -681,30 +681,35 @@ class Electrodialysis1DData(UnitModelBlockData):
                 doc="Limiting Current Density accross the membrane as a function of the normalized length",
             )
             self._make_performance_dl_polarization()
-        if (not self.config.pressure_drop_method == PressureDropMethod.none) and self.config.has_pressure_change:
-            self._pressure_drop_x_calculation()
+        if (
+            not self.config.pressure_drop_method == PressureDropMethod.none
+        ) and self.config.has_pressure_change:
+            self._pressure_drop_calculation()
+
             @self.Constraint(
                 self.flowsheet().time,
                 self.diluate.length_domain,
-                doc="Express deltaP_term by the calculated pressure drop data, diluate."
-
+                doc="Express deltaP_term by the calculated pressure drop data, diluate.",
             )
-
             def eq_deltaP_diluate(self, t, x):
-                return self.diluate.deltaP[t,x] == -self.pressure_drop_x[t,x]
-           
+                return self.diluate.deltaP[t, x] == -self.pressure_drop[t]
+
             @self.Constraint(
                 self.flowsheet().time,
                 self.diluate.length_domain,
-                doc="Express deltaP_term by the calculated pressure drop data, concentrate."
-
+                doc="Express deltaP_term by the calculated pressure drop data, concentrate.",
             )
-
             def eq_deltaP_concentrate(self, t, x):
-                return self.concentrate.deltaP[t,x] == -self.pressure_drop_x[t, x]
+                return self.concentrate.deltaP[t, x] == -self.pressure_drop[t]
+
+        elif self.config.pressure_drop_method == PressureDropMethod.none and (
+            not self.config.has_pressure_change
+        ):
+            pass
         else:
-            raise ConfigurationError("A valid (not none) pressure_drop_method and has_pressure_change being True "
-                                    "must be both used or unused at the same time. " 
+            raise ConfigurationError(
+                "A valid (not none) pressure_drop_method and has_pressure_change being True "
+                "must be both used or unused at the same time. "
             )
         # To require H2O must be in the component
         if "H2O" not in self.component_set:
@@ -1774,13 +1779,12 @@ class Electrodialysis1DData(UnitModelBlockData):
 
             return self.Sh == 0.29 * self.Re**0.5 * self.Sc**0.33
 
-    def _pressure_drop_x_calculation(self):
-        self.pressure_drop_x = Var(
+    def _pressure_drop_calculation(self):
+        self.pressure_drop = Var(
             self.flowsheet().time,
-            self.diluate.length_domain,
             initialize=1e4,
             units=pyunits.pascal * pyunits.meter**-1,
-            doc="pressure drop per unit of length in a single ED channel",
+            doc="pressure drop per unit of length",
         )
         self.pressure_drop_total = Var(
             self.flowsheet().time,
@@ -1803,12 +1807,11 @@ class Electrodialysis1DData(UnitModelBlockData):
 
             @self.Constraint(
                 self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="To calculate pressure drop per unit length in a single channel",
+                doc="To calculate pressure drop per unit length",
             )
-            def eq_pressure_drop_x(self, t, x):
+            def eq_pressure_drop(self, t):
                 return (
-                    self.pressure_drop_x[t, x]
+                    self.pressure_drop[t]
                     == self.dens_mass
                     * self.friction_factor
                     * self.velocity_D[0, 0] ** 2
@@ -1852,7 +1855,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         def eq_pressure_drop_total(self, t):
             return (
-                self.pressure_drop_total[t] == self.pressure_drop_x[t, 0] * self.cell_length
+                self.pressure_drop_total[t] == self.pressure_drop[t] * self.cell_length
             )
 
     # Intialization routines
@@ -2013,6 +2016,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=state_args,
+            hold_state=False,
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
@@ -2025,6 +2029,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=state_args,
+            hold_state=False,
         )
         init_log.info_high("Initialization Step 2 Complete.")
         # ---------------------------------------------------------------------
@@ -2040,8 +2045,8 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         # ---------------------------------------------------------------------
         # Release state
-        blk.diluate.release_state(flags_diluate, outlvl)
-        blk.concentrate.release_state(flags_concentrate, outlvl)
+        # blk.diluate.release_state(flags_diluate, outlvl)
+        # blk.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def calculate_scaling_factors(self):
@@ -2134,8 +2139,8 @@ class Electrodialysis1DData(UnitModelBlockData):
                 * iscale.get_scaling_factor(self.Sc) ** 0.33
             )
             iscale.set_scaling_factor(self.Sh, sf)
-        if hasattr(self, "pressure_drop_x") and (
-            iscale.get_scaling_factor(self.pressure_drop_x, warning=True) is None
+        if hasattr(self, "pressure_drop") and (
+            iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
         ):
             sf = (
                 0.004
@@ -2144,12 +2149,12 @@ class Electrodialysis1DData(UnitModelBlockData):
                 * iscale.get_scaling_factor(self.velocity_D) ** 2
                 * iscale.get_scaling_factor(self.channel_height) ** -1
             )
-            iscale.set_scaling_factor(self.pressure_drop_x, sf)
+            iscale.set_scaling_factor(self.pressure_drop, sf)
         if hasattr(self, "pressure_drop_total") and (
             iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
         ):
             sf = iscale.get_scaling_factor(
-                self.pressure_drop_x
+                self.pressure_drop
             ) * iscale.get_scaling_factor(self.cell_length)
             iscale.set_scaling_factor(self.pressure_drop_total, sf)
 
@@ -2408,20 +2413,20 @@ class Electrodialysis1DData(UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 self.eq_Sh, iscale.get_scaling_factor(self.Sh)
             )
-        if hasattr(self, "eq_pressure_drop_x"):
-            for i, c in self.eq_pressure_drop_x.items():
+        if hasattr(self, "eq_pressure_drop"):
+            for i, c in self.eq_pressure_drop.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_drop_x)
+                    c, iscale.get_scaling_factor(self.pressure_drop)
                 )
         if hasattr(self, "eq_deltaP_diluate"):
             for i, c in self.eq_deltaP_diluate.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_drop_x)
+                    c, iscale.get_scaling_factor(self.pressure_drop)
                 )
         if hasattr(self, "eq_deltaP_concentrate"):
             for i, c in self.eq_deltaP_concentrate.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_drop_x)
+                    c, iscale.get_scaling_factor(self.pressure_drop)
                 )
         if hasattr(self, "eq_hydraulic_diameter"):
             for i, c in self.eq_hydraulic_diameter.items():

@@ -1397,6 +1397,7 @@ class Test_ED_pressure_drop_components:
             has_nonohmic_potential_membrane=False,
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.experimental,
+            has_pressure_change=True,
         )
         return m
 
@@ -1420,6 +1421,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Ponzio,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            has_pressure_change=True,
         )
         return m
 
@@ -1443,6 +1445,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.defined,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            has_pressure_change=True,
         )
         return m
 
@@ -1466,6 +1469,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Gurreri,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            has_pressure_change=True,
         )
         return m
 
@@ -1489,6 +1493,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
+            has_pressure_change=True,
         )
         return m
 
@@ -1512,6 +1517,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.defined,
+            has_pressure_change=True,
         )
         return m
 
@@ -1535,6 +1541,7 @@ class Test_ED_pressure_drop_components:
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
             hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+            has_pressure_change=True,
         )
         return m
 
@@ -1544,9 +1551,9 @@ class Test_ED_pressure_drop_components:
     ):
         ed_m = (ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
         for m in ed_m:
-            m.fs.unit.inlet_diluate.pressure.fix(101325)
+            m.fs.unit.outlet_diluate.pressure.fix(101325)
             m.fs.unit.inlet_diluate.temperature.fix(298.15)
-            m.fs.unit.inlet_concentrate.pressure.fix(101325)
+            m.fs.unit.outlet_concentrate.pressure.fix(101325)
             m.fs.unit.inlet_concentrate.temperature.fix(298.15)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(17.875)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(5.56e-2)
