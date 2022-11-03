@@ -105,22 +105,25 @@ def register_costing_parameter_block(build_rule, parameter_block_name):
             if parameter_block is None:
                 parameter_block = pyo.Block(rule=build_rule)
                 blk.costing_package.add_component(parameter_block_name, parameter_block)
-                # fix the parameters
-                for var in parameter_block.component_objects(
-                    pyo.Var, descend_into=True
-                ):
-                    var.fix()
-            elif parameter_block._rule is None:
+                # fix the parameters in case the build_rule did not
+                parameter_block.fix_all_vars()
+            elif parameter_block._rule is None or not hasattr(
+                parameter_block._rule, "_fcn"
+            ):
                 raise RuntimeError(
-                    f"Use the register_costing_parameter_block decorator for specifying costing-package-level parameters"
+                    "Use the register_costing_parameter_block decorator for specifying"
+                    "costing-package-level parameters"
                 )
             elif parameter_block._rule._fcn is not build_rule:
                 other_rule = parameter_block._rule._fcn
                 raise RuntimeError(
-                    f"Attempting to add identically named costing parameter blocks with different build_rules to the costing package {blk.costing_package}."
-                    f"Parameter block named {parameter_block_name} was previously built by function {other_rule.__name__} from module {other_rule.__module__}"
+                    "Attempting to add identically named costing parameter blocks with "
+                    "different build rules to the costing package "
+                    f"{blk.costing_package}. Parameter block named "
+                    f"{parameter_block_name} was previously built by function "
+                    f"{other_rule.__name__} from module {other_rule.__module__}"
                 )
-            # else we pass
+            # else parameter_block was constructed by build_rule previously
             return func(blk, *args, **kwargs)
 
         return add_costing_parameter_block
