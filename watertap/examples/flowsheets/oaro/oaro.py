@@ -56,6 +56,7 @@ from watertap.costing import WaterTAPCosting
 from watertap.core.util.initialization import check_dof
 from idaes.core.util.model_diagnostics import DegeneracyHunter
 from idaes.core.util.scaling import *
+from watertap.core.util.infeasible import *
 
 
 class ERDtype(StrEnum):
@@ -81,18 +82,26 @@ def main(erd_type=ERDtype.pump_as_turbine):
     #     pass
 
     # Use of Degeneracy Hunter for troubleshooting model.
-    m.fs.dummy_objective = Objective(expr=0)
-    solver.options["max_iter"] = 0
-    solver.solve(m, tee=True)
-    dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
-    dh.check_residuals(tol=0.1)
+    # m.fs.dummy_objective = Objective(expr=0)
+    # solver.options["max_iter"] = 0
+    # solver.solve(m, tee=True)
+    # dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
+    # dh.check_residuals(tol=0.1)
 
     # optimize and display
     # optimize_set_up(m)
+
+    # solve(m, solver=solver, tee=True)
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
+
     try:
         solve(m, solver=solver, tee=True)
+        print_close_to_bounds(m)
+        print_infeasible_constraints(m)
     except:
         print("Solve Failed...")
+
     # print("\n***---Simulation results---***")
     # display_system(m)
     # display_design(m)
@@ -170,17 +179,17 @@ def build(erd_type=ERDtype.pump_as_turbine):
     )
 
     # system water recovery
-    m.fs.water_recovery = Var(
-        initialize=0.5,
-        bounds=(0, 1),
-        domain=NonNegativeReals,
-        units=pyunits.dimensionless,
-        doc="System Water Recovery",
-    )
-    m.fs.eq_water_recovery = Constraint(
-        expr=m.fs.feed.properties[0].flow_vol * m.fs.water_recovery
-        == m.fs.product.properties[0].flow_vol
-    )
+    # m.fs.water_recovery = Var(
+    #     initialize=0.5,
+    #     bounds=(0, 1),
+    #     domain=NonNegativeReals,
+    #     units=pyunits.dimensionless,
+    #     doc="System Water Recovery",
+    # )
+    # m.fs.eq_water_recovery = Constraint(
+    #     expr=m.fs.feed.properties[0].flow_vol * m.fs.water_recovery
+    #     == m.fs.product.properties[0].flow_vol
+    # )
 
     # connections
     if erd_type == ERDtype.pump_as_turbine:
@@ -344,7 +353,7 @@ def set_operating_conditions(
         NaCl_passage=0.01,
         solver=solver,
     )
-    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 1e5
+    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 3e5
     m.fs.P3.control_volume.properties_out[0].pressure.setub(5e5)
     # initialize RO
     # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
@@ -464,6 +473,9 @@ def initialize_system(m, solver=None):
     m.fs.P1.initialize(optarg=optarg)
     propagate_state(m.fs.s02)
 
+    # ---initialize OARO---
+    m.fs.OARO.initialize(optarg=optarg)
+
     # propagate state from oaro perm outlet to pump 2
     propagate_state(m.fs.s05)
 
@@ -478,9 +490,6 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s08)
     propagate_state(m.fs.s09)
     propagate_state(m.fs.s10)
-
-    # ---initialize OARO---
-    m.fs.OARO.initialize(optarg=optarg)
 
     # --- initialize ERD ---
     if m.fs.erd_type == ERDtype.pump_as_turbine:
