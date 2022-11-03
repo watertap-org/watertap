@@ -10,9 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import sys
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
@@ -20,7 +18,6 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 
 from watertap.unit_models.mvc.components import Evaporator
 import watertap.property_models.seawater_prop_pack as props_sw

@@ -13,8 +13,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
     Var,
     Param,
     Suffix,

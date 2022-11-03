@@ -15,10 +15,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Param,
     Var,
-    Expression,
-    Constraint,
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
@@ -28,7 +25,6 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
-    ControlVolume0DBlock,
 )
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -49,7 +45,6 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 

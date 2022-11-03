@@ -13,7 +13,6 @@ import tempfile
 import click
 from json_schema_for_humans import generate as schema_gen
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
-from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 # package

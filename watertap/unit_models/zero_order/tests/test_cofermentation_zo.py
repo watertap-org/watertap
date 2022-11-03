@@ -22,14 +22,11 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    TransformationFactory,
     units as pyunits,
     Param,
-    Expression,
     Block,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
@@ -37,7 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import CofermentationZO, FeedZO
+from watertap.unit_models.zero_order import CofermentationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
