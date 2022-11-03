@@ -66,7 +66,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("therm_cond_phase", "Liq"): 0.6086,
             ("dh_vap_mass", None): 2.356e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
-            ("bpe_phase", "Liq"): 0.3093,
+            ("boiling_point_elevation_phase", "Liq"): 0.3093,
         }
 
 
@@ -111,7 +111,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("therm_cond_phase", "Liq"): 0.6400,
             ("dh_vap_mass", None): 2.358e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.493e-9,
-            ("bpe_phase", "Liq"): 0.0989,
+            ("boiling_point_elevation_phase", "Liq"): 0.0989,
         }
 
 
@@ -156,7 +156,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("therm_cond_phase", "Liq"): 0.5854,
             ("dh_vap_mass", None): 2.353e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
-            ("bpe_phase", "Liq"): 0.4069,
+            ("boiling_point_elevation_phase", "Liq"): 0.4069,
         }
 
 

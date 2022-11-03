@@ -705,7 +705,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-                "bpe_phase": {"method": "_bpe_phase"},
+                "boiling_point_elevation_phase": {
+                    "method": "_boiling_point_elevation_phase"
+                },
             }
         )
         # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
@@ -1449,8 +1451,8 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
-    def _bpe_phase(self):
-        self.bpe_phase = Var(
+    def _boiling_point_elevation_phase(self):
+        self.boiling_point_elevation_phase = Var(
             self.params.phase_list,
             initialize=5e-1,
             bounds=(0, 1e9),
@@ -1458,16 +1460,18 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Boiling point elevation",
         )
 
-        def rule_bpe_phase(
+        def rule_boiling_point_elevation_phase(
             b,
         ):  # boiling point elevation of seawater from eq. 36 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_phase_comp["Liq", "TDS"]
             A = b.params.bpe_A0 + b.params.bpe_A1 * t + b.params.bpe_A2 * t**2
             B = b.params.bpe_B0 + b.params.bpe_B1 * t + b.params.bpe_B2 * t**2
-            return b.bpe_phase["Liq"] == A * s**2 + B * s
+            return b.boiling_point_elevation_phase["Liq"] == A * s**2 + B * s
 
-        self.eq_bpe_phase = Constraint(rule=rule_bpe_phase)
+        self.eq_boiling_point_elevation_phase = Constraint(
+            rule=rule_boiling_point_elevation_phase
+        )
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -1648,8 +1652,8 @@ class SeawaterStateBlockData(StateBlockData):
                 * iscale.get_scaling_factor(self.enth_mass_phase["Liq"]),
             )
 
-        if self.is_property_constructed("bpe_phase"):
-            iscale.set_scaling_factor(self.bpe_phase["Liq"], 1)
+        if self.is_property_constructed("boiling_point_elevation_phase"):
+            iscale.set_scaling_factor(self.boiling_point_elevation_phase["Liq"], 1)
 
         # transforming constraints
         # property relationships with no index, simple constraint
@@ -1680,7 +1684,7 @@ class SeawaterStateBlockData(StateBlockData):
             "enth_mass_phase",
             "cp_mass_phase",
             "therm_cond_phase",
-            "bpe_phase",
+            "boiling_point_elevation_phase",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
