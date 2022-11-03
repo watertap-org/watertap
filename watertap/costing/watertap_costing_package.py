@@ -105,27 +105,20 @@ def register_costing_parameter_block(build_rule, parameter_block_name):
             if parameter_block is None:
                 parameter_block = pyo.Block(rule=build_rule)
                 blk.costing_package.add_component(parameter_block_name, parameter_block)
-                blk.costing_package.parameter_block_builders[
-                    parameter_block_name
-                ] = func
                 # fix the parameters
                 for var in parameter_block.component_objects(
                     pyo.Var, descend_into=True
                 ):
                     var.fix()
-            elif (
-                parameter_block_name not in blk.costing_package.parameter_block_builders
-            ):
+            elif parameter_block._rule is None:
                 raise RuntimeError(
                     f"Use the register_costing_parameter_block decorator for specifying costing-package-level parameters"
                 )
-            elif (
-                blk.costing_package.parameter_block_builders[parameter_block_name]
-                is not func
-            ):
+            elif parameter_block._rule._fcn is not build_rule:
+                other_rule = parameter_block._rule._fcn
                 raise RuntimeError(
-                    f"Attempting to add identically named costing parameter blocks to the costing package {blk.costing_package}."
-                    f"Parameter block named {parameter_block_name} was previously added by function {func.__name__} from module {func.__module__}"
+                    f"Attempting to add identically named costing parameter blocks with different build_rules to the costing package {blk.costing_package}."
+                    f"Parameter block named {parameter_block_name} was previously built by function {other_rule.__name__} from module {other_rule.__module__}"
                 )
             # else we pass
             return func(blk, *args, **kwargs)
@@ -150,9 +143,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.base_currency = pyo.units.USD_2018
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
-
-        # Define the registered functions on this block
-        self.parameter_block_builders = {}
 
         # Define standard material flows and costs
         # The WaterTAP costing package creates flows
