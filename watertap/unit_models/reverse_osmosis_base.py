@@ -565,6 +565,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                 res = opt.solve(self, tee=slc.tee)
 
         # release inlet state, in case this error is caught
+
         self.feed_side.release_state(source_flags, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
