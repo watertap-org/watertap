@@ -676,7 +676,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("diffus_phase_comp", 1e9)
-        self.set_default_scaling("boiling_point_elevation_phase", 1e0)
+        self.set_default_scaling("boiling_point_elevation_phase", 1e0, index="Liq")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1461,15 +1461,14 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_boiling_point_elevation_phase(
-            b,
-            p,
+            b, p
         ):  # boiling point elevation of seawater from eq. 36 in Sharqawy et al. (2010)
 
             t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_phase_comp["Liq", "TDS"]
             A = b.params.bpe_A0 + b.params.bpe_A1 * t + b.params.bpe_A2 * t**2
             B = b.params.bpe_B0 + b.params.bpe_B1 * t + b.params.bpe_B2 * t**2
-            return b.boiling_point_elevation_phase["Liq"] == A * s**2 + B * s
+            return b.boiling_point_elevation_phase[p] == A * s**2 + B * s
 
         self.eq_boiling_point_elevation_phase = Constraint(
             self.params.phase_list, rule=rule_boiling_point_elevation_phase
@@ -1678,6 +1677,14 @@ class SeawaterStateBlockData(StateBlockData):
             )
             iscale.constraint_scaling_transform(self.eq_pressure_osm_phase["Liq"], sf)
 
+        if self.is_property_constructed("boiling_point_elevation_phase"):
+            sf = iscale.get_scaling_factor(
+                self.boiling_point_elevation_phase["Liq"], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                self.eq_boiling_point_elevation_phase["Liq"], sf
+            )
+
         # property relationships with phase index, but simple constraint
         v_str_lst_phase = [
             "dens_mass_phase",
@@ -1686,7 +1693,6 @@ class SeawaterStateBlockData(StateBlockData):
             "enth_mass_phase",
             "cp_mass_phase",
             "therm_cond_phase",
-            "boiling_point_elevation_phase",
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
