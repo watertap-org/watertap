@@ -1610,12 +1610,12 @@ class Electrodialysis0DData(UnitModelBlockData):
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release state
-        try:
-            blk.diluate.release_state(flags_diluate, outlvl)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-            blk.concentrate.release_state(flags_concentrate, outlvl)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        except InitializationError:
+        blk.diluate.release_state(flags_diluate, outlvl)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        blk.concentrate.release_state(flags_concentrate, outlvl)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):

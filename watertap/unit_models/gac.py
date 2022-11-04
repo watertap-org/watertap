@@ -1068,10 +1068,10 @@ class GACData(UnitModelBlockData):
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        try:
-            blk.process_flow.release_state(flags, outlvl + 1)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        except InitializationError:
+        blk.process_flow.release_state(flags, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     # ---------------------------------------------------------------------

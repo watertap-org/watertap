@@ -899,10 +899,10 @@ class CoagulationFlocculationData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        try:
-            blk.control_volume.release_state(flags, outlvl + 1)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        except InitializationError:
+        blk.control_volume.release_state(flags, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):

@@ -1243,10 +1243,10 @@ class IonExchangeODData(UnitModelBlockData):
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        try:
-            blk.properties_in.release_state(flags, outlvl=outlvl)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        except InitializationError:
+        blk.properties_in.release_state(flags, outlvl=outlvl)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):

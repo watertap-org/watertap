@@ -451,10 +451,10 @@ class PressureExchangerData(UnitModelBlockData):
         init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
 
         # release state of fixed variables
-        try:
-            self.low_pressure_side.properties_in.release_state(flags_low_in)
-            self.high_pressure_side.properties_in.release_state(flags_high_in)
-        except InitializationError:
+        self.low_pressure_side.properties_in.release_state(flags_low_in)
+        self.high_pressure_side.properties_in.release_state(flags_high_in)
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         # reactivate volumetric flow constraint

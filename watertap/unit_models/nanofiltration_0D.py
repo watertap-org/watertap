@@ -599,10 +599,10 @@ class NanoFiltrationData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        try:
-            blk.feed_side.release_state(flags, outlvl + 1)
-            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        except InitializationError:
+        blk.feed_side.release_state(flags, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
