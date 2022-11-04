@@ -41,7 +41,10 @@ from watertap.unit_models import (
 
 from .units.crystallizer import cost_crystallizer, CrystallizerCostType
 from .units.electrodialysis import cost_electrodialysis
-from .units.energy_recovery_device import cost_energy_recovery_device
+from .units.energy_recovery_device import (
+    cost_energy_recovery_device,
+    EnergyRecoveryDeviceType,
+)
 from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
 from .units.nanofiltration import cost_nanofiltration
@@ -154,7 +157,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 units=pyo.units.dimensionless,
             )
 
-        self.naocl = pyo.Block(rule=build_naoh_cost_param_block)
+        self.naocl = pyo.Block(rule=build_naocl_cost_param_block)
         self.available_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
 
         def build_caoh2_cost_param_block(blk):
