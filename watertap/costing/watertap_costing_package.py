@@ -39,19 +39,16 @@ from watertap.unit_models import (
     GAC,
 )
 
-from .units.crystallizer import cost_crystallizer, CrystallizerCostType
+from .units.crystallizer import cost_crystallizer
 from .units.electrodialysis import cost_electrodialysis
-from .units.energy_recovery_device import (
-    cost_energy_recovery_device,
-    EnergyRecoveryDeviceType,
-)
+from .units.energy_recovery_device import cost_energy_recovery_device
 from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
 from .units.nanofiltration import cost_nanofiltration
-from .units.mixer import cost_mixer, MixerType
+from .units.mixer import cost_mixer
 from .units.pressure_exchanger import cost_pressure_exchanger
-from .units.pump import cost_pump, PumpType
-from .units.reverse_osmosis import cost_reverse_osmosis, ROType
+from .units.pump import cost_pump
+from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
 
 
