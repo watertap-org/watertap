@@ -713,10 +713,7 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
 
-        try:
-            m.fs.ROUnits[stage].initialize(optarg=optarg)
-        except InitializationError:
-            pass
+        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
@@ -747,10 +744,7 @@ def do_backward_initialization_pass(m, optarg):
     for stage in reversed(m.fs.NonFinalStages):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
-        try:
-            m.fs.ROUnits[stage].initialize(optarg=optarg)
-        except InitializationError:
-            pass
+        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
         if stage == first_stage:
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_ERD_to_pump)
@@ -788,10 +782,12 @@ def initialize(m, verbose=True, solver=None):
     # run SD tool
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
-        try:
+        if "ROUnits" in unit.name:
+            unit.initialize(
+                optarg=solver.options, outlvl=outlvl, raise_on_failure=False
+            )
+        else:
             unit.initialize(optarg=solver.options, outlvl=outlvl)
-        except InitializationError:
-            pass
 
     seq.run(m, func_initialize)
 

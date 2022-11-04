@@ -487,6 +487,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for RO initialization routines
