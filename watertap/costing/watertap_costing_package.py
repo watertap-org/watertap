@@ -121,7 +121,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             mutable=True,
             initialize=0.07,
             doc="Electricity cost",
-            units=self.base_currency / pyo.units.kWh,
+            units=pyo.units.USD_2018 / pyo.units.kWh,
         )
         self.available_flows["electricity"] = self.electricity_base_cost
 
@@ -132,9 +132,49 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.kg / pyo.units.kWh,
         )
 
-        def build_hcl_cost_param_block(blk):
+        # Crystallizer operating cost information from literature
+        self.steam_unit_cost = pyo.Var(
+            initialize=0.004,
+            units=pyo.units.USD_2018 / (pyo.units.meter**3),
+            doc="Steam cost, Panagopoulos (2019)",
+        )
+        self.available_flows["steam"] = self.steam_unit_cost
 
-            costing = blk.parent_block()
+        def build_naocl_cost_param_block(blk):
+
+            blk.cost = pyo.Param(
+                initialize=0.23,
+                doc="NaOCl cost",
+                units=pyo.units.USD_2018 / pyo.units.kg,
+            )
+            blk.purity = pyo.Param(
+                mutable=True,
+                initialize=0.15,
+                doc="NaOCl purity",
+                units=pyo.units.dimensionless,
+            )
+
+        self.naocl = pyo.Block(rule=build_naoh_cost_param_block)
+        self.available_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
+
+        def build_caoh2_cost_param_block(blk):
+            blk.cost = pyo.Param(
+                mutable=True,
+                initialize=0.12,
+                doc="CaOH2 cost",
+                units=pyo.units.USD_2018 / pyo.units.kg,
+            )
+            blk.purity = pyo.Param(
+                mutable=True,
+                initialize=1,
+                doc="CaOH2 purity",
+                units=pyo.units.dimensionless,
+            )
+
+        self.caoh2 = pyo.Block(rule=build_caoh2_cost_param_block)
+        self.available_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
+
+        def build_hcl_cost_param_block(blk):
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -148,13 +188,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="HCl purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["HCl"] = blk.cost / blk.purity
 
         self.hcl = pyo.Block(rule=build_hcl_cost_param_block)
+        self.available_flows["HCl"] = self.hcl.cost / self.hcl.purity
 
         def build_naoh_cost_param_block(blk):
-
-            costing = blk.parent_block()
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -169,15 +207,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaOH purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["NaOH"] = blk.cost / blk.purity
 
         self.naoh = pyo.Block(rule=build_naoh_cost_param_block)
+        self.available_flows["NaOH"] = self.naoh.cost / self.naoh.purity
 
         def build_meoh_cost_param_block(blk):
             # MeOH = Methanol
-
-            costing = blk.parent_block()
-
             blk.cost = pyo.Param(
                 mutable=True,
                 initialize=3.395,
@@ -191,13 +226,11 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="MeOH purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["MeOH"] = blk.cost / blk.purity
 
         self.meoh = pyo.Block(rule=build_meoh_cost_param_block)
+        self.available_flows["MeOH"] = self.meoh.cost / self.meoh.purity
 
         def build_nacl_cost_param_block(blk):
-
-            costing = blk.parent_block()
 
             blk.cost = pyo.Param(
                 mutable=True,
@@ -212,9 +245,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 doc="NaCl purity",
                 units=pyo.units.dimensionless,
             )
-            costing.available_flows["NaCl"] = blk.cost / blk.purity
 
         self.nacl = pyo.Block(rule=build_nacl_cost_param_block)
+        self.available_flows["NaCl"] = self.nacl.cost / self.nacl.purity
 
         # fix the parameters
         for var in self.component_objects(pyo.Var, descend_into=True):

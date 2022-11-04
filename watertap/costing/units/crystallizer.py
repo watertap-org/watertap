@@ -81,14 +81,6 @@ def build_crystallizer_cost_param_block(blk):
         units=pyo.units.dimensionless,
     )
 
-    # Crystallizer operating cost information from literature
-    blk.steam_unit_cost = pyo.Var(
-        initialize=0.004,
-        units=pyo.units.USD_2018 / (pyo.units.meter**3),
-        doc="Steam cost, Panagopoulos (2019)",
-    )
-    blk.parent_block().available_flows["steam"] = blk.steam_unit_cost
-
 
 def cost_crystallizer(blk, cost_type=CrystallizerCostType.default):
     """

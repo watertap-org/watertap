@@ -79,32 +79,18 @@ def cost_default_mixer(blk):
     )
 
 
-def build_naocl_cost_param_block(blk):
+def build_naocl_mixer_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
-    blk.mixer_unit_cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=5.08,
         doc="NaOCl mixer cost",
         units=pyo.units.USD_2018 / (pyo.units.m**3 / pyo.units.day),
     )
-    blk.cost = pyo.Param(
-        initialize=0.23,
-        doc="NaOCl cost",
-        units=pyo.units.USD_2018 / pyo.units.kg,
-    )
-    blk.purity = pyo.Param(
-        mutable=True,
-        initialize=0.15,
-        doc="NaOCl purity",
-        units=pyo.units.dimensionless,
-    )
-    costing.available_flows["NaOCl"] = blk.cost / blk.purity
 
 
 @register_costing_parameter_block(
-    build_rule=build_naocl_cost_param_block,
-    parameter_block_name="naocl",
+    build_rule=build_naocl_mixer_cost_param_block,
+    parameter_block_name="naocl_mixer",
 )
 def cost_naocl_mixer(blk, dosing_rate):
     """
@@ -117,7 +103,7 @@ def cost_naocl_mixer(blk, dosing_rate):
     """
     cost_by_flow_volume(
         blk,
-        blk.costing_package.naocl.mixer_unit_cost,
+        blk.costing_package.naocl_mixer.unit_cost,
         pyo.units.convert(
             blk.unit_model.inlet_stream_state[0].flow_vol,
             pyo.units.m**3 / pyo.units.day,
@@ -128,33 +114,18 @@ def cost_naocl_mixer(blk, dosing_rate):
     )
 
 
-def build_caoh2_cost_param_block(blk):
+def build_caoh2_mixer_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
-    blk.mixer_unit_cost = pyo.Var(
+    blk.unit_cost = pyo.Var(
         initialize=792.8 * 2.20462,
         doc="Ca(OH)2 mixer cost",
         units=pyo.units.USD_2018 / (pyo.units.kg / pyo.units.day),
     )
-    blk.cost = pyo.Param(
-        mutable=True,
-        initialize=0.12,
-        doc="CaOH2 cost",
-        units=pyo.units.USD_2018 / pyo.units.kg,
-    )
-    blk.purity = pyo.Param(
-        mutable=True,
-        initialize=1,
-        doc="CaOH2 purity",
-        units=pyo.units.dimensionless,
-    )
-    costing.available_flows["CaOH2"] = blk.cost / blk.purity
 
 
 @register_costing_parameter_block(
-    build_rule=build_caoh2_cost_param_block,
-    parameter_block_name="caoh2",
+    build_rule=build_caoh2_mixer_cost_param_block,
+    parameter_block_name="caoh2_mixer",
 )
 def cost_caoh2_mixer(blk, dosing_rate):
     """
@@ -174,7 +145,7 @@ def cost_caoh2_mixer(blk, dosing_rate):
     )
     cost_by_flow_volume(
         blk,
-        blk.costing_package.caoh2.mixer_unit_cost
+        blk.costing_package.caoh2_mixer.unit_cost
         / blk.costing_package.factor_total_investment,
         blk.lime_kg_per_day,
     )
