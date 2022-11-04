@@ -11,6 +11,8 @@
 #
 ###############################################################################
 
+from collections import MutableMapping
+
 import pyomo.environ as pyo
 
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -52,6 +54,21 @@ from .units.reverse_osmosis import cost_reverse_osmosis
 from .units.uv_aop import cost_uv_aop
 
 
+class _DefinedFlowsDict(MutableMapping, dict):
+    # use dict methods
+    __getitem__ = dict.__getitem__
+    __iter__ = dict.__iter__
+    __len__ = dict.__len__
+
+    def __setitem__(self, key, value):
+        if key in self:
+            raise KeyError(f"{key} has already been defined as a flow")
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        raise KeyError("defined flows cannot be removed")
+
+
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
     # Define default mapping of costing methods to unit models
@@ -89,10 +106,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         # Define standard material flows and costs
         # The WaterTAP costing package creates flows
         # in a lazy fashion, the first time `cost_flow`
-        # is called for a flow. The `available_flows`
-        # are all the flows which can be costed with
-        # the WaterTAP costing package.
-        self.available_flows = {}
+        # is called for a flow. The `_DefinedFlowsDict`
+        # prevents defining more than one flow with
+        # the same name.
+        self.defined_flows = _DefinedFlowsDict()
 
         # Build flowsheet level costing components
         # These are the global parameters
@@ -123,7 +140,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Electricity cost",
             units=pyo.units.USD_2018 / pyo.units.kWh,
         )
-        self.available_flows["electricity"] = self.electricity_base_cost
+        self.defined_flows["electricity"] = self.electricity_base_cost
 
         self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
@@ -138,7 +155,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.USD_2018 / (pyo.units.meter**3),
             doc="Steam cost, Panagopoulos (2019)",
         )
-        self.available_flows["steam"] = self.steam_unit_cost
+        self.defined_flows["steam"] = self.steam_unit_cost
 
         def build_naocl_cost_param_block(blk):
 
@@ -155,7 +172,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.naocl = pyo.Block(rule=build_naocl_cost_param_block)
-        self.available_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
+        self.defined_flows["NaOCl"] = self.naocl.cost / self.naocl.purity
 
         def build_caoh2_cost_param_block(blk):
             blk.cost = pyo.Param(
@@ -172,7 +189,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.caoh2 = pyo.Block(rule=build_caoh2_cost_param_block)
-        self.available_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
+        self.defined_flows["CaOH2"] = self.caoh2.cost / self.caoh2.purity
 
         def build_hcl_cost_param_block(blk):
 
@@ -190,7 +207,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.hcl = pyo.Block(rule=build_hcl_cost_param_block)
-        self.available_flows["HCl"] = self.hcl.cost / self.hcl.purity
+        self.defined_flows["HCl"] = self.hcl.cost / self.hcl.purity
 
         def build_naoh_cost_param_block(blk):
 
@@ -209,7 +226,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.naoh = pyo.Block(rule=build_naoh_cost_param_block)
-        self.available_flows["NaOH"] = self.naoh.cost / self.naoh.purity
+        self.defined_flows["NaOH"] = self.naoh.cost / self.naoh.purity
 
         def build_meoh_cost_param_block(blk):
             # MeOH = Methanol
@@ -228,7 +245,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.meoh = pyo.Block(rule=build_meoh_cost_param_block)
-        self.available_flows["MeOH"] = self.meoh.cost / self.meoh.purity
+        self.defined_flows["MeOH"] = self.meoh.cost / self.meoh.purity
 
         def build_nacl_cost_param_block(blk):
 
@@ -247,7 +264,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             )
 
         self.nacl = pyo.Block(rule=build_nacl_cost_param_block)
-        self.available_flows["NaCl"] = self.nacl.cost / self.nacl.purity
+        self.defined_flows["NaCl"] = self.nacl.cost / self.nacl.purity
 
         # fix the parameters
         for var in self.component_objects(pyo.Var, descend_into=True):
@@ -271,14 +288,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             ValueError if flow_type is not recognized.
             TypeError if flow_expr is an indexed Var.
         """
-        if flow_type not in self.available_flows:
+        if flow_type not in self.defined_flows:
             raise ValueError(
                 f"{flow_type} is not a recognized flow type. Please check "
                 "your spelling and that the flow type has been available to"
                 " the FlowsheetCostingBlock."
             )
         if flow_type not in self.flow_types:
-            self.register_flow_type(flow_type, self.available_flows[flow_type])
+            self.register_flow_type(flow_type, self.defined_flows[flow_type])
         super().cost_flow(flow_expr, flow_type)
 
     def build_process_costs(self):
