@@ -12,6 +12,7 @@
 ###############################################################################
 
 import pyomo.environ as pyo
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import StrEnum
 from ..util import cost_membrane, register_costing_parameter_block
 

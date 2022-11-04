@@ -93,66 +93,6 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     )
 
 
-def cost_electrodialysis_stack(
-    blk,
-    membrane_cost,
-    spacer_cost,
-    membrane_replacement_factor,
-    electrode_cost,
-    electrode_replacement_factor,
-):
-    """
-    Generic function for costing the stack in an electrodialysis unit.
-    Assumes the unit_model has a `cell_pair_num`, `cell_width`, and `cell_length`
-    set of variables used to size the total membrane area.
-
-    Args:
-        membrane_cost - The total cost of the CEM and AEM per cell pair in currency per area
-
-        spacer_cost - The total cost of the spacers per cell pair in currency per area
-
-        membrane_replacement_factor - Replacement factor for membranes and spacers
-                                      [fraction of membranes/spacers replaced/year]
-
-        electrode_cost - The total cost of electrodes in a given stack in currency per area
-
-        electrode_replacement_factor - Replacement factor for electrodes
-                                        [fraction of electrodes replaced/year]
-    """
-    make_capital_cost_var(blk)
-    make_fixed_operating_cost_var(blk)
-
-    blk.membrane_cost = pyo.Expression(expr=membrane_cost)
-    blk.membrane_replacement_factor = pyo.Expression(expr=membrane_replacement_factor)
-    blk.spacer_cost = pyo.Expression(expr=spacer_cost)
-    blk.electrode_cost = pyo.Expression(expr=electrode_cost)
-    blk.electrode_replacement_factor = pyo.Expression(expr=electrode_replacement_factor)
-
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == (blk.membrane_cost + blk.spacer_cost)
-        * (
-            blk.unit_model.cell_pair_num
-            * blk.unit_model.cell_width
-            * blk.unit_model.cell_length
-        )
-        + blk.electrode_cost * (blk.unit_model.cell_width * blk.unit_model.cell_length)
-    )
-    blk.fixed_operating_cost_constraint = pyo.Constraint(
-        expr=blk.fixed_operating_cost
-        == blk.membrane_replacement_factor
-        * (blk.membrane_cost + blk.spacer_cost)
-        * (
-            blk.unit_model.cell_pair_num
-            * blk.unit_model.cell_width
-            * blk.unit_model.cell_length
-        )
-        + blk.electrode_replacement_factor
-        * blk.electrode_cost
-        * (blk.unit_model.cell_width * blk.unit_model.cell_length)
-    )
-
-
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
     Generic function for costing by flow volume.
@@ -165,37 +105,4 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost == blk.flow_cost * flow_to_cost
-    )
-
-
-def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_lamp_replacement):
-    """
-    Generic function for costing a UV system.
-
-    Args:
-        reactor_cost - The cost of UV reactor in [currency]/[volume]
-        lamp_cost - The costs of the lamps, sleeves, ballasts and sensors in [currency]/[kW]
-    """
-    make_capital_cost_var(blk)
-    make_fixed_operating_cost_var(blk)
-    blk.reactor_cost = pyo.Expression(expr=reactor_cost)
-    blk.lamp_cost = pyo.Expression(expr=lamp_cost)
-    blk.factor_lamp_replacement = pyo.Expression(expr=factor_lamp_replacement)
-
-    flow_in = pyo.units.convert(
-        blk.unit_model.control_volume.properties_in[0].flow_vol,
-        to_units=pyo.units.m**3 / pyo.units.hr,
-    )
-
-    electricity_demand = pyo.units.convert(
-        blk.unit_model.electricity_demand[0], to_units=pyo.units.kW
-    )
-
-    blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost
-        == blk.reactor_cost * flow_in + blk.lamp_cost * electricity_demand
-    )
-    blk.fixed_operating_cost_constraint = pyo.Constraint(
-        expr=blk.fixed_operating_cost
-        == blk.factor_lamp_replacement * blk.lamp_cost * electricity_demand
     )
