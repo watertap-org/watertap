@@ -33,9 +33,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
+from watertap.costing import WaterTAPCosting
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 
 __author__ = "Xiangyu Bi"

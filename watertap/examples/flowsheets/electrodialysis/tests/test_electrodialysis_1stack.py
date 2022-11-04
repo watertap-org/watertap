@@ -46,10 +46,7 @@ from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-    make_capital_cost_var,
-)
+from watertap.costing import WaterTAPCosting
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
 
