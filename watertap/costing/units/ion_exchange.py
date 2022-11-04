@@ -20,6 +20,85 @@ from ..util import (
 )
 
 
+def build_hcl_cost_param_block(blk):
+
+    blk.cost = pyo.Param(
+        mutable=True,
+        initialize=0.17,
+        doc="HCl cost",  # for 37% sol'n - CatCost v 1.0.4
+        units=pyo.units.USD_2020 / pyo.units.kg,
+    )
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=0.37,
+        doc="HCl purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["HCl"] = blk.cost / blk.purity
+
+
+def build_naoh_cost_param_block(blk):
+
+    blk.cost = pyo.Param(
+        mutable=True,
+        initialize=0.59,
+        doc="NaOH cost",  # for 30% sol'n - iDST
+        units=pyo.units.USD_2020 / pyo.units.kg,
+    )
+
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=0.30,
+        doc="NaOH purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["NaOH"] = blk.cost / blk.purity
+
+
+def build_meoh_cost_param_block(blk):
+    # MeOH = Methanol
+    blk.cost = pyo.Param(
+        mutable=True,
+        initialize=3.395,
+        doc="MeOH cost",  # for 100% purity - ICIS
+        units=pyo.units.USD_2008 / pyo.units.kg,
+    )
+
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=1,
+        doc="MeOH purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["MeOH"] = blk.cost / blk.purity
+
+
+def build_nacl_cost_param_block(blk):
+
+    blk.cost = pyo.Param(
+        mutable=True,
+        initialize=0.09,
+        doc="NaCl cost",  # for solid, 100% purity - CatCost
+        units=pyo.units.USD_2020 / pyo.units.kg,
+    )
+
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=1,
+        doc="NaCl purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["NaCl"] = blk.cost / blk.purity
+
+
 def build_ion_exhange_cost_param_block(blk):
     blk.anion_exchange_resin_cost = pyo.Var(
         initialize=205,
@@ -117,6 +196,22 @@ def build_ion_exhange_cost_param_block(blk):
     )
 
 
+@register_costing_parameter_block(
+    build_rule=build_hcl_cost_param_block,
+    parameter_block_name="hcl",
+)
+@register_costing_parameter_block(
+    build_rule=build_naoh_cost_param_block,
+    parameter_block_name="naoh",
+)
+@register_costing_parameter_block(
+    build_rule=build_meoh_cost_param_block,
+    parameter_block_name="meoh",
+)
+@register_costing_parameter_block(
+    build_rule=build_nacl_cost_param_block,
+    parameter_block_name="nacl",
+)
 @register_costing_parameter_block(
     build_rule=build_ion_exhange_cost_param_block,
     parameter_block_name="ion_exchange",

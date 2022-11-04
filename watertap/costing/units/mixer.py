@@ -25,8 +25,6 @@ class MixerType(StrEnum):
 
 def build_mixer_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
     blk.unit_cost = pyo.Var(
         initialize=361,
         doc="Mixer cost",
@@ -88,6 +86,27 @@ def build_naocl_mixer_cost_param_block(blk):
     )
 
 
+def build_naocl_cost_param_block(blk):
+
+    blk.cost = pyo.Param(
+        initialize=0.23,
+        doc="NaOCl cost",
+        units=pyo.units.USD_2018 / pyo.units.kg,
+    )
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=0.15,
+        doc="NaOCl purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["NaOCl"] = blk.cost / blk.purity
+
+
+@register_costing_parameter_block(
+    build_rule=build_naocl_cost_param_block, parameter_block_name="naocl"
+)
 @register_costing_parameter_block(
     build_rule=build_naocl_mixer_cost_param_block,
     parameter_block_name="naocl_mixer",
@@ -114,6 +133,24 @@ def cost_naocl_mixer(blk, dosing_rate):
     )
 
 
+def build_caoh2_cost_param_block(blk):
+    blk.cost = pyo.Param(
+        mutable=True,
+        initialize=0.12,
+        doc="CaOH2 cost",
+        units=pyo.units.USD_2018 / pyo.units.kg,
+    )
+    blk.purity = pyo.Param(
+        mutable=True,
+        initialize=1,
+        doc="CaOH2 purity",
+        units=pyo.units.dimensionless,
+    )
+
+    costing = blk.parent_block()
+    costing.defined_flows["CaOH2"] = blk.cost / blk.purity
+
+
 def build_caoh2_mixer_cost_param_block(blk):
 
     blk.unit_cost = pyo.Var(
@@ -123,6 +160,9 @@ def build_caoh2_mixer_cost_param_block(blk):
     )
 
 
+@register_costing_parameter_block(
+    build_rule=build_caoh2_cost_param_block, parameter_block_name="caoh2"
+)
 @register_costing_parameter_block(
     build_rule=build_caoh2_mixer_cost_param_block,
     parameter_block_name="caoh2_mixer",
