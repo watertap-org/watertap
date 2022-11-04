@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from collections import MutableMapping
+from collections.abc import MutableMapping
 
 import pyomo.environ as pyo
 
