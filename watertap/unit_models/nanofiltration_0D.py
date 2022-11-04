@@ -13,7 +13,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     Set,
     Var,
     check_optimal_termination,

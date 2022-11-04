@@ -145,7 +145,7 @@ class TestCoolingTowerZO_w_default_removal:
         assert pytest.approx(107.143, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(9.5238e-8, rel=1e-5) == value(
+        assert pytest.approx(5.0650437e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])

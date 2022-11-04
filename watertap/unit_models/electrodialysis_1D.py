@@ -18,7 +18,6 @@ from pyomo.environ import (
     Suffix,
     Constraint,
     NonNegativeReals,
-    NonNegativeIntegers,
     value,
     units as pyunits,
     log,

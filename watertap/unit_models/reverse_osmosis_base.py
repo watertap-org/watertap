@@ -12,11 +12,9 @@
 ###############################################################################
 
 from copy import deepcopy
-from enum import Enum, auto
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import Bool, ConfigValue
 from pyomo.environ import (
-    Block,
     NonNegativeReals,
     Param,
     Suffix,
