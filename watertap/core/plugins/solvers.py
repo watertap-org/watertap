@@ -104,7 +104,7 @@ class IpoptWaterTAP(IPOPT):
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
         try:
-            iscale.constraint_autoscale_large_jac(
+            _, _, nlp = iscale.constraint_autoscale_large_jac(
                 self._model,
                 ignore_constraint_scaling=ignore_constraint_scaling,
                 ignore_variable_scaling=ignore_variable_scaling,
@@ -112,6 +112,7 @@ class IpoptWaterTAP(IPOPT):
                 min_scale=min_scale,
             )
         except Exception as err:
+            nlp = None
             if str(err) == "Error in AMPL evaluation":
                 print(
                     "ipopt-watertap: Issue in AMPL function evaluation; Jacobian constraint scaling not applied."
@@ -131,6 +132,13 @@ class IpoptWaterTAP(IPOPT):
                 print("Error in constraint_autoscale_large_jac")
                 self._cleanup()
                 raise
+
+        # set different default for `alpha_for_y` if this is an LP
+        # see: https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_alpha_for_y
+        if nlp is not None:
+            if nlp.nnz_hessian_lag() == 0:
+                if "alpha_for_y" not in self.options:
+                    self.options["alpha_for_y"] = "bound-mult"
 
         try:
             # this creates the NL file, among other things

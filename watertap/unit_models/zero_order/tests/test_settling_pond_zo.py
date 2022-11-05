@@ -249,7 +249,7 @@ class TestSettlingPondZO_w_default_removal:
         assert pytest.approx(998.99, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(8.0659e-07, rel=1e-5) == value(
+        assert pytest.approx(4.2897e-08, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0.0, abs=1e-5) == value(model.fs.unit.electricity[0])
