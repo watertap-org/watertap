@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+import re
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
@@ -39,6 +40,7 @@ from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Xiangyu Bi"
 
@@ -1598,10 +1600,6 @@ class Test_ED_pressure_drop_components:
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
         initialization_tester(ed_m[1])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[1])
-        }
-        assert not badly_scaled_var_values
         results = solver.solve(ed_m[1])
         assert_optimal_termination(results)
         assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1619,10 +1617,6 @@ class Test_ED_pressure_drop_components:
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
         initialization_tester(ed_m[2])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[2])
-        }
-        assert not badly_scaled_var_values
         results = solver.solve(ed_m[2])
         assert_optimal_termination(results)
         assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1640,10 +1634,6 @@ class Test_ED_pressure_drop_components:
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
         initialization_tester(ed_m[3])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[3])
-        }
-        assert not badly_scaled_var_values
         results = solver.solve(ed_m[3])
         assert_optimal_termination(results)
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
@@ -1662,10 +1652,6 @@ class Test_ED_pressure_drop_components:
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
         initialization_tester(ed_m[4])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[4])
-        }
-        assert not badly_scaled_var_values
         results = solver.solve(ed_m[4])
         assert_optimal_termination(results)
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
@@ -1685,10 +1671,6 @@ class Test_ED_pressure_drop_components:
         assert degrees_of_freedom(ed_m[5]) == 0
         initialization_tester(ed_m[5])
         iscale.calculate_scaling_factors(ed_m[5])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[5])
-        }
-        assert not badly_scaled_var_values
         results = solver.solve(ed_m[5])
         assert_optimal_termination(results)
         assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
@@ -1703,3 +1685,46 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
             18812.603, rel=1e-3
         )
+
+    @pytest.mark.unit
+    def test_deltaP_configerr(self):
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match=(
+                re.escape(
+                    "A valid (not none) pressure_drop_method and has_pressure_change being True "
+                    "must be both used or unused at the same time. "
+                )
+            ),
+        ):
+            m = ConcreteModel()
+            m.fs = FlowsheetBlock(dynamic=False)
+
+            m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+            m.fs.unit = Electrodialysis1D(
+                property_package=m.fs.properties,
+                operation_mode=ElectricalOperationMode.Constant_Voltage,
+                finite_elements=10,
+                has_nonohmic_potential_membrane=False,
+                has_Nernst_diffusion_layer=False,
+                pressure_drop_method=PressureDropMethod.none,
+                has_pressure_change=True,
+            )
+            m1 = ConcreteModel()
+            m1.fs = FlowsheetBlock(dynamic=False)
+            m1.fs.properties = DSPMDEParameterBlock(**ion_dict)
+            m1.fs.unit = Electrodialysis1D(
+                property_package=m.fs.properties,
+                operation_mode=ElectricalOperationMode.Constant_Voltage,
+                finite_elements=10,
+                has_nonohmic_potential_membrane=False,
+                has_Nernst_diffusion_layer=False,
+                pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+                has_pressure_change=False,
+            )
