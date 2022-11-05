@@ -71,14 +71,13 @@ class PressureDropMethod(Enum):
 
 
 class FrictionFactorMethod(Enum):
-    defined = 0
-    Ponzio = 1
-    Gurreri = 2
-    Kuroda = 3
+    fixed = 0
+    Gurreri = 1
+    Kuroda = 2
 
 
 class HydraulicDiameterMethod(Enum):
-    defined = 0
+    fixed = 0
     spacer_specific_area_known = 1
     conventional = 2
 
@@ -113,8 +112,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             domain=In([False]),
             description="Holdup construction flag - must be False",
             doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. The filtration unit does not have defined volume, thus
-    this must be False.""",
+    **default** - False.""",
         ),
     )
     CONFIG.declare(
@@ -152,19 +150,18 @@ class Electrodialysis1DData(UnitModelBlockData):
     CONFIG.declare(
         "friction_factor_method",
         ConfigValue(
-            default=FrictionFactorMethod.defined,
+            default=FrictionFactorMethod.fixed,
             domain=In(FrictionFactorMethod),
             description="Method to calculate the Darcy's friction factor",
             doc="""
-     **default** - ``FrictionFactorMethod.defined``
+     **default** - ``FrictionFactorMethod.fixed``
 
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``FrictionFactorMethod.defined``", "Friction factor is defined and fixed by users" 
-           "``FrictionFactorMethod.Ponzio``", "Frction factor evaluated based on Pazio's work"
-           "``FrictionFactorMethod.Gurreri``", "Frction factor evaluated based on Gurreri's work"
-           "``FrictionFactorMethod.Kuroda``", "Frction factor evaluated based on Kuroda's work"
+           "``FrictionFactorMethod.fixed``", "Friction factor is fixed by users" 
+           "``FrictionFactorMethod.Gurreri``", "Friction factor evaluated based on Gurreri's work"
+           "``FrictionFactorMethod.Kuroda``", "Friction factor evaluated based on Kuroda's work"
        """,
         ),
     )
@@ -181,9 +178,9 @@ class Electrodialysis1DData(UnitModelBlockData):
        .. csv-table::
            :header: "Configuration Options", "Description"
            
-           "``HydraulicDiameterMethod.defined``", "Hydraulic diameter is defined and fixed by users" 
+           "``HydraulicDiameterMethod.fixed``", "Hydraulic diameter is fixed by users" 
            "``HydraulicDiameterMethod.conventional``", "Conventional method for a rectangular channel with spacer porosity considered" 
-           "``HydraulicDiameterMethod.spacer_specific_area_known``", "A method for spacer-filled channel requiring the spapcer specific area data"
+           "``HydraulicDiameterMethod.spacer_specific_area_known``", "A method for spacer-filled channel requiring the spacer specific area data"
        """,
         ),
     )
@@ -1702,17 +1699,17 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc="The mass diffusivity of the solute as molecules (not individual ions)",
         )
         self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
-        self.Re = Var(
+        self.N_Re = Var(
             initialize=100, units=pyunits.dimensionless, doc="Reynolds Number"
         )
-        self.Sc = Var(
+        self.N_Sc = Var(
             initialize=2000, units=pyunits.dimensionless, doc="Schmidt Number"
         )
-        self.Sh = Var(
+        self.N_Sh = Var(
             initialize=100, units=pyunits.dimensionless, doc="Sherwood Number"
         )
 
-        if self.config.hydraulic_diameter_method == HydraulicDiameterMethod.defined:
+        if self.config.hydraulic_diameter_method == HydraulicDiameterMethod.fixed:
             _log.warning("Do not forget to FIX the channel hydraulic diameter in [m]!")
         else:
 
@@ -1753,7 +1750,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_Re(self):
 
             return (
-                self.Re
+                self.N_Re
                 == self.dens_mass
                 * self.velocity_D[0, 0]
                 * self.hydraulic_diameter
@@ -1766,7 +1763,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_Sc(self):
 
             return (
-                self.Sc
+                self.N_Sc
                 == self.visc_d
                 * self.dens_mass**-1
                 * self.general_mass_diffusivity**-1
@@ -1777,7 +1774,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         def eq_Sh(self):
 
-            return self.Sh == 0.29 * self.Re**0.5 * self.Sc**0.33
+            return self.N_Sh == 0.29 * self.N_Re**0.5 * self.N_Sc**0.33
 
     def _pressure_drop_calculation(self):
         self.pressure_drop = Var(
@@ -1819,7 +1816,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                     * self.hydraulic_diameter**-1
                 )
 
-            if self.config.friction_factor_method == FrictionFactorMethod.defined:
+            if self.config.friction_factor_method == FrictionFactorMethod.fixed:
                 _log.warning("Do not forget to FIX the Darcy's friction factor value!")
             else:
 
@@ -1829,25 +1826,20 @@ class Electrodialysis1DData(UnitModelBlockData):
                 def eq_friction_factor(self):
                     if (
                         self.config.friction_factor_method
-                        == FrictionFactorMethod.Ponzio
-                    ):
-                        if value(self.Re) < 61:
-                            return self.friction_factor == 1400 * self.Re**-1
-                        else:
-                            return self.friction_factor == 104.5 * self.Re**-0.37
-                    elif (
-                        self.config.friction_factor_method
                         == FrictionFactorMethod.Gurreri
                     ):
                         return (
                             self.friction_factor
-                            == 4 * 50.6 * self.spacer_porosity**-7.06 * self.Re**-1
+                            == 4
+                            * 50.6
+                            * self.spacer_porosity**-7.06
+                            * self.N_Re**-1
                         )
                     elif (
                         self.config.friction_factor_method
                         == FrictionFactorMethod.Kuroda
                     ):
-                        return self.friction_factor == 4 * 9.6 * self.Re**-0.5
+                        return self.friction_factor == 4 * 9.6 * self.N_Re**-0.5
 
         @self.Constraint(
             self.flowsheet().time,
@@ -2016,7 +2008,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=state_args,
-            hold_state=False,
+            hold_state=True,
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
@@ -2029,7 +2021,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=state_args,
-            hold_state=False,
+            hold_state=True,
         )
         init_log.info_high("Initialization Step 2 Complete.")
         # ---------------------------------------------------------------------
@@ -2045,8 +2037,8 @@ class Electrodialysis1DData(UnitModelBlockData):
         )
         # ---------------------------------------------------------------------
         # Release state
-        # blk.diluate.release_state(flags_diluate, outlvl)
-        # blk.concentrate.release_state(flags_concentrate, outlvl)
+        blk.diluate.release_state(flags_diluate, outlvl)
+        blk.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def calculate_scaling_factors(self):
@@ -2117,28 +2109,28 @@ class Electrodialysis1DData(UnitModelBlockData):
             iscale.get_scaling_factor(self.spacer_specific_area, warning=True) is None
         ):
             iscale.set_scaling_factor(self.spacer_specific_area, 1e-4)
-        if hasattr(self, "Re") and (
-            iscale.get_scaling_factor(self.Re, warning=True) is None
+        if hasattr(self, "N_Re") and (
+            iscale.get_scaling_factor(self.N_Re, warning=True) is None
         ):
-            iscale.set_scaling_factor(self.Re, 0.01)
-        if hasattr(self, "Sc") and (
-            iscale.get_scaling_factor(self.Sc, warning=True) is None
+            iscale.set_scaling_factor(self.N_Re, 0.01)
+        if hasattr(self, "N_Sc") and (
+            iscale.get_scaling_factor(self.N_Sc, warning=True) is None
         ):
             sf = (
                 iscale.get_scaling_factor(self.visc_d)
                 * iscale.get_scaling_factor(self.dens_mass) ** -1
                 * iscale.get_scaling_factor(self.general_mass_diffusivity) ** -1
             )
-            iscale.set_scaling_factor(self.Sc, sf)
-        if hasattr(self, "Sh") and (
-            iscale.get_scaling_factor(self.Sh, warning=True) is None
+            iscale.set_scaling_factor(self.N_Sc, sf)
+        if hasattr(self, "N_Sh") and (
+            iscale.get_scaling_factor(self.N_Sh, warning=True) is None
         ):
             sf = (
                 10
-                * iscale.get_scaling_factor(self.Re) ** 0.5
-                * iscale.get_scaling_factor(self.Sc) ** 0.33
+                * iscale.get_scaling_factor(self.N_Re) ** 0.5
+                * iscale.get_scaling_factor(self.N_Sc) ** 0.33
             )
-            iscale.set_scaling_factor(self.Sh, sf)
+            iscale.set_scaling_factor(self.N_Sh, sf)
         if hasattr(self, "pressure_drop") and (
             iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
         ):
@@ -2403,15 +2395,15 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         if hasattr(self, "eq_Re"):
             iscale.constraint_scaling_transform(
-                self.eq_Re, iscale.get_scaling_factor(self.Re)
+                self.eq_Re, iscale.get_scaling_factor(self.N_Re)
             )
         if hasattr(self, "eq_Sc"):
             iscale.constraint_scaling_transform(
-                self.eq_Sc, iscale.get_scaling_factor(self.Sc)
+                self.eq_Sc, iscale.get_scaling_factor(self.N_Sc)
             )
         if hasattr(self, "eq_Sh"):
             iscale.constraint_scaling_transform(
-                self.eq_Sh, iscale.get_scaling_factor(self.Sh)
+                self.eq_Sh, iscale.get_scaling_factor(self.N_Sh)
             )
         if hasattr(self, "eq_pressure_drop"):
             for i, c in self.eq_pressure_drop.items():

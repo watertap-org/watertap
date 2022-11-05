@@ -1402,30 +1402,6 @@ class Test_ED_pressure_drop_components:
         return m
 
     @pytest.fixture(scope="class")
-    def ed_m1(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        ion_dict = {
-            "solute_list": ["Na_+", "Cl_-"],
-            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
-            "charge": {"Na_+": 1, "Cl_-": -1},
-        }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
-        m.fs.unit = Electrodialysis1D(
-            property_package=m.fs.properties,
-            operation_mode=ElectricalOperationMode.Constant_Voltage,
-            finite_elements=10,
-            has_nonohmic_potential_membrane=False,
-            has_Nernst_diffusion_layer=False,
-            pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
-            friction_factor_method=FrictionFactorMethod.Ponzio,
-            hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
-            has_pressure_change=True,
-        )
-        return m
-
-    @pytest.fixture(scope="class")
     def ed_m2(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -1443,7 +1419,7 @@ class Test_ED_pressure_drop_components:
             has_nonohmic_potential_membrane=False,
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
-            friction_factor_method=FrictionFactorMethod.defined,
+            friction_factor_method=FrictionFactorMethod.fixed,
             hydraulic_diameter_method=HydraulicDiameterMethod.conventional,
             has_pressure_change=True,
         )
@@ -1516,7 +1492,7 @@ class Test_ED_pressure_drop_components:
             has_Nernst_diffusion_layer=False,
             pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
             friction_factor_method=FrictionFactorMethod.Kuroda,
-            hydraulic_diameter_method=HydraulicDiameterMethod.defined,
+            hydraulic_diameter_method=HydraulicDiameterMethod.fixed,
             has_pressure_change=True,
         )
         return m
@@ -1546,14 +1522,12 @@ class Test_ED_pressure_drop_components:
         return m
 
     @pytest.mark.unit
-    def test_deltaP_various_methods(
-        self, ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6
-    ):
-        ed_m = (ed_m0, ed_m1, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
+    def test_deltaP_various_methods(self, ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6):
+        ed_m = (ed_m0, ed_m2, ed_m3, ed_m4, ed_m5, ed_m6)
         for m in ed_m:
-            m.fs.unit.outlet_diluate.pressure.fix(101325)
+            m.fs.unit.inlet_diluate.pressure.fix(201325)
             m.fs.unit.inlet_diluate.temperature.fix(298.15)
-            m.fs.unit.outlet_concentrate.pressure.fix(101325)
+            m.fs.unit.inlet_concentrate.pressure.fix(201325)
             m.fs.unit.inlet_concentrate.temperature.fix(298.15)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(17.875)
             m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(5.56e-2)
@@ -1612,12 +1586,15 @@ class Test_ED_pressure_drop_components:
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[0])
         }
         assert not badly_scaled_var_values
+        results = solver.solve(ed_m[0])
+        assert_optimal_termination(results)
         assert value(ed_m[0].fs.unit.pressure_drop_total[0]) == pytest.approx(
             67200, rel=1e-3
         )
 
-        # Test ed_m1
+        # Test ed_m2
         ed_m[1].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
         initialization_tester(ed_m[1])
@@ -1625,17 +1602,20 @@ class Test_ED_pressure_drop_components:
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[1])
         }
         assert not badly_scaled_var_values
+        results = solver.solve(ed_m[1])
+        assert_optimal_termination(results)
+        assert value(ed_m[1].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
+
         assert value(ed_m[1].fs.unit.pressure_drop[0]) == pytest.approx(
-            24640.839, rel=1e-3
+            21280.815, rel=1e-3
         )
 
         assert value(ed_m[1].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            41396.609, rel=1e-3
+            35751.769, rel=1e-3
         )
 
-        # Test ed_m2
+        # Test ed_m3
         ed_m[2].fs.unit.general_mass_diffusivity.fix(1.6e-9)
-        ed_m[2].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
         initialization_tester(ed_m[2])
@@ -1643,17 +1623,19 @@ class Test_ED_pressure_drop_components:
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[2])
         }
         assert not badly_scaled_var_values
-        assert value(ed_m[2].fs.unit.Re) == pytest.approx(58.708, rel=1e-3)
+        results = solver.solve(ed_m[2])
+        assert_optimal_termination(results)
+        assert value(ed_m[2].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
 
         assert value(ed_m[2].fs.unit.pressure_drop[0]) == pytest.approx(
-            21280.815, rel=1e-3
+            13670.276, rel=1e-3
         )
 
         assert value(ed_m[2].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            35751.769, rel=1e-3
+            22966.063, rel=1e-3
         )
 
-        # Test ed_m3
+        # Test ed_m4
         ed_m[3].fs.unit.general_mass_diffusivity.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
@@ -1662,18 +1644,21 @@ class Test_ED_pressure_drop_components:
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[3])
         }
         assert not badly_scaled_var_values
-        assert value(ed_m[3].fs.unit.Re) == pytest.approx(58.708, rel=1e-3)
+        results = solver.solve(ed_m[3])
+        assert_optimal_termination(results)
+        assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
 
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            13670.276, rel=1e-3
+            5332.605, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            22966.063, rel=1e-3
+            8958.776, rel=1e-3
         )
 
-        # Test ed_m4
+        # Test ed_m5
         ed_m[4].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[4].fs.unit.hydraulic_diameter.fix(1.5e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
         initialization_tester(ed_m[4])
@@ -1681,53 +1666,40 @@ class Test_ED_pressure_drop_components:
             var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[4])
         }
         assert not badly_scaled_var_values
-        assert value(ed_m[4].fs.unit.Re) == pytest.approx(58.708, rel=1e-3)
+        results = solver.solve(ed_m[4])
+        assert_optimal_termination(results)
+        assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
 
         assert value(ed_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
-            5332.605, rel=1e-3
-        )
-
-        assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            8958.776, rel=1e-3
-        )
-
-        # Test ed_m5
-        ed_m[5].fs.unit.general_mass_diffusivity.fix(1.6e-9)
-        ed_m[5].fs.unit.hydraulic_diameter.fix(1.5e-3)
-        iscale.calculate_scaling_factors(ed_m[5])
-        assert degrees_of_freedom(ed_m[5]) == 0
-        initialization_tester(ed_m[5])
-        badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[5])
-        }
-        assert not badly_scaled_var_values
-        assert value(ed_m[5].fs.unit.Re) == pytest.approx(74.987, rel=1e-3)
-
-        assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
             3694.099, rel=1e-3
         )
 
-        assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
+        assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
             6206.087, rel=1e-3
         )
 
         # Test ed_m6
-        ed_m[6].fs.unit.general_mass_diffusivity.fix(1.6e-9)
-        ed_m[6].fs.unit.spacer_specific_area.fix(10700)
-        iscale.calculate_scaling_factors(ed_m[6])
-        assert degrees_of_freedom(ed_m[6]) == 0
-        initialization_tester(ed_m[6])
-        iscale.calculate_scaling_factors(ed_m[6])
+        ed_m[5].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[5].fs.unit.spacer_specific_area.fix(10700)
+        iscale.calculate_scaling_factors(ed_m[5])
+        assert degrees_of_freedom(ed_m[5]) == 0
+        initialization_tester(ed_m[5])
+        iscale.calculate_scaling_factors(ed_m[5])
         badly_scaled_var_values = {
-            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[6])
+            var.name: val for (var, val) in iscale.badly_scaled_var_generator(ed_m[5])
         }
         assert not badly_scaled_var_values
-        assert value(ed_m[6].fs.unit.Re) == pytest.approx(35.801, rel=1e-3)
+        results = solver.solve(ed_m[5])
+        assert_optimal_termination(results)
+        assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
+        assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
+            182512.397, rel=1e-3
+        )
 
-        assert value(ed_m[6].fs.unit.pressure_drop[0]) == pytest.approx(
+        assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
             11197.978, rel=1e-3
         )
 
-        assert value(ed_m[6].fs.unit.pressure_drop_total[0]) == pytest.approx(
+        assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
             18812.603, rel=1e-3
         )
