@@ -667,7 +667,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "flow_mol_phase_comp", 1e4, index=("Liq", "N")
         )
         # set scaling factors for some vars
-        iscale.set_scaling_factor(m.fs.unit.cell_width, 100)
+        iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
         iscale.set_scaling_factor(m.fs.unit.cell_length, 10)
 
         iscale.calculate_scaling_factors(m.fs)

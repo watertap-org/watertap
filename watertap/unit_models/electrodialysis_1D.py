@@ -2336,6 +2336,17 @@ class Electrodialysis1DData(UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_width)
                     * iscale.get_scaling_factor(self.cell_length),
                 )
+        for ind in self.diluate.Dpower_electrical_Dx:
+            if (
+                iscale.get_scaling_factor(
+                    self.diluate.Dpower_electrical_Dx[ind], warning=False
+                )
+                is None
+            ):
+                iscale.set_scaling_factor(
+                    self.diluate.Dpower_electrical_Dx[ind],
+                    iscale.get_scaling_factor(self.diluate.power_electrical_x[ind]),
+                )
         if (
             iscale.get_scaling_factor(self.specific_power_electrical, warning=False)
             is None
