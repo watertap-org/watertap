@@ -149,17 +149,21 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         diff_specs_keys = list(self.config.differential_sweep_specs.keys())
         sweep_param_keys = list(sweep_params.keys())
 
-        # print("\n here!!")
-        # print("diff_specs_keys = ", diff_specs_keys)
-        # print("sweep_param_keys = ", sweep_param_keys)
-        # print(all(key in sweep_param_keys for key in diff_specs_keys))
-
         if all(key in sweep_param_keys for key in diff_specs_keys):
             self.diff_spec_index = [sweep_param_keys.index(key) for key in diff_specs_keys]
             print(self.diff_spec_index)
         else:
             raise ValueError("differential_sweep_specs keys don't match with sweep_param keys")
 
+    def _define_differential_sweep_outputs(self, sweep_params):
+        self.differential_outputs = self.outputs
+        print("sweep_params.keys() = ", sweep_params.keys())
+        if self.outputs is not None:
+            for key in sweep_params.keys():
+                if key not in self.config.differential_sweep_specs.keys():
+                    pass
+                    # self.differential_outputs[key] = sweep_params[key].
+            
     def _append_differential_results(self, local_output_dict, diff_results_dict):
 
         print("local_output_dict.keys() = ", local_output_dict['sweep_params'].keys())
@@ -311,10 +315,12 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         # Create a base sweep_params
         sweep_params, sampling_type = self._process_sweep_params(sweep_params)
 
-        self.outputs = outputs
-
         # Check if the keys in the differential sweep specs exist in sweep params
         self._check_differential_sweep_key_validity(sweep_params)
+
+        # Define differential sweep outputs
+        self.outputs = outputs
+        self._define_differential_sweep_outputs(sweep_params) # outputs
 
         # Set the seed before sampling
         self.seed = seed
