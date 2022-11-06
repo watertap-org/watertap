@@ -151,15 +151,21 @@ def test_differential_parameter_sweep(model, tmp_path):
     h5_results_file_name = str(results_fname) + ".h5"
 
     m = model
+    m.fs.slack_penalty = 1000.0
+    m.fs.slack.setub(0)
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     differential_sweep_specs = {
-        "fs.a": {
+        A.name: {
             "diff_mode": "sum",
             "diff_sample_type": NormalSample,
             "std_dev": 0.01,
             "pyomo_object": m.fs.input["a"],
         },
-        "fs.b": {
+        B.name: {
             "diff_mode": "product",
             "diff_sample_type": UniformSample,
             "relative_lb": 0.01,
@@ -180,13 +186,6 @@ def test_differential_parameter_sweep(model, tmp_path):
         differential_sweep_specs=differential_sweep_specs,
     )
 
-    m = model
-    m.fs.slack_penalty = 1000.0
-    m.fs.slack.setub(0)
-
-    A = m.fs.input["a"]
-    B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     # Call the parameter_sweep function
     global_results_dict, _ = ps.parameter_sweep(
@@ -431,6 +430,74 @@ def test_differential_parameter_sweep(model, tmp_path):
 
 
 @pytest.mark.component
+def test_differential_parameter_sweep_selective(model, tmp_path):
+
+    comm = MPI.COMM_WORLD
+    tmp_path = _get_rank0_path(comm, tmp_path)
+
+    results_fname = os.path.join(tmp_path, "global_results")
+    csv_results_file_name = str(results_fname) + ".csv"
+    h5_results_file_name = str(results_fname) + ".h5"
+
+    m = model
+    m.fs.slack_penalty = 1000.0
+    m.fs.slack.setub(0)
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+    differential_sweep_specs = {
+        B.name: {
+            "diff_mode": "product",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.1,
+            "relative_ub": 10.0,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    ps = DifferentialParameterSweep(
+        comm=comm,
+        csv_results_file_name=csv_results_file_name,
+        h5_results_file_name=h5_results_file_name,
+        debugging_data_dir=tmp_path,
+        interpolate_nan_outputs=True,
+        optimize_function=_optimization,
+        reinitialize_function=_reinitialize,
+        reinitialize_kwargs={"slack_penalty": 10.0},
+        differential_sweep_specs=differential_sweep_specs,
+    )
+
+    # Call the parameter_sweep function
+    global_results_dict, _ = ps.parameter_sweep(
+        m,
+        sweep_params,
+        outputs=None,
+        seed=0,
+    )
+
+    import pprint
+    print(global_results_dict)
+    pprint.pprint(global_results_dict)
+
+    # if ps.rank == 0:
+
+    #     read_dict = _read_output_h5(h5_results_file_name)
+    #     _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+    #     _assert_dictionary_correctness(global_results_dict, read_dict)
+    #     if ps.num_procs > 1:
+    #         # Compare the sorted dictionary. We need to work with a sorted dictionary
+    #         # because the differential parameter sweep produces a global dictionary
+    #         # that is jumbled by the number of procs.
+    #         sorted_truth_dict = sort_output_dict(truth_dict)
+    #         sorted_read_dict = sort_output_dict(read_dict)
+    #         _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+    #     else:
+    #         _assert_dictionary_correctness(truth_dict, read_dict)
+
+
+@pytest.mark.component
 def test_differential_parameter_sweep_function(model, tmp_path):
 
     comm = MPI.COMM_WORLD
@@ -441,15 +508,21 @@ def test_differential_parameter_sweep_function(model, tmp_path):
     h5_results_file_name = str(results_fname) + ".h5"
 
     m = model
+    m.fs.slack_penalty = 1000.0
+    m.fs.slack.setub(0)
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
     differential_sweep_specs = {
-        "fs.a": {
+        A.name: {
             "diff_mode": "sum",
             "diff_sample_type": NormalSample,
             "std_dev": 0.01,
             "pyomo_object": m.fs.input["a"],
         },
-        "fs.b": {
+        B.name: {
             "diff_mode": "product",
             "diff_sample_type": UniformSample,
             "relative_lb": 0.01,
@@ -458,13 +531,7 @@ def test_differential_parameter_sweep_function(model, tmp_path):
         },
     }
 
-    m = model
-    m.fs.slack_penalty = 1000.0
-    m.fs.slack.setub(0)
-
-    A = m.fs.input["a"]
-    B = m.fs.input["b"]
-    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+    
 
     # Call the parameter_sweep function
     global_results_dict, _ = differential_parameter_sweep(
