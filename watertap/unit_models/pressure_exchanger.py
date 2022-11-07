@@ -40,11 +40,13 @@ from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
+from watertap.core import InitializationMixin
+
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("PressureExchanger")
-class PressureExchangerData(UnitModelBlockData):
+class PressureExchangerData(InitializationMixin, UnitModelBlockData):
     """
     Standard Pressure Exchanger Unit Model Class:
     - steady state only
