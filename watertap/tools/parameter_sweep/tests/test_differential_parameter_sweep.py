@@ -65,6 +65,7 @@ def model():
     )
     return m
 
+
 @pytest.mark.component
 def test_check_differential_sweep_key_validity(model):
 
@@ -95,7 +96,7 @@ def test_check_differential_sweep_key_validity(model):
     ps.outputs = None
     ps._check_differential_sweep_key_validity(sweep_params)
 
-    assert ps.diff_spec_index == [0,1]
+    assert ps.diff_spec_index == [0, 1]
 
 
 @pytest.mark.component
@@ -119,7 +120,7 @@ def test_create_differential_sweep_params_normal(model):
     ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     local_values = np.array([0.0, 1.0, 2.0])
 
-    ps.diff_spec_index = [0,1]
+    ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
@@ -157,7 +158,7 @@ def test_create_differential_sweep_params_others(model):
     ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     local_values = np.array([0.1, 1.0, 2.0])
 
-    ps.diff_spec_index = [0,1]
+    ps.diff_spec_index = [0, 1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
@@ -168,6 +169,7 @@ def test_create_differential_sweep_params_others(model):
     for key, value in diff_sweep_param_dict.items():
         assert value.lower_limit == expected_dict[key].lower_limit
         assert value.upper_limit == expected_dict[key].upper_limit
+
 
 @pytest.mark.component
 def test_bad_differential_sweep_specs(model, tmp_path):
@@ -204,6 +206,7 @@ def test_bad_differential_sweep_specs(model, tmp_path):
             seed=0,
         )
 
+
 @pytest.mark.component
 def test_differential_sweep_outputs(model):
 
@@ -238,13 +241,14 @@ def test_differential_sweep_outputs(model):
     )
 
     sweep_params, _ = ps._process_sweep_params(sweep_params)
-    
+
     ps.outputs = outputs
     ps._define_differential_sweep_outputs(sweep_params)
 
     # Finally test for the keys
     expected_keys = ["fs.output[c]", "fs.input[a]"]
-    assert expected_keys == list(ps.differential_outputs.keys())    
+    assert expected_keys == list(ps.differential_outputs.keys())
+
 
 @pytest.mark.component
 def test_differential_parameter_sweep(model, tmp_path):
