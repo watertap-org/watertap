@@ -61,7 +61,7 @@ class _DefinedFlowsDict(MutableMapping, dict):
     __len__ = dict.__len__
 
     def __setitem__(self, key, value):
-        if key in self:
+        if key in self and self[key] is not value:
             raise KeyError(f"{key} has already been defined as a flow")
         dict.__setitem__(self, key, value)
 

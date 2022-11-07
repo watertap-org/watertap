@@ -16,7 +16,7 @@ import pytest
 import pyomo.environ as pyo
 import idaes.core as idc
 
-from watertap.costing.watertap_costing_package import WaterTAPCosting
+from watertap.costing.watertap_costing_package import WaterTAPCosting, _DefinedFlowsDict
 
 
 @pytest.mark.component
@@ -57,3 +57,37 @@ def test_lazy_flow_costing():
     m.fs.costing.cost_flow(m.fs.foo, "foo")
 
     assert "foo" in m.fs.costing.flow_types
+
+
+@pytest.mark.component
+def test_defined_flows_dict():
+
+    d = _DefinedFlowsDict()
+
+    # test __setitem__; set unused keys
+    d["a"] = 1
+    d["b"] = 2
+
+    # test __delitem__; raise error on delete
+    with pytest.raises(
+        KeyError,
+        match="defined flows cannot be removed",
+    ):
+        del d["a"]
+
+    # test __setitem__; raise error if overwrite
+    with pytest.raises(
+        KeyError,
+        match="a has already been defined as a flow",
+    ):
+        d["a"] = 2
+
+    # test __getitem__
+    assert d["a"] == 1
+    assert d["b"] == 2
+
+    # test __len__
+    assert len(d) == 2
+
+    # test __iter__
+    assert [*d] == ["a", "b"]
