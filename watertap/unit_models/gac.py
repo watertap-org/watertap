@@ -38,6 +38,8 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 __author__ = "Hunter Barber"
 
 _log = idaeslog.getLogger(__name__)
@@ -58,7 +60,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
-class GACData(UnitModelBlockData):
+class GACData(InitializationMixin, UnitModelBlockData):
     """
     Initial Granular Activated Carbon Model -
     currently should be used for only with ion_DSPMDE_prop_pack with

@@ -40,12 +40,14 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("NanoFiltration0D")
-class NanoFiltrationData(UnitModelBlockData):
+class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
     """
     Standard NF Unit Model Class:
     - zero dimensional model

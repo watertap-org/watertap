@@ -41,13 +41,15 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 __author__ = "Austin Ladshaw"
 
 _log = idaeslog.getLogger(__name__)
 
 # Name of the unit model
 @declare_process_block_class("CoagulationFlocculation")
-class CoagulationFlocculationData(UnitModelBlockData):
+class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
     """
     Zero order Coagulation-Flocculation model based on Jar Tests
     """

@@ -23,6 +23,8 @@ import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 _log = idaeslog.getLogger(__name__)
 
 
@@ -33,7 +35,7 @@ class VariableEfficiency(Enum):
 
 
 @declare_process_block_class("Pump")
-class PumpIsothermalData(PumpData):
+class PumpIsothermalData(InitializationMixin, PumpData):
     """
     Standard Isothermal Pump Unit Model Class
     """
