@@ -87,9 +87,7 @@ def test_create_differential_sweep_params_normal(model):
     ps = DifferentialParameterSweep()
     local_values = np.array([0.0, 1.0, 2.0])
 
-    diff_sweep_param_dict = ps._create_differential_sweep_params(
-        local_values, differential_sweep_specs
-    )
+    diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
         "fs.a": NormalSample(m.fs.input["a"], 0.0, 0.01, 1),
@@ -126,9 +124,7 @@ def test_create_differential_sweep_params_others(model):
     ps = DifferentialParameterSweep()
     local_values = np.array([0.1, 1.0, 2.0])
 
-    diff_sweep_param_dict = ps._create_differential_sweep_params(
-        local_values, differential_sweep_specs
-    )
+    diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
         "fs.a": GeomSample(m.fs.input["a"], 0.099, 1.1, 1),

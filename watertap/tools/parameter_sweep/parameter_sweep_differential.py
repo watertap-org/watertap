@@ -110,7 +110,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
     #     return diff_sweep_param
 
-    def _create_differential_sweep_params(self, local_values, nominal_param_dict):
+    def _create_differential_sweep_params(self, local_values):
 
         differential_sweep_specs = self.config.differential_sweep_specs
 
@@ -145,9 +145,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         sweep_param_keys = list(sweep_params.keys())
 
         if all(key in sweep_param_keys for key in diff_specs_keys):
-            self.diff_spec_index = [sweep_param_keys.index(key) for key in diff_specs_keys]
+            self.diff_spec_index = [
+                sweep_param_keys.index(key) for key in diff_specs_keys
+            ]
         else:
-            raise ValueError("differential_sweep_specs keys don't match with sweep_param keys")
+            raise ValueError(
+                "differential_sweep_specs keys don't match with sweep_param keys"
+            )
 
     def _define_differential_sweep_outputs(self, sweep_params):
         self.differential_outputs = self.outputs
@@ -155,7 +159,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             for key in sweep_params.keys():
                 if key not in self.config.differential_sweep_specs.keys():
                     self.differential_outputs[key] = sweep_params[key].pyomo_object
-            
+
     def _append_differential_results(self, local_output_dict, diff_results_dict):
 
         for idx, diff_sol in diff_results_dict.items():
@@ -166,12 +170,20 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 else:
                     for subkey, subitem in item.items():
                         if subkey in local_output_dict["sweep_params"].keys():
-                            local_output_dict["sweep_params"][subkey]["value"] = np.concatenate(
-                                (local_output_dict["sweep_params"][subkey]["value"], subitem["value"])
+                            local_output_dict["sweep_params"][subkey][
+                                "value"
+                            ] = np.concatenate(
+                                (
+                                    local_output_dict["sweep_params"][subkey]["value"],
+                                    subitem["value"],
+                                )
                             )
                         else:
                             local_output_dict[key][subkey]["value"] = np.concatenate(
-                                (local_output_dict[key][subkey]["value"], subitem["value"])
+                                (
+                                    local_output_dict[key][subkey]["value"],
+                                    subitem["value"],
+                                )
                             )
 
     def _collect_local_inputs(self, local_results_dict):
@@ -227,11 +239,9 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             num_global_samples,
         )
 
-    def _run_differential_sweep(self, model, local_value, nominal_param_dict):
+    def _run_differential_sweep(self, model, local_value):
 
-        diff_sweep_param_dict = self._create_differential_sweep_params(
-            local_value, nominal_param_dict
-        )
+        diff_sweep_param_dict = self._create_differential_sweep_params(local_value)
 
         # We want this instance of the parameter sweep to run in serial
         diff_ps = ParameterSweep(
@@ -250,10 +260,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
-
-        # import pprint
-        # print("differential_sweep_output_dict")
-        # pprint.pprint(differential_sweep_output_dict)
 
         return differential_sweep_output_dict
 
@@ -276,7 +282,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
             local_output_dict,
         )
         self.differential_sweep_output_dict[k] = self._run_differential_sweep(
-            model, local_value_k, sweep_params,
+            model, local_value_k
         )
 
         return run_successful
