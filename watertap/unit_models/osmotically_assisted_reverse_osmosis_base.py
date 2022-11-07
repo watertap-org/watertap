@@ -35,6 +35,8 @@ from watertap.core.membrane_channel_base import (
     ConcentrationPolarizationType,
 )
 
+from watertap.core import InitializationMixin
+
 
 def _add_has_full_reporting(config_obj):
     config_obj.declare(
@@ -53,7 +55,9 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
+class OsmoticallyAssistedReverseOsmosisBaseData(
+    InitializationMixin, UnitModelBlockData
+):
     """
     Osmotically Assisted Reverse Osmosis base class
 

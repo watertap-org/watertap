@@ -47,6 +47,8 @@ import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
 from enum import Enum
 
+from watertap.core import InitializationMixin
+
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 
 _log = idaeslog.getLogger(__name__)
@@ -65,7 +67,7 @@ class ElectricalOperationMode(Enum):
 
 # Name of the unit model
 @declare_process_block_class("Electrodialysis0D")
-class Electrodialysis0DData(UnitModelBlockData):
+class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     """
     0D Electrodialysis Model
     """

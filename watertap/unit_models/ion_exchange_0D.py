@@ -41,6 +41,8 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 __author__ = "Kurban Sitterley"
 
 _log = idaeslog.getLogger(__name__)
@@ -61,7 +63,7 @@ class RegenerantChem(StrEnum):
 
 
 @declare_process_block_class("IonExchange0D")
-class IonExchangeODData(UnitModelBlockData):
+class IonExchangeODData(InitializationMixin, UnitModelBlockData):
     """
     Zero order ion exchange model
     """

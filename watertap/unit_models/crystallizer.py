@@ -40,6 +40,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
@@ -47,7 +48,7 @@ __author__ = "Oluwamayowa Amusat"
 
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Crystallization")
-class CrystallizationData(UnitModelBlockData):
+class CrystallizationData(InitializationMixin, UnitModelBlockData):
     """
     Zero order crystallization model
     """

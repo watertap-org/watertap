@@ -32,6 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     CONFIG_Template,
@@ -56,7 +57,7 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-class ReverseOsmosisBaseData(UnitModelBlockData):
+class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
     """
     Reverse Osmosis base class
     """
