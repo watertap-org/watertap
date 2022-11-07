@@ -56,19 +56,18 @@ def cost_reverse_osmosis(blk, ro_type=ROType.standard):
             default = ROType.standard
     """
     if ro_type == ROType.standard:
-        pass
+        return cost_membrane(
+            blk,
+            blk.costing_package.reverse_osmosis.membrane_cost,
+            blk.costing_package.reverse_osmosis.factor_membrane_replacement,
+        )
     elif ro_type == ROType.high_pressure:
-        cost_high_pressure_reverse_osmosis(blk)
+        return cost_high_pressure_reverse_osmosis(blk)
     else:
         raise ConfigurationError(
             f"{blk.unit_model.name} received invalid argument for ro_type:"
             f" {ro_type}. Argument must be a member of the ROType Enum."
         )
-    cost_membrane(
-        blk,
-        blk.costing_package.reverse_osmosis.membrane_cost,
-        blk.costing_package.reverse_osmosis.factor_membrane_replacement,
-    )
 
 
 @register_costing_parameter_block(
