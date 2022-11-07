@@ -170,6 +170,7 @@ def test_create_differential_sweep_params_sum_prod(model):
         assert value.lower_limit == expected_dict[key].lower_limit
         assert value.upper_limit == expected_dict[key].upper_limit
 
+
 @pytest.mark.component
 def test_create_differential_sweep_params_percentile(model):
 

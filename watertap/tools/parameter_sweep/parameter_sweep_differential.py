@@ -110,7 +110,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                     delta_nominal = upper_nominal - lower_nominal
                     lb = nominal_val + delta_nominal * relative_lb
                     ub = nominal_val + delta_nominal * relative_ub
-                    print(f"lb = {lb}, ub = {ub}")
                 else:
                     raise NotImplementedError
                 diff_sweep_param[param] = specs["diff_sample_type"](
