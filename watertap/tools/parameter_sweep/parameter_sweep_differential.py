@@ -82,34 +82,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         if self.config.guarantee_solves:
             raise NotImplementedError
 
-    # def _create_differential_sweep_params(self, local_values, differential_sweep_specs):
-
-    #     diff_sweep_param = {}
-    #     for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
-    #         nominal_val = local_values[ctr]
-    #         pyomo_object = specs["pyomo_object"]
-    #         if specs["diff_sample_type"] == NormalSample:
-    #             std_dev = specs["std_dev"]
-    #             diff_sweep_param[param] = NormalSample(
-    #                 pyomo_object, nominal_val, std_dev, self.config.num_diff_samples
-    #             )
-    #         else:
-    #             relative_lb = specs["relative_lb"]
-    #             relative_ub = specs["relative_ub"]
-    #             if specs["diff_mode"] == "sum":
-    #                 lb = nominal_val * (1 - relative_lb)
-    #                 ub = nominal_val * (1 + relative_ub)
-    #             elif specs["diff_mode"] == "product":
-    #                 lb = nominal_val * relative_lb
-    #                 ub = nominal_val * relative_ub
-    #             else:
-    #                 raise NotImplementedError
-    #             diff_sweep_param[param] = specs["diff_sample_type"](
-    #                 pyomo_object, lb, ub, self.config.num_diff_samples
-    #             )
-
-    #     return diff_sweep_param
-
     def _create_differential_sweep_params(self, local_values):
 
         differential_sweep_specs = self.config.differential_sweep_specs

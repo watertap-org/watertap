@@ -65,6 +65,38 @@ def model():
     )
     return m
 
+@pytest.mark.component
+def test_check_differential_sweep_key_validity(model):
+
+    m = model
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+    differential_sweep_specs = {
+        A.name: {
+            "diff_mode": "sum",
+            "diff_sample_type": NormalSample,
+            "std_dev": 0.01,
+            "pyomo_object": m.fs.input["a"],
+        },
+        B.name: {
+            "diff_mode": "product",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.01,
+            "relative_ub": 0.01,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
+    sweep_params, _ = ps._process_sweep_params(sweep_params)
+    ps.outputs = None
+    ps._check_differential_sweep_key_validity(sweep_params)
+
+    assert ps.diff_spec_index == [0,1]
+
 
 @pytest.mark.component
 def test_create_differential_sweep_params_normal(model):
@@ -84,9 +116,10 @@ def test_create_differential_sweep_params_normal(model):
         },
     }
 
-    ps = DifferentialParameterSweep()
+    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     local_values = np.array([0.0, 1.0, 2.0])
 
+    ps.diff_spec_index = [0,1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
@@ -121,9 +154,10 @@ def test_create_differential_sweep_params_others(model):
         },
     }
 
-    ps = DifferentialParameterSweep()
+    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     local_values = np.array([0.1, 1.0, 2.0])
 
+    ps.diff_spec_index = [0,1]
     diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
 
     expected_dict = {
@@ -161,7 +195,7 @@ def test_bad_differential_sweep_specs(model, tmp_path):
     B = m.fs.input["b"]
     sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
 
-    ps = DifferentialParameterSweep()
+    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
     with pytest.raises(ValueError):
         ps.parameter_sweep(
             m,
@@ -169,6 +203,48 @@ def test_bad_differential_sweep_specs(model, tmp_path):
             outputs=None,
             seed=0,
         )
+
+@pytest.mark.component
+def test_differential_sweep_outputs(model):
+
+    comm = MPI.COMM_WORLD
+
+    m = model
+    m.fs.slack_penalty = 1000.0
+    m.fs.slack.setub(0)
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+    differential_sweep_specs = {
+        B.name: {
+            "diff_mode": "product",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.01,
+            "relative_ub": 0.01,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    outputs = {"fs.output[c]": m.fs.output["c"]}
+
+    ps = DifferentialParameterSweep(
+        comm=comm,
+        optimize_function=_optimization,
+        reinitialize_function=_reinitialize,
+        reinitialize_kwargs={"slack_penalty": 10.0},
+        differential_sweep_specs=differential_sweep_specs,
+    )
+
+    sweep_params, _ = ps._process_sweep_params(sweep_params)
+    
+    ps.outputs = outputs
+    ps._define_differential_sweep_outputs(sweep_params)
+
+    # Finally test for the keys
+    expected_keys = ["fs.output[c]", "fs.input[a]"]
+    assert expected_keys == list(ps.differential_outputs.keys())    
 
 @pytest.mark.component
 def test_differential_parameter_sweep(model, tmp_path):
