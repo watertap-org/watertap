@@ -18,6 +18,7 @@ from pyomo.environ import (
     log10,
     Param,
     Var,
+    check_optimal_termination,
     Set,
     Suffix,
     units as pyunits,
@@ -40,7 +41,7 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import add_object_reference
@@ -717,7 +718,11 @@ class Ultraviolet0DData(UnitModelBlockData):
             )
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -777,6 +782,9 @@ class Ultraviolet0DData(UnitModelBlockData):
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         # TODO: add other performance constants
