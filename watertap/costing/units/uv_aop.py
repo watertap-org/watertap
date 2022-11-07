@@ -21,8 +21,6 @@ from ..util import (
 
 def build_uv_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
     blk.factor_lamp_replacement = pyo.Var(
         initialize=0.33278,
         doc="UV replacement factor accounting for lamps, sleeves, ballasts and sensors [fraction of uv replaced/year]",

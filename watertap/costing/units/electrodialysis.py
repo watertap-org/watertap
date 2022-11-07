@@ -21,8 +21,6 @@ from ..util import (
 
 def build_electrodialysis_cost_param_block(blk):
 
-    costing = blk.parent_block()
-
     blk.cem_membrane_cost = pyo.Var(
         initialize=43,
         doc="Cost of CEM membrane used in Electrodialysis ($/CEM/area)",
