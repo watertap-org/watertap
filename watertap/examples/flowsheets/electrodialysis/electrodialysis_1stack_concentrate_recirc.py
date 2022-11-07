@@ -30,14 +30,15 @@ from idaes.core.util.initialization import propagate_state
 #from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics, variables_set
 import idaes.core.util.model_statistics as mstat
 from pyomo.core.expr.current import identify_variables
-from idaes.models.unit_models import Feed, Product, Separator, Mixer, Pump
+from idaes.models.unit_models import Feed, Product, Separator, Mixer 
+from watertap.unit_models.pressure_changer import Pump
 from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from pytest import approx
 from watertap.core.util.initialization import check_dof
-from watertap.unit_models.electrodialysis_1D import ElectricalOperationMode
+from watertap.unit_models.electrodialysis_1D import ElectricalOperationMode, PressureDropMethod,FrictionFactorMethod,HydraulicDiameterMethod
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import (
     MixerType,
@@ -55,6 +56,7 @@ def main():
     m = build()
     #set_operating_conditions(m)
     simu_scenario1(m)
+
     initialize_system(m, solver=solver)
     solve(m, solver=solver)
     print("\n***---Simulation results---***")
@@ -95,6 +97,10 @@ def build():
         property_package=m.fs.properties,
         operation_mode=ElectricalOperationMode.Constant_Voltage,
         finite_elements=20,
+        has_pressure_change=True,
+        pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
+        hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+        friction_factor_method =  FrictionFactorMethod.Gurreri
     )
     m.fs.sepa1 = Separator(
         property_package=m.fs.properties,
@@ -111,10 +117,10 @@ def build():
     m.fs.sepa1.to_conc_in1_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_feed_state[0].conc_mass_phase_comp[...]
     m.fs.mix0.from_conc_out_state[0].conc_mass_phase_comp[...]
-    m.fs.pump0.from_feed_state[0].conc_mass_phase_comp[...]
-    m.fs.pump0.from_conc_out_state[0].conc_mass_phase_comp[...]
-    m.fs.pump1.from_feed_state[0].conc_mass_phase_comp[...]
-    m.fs.pump1.from_conc_out_state[0].conc_mass_phase_comp[...]
+    m.fs.pump0.control_volume.properties_in[0].conc_mass_phase_comp[...]
+    m.fs.pump0.control_volume.properties_in[0].conc_mass_phase_comp[...]
+    m.fs.pump1.control_volume.properties_in[0].conc_mass_phase_comp[...]
+    m.fs.pump1.control_volume.properties_in[0].conc_mass_phase_comp[...]
     m.fs.prod.properties[0].conc_mass_phase_comp[...]
     m.fs.disp.properties[0].conc_mass_phase_comp[...]
 
@@ -125,10 +131,10 @@ def build():
     m.fs.sepa1.to_conc_in1_state[0].flow_vol_phase[...]
     m.fs.mix0.from_feed_state[0].flow_vol_phase[...]
     m.fs.mix0.from_conc_out_state[0].flow_vol_phase[...]
-    m.fs.pump0.from_feed_state[0].flow_vol_phase[...]
-    m.fs.pump0.from_conc_out_state[0].flow_vol_phase[...]
-    m.fs.pump1.from_feed_state[0].flow_vol_phase[...]
-    m.fs.pump1.from_conc_out_state[0].flow_vol_phase[...]
+    m.fs.pump0.control_volume.properties_in[0].flow_vol_phase[...]
+    m.fs.pump0.control_volume.properties_in[0].flow_vol_phase[...]
+    m.fs.pump1.control_volume.properties_in[0].flow_vol_phase[...]
+    m.fs.pump1.control_volume.properties_in[0].flow_vol_phase[...]
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
     m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
@@ -140,6 +146,8 @@ def build():
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump0.costing =UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump1.costing =UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.prod.properties[0].flow_vol_phase["Liq"]
@@ -238,6 +246,7 @@ def build():
     iscale.set_scaling_factor(m.fs.EDstack.cell_width, 10)
     iscale.set_scaling_factor(m.fs.EDstack.cell_length, 10)
     iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 0.01)
+    iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 0.01)
     iscale.calculate_scaling_factors(m)
     return m
 '''
@@ -280,8 +289,8 @@ def simu_scenario1(m):
     # specific water recovery and product salinity.
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(298.15)
-    m.fs.pump1.properties_in[0].pressure.fix(101325)  # feed temperature [K]
-    m.fs.pump1.properties_in[0].temperature.fix(298.15)
+    m.fs.pump1.control_volume.properties_in[0].pressure.fix(101325)  # feed temperature [K]
+    m.fs.pump1.control_volume.properties_in[0].temperature.fix(298.15)
     m.fs.prod.properties[0].pressure.fix(101325)  # feed pressure [Pa]
     m.fs.prod.properties[0].temperature.fix(298.15)
     m.fs.disp.properties[0].pressure.fix(101325)  # feed pressure [Pa]
@@ -299,7 +308,7 @@ def simu_scenario1(m):
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.137)
     m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.137)
     '''
-    m.fs.recovery_volume_H2O.fix(0.5) 
+    m.fs.recovery_volume_H2O.fix(0.7) 
     #m.fs.prod_salinity.fix(0.5) 
     # Set ED unit vars
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
@@ -324,11 +333,15 @@ def simu_scenario1(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-    m.fs.EDstack.spacer_porosity.fix(0.8)
+    m.fs.EDstack.spacer_porosity.fix(0.83)
+    m.fs.EDstack.spacer_specific_area.fix(24600)
+    m.fs.EDstack.general_mass_diffusivity.fix(1.6e-9)
 
     #set initial values of to-be-computed vars 
     m.fs.EDstack.voltage_applied[0].fix(88.5)
+   
     mstat.report_statistics(m)
+    assert mstat.degrees_of_freedom(m.fs) == 0
 
 
 def set_operating_conditions(m):
@@ -403,12 +416,15 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.arc1b)
     m.fs.pump1.initialize(optarg=optarg)
     propagate_state(m.fs.arc1f)
+    propagate_state(destination=m.fs.prod.inlet, source=m.fs.feed.outlet)
     m.fs.prod.initialize(optarg=optarg)
     propagate_state(m.fs.arc4, direction="backward")
     propagate_state(m.fs.arc2)
     propagate_state( destination=m.fs.pump0.inlet, source=m.fs.pump1.inlet)
-    m.fs.pump0.initalize(optarg=optarg)
+    m.fs.pump0.initialize(optarg=optarg)
     propagate_state(m.fs.arc3f)
+    m.fs.EDstack.inlet_diluate.display()
+    m.fs.EDstack.inlet_concentrate.display()
     m.fs.EDstack.initialize(optarg=optarg)
     propagate_state(m.fs.arc5)
     m.fs.sepa1.split_fraction[0,"to_conc_in1"].set_value(max(2-value(m.fs.recovery_volume_H2O)**-1, 1e-8))
