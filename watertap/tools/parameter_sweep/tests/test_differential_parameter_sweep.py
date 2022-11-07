@@ -135,6 +135,40 @@ def test_create_differential_sweep_params_others(model):
         assert value.lower_limit == expected_dict[key].lower_limit
         assert value.upper_limit == expected_dict[key].upper_limit
 
+@pytest.mark.component
+def test_bad_differential_sweep_specs(model, tmp_path):
+
+    m = model
+
+    differential_sweep_specs = {
+        "fs.a": {
+            "diff_mode": "sum",
+            "diff_sample_type": GeomSample,
+            "relative_lb": 0.01,
+            "relative_ub": 10.0,
+            "pyomo_object": m.fs.input["a"],
+        },
+        "fs.b": {
+            "diff_mode": "product",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.01,
+            "relative_ub": 0.1,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    A = m.fs.input["a"]
+    B = m.fs.input["b"]
+    sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+
+    ps = DifferentialParameterSweep()
+    with pytest.raises(ValueError):
+        ps.parameter_sweep(
+            m,
+            sweep_params,
+            outputs=None,
+            seed=0,
+        )
 
 @pytest.mark.component
 def test_differential_parameter_sweep(model, tmp_path):
