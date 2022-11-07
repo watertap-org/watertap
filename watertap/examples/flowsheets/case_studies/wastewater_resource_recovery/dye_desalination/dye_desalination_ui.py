@@ -306,7 +306,7 @@ def export_variables(flowsheet=None, exports=None):
         input_category="RO costing",
         is_output=False,
     )
-    v = fs.ro_costing.energy_recovery_device.pressure_exchanger_cost
+    v = fs.ro_costing.pressure_exchanger.cost
     exports.add(
         obj=v,
         name=v.doc,
