@@ -107,7 +107,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 elif specs["diff_mode"] == "percentile":
                     lower_nominal = specs["nominal_lb"]
                     upper_nominal = specs["nominal_ub"]
-                    delta_nominal = upper_nominal - lower_nominal
+                    delta_nominal = abs(upper_nominal - lower_nominal)
                     lb = nominal_val + delta_nominal * relative_lb
                     ub = nominal_val + delta_nominal * relative_ub
                 else:
