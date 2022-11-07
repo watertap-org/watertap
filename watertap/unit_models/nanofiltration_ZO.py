@@ -14,6 +14,7 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -36,7 +37,7 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -449,7 +450,11 @@ class NanofiltrationData(UnitModelBlockData):
             )
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -515,6 +520,9 @@ class NanofiltrationData(UnitModelBlockData):
         # Release Inlet state
         blk.feed_side.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         for k in ("ion_set", "solute_set"):
