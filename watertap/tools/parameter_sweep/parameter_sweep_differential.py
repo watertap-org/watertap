@@ -114,10 +114,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         differential_sweep_specs = self.config.differential_sweep_specs
 
-        # import pprint
-        # print("sweep_params = ")
-        # pprint.pprint(nominal_param_dict)
-
         diff_sweep_param = {}
         for ctr, (param, specs) in enumerate(differential_sweep_specs.items()):
             nominal_val = local_values[self.diff_spec_index[ctr]]
@@ -141,7 +137,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 diff_sweep_param[param] = specs["diff_sample_type"](
                     pyomo_object, lb, ub, self.config.num_diff_samples
                 )
-        print("diff_sweep_param.keys() = ",diff_sweep_param.keys())
 
         return diff_sweep_param
 
@@ -151,23 +146,17 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         if all(key in sweep_param_keys for key in diff_specs_keys):
             self.diff_spec_index = [sweep_param_keys.index(key) for key in diff_specs_keys]
-            print(self.diff_spec_index)
         else:
             raise ValueError("differential_sweep_specs keys don't match with sweep_param keys")
 
     def _define_differential_sweep_outputs(self, sweep_params):
         self.differential_outputs = self.outputs
-        print("sweep_params.keys() = ", sweep_params.keys())
         if self.outputs is not None:
             for key in sweep_params.keys():
                 if key not in self.config.differential_sweep_specs.keys():
-                    pass
-                    # self.differential_outputs[key] = sweep_params[key].
+                    self.differential_outputs[key] = sweep_params[key].pyomo_object
             
     def _append_differential_results(self, local_output_dict, diff_results_dict):
-
-        print("local_output_dict.keys() = ", local_output_dict['sweep_params'].keys())
-        print("diff_results_dict.keys() = ", diff_results_dict[0]['sweep_params'].keys())
 
         for idx, diff_sol in diff_results_dict.items():
             for key, item in diff_sol.items():
@@ -175,7 +164,6 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 if key == "solve_successful":
                     local_output_dict["solve_successful"].extend(item)
                 else:
-                    print("item.keys() = ", item.keys())
                     for subkey, subitem in item.items():
                         if subkey in local_output_dict["sweep_params"].keys():
                             local_output_dict["sweep_params"][subkey]["value"] = np.concatenate(
@@ -258,10 +246,14 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         _, differential_sweep_output_dict = diff_ps.parameter_sweep(
             model,
             diff_sweep_param_dict,
-            outputs=self.outputs,
+            outputs=self.differential_outputs,
             num_samples=self.config.num_diff_samples,
             seed=self.seed,
         )
+
+        # import pprint
+        # print("differential_sweep_output_dict")
+        # pprint.pprint(differential_sweep_output_dict)
 
         return differential_sweep_output_dict
 
@@ -320,7 +312,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         # Define differential sweep outputs
         self.outputs = outputs
-        self._define_differential_sweep_outputs(sweep_params) # outputs
+        self._define_differential_sweep_outputs(sweep_params)
 
         # Set the seed before sampling
         self.seed = seed

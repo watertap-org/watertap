@@ -186,7 +186,6 @@ def test_differential_parameter_sweep(model, tmp_path):
         differential_sweep_specs=differential_sweep_specs,
     )
 
-
     # Call the parameter_sweep function
     global_results_dict, _ = ps.parameter_sweep(
         m,
@@ -451,8 +450,8 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         B.name: {
             "diff_mode": "product",
             "diff_sample_type": UniformSample,
-            "relative_lb": 0.1,
-            "relative_ub": 10.0,
+            "relative_lb": 0.25,
+            "relative_ub": 0.75,
             "pyomo_object": m.fs.input["b"],
         },
     }
@@ -467,6 +466,7 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         reinitialize_function=_reinitialize,
         reinitialize_kwargs={"slack_penalty": 10.0},
         differential_sweep_specs=differential_sweep_specs,
+        num_diff_samples=2,
     )
 
     # Call the parameter_sweep function
@@ -477,24 +477,338 @@ def test_differential_parameter_sweep_selective(model, tmp_path):
         seed=0,
     )
 
-    import pprint
-    print(global_results_dict)
-    pprint.pprint(global_results_dict)
+    if ps.rank == 0:
 
-    # if ps.rank == 0:
+        truth_dict = {
+            "outputs": {
+                "fs.output[c]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array(
+                        [
+                            0.2,
+                            0.2,
+                            0.2,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.2,
+                            0.2,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                        ]
+                    ),
+                },
+                "fs.output[d]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array(
+                        [
+                            0.00000000e00,
+                            7.50000000e-01,
+                            1.00000000e00,
+                            9.89148858e-09,
+                            7.50000010e-01,
+                            1.00000000e00,
+                            9.77798881e-09,
+                            7.50000010e-01,
+                            1.00000000e00,
+                            0.00000000e00,
+                            0.00000000e00,
+                            3.93305064e-01,
+                            4.55696012e-01,
+                            7.86610138e-01,
+                            9.11392035e-01,
+                            9.88979157e-09,
+                            9.88979157e-09,
+                            3.93305074e-01,
+                            4.55696022e-01,
+                            7.86610138e-01,
+                            9.11392035e-01,
+                            9.88962016e-09,
+                            9.88962016e-09,
+                            3.93305074e-01,
+                            4.55696022e-01,
+                            7.86610138e-01,
+                            9.11392035e-01,
+                        ]
+                    ),
+                },
+                "fs.performance": {
+                    "value": np.array(
+                        [
+                            0.2,
+                            0.95,
+                            1.20,
+                            1.00,
+                            1.75,
+                            2.0,
+                            1.00,
+                            1.75,
+                            2.0,
+                            0.2,
+                            0.2,
+                            0.59330506,
+                            0.65569601,
+                            0.98661015,
+                            1.11139204,
+                            1.0,
+                            1.0,
+                            1.39330507,
+                            1.45569602,
+                            1.78661014,
+                            1.91139203,
+                            1.0,
+                            1.0,
+                            1.39330507,
+                            1.45569602,
+                            1.78661014,
+                            1.91139203,
+                        ]
+                    )
+                },
+                "fs.slack[ab_slack]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array(
+                        [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.8,
+                            0.8,
+                            0.8,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.8,
+                            0.8,
+                            0.8,
+                            0.8,
+                            0.8,
+                            0.8,
+                        ]
+                    ),
+                },
+                "fs.slack[cd_slack]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 0,
+                    "value": np.array(
+                        [
+                            0.0,
+                            0.0,
+                            0.5,
+                            0.0,
+                            0.0,
+                            0.5,
+                            0.0,
+                            0.0,
+                            0.5,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                        ]
+                    ),
+                },
+                "objective": {
+                    "value": np.array(
+                        [
+                            0.2,
+                            0.95,
+                            -3.79999989,
+                            1.00,
+                            1.75,
+                            -2.9999999,
+                            -6.99999989,
+                            -6.24999989,
+                            -10.9999998,
+                            0.2,
+                            0.2,
+                            0.59330506,
+                            0.65569601,
+                            0.98661015,
+                            1.11139204,
+                            1.00000001,
+                            1.00000001,
+                            1.39330507,
+                            1.45569602,
+                            1.78661014,
+                            1.91139203,
+                            -6.99999989,
+                            -6.99999989,
+                            -6.60669483,
+                            -6.54430388,
+                            -6.21338976,
+                            -6.08860787,
+                        ]
+                    )
+                },
+            },
+            "solve_successful": [
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+            ],
+            "sweep_params": {
+                "fs.input[a]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array(
+                        [
+                            0.1,
+                            0.1,
+                            0.1,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.9,
+                            0.9,
+                            0.9,
+                            0.1,
+                            0.1,
+                            0.1,
+                            0.1,
+                            0.1,
+                            0.1,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.9,
+                            0.9,
+                            0.9,
+                            0.9,
+                            0.9,
+                            0.9,
+                        ]
+                    ),
+                },
+                "fs.input[b]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array(
+                        [
+                            0.0,
+                            0.25,
+                            0.5,
+                            0.0,
+                            0.25,
+                            0.5,
+                            0.0,
+                            0.25,
+                            0.5,
+                            0.0,
+                            0.0,
+                            0.13110169,
+                            0.15189867,
+                            0.26220338,
+                            0.30379734,
+                            0.0,
+                            0.0,
+                            0.13110169,
+                            0.15189867,
+                            0.26220338,
+                            0.30379734,
+                            0.0,
+                            0.0,
+                            0.13110169,
+                            0.15189867,
+                            0.26220338,
+                            0.30379734,
+                        ]
+                    ),
+                },
+            },
+        }
 
-    #     read_dict = _read_output_h5(h5_results_file_name)
-    #     _assert_h5_csv_agreement(csv_results_file_name, read_dict)
-    #     _assert_dictionary_correctness(global_results_dict, read_dict)
-    #     if ps.num_procs > 1:
-    #         # Compare the sorted dictionary. We need to work with a sorted dictionary
-    #         # because the differential parameter sweep produces a global dictionary
-    #         # that is jumbled by the number of procs.
-    #         sorted_truth_dict = sort_output_dict(truth_dict)
-    #         sorted_read_dict = sort_output_dict(read_dict)
-    #         _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
-    #     else:
-    #         _assert_dictionary_correctness(truth_dict, read_dict)
+        read_dict = _read_output_h5(h5_results_file_name)
+        _assert_h5_csv_agreement(csv_results_file_name, read_dict)
+        _assert_dictionary_correctness(global_results_dict, read_dict)
+        if ps.num_procs > 1:
+            # Compare the sorted dictionary. We need to work with a sorted dictionary
+            # because the differential parameter sweep produces a global dictionary
+            # that is jumbled by the number of procs.
+            sorted_truth_dict = sort_output_dict(truth_dict)
+            sorted_read_dict = sort_output_dict(read_dict)
+            _assert_dictionary_correctness(sorted_truth_dict, sorted_read_dict)
+        else:
+            _assert_dictionary_correctness(truth_dict, read_dict)
 
 
 @pytest.mark.component
@@ -530,8 +844,6 @@ def test_differential_parameter_sweep_function(model, tmp_path):
             "pyomo_object": m.fs.input["b"],
         },
     }
-
-    
 
     # Call the parameter_sweep function
     global_results_dict, _ = differential_parameter_sweep(
