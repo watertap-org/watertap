@@ -134,7 +134,7 @@ def test_create_differential_sweep_params_normal(model):
 
 
 @pytest.mark.component
-def test_create_differential_sweep_params_others(model):
+def test_create_differential_sweep_params_sum_prod(model):
 
     m = model
 
@@ -164,6 +164,37 @@ def test_create_differential_sweep_params_others(model):
     expected_dict = {
         "fs.a": GeomSample(m.fs.input["a"], 0.099, 1.1, 1),
         "fs.b": UniformSample(m.fs.input["b"], 0.01, 0.1, 1),
+    }
+
+    for key, value in diff_sweep_param_dict.items():
+        assert value.lower_limit == expected_dict[key].lower_limit
+        assert value.upper_limit == expected_dict[key].upper_limit
+
+@pytest.mark.component
+def test_create_differential_sweep_params_percentile(model):
+
+    m = model
+
+    differential_sweep_specs = {
+        "fs.b": {
+            "diff_mode": "percentile",
+            "diff_sample_type": UniformSample,
+            "relative_lb": 0.01,
+            "relative_ub": 0.1,
+            "nominal_lb": 0.0,
+            "nominal_ub": 1.0,
+            "pyomo_object": m.fs.input["b"],
+        },
+    }
+
+    ps = DifferentialParameterSweep(differential_sweep_specs=differential_sweep_specs)
+    local_values = np.array([0.1, 1.0, 2.0])
+
+    ps.diff_spec_index = [0, 1]
+    diff_sweep_param_dict = ps._create_differential_sweep_params(local_values)
+
+    expected_dict = {
+        "fs.b": UniformSample(m.fs.input["b"], 0.11, 0.2, 1),
     }
 
     for key, value in diff_sweep_param_dict.items():

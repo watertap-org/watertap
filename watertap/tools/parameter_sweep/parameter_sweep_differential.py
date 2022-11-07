@@ -104,6 +104,13 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 elif specs["diff_mode"] == "product":
                     lb = nominal_val * relative_lb
                     ub = nominal_val * relative_ub
+                elif specs["diff_mode"] == "percentile":
+                    lower_nominal = specs["nominal_lb"]
+                    upper_nominal = specs["nominal_ub"]
+                    delta_nominal = upper_nominal - lower_nominal
+                    lb = nominal_val + delta_nominal * relative_lb
+                    ub = nominal_val + delta_nominal * relative_ub
+                    print(f"lb = {lb}, ub = {ub}")
                 else:
                     raise NotImplementedError
                 diff_sweep_param[param] = specs["diff_sample_type"](
