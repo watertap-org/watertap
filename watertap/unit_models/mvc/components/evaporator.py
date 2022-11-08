@@ -33,10 +33,6 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-<<<<<<< HEAD
-from idaes.core.util.model_statistics import degrees_of_freedom
-=======
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -231,11 +227,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_feed = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of feed inlet",
-<<<<<<< HEAD
-            default=tmp_dict,
-=======
             **tmp_dict,
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Brine state block
@@ -243,11 +235,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_brine = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of brine outlet",
-<<<<<<< HEAD
-            default=tmp_dict,
-=======
             **tmp_dict,
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Vapor state block
@@ -258,11 +246,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_vapor = self.config.property_package_vapor.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of vapor outlet",
-<<<<<<< HEAD
-            default=tmp_dict,
-=======
             **tmp_dict,
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Add block for condenser constraints
@@ -313,11 +297,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         def eq_vapor_pressure(b, t):
             return b.properties_vapor[t].pressure == b.properties_brine[t].pressure
 
-<<<<<<< HEAD
-        # Vapor temperature
-=======
         # Vapor temperature - assumed to be equal to brine temperature
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         @self.Constraint(self.flowsheet().time, doc="Vapor temperature")
         def eq_vapor_temperature(b, t):
             return (
@@ -454,25 +434,6 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-<<<<<<< HEAD
-        # check degrees of freedom
-        under_constrained_flag = False
-        # if degrees_of_freedom(blk) != 0:
-        if (
-            not blk.delta_temperature_in.is_fixed()
-            and not blk.delta_temperature_out.is_fixed()
-        ):
-            if delta_temperature_in != None and delta_temperature_out != None:
-                blk.delta_temperature_in.fix(delta_temperature_in)
-                blk.delta_temperature_out.fix(delta_temperature_out)
-                under_constrained_flag = True
-            else:
-                raise RuntimeError(
-                    "The model has {} degrees of freedom rather than 0 for initialization."
-                    " This error suggests that temperature differences have not been fixed"
-                    " for initialization.".format(degrees_of_freedom(blk))
-                )
-=======
         # incorporate guessed temperature differences
         has_guessed_delta_temperature_in = False
         if delta_temperature_in is not None:
@@ -496,7 +457,6 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             blk.delta_temperature_out.fix(delta_temperature_out)
             has_guessed_delta_temperature_out = True
 
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -505,14 +465,9 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states and release delta_temperature
         blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
-<<<<<<< HEAD
-        if under_constrained_flag:
-            blk.delta_temperature_in.unfix()
-=======
         if has_guessed_delta_temperature_in:
             blk.delta_temperature_in.unfix()
         if has_guessed_delta_temperature_out:
->>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
             blk.delta_temperature_out.unfix()
         if hasattr(blk, "connection_to_condenser"):
             blk.connection_to_condenser.activate()
