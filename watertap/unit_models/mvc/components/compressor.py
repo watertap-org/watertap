@@ -15,6 +15,7 @@
 from pyomo.environ import (
     Var,
     Suffix,
+    check_optimal_termination,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -31,15 +32,18 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Compressor")
-class CompressorData(UnitModelBlockData):
+class CompressorData(InitializationMixin, UnitModelBlockData):
     """
     Compressor model for MVC
     """
@@ -196,7 +200,7 @@ class CompressorData(UnitModelBlockData):
         self.properties_isentropic_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of isentropic outlet",
-            **tmp_dict
+            **tmp_dict,
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
@@ -314,6 +318,9 @@ class CompressorData(UnitModelBlockData):
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
