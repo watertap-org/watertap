@@ -46,6 +46,8 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.misc import add_object_reference
 
+from watertap.core import InitializationMixin
+
 _log = idaeslog.getLogger(__name__)
 
 # ---------------------------------------------------------------------
@@ -55,7 +57,7 @@ class UVDoseType(Enum):
 
 
 @declare_process_block_class("Ultraviolet0D")
-class Ultraviolet0DData(UnitModelBlockData):
+class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
     """
     Standard UV Unit Model Class:
     - zero dimensional model

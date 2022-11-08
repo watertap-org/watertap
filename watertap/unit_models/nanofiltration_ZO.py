@@ -41,12 +41,14 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("NanofiltrationZO")
-class NanofiltrationData(UnitModelBlockData):
+class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """
     Zero order nanofiltration model based on specified water flux and ion rejection.
     Default data from Table 9 in Labban et al. (2017) https://doi.org/10.1016/j.memsci.2016.08.062
