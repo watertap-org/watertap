@@ -245,7 +245,6 @@ class TestUV:
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -463,7 +462,6 @@ class TestUV_standard:
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -705,7 +703,6 @@ class TestUV_with_multiple_comps:
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -934,7 +931,6 @@ class TestUV_detailed:
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -1158,7 +1154,6 @@ class TestUVAOP:
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
