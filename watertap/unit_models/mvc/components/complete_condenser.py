@@ -195,11 +195,11 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 "Liq", j
             )
 
-        @self.Constraint(
-            self.config.property_package.phase_list,
-            doc="Mass balance for condensing state",
-        )
-        # def eq_mass_balance_condensingc(b, p):
+        # @self.Constraint(
+        #     self.config.property_package.phase_list,
+        #     doc="Mass balance for condensing state",
+        # )
+        # def eq_mass_balance_condensing(b, p):
         #     return (
         #             b.control_volume.properties_in[0].flow_mass_phase_comp[p, "H2O"]
         #             == b.properties_condensing[0].flow_mass_phase_comp[p, "H2O"]
