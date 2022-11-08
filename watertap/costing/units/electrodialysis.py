@@ -131,24 +131,31 @@ def cost_electrodialysis_stack(
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == (blk.membrane_cost + blk.spacer_cost)
-        * (
-            blk.unit_model.cell_pair_num
-            * blk.unit_model.cell_width
-            * blk.unit_model.cell_length
-        )
-        + blk.electrode_cost * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+        == pyo.units.convert(
+            (blk.membrane_cost + blk.spacer_cost)
+            * (
+                blk.unit_model.cell_pair_num
+                * blk.unit_model.cell_width
+                * blk.unit_model.cell_length
+            )
+            + blk.electrode_cost
+            * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.membrane_replacement_factor
-        * (blk.membrane_cost + blk.spacer_cost)
-        * (
-            blk.unit_model.cell_pair_num
-            * blk.unit_model.cell_width
-            * blk.unit_model.cell_length
-        )
-        + blk.electrode_replacement_factor
-        * blk.electrode_cost
-        * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+        == pyo.units.convert(
+            blk.membrane_replacement_factor
+            * (blk.membrane_cost + blk.spacer_cost)
+            * (
+                blk.unit_model.cell_pair_num
+                * blk.unit_model.cell_width
+                * blk.unit_model.cell_length
+            )
+            + blk.electrode_replacement_factor
+            * blk.electrode_cost
+            * (blk.unit_model.cell_width * blk.unit_model.cell_length)
+        ),
+        to_units=blk.costing_package.base_currency,
     )

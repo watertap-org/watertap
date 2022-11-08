@@ -78,8 +78,11 @@ def cost_high_pressure_pump(blk, cost_electricity_flow=True):
     make_capital_cost_var(blk)
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.costing_package.high_pressure_pump.cost
-        * pyo.units.convert(blk.unit_model.work_mechanical[t0], pyo.units.W)
+        == pyo.units.convert(
+            blk.costing_package.high_pressure_pump.cost
+            * pyo.units.convert(blk.unit_model.work_mechanical[t0], pyo.units.W)
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     if cost_electricity_flow:
         blk.costing_package.cost_flow(

@@ -292,59 +292,80 @@ def cost_ion_exchange(blk):
 
     blk.capital_cost_vessel_constraint = pyo.Constraint(
         expr=blk.capital_cost_vessel
-        == ion_exchange_params.vessel_intercept
-        + ion_exchange_params.vessel_A_coeff * col_vol_gal**3
-        + ion_exchange_params.vessel_B_coeff * col_vol_gal**2
-        + ion_exchange_params.vessel_C_coeff * col_vol_gal
+        == pyo.units.convert(
+            ion_exchange_params.vessel_intercept
+            + ion_exchange_params.vessel_A_coeff * col_vol_gal**3
+            + ion_exchange_params.vessel_B_coeff * col_vol_gal**2
+            + ion_exchange_params.vessel_C_coeff * col_vol_gal
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     blk.capital_cost_resin_constraint = pyo.Constraint(
-        expr=blk.capital_cost_resin == resin_cost * bed_vol_ft3
+        expr=blk.capital_cost_resin
+        == pyo.units.convert(
+            resin_cost * bed_vol_ft3, to_units=blk.costing_package.base_currency
+        )
     )
     blk.capital_cost_backwash_tank_constraint = pyo.Constraint(
         expr=blk.capital_cost_backwash_tank
-        == ion_exchange_params.backwash_tank_intercept
-        + ion_exchange_params.backwash_tank_A_coeff * bw_tank_vol**3
-        + ion_exchange_params.backwash_tank_B_coeff * bw_tank_vol**2
-        + ion_exchange_params.backwash_tank_C_coeff * bw_tank_vol
+        == pyo.units.convert(
+            ion_exchange_params.backwash_tank_intercept
+            + ion_exchange_params.backwash_tank_A_coeff * bw_tank_vol**3
+            + ion_exchange_params.backwash_tank_B_coeff * bw_tank_vol**2
+            + ion_exchange_params.backwash_tank_C_coeff * bw_tank_vol
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     blk.capital_cost_regen_tank_constraint = pyo.Constraint(
         expr=blk.capital_cost_regen_tank
-        == ion_exchange_params.regen_tank_intercept
-        + ion_exchange_params.regen_tank_A_coeff * regen_tank_vol**2
-        + ion_exchange_params.regen_tank_B_coeff * regen_tank_vol
+        == pyo.units.convert(
+            ion_exchange_params.regen_tank_intercept
+            + ion_exchange_params.regen_tank_A_coeff * regen_tank_vol**2
+            + ion_exchange_params.regen_tank_B_coeff * regen_tank_vol
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == (
-            (blk.capital_cost_vessel + blk.capital_cost_resin)
-            * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
-            + blk.capital_cost_backwash_tank
-            + blk.capital_cost_regen_tank
+        == pyo.units.convert(
+            (
+                (blk.capital_cost_vessel + blk.capital_cost_resin)
+                * (blk.unit_model.number_columns + blk.unit_model.number_columns_redund)
+                + blk.capital_cost_backwash_tank
+                + blk.capital_cost_regen_tank
+            )
+            * TIC,
+            to_units=blk.costing_package.base_currency,
         )
-        * TIC
     )
     if blk.unit_model.config.hazardous_waste:
         blk.operating_cost_hazardous_constraint = pyo.Constraint(
             expr=blk.operating_cost_hazardous
-            == (
-                bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
-                + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
-            )
-            * ion_exchange_params.annual_resin_replacement_factor
-            + ion_exchange_params.hazardous_min_cost
+            == pyo.units.convert(
+                (
+                    bw_tank_vol * ion_exchange_params.hazardous_regen_disposal
+                    + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
+                )
+                * ion_exchange_params.annual_resin_replacement_factor
+                + ion_exchange_params.hazardous_min_cost
+            ),
+            to_units=blk.costing_package.base_currency,
         )
     else:
         blk.operating_cost_hazardous.fix(0)
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == (
+        == pyo.units.convert(
             (
-                bed_vol_ft3
-                * ion_exchange_params.annual_resin_replacement_factor
-                * resin_cost
+                (
+                    bed_vol_ft3
+                    * ion_exchange_params.annual_resin_replacement_factor
+                    * resin_cost
+                )
+                + blk.operating_cost_hazardous
             )
-            + blk.operating_cost_hazardous
-        )
+        ),
+        to_units=blk.costing_package.base_currency,
     )
 
     regen_soln_flow = (

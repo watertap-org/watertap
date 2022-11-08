@@ -89,9 +89,15 @@ def cost_uv_aop_bundle(blk, reactor_cost, lamp_cost, factor_lamp_replacement):
 
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
-        == blk.reactor_cost * flow_in + blk.lamp_cost * electricity_demand
+        == pyo.units.convert(
+            blk.reactor_cost * flow_in + blk.lamp_cost * electricity_demand
+        ),
+        to_units=blk.costing_package.base_currency,
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_lamp_replacement * blk.lamp_cost * electricity_demand
+        == pyo.units.convert(
+            blk.factor_lamp_replacement * blk.lamp_cost * electricity_demand
+        ),
+        to_units=blk.costing_package.base_currency,
     )

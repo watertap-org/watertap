@@ -85,11 +85,18 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
     blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost == blk.membrane_cost * blk.unit_model.area
+        expr=blk.capital_cost
+        == pyo.units.convert(
+            blk.membrane_cost * blk.unit_model.area,
+            to_units=blk.costing_package.base_currency,
+        )
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
-        == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area
+        == pyo.units.convert(
+            blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area,
+            to_units=blk.costing_package.base_currency,
+        )
     )
 
 
@@ -104,5 +111,8 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(
-        expr=blk.capital_cost == blk.flow_cost * flow_to_cost
+        expr=blk.capital_cost
+        == pyo.units.convert(
+            blk.flow_cost * flow_to_cost, to_units=blk.costing_package.base_currency
+        )
     )
