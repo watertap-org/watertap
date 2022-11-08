@@ -296,9 +296,9 @@ def cost_ion_exchange(blk):
             ion_exchange_params.vessel_intercept
             + ion_exchange_params.vessel_A_coeff * col_vol_gal**3
             + ion_exchange_params.vessel_B_coeff * col_vol_gal**2
-            + ion_exchange_params.vessel_C_coeff * col_vol_gal
-        ),
-        to_units=blk.costing_package.base_currency,
+            + ion_exchange_params.vessel_C_coeff * col_vol_gal,
+            to_units=blk.costing_package.base_currency,
+        )
     )
     blk.capital_cost_resin_constraint = pyo.Constraint(
         expr=blk.capital_cost_resin
@@ -312,18 +312,18 @@ def cost_ion_exchange(blk):
             ion_exchange_params.backwash_tank_intercept
             + ion_exchange_params.backwash_tank_A_coeff * bw_tank_vol**3
             + ion_exchange_params.backwash_tank_B_coeff * bw_tank_vol**2
-            + ion_exchange_params.backwash_tank_C_coeff * bw_tank_vol
-        ),
-        to_units=blk.costing_package.base_currency,
+            + ion_exchange_params.backwash_tank_C_coeff * bw_tank_vol,
+            to_units=blk.costing_package.base_currency,
+        )
     )
     blk.capital_cost_regen_tank_constraint = pyo.Constraint(
         expr=blk.capital_cost_regen_tank
         == pyo.units.convert(
             ion_exchange_params.regen_tank_intercept
             + ion_exchange_params.regen_tank_A_coeff * regen_tank_vol**2
-            + ion_exchange_params.regen_tank_B_coeff * regen_tank_vol
-        ),
-        to_units=blk.costing_package.base_currency,
+            + ion_exchange_params.regen_tank_B_coeff * regen_tank_vol,
+            to_units=blk.costing_package.base_currency,
+        )
     )
     blk.capital_cost_constraint = pyo.Constraint(
         expr=blk.capital_cost
@@ -347,9 +347,9 @@ def cost_ion_exchange(blk):
                     + bed_mass_ton * ion_exchange_params.hazardous_resin_disposal
                 )
                 * ion_exchange_params.annual_resin_replacement_factor
-                + ion_exchange_params.hazardous_min_cost
-            ),
-            to_units=blk.costing_package.base_currency,
+                + ion_exchange_params.hazardous_min_cost,
+                to_units=blk.costing_package.base_currency,
+            )
         )
     else:
         blk.operating_cost_hazardous.fix(0)
@@ -363,9 +363,10 @@ def cost_ion_exchange(blk):
                     * resin_cost
                 )
                 + blk.operating_cost_hazardous
-            )
-        ),
-        to_units=blk.costing_package.base_currency,
+            ),
+            to_units=blk.costing_package.base_currency
+            / blk.costing_package.base_period,
+        )
     )
 
     regen_soln_flow = (

@@ -139,9 +139,9 @@ def cost_electrodialysis_stack(
                 * blk.unit_model.cell_length
             )
             + blk.electrode_cost
-            * (blk.unit_model.cell_width * blk.unit_model.cell_length)
-        ),
-        to_units=blk.costing_package.base_currency,
+            * (blk.unit_model.cell_width * blk.unit_model.cell_length),
+            to_units=blk.costing_package.base_currency,
+        )
     )
     blk.fixed_operating_cost_constraint = pyo.Constraint(
         expr=blk.fixed_operating_cost
@@ -155,7 +155,8 @@ def cost_electrodialysis_stack(
             )
             + blk.electrode_replacement_factor
             * blk.electrode_cost
-            * (blk.unit_model.cell_width * blk.unit_model.cell_length)
-        ),
-        to_units=blk.costing_package.base_currency,
+            * (blk.unit_model.cell_width * blk.unit_model.cell_length),
+            to_units=blk.costing_package.base_currency
+            / blk.costing_package.base_period,
+        )
     )

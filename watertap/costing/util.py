@@ -95,7 +95,8 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
         expr=blk.fixed_operating_cost
         == pyo.units.convert(
             blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area,
-            to_units=blk.costing_package.base_currency,
+            to_units=blk.costing_package.base_currency
+            / blk.costing_package.base_period,
         )
     )
 
