@@ -16,8 +16,10 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
+    log10,
     exp,
     check_optimal_termination,
+    Set,
 )
 from pyomo.environ import units as pyunits
 
@@ -31,8 +33,9 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component
+from idaes.core.base.components import Component, Solute, Solvent
 from idaes.core.base.phases import LiquidPhase, VaporPhase
+from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -74,11 +77,9 @@ class WaterParameterData(PhysicalParameterBlock):
 
         """ References
         This package was developed from the following references:
-
         - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
-
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
@@ -429,7 +430,6 @@ class _WaterStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-
                          flow_mass_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
@@ -505,7 +505,6 @@ class _WaterStateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialisation.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -531,7 +530,6 @@ class _WaterStateBlock(StateBlock):
         be state variables or properties. This method is typically used before
         initialization to solve for state variables because non-state variables (i.e. properties)
         cannot be fixed in initialization routines.
-
         Keyword Arguments:
             var_args : dictionary with variables and their values, they can be state variables or properties
                        {(VAR_NAME, INDEX): VALUE}
@@ -542,7 +540,6 @@ class _WaterStateBlock(StateBlock):
             solver : solver name string if None is provided the default solver
                      for IDAES will be used (default = None)
             optarg : solver options dictionary object (default={})
-
         Returns:
             results object from state block solve
         """
