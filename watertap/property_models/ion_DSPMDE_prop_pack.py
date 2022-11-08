@@ -1954,23 +1954,15 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # transforming constraints
         for metadata_dic in self.params.get_metadata().properties.values():
-            exclusions = [
-                "diffus_phase_comp",
-                "visc_d_phase",
-                "radius_stokes_comp",
-                "mw_comp",
-                "charge_comp",
-                "dielectric_constant",
-            ]
             var_str = metadata_dic["name"]
-            if (
-                metadata_dic["method"] is not None
-                and metadata_dic["name"] not in exclusions
-                and self.is_property_constructed(var_str)
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
             ):
                 var = getattr(self, var_str)
                 if isinstance(var, Expression):
                     continue  # properties that are expressions do not have constraints
+                if isinstance(var, Param):
+                    continue  # properties that are parameters do not have constraints
                 con = getattr(self, "eq_" + var_str)
                 for ind, c in con.items():
                     sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
