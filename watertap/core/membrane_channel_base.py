@@ -426,7 +426,7 @@ class MembraneChannelMixin:
                 self.length_domain,
                 solute_set,
                 initialize=5e-5,
-                bounds=(1e-6, 1e-3),
+                bounds=(1e-8, 1e-3),
                 domain=NonNegativeReals,
                 units=units_meta("length") * units_meta("time") ** -1,
                 doc="Membrane channel mass transfer coefficient",

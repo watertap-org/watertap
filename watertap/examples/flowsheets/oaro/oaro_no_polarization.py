@@ -74,15 +74,13 @@ def main(erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
+    assert_degrees_of_freedom(m, expected_dof=0)
     initialize_system(m, solver=solver)
+    assert_degrees_of_freedom(m, expected_dof=0)
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
 
-    # m.fs.P1.report()
-    # m.fs.OARO.report()
-    # m.fs.ERD1.report()
-    # m.fs.P2.report()
-    # m.fs.RO.report()
-    # m.fs.ERD2.report()
-    # m.fs.P3.report()
+    # solve(m, solver=solver, tee=True)
 
     # Use of Degeneracy Hunter for troubleshooting model.
     # m.fs.dummy_objective = Objective(expr=0)
@@ -90,14 +88,13 @@ def main(erd_type=ERDtype.pump_as_turbine):
     # solver.solve(m, tee=True)
     # dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
     # dh.check_residuals(tol=0.1)
+    # solver.options["max_iter"] = 2000
+    # try:
+    #     dh.check_rank_equality_constraints()
+    # except:
+    #     ds2 = dh.find_candidate_equations(verbose=True, tee=True)
+    #     ids = dh.find_irreducible_degenerate_sets(verbose=True, tee=False)
 
-    # print_close_to_bounds(m)
-    # print_infeasible_constraints(m)
-
-    # optimize and display
-    # optimize_set_up(m)
-
-    # solve(m, solver=solver, tee=True)
     try:
         solve(m, solver=solver, tee=True)
     except:
@@ -143,22 +140,25 @@ def build(erd_type=ERDtype.pump_as_turbine):
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
         property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
     )
+    # m.fs.RO = ReverseOsmosis0D(
+    #     property_package=m.fs.properties,
+    #     has_pressure_change=True,
+    #     pressure_change_type=PressureChangeType.calculated,
+    #     mass_transfer_coefficient=MassTransferCoefficient.calculated,
+    #     concentration_polarization_type=ConcentrationPolarizationType.calculated,
+    # )
     # m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
         property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
     )
     # m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
@@ -250,9 +250,7 @@ def set_operating_conditions(
     if solver is None:
         solver = get_solver()
     # ---specifications---
-    print("DOF before feed:", degrees_of_freedom(m))
     # feed
-    print("Degrees of Freedom of Feed before fixed:", degrees_of_freedom(m.fs.feed))
     # state variables
     pressure_atmospheric = 101325
     feed_pressure = pressure_atmospheric
@@ -276,44 +274,46 @@ def set_operating_conditions(
     #     },  # feed NaCl mass fraction [-]
     #     hold_state=True,  # fixes the calculated component mass flow rates
     # )
-    print("Degrees of Freedom of Feed after fixed:", degrees_of_freedom(m.fs.feed))
-    print("DOF after feed:", degrees_of_freedom(m))
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    print("Degrees of Freedom of P1 before fixed:", degrees_of_freedom(m.fs.P1))
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # print("Operating pressure of P1:", operating_pressure)
+    # m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
     m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
-    # m.fs.P1.control_volume.properties_out[0].pressure = 50e5
     # m.fs.P1.deltaP.setlb(0)
 
-    print("Degrees of Freedom of P1 after fixed:", degrees_of_freedom(m.fs.P1))
-    print("DOF after P1:", degrees_of_freedom(m))
-
     # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
-    print("Degrees of Freedom of P2 before fixed:", degrees_of_freedom(m.fs.P2))
-
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # print("Operating pressure of P2:", operating_pressure)
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(18e5)
-    # m.fs.P2.control_volume.properties_out[0].pressure = 18e5
-
-    print("Degrees of Freedom of P2 after fixed:", degrees_of_freedom(m.fs.P2))
-    print("DOF after P2:", degrees_of_freedom(m))
+    # m.fs.P2.control_volume.properties_out[0].pressure.fix(18e5)
+    m.fs.P2.control_volume.properties_out[0].pressure = 30e5
+    m.fs.P2.deltaP.setlb(0)
 
     # pump 3, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P3.control_volume.properties_out[0].pressure.fix(4e5)
-    m.fs.P3.control_volume.properties_out[0].pressure = 3.4e5
+    # m.fs.P3.control_volume.properties_out[0].pressure.fix(1.5e5)
+    m.fs.P3.control_volume.properties_out[0].pressure = 5e5
     m.fs.P3.deltaP.setlb(0)
 
     # Initialize OARO
-    print("Degrees of Freedom of OARO before fixed:", degrees_of_freedom(m.fs.OARO))
     membrane_area = 50
     A = 4.2e-12
     B = 1.3e-8
+    feed_cp_mod = 1.1
+    permeate_cp_mod = 0.9
 
-    # m.fs.OARO.area.fix(membrane_area)
+    # m.fs.OARO.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
+    # )
+    # m.fs.OARO.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    # )
+    # m.fs.OARO.feed_inlet.pressure[0].fix(
+    #     m.fs.P1.control_volume.properties_out[0].pressure
+    # )
+    # m.fs.OARO.feed_inlet.temperature[0].fix(
+    #     m.fs.P1.control_volume.properties_out[0].temperature
+    # )
+
+    m.fs.OARO.area.fix(membrane_area)
     m.fs.OARO.A_comp.fix(A)
     m.fs.OARO.B_comp.fix(B)
 
@@ -327,50 +327,39 @@ def set_operating_conditions(
         perm_flow_mass * perm_mass_frac_H2O
     )
     m.fs.OARO.permeate_outlet.pressure[0].fix(pressure_atmospheric)
-    m.fs.OARO.structural_parameter.fix(300e-6)
 
-    m.fs.OARO.permeate_side.channel_height.fix(0.001)
-    m.fs.OARO.permeate_side.spacer_porosity.fix(0.75)
-    m.fs.OARO.feed_side.channel_height.fix(0.002)
-    m.fs.OARO.feed_side.spacer_porosity.fix(0.75)
-    m.fs.OARO.feed_side.velocity[0, 0].fix(0.1)
-
-    print("Degrees of Freedom of OARO after fixed:", degrees_of_freedom(m.fs.OARO))
-    print("DOF after OARO:", degrees_of_freedom(m))
+    # m.fs.OARO.feed_side.cp_modulus.fix(feed_cp_mod)
+    # m.fs.OARO.permeate_side.cp_modulus.fix(permeate_cp_mod)
+    # m.fs.OARO.feed_side.deltaP.fix(-4e4)
+    # m.fs.OARO.permeate_side.deltaP.fix(-5e4)
 
     # RO unit
-    print("Degrees of Freedom of RO before fixed:", degrees_of_freedom(m.fs.RO))
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(5)  # stage width [m]
-    # m.fs.RO.area.fix(50)  # guess area for RO initialization
+    m.fs.RO.area.fix(50)  # guess area for RO initialization
 
-    print("Degrees of Freedom of RO after fixed:", degrees_of_freedom(m.fs.RO))
-    print("DOF after RO:", degrees_of_freedom(m))
+    # membrane_pressure_drop = 3e5
+    # concentration_polarization_modulus = 1.1
+    # m.fs.RO.deltaP.fix(-membrane_pressure_drop)
+    # m.fs.RO.feed_side.cp_modulus.fix(concentration_polarization_modulus)
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
-        print("Degrees of Freedom of ERD1 before fixed:", degrees_of_freedom(m.fs.ERD1))
         m.fs.ERD1.efficiency_pump.fix(0.95)
         # m.fs.ERD1.control_volume.properties_out[0].pressure.fix(101325)
-        m.fs.ERD1.control_volume.properties_out[0].pressure = 101325
+        m.fs.ERD1.control_volume.properties_out[0].pressure = pressure_atmospheric
+        # m.fs.ERD1.control_volume.properties_out[0].pressure.setub(pressure_atmospheric)
+        # m.fs.ERD1.control_volume.properties_out[0].pressure.setlb(pressure_atmospheric)
         m.fs.ERD1.deltaP.setub(0)
-        print("Degrees of Freedom of ERD1 after fixed:", degrees_of_freedom(m.fs.ERD1))
-        print("DOF after ERD1:", degrees_of_freedom(m))
 
-        print("Degrees of Freedom of ERD2 before fixed:", degrees_of_freedom(m.fs.ERD2))
         m.fs.ERD2.efficiency_pump.fix(0.95)
-        m.fs.ERD2.control_volume.properties_out[0].pressure.fix(101325)
-        # m.fs.ERD2.control_volume.properties_out[0].pressure = 101325
-        # m.fs.ERD2.deltaP.setub(0)
-        # m.fs.ERD2.control_volume.properties_out[0].pressure.setub(101325)
+        # m.fs.ERD2.control_volume.properties_out[0].pressure.fix(101325)
+        m.fs.ERD2.control_volume.properties_out[0].pressure = pressure_atmospheric
+        # m.fs.ERD2.control_volume.properties_out[0].pressure.setub(pressure_atmospheric)
+        # m.fs.ERD2.control_volume.properties_out[0].pressure.setlb(pressure_atmospheric)
+        m.fs.ERD2.deltaP.setub(0)
 
-        print("Degrees of Freedom of ERD2 after fixed:", degrees_of_freedom(m.fs.ERD2))
-
-        print("DOF after ERD2:", degrees_of_freedom(m))
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -425,14 +414,88 @@ def initialize_system(m, solver=None):
     #     # print_infeasible_constraints(m)
     #     print("Initialize Failed...")
     m.fs.RO.initialize(optarg=optarg)
-    propagate_state(m.fs.s07)
+    # propagate_state(m.fs.s07)
 
     propagate_state(m.fs.s08)
     m.fs.ERD2.initialize(optarg=optarg)
 
     propagate_state(m.fs.s09)
     m.fs.P3.initialize(optarg=optarg)
-    # propagate_state(m.fs.s10)
+
+    # # --- initialize ERD ---
+    # if m.fs.erd_type == ERDtype.pump_as_turbine:
+    #     initialize_pump_as_turbine(m, optarg)
+    #
+    # else:
+    #     erd_type_not_found(m.fs.erd_type)
+
+    # m.fs.costing.initialize()
+
+
+# def initialize_pump_as_turbine(m, optarg):
+#     propagate_state(m.fs.s03)
+#     m.fs.ERD1.initialize(optarg=optarg)
+#     # propagate_state(m.fs.s04)
+#     # propagate_state(m.fs.s08)
+#     # m.fs.ERD2.initialize(optarg=optarg)
+#     propagate_state(m.fs.s01)
+#     m.fs.P1.initialize(optarg=optarg)
+#     propagate_state(m.fs.s02)
+#     propagate_state(m.fs.s05)
+#     m.fs.P2.initialize(optarg=optarg)
+#     # propagate_state(m.fs.s06)
+#     # m.fs.RO.initialize(optarg=optarg)
+#     # propagate_state(m.fs.s07)
+#     # m.fs.product.initialize()
+#     # propagate_state(m.fs.s08)
+#     # m.fs.product.initialize()
+#     # m.fs.P3.initialize(optarg=optarg)
+#     # propagate_state(m.fs.s09)
+
+
+# def optimize_set_up(m):
+#     # add objective
+#     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+#
+#     # unfix decision variables and add bounds
+#     # pump 1 and pump 2
+#     m.fs.P1.control_volume.properties_out[0].pressure.unfix()
+#     m.fs.P1.control_volume.properties_out[0].pressure.setlb(10e5)
+#     m.fs.P1.control_volume.properties_out[0].pressure.setub(80e5)
+#     m.fs.P1.deltaP.setlb(0)
+#
+#     # RO
+#     m.fs.RO.area.unfix()
+#     m.fs.RO.area.setlb(1)
+#     m.fs.RO.area.setub(150)
+#
+#     # additional specifications
+#     m.fs.product_salinity = Param(
+#         initialize=500e-6, mutable=True
+#     )  # product NaCl mass fraction [-]
+#     m.fs.minimum_water_flux = Param(
+#         initialize=1.0 / 3600.0, mutable=True
+#     )  # minimum water flux [kg/m2-s]
+#
+#     # additional constraints
+#     m.fs.eq_product_quality = Constraint(
+#         expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+#         <= m.fs.product_salinity
+#     )
+#     iscale.constraint_scaling_transform(
+#         m.fs.eq_product_quality, 1e3
+#     )  # scaling constraint
+#     m.fs.eq_minimum_water_flux = Constraint(
+#         expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
+#     )
+#
+#     # ---checking model---
+#     assert_degrees_of_freedom(m, 1)
+#
+#
+# def optimize(m, solver=None, check_termination=True):
+#     # --solve---
+#     return solve(m, solver=solver, check_termination=check_termination)
 
 
 def display_system(m):
@@ -513,19 +576,19 @@ def display_state(m):
     print_state("P1 out    ", m.fs.P1.outlet)
     print_state("OARO Feed in", m.fs.OARO.feed_inlet)
     print_state("OARO Feed out", m.fs.OARO.feed_outlet)
-    print_state("ERD1 in    ", m.fs.ERD1.inlet)
-    print_state("ERD1 out    ", m.fs.ERD1.outlet)
     print_state("OARO Perm in", m.fs.OARO.permeate_inlet)
     print_state("OARO Perm out", m.fs.OARO.permeate_outlet)
+    print_state("ERD1 in    ", m.fs.ERD1.inlet)
+    print_state("ERD1 out    ", m.fs.ERD1.outlet)
     print_state("P2 in    ", m.fs.P2.inlet)
     print_state("P2 out    ", m.fs.P2.outlet)
     print_state("RO in   ", m.fs.RO.inlet)
     print_state("RO reten  ", m.fs.RO.retentate)
+    print_state("RO perm   ", m.fs.RO.permeate)
     print_state("ERD2 in    ", m.fs.ERD2.inlet)
     print_state("ERD2 out    ", m.fs.ERD2.outlet)
     print_state("P3 in    ", m.fs.P3.inlet)
     print_state("P3 out    ", m.fs.P3.outlet)
-    print_state("RO perm   ", m.fs.RO.permeate)
 
 
 if __name__ == "__main__":
@@ -536,5 +599,3 @@ if __name__ == "__main__":
     # m.fs.ERD1.report()
     # m.fs.P2.report()
     # m.fs.RO.report()
-    # m.fs.ERD2.report()
-    # m.fs.P3.report()

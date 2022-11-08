@@ -146,7 +146,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             self.dP_dx = Var(
                 self.flowsheet().config.time,
                 initialize=-5e4,
-                bounds=(-2e5, -1e3),
+                bounds=(-2e5, -1e2),
                 domain=NegativeReals,
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="pressure drop per unit length across channel",
@@ -163,7 +163,7 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
                 self.flowsheet().config.time,
                 self.length_domain,
                 initialize=-5e4,
-                bounds=(-2e5, -1e3),
+                bounds=(-2e5, -1e2),
                 domain=NegativeReals,
                 units=units_meta("pressure") * units_meta("length") ** -1,
                 doc="Pressure drop per unit length of channel at inlet and outlet",

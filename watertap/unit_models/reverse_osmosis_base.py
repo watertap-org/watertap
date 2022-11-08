@@ -183,7 +183,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.4,
-            bounds=(1e-2, 1 - 1e-6),
+            bounds=(1e-4, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Volumetric recovery rate",
         )
@@ -206,7 +206,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
+            bounds=lambda b, t, p, j: (1e-4, 1 - 1e-6)
             if j in solvent_set
             else (1e-5, 1 - 1e-6),
             units=pyunits.dimensionless,
@@ -336,7 +336,7 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
+            bounds=lambda b, t, x, p, j: (1e-5, 3e-2)
             if j in solvent_set
             else (1e-8, 1e-3),
             units=units_meta("mass")
@@ -526,12 +526,12 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if degrees_of_freedom(self) != 0:
-            # TODO: should we have a separate error for DoF?
-            raise Exception(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(self)}"
-            )
+        # if degrees_of_freedom(self) != 0:
+        #     # TODO: should we have a separate error for DoF?
+        #     raise Exception(
+        #         f"{self.name} degrees of freedom were not 0 at the beginning "
+        #         f"of initialization. DoF = {degrees_of_freedom(self)}"
+        #     )
 
         state_args_permeate = self._get_state_args_permeate(
             initialize_guess, state_args
