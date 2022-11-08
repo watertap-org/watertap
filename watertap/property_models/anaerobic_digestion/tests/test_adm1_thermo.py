@@ -14,12 +14,14 @@
 Tests for ADM1 thermo property package.
 Authors: Adam Atia
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, Param, units, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
+
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
     ADM1StateBlock,

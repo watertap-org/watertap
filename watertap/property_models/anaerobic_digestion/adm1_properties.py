@@ -91,10 +91,9 @@ class ADM1ParameterData(PhysicalParameterBlock):
         self.X_I = Solute(doc="Particulate inerts")
 
         # TODO: Additional components not in Table but referred to in text
+
         self.S_cat = Component(doc="Total cation equivalents concentration")
         self.S_an = Component(doc="Total anion equivalents concentration")
-
-        # TODO: checkpoint
 
         # Heat capacity of water
         self.cp_mass = pyo.Param(

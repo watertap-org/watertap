@@ -197,6 +197,7 @@ class TestParamBlock(object):
 
         assert len(model.rparams.rate_reaction_stoichiometry) == 19 * 27
         for i, v in model.rparams.rate_reaction_stoichiometry.items():
+
             assert i[0] in [
                 "R1",
                 "R2",
@@ -218,7 +219,6 @@ class TestParamBlock(object):
                 "R18",
                 "R19",
             ]
-
             if i in stoic:
                 assert pytest.approx(stoic[i], rel=1e-2) == value(v)
             else:

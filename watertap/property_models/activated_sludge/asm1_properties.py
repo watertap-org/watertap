@@ -154,7 +154,7 @@ class _ASM1StateBlock(StateBlock):
         state_args : Dictionary with initial guesses for the state vars
                      chosen. Note that if this method is triggered
                      through the control volume, and if initial guesses
-                     were not provied at the unit model level, the
+                     were not provide at the unit model level, the
                      control volume passes the inlet values as initial
                      guess.The keys for the state_args dictionary are:
 
@@ -179,13 +179,13 @@ class _ASM1StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
 
         Returns:
             If hold_states is True, returns a dict containing flags for
@@ -217,14 +217,14 @@ class _ASM1StateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
-            outlvl : sets output level of of logging
+            outlvl : sets output level of logging
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
@@ -238,7 +238,7 @@ class _ASM1StateBlock(StateBlock):
 @declare_process_block_class("ASM1StateBlock", block_class=_ASM1StateBlock)
 class ASM1StateBlockData(StateBlockData):
     """
-    StateBlock for calculating thermophysical proeprties associated with the ASM1
+    StateBlock for calculating thermophysical properties associated with the ASM1
     reaction system.
     """
 
@@ -252,7 +252,7 @@ class ASM1StateBlockData(StateBlockData):
         self.flow_vol = pyo.Var(
             initialize=1.0,
             domain=pyo.NonNegativeReals,
-            doc="Total volumentric flowrate",
+            doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
         )
         self.pressure = pyo.Var(
