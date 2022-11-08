@@ -550,9 +550,9 @@ class CoagulationStateBlockData(StateBlockData):
         def rule_dens_mass_phase(b, p):
             return b.dens_mass_phase[p] == (
                 b.params.ref_dens_liq
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TDS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TSS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "Sludge"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TDS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TSS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "Sludge"]
             ) * (
                 b.params.dens_param_A * b.temperature**2
                 + b.params.dens_param_B * b.temperature
@@ -579,10 +579,10 @@ class CoagulationStateBlockData(StateBlockData):
             return (
                 b.flow_vol_phase[p]
                 == (
-                    b.flow_mass_phase_comp["Liq", "H2O"]
-                    + b.flow_mass_phase_comp["Liq", "TDS"]
-                    + b.flow_mass_phase_comp["Liq", "TSS"]
-                    + b.flow_mass_phase_comp["Liq", "Sludge"]
+                    b.flow_mass_phase_comp[p, "H2O"]
+                    + b.flow_mass_phase_comp[p, "TDS"]
+                    + b.flow_mass_phase_comp[p, "TSS"]
+                    + b.flow_mass_phase_comp[p, "Sludge"]
                 )
                 / b.dens_mass_phase[p]
             )
@@ -742,17 +742,11 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase, 1e-3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.dens_mass_phase)
-            iscale.constraint_scaling_transform(self.eq_dens_mass_phase["Liq"], sf)
-
         if self.is_property_constructed("flow_vol_phase"):
             sf = iscale.get_scaling_factor(
                 self.flow_mass_phase_comp["Liq", "H2O"]
             ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
             iscale.set_scaling_factor(self.flow_vol_phase["Liq"], sf)
-            # transforming constraints
-            iscale.constraint_scaling_transform(self.eq_flow_vol_phase["Liq"], sf)
 
         if self.is_property_constructed("conc_mass_phase_comp"):
             # Apply variable scaling
@@ -781,10 +775,6 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.visc_d_phase) is None:
                 iscale.set_scaling_factor(self.visc_d_phase, 1e3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.visc_d_phase)
-            iscale.constraint_scaling_transform(self.eq_visc_d_phase["Liq"], sf)
-
         if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
                 sf = (
@@ -793,6 +783,20 @@ class CoagulationStateBlockData(StateBlockData):
                     * 1e-1
                 )
                 iscale.set_scaling_factor(self.enth_flow, sf)
+
+        # transforming constraints
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic["name"]
+            if metadata_dic["method"] is not None and self.is_property_constructed(
+                var_str
+            ):
+                var = getattr(self, var_str)
+                if isinstance(var, Expression):
+                    continue  # properties that are expressions do not have constraints
+                con = getattr(self, "eq_" + var_str)
+                for ind, c in con.items():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
 
     # ------------------------------------------------------------------
     # # TODO: Create functions for easier user access to setup intial values
