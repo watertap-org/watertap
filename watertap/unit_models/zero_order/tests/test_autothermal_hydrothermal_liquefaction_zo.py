@@ -24,7 +24,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -48,19 +47,17 @@ class TestATHTLZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "organic_solid",
-                    "organic_liquid",
-                    "inorganic_solid",
-                    "carbon_dioxide",
-                ]
-            }
+            solute_list=[
+                "organic_solid",
+                "organic_liquid",
+                "inorganic_solid",
+                "carbon_dioxide",
+            ]
         )
 
-        m.fs.unit = ATHTLZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = ATHTLZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
         m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(71.2)
@@ -159,7 +156,7 @@ class TestATHTLZO:
         assert pytest.approx(0.003499, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(2.8583e-08, rel=1e-5) == value(
+        assert pytest.approx(6.800226e-12, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["organic_solid"]
         )
         assert pytest.approx(1000, rel=1e-5) == value(
@@ -195,17 +192,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-                "carbon_dioxide",
-            ]
-        }
+        solute_list=[
+            "organic_solid",
+            "organic_liquid",
+            "inorganic_solid",
+            "carbon_dioxide",
+        ]
     )
 
     source_file = os.path.join(
@@ -221,9 +216,9 @@ def test_costing():
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit = ATHTLZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = ATHTLZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
     m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(71.2)
@@ -233,9 +228,7 @@ def test_costing():
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.autothermal_hydrothermal_liquefaction, Block)
     assert isinstance(
@@ -316,4 +309,6 @@ def test_costing():
     assert_optimal_termination(results)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
-    assert m.fs.unit.flow_mass_in[0] in m.fs.costing._registered_flows["catalyst_ATHTL"]
+    assert (
+        m.fs.unit.catalyst_flow[0] in m.fs.costing._registered_flows["catalyst_ATHTL"]
+    )

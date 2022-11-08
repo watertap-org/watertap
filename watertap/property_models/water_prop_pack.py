@@ -16,10 +16,8 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
-    log10,
     exp,
     check_optimal_termination,
-    Set,
 )
 from pyomo.environ import units as pyunits
 
@@ -33,9 +31,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Component
 from idaes.core.base.phases import LiquidPhase, VaporPhase
-from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,

@@ -13,11 +13,13 @@
 
 from pyomo.environ import (
     ConcreteModel,
+    Var,
     value,
     Constraint,
     Objective,
     TransformationFactory,
     assert_optimal_termination,
+    units as pyunits,
 )
 from pyomo.network import Arc
 
@@ -61,33 +63,29 @@ def main():
 def build():
     # ---building model---
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
-        "electrical_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
+        "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
-        default={
-            "property_package": m.fs.properties,
-            "outlet_list": ["inlet_diluate", "inlet_concentrate"],
-        }
+        property_package=m.fs.properties,
+        outlet_list=["inlet_diluate", "inlet_concentrate"],
     )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlets of the ED stack.
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
-        default={
-            "property_package": m.fs.properties,
-            "operation_mode": "Constant_Voltage",
-            "finite_elements": 20,
-        },
+        property_package=m.fs.properties,
+        operation_mode="Constant_Voltage",
+        finite_elements=20,
     )
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # Touching needed variables for initialization and displaying results
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
@@ -103,9 +101,7 @@ def build():
     m.fs.disposal.properties[0].flow_vol_phase[...]
 
     # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
@@ -113,6 +109,41 @@ def build():
     m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+
+    # Add two variable for reporting
+    m.fs.mem_area = Var(
+        initialize=1,
+        bounds=(0, 1e3),
+        units=pyunits.meter**2,
+        doc="Total membrane area for cem (or aem) in one stack",
+    )
+    m.fs.product_salinity = Var(
+        initialize=1, bounds=(0, 1000), units=pyunits.kg * pyunits.meter**-3
+    )
+    m.fs.disposal_salinity = Var(
+        initialize=1, bounds=(0, 1e6), units=pyunits.kg * pyunits.meter**-3
+    )
+    m.fs.eq_product_salinity = Constraint(
+        expr=m.fs.product_salinity
+        == sum(
+            m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    )
+    m.fs.eq_disposal_salinity = Constraint(
+        expr=m.fs.disposal_salinity
+        == sum(
+            m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
+            for j in m.fs.properties.ion_set | m.fs.properties.solute_set
+        )
+    )
+
+    m.fs.eq_mem_area = Constraint(
+        expr=m.fs.mem_area
+        == m.fs.EDstack.cell_width
+        * m.fs.EDstack.cell_length
+        * m.fs.EDstack.cell_pair_num
     )
 
     # Add Arcs
@@ -230,25 +261,21 @@ def optimize_system(m, solver=None):
     # Choose and unfix variables to be optimized
     m.fs.EDstack.voltage_applied[0].unfix()
     m.fs.EDstack.cell_pair_num.unfix()
+    m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.01)
-    m.fs.EDstack.voltage_applied[0].setub(60)
+    m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(1)
-    m.fs.EDstack.cell_pair_num.setub(1000)
+    m.fs.EDstack.cell_pair_num.setub(500)
 
     # Set a treatment goal
-    # Example here is to reach a final product water containing NaCl < 1 g/L (from a 10 g/L feed)
-    m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"] <= 0.393
-    )
-    iscale.constraint_scaling_transform(
-        m.fs.eq_product_quality, 1e2
-    )  # scaling constraint
+    # Example here is to reach a final product water containing NaCl = 1 g/L (from a 10 g/L feed)
+    m.fs.product.properties[0].conc_mass_phase_comp["Liq", "Na_+"].fix(0.393)
 
     print("---report model statistics---\n ", report_statistics(m.fs))
     if solver is None:
         solver = get_solver()
-    results = solver.solve(m, tee=False)
+    results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
 
@@ -268,21 +295,11 @@ def display_model_metrics(m):
         ],
         "Product": [
             value(m.fs.product.properties[0].flow_vol_phase["Liq"]),
-            value(
-                sum(
-                    m.fs.product.properties[0].conc_mass_phase_comp["Liq", j]
-                    for j in m.fs.properties.ion_set
-                )
-            ),
+            value(m.fs.product_salinity),
         ],
         "Disposal": [
             value(m.fs.disposal.properties[0].flow_vol_phase["Liq"]),
-            value(
-                sum(
-                    m.fs.disposal.properties[0].conc_mass_phase_comp["Liq", j]
-                    for j in m.fs.properties.ion_set
-                )
-            ),
+            value(m.fs.disposal_salinity),
         ],
     }
     fp_table = DataFrame(
@@ -296,11 +313,7 @@ def display_model_metrics(m):
     pm_table = DataFrame(
         data=[
             value(m.fs.EDstack.recovery_mass_H2O[0]),
-            value(
-                m.fs.EDstack.cell_width
-                * m.fs.EDstack.cell_length
-                * m.fs.EDstack.cell_pair_num
-            ),
+            value(m.fs.mem_area),
             value(m.fs.EDstack.voltage_applied[0]),
             value(m.fs.costing.specific_energy_consumption),
             value(m.fs.costing.LCOW),

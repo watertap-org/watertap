@@ -16,12 +16,11 @@ Tests for zero-order gas-sparged membrane unit
 import pytest
 
 
-from idaes.core import declare_process_block_class, FlowsheetBlock
+from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.config import bin_directory as idaes_bin_directory
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -51,12 +50,12 @@ class TestGasSpargedMembraneZO:
     def model(self):
         m = ConcreteModel()
         m.db = Database()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["cod"]})
+        m.fs.water_props = WaterParameterBlock(solute_list=["cod"])
 
         m.fs.unit = GasSpargedMembraneZO(
-            default={"property_package": m.fs.water_props, "database": m.db}
+            property_package=m.fs.water_props, database=m.db
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)

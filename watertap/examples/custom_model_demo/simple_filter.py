@@ -132,21 +132,17 @@ class FiltrationData(UnitModelBlockData):
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True  # inlet block is an inlet
         self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,  # time domain for the state block, just 0 in this case
-            doc="Material properties of inlet",
-            default=tmp_dict,
+            self.flowsheet().config.time, doc="Material properties of inlet", **tmp_dict
         )
         # Add outlet and waste block
         tmp_dict["defined_state"] = False  # outlet and waste block is not an inlet
         self.properties_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of outlet",
-            default=tmp_dict,
+            **tmp_dict
         )
         self.properties_waste = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of waste",
-            default=tmp_dict,
+            self.flowsheet().config.time, doc="Material properties of waste", **tmp_dict
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks

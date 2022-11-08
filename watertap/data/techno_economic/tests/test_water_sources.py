@@ -39,10 +39,10 @@ def test_default_source():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"database": m.db})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(database=m.db)
 
-    m.fs.unit = FeedZO(default={"property_package": m.fs.params})
+    m.fs.unit = FeedZO(property_package=m.fs.params)
 
     for j in m.fs.params.solute_set:
         assert j in source_data[DEFAULT_SOURCE]["solutes"]
@@ -71,12 +71,10 @@ def test_all_sources(source):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"database": m.db, "water_source": source}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(database=m.db, water_source=source)
 
-    m.fs.unit = FeedZO(default={"property_package": m.fs.params})
+    m.fs.unit = FeedZO(property_package=m.fs.params)
 
     for j in m.fs.params.solute_set:
         assert j in source_data[source]["solutes"]

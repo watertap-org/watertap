@@ -12,7 +12,14 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Block, Var, Suffix, units as pyunits, ExternalFunction
+from pyomo.environ import (
+    Block,
+    Var,
+    Suffix,
+    units as pyunits,
+    ExternalFunction,
+    check_optimal_termination,
+)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -26,20 +33,22 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+<<<<<<< HEAD
 from idaes.core.util.model_statistics import degrees_of_freedom
+=======
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-# From watertap
-from watertap.unit_models.mvc.components.complete_condenser import Condenser
+from watertap.core import InitializationMixin
 
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Evaporator")
-class EvaporatorData(UnitModelBlockData):
+class EvaporatorData(InitializationMixin, UnitModelBlockData):
     """
     Evaporator model for MVC
     """
@@ -222,7 +231,11 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_feed = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of feed inlet",
+<<<<<<< HEAD
             default=tmp_dict,
+=======
+            **tmp_dict,
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Brine state block
@@ -230,7 +243,11 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_brine = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of brine outlet",
+<<<<<<< HEAD
             default=tmp_dict,
+=======
+            **tmp_dict,
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Vapor state block
@@ -241,7 +258,11 @@ class EvaporatorData(UnitModelBlockData):
         self.properties_vapor = self.config.property_package_vapor.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of vapor outlet",
+<<<<<<< HEAD
             default=tmp_dict,
+=======
+            **tmp_dict,
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         )
 
         # Add block for condenser constraints
@@ -292,13 +313,16 @@ class EvaporatorData(UnitModelBlockData):
         def eq_vapor_pressure(b, t):
             return b.properties_vapor[t].pressure == b.properties_brine[t].pressure
 
+<<<<<<< HEAD
         # Vapor temperature
+=======
+        # Vapor temperature - assumed to be equal to brine temperature
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         @self.Constraint(self.flowsheet().time, doc="Vapor temperature")
         def eq_vapor_temperature(b, t):
             return (
                 b.properties_vapor[t].temperature == b.properties_brine[t].temperature
             )
-            # return b.properties_vapor[t].temperature == 0.5*(b.properties_out[t].temperature + b.properties_in[t].temperature)
 
         ### EVAPORATOR CONSTRAINTS ###
         # log mean temperature
@@ -430,6 +454,7 @@ class EvaporatorData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
+<<<<<<< HEAD
         # check degrees of freedom
         under_constrained_flag = False
         # if degrees_of_freedom(blk) != 0:
@@ -447,6 +472,31 @@ class EvaporatorData(UnitModelBlockData):
                     " This error suggests that temperature differences have not been fixed"
                     " for initialization.".format(degrees_of_freedom(blk))
                 )
+=======
+        # incorporate guessed temperature differences
+        has_guessed_delta_temperature_in = False
+        if delta_temperature_in is not None:
+            if blk.delta_temperature_in.is_fixed():
+                raise RuntimeError(
+                    "A guess was provided for the delta_temperature_in variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_in"
+                )
+            blk.delta_temperature_in.fix(delta_temperature_in)
+            has_guessed_delta_temperature_in = True
+
+        has_guessed_delta_temperature_out = False
+        if delta_temperature_out is not None:
+            if blk.delta_temperature_out.is_fixed():
+                raise RuntimeError(
+                    "A guess was provided for the delta_temperature_out variable in the "
+                    "initialization, but it is already fixed. Either do not "
+                    "provide a guess for or unfix delta_temperature_out"
+                )
+            blk.delta_temperature_out.fix(delta_temperature_out)
+            has_guessed_delta_temperature_out = True
+
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -455,13 +505,22 @@ class EvaporatorData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states and release delta_temperature
         blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
+<<<<<<< HEAD
         if under_constrained_flag:
             blk.delta_temperature_in.unfix()
+=======
+        if has_guessed_delta_temperature_in:
+            blk.delta_temperature_in.unfix()
+        if has_guessed_delta_temperature_out:
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
             blk.delta_temperature_out.unfix()
         if hasattr(blk, "connection_to_condenser"):
             blk.connection_to_condenser.activate()
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {

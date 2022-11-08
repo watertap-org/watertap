@@ -27,7 +27,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     optimize,
 )
 
-from watertap.tools.parameter_sweep_input_parser import (
+from watertap.tools.parameter_sweep import (
     get_sweep_params_from_yaml,
     set_defaults_from_yaml,
 )
@@ -41,14 +41,14 @@ def get_sweep_params(m, use_LHS=False):
         sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
         sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
         sweep_params["Spacer_porosity"] = LatinHypercubeSample(
-            m.fs.RO.spacer_porosity, 0.95, 0.99
+            m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99
         )
 
     else:
         sweep_params["A_comp"] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
         sweep_params["B_comp"] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
         sweep_params["Spacer_porosity"] = UniformSample(
-            m.fs.RO.spacer_porosity, 0.95, 0.99
+            m.fs.RO.feed_side.spacer_porosity, 0.95, 0.99
         )
 
     return sweep_params

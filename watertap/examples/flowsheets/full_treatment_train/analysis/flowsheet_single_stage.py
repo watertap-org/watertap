@@ -172,7 +172,7 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
-    m.fs.RO.N_Re[0, 0].unfix()
+    m.fs.RO.feed_side.N_Re[0, 0].unfix()
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
@@ -211,7 +211,7 @@ def optimize(m, check_termination=True):
 
 def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     build(m, **desal_kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 

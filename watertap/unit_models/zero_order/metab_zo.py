@@ -15,11 +15,9 @@ This module contains a zero-order representation of a METAB bioreactor with simp
 (i.e., conversion fractions for key reagents and conversion ratios for other reactive species).
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
-
-from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
-from watertap.ui.api import export_variables
+from watertap.core import build_sido_reactive, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Tim Bartholomew"
@@ -129,18 +127,3 @@ class MetabZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Electricity Demand"] = self.electricity
         self._perf_var_dict["Thermal Energy Demand"] = self.heat
-
-        export_variables(
-            self,
-            name="METAB Z0",
-            desc="Zero-Order model for a METAB bioreactor",
-            variables=[
-                "volume",
-                "hydraulic_retention_time",
-                "electricity",
-                "heat",
-                "energy_electric_mixer_vol",
-                "energy_electric_vacuum_flow_vol_byproduct",
-                "energy_thermal_flow_vol_inlet",
-            ],
-        )

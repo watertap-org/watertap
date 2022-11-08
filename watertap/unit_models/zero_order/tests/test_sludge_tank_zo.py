@@ -46,14 +46,12 @@ class TestSludgeTankZO_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["toc", "tds", "eeq", "nitrate", "tss"]}
+            solute_list=["toc", "tds", "eeq", "nitrate", "tss"]
         )
 
-        m.fs.unit = SludgeTankZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = SludgeTankZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(3)
@@ -171,16 +169,16 @@ class TestSludgeTankZO_default_removal:
         assert pytest.approx(0.00594178240, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]
         )
-        assert pytest.approx(4.753e-8, rel=1e-2) == value(
+        assert pytest.approx(2.528e-9, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]
         )
-        assert pytest.approx(4.753e-8, rel=1e-2) == value(
+        assert pytest.approx(2.528e-9, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
         )
-        assert pytest.approx(4.753e-8, rel=1e-2) == value(
+        assert pytest.approx(2.528e-9, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["eeq"]
         )
-        assert pytest.approx(4.753e-8, rel=1e-2) == value(
+        assert pytest.approx(2.528e-9, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
         assert pytest.approx(999.994058, rel=1e-5) == value(
@@ -214,12 +212,10 @@ class TestSludgeTankZO_w_o_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss"])
 
-        m.fs.unit = SludgeTankZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = SludgeTankZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(17)
@@ -338,15 +334,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = SludgeTankZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = SludgeTankZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -355,9 +349,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.sludge_tank, Block)
     assert isinstance(m.fs.costing.sludge_tank.capital_a_parameter, Var)

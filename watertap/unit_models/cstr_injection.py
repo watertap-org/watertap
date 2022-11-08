@@ -38,11 +38,13 @@ from idaes.core.util.config import (
 )
 import idaes.core.util.unit_costing as costing
 
+from watertap.core import InitializationMixin
+
 __author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
 @declare_process_block_class("CSTR_Injection")
-class CSTR_InjectionData(UnitModelBlockData):
+class CSTR_InjectionData(InitializationMixin, UnitModelBlockData):
     """
     CSTR Unit Model with Injection Class
     """
@@ -234,14 +236,12 @@ see reaction package for documentation.}""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=self.config.reaction_package,
+            reaction_package_args=self.config.reaction_package_args,
         )
 
         self.control_volume.add_geometry()
@@ -322,7 +322,7 @@ see reaction package for documentation.}""",
         "FlowsheetCostingBlock tools.",
         version="TBD",
     )
-    def get_costing(self, year=None, module=costing, **kwargs):
+    def get_costing(self, year=None, module=costing, **kwargs):  # TODO-DEPR: remove
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 

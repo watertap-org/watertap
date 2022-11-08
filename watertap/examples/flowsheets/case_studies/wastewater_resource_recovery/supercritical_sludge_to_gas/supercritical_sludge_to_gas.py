@@ -24,10 +24,10 @@ from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Product
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
-from idaes.generic_models.costing import UnitModelCostingBlock
+from idaes.core import UnitModelCostingBlock
 
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
@@ -53,7 +53,7 @@ def main():
 
     results = solve(m)
     assert_optimal_termination(results)
-    display_results(m)
+    # display_reports(m)
 
     add_costing(m)
     initialize_costing(m)
@@ -61,7 +61,10 @@ def main():
     assert_units_consistent(m)
 
     results = solve(m)
-    display_costing(m)
+    assert_optimal_termination(results)
+
+    display_metrics_results(m)
+    display_additional_results(m)
 
     return m, results
 
@@ -71,46 +74,31 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-                "carbon_dioxide",
-            ]
-        }
+        solute_list=[
+            "organic_solid",
+            "organic_liquid",
+            "inorganic_solid",
+            "carbon_dioxide",
+        ]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.ATHTL = ATHTLZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.ATHTL = ATHTLZO(property_package=m.fs.prop, database=m.db)
     m.fs.salt_precipitation = SaltPrecipitationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
-    m.fs.HTG = HTGZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.HTG = HTGZO(property_package=m.fs.prop, database=m.db)
 
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
     # CO2 from ATHTL to sulfer conversion unit, final product should be solid sulfer, H2 and CO2
-    m.fs.product_CO2 = Product(default={"property_package": m.fs.prop})
+    m.fs.product_CO2 = Product(property_package=m.fs.prop)
     # sulfates, nitrates & phosphates (organics & inorganics) from salt precipitation unit
-    m.fs.product_salts = Product(default={"property_package": m.fs.prop})
+    m.fs.product_salts = Product(property_package=m.fs.prop)
     # CO2 from HTG for renewable natural gas product
-    m.fs.product_natural_gas = Product(default={"property_package": m.fs.prop})
+    m.fs.product_natural_gas = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.ATHTL.inlet)
@@ -183,9 +171,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.ATHTL.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.salt_precipitation.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.HTG.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -240,6 +228,70 @@ def add_costing(m):
             )
         ),
         doc="Levelized cost of Sulfates, Nitrates and Phosphates",
+    )
+
+    # other levelized costs
+    m.fs.costing.annual_water_inlet = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.annual_water_production = Expression(
+        expr=m.fs.costing.utilization_factor
+        * pyunits.convert(
+            m.fs.product_H2O.properties[0].flow_vol,
+            to_units=pyunits.m**3 / m.fs.costing.base_period,
+        )
+    )
+
+    m.fs.costing.annual_CO2_renewable_production = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.HTG.byproduct.flow_mass_comp[0, "carbon_dioxide"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        )
+    )
+
+    m.fs.costing.annual_CO2_sulfur_production = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                m.fs.ATHTL.byproduct.flow_mass_comp[0, "carbon_dioxide"],
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        )
+    )
+
+    m.fs.costing.annual_sulphate_nitrate_phosphate_production = Expression(
+        expr=(
+            m.fs.costing.utilization_factor
+            * pyunits.convert(
+                (
+                    m.fs.salt_precipitation.byproduct.flow_mass_comp[0, "organic_solid"]
+                    + m.fs.salt_precipitation.byproduct.flow_mass_comp[
+                        0, "inorganic_solid"
+                    ]
+                ),
+                to_units=pyunits.kg / m.fs.costing.base_period,
+            )
+        )
+    )
+
+    m.fs.costing.total_annualized_cost = Expression(
+        expr=(
+            m.fs.costing.total_capital_cost * m.fs.costing.capital_recovery_factor
+            + m.fs.costing.total_operating_cost
+        )
+    )
+
+    m.fs.costing.LCOT = Expression(
+        expr=(m.fs.costing.total_annualized_cost / m.fs.costing.annual_water_inlet),
+        doc="Levelized Cost of Treatment",
     )
 
 
@@ -306,6 +358,199 @@ def display_costing(m):
         pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2020 / pyunits.kg)
     )
     print(f"Levelized Cost of Sulfates, Nitrates and Phosphates: {LCOS:.3f} $/kg")
+
+
+def display_metrics_results(m):
+    print("----------Levelized costs----------")
+    LCOT = value(
+        pyunits.convert(
+            m.fs.costing.LCOT, to_units=m.fs.costing.base_currency / pyunits.m**3
+        )
+    )
+    print(f"Levelized Cost of Treatment: {LCOT:.4f} $/m3 of feed")
+    LCOW = value(
+        pyunits.convert(
+            m.fs.costing.LCOW, to_units=m.fs.costing.base_currency / pyunits.m**3
+        )
+    )
+    print(f"Levelized Cost of Water: {LCOW:.4f} $/m3 of product")
+    LCOG = value(
+        pyunits.convert(m.fs.costing.LCOG, to_units=pyunits.USD_2020 / pyunits.kg)
+    )
+    print(f"Levelized Cost of Natural Gas Based on Carbon Dioxide: {LCOG:.4f} $/kg")
+    LCOC = value(
+        pyunits.convert(m.fs.costing.LCOC, to_units=pyunits.USD_2020 / pyunits.kg)
+    )
+    print(f"Levelized Cost of Carbon Dioxide from AT-HTL: {LCOC:.4f} $/kg")
+    LCOS = value(
+        pyunits.convert(m.fs.costing.LCOS, to_units=pyunits.USD_2020 / pyunits.kg)
+    )
+    print(f"Levelized Cost of Sulfates, Nitrates and Phosphates: {LCOS:.4f} $/kg")
+
+    print("----------Capital costs----------")
+    DCC_normalized = value(
+        pyunits.convert(
+            (
+                m.fs.ATHTL.costing.direct_capital_cost
+                + m.fs.salt_precipitation.costing.direct_capital_cost
+                + m.fs.HTG.costing.direct_capital_cost
+            )
+            / m.fs.feed.properties[0].flow_vol,
+            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        )
+    )
+    print(f"Normalized direct capital costs: {DCC_normalized:.4f} $/(m3/day)")
+    ICC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.total_capital_cost / m.fs.feed.properties[0].flow_vol,
+            to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
+        )
+    )
+    print(f"Normalized total capital costs: {ICC_normalized:.4f} $/(m3/day)")
+
+    print("----------Operating costs----------")
+    FMC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.maintenance_cost / m.fs.costing.total_capital_cost,
+            to_units=1 / pyunits.a,
+        )
+    )
+    print(f"Normalized maintenance costs: {FMC_normalized:.4f} 1/year")
+    EC_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["electricity"]
+            / m.fs.costing.annual_water_inlet,
+            to_units=m.fs.costing.base_currency / pyunits.m**3,
+        )
+    )
+    print(f"Normalized electricity cost: {EC_normalized:.4f} $/m3 of feed")
+    Catalyst_ATHTL_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["catalyst_ATHTL"]
+            / m.fs.costing.annual_water_inlet,
+            to_units=m.fs.costing.base_currency / pyunits.m**3,
+        )
+    )
+    print(
+        f"Normalized catalyst for AT-HTL cost: {Catalyst_ATHTL_normalized:.4f} $/m3 of feed"
+    )
+    Catalyst_HTG_normalized = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_costs["catalyst_HTG"]
+            / m.fs.costing.annual_water_inlet,
+            to_units=m.fs.costing.base_currency / pyunits.m**3,
+        )
+    )
+    print(
+        f"Normalized catalyst for HTG cost: {Catalyst_HTG_normalized:.4f} $/m3 of feed"
+    )
+
+    print("----------Performance metrics----------")
+    volumetric_recovery = value(
+        m.fs.product_H2O.properties[0].flow_vol / m.fs.feed.properties[0].flow_vol
+    )
+    print(f"Water recovery: {volumetric_recovery:.4f} m3 of product/m3 of feed")
+    OrganicR_normalized = value(
+        pyunits.convert(
+            1
+            - (
+                m.fs.product_H2O.properties[0].flow_mass_comp["organic_solid"]
+                + m.fs.product_H2O.properties[0].flow_mass_comp["organic_liquid"]
+            )
+            / (
+                m.fs.feed.properties[0].flow_mass_comp["organic_solid"]
+                + m.fs.feed.properties[0].flow_mass_comp["organic_liquid"]
+            ),
+            to_units=pyunits.dimensionless,
+        )
+    )
+    print(f"Organic removal: {OrganicR_normalized:.4f} dimensionless")
+    InorganicR_normalized = value(
+        pyunits.convert(
+            1
+            - m.fs.product_H2O.properties[0].flow_mass_comp["inorganic_solid"]
+            / m.fs.feed.properties[0].flow_mass_comp["inorganic_solid"],
+            to_units=pyunits.dimensionless,
+        )
+    )
+    print(f"Inorganic removal: {InorganicR_normalized:.4f} dimensionless")
+
+    print("----------Energy intensity----------")
+    SEC = value(
+        pyunits.convert(
+            m.fs.costing.aggregate_flow_electricity / m.fs.feed.properties[0].flow_vol,
+            to_units=pyunits.kWh / pyunits.m**3,
+        )
+    )
+    print(f"Specific electricity consumption: {SEC:.4f} kWh/m3 of feed")
+
+
+def display_additional_results(m):
+    print("----------Outlets----------")
+    product_H2O_flow = value(
+        pyunits.convert(
+            m.fs.product_H2O.properties[0].flow_vol,
+            to_units=pyunits.m**3 / pyunits.hr,
+        )
+    )
+    print(f"H2O outlet flow: {product_H2O_flow:.4f} m3/h")
+    product_H2O_Organic_Solid = value(
+        pyunits.convert(
+            m.fs.product_H2O.properties[0].conc_mass_comp["organic_solid"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet organic(s) conc: {product_H2O_Organic_Solid:.4f} g/L")
+    product_H2O_Organic_Liquid = value(
+        pyunits.convert(
+            m.fs.product_H2O.properties[0].conc_mass_comp["organic_liquid"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet Organic(l) conc: {product_H2O_Organic_Liquid:.4f} g/L")
+    product_H2O_Inorganic_Solid = value(
+        pyunits.convert(
+            m.fs.product_H2O.properties[0].conc_mass_comp["inorganic_solid"],
+            to_units=pyunits.g / pyunits.L,
+        )
+    )
+    print(f"H2O outlet inorganic(s) conc: {product_H2O_Inorganic_Solid:.4f} g/L")
+
+    print("----------Capital costs----------")
+    total_capital_costs = value(m.fs.costing.total_capital_cost) / 1e6
+    print(f"Total capital costs: {total_capital_costs:.4f} $M")
+    ATHTL_capital_costs = value(m.fs.ATHTL.costing.capital_cost) / 1e6
+    print(f"AT-HTL capital costs: {ATHTL_capital_costs:.4f} $M")
+    salt_precipitation_capital_costs = (
+        value(m.fs.salt_precipitation.costing.capital_cost) / 1e6
+    )
+    print(
+        f"Salt precipitation capital costs: {salt_precipitation_capital_costs:.4f} $M"
+    )
+    HTG_capital_costs = value(m.fs.HTG.costing.capital_cost) / 1e6
+    print(f"HTG capital costs: {HTG_capital_costs:.4f} $M")
+
+    print("----------Operating costs----------")
+    total_operating_costs = value(m.fs.costing.total_operating_cost) / 1e6
+    print(f"Total operating costs: {total_operating_costs:.4f} $M/year")
+    fixed_operating_costs = value(m.fs.costing.total_fixed_operating_cost) / 1e6
+    print(f"Fixed operating costs: {fixed_operating_costs:.4f} $M/year")
+    electricity_operating_costs = (
+        value(m.fs.costing.aggregate_flow_costs["electricity"]) / 1e3
+    )
+    print(f"Electricity operating costs: {electricity_operating_costs:.4f} $k/year")
+    catalyst_ATHTL_operating_costs = (
+        value(m.fs.costing.aggregate_flow_costs["catalyst_ATHTL"]) / 1e6
+    )
+    print(
+        f"Catalyst in AT-HTL operating costs: {catalyst_ATHTL_operating_costs:.4f} $M/year"
+    )
+    catalyst_HTG_operating_costs = (
+        value(m.fs.costing.aggregate_flow_costs["catalyst_HTG"]) / 1e6
+    )
+    print(
+        f"Catalyst in HTG operating costs: {catalyst_HTG_operating_costs:.4f} $M/year"
+    )
 
 
 if __name__ == "__main__":

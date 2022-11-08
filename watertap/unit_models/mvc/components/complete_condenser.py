@@ -12,16 +12,7 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import (
-    Block,
-    Set,
-    Var,
-    Param,
-    Suffix,
-    NonNegativeReals,
-    Reference,
-    units as pyunits,
-)
+from pyomo.environ import Suffix, check_optimal_termination
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -33,21 +24,21 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Condenser")
-class CompressorData(UnitModelBlockData):
+class CompressorData(InitializationMixin, UnitModelBlockData):
     """
     Condenser model for MVC
     """
@@ -166,26 +157,24 @@ class CompressorData(UnitModelBlockData):
 
         # Add control volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         # Add condensing state block
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # condensing state block is not an inlet
-        self.properties_condensing = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of condensing state in condenser",
-            default=tmp_dict,
-        )
+        # tmp_dict = dict(**self.config.property_package_args)
+        # tmp_dict["has_phase_equilibrium"] = False
+        # tmp_dict["parameters"] = self.config.property_package
+        # tmp_dict["defined_state"] = False  # condensing state block is not an inlet
+        # self.properties_condensing = self.config.property_package.state_block_class(
+        #     self.flowsheet().config.time,
+        #     doc="Material properties of condensing state in condenser",
+        #     default=tmp_dict,
+        # )
 
         # complete condensation mass balance
         @self.control_volume.Constraint(
@@ -210,25 +199,25 @@ class CompressorData(UnitModelBlockData):
             self.config.property_package.phase_list,
             doc="Mass balance for condensing state",
         )
-        def eq_mass_balance_condensingc(b, p):
-            return (
-                    b.control_volume.properties_in[0].flow_mass_phase_comp[p, "H2O"]
-                    == b.properties_condensing[0].flow_mass_phase_comp[p, "H2O"]
-            )
+        # def eq_mass_balance_condensingc(b, p):
+        #     return (
+        #             b.control_volume.properties_in[0].flow_mass_phase_comp[p, "H2O"]
+        #             == b.properties_condensing[0].flow_mass_phase_comp[p, "H2O"]
+        #     )
 
-        @self.Constraint(doc="Condensing state pressure")
-        def eq_condensing_pressure(b):
-            return (
-                    b.properties_condensing[0].pressure
-                    == b.control_volume.properties_in[0].pressure
-            )
+        # @self.Constraint(doc="Condensing state pressure")
+        # def eq_condensing_pressure(b):
+        #     return (
+        #             b.properties_condensing[0].pressure
+        #             == b.control_volume.properties_in[0].pressure
+        #     )
 
-        @self.Constraint(doc="Condensing state saturation pressure")
-        def eq_condensing_pressure_sat(b):
-            return (
-                    b.properties_condensing[0].pressure
-                    == b.properties_condensing[0].pressure_sat
-            )
+        # @self.Constraint(doc="Condensing state saturation pressure")
+        # def eq_condensing_pressure_sat(b):
+        #     return (
+        #             b.properties_condensing[0].pressure
+        #             == b.properties_condensing[0].pressure_sat
+        #     )
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type, has_heat_transfer=True
@@ -238,16 +227,16 @@ class CompressorData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type
         )
 
-        # # Add constraints
-        # @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
-        # def eq_condenser_pressure_sat(b, t):
-        #     return (
-        #         b.control_volume.properties_out[t].pressure
-        #         >= b.control_volume.properties_out[t].pressure_sat
-        #     )
-        @self.Constraint(self.flowsheet().time, doc="Saturation temperature constraint")
-        def eq_condenser_T_sat(b,t):
-            return (b.control_volume.properties_out[t].temperature <= b.properties_condensing[0].temperature)
+        # Add constraints
+        @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
+        def eq_condenser_pressure_sat(b, t):
+            return (
+                b.control_volume.properties_out[t].pressure
+                >= b.control_volume.properties_out[t].pressure_sat
+            )
+        # @self.Constraint(self.flowsheet().time, doc="Saturation temperature constraint")
+        # def eq_condenser_T_sat(b,t):
+        #     return (b.control_volume.properties_out[t].temperature <= b.properties_condensing[0].temperature)
         # Add ports
         self.add_port(name="inlet", block=self.control_volume.properties_in)
         self.add_port(name="outlet", block=self.control_volume.properties_out)
@@ -273,7 +262,8 @@ class CompressorData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
-            hold_state: boolean indicating if the inlet conditions should stay fixed
+            hold_state : boolean indicating if the inlet conditions should stay fixed
+            heat : inital guess for heat transfer out of condenser (negative)
 
         Returns: None
         """
@@ -292,17 +282,22 @@ class CompressorData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # # ---------------------------------------------------------------------
-        # check degrees of freedom
-        under_constrained_flag = False
-        if degrees_of_freedom(blk) != 0:
-            if heat != None:
+        # check if guess is needed for the heat based on degrees of freedom
+        has_guessed_heat = False
+        if degrees_of_freedom(blk) > 1:
+            raise RuntimeError(
+                "The model has {} degrees of freedom rather than 0 or 1 (with a guessed heat) for initialization."
+                " This error suggests that an outlet condition has not been fixed"
+                " for initialization.".format(degrees_of_freedom(blk))
+            )
+        elif degrees_of_freedom(blk) == 1:
+            if heat is not None:
                 blk.control_volume.heat.fix(heat)
-                under_constrained_flag = True
+                has_guessed_heat = True
             else:
                 raise RuntimeError(
-                    "The model has {} degrees of freedom rather than 0 for initialization."
-                    " This error suggests that an outlet condition has not been fixed"
-                    " for initialization.".format(degrees_of_freedom(blk))
+                    "The model has 1 degree of freedom rather than 0 for initialization."
+                    " A common error for this model is not providing a guess for heat in the initialization."
                 )
 
         # Solve unit
@@ -312,13 +307,18 @@ class CompressorData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         if hold_state:
-            return flags
+            pass
         else:
             # Release Inlet state
             blk.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        if under_constrained_flag:
+        if has_guessed_heat:
             blk.control_volume.heat.unfix()
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+
+        return flags
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Heat duty": self.control_volume.heat[time_point]}

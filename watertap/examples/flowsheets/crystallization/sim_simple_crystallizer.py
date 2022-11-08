@@ -53,12 +53,12 @@ if __name__ == "__main__":
 
     # create model, flowsheet
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # attach property package
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
     # build the unit model
-    m.fs.crystallizer = Crystallization(default={"property_package": m.fs.properties})
+    m.fs.crystallizer = Crystallization(property_package=m.fs.properties)
 
     # now specify the model
     print("DOF before specifying:", degrees_of_freedom(m.fs))
@@ -103,10 +103,8 @@ if __name__ == "__main__":
     )
     iscale.calculate_scaling_factors(m.fs)
     m.fs.crystallizer.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method_arguments": {"cost_type": CrystallizerCostType.mass_basis},
-        },
+        flowsheet_costing_block=m.fs.costing,
+        costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
     )
     m.fs.costing.cost_process()
 

@@ -46,12 +46,10 @@ class TestSedimentationZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss", "foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss", "foo"])
 
-        m.fs.unit = SedimentationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = SedimentationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
@@ -185,15 +183,13 @@ class TestSedimentationZO_phosphorus_capture_tss:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tss"])
 
         m.fs.unit = SedimentationZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "phosphorus_capture",
-            }
+            property_package=m.fs.params,
+            database=m.db,
+            process_subtype="phosphorus_capture",
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
@@ -321,15 +317,13 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["phosphates"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["phosphates"])
 
         m.fs.unit = SedimentationZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "phosphorus_capture",
-            }
+            property_package=m.fs.params,
+            database=m.db,
+            process_subtype="phosphorus_capture",
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
@@ -460,12 +454,10 @@ class TestSedimentationZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "tss"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["tds", "tss"])
 
-        m.fs.unit = SedimentationZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = SedimentationZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -492,15 +484,13 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = SedimentationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = SedimentationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -509,9 +499,7 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.sedimentation, Block)
     assert isinstance(m.fs.costing.sedimentation.capital_a_parameter, Var)
@@ -531,18 +519,16 @@ def test_costing_phosphorus_capture():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = SedimentationZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "phosphorus_capture",
-        }
+        property_package=m.fs.params,
+        database=m.db,
+        process_subtype="phosphorus_capture",
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -552,9 +538,7 @@ def test_costing_phosphorus_capture():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.sedimentation, Block)
     assert isinstance(m.fs.costing.sedimentation.unit_capex, Var)
@@ -572,8 +556,8 @@ def test_costing_phosphorus_capture():
 @pytest.mark.unit
 def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
     with pytest.raises(
         KeyError,
@@ -581,19 +565,17 @@ def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
         "tss or phosphates.",
     ):
         m.fs.unit = SedimentationZO(
-            default={
-                "property_package": m.fs.params,
-                "database": db,
-                "process_subtype": "phosphorus_capture",
-            }
+            property_package=m.fs.params,
+            database=db,
+            process_subtype="phosphorus_capture",
         )
 
 
 @pytest.mark.unit
 def test_phosphorus_capture_phosphate_tss_in_solute_list_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["tss", "phosphates"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["tss", "phosphates"])
 
     with pytest.raises(
         KeyError,
@@ -601,9 +583,7 @@ def test_phosphorus_capture_phosphate_tss_in_solute_list_error():
         "solute_list. Please choose one.",
     ):
         m.fs.unit = SedimentationZO(
-            default={
-                "property_package": m.fs.params,
-                "database": db,
-                "process_subtype": "phosphorus_capture",
-            }
+            property_package=m.fs.params,
+            database=db,
+            process_subtype="phosphorus_capture",
         )

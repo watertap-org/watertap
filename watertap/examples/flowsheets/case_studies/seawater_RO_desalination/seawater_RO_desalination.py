@@ -68,34 +68,15 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
 
 
-def flowsheet_interface():
-    from watertap.ui.api import FlowsheetInterface, WorkflowActions
-
-    fsi = FlowsheetInterface(
-        {
-            "display_name": "Seawater RO Desalination (ERD=pressure exchanger)",
-            "description": "Seawater reverse osmosis desalination",
-        }
-    )
-    fsi.set_action(
-        WorkflowActions.build, build_flowsheet, erd_type="pressure_exchanger"
-    )
-    fsi.set_action(WorkflowActions.solve, solve_flowsheet)
-    # note: don't have any flowsheet block yet, will get that in build_flowsheet()
-    return fsi
-
-
-def build_flowsheet(ui=None, erd_type=None, **kw):
+def build_flowsheet(erd_type=None):
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
-    if ui:
-        ui.set_block(m.fs)
     return m
 
 
-def solve_flowsheet(block=None, **kwargs):
-    m = block.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
+def solve_flowsheet(flowsheet=None):
+    m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
     solve(m)
@@ -135,13 +116,11 @@ def build(erd_type=None):
     m.db = Database()
     m.erd_type = erd_type
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["tds", "tss"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(solute_list=["tds", "tss"])
     density = 1023.5 * pyunits.kg / pyunits.m**3
     m.fs.prop_prtrt.dens_mass_default = density
-    m.fs.prop_psttrt = prop_ZO.WaterParameterBlock(default={"solute_list": ["tds"]})
+    m.fs.prop_psttrt = prop_ZO.WaterParameterBlock(solute_list=["tds"])
     m.fs.prop_desal = prop_SW.SeawaterParameterBlock()
 
     # block structure
@@ -150,70 +129,56 @@ def build(erd_type=None):
     psttrt = m.fs.posttreatment = Block()
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop_prtrt})
+    m.fs.feed = FeedZO(property_package=m.fs.prop_prtrt)
     # pretreatment
-    prtrt.intake = SWOnshoreIntakeZO(default={"property_package": m.fs.prop_prtrt})
+    prtrt.intake = SWOnshoreIntakeZO(property_package=m.fs.prop_prtrt)
     prtrt.ferric_chloride_addition = ChemicalAdditionZO(
-        default={
-            "property_package": m.fs.prop_prtrt,
-            "database": m.db,
-            "process_subtype": "ferric_chloride",
-        }
+        property_package=m.fs.prop_prtrt,
+        database=m.db,
+        process_subtype="ferric_chloride",
     )
-    prtrt.chlorination = ChlorinationZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
-    )
-    prtrt.static_mixer = StaticMixerZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
-    )
+    prtrt.chlorination = ChlorinationZO(property_package=m.fs.prop_prtrt, database=m.db)
+    prtrt.static_mixer = StaticMixerZO(property_package=m.fs.prop_prtrt, database=m.db)
     prtrt.storage_tank_1 = StorageTankZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
+        property_package=m.fs.prop_prtrt, database=m.db
     )
     prtrt.media_filtration = MediaFiltrationZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
+        property_package=m.fs.prop_prtrt, database=m.db
     )
     prtrt.backwash_handling = BackwashSolidsHandlingZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
+        property_package=m.fs.prop_prtrt, database=m.db
     )
     prtrt.anti_scalant_addition = ChemicalAdditionZO(
-        default={
-            "property_package": m.fs.prop_prtrt,
-            "database": m.db,
-            "process_subtype": "anti-scalant",
-        }
+        property_package=m.fs.prop_prtrt, database=m.db, process_subtype="anti-scalant"
     )
     prtrt.cartridge_filtration = CartridgeFiltrationZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
+        property_package=m.fs.prop_prtrt, database=m.db
     )
 
     # desalination
-    desal.P1 = Pump(default={"property_package": m.fs.prop_desal})
+    desal.P1 = Pump(property_package=m.fs.prop_desal)
     desal.RO = ReverseOsmosis0D(
-        default={
-            "property_package": m.fs.prop_desal,
-            "has_pressure_change": True,
-            "pressure_change_type": PressureChangeType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-        }
+        property_package=m.fs.prop_desal,
+        has_pressure_change=True,
+        pressure_change_type=PressureChangeType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
     )
     desal.RO.width.setub(5000)
     desal.RO.area.setub(20000)
     if erd_type == "pressure_exchanger":
         desal.S1 = Separator(
-            default={"property_package": m.fs.prop_desal, "outlet_list": ["P1", "PXR"]}
+            property_package=m.fs.prop_desal, outlet_list=["P1", "PXR"]
         )
         desal.M1 = Mixer(
-            default={
-                "property_package": m.fs.prop_desal,
-                "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-                "inlet_list": ["P1", "P2"],
-            }
+            property_package=m.fs.prop_desal,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["P1", "P2"],
         )
-        desal.PXR = PressureExchanger(default={"property_package": m.fs.prop_desal})
-        desal.P2 = Pump(default={"property_package": m.fs.prop_desal})
+        desal.PXR = PressureExchanger(property_package=m.fs.prop_desal)
+        desal.P2 = Pump(property_package=m.fs.prop_desal)
     elif erd_type == "pump_as_turbine":
-        desal.ERD = EnergyRecoveryDevice(default={"property_package": m.fs.prop_desal})
+        desal.ERD = EnergyRecoveryDevice(property_package=m.fs.prop_desal)
     else:
         raise ConfigurationError(
             "erd_type was {}, but can only "
@@ -223,44 +188,33 @@ def build(erd_type=None):
 
     # posttreatment
     psttrt.storage_tank_2 = StorageTankZO(
-        default={"property_package": m.fs.prop_psttrt, "database": m.db}
+        property_package=m.fs.prop_psttrt, database=m.db
     )
     psttrt.uv_aop = UVAOPZO(
-        default={
-            "property_package": m.fs.prop_psttrt,
-            "database": m.db,
-            "process_subtype": "hydrogen_peroxide",
-        }
+        property_package=m.fs.prop_psttrt,
+        database=m.db,
+        process_subtype="hydrogen_peroxide",
     )
     psttrt.co2_addition = CO2AdditionZO(
-        default={"property_package": m.fs.prop_psttrt, "database": m.db}
+        property_package=m.fs.prop_psttrt, database=m.db
     )
     psttrt.lime_addition = ChemicalAdditionZO(
-        default={
-            "property_package": m.fs.prop_psttrt,
-            "database": m.db,
-            "process_subtype": "lime",
-        }
+        property_package=m.fs.prop_psttrt, database=m.db, process_subtype="lime"
     )
     psttrt.storage_tank_3 = StorageTankZO(
-        default={"property_package": m.fs.prop_psttrt, "database": m.db}
+        property_package=m.fs.prop_psttrt, database=m.db
     )
 
     # product and disposal
     m.fs.municipal = MunicipalDrinkingZO(
-        default={"property_package": m.fs.prop_psttrt, "database": m.db}
+        property_package=m.fs.prop_psttrt, database=m.db
     )
-    m.fs.landfill = LandfillZO(
-        default={"property_package": m.fs.prop_prtrt, "database": m.db}
-    )
-    m.fs.disposal = Product(default={"property_package": m.fs.prop_desal})
+    m.fs.landfill = LandfillZO(property_package=m.fs.prop_prtrt, database=m.db)
+    m.fs.disposal = Product(property_package=m.fs.prop_desal)
 
     # translator blocks
     m.fs.tb_prtrt_desal = Translator(
-        default={
-            "inlet_property_package": m.fs.prop_prtrt,
-            "outlet_property_package": m.fs.prop_desal,
-        }
+        inlet_property_package=m.fs.prop_prtrt, outlet_property_package=m.fs.prop_desal
     )
 
     @m.fs.tb_prtrt_desal.Constraint(["H2O", "tds"])
@@ -275,10 +229,7 @@ def build(erd_type=None):
         )
 
     m.fs.tb_desal_psttrt = Translator(
-        default={
-            "inlet_property_package": m.fs.prop_desal,
-            "outlet_property_package": m.fs.prop_psttrt,
-        }
+        inlet_property_package=m.fs.prop_desal, outlet_property_package=m.fs.prop_psttrt
     )
 
     @m.fs.tb_desal_psttrt.Constraint(["H2O", "TDS"])
@@ -468,8 +419,10 @@ def set_operating_conditions(m):
     # RO unit
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    desal.RO.feed_side.spacer_porosity.fix(
+        0.97
+    )  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     desal.RO.width.fix(1000)  # stage width [m]
     desal.RO.area.fix(
@@ -647,55 +600,49 @@ def add_costing(m):
     #     "flowsheet_costing_block": m.fs.zo_costing})
 
     prtrt.ferric_chloride_addition.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.chlorination.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.static_mixer.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.storage_tank_1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.media_filtration.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.backwash_handling.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.anti_scalant_addition.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     prtrt.cartridge_filtration.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
 
     # RO Train
     # RO equipment is costed using more detailed costing package
     desal.P1.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.ro_costing,
-            "costing_method_arguments": {"cost_electricity_flow": False},
-        }
+        flowsheet_costing_block=m.fs.ro_costing,
+        costing_method_arguments={"cost_electricity_flow": False},
     )
-    desal.RO.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.ro_costing}
-    )
+    desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
     if m.erd_type == "pressure_exchanger":
         # desal.S1.costing = UnitModelCostingBlock(default={
         #     "flowsheet_costing_block": m.fs.ro_costing})
         desal.M1.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.ro_costing}
+            flowsheet_costing_block=m.fs.ro_costing
         )
         desal.PXR.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.ro_costing}
+            flowsheet_costing_block=m.fs.ro_costing
         )
         desal.P2.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.ro_costing,
-                "costing_method_arguments": {"cost_electricity_flow": False},
-            }
+            flowsheet_costing_block=m.fs.ro_costing,
+            costing_method_arguments={"cost_electricity_flow": False},
         )
     elif m.erd_type == "pump_as_turbine":
         pass
@@ -726,27 +673,27 @@ def add_costing(m):
 
     # Post-treatment units
     psttrt.storage_tank_2.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     psttrt.uv_aop.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     psttrt.co2_addition.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     psttrt.lime_addition.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     psttrt.storage_tank_3.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
 
     # Product and disposal
     m.fs.municipal.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
     m.fs.landfill.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.zo_costing}
+        flowsheet_costing_block=m.fs.zo_costing
     )
 
     # Aggregate unit level costs and calculate overall process costs
@@ -832,6 +779,21 @@ def display_costing(m):
                 )
             ),
         )
+
+
+def export_to_ui():
+    from watertap.ui.fsapi import FlowsheetInterface
+
+    def noop(*args, **kwargs):
+        return
+
+    return FlowsheetInterface(
+        name="Seawater RO",
+        description="Seawater RO desalination",
+        do_export=noop,
+        do_build=noop,
+        do_solve=noop,
+    )
 
 
 if __name__ == "__main__":

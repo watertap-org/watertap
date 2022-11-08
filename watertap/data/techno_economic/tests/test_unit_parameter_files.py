@@ -83,6 +83,7 @@ def test_unit_parameter_files(tech):
         "constructed_wetlands",
         "deep_well_injection",
         "electrochemical_nutrient_removal",
+        "electrodialysis_reversal",
         "energy_recovery",
         "evaporation_pond",
         "filter_press",

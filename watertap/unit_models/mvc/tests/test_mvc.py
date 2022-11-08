@@ -10,7 +10,6 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import sys
 import pytest
 from io import StringIO
 
@@ -46,13 +45,14 @@ def build(m):
 
     # Evaporator
     m.fs.evaporator = Evaporator(
-        default={
-            "property_package_feed": m.fs.properties_feed,
-            "property_package_vapor": m.fs.properties_vapor,
-        }
+        property_package_feed=m.fs.properties_feed,
+        property_package_vapor=m.fs.properties_vapor,
     )
     # Compressor
-    m.fs.compressor = Compressor(default={"property_package": m.fs.properties_vapor})
+    m.fs.compressor = Compressor(property_package=m.fs.properties_vapor)
+
+    # Condenser
+    m.fs.condenser = Condenser(property_package=m.fs.properties_vapor)
 
     # Condenser
     m.fs.condenser = Condenser(default={"property_package": m.fs.properties_vapor})
@@ -138,7 +138,7 @@ def initialize(m, solver=None):
 @pytest.mark.component
 def test_mvc():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     build(m)
     assert_units_consistent(m)

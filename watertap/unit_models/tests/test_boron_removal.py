@@ -52,16 +52,10 @@ from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
-    Set,
     Param,
     Var,
     units as pyunits,
-    Suffix,
     Constraint,
-    SolverFactory,
-    SolverStatus,
-    TerminationCondition,
-    log10,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -70,10 +64,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
 import re
 
 __author__ = "Austin Ladshaw"
@@ -135,7 +127,7 @@ class TestBoronRemoval_IonPropPack_Min:
     @pytest.fixture(scope="class")
     def min_boron_removal_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
             "solute_list": ["B[OH]3", "B[OH]4_-", "Na_+"],
@@ -146,14 +138,13 @@ class TestBoronRemoval_IonPropPack_Min:
                 "Na_+": 23e-3,
             },
             "charge": {
-                "B[OH]3": 0,
                 "B[OH]4_-": -1,
                 "Na_+": 1,
             },
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -165,10 +156,7 @@ class TestBoronRemoval_IonPropPack_Min:
             },
         }
         m.fs.unit = BoronRemoval(
-            default={
-                "property_package": m.fs.properties,
-                "chemical_mapping_data": map,
-            }
+            property_package=m.fs.properties, chemical_mapping_data=map
         )
 
         return m
@@ -311,7 +299,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
     @pytest.fixture(scope="class")
     def alk_boron_removal_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
@@ -323,11 +311,11 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
                 "Na_+": 23e-3,
                 "HCO3_-": 61e-3,
             },
-            "charge": {"B[OH]3": 0, "B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
+            "charge": {"B[OH]4_-": -1, "Na_+": 1, "HCO3_-": -1},
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -339,10 +327,7 @@ class TestBoronRemoval_IonPropPack_with_ResAlk:
             },
         }
         m.fs.unit = BoronRemoval(
-            default={
-                "property_package": m.fs.properties,
-                "chemical_mapping_data": map,
-            }
+            property_package=m.fs.properties, chemical_mapping_data=map
         )
 
         return m
@@ -463,7 +448,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
     @pytest.fixture(scope="class")
     def base_boron_removal_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
@@ -475,14 +460,13 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
                 "Na_+": 23e-3,
             },
             "charge": {
-                "B[OH]3": 0,
                 "B[OH]4_-": -1,
                 "Na_+": 1,
             },
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -494,10 +478,7 @@ class TestBoronRemoval_IonPropPack_with_ResBase:
             },
         }
         m.fs.unit = BoronRemoval(
-            default={
-                "property_package": m.fs.properties,
-                "chemical_mapping_data": map,
-            }
+            property_package=m.fs.properties, chemical_mapping_data=map
         )
 
         return m
@@ -618,7 +599,7 @@ class TestBoronRemoval_GenPropPack:
     @pytest.fixture(scope="class")
     def gen_boron_removal_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Configuration dictionary for generic
         thermo_config = {
@@ -807,7 +788,7 @@ class TestBoronRemoval_GenPropPack:
         # End thermo_config definition
 
         # attach prop pack to flowsheet
-        m.fs.properties = GenericParameterBlock(default=thermo_config)
+        m.fs.properties = GenericParameterBlock(**thermo_config)
 
         map = {
             "boron_name": "B[OH]3",  # [is required]
@@ -821,10 +802,7 @@ class TestBoronRemoval_GenPropPack:
             },
         }
         m.fs.unit = BoronRemoval(
-            default={
-                "property_package": m.fs.properties,
-                "chemical_mapping_data": map,
-            }
+            property_package=m.fs.properties, chemical_mapping_data=map
         )
 
         return m
@@ -931,20 +909,19 @@ class TestBoronRemoval_BadConfigs:
     @pytest.fixture(scope="class")
     def boron_removal_bad_configs(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # create dict to define ions (the prop pack requires this)
         ion_dict = {
             "solute_list": ["B[OH]3", "B[OH]4_-", "H_+", "OH_-", "Na_+"],
             "mw_data": {"H2O": 18e-3, "B[OH]3": 61.83e-3, "B[OH]4_-": 78.83e-3},
             "charge": {
-                "B[OH]3": 0,
                 "B[OH]4_-": -1,
             },
         }
 
         # attach prop pack to flowsheet
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
 
         return m
 
@@ -968,10 +945,7 @@ class TestBoronRemoval_BadConfigs:
         )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Invalid name of borate
@@ -990,10 +964,7 @@ class TestBoronRemoval_BadConfigs:
         )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Empty dict
@@ -1001,10 +972,7 @@ class TestBoronRemoval_BadConfigs:
         error_msg = "Did not provide a 'dict' for 'chemical_mapping_data' "
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Invalid name of hydroxide
@@ -1024,10 +992,7 @@ class TestBoronRemoval_BadConfigs:
         )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Invalid name of protons
@@ -1047,10 +1012,7 @@ class TestBoronRemoval_BadConfigs:
         )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Invalid name of cation
@@ -1069,10 +1031,7 @@ class TestBoronRemoval_BadConfigs:
         )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Missing information (borate_name)
@@ -1086,10 +1045,7 @@ class TestBoronRemoval_BadConfigs:
         error_msg = "Missing some required information in 'chemical_mapping_data' "
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Missing information (mw_additive)
@@ -1103,10 +1059,7 @@ class TestBoronRemoval_BadConfigs:
         error_msg = "Missing some required information in 'chemical_mapping_data' "
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
         # Improper data type (mw_additive must be a tuple with value and units)
@@ -1122,10 +1075,7 @@ class TestBoronRemoval_BadConfigs:
         error_msg = "Did not provide a tuple for 'mw_additive' "
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )
 
 
@@ -1135,7 +1085,7 @@ class TestBoronRemoval_BadConfigs_Generic:
     @pytest.fixture(scope="class")
     def boron_removal_bad_configs_gen(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Configuration dictionary for generic
         thermo_config = {
@@ -1351,7 +1301,7 @@ class TestBoronRemoval_BadConfigs_Generic:
         # End thermo_config definition
 
         # attach prop pack to flowsheet
-        m.fs.properties = GenericParameterBlock(default=thermo_config)
+        m.fs.properties = GenericParameterBlock(**thermo_config)
 
         return m
 
@@ -1372,8 +1322,5 @@ class TestBoronRemoval_BadConfigs_Generic:
         error_msg = "Property Package CANNOT contain 'inherent_reactions' "
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             m.fs.unit = BoronRemoval(
-                default={
-                    "property_package": m.fs.properties,
-                    "chemical_mapping_data": map,
-                }
+                property_package=m.fs.properties, chemical_mapping_data=map
             )

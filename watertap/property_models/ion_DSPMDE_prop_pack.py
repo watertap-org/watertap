@@ -49,16 +49,17 @@ from idaes.core import (
     StateBlockData,
     StateBlock,
     MaterialBalanceType,
+    EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
-from idaes.core.base.phases import LiquidPhase, AqueousPhase
+from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -82,6 +83,21 @@ class DensityCalculation(Enum):
     laliberte = (
         auto()
     )  # Laliberte correlation using apparent density #TODO add this later with reference
+
+
+class ElectricalMobilityCalculation(Enum):
+    none = auto()
+    EinsteinRelation = auto()
+
+
+class EquivalentConductivityCalculation(Enum):
+    none = auto()
+    ElectricalMobility = auto()
+
+
+class TransportNumberCalculation(Enum):
+    none = auto()
+    ElectricalMobility = auto()
 
 
 @declare_process_block_class("DSPMDEParameterBlock")
@@ -117,9 +133,26 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         ),
     )
     CONFIG.declare(
-        "electrical_mobility_data",
+        "elec_mobility_data",
         ConfigValue(default={}, domain=dict, description="Ion electrical mobility"),
     )
+    CONFIG.declare(
+        "trans_num_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="transport number of ions in the liquid phase",
+        ),
+    )
+    CONFIG.declare(
+        "equiv_conductivity_phase_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="Equivalent conductivity of ions in the liquid phase",
+        ),
+    )
+
     CONFIG.declare(
         "charge", ConfigValue(default={}, domain=dict, description="Ion charge")
     )
@@ -162,6 +195,65 @@ class DSPMDEParameterData(PhysicalParameterBlock):
        """,
         ),
     )
+    CONFIG.declare(
+        "elec_mobility_calculation",
+        ConfigValue(
+            default=ElectricalMobilityCalculation.none,
+            domain=In(ElectricalMobilityCalculation),
+            description="Electrical mobility calculation flag",
+            doc="""
+           Options to account for ion electrical mobility.
+
+           **default** - ``ElectricalMobilityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``ElectricalMobilityCalculation.none``", "Users provide data via the elec_mobility_data configuration"
+           "``ElectricalMobilityCalculation.EinsteinRelation``", "Calculate from the diffusivity_data by the Einstein Relation"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "trans_num_calculation",
+        ConfigValue(
+            default=TransportNumberCalculation.ElectricalMobility,
+            domain=In(TransportNumberCalculation),
+            description="Ion transport number calculation flag",
+            doc="""
+           Options to account for ion transport number in the solution.
+
+           **default** - ``TransportNumberCalculation.ElectricalMobility``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``TransportNumberCalculation.none``", "Users provide data via the trans_num_data configuration"
+           "``TransportNumberCalculation.ElectricalMobility``", "Calculated from the elec_mobility_data"
+       """,
+        ),
+    )
+
+    CONFIG.declare(
+        "equiv_conductivity_calculation",
+        ConfigValue(
+            default=EquivalentConductivityCalculation.ElectricalMobility,
+            domain=In(EquivalentConductivityCalculation),
+            description="Ion equivalent conductivity calculation flag",
+            doc="""
+           Options to account for the total equivalent conductivity of the liquid phase (solution).
+
+           **default** - ``EquivalentConductivityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``EquivalentConductivityCalculation.none``", "Users provide data via the equiv_conductivity_data configuration"
+           "``EquivalentConductivityCalculation.ElectricalMobility``", "Calculated from the electrical_mobility_data"
+       """,
+        ),
+    )
 
     def build(self):
         """
@@ -188,32 +280,26 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         for j in self.config.solute_list:
             if j in self.config.charge:
-                if self.config.charge[j] > 0:
-                    self.add_component(
-                        str(j),
-                        Cation(
-                            default={
-                                "charge": self.config.charge[j],
-                                "_electrolyte": True,
-                            }
-                        ),
+                if self.config.charge[j] == 0:
+                    raise ConfigurationError(
+                        "The charge property should not be assigned to the neutral component: {}".format(
+                            j
+                        )
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
-                elif self.config.charge[j] < 0:
+                elif self.config.charge[j] > 0:
                     self.add_component(
                         str(j),
-                        Anion(
-                            default={
-                                "charge": self.config.charge[j],
-                                "_electrolyte": True,
-                            }
-                        ),
+                        Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
                     self.component_list.add(str(j))
                     self.ion_set.add(str(j))
                 else:
-                    self.add_component(str(j), Solute())
+                    self.add_component(
+                        str(j),
+                        Anion(charge=self.config.charge[j], _electrolyte=True),
+                    )
+                    self.component_list.add(str(j))
+                    self.ion_set.add(str(j))
             else:
                 self.add_component(str(j), Solute())
 
@@ -256,18 +342,10 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity",
         )
-        # Ion electrical mobility
-        self.electrical_mobility_comp = Param(
-            self.ion_set | self.solute_set,
-            mutable=True,
-            default=5.19e-8,  # default as Na+
-            initialize=self.config.electrical_mobility_data,
-            units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
-            doc="Ion electrical mobility",
-        )
+
         # Ion charge
         self.charge_comp = Param(
-            self.ion_set | self.solute_set,
+            self.ion_set,
             mutable=True,
             default=1,
             initialize=self.config.charge,
@@ -365,6 +443,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("diffus_phase_comp", 1e10, index="Liq")
+        self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -375,6 +454,8 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
+                "flow_equiv_phase_comp": {"method": "_flow_equiv_phase_comp"},
+                "conc_equiv_phase_comp": {"method": "_conc_equiv_phase_comp"},
                 "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "dens_mass_solvent": {"method": "_dens_mass_solvent"},
@@ -386,10 +467,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
+                "visc_k_phase": {"method": "_visc_k_phase"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "radius_stokes_comp": {"method": "_radius_stokes_comp"},
                 "mw_comp": {"method": "_mw_comp"},
-                "electrical_mobility_comp": {"method": "_electrical_mobility_comp"},
+                "elec_mobility_phase_comp": {"method": "_elec_mobility_phase_comp"},
+                "trans_num_phase_comp": {"method": "_trans_num_phase_comp"},
+                "equiv_conductivity_phase": {"method": "_equiv_conductivity_phase"},
                 "elec_cond_phase": {"method": "_elec_cond_phase"},
                 "charge_comp": {"method": "_charge_comp"},
                 "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
@@ -478,7 +562,8 @@ class _DSPMDEStateBlock(StateBlock):
 
         # initialize vars caculated from state vars
         for k in self.keys():
-            # Vars indexd by component (and phase)
+
+            # Vars indexed by phase and component_list
             for j in self[k].params.component_list:
                 if self[k].is_property_constructed("mass_frac_phase_comp"):
                     self[k].mass_frac_phase_comp["Liq", j].set_value(
@@ -493,20 +578,13 @@ class _DSPMDEStateBlock(StateBlock):
                         self[k].dens_mass_phase["Liq"]
                         * self[k].mass_frac_phase_comp["Liq", j]
                     )
-                if self[k].is_property_constructed("flow_vol_phase"):
-                    self[k].flow_vol_phase["Liq"].set_value(
-                        sum(
-                            self[k].flow_mol_phase_comp["Liq", j]
-                            * self[k].params.mw_comp[j]
-                            for j in self[k].params.component_list
-                        )
-                        / self[k].dens_mass_phase["Liq"]
-                    )
+
                 if self[k].is_property_constructed("conc_mol_phase_comp"):
                     self[k].conc_mol_phase_comp["Liq", j].set_value(
                         self[k].conc_mass_phase_comp["Liq", j]
                         / self[k].params.mw_comp[j]
                     )
+
                 if self[k].is_property_constructed("flow_mass_phase_comp"):
                     self[k].flow_mass_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
@@ -520,15 +598,53 @@ class _DSPMDEStateBlock(StateBlock):
                             for j in self[k].params.component_list
                         )
                     )
-            # Vars indexd by solute_set
-            for j in self[k].params.solute_set:
+
+            # Vars indexed by ion_set | solute_set
+            for j in self[k].params.ion_set | self[k].params.solute_set:
                 if self[k].is_property_constructed("molality_phase_comp"):
                     self[k].molality_phase_comp["Liq", j].set_value(
                         self[k].flow_mol_phase_comp["Liq", j]
                         / self[k].flow_mol_phase_comp["Liq", "H2O"]
                         / self[k].params.mw_comp["H2O"]
                     )
-            # Vars indexd not indexed or indexed only by phase
+
+            # Vars indexed by ion_set
+            for j in self[k].params.ion_set:
+                if (
+                    self[k].is_property_constructed("elec_mobility_phase_comp")
+                    and self[k].params.config.elec_mobility_calculation
+                    == ElectricalMobilityCalculation.EinsteinRelation
+                ):
+                    self[k].elec_mobility_phase_comp["Liq", j].set_value(
+                        self[k].diffus_phase_comp["Liq", j]
+                        * abs(self[k].charge_comp[j])
+                        * Constants.faraday_constant
+                        / (Constants.gas_constant * self[k].temperature)
+                    )
+                if self[k].is_property_constructed("conc_equiv_phase_comp"):
+                    self[k].conc_equiv_phase_comp["Liq", j].set_value(
+                        self[k].conc_mol_phase_comp["Liq", j]
+                        / abs(self[k].params.charge_comp[j])
+                    )
+                if self[k].is_property_constructed("flow_equiv_phase_comp"):
+                    self[k].flow_equiv_phase_comp["Liq", j].set_value(
+                        self[k].flow_mol_phase_comp["Liq", j]
+                        * abs(self[k].params.charge_comp[j])
+                    )
+            # Vars not indexed or indexed only by phase
+            if self[k].is_property_constructed("flow_vol_phase"):
+                self[k].flow_vol_phase["Liq"].set_value(
+                    sum(
+                        self[k].flow_mol_phase_comp["Liq", j]
+                        * self[k].params.mw_comp[j]
+                        for j in self[k].params.component_list
+                    )
+                    / self[k].dens_mass_phase["Liq"]
+                )
+            if self[k].is_property_constructed("visc_k_phase"):
+                self[k].visc_k_phase["Liq"].set_value(
+                    self[k].visc_d_phase["Liq"] / self[k].dens_mass_phase["Liq"]
+                )
             if self[k].is_property_constructed("ionic_strength_molal"):
                 self[k].ionic_strength_molal.set_value(
                     0.5
@@ -547,14 +663,33 @@ class _DSPMDEStateBlock(StateBlock):
                     * Constants.gas_constant
                     * self[k].temperature
                 )
-            if self[k].is_property_constructed("elec_cond_phase"):
-                self[k].elec_cond_phase["Liq"].set_value(
+
+            if (
+                self[k].is_property_constructed("equiv_conductivity_phase")
+                and self[k].params.config.equiv_conductivity_calculation
+                == EquivalentConductivityCalculation.ElectricalMobility
+            ):
+                self[k].equiv_conductivity_phase["Liq"].set_value(
                     sum(
                         Constants.faraday_constant
                         * abs(self[k].charge_comp[j])
-                        * self[k].electrical_mobility_comp[j]
+                        * self[k].elec_mobility_phase_comp["Liq", j]
                         * self[k].conc_mol_phase_comp["Liq", j]
-                        for j in self[k].params.ion_set | self[k].params.solute_set
+                        for j in self[k].params.ion_set
+                    )
+                    / sum(
+                        abs(self[k].charge_comp[j])
+                        * self[k].conc_mol_phase_comp["Liq", j]
+                        for j in self[k].params.cation_set
+                    )
+                )
+            if self[k].is_property_constructed("elec_cond_phase"):
+                self[k].elec_cond_phase["Liq"].set_value(
+                    self[k].equiv_conductivity_phase["Liq"]
+                    * sum(
+                        abs(self[k].charge_comp[j])
+                        * self[k].conc_mol_phase_comp["Liq", j]
+                        for j in self[k].params.cation_set
                     )
                 )
 
@@ -923,6 +1058,48 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_flow_mass_phase_comp
         )
 
+    def _flow_equiv_phase_comp(self):
+        self.flow_equiv_phase_comp = Var(
+            self.params.phase_list,
+            self.params.ion_set,
+            initialize=0.1,
+            bounds=(0, None),
+            units=pyunits.mol / pyunits.s,
+            doc="Component equivalent charge flowrate",
+        )
+
+        def rule_flow_equiv_phase_comp(b, j):
+
+            return b.flow_equiv_phase_comp["Liq", j] == b.flow_mol_phase_comp[
+                "Liq", j
+            ] * abs(b.params.charge_comp[j])
+
+        self.eq_flow_equiv_phase_comp = Constraint(
+            self.params.ion_set,
+            rule=rule_flow_equiv_phase_comp,
+        )
+
+    def _conc_equiv_phase_comp(self):
+        self.conc_equiv_phase_comp = Var(
+            self.params.phase_list,
+            self.params.ion_set,
+            initialize=500,
+            bounds=(0, None),
+            units=pyunits.mol / pyunits.m**3,
+            doc="Equivalent charge concentration",
+        )
+
+        def rule_conc_equiv_phase_comp(b, j):
+
+            return b.conc_equiv_phase_comp["Liq", j] == b.conc_mol_phase_comp[
+                "Liq", j
+            ] * abs(b.params.charge_comp[j])
+
+        self.eq_conc_equiv_phase_comp = Constraint(
+            self.params.ion_set,
+            rule=rule_conc_equiv_phase_comp,
+        )
+
     def _mole_frac_phase_comp(self):
         self.mole_frac_phase_comp = Var(
             self.params.phase_list,
@@ -964,6 +1141,23 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.ion_set | self.params.solute_set, rule=rule_molality_phase_comp
         )
 
+    def _visc_k_phase(self):
+        self.visc_k_phase = Var(
+            ["Liq"],
+            initialize=1e-6,
+            bounds=(9e-7, 5e-2),
+            units=pyunits.m**2 / pyunits.s,
+            doc="Kinematic Viscosity",
+        )
+
+        def rule_visc_k_phase(b):
+            return (
+                b.visc_d_phase["Liq"]
+                == b.visc_k_phase["Liq"] * b.dens_mass_phase["Liq"]
+            )
+
+        self.eq_visc_k_phase = Constraint(rule=rule_visc_k_phase)
+
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
 
@@ -976,9 +1170,69 @@ class DSPMDEStateBlockData(StateBlockData):
     def _mw_comp(self):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
-    def _electrical_mobility_comp(self):
-        add_object_reference(
-            self, "electrical_mobility_comp", self.params.electrical_mobility_comp
+    def _elec_mobility_phase_comp(self):
+        self.elec_mobility_phase_comp = Var(
+            self.params.phase_list,
+            self.params.ion_set,
+            initialize=5.19e-8,  # default as Na+
+            units=pyunits.meter**2 * pyunits.volt**-1 * pyunits.second**-1,
+            doc="Ion electrical mobility",
+        )
+
+        def rule_elec_mobility_phase_comp(b, j):
+            if (
+                self.params.config.elec_mobility_calculation
+                == ElectricalMobilityCalculation.none
+            ):
+                if ("Liq", j) not in self.params.config.elec_mobility_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing the "elec_mobility_data" configuration to build the elec_mobility_phase_comp 
+                        and/or its derived variables for {} in {}. 
+                        Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
+                        """.format(
+                            j, self.name
+                        )
+                    )
+                else:
+                    return (
+                        b.elec_mobility_phase_comp["Liq", j]
+                        == self.params.config.elec_mobility_data["Liq", j]
+                        * pyunits.meter**2
+                        * pyunits.volt**-1
+                        * pyunits.second**-1
+                    )
+            else:
+                if ("Liq", j) not in self.params.config.diffusivity_data.keys():
+                    raise ConfigurationError(
+                        """
+                        Missing a valid diffusivity_data configuration to use EinsteinRelation 
+                        to compute the "elec_mobility_phase_comp" for {} in {} . 
+                        Provide this configuration or 
+                        use another "elec_mobility_calculation" configuration value. """.format(
+                            j, self.name
+                        )
+                    )
+                else:
+                    if ("Liq", j) in self.params.config.elec_mobility_data.keys():
+                        _log.warning(
+                            """
+                            The provided elec_mobility_data of {} will be overritten 
+                            by the calculated data for {} because the EinsteinRelation 
+                            method is selected.""".format(
+                                j, self.name
+                            )
+                        )
+
+                    return b.elec_mobility_phase_comp["Liq", j] == b.diffus_phase_comp[
+                        "Liq", j
+                    ] * abs(b.charge_comp[j]) * Constants.faraday_constant / (
+                        Constants.gas_constant * b.temperature
+                    )
+
+        self.eq_elec_mobility_phase_comp = Constraint(
+            self.params.ion_set,
+            rule=rule_elec_mobility_phase_comp,
         )
 
     def _charge_comp(self):
@@ -1101,6 +1355,122 @@ class DSPMDEStateBlockData(StateBlockData):
 
         self.eq_pressure_osm_phase = Constraint(rule=rule_pressure_osm_phase)
 
+    def _trans_num_phase_comp(self):
+        self.trans_num_phase_comp = Var(
+            self.params.phase_list,
+            self.params.ion_set,
+            initialize=0.5,
+            units=pyunits.dimensionless,
+            doc="Ion transport number in the liquid phase",
+        )
+
+        def rule_trans_num_phase_comp(b, j):
+            if (
+                self.params.config.trans_num_calculation
+                == TransportNumberCalculation.none
+            ):
+                if ("Liq", j) not in self.params.config.trans_num_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing a valid trans_num_data configuration to build "trans_num_phase_comp" for {} in {}.  
+                        Provide this configuration or use another "trans_num_calculation"
+                        configuration value to contruct the demanded variable(s))""".format(
+                            j, self.name
+                        )
+                    )
+                else:
+                    return (
+                        b.trans_num_phase_comp["Liq", j]
+                        == self.params.config.trans_num_data["Liq", j]
+                    )
+            else:
+                if ("Liq", j) in self.params.config.trans_num_data.keys():
+                    _log.warning(
+                        """
+                        The provided trans_num_data of {} will be overritten by the calculated data for {}
+                        because "TransportNumberCalculation" is set as "ElectricalMobility".""".format(
+                            j, self.name
+                        )
+                    )
+                return b.trans_num_phase_comp["Liq", j] == abs(
+                    b.charge_comp[j]
+                ) * b.elec_mobility_phase_comp["Liq", j] * b.conc_mol_phase_comp[
+                    "Liq", j
+                ] / sum(
+                    abs(b.charge_comp[j])
+                    * b.elec_mobility_phase_comp["Liq", j]
+                    * b.conc_mol_phase_comp["Liq", j]
+                    for j in self.params.ion_set
+                )
+
+        self.eq_trans_num_phase_comp = Constraint(
+            self.params.ion_set,
+            rule=rule_trans_num_phase_comp,
+        )
+
+    def _equiv_conductivity_phase(self):
+        self.equiv_conductivity_phase = Var(
+            self.params.phase_list,
+            initialize=0.5,
+            units=pyunits.meter**2 * pyunits.ohm**-1 * pyunits.mol**-1,
+            doc="Total equivalent electrical conducitivty of the liquid phase",
+        )
+
+        def rule_equiv_conductivity_phase(b):
+            if (
+                self.params.config.equiv_conductivity_calculation
+                == EquivalentConductivityCalculation.none
+            ):
+                if "Liq" not in self.params.config.equiv_conductivity_phase_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing a valid equiv_conductivity_phase_data configuration to build 
+                        "equiv_conductivity_phase" and its derived variables for {}. 
+                        Provide this configuration or use another "equiv_conductivity_calculation"
+                        configuration value to contruct the demanded variable(s))""".format(
+                            self.name
+                        )
+                    )
+                else:
+                    if len(self.params.ion_set) > 2:
+                        _log.warning(
+                            """ 
+                            Caution should be taken to use a constant solution equivalent conductivity for a multi-electrolyte system.
+                            Heterogeneous concentration variation among ions may lead to varying equivalent conductivity and computing
+                            the phase equivalent conductivity using the "EquivalentConductivityCalculation.ElectricalMobility" method 
+                            is recommended."""
+                        )
+                    return (
+                        b.equiv_conductivity_phase["Liq"]
+                        == self.params.config.equiv_conductivity_phase_data["Liq"]
+                        * pyunits.meter**2
+                        * pyunits.ohm**-1
+                        * pyunits.mol**-1
+                    )
+            else:
+                if len(self.params.config.equiv_conductivity_phase_data) != 0:
+                    _log.warning(
+                        """
+                        The provided equiv_conductivity_phase_data will be overritten by the calculated data for {} because
+                        "EquivalentConductivityCalculation" is set as "ElectricalMobility".""".format(
+                            self.name
+                        )
+                    )
+                return b.equiv_conductivity_phase["Liq"] == sum(
+                    Constants.faraday_constant
+                    * abs(b.charge_comp[j])
+                    * b.elec_mobility_phase_comp["Liq", j]
+                    * b.conc_mol_phase_comp["Liq", j]
+                    for j in self.params.ion_set
+                ) / sum(
+                    abs(b.charge_comp[j]) * b.conc_mol_phase_comp["Liq", j]
+                    for j in self.params.cation_set
+                )
+
+        self.eq_equiv_conductivity_phase = Constraint(
+            rule=rule_equiv_conductivity_phase
+        )
+
     def _elec_cond_phase(self):
         self.elec_cond_phase = Var(
             self.params.phase_list,
@@ -1110,13 +1480,10 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
         def rule_elec_cond_phase(b):
-            return b.elec_cond_phase["Liq"] == sum(
-                Constants.faraday_constant
-                * abs(b.charge_comp[j])
-                * b.electrical_mobility_comp[j]
-                * b.conc_mol_phase_comp["Liq", j]
-                for j in self.params.ion_set | self.params.solute_set
-            )  # maybe revisit for other emprical calculation or non-ideal situation
+            return b.elec_cond_phase["Liq"] == b.equiv_conductivity_phase["Liq"] * sum(
+                abs(b.charge_comp[j]) * b.conc_mol_phase_comp["Liq", j]
+                for j in self.params.cation_set
+            )
 
         self.eq_elec_cond_phase = Constraint(rule=rule_elec_cond_phase)
 
@@ -1144,9 +1511,8 @@ class DSPMDEStateBlockData(StateBlockData):
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
 
-    # TODO: augment model with energybalance later
-    # def default_energy_balance_type(self):
-    #     return EnergyBalanceType.enthalpyTotal
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.none
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
@@ -1168,6 +1534,7 @@ class DSPMDEStateBlockData(StateBlockData):
         get_property=None,
         solve=True,
     ):
+
         if tol is None:
             tol = 1e-8
         if not defined_state and get_property is not None:
@@ -1179,13 +1546,13 @@ class DSPMDEStateBlockData(StateBlockData):
                 self.charge_balance = Constraint(
                     expr=sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                        for j in self.params.ion_set | self.params.solute_set
+                        for j in self.params.ion_set
                     )
                     == 0
                 )
             else:
                 raise ValueError(
-                    "adjust_by_ion must be set to the name of an ion in the list of solutes."
+                    "adjust_by_ion must be set to the name of an ion in the ion_set."
                 )
         if defined_state:
             for j in self.params.ion_set | self.params.solute_set:
@@ -1214,12 +1581,14 @@ class DSPMDEStateBlockData(StateBlockData):
             if adjust_by_ion is not None:
                 ion_before_adjust = self.flow_mol_phase_comp["Liq", adjust_by_ion].value
             solve = get_solver()
+            solve.solve(self)
             results = solve.solve(self)
             if check_optimal_termination(results):
+                self.conc_mol_phase_comp[...].pprint()
                 val = value(
                     sum(
                         self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                        for j in self.params.ion_set | self.params.solute_set
+                        for j in self.params.ion_set
                     )
                 )
             else:
@@ -1232,7 +1601,7 @@ class DSPMDEStateBlockData(StateBlockData):
             val = value(
                 sum(
                     self.charge_comp[j] * self.conc_mol_phase_comp["Liq", j]
-                    for j in self.params.ion_set | self.params.solute_set
+                    for j in self.params.ion_set
                 )
             )
         if abs(val) <= tol:
@@ -1294,7 +1663,8 @@ class DSPMDEStateBlockData(StateBlockData):
         # for the following variables: pressure,
         # temperature, dens_mass, visc_d_phase, diffus_phase_comp
 
-        # these variables should have user input
+        # the following variables should have users' input of scaling factors;
+        # missing input triggers a warning
         if iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", "H2O"]) is None:
             sf = iscale.get_scaling_factor(
                 self.flow_mol_phase_comp["Liq", "H2O"], default=1, warning=True
@@ -1308,30 +1678,40 @@ class DSPMDEStateBlockData(StateBlockData):
                 )
                 iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
 
-        # scaling factors for parameters
+        if self.is_property_constructed("flow_equiv_phase_comp"):
+            for j in self.flow_equiv_phase_comp.keys():
+                if iscale.get_scaling_factor(self.flow_equiv_phase_comp[j]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[j])
+                    iscale.set_scaling_factor(self.flow_equiv_phase_comp[j], sf)
+
+        # The following variables and parameters have computed scalling factors;
+        # Users do not have to input scaling factors but, if they do, their value
+        # will override.
         for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
-
         for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
-
-        for ind, v in self.electrical_mobility_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.electrical_mobility_comp[ind], 1e8)
-
+                if ind in self.params.config.diffusivity_data.keys():
+                    sf = self.params.config.diffusivity_data[ind] ** -1
+                else:
+                    sf = 1e10
+                iscale.set_scaling_factor(self.diffus_phase_comp[ind], sf)
         if self.is_property_constructed("dens_mass_solvent"):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-3)
-
-        for p, v in self.dens_mass_phase.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-3)
-        for p, v in self.visc_d_phase.items():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.visc_d_phase[p], 1e3)
-
+        if self.is_property_constructed("dens_mass_phase"):
+            for p, v in self.dens_mass_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-3)
+        if self.is_property_constructed("visc_d_phase"):
+            for p, v in self.visc_d_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.visc_d_phase[p], 1e3)
+        if self.is_property_constructed("visc_k_phase"):
+            for p, v in self.visc_k_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.visc_k_phase[p], 1e6)
         if self.is_property_constructed("mole_frac_phase_comp"):
             for j in self.params.component_list:
                 if (
@@ -1359,7 +1739,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     is None
                 ):
                     sf = iscale.get_scaling_factor(
-                        self.flow_mol_phase_comp["Liq", j], default=1
+                        self.flow_mol_phase_comp["Liq", j]
                     ) * iscale.get_scaling_factor(self.mw_comp[j])
                     iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", j], sf)
 
@@ -1372,9 +1752,9 @@ class DSPMDEStateBlockData(StateBlockData):
                 ):
                     if comp.is_solute():
                         sf = iscale.get_scaling_factor(
-                            self.flow_mass_phase_comp["Liq", j], default=1
+                            self.flow_mass_phase_comp["Liq", j]
                         ) / iscale.get_scaling_factor(
-                            self.flow_mass_phase_comp["Liq", "H2O"], default=1
+                            self.flow_mass_phase_comp["Liq", "H2O"]
                         )
                         iscale.set_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j], sf
@@ -1401,9 +1781,7 @@ class DSPMDEStateBlockData(StateBlockData):
                             self.conc_mass_phase_comp["Liq", j],
                             sf_dens
                             * iscale.get_scaling_factor(
-                                self.mass_frac_phase_comp["Liq", j],
-                                default=1,
-                                warning=True,
+                                self.mass_frac_phase_comp["Liq", j]
                             ),
                         )
 
@@ -1418,27 +1796,94 @@ class DSPMDEStateBlockData(StateBlockData):
                     ) / iscale.get_scaling_factor(self.mw_comp[j])
                     iscale.set_scaling_factor(self.conc_mol_phase_comp["Liq", j], sf)
 
-        # these variables do not typically require user input,
-        # will not override if the user does provide the scaling factor
+        if self.is_property_constructed("conc_equiv_phase_comp"):
+            for j in self.params.ion_set:
+                if (
+                    iscale.get_scaling_factor(self.conc_equiv_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                    iscale.set_scaling_factor(self.conc_equiv_phase_comp["Liq", j], sf)
+
         if self.is_property_constructed("pressure_osm_phase"):
             if iscale.get_scaling_factor(self.pressure_osm_phase) is None:
-                sf = 1e-3 * min(
-                    iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
-                    for j in self.params.ion_set | self.params.solute_set
+                sf = (
+                    1e-3
+                    * sum(
+                        iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                        ** 2
+                        for j in self.params.ion_set | self.params.solute_set
+                    )
+                    ** 0.5
                 )
                 iscale.set_scaling_factor(self.pressure_osm_phase, sf)
 
+        if self.is_property_constructed("elec_mobility_phase_comp"):
+            for ind, v in self.elec_mobility_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if (
+                        self.params.config.elec_mobility_calculation
+                        == ElectricalMobilityCalculation.EinsteinRelation
+                    ):
+                        sf = iscale.get_scaling_factor(self.diffus_phase_comp[ind]) / 40
+                    else:
+                        sf = self.params.config.elec_mobility_data[ind] ** -1
+                    iscale.set_scaling_factor(self.elec_mobility_phase_comp[ind], sf)
+
+        if self.is_property_constructed("trans_num_phase_comp"):
+            for ind, v in self.trans_num_phase_comp.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(self.trans_num_phase_comp[ind], 10)
+        if self.is_property_constructed("equiv_conductivity_phase"):
+            for ind, v in self.equiv_conductivity_phase.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if (
+                        self.params.config.equiv_conductivity_calculation
+                        == EquivalentConductivityCalculation.ElectricalMobility
+                    ):
+                        sf = (
+                            1
+                            / 96485
+                            * sum(
+                                iscale.get_scaling_factor(
+                                    self.elec_mobility_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                * iscale.get_scaling_factor(
+                                    self.conc_mol_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                for j in self.params.ion_set
+                            )
+                            ** 0.5
+                            / sum(
+                                iscale.get_scaling_factor(
+                                    self.conc_mol_phase_comp["Liq", j]
+                                )
+                                ** 2
+                                for j in self.params.cation_set
+                            )
+                            ** 0.5
+                        )
+                    else:
+                        sf = self.params.config.equiv_conductivity_phase_data[ind] ** -1
+                    iscale.set_scaling_factor(self.equiv_conductivity_phase[ind], sf)
+
         if self.is_property_constructed("elec_cond_phase"):
             if iscale.get_scaling_factor(self.elec_cond_phase) is None:
-                sf = 1e-4 * min(
-                    (
-                        0.5
-                        * iscale.get_scaling_factor(self.electrical_mobility_comp[j])
-                        * iscale.get_scaling_factor(self.conc_mol_phase_comp["Liq", j])
+                for ind, v in self.elec_cond_phase.items():
+                    sf = (
+                        iscale.get_scaling_factor(self.equiv_conductivity_phase[ind])
+                        * sum(
+                            iscale.get_scaling_factor(
+                                self.conc_mol_phase_comp["Liq", j]
+                            )
+                            ** 2
+                            for j in self.params.cation_set
+                        )
+                        ** 0.5
                     )
-                    for j in self.params.ion_set | self.params.solute_set
-                )
-                iscale.set_scaling_factor(self.elec_cond_phase, sf)
+                    iscale.set_scaling_factor(self.elec_cond_phase[ind], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             sf = (
@@ -1503,7 +1948,9 @@ class DSPMDEStateBlockData(StateBlockData):
             "pressure_osm_phase",
             "flow_vol_phase",
             "dens_mass_phase",
+            "equiv_conductivity_phase",
             "elec_cond_phase",
+            "visc_k_phase",
         ]:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -1516,10 +1963,14 @@ class DSPMDEStateBlockData(StateBlockData):
             "mass_frac_phase_comp",
             "conc_mass_phase_comp",
             "flow_mass_phase_comp",
+            "flow_equiv_phase_comp",
             "mole_frac_phase_comp",
             "conc_mol_phase_comp",
+            "conc_equiv_phase_comp",
             "act_coeff_phase_comp",
             "molality_phase_comp",
+            "elec_mobility_phase_comp",
+            "trans_num_phase_comp",
         ]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):

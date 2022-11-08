@@ -22,7 +22,6 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
-    Param,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -46,12 +45,10 @@ class TestBlendingReservoirZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["foo"])
 
-        m.fs.unit = BlendingReservoirZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = BlendingReservoirZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
@@ -109,7 +106,9 @@ class TestBlendingReservoirZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(7e-10, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -120,15 +119,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = BlendingReservoirZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = BlendingReservoirZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -137,9 +134,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.blending_reservoir, Block)
     assert isinstance(m.fs.costing.blending_reservoir.capital_a_parameter, Var)

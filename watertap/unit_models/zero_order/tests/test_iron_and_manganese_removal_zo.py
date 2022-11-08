@@ -46,14 +46,10 @@ class TestIronManganeseRemovalZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["iron", "manganese", "foo"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["iron", "manganese", "foo"])
 
-        m.fs.unit = IronManganeseRemovalZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = IronManganeseRemovalZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "iron"].fix(250)
@@ -171,7 +167,7 @@ class TestIronManganeseRemovalZO_w_default_removal:
         assert pytest.approx(2.2173e-08, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
-        assert pytest.approx(4166.50264, abs=1e-5) == value(
+        assert pytest.approx(521.534735, abs=1e-5) == value(
             model.fs.unit.electricity[0]
         )
 
@@ -198,17 +194,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["iron", "manganese", "foo"]}
-    )
+    m.fs.params = WaterParameterBlock(solute_list=["iron", "manganese", "foo"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = IronManganeseRemovalZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = IronManganeseRemovalZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "iron"].fix(250)
@@ -217,9 +209,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.iron_and_manganese_removal, Block)
     assert isinstance(

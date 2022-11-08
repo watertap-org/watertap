@@ -29,9 +29,9 @@ solver = get_solver()
 @pytest.mark.component
 def test_complete_condense():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.WaterParameterBlock()
-    m.fs.unit = Condenser(default={"property_package": m.fs.properties})
+    m.fs.unit = Condenser(property_package=m.fs.properties)
 
     # scaling
     m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Vap", "H2O"))
@@ -63,6 +63,7 @@ def test_complete_condense():
         1.0000, rel=1e-3
     )
 <<<<<<< HEAD
+<<<<<<< HEAD
     assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
     assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
     assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)
@@ -77,3 +78,8 @@ def test_complete_condense():
     perf_dict = m.fs.unit._get_performance_contents()
     assert perf_dict == {"vars": {"Heat duty": m.fs.unit.control_volume.heat[0]}}
 >>>>>>> 3070bdaa62b7e34ede6087582b06dc34c6c50d1b
+=======
+    assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
+    assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
+    assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)
+>>>>>>> 614529f6c9144ad224699b673c6c877ef5a86553
