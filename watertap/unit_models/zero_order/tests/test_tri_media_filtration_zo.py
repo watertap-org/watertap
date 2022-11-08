@@ -333,7 +333,7 @@ class TestTriMediaFiltrationZO_w_default_removal:
         assert pytest.approx(283.582, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(2.38806e-7, rel=1e-5) == value(
+        assert pytest.approx(1.27004e-8, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0.02592, abs=1e-5) == value(model.fs.unit.electricity[0])

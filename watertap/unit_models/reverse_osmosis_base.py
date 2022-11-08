@@ -32,6 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     CONFIG_Template,
@@ -56,7 +57,7 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-class ReverseOsmosisBaseData(UnitModelBlockData):
+class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
     """
     Reverse Osmosis base class
     """
@@ -487,7 +488,6 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        raise_on_failure=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -565,14 +565,12 @@ class ReverseOsmosisBaseData(UnitModelBlockData):
                 res = opt.solve(self, tee=slc.tee)
 
         # release inlet state, in case this error is caught
+
         self.feed_side.release_state(source_flags, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            if raise_on_failure:
-                raise InitializationError(
-                    f"Unit model {self.name} failed to initialize"
-                )
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
