@@ -658,7 +658,180 @@ class SeawaterParameterData(PhysicalParameterBlock):
             units=pyunits.K,
             doc="Boiling point parameter B2",
         )
-
+        self.entr_mass_param_B1 = Var(
+            within=Reals,
+            initialize=-4.231e2,
+            units=pyunits.J/pyunits.kg/pyunits.K,
+            doc='Entropy parameter B1'
+        )
+        self.entr_mass_param_B2 = Var(
+            within=Reals,
+            initialize=1.463e4,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Entropy parameter B2'
+        )
+        self.entr_mass_param_B3 = Var(
+            within=Reals,
+            initialize=-9.880e4,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Entropy parameter B3'
+        )
+        self.entr_mass_param_B4 = Var(
+            within=Reals,
+            initialize=3.095e5,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Entropy parameter B4'
+        )
+        self.entr_mass_param_B5 = Var(
+            within=Reals,
+            initialize=2.562e1,
+            units=pyunits.J / pyunits.kg / pyunits.K**2,
+            doc='Entropy parameter B5'
+        )
+        self.entr_mass_param_B6 = Var(
+            within=Reals,
+            initialize=-1.443e-1,
+            units=pyunits.J / pyunits.kg / pyunits.K**3,
+            doc='Entropy parameter B6'
+        )
+        self.entr_mass_param_B7 = Var(
+            within=Reals,
+            initialize=5.879e-4,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 4,
+            doc='Entropy parameter B7'
+        )
+        self.entr_mass_param_B8 = Var(
+            within=Reals,
+            initialize=-6.111e1,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 2,
+            doc='Entropy parameter B8'
+        )
+        self.entr_mass_param_B9 = Var(
+            within=Reals,
+            initialize=8.041e1,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 2,
+            doc='Entropy parameter B9'
+        )
+        self.entr_mass_param_B10 = Var(
+            within=Reals,
+            initialize=-3.035e-1,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 3,
+            doc='Entropy parameter B10'
+        )
+        self.entr_mass_param_C1 = Var(
+            within=Reals,
+            initialize=0.1543,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Entropy pure water parameter C1'
+        )
+        self.entr_mass_param_C2 = Var(
+            within=Reals,
+            initialize=15.383,
+            units=pyunits.J / pyunits.kg / pyunits.K**2,
+            doc='Entropy pure water parameter C2'
+        )
+        self.entr_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-2.996e-2,
+            units=pyunits.J / pyunits.kg / pyunits.K**3,
+            doc='Entropy pure water parameter C3'
+        )
+        self.entr_mass_param_C4 = Var(
+            within=Reals,
+            initialize=8.193e-5,
+            units=pyunits.J / pyunits.kg / pyunits.K**4,
+            doc='Entropy pure water parameter C4'
+        )
+        self.entr_mass_param_C5 = Var(
+            within=Reals,
+            initialize=-1.370e-7,
+            units=pyunits.J / pyunits.kg / pyunits.K**5,
+            doc='Entropy pure water parameter C5'
+        )
+        self.gibbs_mass_param_B1 = Var(
+            within=Reals,
+            initialize=-2.4176e2,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Gibbs parameter B1'
+        )
+        self.gibbs_mass_param_B2 = Var(
+            within=Reals,
+            initialize=-6.2462e-1,
+            units=pyunits.J / pyunits.kg / pyunits.K**2,
+            doc='Gibbs parameter B2'
+        )
+        self.gibbs_mass_param_B3 = Var(
+            within=Reals,
+            initialize=7.4761e-3,
+            units=pyunits.J / pyunits.kg / pyunits.K**3,
+            doc='Gibbs parameter B3'
+        )
+        self.gibbs_mass_param_B4 = Var(
+            within=Reals,
+            initialize=1.3836e-3,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 2,
+            doc='Gibbs parameter B4'
+        )
+        self.gibbs_mass_param_B5 = Var(
+            within=Reals,
+            initialize=-6.7157e-6,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 3,
+            doc='Gibbs parameter B5'
+        )
+        self.gibbs_mass_param_B6 = Var(
+            within=Reals,
+            initialize=5.1993e-4,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Gibbs parameter B6'
+        )
+        self.gibbs_mass_param_B7 = Var(
+            within=Reals,
+            initialize=9.9176e-9,
+            units=pyunits.J / pyunits.kg / pyunits.K**3,
+            doc='Gibbs parameter B7'
+        )
+        self.gibbs_mass_param_B8 = Var(
+            within=Reals,
+            initialize=6.6448e1,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Gibbs parameter B8'
+        )
+        self.gibbs_mass_param_B9 = Var(
+            within=Reals,
+            initialize=2.0681e-1,
+            units=pyunits.J / pyunits.kg / pyunits.K**2,
+            doc='Gibbs parameter B9'
+        )
+        self.gibbs_mass_param_C1 = Var(
+            within=Reals,
+            initialize=1.0677e2,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Gibbs pure water parameter C1'
+        )
+        self.gibbs_mass_param_C2 = Var(
+            within=Reals,
+            initialize=-1.4303,
+            units=pyunits.J / pyunits.kg / pyunits.K**2,
+            doc='Gibbs pure water parameter C2'
+        )
+        self.gibbs_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-7.6139,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 3,
+            doc='Gibbs pure water parameter C3'
+        )
+        self.gibbs_mass_param_C4 = Var(
+            within=Reals,
+            initialize=8.3627e-3,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 4,
+            doc='Gibbs pure water parameter C4'
+        )
+        self.gibbs_mass_param_C5 = Var(
+            within=Reals,
+            initialize=-7.8754e-6,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 5,
+            doc='Gibbs pure water parameter C5'
+        )
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -676,7 +849,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("dh_vap_mass", 1e-6)
         self.set_default_scaling("diffus_phase_comp", 1e9)
-
+        self.set_default_scaling("entr_mass_phase", 1e-2, index='Liq')
+        self.set_default_scaling("gibbs_mass_phase", 1e-2, index='Liq')
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -704,6 +878,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
+                "entr_mass_phase": {"method": "_entr_mass_phase"},
+                "entr_flow": {"method": "_entr_flow"},
+                "gibbs_mass_phase":{"method":"_gibbs_mass_phase"}
             }
         )
         # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
@@ -1447,6 +1624,89 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
+    def _entr_mass_phase(self):
+        self.entr_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1e2,
+            bounds=(1, 1e9),
+            units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
+            doc="Specific entropy",
+        )
+
+        def rule_entr_mass_phase(b):  # specific entropy, eq. 30 and 31 in Nayar
+            t = (
+                b.temperature - 273.15 * pyunits.K
+            )  # temperature in degC, but pyunits in K
+            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            s_w = (
+                b.params.entr_mass_param_C1
+                + b.params.entr_mass_param_C2 * t
+                + b.params.entr_mass_param_C3 * t**2
+                + b.params.entr_mass_param_C4 * t**3
+                + b.params.entr_mass_param_C5 * t**4
+            )
+            s_sw = s_w - S * (
+                b.params.entr_mass_param_B1
+                + b.params.entr_mass_param_B2 * S
+                + b.params.entr_mass_param_B3 * S**2
+                + b.params.entr_mass_param_B4 * S**3
+                + b.params.entr_mass_param_B5 * t
+                + b.params.entr_mass_param_B6 * t**2
+                + b.params.entr_mass_param_B7 * t**3
+                + b.params.entr_mass_param_B8 * S * t
+                + b.params.entr_mass_param_B9 * S**2 * t
+                + b.params.entr_mass_param_B10 * S * t**2
+            )
+            return b.entr_mass_phase["Liq"] == s_sw
+
+        self.eq_entr_mass_phase = Constraint(rule=rule_entr_mass_phase)
+
+    def _entr_flow(self):
+        # entropy flow expression for get_entropy_flow_terms method
+
+        def rule_entr_flow(b):  # entropy flow [J/s-K]
+            return (
+                sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * b.entr_mass_phase["Liq"]
+            )
+
+        self.entr_flow = Expression(rule=rule_entr_flow)
+
+    def _gibbs_mass_phase(self):
+        self.gibbs_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1e2,
+            bounds=(1, 1e9),
+            units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
+            doc="Specific Gibbs",
+        )
+
+        def rule_gibbs_mass_phase(b):  # specific Gibbs, eq. 38 and 39 in Nayar
+            t = (
+                b.temperature - 273.15 * pyunits.K
+            )  # temperature in degC, but pyunits in K
+            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            g_w = (
+                b.params.gibbs_mass_param_C1
+                + b.params.gibbs_mass_param_C2 * t
+                + b.params.gibbs_mass_param_C3 * t**2
+                + b.params.gibbs_mass_param_C4 * t**3
+                + b.params.gibbs_mass_param_C5 * t**4
+            )
+            g_sw = g_w - S * (
+                b.params.gibbs_mass_param_B1
+                + b.params.gibbs_mass_param_B2 * t
+                + b.params.gibbs_mass_param_B3 * t**2
+                + b.params.gibbs_mass_param_B4 * S**2 * t
+                + b.params.gibbs_mass_param_B5 * S**2 * t**2
+                + b.params.gibbs_mass_param_B6 * S**3
+                + b.params.gibbs_mass_param_B7 * S**3 * t**2
+                + b.params.gibbs_mass_param_B8 * log(S) * t
+                + b.params.gibbs_mass_param_B9 * log(S) * t
+            )
+            return b.gibbs_mass_phase["Liq"] == g_sw
+
+        self.eq_gibbs_mass_phase = Constraint(rule=rule_gibbs_mass_phase)
     # -----------------------------------------------------------------------------
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
@@ -1460,6 +1720,9 @@ class SeawaterStateBlockData(StateBlockData):
         """Create enthalpy flow terms."""
         return self.enth_flow
 
+    def get_entropy_flow_terms(self, p):
+        """Creat entropy flow terms."""
+        return self.entr_flow
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
     #     """Create material density terms."""
@@ -1655,6 +1918,7 @@ class SeawaterStateBlockData(StateBlockData):
             "enth_mass_phase",
             "cp_mass_phase",
             "therm_cond_phase",
+            "entr_mass_phase"
         ]
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):

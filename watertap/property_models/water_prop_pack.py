@@ -358,7 +358,60 @@ class WaterParameterData(PhysicalParameterBlock):
             units=enth_mass_units * t_inv_units**4,
             doc="Latent heat of pure water parameter 4",
         )
-
+        self.entr_mass_param_A1 = Var(
+            within=Reals,
+            initialize=-4.4786e-3,
+            units = pyunits.J * pyunits.kg**-1 * pyunits.K**-1 * pyunits.Pa**-1,
+            doc='Entropy pressure dependence parameter A1'
+        )
+        self.entr_mass_param_A2 = Var(
+            within=Reals,
+            initialize=-1.1654e-2,
+            units=pyunits.J * pyunits.kg ** -1 * pyunits.K ** -2 * pyunits.Pa ** -1,
+            doc='Entropy pressure dependence parameter A2'
+        )
+        self.entr_mass_param_A3 = Var(
+            within=Reals,
+            initialize=6.1154e-5,
+            units=pyunits.J * pyunits.kg ** -1 * pyunits.K ** -3 * pyunits.Pa ** -1,
+            doc='Entropy pressure dependence parameter A3'
+        )
+        self.entr_mass_param_A4 = Var(
+            within=Reals,
+            initialize=-2.0696e-7,
+            units=pyunits.J * pyunits.kg ** -1 * pyunits.K ** -4 * pyunits.Pa ** -1,
+            doc='Entropy pressure dependence parameter A4'
+        )
+        self.entr_mass_param_C1 = Var(
+            within=Reals,
+            initialize=0.1543,
+            units=pyunits.J / pyunits.kg / pyunits.K,
+            doc='Entropy pure water parameter C1'
+        )
+        self.entr_mass_param_C2 = Var(
+            within=Reals,
+            initialize=15.383,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 2,
+            doc='Entropy pure water parameter C2'
+        )
+        self.entr_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-2.996e-2,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 3,
+            doc='Entropy pure water parameter C3'
+        )
+        self.entr_mass_param_C4 = Var(
+            within=Reals,
+            initialize=8.193e-5,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 4,
+            doc='Entropy pure water parameter C4'
+        )
+        self.entr_mass_param_C5 = Var(
+            within=Reals,
+            initialize=-1.370e-7,
+            units=pyunits.J / pyunits.kg / pyunits.K ** 5,
+            doc='Entropy pure water parameter C5'
+        )
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -375,6 +428,8 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Vap")
         self.set_default_scaling("dh_vap_mass", 1e-6)
+        self.set_default_scaling("entr_mass_phase", 1e-3, index='Liq')
+        self.set_default_scaling("entr_mass_phase", 1e-3, index='Vap')
 
     @classmethod
     def define_metadata(cls, obj):
@@ -394,6 +449,8 @@ class WaterParameterData(PhysicalParameterBlock):
                 "enth_flow_phase": {"method": "_enth_flow_phase"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "dh_vap_mass": {"method": "_dh_vap_mass"},
+                "entr_mass_phase": {"method": "_entr_mass_phase"},
+                "entr_flow_phase": {"method": "_entr_flow_phase"},
             }
         )
 
@@ -923,6 +980,68 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_dh_vap_mass = Constraint(rule=rule_dh_vap_mass)
 
+    def _entr_mass_phase(self):
+        self.entr_mass_phase = Var(
+            self.params.phase_list,  # ['Liq','Vap']
+            initialize=1e3,
+            bounds=(1, 1e9),
+            units=pyunits.J * pyunits.kg**-1 * pyunits.K**-1,
+            doc="Specific entropy",
+        )
+
+        def rule_entr_mass_phase(
+            b, phase
+        ):  # specific entropy, eq.31 in Nayar
+            t = (
+                b.temperature - 273.15 * pyunits.K
+            )  # temperature in degC, but pyunits in K
+            P = (b.pressure*1e-6) # convert to MPa
+            P0 = 0.101325
+            s_w = (
+                b.params.entr_mass_param_C1
+                + b.params.entr_mass_param_C2 * t
+                + b.params.entr_mass_param_C3 * t**2
+                + b.params.entr_mass_param_C4 * t**3
+                + b.params.entr_mass_param_C5 * t**4
+            )
+
+            if phase == "Liq":
+                return b.entr_mass_phase["Liq"] == s_w
+            else:  # phase == 'Vap'
+                # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
+                #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
+                # h_vap = h_w + dh_vap_w
+                # dh_vap_w
+                p_dependence = (P-P0)*(
+                                b.params.entr_mass_param_A1
+                                + b.params.entr_mass_param_A2 * t
+                                + b.params.entr_mass_param_A3 * t**2
+                                + b.params.entr_mass_param_A4 * t**3
+                )
+                return b.entr_mass_phase["Vap"] == s_w + p_dependence + b.dh_vap_mass/b.temperature
+
+        self.eq_entr_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_entr_mass_phase
+        )
+    def _entr_flow_phase(self):
+        # entropy flow variable
+        self.entr_flow_phase = Var(
+            self.params.phase_list,  # ['Liq','Vap']
+            initialize=1e2,
+            bounds=(None, None),
+            units=pyunits.J / pyunits.s / pyunits.K,
+            doc="Entropy flow",
+        )
+
+        def rule_entr_flow_phase(b, p):  # enthalpy flow [J/s]
+            return (
+                b.entr_flow_phase[p]
+                == b.flow_mass_phase_comp[p, "H2O"] * b.entr_mass_phase[p]
+            )
+
+        self.eq_entr_flow_phase = Constraint(
+            self.params.phase_list, rule=rule_entr_flow_phase
+        )
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
     # return a pyomo Var or Expression
@@ -934,6 +1053,10 @@ class WaterStateBlockData(StateBlockData):
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
         return self.enth_flow_phase[p]
+
+    def get_entropy_flow_terms(self, p):
+        """Create entropy flow terms."""
+        return self.entr_flow_phase[p]
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -1042,6 +1165,13 @@ class WaterStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
                     sf *= iscale.get_scaling_factor(self.enth_mass_phase[p])
                     iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
+
+        if self.is_property_constructed("entr_flow_phase"):
+            for p in self.params.phase_list:
+                if iscale.get_scaling_factor(self.entr_flow_phase[p]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
+                    sf *= iscale.get_scaling_factor(self.entr_mass_phase[p])
+                    iscale.set_scaling_factor(self.entr_flow_phase[p], sf)
 
         # transforming constraints
         for metadata_dic in self.params.get_metadata().properties.values():

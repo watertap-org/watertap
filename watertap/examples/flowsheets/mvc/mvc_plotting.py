@@ -21,6 +21,8 @@ from pyomo.environ import (
 
 
 def main():
+    run_tornado()
+    assert False
 
     cases = {}
     cases['evap_hx_cost'] = [(3000, 2000)]
@@ -33,6 +35,13 @@ def main():
     dir = "C:/Users/carso/Documents/MVC/watertap_results/full_parameter_sweeps_P_out_unfixed"
     map_dir = dir + "/evap_3000_hx_2000/elec_0.15/cv_temp_max_450/comp_cost_1"
     save_dir = map_dir + '/figures'
+    var = 'Efficiency'
+    label = r'$\eta_{II}$ (%)'
+    vmin = 0
+    vmax = 1
+    ticks = [0, .5, 1]
+    fmt = '.1f'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     make_maps(map_dir, save_dir)
 
@@ -58,6 +67,21 @@ def main():
     # save_dir = map_dir+"comparison_figures"
     # make_maps_comparison(map_dir_list, save_dir, title_list)
     return
+
+def run_tornado():
+    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/tornado_sensitivity/"
+    save_dir = map_dir + "figures"
+    # save_tornado_plot_data(map_dir)
+    tornado_plot(map_dir, save_dir)
+
+def run_dual_param_sensitivity():
+    map_dir = "C:/Users/carso/Documents/MVC/watertap_results/dual_c_evap_U_evap_sensitivity/plus_20_minus_20"
+    save_dir = map_dir + "/figures"
+    xlabel = "Evaporator cost (%)"
+    xticklabels = ['-20', '-15', '-10', '-5', '0', '+5', '+10', '+15', "+20"]
+    ylabel = "Evaporator overall heat transfer\ncoefficient change (%)"
+    yticklabels = ['-20', '-15', '-10', '-5', '0', '+5', '+10', '+15', "+20"]
+    make_maps_dual_param(map_dir, save_dir, xticklabels, yticklabels, xlabel, ylabel)
 
 def plot_2D_heat_map_dual_param(map_dir, save_dir, param, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels, xlabel, ylabel, make_ticks=True, dif=False):
     fig = plt.figure()
@@ -221,6 +245,30 @@ def plot_2D_heat_map_subplots(map_dir, title_list, save_dir, param, param_label,
     fig.savefig(save_dir + '/' + param + '.png', bbox_inches='tight', dpi=300)
 
 def make_maps(map_dir, save_dir):
+    var = 'capex opex ratio'
+    label = 'CAPEX/OPEX (-)'
+    vmin = 0
+    vmax = 1
+    ticks = [0, .5, 1]
+    fmt = '.2f'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'LCOW normalized electricity'
+    label = 'Electricty cost fraction (-)'
+    vmin = 0
+    vmax = 1
+    ticks = [0,.5,1]
+    fmt = '.2f'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
+    var = 'LCOW normalized opex'
+    label = 'Operating cost fraction (-)'
+    vmin = 0
+    vmax = 1
+    ticks = [0, .5, 1]
+    fmt = '.2f'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+
     var = 'Distillate hx LMTD'
     label = r'Distillate HX LMTD (K)'
     vmin = 0
@@ -234,7 +282,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     var = 'Distillate hx heat transfer kW'
-    label = r'Distillate HX Q [kW]'
+    label = r'Distillate HX Q (kW)'
     vmin = 0
     vmax = 10
     ticks = [0,10]
@@ -242,19 +290,19 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var,label, vmin, vmax, ticks,fmt, make_ticks=True)
 
     var = 'Brine hx heat transfer kW'
-    label = r'Brine HX Q [kW]'
+    label = r'Brine HX Q (kW)'
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     var = 'Normalized distillate hx heat transfer kJ per kg'
     label = r'Distillate HX normalized q [kJ/kg-feed]'
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
-    # var = 'Normalized brine hx heat transfer kJ per kg'
-    # label = r'Brine HX normalized q [kJ/kg-feed]'
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
+    var = 'Normalized brine hx heat transfer kJ per kg'
+    label = r'Brine HX normalized q [kJ/kg-feed]'
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, make_ticks=True)
 
     var = 'LCOW'
-    label = r'LCOW [\$/$\rmm^3$ of product]'
+    label = r'LCOW (\$/$\rmm^3$ of product)'
     vmin = 2.8  # minimum cost on bar, $/m3
     vmax = 6.1  # maximum cost on bar, $/m3
     ticks = [3, 4, 5, 6]  # tick marks on bar
@@ -262,7 +310,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'SEC'
-    label = r'SEC [kWh/$\rmm^3$ of product]'
+    label = r'SEC (kWh/$\rmm^3$ of product)'
     vmin = 15  # minimum cost on bar, $/m3
     vmax = 63  # maximum cost on bar, $/m3
     ticks = [20, 30, 40, 50, 63]  # tick marks on bar
@@ -270,7 +318,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Brine temperature Celsius'
-    label = 'Evaporator temperature [C]'
+    label = 'Evaporator temperature (C)'
     vmin = 25  # minimum cost on bar, $/m3
     vmax = 150  # maximum cost on bar, $/m3
     ticks = [25, 50, 100, 150]  # tick marks on bar
@@ -278,7 +326,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Brine pressure kPa'
-    label = 'Evaporator pressure [kPa]'
+    label = 'Evaporator pressure (kPa)'
     vmin = 0  # minimum cost on bar, $/m3
     vmax = 403  # maximum cost on bar, $/m3
     ticks = [0, 100, 200, 300, 400]  # tick marks on bar
@@ -286,7 +334,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Preheated feed temperature Celsius'
-    label = 'Preheated feed temperature [C]'
+    label = 'Preheated feed temperature (C)'
     vmin = 25  # minimum cost on bar, $/m3
     vmax = 150  # maximum cost on bar, $/m3
     ticks = [50, 100, 150]  # tick marks on bar
@@ -294,7 +342,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressed vapor temperature Celsius'
-    label = 'Compressed vapor temperature [C]'
+    label = 'Compressed vapor temperature (C)'
     vmin = 87  # minimum cost on bar, $/m3
     vmax = 227  # maximum cost on bar, $/m3
     ticks = [100, 150, 200]  # tick marks on bar
@@ -302,7 +350,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressed vapor pressure kPa'
-    label = 'Compressed vapor pressure [kPa]'
+    label = 'Compressed vapor pressure (kPa)'
     vmin = 3  # minimum cost on bar, $/m3
     vmax = 629  # maximum cost on bar, $/m3
     ticks = [200, 400, 600]  # tick marks on bar
@@ -310,39 +358,39 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Distillate temperature Celsius'
-    label = 'Distillate temperature [C]'
+    label = 'Distillate temperature (C)'
     vmin = 34  # minimum cost on bar, $/m3
     vmax = 161  # maximum cost on bar, $/m3
     ticks = [50, 100, 150]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
-    # var = 'Preheater split ratio'
-    # label = 'Preheater split ratio [C]'
-    # vmin = 0.4  # minimum cost on bar, $/m3
-    # vmax = 1  # maximum cost on bar, $/m3
-    # ticks = [0.4, 0.6, 0.8]  # tick marks on bar
-    # fmt = '.2f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    var = 'Preheater split ratio'
+    label = 'Preheater split ratio (-)'
+    vmin = 0.4  # minimum cost on bar, $/m3
+    vmax = 1  # maximum cost on bar, $/m3
+    ticks = [0.4, 0.6, 0.8]  # tick marks on bar
+    fmt = '.2f'  # format of annotation
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Distillate hx area'
-    label = r'Distillate preheater area [$\rmm^2$]'
+    label = r'Distillate preheater area ($\rmm^2$)'
     vmin = 0  # minimum cost on bar, $/m3
     vmax = 1630  # maximum cost on bar, $/m3
     ticks = [500, 1000, 2000, 3000, 4000]  # tick marks on bar
     fmt = '.0f'  # format of annotation
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
-    # var = 'Brine hx area'
-    # label = r'Brine preheater area [$\rmm^2$]'
-    # vmin = 0  # minimum cost on bar, $/m3
-    # vmax = 1001  # maximum cost on bar, $/m3
-    # ticks = [250, 500, 750]  # tick marks on bar
-    # fmt = '.0f'  # format of annotation
-    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    var = 'Brine hx area'
+    label = r'Brine preheater area ($\rmm^2$)'
+    vmin = 0  # minimum cost on bar, $/m3
+    vmax = 1001  # maximum cost on bar, $/m3
+    ticks = [250, 500, 750]  # tick marks on bar
+    fmt = '.0f'  # format of annotation
+    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator area'
-    label = r'Evaporator area [$\rmm^2$]'
+    label = r'Evaporator area ($\rmm^2$)'
     vmin = 742  # minimum cost on bar, $/m3
     vmax = 3740  # maximum cost on bar, $/m3
     ticks = [1000, 2000, 3000]  # tick marks on bar
@@ -350,7 +398,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator LMTD'
-    label = r'Evaporator LMTD [K]'
+    label = r'Evaporator LMTD (K)'
     vmin = 19  # minimum cost on bar, $/m3
     vmax = 61  # maximum cost on bar, $/m3
     ticks = [20, 40, 60]  # tick marks on bar
@@ -358,7 +406,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Compressor pressure ratio'
-    label = r'Compressor pressure ratio [-]'
+    label = r'Compressor pressure ratio (-)'
     vmin = 1.5  # minimum cost on bar, $/m3
     vmax = 3.6  # maximum cost on bar, $/m3
     ticks = [2, 2.5, 3]  # tick marks on bar
@@ -366,7 +414,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Evaporator-feed temperature difference'
-    label = r'$T_{brine}-T_{feed}$ [C]'
+    label = r'$T_{brine}-T_{feed}$ (C)'
     vmin = -7  # minimum cost on bar, $/m3
     vmax = 15  # maximum cost on bar, $/m3
     ticks = [-5, 0, 5, 10, 15]  # tick marks on bar
@@ -374,7 +422,7 @@ def make_maps(map_dir, save_dir):
     plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
     var = 'Mass flux LMH'
-    label = r'Product flux over evaporator [LMH]'
+    label = r'Product flux over evaporator (LMH)'
     vmin = 28  # minimum cost on bar, $/m3
     vmax = 82  # maximum cost on bar, $/m3
     ticks = [30, 40, 50, 60, 70, 80]  # tick marks on bar
@@ -383,23 +431,48 @@ def make_maps(map_dir, save_dir):
 
 def make_maps_dual_param(map_dir, save_dir,xticklabels,yticklabels,xlabel,ylabel):
     var = 'LCOW'
-    label = r'LCOW [\$/$\rmm^3$ of product]'
+    label = r'LCOW (\$/$\rmm^3$ of product)'
     vmin = 2.8  # minimum cost on bar, $/m3
     vmax = 6.1  # maximum cost on bar, $/m3
     ticks = [3, 4, 5, 6]  # tick marks on bar
     fmt = '.1f'  # format of annotation
-    plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt,xticklabels,yticklabels,xlabel,ylabel)
-
-    plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels,xlabel,ylabel, dif=True)
+    # plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt,xticklabels,yticklabels,xlabel,ylabel)
+    vmin = -18
+    vmax = 18
+    ticks = [-15,-10,-5,0,5,10,15]
+    fmt = '.0f'
+    plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels,xlabel,ylabel, make_ticks=False, dif=True)
 
     var = 'SEC'
-    label = r'SEC [kWh/$\rmm^3$ of product]'
+    label = r'SEC (kWh/$\rmm^3$ of product)'
     vmin = 15  # minimum cost on bar, $/m3
     vmax = 63  # maximum cost on bar, $/m3
     ticks = [20, 30, 40, 50, 63]  # tick marks on bar
-    fmt = '.0f'  # format of annotation
-    plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
+    fmt = '.1f'  # format of annotation
+    # plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels, xlabel,
+    #                             ylabel)
+    vmin = -10.8
+    vmax = 10.8
+    ticks = [-10,-5,0,5,10]
+    plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels, xlabel,
+                                ylabel, dif=True)
+    # plot_2D_heat_map(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt)
 
+    var = 'capex opex ratio'
+    label = 'CAPEX/OPEX (-)'
+    vmin = 0
+    vmax = 1
+    ticks = [0, .5, 1]
+    fmt = '.2f'
+    # plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels, xlabel,
+    #                             ylabel)
+    vmin = -8.8
+    vmax = 8.8
+    ticks = [-5,0,5]
+    fmt = '.1f'
+    plot_2D_heat_map_dual_param(map_dir, save_dir, var, label, vmin, vmax, ticks, fmt, xticklabels, yticklabels, xlabel,
+                                ylabel, dif=True)
+    assert False
     var = 'Brine temperature Celsius'
     label = 'Evaporator temperature [C]'
     vmin = 25  # minimum cost on bar, $/m3
@@ -793,6 +866,158 @@ def make_cost_bar_charts_old(map_dir):
     plt.tight_layout()
     ax.xaxis.label.set_size(6)
     plt.show()
+
+
+def tornado_plot(map_dir, save_dir):
+    df = pd.read_csv(map_dir+'tornado_results.csv')
+    labels_dict = {}
+    labels_dict['compressor_cost'] = 'Compressor Cost'
+    labels_dict['compressor_efficiency'] = 'Compressor Efficiency'
+    labels_dict['electricity_cost'] = 'Electricity Cost'
+    labels_dict['evaporator_cost'] = 'Evaporator Cost'
+    labels_dict['preheater_cost'] = 'Preheater Cost'
+    labels_dict['U_evap'] = 'Evaporator U'
+    labels_dict['U_hx_brine'] = 'Brine HX U'
+    labels_dict['U_hx_distillate'] = 'Distillate HX U'
+    # n_param = len(labels_dict.keys())
+    n_param = 7
+    widths = {}
+    starts = {}
+    labels = []
+    min_LCOW = min(min(df['LCOW_min_per']), min(df['LCOW_max_per']))
+    max_LCOW = max(max(df['LCOW_min_per']), max(df['LCOW_max_per']))
+    min_SEC = min(min(df['SEC_min_per']), min(df['SEC_max_per']))
+    max_SEC = max(max(df['SEC_min_per']), max(df['SEC_max_per']))
+    min_co_ratio = min(min(df['capex_opex_ratio_min_per']), min(df['capex_opex_ratio_max_per']))
+    max_co_ratio = max(max(df['capex_opex_ratio_min_per']), max(df['capex_opex_ratio_max_per']))
+
+    widths['LCOW'] = []
+    widths['SEC'] = []
+    widths['co_ratio'] = []
+    starts['LCOW'] = []
+    starts['SEC'] = []
+    starts['co_ratio'] = []
+
+    for i in range(n_param):
+        labels.append(labels_dict[df['parameter'][i]])
+        min_lcow = min(df['LCOW_min_per'][i],df['LCOW_max_per'][i])
+        max_lcow = max(df['LCOW_min_per'][i],df['LCOW_max_per'][i])
+        widths['LCOW'].append(max_lcow-min_lcow)
+        starts['LCOW'].append(min_lcow)
+
+        min_sec = min(df['SEC_min_per'][i], df['SEC_max_per'][i])
+        max_sec = max(df['SEC_min_per'][i], df['SEC_max_per'][i])
+        widths['SEC'].append(max_sec - min_sec)
+        starts['SEC'].append(min_sec)
+
+        min_cor = min(df['capex_opex_ratio_min_per'][i], df['capex_opex_ratio_max_per'][i])
+        max_cor = max(df['capex_opex_ratio_min_per'][i], df['capex_opex_ratio_max_per'][i])
+        widths['co_ratio'].append(max_cor - min_cor)
+        starts['co_ratio'].append(min_cor)
+
+    # Reorder to plot in descending order by LCOW
+    idx = sorted(range(len(widths['LCOW'])), key=lambda index: widths['LCOW'][index])
+    widths['LCOW_descending'] = sorted(widths['LCOW'])
+    starts['LCOW_descending'] = []
+    widths['SEC_reorder'] = []
+    widths['co_ratio_reorder'] = []
+    starts['SEC_reorder'] = []
+    starts['co_ratio_reorder'] = []
+    labels_reorder =[]
+    for i in idx:
+        starts['LCOW_descending'].append(starts['LCOW'][i])
+        labels_reorder.append(labels[i])
+        widths['SEC_reorder'].append(widths['SEC'][i])
+        widths['co_ratio_reorder'].append(widths['co_ratio'][i])
+        starts['SEC_reorder'].append(starts['SEC'][i])
+        starts['co_ratio_reorder'].append(starts['co_ratio'][i])
+
+    allowance = 1
+    c = ['red', 'red','blue','blue','blue','red','blue']
+    fig = plt.figure()
+    ax = fig.axes
+    plt.barh(labels_reorder, widths['LCOW_descending'], left=starts['LCOW_descending'],color=c)
+    plt.axvline(0,linestyle='--', color='black')
+    plt.xlabel('Percentage Change in LCOW (%)')
+    plt.xlim(min_LCOW-allowance,max_co_ratio+allowance)
+
+    # plt.xlim(min_LCOW-allowance,max_LCOW+allowance)
+    # plt.invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+
+    c = ['red', 'red', 'blue', 'red', 'red', 'red', 'blue']
+    fig = plt.figure()
+    ax = fig.axes
+    plt.barh(labels_reorder, widths['SEC_reorder'], left=starts['SEC_reorder'],color=c)
+    plt.axvline(0, linestyle='--', color='black')
+    plt.xlabel('Percentage Change in SEC (%)')
+    plt.xlim(min_LCOW-allowance,max_co_ratio+allowance)
+
+    # plt.xlim(min_SEC-allowance, max_SEC+allowance)
+
+    # plt.invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+
+    c = ['blue', 'blue', 'red', 'blue', 'blue', 'red', 'blue']
+    fig = plt.figure()
+    ax = fig.axes
+    plt.barh(labels_reorder, widths['co_ratio_reorder'], left=starts['co_ratio_reorder'],color=c)
+    plt.axvline(0,linestyle='--', color='black')
+    plt.xlabel('Percentage Change in CAPEX/OPEX (%)')
+    plt.xlim(min_LCOW-allowance,max_co_ratio+allowance)
+    # plt.invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+
+
+def save_tornado_plot_data(map_dir):
+    outputs = {}
+    outputs['parameter'] = []
+    outputs['param_min'] = []
+    outputs['param_max'] = []
+    outputs['LCOW_min'] = []
+    outputs['LCOW_max'] = []
+    outputs['SEC_min'] = []
+    outputs['SEC_max'] = []
+    outputs['capex_opex_ratio_min'] = []
+    outputs['capex_opex_ratio_max'] = []
+
+    # Baseline case for 100 g/kg, 50% recovery
+    LCOW_base = 5.39
+    SEC_base = 33.5
+    co_ratio_base = 0.435/0.565
+
+    for filename in os.listdir(map_dir):
+        # print(filename)
+        param_name = filename.split('.')[0]
+        if param_name == 'figures':
+            continue
+        if param_name == 'tornado_results':
+            continue
+        print(param_name)
+        outputs['parameter'].append(param_name)
+        df = pd.read_csv(map_dir+filename)
+        outputs['param_min'].append(df['# '+param_name][0])
+        outputs['param_max'].append(df['# '+param_name][1])
+        outputs['LCOW_min'].append(df['LCOW'][0])
+        outputs['LCOW_max'].append(df['LCOW'][1])
+        outputs['SEC_min'].append(df['SEC'][0])
+        outputs['SEC_max'].append(df['SEC'][1])
+        outputs['capex_opex_ratio_min'].append(df['capex opex ratio'][0])
+        outputs['capex_opex_ratio_max'].append(df['capex opex ratio'][1])
+
+    outputs['LCOW_min_per'] = (np.array(outputs['LCOW_min'])/LCOW_base-1)*100
+    outputs['LCOW_max_per'] = (np.array(outputs['LCOW_max'])/LCOW_base-1)*100
+    outputs['SEC_min_per'] = (np.array(outputs['SEC_min'])/SEC_base-1)*100
+    outputs['SEC_max_per'] = (np.array(outputs['SEC_max'])/SEC_base-1)*100
+    outputs['capex_opex_ratio_min_per'] = (np.array(outputs['capex_opex_ratio_min'])/co_ratio_base-1)*100
+    outputs['capex_opex_ratio_max_per'] = (np.array(outputs['capex_opex_ratio_max'])/co_ratio_base-1)*100
+
+    # save to csv
+    df = pd.DataFrame(outputs)
+    df.to_csv(map_dir+'tornado_results.csv', index=False)
 
 def plot_3D_results(results_file):
     df = pd.read_csv(results_file)

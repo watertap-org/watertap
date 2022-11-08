@@ -176,6 +176,17 @@ class CompressorData(UnitModelBlockData):
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
+        # Add condensing state block
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False  # condensing state block is not an inlet
+        self.properties_condensing = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of condensing state in condenser",
+            default=tmp_dict,
+        )
+
         # complete condensation mass balance
         @self.control_volume.Constraint(
             self.flowsheet().time,
@@ -195,6 +206,30 @@ class CompressorData(UnitModelBlockData):
                 "Liq", j
             )
 
+        @self.Constraint(
+            self.config.property_package.phase_list,
+            doc="Mass balance for condensing state",
+        )
+        def eq_mass_balance_condensingc(b, p):
+            return (
+                    b.control_volume.properties_in[0].flow_mass_phase_comp[p, "H2O"]
+                    == b.properties_condensing[0].flow_mass_phase_comp[p, "H2O"]
+            )
+
+        @self.Constraint(doc="Condensing state pressure")
+        def eq_condensing_pressure(b):
+            return (
+                    b.properties_condensing[0].pressure
+                    == b.control_volume.properties_in[0].pressure
+            )
+
+        @self.Constraint(doc="Condensing state saturation pressure")
+        def eq_condensing_pressure_sat(b):
+            return (
+                    b.properties_condensing[0].pressure
+                    == b.properties_condensing[0].pressure_sat
+            )
+
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type, has_heat_transfer=True
         )
@@ -204,13 +239,15 @@ class CompressorData(UnitModelBlockData):
         )
 
         # # Add constraints
-        @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
-        def eq_condenser_pressure_sat(b, t):
-            return (
-                b.control_volume.properties_out[t].pressure
-                >= b.control_volume.properties_out[t].pressure_sat
-            )
-
+        # @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
+        # def eq_condenser_pressure_sat(b, t):
+        #     return (
+        #         b.control_volume.properties_out[t].pressure
+        #         >= b.control_volume.properties_out[t].pressure_sat
+        #     )
+        @self.Constraint(self.flowsheet().time, doc="Saturation temperature constraint")
+        def eq_condenser_T_sat(b,t):
+            return (b.control_volume.properties_out[t].temperature <= b.properties_condensing[0].temperature)
         # Add ports
         self.add_port(name="inlet", block=self.control_volume.properties_in)
         self.add_port(name="outlet", block=self.control_volume.properties_out)
