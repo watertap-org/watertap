@@ -153,7 +153,7 @@ def build_ion_exhange_cost_param_block(blk):
     )
     blk.backwash_tank_intercept = pyo.Var(
         initialize=4717.255,
-        units=pyo.units.dimensionless,
+        units=pyo.units.USD_2020,
         doc="Ion exchange backwash tank cost equation - exponent, Fiberglass tank",
     )
     # Ion exchange regeneration solution tank costed with 2nd order polynomial:
@@ -161,7 +161,7 @@ def build_ion_exhange_cost_param_block(blk):
 
     blk.regen_tank_intercept = pyo.Var(
         initialize=4408.327,
-        units=pyo.units.USD_2020 / pyo.units.gal,
+        units=pyo.units.USD_2020,
         doc="Ion exchange regen tank cost equation - C coeff. Stainless steel",
     )
     blk.regen_tank_A_coeff = pyo.Var(
@@ -181,7 +181,7 @@ def build_ion_exhange_cost_param_block(blk):
     )
     blk.hazardous_min_cost = pyo.Var(
         initialize=3240,
-        units=pyo.units.USD_2020,
+        units=pyo.units.USD_2020 / pyo.units.year,
         doc="Min cost per hazardous waste shipment - EPA",
     )
     blk.hazardous_resin_disposal = pyo.Var(
@@ -272,7 +272,7 @@ def cost_ion_exchange(blk):
     blk.operating_cost_hazardous = pyo.Var(
         initialize=1e5,
         domain=pyo.NonNegativeReals,
-        units=blk.costing_package.base_currency,
+        units=blk.costing_package.base_currency / blk.costing_package.base_period,
         doc="Operating cost for hazardous waste disposal",
     )
 
@@ -348,7 +348,8 @@ def cost_ion_exchange(blk):
                 )
                 * ion_exchange_params.annual_resin_replacement_factor
                 + ion_exchange_params.hazardous_min_cost,
-                to_units=blk.costing_package.base_currency,
+                to_units=blk.costing_package.base_currency
+                / blk.costing_package.base_period,
             )
         )
     else:
@@ -362,11 +363,11 @@ def cost_ion_exchange(blk):
                     * ion_exchange_params.annual_resin_replacement_factor
                     * resin_cost
                 )
-                + blk.operating_cost_hazardous
             ),
             to_units=blk.costing_package.base_currency
             / blk.costing_package.base_period,
         )
+        + blk.operating_cost_hazardous
     )
 
     regen_soln_flow = (
