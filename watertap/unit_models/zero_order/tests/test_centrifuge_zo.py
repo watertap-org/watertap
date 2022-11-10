@@ -133,7 +133,7 @@ class TestCentrifugeZO:
         assert pytest.approx(0.49975, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
         )
-        assert pytest.approx(9.99444e-10, rel=1e-5) == value(
+        assert pytest.approx(1.503489e-09, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["struvite"]
         )
         assert pytest.approx(0.00095, rel=1e-5) == value(
@@ -142,7 +142,7 @@ class TestCentrifugeZO:
         assert pytest.approx(1000, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]
         )
-        assert pytest.approx(1.052688e-7, rel=1e-5) == value(
+        assert pytest.approx(1.583412e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["struvite"]
         )
         assert pytest.approx(1.000054e-10, abs=1e-5) == value(

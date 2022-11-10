@@ -53,6 +53,8 @@ from watertap.core.util.initialization import check_dof
 
 import idaes.logger as idaeslog
 
+from watertap.core import InitializationMixin
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -77,7 +79,7 @@ class ConcentrationPolarizationType(Enum):
 
 
 @declare_process_block_class("NanofiltrationDSPMDE0D")
-class NanofiltrationData(UnitModelBlockData):
+class NanofiltrationData(InitializationMixin, UnitModelBlockData):
     """
     Nanofiltration model based on Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
 
