@@ -839,11 +839,15 @@ class MembraneChannelMixin:
         if hasattr(self, "dh"):
             if iscale.get_scaling_factor(self.dh) is None:
                 iscale.set_scaling_factor(self.dh, 1e3)
+                sf = iscale.get_scaling_factor(self.dh)
+                iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         if hasattr(self, "K"):
-            for v in self.K.values():
+            for idx, v in self.K.items():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e4)
+                sf = iscale.get_scaling_factor(v)
+                iscale.constraint_scaling_transform(self.eq_K[idx], sf)
 
         if hasattr(self, "N_Re"):
             for t, x in self.N_Re.keys():
