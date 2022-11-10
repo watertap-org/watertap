@@ -18,6 +18,13 @@ The WaterTAP development team is composed of researchers from:
 * National Renewable Energy Laboratory
 * Oak Ridge National Laboratory
 
+Cite this work
+--------------
+
+Use the reference text given below to cite the WaterTAP project:
+
+   Keith S. Beattie, Daniel Gunter, Ben Knueven, Andrew Lee, Austin Ladshaw, Markus Drouven, Tim Bartholomew, Xiangyu Bi, Ludovico Bianchi, Travis Arnold, Adam Atia, Chenyu Wang, Ariel Miara, Sitterley Kurban, Allu Srikanth, Alexander Dudchenko, Oluwamayowa Amusat, Panda Kinshuk, and Ethan Young. WaterTAP: An open-source water treatment model library. Sponsored by California Energy Commission, National Alliance for Water Innovation, and USDOE. Version 0.6. Available at https://github.com/watertap-org/watertap.
+
 Content
 -------
 

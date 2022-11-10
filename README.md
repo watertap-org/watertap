@@ -23,6 +23,12 @@ The WaterTAP documentation is available online at <https://watertap.readthedocs.
 
 Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/latest/getting_started/install.html#for-watertap-developers) section of the documentation.
 
+## Cite this work
+
+To cite this work, use the "Cite this repository" feature available on the right side of this repository page or use the reference text given below.
+
+> Keith S. Beattie, Daniel Gunter, Ben Knueven, Andrew Lee, Austin Ladshaw, Markus Drouven, Tim Bartholomew, Xiangyu Bi, Ludovico Bianchi, Travis Arnold, Adam Atia, Chenyu Wang, Ariel Miara, Sitterley Kurban, Allu Srikanth, Alexander Dudchenko, Oluwamayowa Amusat, Panda Kinshuk, and Ethan Young. WaterTAP: An open-source water treatment model library. Sponsored by California Energy Commission, National Alliance for Water Innovation, and USDOE. Version 0.6. Available at https://github.com/watertap-org/watertap.
+
 ## Funding Acknowledgements
 
 This work is being conducted as part of the [National Alliance for Water Innovation
