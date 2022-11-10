@@ -83,7 +83,6 @@ def main():
     set_up_optimization(m)  # unfixes decision variables and sets objective to minimize LCOW
     results = solve(m, tee=False)
     print(results.solver.termination_condition)
-    # display_exergy_destruction(m)
     if results.solver.termination_condition == "infeasible":
         debug_infeasible(m.fs, solver)
     display_results(m)
@@ -563,7 +562,7 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.Q_ext[0].fix()
     m.fs.evaporator.initialize_build(
-        delta_temperature_in=70, delta_temperature_out=9
+        delta_temperature_in=50, delta_temperature_out=10
     )  # fixes and unfixes those values
     m.fs.Q_ext[0].unfix()
 
