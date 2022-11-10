@@ -692,19 +692,19 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         def build_evaporator_cost_param_block(blk):
 
-            blk.evaporator_material_factor_cost = pyo.Var(
+            blk.material_factor_cost = pyo.Var(
                 initialize=1,
                 doc="Horizontal falling tube evaporator material factor (Couper et al., 2005)",
                 units=pyo.units.dimensionless,
             )
 
-            blk.evaporator_unit_cost = pyo.Var(
+            blk.unit_cost = pyo.Var(
                 initialize=1000,  # 360,
                 doc="Horizontal falling tube evaporator unit cost per area (Couper et al., 2005)",
                 units=pyo.units.USD_2005,
             )
 
-            blk.evaporator_exponent = pyo.Var(
+            blk.exponent = pyo.Var(
                 initialize=0.85,
                 doc="Horizontal falling tube evaporator area-based cost exponent (Couper et al., 2005)",
                 units=pyo.units.dimensionless,
@@ -714,13 +714,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         def build_compressor_cost_param_block(blk):
 
-            blk.compressor_unit_cost = pyo.Var(
+            blk.unit_cost = pyo.Var(
                 initialize=7364,
                 doc="Compressor unit cost (El-Sayed et al., 2001)",
                 units=pyo.units.USD_2001,
             )
 
-            blk.compressor_exponent = pyo.Var(
+            blk.exponent = pyo.Var(
                 initialize=0.7,
                 doc="Compressor exponent (El-Sayed et al., 2001)",
                 units=pyo.units.dimensionless,
@@ -730,24 +730,24 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         def build_heat_exchanger_cost_param_block(blk):
 
-            blk.heat_exchanger_material_factor_cost = pyo.Var(
+            blk.material_factor_cost = pyo.Var(
                 initialize=1,
                 doc='Heat exchanger material factor',
                 units=pyo.units.dimensionless
             )
-            blk.heat_exchanger_base_cost = pyo.Var(
+            blk.base_cost = pyo.Var(
                 initialize=31683,
                 doc='Heat exchanger base cost',
                 units=pyo.units.USD_2018
             )
 
-            blk.heat_exchanger_unit_cost = pyo.Var(
+            blk.unit_cost = pyo.Var(
                 initialize=1000,  # 61,
                 doc='Heat exchanger unit cost per area',
                 units=pyo.units.USD_2018
             )
 
-            blk.heat_exchanger_exponent = pyo.Var(
+            blk.exponent = pyo.Var(
                 initialize=1.2,
                 doc='Heat exchanger area based exponent',
                 units=pyo.units.dimensionless,
@@ -1727,8 +1727,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             expr=blk.capital_cost
             == pyo.units.convert(
                 (
-                blk.costing_package.evaporator_unit_cost
-                * blk.costing_package.evaporator_material_factor_cost
+                blk.costing_package.evaporator.unit_cost
+                * blk.costing_package.evaporator.material_factor_cost
                 * (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))
                    /pyo.units.m**2))
                 ,
@@ -1746,12 +1746,12 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
-                (blk.costing_package.compressor_unit_cost
+                (blk.costing_package.compressor.unit_cost
                  * blk.unit_model.control_volume.properties_in[0].flow_mass_phase_comp['Vap','H2O'] # Add a convert to kg/s
                  / (pyo.units.kg / pyo.units.s)
                  * blk.unit_model.pressure_ratio
                  * (blk.unit_model.efficiency/(1-blk.unit_model.efficiency))
-                 ** blk.costing_package.compressor_exponent
+                 ** blk.costing_package.compressor.exponent
                 ),
                 to_units=blk.costing_package.base_currency
             )
@@ -1775,8 +1775,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost
             == pyo.units.convert(
-                (blk.costing_package.heat_exchanger_material_factor_cost*
-                 (blk.costing_package.heat_exchanger_unit_cost*
+                (blk.costing_package.heat_exchanger.material_factor_cost*
+                 (blk.costing_package.heat_exchanger.unit_cost*
                   (pyo.units.convert(blk.unit_model.area , to_units=(pyo.units.m**2))/pyo.units.m**2))),
                                  to_units=blk.costing_package.base_currency)
         )
