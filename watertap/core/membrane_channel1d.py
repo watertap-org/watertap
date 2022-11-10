@@ -11,6 +11,8 @@
 #
 ###############################################################################
 
+from copy import deepcopy
+
 from pyomo.common.config import ConfigValue, In
 from pyomo.environ import (
     Constraint,
@@ -239,19 +241,17 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
+        if self._flow_direction == FlowDirection.forward:
+            state_args_properties = state_args["feed_side"]
+        else:
+            state_args_properties = state_args["permeate"]
+
         source_flags = super().initialize(
-            state_args=state_args["feed_side"],
+            state_args=state_args_properties,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,
-        )
-
-        self.properties_interface.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args["interface"],
         )
 
         if hold_state:

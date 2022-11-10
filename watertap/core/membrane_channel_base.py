@@ -718,11 +718,6 @@ class MembraneChannelMixin:
             initialize_guess["solvent_recovery"] = 0.5
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.01
-        if "cp_modulus" not in initialize_guess:
-            if hasattr(self, "cp_modulus"):
-                initialize_guess["cp_modulus"] = 1.1
-            else:
-                initialize_guess["cp_modulus"] = 1
 
         # Get source block
         # TODO: need to re-visit for counterflow
@@ -766,63 +761,23 @@ class MembraneChannelMixin:
                 1 - initialize_guess["solute_recovery"]
             )
 
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
+        # slightly modify initial values for other state blocks
+        state_args_permeate = deepcopy(state_args)
 
+        state_args_permeate["pressure"] = 101325  # 1 bar
+        for j in self.config.property_package.solvent_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solvent_recovery"
+            ]
         for j in self.config.property_package.solute_set:
-            state_args_interface_in["flow_mass_phase_comp"][
-                ("Liq", j)
-            ] *= initialize_guess["cp_modulus"]
-            state_args_interface_out["flow_mass_phase_comp"][
-                ("Liq", j)
-            ] *= initialize_guess["cp_modulus"]
-
-        # TODO: I think this is what we'd like to do, but IDAES needs to be changed
-        # state_args_interface = {}
-        # for t in self.flowsheet().config.time:
-        #     for x in self.length_domain:
-        #         assert 0.0 <= x <= 1.0
-        #         state_args_tx = {}
-        #         for k in state_args_interface_in:
-        #             if isinstance(state_args_interface_in[k], dict):
-        #                 if k not in state_args_tx:
-        #                     state_args_tx[k] = {}
-        #                 for index in state_args_interface_in[k]:
-        #                     state_args_tx[k][index] = (
-        #                         1.0 - x
-        #                     ) * state_args_interface_in[k][
-        #                         index
-        #                     ] + x * state_args_interface_out[
-        #                         k
-        #                     ][
-        #                         index
-        #                     ]
-        #             else:
-        #                 state_args_tx[k] = (1.0 - x) * state_args_interface_in[
-        #                     k
-        #                 ] + x * state_args_interface_out[k]
-        #         state_args_interface[t, x] = state_args_tx
-
-        x = 0.5
-        state_args_tx = {}
-        for k in state_args_interface_in:
-            if isinstance(state_args_interface_in[k], dict):
-                if k not in state_args_tx:
-                    state_args_tx[k] = {}
-                for index in state_args_interface_in[k]:
-                    state_args_tx[k][index] = (1.0 - x) * state_args_interface_in[k][
-                        index
-                    ] + x * state_args_interface_out[k][index]
-            else:
-                state_args_tx[k] = (1.0 - x) * state_args_interface_in[
-                    k
-                ] + x * state_args_interface_out[k]
-        state_args_interface = state_args_tx
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solute_recovery"
+            ]
 
         return {
             "feed_side": state_args,
             "retentate": state_args_retentate,
-            "interface": state_args_interface,
+            "permeate": state_args_permeate,
         }
 
     def calculate_scaling_factors(self):
@@ -846,8 +801,11 @@ class MembraneChannelMixin:
             for idx, v in self.K.items():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e4)
-                sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_K[idx], sf)
+
+        if hasattr(self, "eq_K"):
+            for idx, c in self.eq_K.items():
+                sf = iscale.get_scaling_factor(self.K[idx])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "N_Re"):
             for t, x in self.N_Re.keys():

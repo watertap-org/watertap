@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+import math
 from pyomo.common.config import Bool, ConfigValue
 from pyomo.environ import (
     NonNegativeReals,
@@ -20,6 +21,7 @@ from pyomo.environ import (
     check_optimal_termination,
     exp,
     units as pyunits,
+    value,
 )
 from idaes.core import UnitModelBlockData, FlowDirection
 from idaes.core.solvers import get_solver
@@ -189,13 +191,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         # Feed and permeate-side isothermal conditions
         @self.Constraint(
             self.flowsheet().config.time,
-            self.length_domain,
             doc="Isothermal assumption for permeate",
         )
-        def eq_permeate_isothermal(b, t, x):
+        def eq_permeate_isothermal(b, t):
             return (
-                b.feed_side.properties[t, x].temperature
-                == b.permeate_side.properties[t, x].temperature
+                b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature
+                == b.permeate_side.properties[
+                    t, b.permeate_side.length_domain.first()
+                ].temperature
             )
 
         # ==========================================================================
@@ -475,7 +478,8 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
     def initialize_build(
         self,
         initialize_guess=None,
-        state_args=None,
+        state_args_feed=None,
+        state_args_permeate=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -494,9 +498,13 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                                'solvent_recovery': 0.5,
                                'solute_recovery': 0.01,
                                'cp_modulus': 1.1})
-            state_args : a dict of arguments to be passed to the property
+            state_args_feed : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for the inlet
                          feed side state block (see documentation of the specific
+                         property package) (default = None).
+            state_args_permeate : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         permeate side state block (see documentation of the specific
                          property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
@@ -507,15 +515,48 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             None
         """
 
-        source_flags = self.feed_side.initialize(
-            state_args=state_args,
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        # The model is isothermal, but the initialize methods
+        # (or the user) will fix the permeate-side temperature.
+        # Therefore, for initialization we need to deactivate
+        # the isothermal constraint but check that it will
+        # be enforced.
+        for t in self.flowsheet().config.time:
+            if not math.isclose(
+                value(self.feed_inlet.temperature[t]),
+                value(self.permeate_inlet.temperature[t]),
+            ):
+                init_log.warning(
+                    f"Feed temperatures are different at time {t}, but OARO makes isothermal assumption"
+                )
+            # set them equal
+            self.permeate_inlet.temperature[t].set_value(
+                value(self.feed_inlet.temperature[t])
+            )
+
+        self.eq_permeate_isothermal.deactivate()
+
+        feed_flags = self.feed_side.initialize(
+            state_args=state_args_feed,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
         )
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        init_log.info_high("Initialization Step 1a (feed side) Complete")
+
+        permeate_flags = self.permeate_side.initialize(
+            state_args=state_args_permeate,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            initialize_guess=initialize_guess,
+        )
+
+        init_log.info_high("Initialization Step 1b (permeate side) Complete")
 
         if degrees_of_freedom(self) != 0:
             # TODO: should we have a separate error for DoF?
@@ -526,25 +567,26 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Create solver
         opt = get_solver(solver, optarg)
-        # ---------------------------------------------------------------------
-        # Solve unit
+
+        # Solve unit *without* flux equation
+        self.eq_flux_mass.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-            print("DOF after 1st solve", degrees_of_freedom(self))
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {self.name}, trying one more time"
-                )
-                res = opt.solve(self, tee=slc.tee)
-                print("DOF after 2nd solve", degrees_of_freedom(self))
+        # Solve unit *with* flux equation
+        self.eq_flux_mass.activate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
 
         # release inlet state, in case this error is caught
-        self.feed_side.release_state(source_flags, outlvl)
+        self.feed_side.release_state(permeate_flags, outlvl)
+        self.feed_side.release_state(feed_flags, outlvl)
+        self.eq_permeate_isothermal.activate()
         print("DOF after release state", degrees_of_freedom(self))
 
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
@@ -780,3 +822,5 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                         self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]
                     )
                     iscale.set_scaling_factor(v, sf)
+                sf = iscale.get_scaling_factor(v)
+                iscale.constraint_scaling_transform(self.eq_flux_mass[t, x, p, j], sf)

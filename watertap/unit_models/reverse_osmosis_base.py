@@ -515,6 +515,8 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         Returns:
             None
         """
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         source_flags = self.feed_side.initialize(
             state_args=state_args,
@@ -523,15 +525,8 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             solver=solver,
             initialize_guess=initialize_guess,
         )
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if degrees_of_freedom(self) != 0:
-            # TODO: should we have a separate error for DoF?
-            raise Exception(
-                f"{self.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(self)}"
-            )
+        init_log.info_high("Initialization Step 1a (feed side) Complete")
 
         state_args_permeate = self._get_state_args_permeate(
             initialize_guess, state_args
@@ -551,18 +546,29 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             state_args=state_args_permeate,
         )
 
+        init_log.info_high("Initialization Step 1b (permeate side) Complete")
+
+        if degrees_of_freedom(self) != 0:
+            # TODO: should we have a separate error for DoF?
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
+
         # Create solver
         opt = get_solver(solver, optarg)
-        # ---------------------------------------------------------------------
-        # Solve unit
+
+        # Solve unit *without* flux equation
+        self.eq_flux_mass.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {self.name}, trying one more time"
-                )
-                res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
+
+        # Solve unit *with* flux equation
+        self.eq_flux_mass.activate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
 
         # release inlet state, in case this error is caught
 
