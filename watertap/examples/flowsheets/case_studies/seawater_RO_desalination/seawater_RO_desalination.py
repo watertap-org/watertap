@@ -596,8 +596,7 @@ def add_costing(m):
     # Add costing to zero order units
     # Pre-treatment units
     # This really looks like it should be a feed block in its own right
-    # prtrt.intake.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    # prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
 
     prtrt.ferric_chloride_addition.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.zo_costing
@@ -632,8 +631,7 @@ def add_costing(m):
     )
     desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
     if m.erd_type == "pressure_exchanger":
-        # desal.S1.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
+        # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
         desal.M1.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.ro_costing
         )
@@ -646,8 +644,7 @@ def add_costing(m):
         )
     elif m.erd_type == "pump_as_turbine":
         pass
-        # desal.ERD.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
+        # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "

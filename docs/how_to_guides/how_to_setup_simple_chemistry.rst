@@ -430,7 +430,7 @@ code below.
 
     # Add a thermo parameter block to that flowsheet
     #   Here, we are passing our 'thermo_config' dictionary we created earlier
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     # Add a reaction parameter block to that flowsheet
     #   Here, we are passing our thermo block created above as the property package
@@ -459,10 +459,3 @@ In the example code above, we show how to setup the thermo and reaction packages
 and place them into the `EquilibriumReactor` unit model, but do not go further.
 Additional instructions for setting up and solving unit models can be found at
 `IDAESWorkflow`_.
-
-.. testoutput::
-   :hide:
-   :options: +ELLIPSIS
-
-   WARNING: DEPRECATED: The default argument for the ProcessBlock class is
-       ...

@@ -272,7 +272,7 @@ code below.
 
     # Add a thermo parameter block to that flowsheet
     #   Here, we are passing our 'thermo_config' dictionary we created earlier
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config)
 
     # Add a reaction parameter block to that flowsheet
     #   Here, we are passing our thermo block created above as the property package
@@ -299,10 +299,3 @@ code below.
     # At this point, you can 'fix' your inlet/outlet state conditions,
     #     setup scaling factors, initialize the model, then solve the model
     #     just as you would with any other IDAES flowsheet
-
-.. testoutput::
-   :hide:
-   :options: +ELLIPSIS
-
-   WARNING: DEPRECATED: The default argument for the ProcessBlock class is
-       ...

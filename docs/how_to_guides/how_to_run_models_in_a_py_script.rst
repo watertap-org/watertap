@@ -76,10 +76,10 @@ Example: Python file with recommended structure
    def main():
        # Create a concrete model, flowsheet, and NaCl property parameter block.
        m = ConcreteModel()
-       m.fs = FlowsheetBlock(default={"dynamic": False})
+       m.fs = FlowsheetBlock(dynamic=False)
        m.fs.properties = props.NaClParameterBlock()
        # Add an RO unit to the flowsheet.
-       m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+       m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
        # Specify system variables.
        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl
@@ -132,10 +132,10 @@ Example: the same code without recommended structure (may cause errors on Window
 
    # Create a concrete model, flowsheet, and NaCl property parameter block.
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.NaClParameterBlock()
    # Add an RO unit to the flowsheet.
-   m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+   m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
    # Specify system variables.
    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl
