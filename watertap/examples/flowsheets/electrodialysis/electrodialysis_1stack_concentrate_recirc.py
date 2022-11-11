@@ -25,12 +25,14 @@ from pyomo.environ import (
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
+from idaes.core.base.control_volume_base import EnergyBalanceType
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
-#from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics, variables_set
+
+# from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics, variables_set
 import idaes.core.util.model_statistics as mstat
 from pyomo.core.expr.current import identify_variables
-from idaes.models.unit_models import Feed, Product, Separator, Mixer 
+from idaes.models.unit_models import Feed, Product, Separator, Mixer
 from watertap.unit_models.pressure_changer import Pump
 from idaes.models.unit_models.mixer import MixingType, MomentumMixingType
 from pandas import DataFrame
@@ -38,7 +40,12 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from pytest import approx
 from watertap.core.util.initialization import check_dof
-from watertap.unit_models.electrodialysis_1D import ElectricalOperationMode, PressureDropMethod,FrictionFactorMethod,HydraulicDiameterMethod
+from watertap.unit_models.electrodialysis_1D import (
+    ElectricalOperationMode,
+    PressureDropMethod,
+    FrictionFactorMethod,
+    HydraulicDiameterMethod,
+)
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import (
     MixerType,
@@ -54,19 +61,18 @@ def main():
     solver = get_solver()
     # Simulate a fully defined operation
     m = build()
-    #set_operating_conditions(m)
+    # set_operating_conditions(m)
     simu_scenario1(m)
-
     initialize_system(m, solver=solver)
     solve(m, solver=solver)
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
-    #initialize_system(m, solver=solver)
-    #optimize_system(m, solver=solver)
-    #print("\n***---Optimization results---***")
-    #display_model_metrics(m)
+    # initialize_system(m, solver=solver)
+    # optimize_system(m, solver=solver)
+    # print("\n***---Optimization results---***")
+    # display_model_metrics(m)
 
 
 def build():
@@ -84,13 +90,21 @@ def build():
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.sepa0 = Separator(
         property_package=m.fs.properties,
-        outlet_list=["to_dil", "to_conc_in0"],
-    ) 
-    m.fs.mix0 = Mixer(property_package=m.fs.properties, energy_mixing_type = MixingType.none, momentum_mixing_type = MomentumMixingType.none,
-        inlet_list=["from_feed", "from_conc_out"])
+        outlet_list=["to_dil_in", "to_conc_in0"],
+    )
+    m.fs.mix0 = Mixer(
+        property_package=m.fs.properties,
+        energy_mixing_type=MixingType.none,
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["from_feed", "from_conc_out"],
+    )
 
     m.fs.pump0 = Pump(property_package=m.fs.properties)
+    m.fs.pump0.del_component("ratioP")
+    m.fs.pump0.del_component("ratioP_calculation")
     m.fs.pump1 = Pump(property_package=m.fs.properties)
+    m.fs.pump1.del_component("ratioP")
+    m.fs.pump1.del_component("ratioP_calculation")
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
@@ -100,18 +114,18 @@ def build():
         has_pressure_change=True,
         pressure_drop_method=PressureDropMethod.Darcy_Weisbach,
         hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
-        friction_factor_method =  FrictionFactorMethod.Gurreri
+        friction_factor_method=FrictionFactorMethod.Gurreri,
     )
     m.fs.sepa1 = Separator(
         property_package=m.fs.properties,
         outlet_list=["to_disp", "to_conc_in1"],
-    ) 
+    )
     m.fs.prod = Product(property_package=m.fs.properties)
     m.fs.disp = Product(property_package=m.fs.properties)
 
     # Touching needed variables for initialization and displaying results
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.sepa0.to_dil_state[0].conc_mass_phase_comp[...]
+    m.fs.sepa0.to_dil_in_state[0].conc_mass_phase_comp[...]
     m.fs.sepa0.to_conc_in0_state[0].conc_mass_phase_comp[...]
     m.fs.sepa1.to_disp_state[0].conc_mass_phase_comp[...]
     m.fs.sepa1.to_conc_in1_state[0].conc_mass_phase_comp[...]
@@ -125,7 +139,7 @@ def build():
     m.fs.disp.properties[0].conc_mass_phase_comp[...]
 
     m.fs.feed.properties[0].flow_vol_phase[...]
-    m.fs.sepa0.to_dil_state[0].flow_vol_phase[...]
+    m.fs.sepa0.to_dil_in_state[0].flow_vol_phase[...]
     m.fs.sepa0.to_conc_in0_state[0].flow_vol_phase[...]
     m.fs.sepa1.to_disp_state[0].flow_vol_phase[...]
     m.fs.sepa1.to_conc_in1_state[0].flow_vol_phase[...]
@@ -140,14 +154,13 @@ def build():
     m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
     m.fs.EDstack.concentrate.properties[...].flow_vol_phase[...]
 
-
-    #m.fs.EDstack.inlet_diluate.flow_vol_phase[...]
-    #m.fs.EDstack.inlet_concentrate.flow_vol_phase[...]
+    # m.fs.EDstack.inlet_diluate.flow_vol_phase[...]
+    # m.fs.EDstack.inlet_concentrate.flow_vol_phase[...]
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.pump0.costing =UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-    m.fs.pump1.costing =UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump0.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.pump1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.prod.properties[0].flow_vol_phase["Liq"]
@@ -159,12 +172,12 @@ def build():
 
     # add extra variables and constraints
     m.fs.recovery_volume_H2O = Var(
-            initialize=0.5,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc="flowsheet level water recovery calculated by volumeric flow rate",
-        )
+        initialize=0.5,
+        bounds=(0, 1),
+        domain=NonNegativeReals,
+        units=pyunits.dimensionless,
+        doc="flowsheet level water recovery calculated by volumeric flow rate",
+    )
     m.fs.mem_area = Var(
         initialize=1,
         bounds=(0, 1e3),
@@ -178,14 +191,15 @@ def build():
         initialize=1, bounds=(0, 1e6), units=pyunits.kg * pyunits.meter**-3
     )
     m.fs.eq_recovery_volume_H2O = Constraint(
-        expr=m.fs.recovery_volume_H2O == 
-        m.fs.prod.properties[0].flow_vol_phase['Liq']
-        * m.fs.feed.properties[0].flow_vol_phase['Liq']**-1
+        expr=m.fs.recovery_volume_H2O
+        == m.fs.prod.properties[0].flow_vol_phase["Liq"]
+        * m.fs.feed.properties[0].flow_vol_phase["Liq"] ** -1
     )
-    m.fs.eq_electrodialysis_equal_flow =  Constraint(
-        expr=m.fs.EDstack.diluate.properties[0,0].flow_vol_phase["Liq"]==m.fs.EDstack.concentrate.properties[0,0].flow_vol_phase["Liq"]
+    m.fs.eq_electrodialysis_equal_flow = Constraint(
+        expr=m.fs.EDstack.diluate.properties[0, 0].flow_vol_phase["Liq"]
+        == m.fs.EDstack.concentrate.properties[0, 0].flow_vol_phase["Liq"]
     )
-    
+
     m.fs.eq_product_salinity = Constraint(
         expr=m.fs.prod_salinity
         == sum(
@@ -210,45 +224,27 @@ def build():
 
     # Add Arcs
     m.fs.arc0 = Arc(source=m.fs.feed.outlet, destination=m.fs.sepa0.inlet)
-    m.fs.arc1b = Arc(
-        source=m.fs.sepa0.to_dil, destination=m.fs.pump1.inlet)
-    m.fs.arc1f = Arc(source=m.fs.pump1.outlet,
-        destination = m.fs.EDstack.inlet_diluate
-    )
+    m.fs.arc1b = Arc(source=m.fs.sepa0.to_dil_in, destination=m.fs.pump1.inlet)
+    m.fs.arc1f = Arc(source=m.fs.pump1.outlet, destination=m.fs.EDstack.inlet_diluate)
     m.fs.arc2 = Arc(
         source=m.fs.sepa0.to_conc_in0,
         destination=m.fs.mix0.from_feed,
     )
     m.fs.arc3b = Arc(source=m.fs.mix0.outlet, destination=m.fs.pump0.inlet)
-    m.fs.arc3f = Arc(source=m.fs.pump0.outlet, destination=m.fs.EDstack.inlet_concentrate)
-    m.fs.arc4 = Arc(
-        source=m.fs.EDstack.outlet_diluate, destination=m.fs.prod.inlet
+    m.fs.arc3f = Arc(
+        source=m.fs.pump0.outlet, destination=m.fs.EDstack.inlet_concentrate
     )
+    m.fs.arc4 = Arc(source=m.fs.EDstack.outlet_diluate, destination=m.fs.prod.inlet)
     m.fs.arc5 = Arc(
         source=m.fs.EDstack.outlet_concentrate, destination=m.fs.sepa1.inlet
     )
-    m.fs.arc6 = Arc(
-        source=m.fs.sepa1.to_disp, destination=m.fs.disp.inlet
-    )
-    m.fs.arc7 = Arc(
-        source=m.fs.sepa1.to_conc_in1, destination=m.fs.mix0.from_conc_out
-    )
+    m.fs.arc6 = Arc(source=m.fs.sepa1.to_disp, destination=m.fs.disp.inlet)
+    m.fs.arc7 = Arc(source=m.fs.sepa1.to_conc_in1, destination=m.fs.mix0.from_conc_out)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # Scaling
-    m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
-    m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e1, index=("Liq", "Na_+")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mol_phase_comp", 1e1, index=("Liq", "Cl_-")
-    )
-    iscale.set_scaling_factor(m.fs.EDstack.cell_width, 10)
-    iscale.set_scaling_factor(m.fs.EDstack.cell_length, 10)
-    iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 0.01)
-    iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 0.01)
-    iscale.calculate_scaling_factors(m)
     return m
+
+
 '''
 def simu_var_wr_fc(m):
     m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
@@ -282,49 +278,38 @@ def simu_var_WatRec_FeedConc(m,wr_args=None,in_conc_args=None):
             ("conc_mass_phase_comp",("Liq","Cl_-")):1.214})
 
 '''
+
+
 def simu_scenario1(m):
 
     # ---specifications---
-    # Here is simulated a scenario of a defined EDstack and 
+    # Here is simulated a scenario of a defined EDstack and
     # specific water recovery and product salinity.
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].pressure.fix(101325)
     m.fs.feed.properties[0].temperature.fix(298.15)
-    m.fs.pump1.control_volume.properties_in[0].pressure.fix(101325)  # feed temperature [K]
-    m.fs.pump1.control_volume.properties_in[0].temperature.fix(298.15)
-    m.fs.prod.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.prod.properties[0].temperature.fix(298.15)
-    m.fs.disp.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.pump1.control_volume.properties_in[0].pressure.fix(101325)
+    m.fs.pump1.efficiency_pump.fix(0.8)
+    m.fs.pump0.efficiency_pump.fix(0.8)
+
+    # m.fs.pump1.control_volume.properties_in[0].temperature.fix(298.15)
+    m.fs.prod.properties[0].pressure.fix(101325)  #
+    # m.fs.prod.properties[0].temperature.fix(298.15)
+    m.fs.disp.properties[0].pressure.fix(101325)
     m.fs.disp.properties[0].temperature.fix(298.15)
 
-    
-    m.fs.feed.properties.calculate_state({
-            ("flow_vol_phase","Liq"):4e-3,
-            ("conc_mass_phase_comp",("Liq","Na_+")):3.932,
-            ("conc_mass_phase_comp",("Liq","Cl_-")):6.068},
-            hold_state=True)
-    '''
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(28.83)
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(1.78e-2)
+    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(1.78e-2)
+    m.fs.recovery_volume_H2O.fix(0.6)
 
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(221.78)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.137)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(0.137)
-    '''
-    m.fs.recovery_volume_H2O.fix(0.7) 
-    #m.fs.prod_salinity.fix(0.5) 
     # Set ED unit vars
+    # membrane properties
     m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
     m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
     m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
     m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
-    m.fs.EDstack.electrodes_resistance.fix(0)
-    m.fs.EDstack.cell_pair_num.fix(250)
-    m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
-    m.fs.EDstack.cell_width.fix(0.42)
-    m.fs.EDstack.cell_length.fix(0.73)
-    m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
-    m.fs.EDstack.membrane_thickness["cem"].fix(1.3e-4)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(1.8e-10)
     m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(1.25e-10)
     m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(1.8e-10)
@@ -333,64 +318,27 @@ def simu_scenario1(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-    m.fs.EDstack.spacer_porosity.fix(0.83)
-    m.fs.EDstack.spacer_specific_area.fix(24600)
-    m.fs.EDstack.general_mass_diffusivity.fix(1.6e-9)
+    m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
+    m.fs.EDstack.membrane_thickness["cem"].fix(1.3e-4)
 
-    #set initial values of to-be-computed vars 
-    m.fs.EDstack.voltage_applied[0].fix(88.5)
-   
+    # Stack properties
+    m.fs.EDstack.cell_pair_num.fix(56)
+    m.fs.EDstack.channel_height.fix(7.1e-4)
+    m.fs.EDstack.cell_width.fix(0.197)
+    m.fs.EDstack.cell_length.fix(1.68)
+
+    # Spacer properties
+    m.fs.EDstack.spacer_porosity.fix(0.83)
+    m.fs.EDstack.spacer_specific_area.fix(10400)
+
+    # Electrochemical properties
+    m.fs.EDstack.electrodes_resistance.fix(0)
+    m.fs.EDstack.current_utilization.fix(1)
+    m.fs.EDstack.general_mass_diffusivity.fix(1.6e-9)
+    m.fs.EDstack.voltage_applied[0].fix(10)
+
     mstat.report_statistics(m)
     assert mstat.degrees_of_freedom(m.fs) == 0
-
-
-def set_operating_conditions(m):
-
-    # ---specifications---
-    # Fix state variables at the origin
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(298.15)  # feed temperature [K]
-    m.fs.EDstack.concentrate.properties[0,0].temperature.fix(298.15)
-    m.fs.EDstack.concentrate.properties[0,0].pressure.fix(101325)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "H2O"].fix(4.8)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Na_+"].fix(1.476e-2)
-    m.fs.feed.properties[0].flow_mol_phase_comp["Liq", "Cl_-"].fix(1.476e-2)
-    m.fs.recovery_volume_H2O.fix(0.5)
-    # Fix separator's split_fraction to 0.5, i.e., equal flows into the diluate and concentrate channels
-    #m.fs.sepa0.split_fraction[0, "inlet_diluate"].fix(0.5)
-
-
-    # Fix ED unit vars
-    m.fs.EDstack.water_trans_number_membrane["cem"].fix(5.8)
-    m.fs.EDstack.water_trans_number_membrane["aem"].fix(4.3)
-    m.fs.EDstack.water_permeability_membrane["cem"].fix(2.16e-14)
-    m.fs.EDstack.water_permeability_membrane["aem"].fix(1.75e-14)
-    m.fs.EDstack.voltage_applied.fix(5)
-    m.fs.EDstack.electrodes_resistance.fix(0)
-    m.fs.EDstack.cell_pair_num.fix(100)
-    m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.channel_height.fix(2.7e-4)
-    m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
-    m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
-    m.fs.EDstack.cell_width.fix(0.1)
-    m.fs.EDstack.cell_length.fix(0.79)
-    m.fs.EDstack.membrane_thickness["aem"].fix(1.3e-4)
-    m.fs.EDstack.membrane_thickness["cem"].fix(1.3e-4)
-    m.fs.EDstack.solute_diffusivity_membrane["cem", "Na_+"].fix(1.8e-10)
-    m.fs.EDstack.solute_diffusivity_membrane["aem", "Na_+"].fix(1.25e-10)
-    m.fs.EDstack.solute_diffusivity_membrane["cem", "Cl_-"].fix(1.8e-10)
-    m.fs.EDstack.solute_diffusivity_membrane["aem", "Cl_-"].fix(1.25e-10)
-    m.fs.EDstack.ion_trans_number_membrane["cem", "Na_+"].fix(1)
-    m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
-    m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
-    m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
-    m.fs.EDstack.spacer_porosity.fix(0.8)
-
-    # check zero degrees of freedom
-    mstat.report_statistics(m)
-    check_dof(m)
-    
-
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -408,35 +356,66 @@ def initialize_system(m, solver=None):
     if solver is None:
         solver = get_solver()
     optarg = solver.options
+    # set scaling factors for state vars and call the 'calculate_scaling_factors' function
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 0.1, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+    )
+    iscale.set_scaling_factor(m.fs.EDstack.cell_width, 5)
+    iscale.set_scaling_factor(m.fs.EDstack.cell_length, 1)
+    iscale.set_scaling_factor(m.fs.EDstack.cell_pair_num, 0.1)
+    iscale.set_scaling_factor(m.fs.EDstack.voltage_applied, 1)
+    iscale.set_scaling_factor(m.fs.pump0.control_volume.work, 1e1)
+    iscale.set_scaling_factor(m.fs.pump1.control_volume.work, 1e1)
+    iscale.calculate_scaling_factors(m)
 
     # populate intitial properties throughout the system
     m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.arc0)
     m.fs.sepa0.initialize(optarg=optarg)
     propagate_state(m.fs.arc1b)
-    m.fs.pump1.initialize(optarg=optarg)
+    m.fs.pump1.deltaP[0].fix(2e5)
+    m.fs.pump1.initialize()
+    m.fs.pump1.deltaP[0].unfix()
+    propagate_state(destination=m.fs.pump0.inlet, source=m.fs.pump1.inlet)
+    m.fs.pump0.deltaP[0].fix(2e5)
+    m.fs.pump0.initialize()
+    m.fs.pump0.deltaP[0].unfix()
     propagate_state(m.fs.arc1f)
-    propagate_state(destination=m.fs.prod.inlet, source=m.fs.feed.outlet)
-    m.fs.prod.initialize(optarg=optarg)
-    propagate_state(m.fs.arc4, direction="backward")
-    propagate_state(m.fs.arc2)
-    propagate_state( destination=m.fs.pump0.inlet, source=m.fs.pump1.inlet)
-    m.fs.pump0.initialize(optarg=optarg)
     propagate_state(m.fs.arc3f)
-    m.fs.EDstack.inlet_diluate.display()
-    m.fs.EDstack.inlet_concentrate.display()
     m.fs.EDstack.initialize(optarg=optarg)
+    propagate_state(m.fs.arc4)
+    m.fs.prod.initialize(optarg=optarg)
     propagate_state(m.fs.arc5)
-    m.fs.sepa1.split_fraction[0,"to_conc_in1"].set_value(max(2-value(m.fs.recovery_volume_H2O)**-1, 1e-8))
+    m.fs.prod.initialize(optarg=optarg)
+    m.fs.sepa1.split_fraction[0, "to_conc_in1"].fix(
+        max(2 - value(m.fs.recovery_volume_H2O) ** -1, 1e-8)
+    )
     m.fs.sepa1.initialize(optarg=optarg)
+    m.fs.sepa1.split_fraction[0, "to_conc_in1"].unfix()
     propagate_state(m.fs.arc6)
     m.fs.disp.initialize()
     propagate_state(m.fs.arc7)
-    propagate_state(m.fs.arc3b,direction="backward")
+    propagate_state(m.fs.arc3b, direction="backward")
+    propagate_state(m.fs.arc2)
     m.fs.mix0.initialize(optarg=optarg)
     m.fs.costing.initialize()
 
-'''
+    iscale.calculate_scaling_factors(m)
+    print("BADLY SCALED VARS & CONSTRAINS")
+    badly_scaled_var_values = {
+        var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
+    }
+    for j, k in badly_scaled_var_values.items():
+        print(j, ":", k)
+
+
+"""
 def optimize_system(m, solver=None):
 
     # Below is an example of optimizing the operational voltage and cell pair number (which translates to membrane use)
@@ -466,7 +445,9 @@ def optimize_system(m, solver=None):
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
-'''
+"""
+
+
 def display_model_metrics(m):
 
     print("---Flow properties in feed, product and disposal---")
@@ -518,6 +499,40 @@ def display_model_metrics(m):
         ],
     )
     print(pm_table)
+    print("---Pressure and Temperature point checking---")
+
+    pt_dict = {
+        "Feed": (
+            value(m.fs.feed.outlet.pressure[0]),
+            value(m.fs.feed.outlet.temperature[0]),
+        ),
+        "ED_in_dil": (
+            value(m.fs.EDstack.inlet_diluate.pressure[0]),
+            value(m.fs.EDstack.inlet_diluate.temperature[0]),
+        ),
+        "ED_in_conc": (
+            value(m.fs.EDstack.inlet_concentrate.pressure[0]),
+            value(m.fs.EDstack.inlet_concentrate.temperature[0]),
+        ),
+        "ED_out_dil": (
+            value(m.fs.EDstack.outlet_diluate.pressure[0]),
+            value(m.fs.EDstack.outlet_diluate.temperature[0]),
+        ),
+        "ED_out_conc": (
+            value(m.fs.EDstack.outlet_concentrate.pressure[0]),
+            value(m.fs.EDstack.outlet_concentrate.temperature[0]),
+        ),
+        "Prod": (
+            value(m.fs.prod.inlet.pressure[0]),
+            value(m.fs.prod.inlet.temperature[0]),
+        ),
+        "Disp": (
+            value(m.fs.disp.inlet.pressure[0]),
+            value(m.fs.disp.inlet.temperature[0]),
+        ),
+    }
+    pt_table = DataFrame(data=pt_dict, index=["Pressure (Pa)", "Temperature (K)"])
+    print(pt_table)
 
 
 if __name__ == "__main__":
