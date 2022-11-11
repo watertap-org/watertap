@@ -85,6 +85,7 @@ be declared as **inherent** and, thus, be a part of this configuration dictionar
                         "mw": (18.0153, pyunits.g/pyunits.mol),
                         # Parameters here come from Perry's Handbook:  p. 2-98
                         "dens_mol_liq_comp_coeff": {
+                            'eqn_type': 1,
                             '1': (5.459, pyunits.kmol*pyunits.m**-3),
                             '2': (0.30542, pyunits.dimensionless),
                             '3': (647.13, pyunits.K),
