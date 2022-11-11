@@ -34,6 +34,7 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
+    MaterialFlowBasis,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
