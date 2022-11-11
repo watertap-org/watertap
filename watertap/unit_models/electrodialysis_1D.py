@@ -1692,7 +1692,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 )
 
     def _get_fluid_dimensionless_quantities(self):
-        self.general_mass_diffusivity = Var(
+        self.diffus_mass = Var(
             initialize=1e-9,
             bounds=(1e-16, 1e-6),
             units=pyunits.meter**2 * pyunits.second**-1,
@@ -1763,10 +1763,7 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_Sc(self):
 
             return (
-                self.N_Sc
-                == self.visc_d
-                * self.dens_mass**-1
-                * self.general_mass_diffusivity**-1
+                self.N_Sc == self.visc_d * self.dens_mass**-1 * self.diffus_mass**-1
             )
 
         @self.Constraint(
@@ -2069,11 +2066,10 @@ class Electrodialysis1DData(UnitModelBlockData):
         ):
             iscale.set_scaling_factor(self.solute_diffusivity_membrane, 1e10)
 
-        if hasattr(self, "general_mass_diffusivity") and (
-            iscale.get_scaling_factor(self.general_mass_diffusivity, warning=True)
-            is None
+        if hasattr(self, "diffus_mass") and (
+            iscale.get_scaling_factor(self.diffus_mass, warning=True) is None
         ):
-            iscale.set_scaling_factor(self.general_mass_diffusivity, 1e9)
+            iscale.set_scaling_factor(self.diffus_mass, 1e9)
 
         if (
             iscale.get_scaling_factor(self.water_permeability_membrane, warning=True)
@@ -2119,7 +2115,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             sf = (
                 iscale.get_scaling_factor(self.visc_d)
                 * iscale.get_scaling_factor(self.dens_mass) ** -1
-                * iscale.get_scaling_factor(self.general_mass_diffusivity) ** -1
+                * iscale.get_scaling_factor(self.diffus_mass) ** -1
             )
             iscale.set_scaling_factor(self.N_Sc, sf)
         if hasattr(self, "N_Sh") and (

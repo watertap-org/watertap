@@ -1595,7 +1595,7 @@ class Test_ED_pressure_drop_components:
         )
 
         # Test ed_m2
-        ed_m[1].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[1].fs.unit.diffus_mass.fix(1.6e-9)
         ed_m[1].fs.unit.friction_factor.fix(20)
         iscale.calculate_scaling_factors(ed_m[1])
         assert degrees_of_freedom(ed_m[1]) == 0
@@ -1613,7 +1613,7 @@ class Test_ED_pressure_drop_components:
         )
 
         # Test ed_m3
-        ed_m[2].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[2].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[2])
         assert degrees_of_freedom(ed_m[2]) == 0
         initialization_tester(ed_m[2])
@@ -1630,7 +1630,7 @@ class Test_ED_pressure_drop_components:
         )
 
         # Test ed_m4
-        ed_m[3].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[3].fs.unit.diffus_mass.fix(1.6e-9)
         iscale.calculate_scaling_factors(ed_m[3])
         assert degrees_of_freedom(ed_m[3]) == 0
         initialization_tester(ed_m[3])
@@ -1647,7 +1647,7 @@ class Test_ED_pressure_drop_components:
         )
 
         # Test ed_m5
-        ed_m[4].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[4].fs.unit.diffus_mass.fix(1.6e-9)
         ed_m[4].fs.unit.hydraulic_diameter.fix(1.5e-3)
         iscale.calculate_scaling_factors(ed_m[4])
         assert degrees_of_freedom(ed_m[4]) == 0
@@ -1665,7 +1665,7 @@ class Test_ED_pressure_drop_components:
         )
 
         # Test ed_m6
-        ed_m[5].fs.unit.general_mass_diffusivity.fix(1.6e-9)
+        ed_m[5].fs.unit.diffus_mass.fix(1.6e-9)
         ed_m[5].fs.unit.spacer_specific_area.fix(10700)
         iscale.calculate_scaling_factors(ed_m[5])
         assert degrees_of_freedom(ed_m[5]) == 0
