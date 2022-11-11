@@ -38,11 +38,13 @@ from idaes.core.util.config import (
 )
 import idaes.core.util.unit_costing as costing
 
+from watertap.core import InitializationMixin
+
 __author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
 @declare_process_block_class("CSTR_Injection")
-class CSTR_InjectionData(UnitModelBlockData):
+class CSTR_InjectionData(InitializationMixin, UnitModelBlockData):
     """
     CSTR Unit Model with Injection Class
     """

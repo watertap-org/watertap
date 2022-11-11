@@ -15,6 +15,7 @@
 from pyomo.environ import (
     Set,
     Var,
+    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -33,15 +34,21 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
+    MaterialFlowBasis,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
+
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
 from enum import Enum
+
+from watertap.core import InitializationMixin
 
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 
@@ -61,7 +68,7 @@ class ElectricalOperationMode(Enum):
 
 # Name of the unit model
 @declare_process_block_class("Electrodialysis0D")
-class Electrodialysis0DData(UnitModelBlockData):
+class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     """
     0D Electrodialysis Model
     """
@@ -1527,7 +1534,11 @@ class Electrodialysis0DData(UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -1601,6 +1612,9 @@ class Electrodialysis0DData(UnitModelBlockData):
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         blk.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
