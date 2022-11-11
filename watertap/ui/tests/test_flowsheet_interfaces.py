@@ -15,10 +15,6 @@ def fs_interface(request) -> FlowsheetInterface:
     fs_interface: FlowsheetInterface = request.param
     fs_exp = fs_interface.fs_exp
 
-    # TODO: remove once the issue is resolved
-    if fs_exp.name in {"Swine wastewater treatment"}:
-        pytest.xfail(reason="IDAES update causes KeyError to be raised (#817)")
-
     markers_to_apply = []
     # with this parametrization setup, ``request`` will be a SubRequest
     # if we use request.applymarker(), the marker will be applied to the entire class
