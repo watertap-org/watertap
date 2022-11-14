@@ -828,21 +828,22 @@ class TestOsmoticallyAssistedReverseOsmosis:
         )
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            0.7719873688757197
+        )
+        m.fs.unit.permeate_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            0.004970483059191647
+        )
+        m.fs.unit.permeate_inlet.pressure[0].fix(405467.2130804832)
+
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+
         m.fs.unit.area.fix(membrane_area)
 
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
 
-        perm_flow_mass = 1
-        perm_mass_frac_NaCl = 0.005
-        perm_mass_frac_H2O = 1 - perm_mass_frac_NaCl
-        m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-            perm_flow_mass * perm_mass_frac_NaCl
-        )
-        m.fs.unit.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-            perm_flow_mass * perm_mass_frac_H2O
-        )
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.structural_parameter.fix(300e-6)
 
         m.fs.unit.permeate_side.channel_height.fix(0.001)
@@ -853,7 +854,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
         # test statistics
         assert number_variables(m) == 186
-        assert number_total_constraints(m) == 152
+        assert number_total_constraints(m) == 151
         assert number_unused_variables(m) == 0
 
         # Test units
