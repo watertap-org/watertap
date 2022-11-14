@@ -581,7 +581,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
 
         # release inlet state, in case this error is caught
-        self.feed_side.release_state(permeate_flags, outlvl)
+        self.permeate_side.release_state(permeate_flags, outlvl)
         self.feed_side.release_state(feed_flags, outlvl)
         self.eq_permeate_isothermal.activate()
         print("DOF after release state", degrees_of_freedom(self))
