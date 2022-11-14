@@ -780,6 +780,44 @@ class MembraneChannelMixin:
             "permeate": state_args_permeate,
         }
 
+    def _get_state_args_interface(self, initialize_guess, prop_in, prop_out):
+        if initialize_guess is None:
+            initialize_guess = {}
+        if "cp_modulus" not in initialize_guess:
+            if hasattr(self, "cp_modulus"):
+                initialize_guess["cp_modulus"] = 1.1
+            else:
+                initialize_guess["cp_modulus"] = 1
+
+        state_args_interface_in = deepcopy(prop_in)
+        state_args_interface_out = deepcopy(prop_out)
+
+        for j in self.config.property_package.solute_set:
+            state_args_interface_in["flow_mass_phase_comp"][
+                ("Liq", j)
+            ] *= initialize_guess["cp_modulus"]
+            state_args_interface_out["flow_mass_phase_comp"][
+                ("Liq", j)
+            ] *= initialize_guess["cp_modulus"]
+
+        x = 0.5
+        state_args_tx = {}
+        for k in state_args_interface_in:
+            if isinstance(state_args_interface_in[k], dict):
+                if k not in state_args_tx:
+                    state_args_tx[k] = {}
+                for index in state_args_interface_in[k]:
+                    state_args_tx[k][index] = (1.0 - x) * state_args_interface_in[k][
+                        index
+                    ] + x * state_args_interface_out[k][index]
+            else:
+                state_args_tx[k] = (1.0 - x) * state_args_interface_in[
+                    k
+                ] + x * state_args_interface_out[k]
+        state_args_interface = state_args_tx
+
+        return state_args_interface
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 

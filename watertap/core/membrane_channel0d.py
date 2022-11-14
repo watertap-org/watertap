@@ -257,6 +257,16 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
             solver=solver,
         )
 
+        state_args_interface = self._get_state_args_interface(
+            initialize_guess, state_args_properties_in, state_args_properties_out
+        )
+        self.properties_interface.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_interface,
+        )
+
         init_log.info("Initialization Complete")
 
         if hold_state:
