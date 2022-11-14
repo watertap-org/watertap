@@ -24,12 +24,12 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
+    EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
@@ -42,7 +42,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Austin Ladshaw"
 
@@ -120,14 +120,24 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # NOTE: This option is temporarily disabled
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    CONFIG.declare(
+        "isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -135,8 +145,9 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -211,18 +222,7 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    def build(self):
-        # build always starts by calling super().build()
-        # This triggers a lot of boilerplate in the background for you
-        super().build()
-
-        # this creates blank scaling factors, which are populated later
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        # Next, get the base units of measurement from the property definition
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        # Check configs for errors
+    def _validate_config(self):
         common_msg = (
             "The 'chemical_mapping_data' dict MUST contain a dict of names that map \n"
             + "to each chemical name in the property package for boron and borate. \n"
@@ -278,6 +278,27 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             raise ConfigurationError(
                 "\n Did not provide a tuple for 'mw_additive' \n" + common_msg
             )
+        if (
+            self.config.isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
+    def build(self):
+        # build always starts by calling super().build()
+        # This triggers a lot of boilerplate in the background for you
+        super().build()
+
+        # this creates blank scaling factors, which are populated later
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        # Next, get the base units of measurement from the property definition
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Check configs for errors
+        self._validate_config()
 
         # Assign name IDs locally for reference later when building constraints
         self.boron_name_id = self.config.chemical_mapping_data["boron_name"]
@@ -535,19 +556,13 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             has_equilibrium_reactions=False,
         )
 
-        # NOTE: This checks for if an energy_balance_type is defined
-        if hasattr(self.config, "energy_balance_type"):
-            self.control_volume.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
-        else:
-            # Adds isothermal constraint if no energy balance present
-            @self.control_volume.Constraint(
-                self.flowsheet().config.time, doc="Isothermal condition"
-            )
-            def eq_isothermal(b, t):
-                return b.properties_out[t].temperature == b.properties_in[t].temperature
+        self.control_volume.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.isothermal:
+            self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
@@ -1073,11 +1088,6 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             else:
                 sf = 10
             iscale.set_scaling_factor(self.conc_mol_OH, sf)
-
-        # Scale isothermal condition
-        # sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
-        # for t in self.control_volume.properties_in:
-        #    iscale.constraint_scaling_transform(self.eq_isothermal[t], sf)
 
         # Scale reactor volume constraint
         sf = iscale.get_scaling_factor(self.reactor_volume)
