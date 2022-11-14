@@ -496,6 +496,13 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
+        else:
+            # Adds isothermal constraint if no energy balance present
+            @self.control_volume.Constraint(
+                self.flowsheet().config.time, doc="Isothermal condition"
+            )
+            def eq_isothermal(b, t):
+                return b.properties_out[t].temperature == b.properties_in[t].temperature
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
@@ -527,17 +534,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
                     [p for p in self.config.property_package._phase_component_set]
                 )
             )
-
-        # -------- Add constraints ---------
-        # Adds isothermal constraint if no energy balance present
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(self.flowsheet().config.time, doc="Isothermal condition")
-            def eq_isothermal(self, t):
-                return (
-                    self.control_volume.properties_out[t].temperature
-                    == self.control_volume.properties_in[t].temperature
-                )
 
         # Constraint for tss loss rate based on measured final turbidity
         self.tss_loss_rate = Var(

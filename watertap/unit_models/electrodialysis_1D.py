@@ -359,11 +359,27 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
         # # Note: the energy balance is disabled currently
+        # Adds isothermal constraint if no energy balance present
         if hasattr(self.config, "energy_balance_type"):
             self.diluate.add_energy_balances(
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
+        else:
+
+            @self.diluate.Constraint(
+                self.flowsheet().time,
+                self.diluate.length_domain,
+                doc="Isothermal condition for Diluate",
+            )
+            def eq_isothermal(b, t, x):
+                if x == b.length_domain.first():
+                    return Constraint.Skip
+                return (
+                    b.properties[t, b.length_domain.first()].temperature
+                    == b.properties[t, x].temperature
+                )
+
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
@@ -412,6 +428,21 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
+        else:
+
+            @self.concentrate.Constraint(
+                self.flowsheet().time,
+                self.concentrate.length_domain,
+                doc="Isothermal condition for Concentrate",
+            )
+            def eq_isothermal(b, t, x):
+                if x == b.length_domain.first():
+                    return Constraint.Skip
+                return (
+                    b.properties[t, b.length_domain.first()].temperature
+                    == b.properties[t, x].temperature
+                )
+
         self.concentrate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change,
@@ -613,41 +644,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
 
         # -------- Add constraints ---------
-
-        # Adds isothermal constraint if no energy balance present
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="Isothermal condition for Diluate",
-            )
-            def eq_isothermal_diluate(self, t, x):
-                if x == self.diluate.length_domain.first():
-                    return Constraint.Skip
-                return (
-                    self.diluate.properties[
-                        t, self.diluate.length_domain.first()
-                    ].temperature
-                    == self.diluate.properties[t, x].temperature
-                )
-
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="Isothermal condition for Concentrate",
-            )
-            def eq_isothermal_concentrate(self, t, x):
-                if x == self.diluate.length_domain.first():
-                    return Constraint.Skip
-                return (
-                    self.concentrate.properties[
-                        t, self.diluate.length_domain.first()
-                    ].temperature
-                    == self.concentrate.properties[t, x].temperature
-                )
 
         @self.Constraint(
             self.flowsheet().time,

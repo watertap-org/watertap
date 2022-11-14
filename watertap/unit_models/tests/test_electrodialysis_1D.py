@@ -107,8 +107,8 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell1):
@@ -355,8 +355,8 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell2):
@@ -566,8 +566,8 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
@@ -796,8 +796,8 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
 
@@ -1024,8 +1024,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1234,8 +1234,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)

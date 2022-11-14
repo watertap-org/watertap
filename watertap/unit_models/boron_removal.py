@@ -541,6 +541,13 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
                 balance_type=self.config.energy_balance_type,
                 has_enthalpy_transfer=False,
             )
+        else:
+            # Adds isothermal constraint if no energy balance present
+            @self.control_volume.Constraint(
+                self.flowsheet().config.time, doc="Isothermal condition"
+            )
+            def eq_isothermal(b, t):
+                return b.properties_out[t].temperature == b.properties_in[t].temperature
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
@@ -549,17 +556,6 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
         # Add ports
         self.add_inlet_port(name="inlet", block=self.control_volume)
         self.add_outlet_port(name="outlet", block=self.control_volume)
-
-        # -------- Add constraints ---------
-        # Adds isothermal constraint if no energy balance present
-        if not hasattr(self.config, "energy_balance_type"):
-
-            @self.Constraint(self.flowsheet().config.time, doc="Isothermal condition")
-            def eq_isothermal(self, t):
-                return (
-                    self.control_volume.properties_out[t].temperature
-                    == self.control_volume.properties_in[t].temperature
-                )
 
         # Constraints for volume and retention time
         @self.Constraint(
@@ -1079,9 +1075,9 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.conc_mol_OH, sf)
 
         # Scale isothermal condition
-        sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
-        for t in self.control_volume.properties_in:
-            iscale.constraint_scaling_transform(self.eq_isothermal[t], sf)
+        # sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
+        # for t in self.control_volume.properties_in:
+        #    iscale.constraint_scaling_transform(self.eq_isothermal[t], sf)
 
         # Scale reactor volume constraint
         sf = iscale.get_scaling_factor(self.reactor_volume)
