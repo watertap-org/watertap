@@ -66,7 +66,7 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -107,8 +107,8 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell1):
@@ -314,7 +314,7 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -355,8 +355,8 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell2):
@@ -525,7 +525,7 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -566,8 +566,8 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
@@ -753,7 +753,7 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -796,8 +796,8 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
 
@@ -977,7 +977,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell5):
         m = electrodialysis_1d_cell5
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1024,8 +1024,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1187,7 +1187,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
     def test_build_model(self, electrodialysis_1d_cell6):
         m = electrodialysis_1d_cell6
         # test configrations
-        assert len(m.fs.unit.config) == 16
+        assert len(m.fs.unit.config) == 18
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
@@ -1234,8 +1234,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.diluate.eq_isothermal, Constraint)
-        assert isinstance(m.fs.unit.concentrate.eq_isothermal, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)

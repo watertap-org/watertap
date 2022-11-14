@@ -32,8 +32,8 @@ from watertap.core.util.initialization import check_solve, check_dof
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume1DBlock,
     declare_process_block_class,
+    EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
@@ -49,7 +49,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from enum import Enum
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume1DBlock, InitializationMixin
 
 __author__ = "Xiangyu Bi, Austin Ladshaw"
 
@@ -187,14 +187,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # # Consider adding the EnergyBalanceType config using the following code
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.none,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    CONFIG.declare(
+        "isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -202,8 +212,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -309,10 +320,20 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
         super().build()
+        self._validate_config()
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         # Get the base units of measurement from the property definition
@@ -358,27 +379,14 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         self.diluate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-        # # Note: the energy balance is disabled currently
-        # Adds isothermal constraint if no energy balance present
-        if hasattr(self.config, "energy_balance_type"):
-            self.diluate.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
-        else:
 
-            @self.diluate.Constraint(
-                self.flowsheet().time,
-                self.diluate.length_domain,
-                doc="Isothermal condition for Diluate",
-            )
-            def eq_isothermal(b, t, x):
-                if x == b.length_domain.first():
-                    return Constraint.Skip
-                return (
-                    b.properties[t, b.length_domain.first()].temperature
-                    == b.properties[t, x].temperature
-                )
+        self.diluate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.isothermal:
+            self.diluate.add_isothermal_assumption()
 
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -422,26 +430,14 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         self.concentrate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
-        # # Note: the energy balance is disabled currently
-        if hasattr(self.config, "energy_balance_type"):
-            self.concentrate.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
-        else:
 
-            @self.concentrate.Constraint(
-                self.flowsheet().time,
-                self.concentrate.length_domain,
-                doc="Isothermal condition for Concentrate",
-            )
-            def eq_isothermal(b, t, x):
-                if x == b.length_domain.first():
-                    return Constraint.Skip
-                return (
-                    b.properties[t, b.length_domain.first()].temperature
-                    == b.properties[t, x].temperature
-                )
+        self.concentrate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.isothermal:
+            self.concentrate.add_isothermal_assumption()
 
         self.concentrate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
