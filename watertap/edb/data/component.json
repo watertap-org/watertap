@@ -612,6 +612,11 @@
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
     "entr_mol_liq_comp": "Perrys",
+    "parameter_data_extra": {
+        "dens_mol_liq_comp_coeff": {
+            "eqn_type": 1
+        }
+    },
     "parameter_data": {
       "mw": [
         {
@@ -1023,6 +1028,11 @@
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
     "entr_mol_liq_comp": "Perrys",
+    "parameter_data_extra": {
+        "dens_mol_liq_comp_coeff": {
+            "eqn_type": 1
+        }
+    },
     "parameter_data": {
       "mw": [
         {
@@ -1204,6 +1214,11 @@
     "phase_equilibrium_form": {
       "Vap-Liq": "fugacity"
     },
+    "parameter_data_extra": {
+        "dens_mol_liq_comp_coeff": {
+            "eqn_type": 1
+        }
+    },
     "parameter_data": {
       "mw": [
         {
@@ -1379,6 +1394,11 @@
     "phase_equilibrium_form": {
       "Vap-Liq": "fugacity"
     },
+    "parameter_data_extra": {
+        "dens_mol_liq_comp_coeff": {
+            "eqn_type": 1
+        }
+    },
     "parameter_data": {
       "mw": [
         {
@@ -1546,6 +1566,11 @@
     "pressure_sat_comp": "NIST",
     "phase_equilibrium_form": {
       "Vap-Liq": "fugacity"
+    },
+    "parameter_data_extra": {
+        "dens_mol_liq_comp_coeff": {
+            "eqn_type": 1
+        }
     },
     "parameter_data": {
       "mw": [

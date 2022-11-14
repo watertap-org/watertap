@@ -60,7 +60,10 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 from idaes.core.util.initialization import propagate_state
-from idaes.generic_models.unit_models import Feed
+from idaes.models.unit_models import (
+    Feed,
+)
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1789,8 +1792,8 @@ def calc_scale(value):
 def test_pressure_recovery_step_5_ions():
     "Test optimal termination across a range of pressures and recovery rates for 5 ion system"
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    default = {
+    m.fs = FlowsheetBlock(dynamic=False)
+    property_kwds = {
         "solute_list": [
             "Ca_2+",
             "SO4_2-",
@@ -1831,11 +1834,11 @@ def test_pressure_recovery_step_5_ions():
         "density_calculation": DensityCalculation.constant,
     }
 
-    m.fs.properties = DSPMDEParameterBlock(default=default)
+    m.fs.properties = DSPMDEParameterBlock(**property_kwds)
 
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
 
-    m.fs.nfUnit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
+    m.fs.nfUnit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
     m.fs.feed_to_nf = Arc(source=m.fs.feed.outlet, destination=m.fs.nfUnit.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
