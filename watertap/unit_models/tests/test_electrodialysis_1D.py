@@ -19,6 +19,7 @@ from watertap.unit_models.electrodialysis_1D import (
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
+    LimitingCurrentDensityMethod,
 )
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
@@ -1167,6 +1168,182 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         ) == pytest.approx(0.0900, rel=1e-3)
         assert value(perform_dict["vars"]["Water recovery by mass"]) == pytest.approx(
             0.4928, rel=1e-3
+        )
+
+
+class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
+    @pytest.fixture(scope="class")
+    def edcell_ilim_empi(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_method=LimitingCurrentDensityMethod.Empirical,
+        )
+        return m
+
+    @pytest.fixture(scope="class")
+    def edcell_ilim_theo(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+            limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
+        )
+        return m
+
+    @pytest.mark.unit
+    def test_stats_constant_vol(self, edcell_ilim_empi, edcell_ilim_theo):
+        model = (edcell_ilim_empi, edcell_ilim_theo)
+        # Specify a system
+        for m in model:
+            m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
+            m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
+            m.fs.unit.water_permeability_membrane["cem"].fix(2.16e-14)
+            m.fs.unit.water_permeability_membrane["aem"].fix(1.75e-14)
+            m.fs.unit.voltage_applied.fix(0.8)
+            m.fs.unit.electrodes_resistance.fix(0)
+            m.fs.unit.cell_pair_num.fix(10)
+            m.fs.unit.current_utilization.fix(1)
+            m.fs.unit.channel_height.fix(5e-4)
+            m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+            m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+            m.fs.unit.cell_width.fix(0.1)
+            m.fs.unit.cell_length.fix(0.79)
+            m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
+            m.fs.unit.membrane_thickness["cem"].fix(1.3e-4)
+            m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(1.8e-10)
+            m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(1.25e-10)
+            m.fs.unit.solute_diffusivity_membrane["cem", "Cl_-"].fix(1.8e-10)
+            m.fs.unit.solute_diffusivity_membrane["aem", "Cl_-"].fix(1.25e-10)
+            m.fs.unit.ion_trans_number_membrane["cem", "Na_+"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["aem", "Na_+"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+            m.fs.unit.spacer_porosity.fix(0.83)
+
+            # set the inlet stream
+            m.fs.unit.inlet_diluate.pressure.fix(101325)
+            m.fs.unit.inlet_diluate.temperature.fix(298.15)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+            m.fs.unit.inlet_concentrate.pressure.fix(101325)
+            m.fs.unit.inlet_concentrate.temperature.fix(298.15)
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(
+                2.40e-1
+            )
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(
+                7.38e-4
+            )
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(
+                7.38e-4
+            )
+
+        model[0].fs.unit.param_a = 25
+        model[0].fs.unit.param_b = 0.5
+        model[1].fs.unit.spacer_specific_area.fix(10700)
+        model[1].fs.unit.diffus_mass.fix(1.6e-9)
+
+    @pytest.mark.component
+    def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
+        model = (edcell_ilim_empi, edcell_ilim_theo)
+        for m in model:
+
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
+            )
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
+            )
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
+            )
+            # set scaling factors for some vars
+            iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+            iscale.set_scaling_factor(m.fs.unit.cell_length, 20)
+            iscale.set_scaling_factor(m.fs.unit.cell_pair_num, 0.01)
+            iscale.calculate_scaling_factors(m.fs)
+            assert degrees_of_freedom(m) == 0
+            initialization_tester(m)
+            badly_scaled_var_values = {
+                var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
+            }
+            assert not badly_scaled_var_values
+            results = solver.solve(m)
+            assert_optimal_termination(results)
+
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.3470e-1, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(5.1988e-04, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(5.1988e-04, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.4530e-1, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(9.5612e-4, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(9.5612e-4, rel=1e-3)
+        assert value(model[0].fs.unit.current_dens_lim_x[0, 0]) == pytest.approx(
+            433.5819, rel=1e-3
+        )
+        assert value(model[0].fs.unit.current_dens_lim_x[0, 1]) == pytest.approx(
+            309.2965, rel=1e-3
+        )
+
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.3468e-1, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(5.1654e-04, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(5.1654e-04, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.4532e-1, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(9.5946e-4, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(9.5946e-4, rel=1e-3)
+        assert value(model[1].fs.unit.current_dens_lim_x[0, 0]) == pytest.approx(
+            450.2808, rel=1e-3
+        )
+        assert value(model[1].fs.unit.current_dens_lim_x[0, 1]) == pytest.approx(
+            323.2072, rel=1e-3
         )
 
 
