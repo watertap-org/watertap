@@ -785,7 +785,10 @@ class MembraneChannelMixin:
             initialize_guess = {}
         if "cp_modulus" not in initialize_guess:
             if hasattr(self, "cp_modulus"):
-                initialize_guess["cp_modulus"] = 1.1
+                if self._flow_direction == FlowDirection.forward:
+                    initialize_guess["cp_modulus"] = 1.1
+                else:
+                    initialize_guess["cp_modulus"] = 0.9
             else:
                 initialize_guess["cp_modulus"] = 1
 
