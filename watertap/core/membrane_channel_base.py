@@ -788,7 +788,7 @@ class MembraneChannelMixin:
                 if self._flow_direction == FlowDirection.forward:
                     initialize_guess["cp_modulus"] = 1.1
                 else:
-                    initialize_guess["cp_modulus"] = 0.9
+                    initialize_guess["cp_modulus"] = 0.5
             else:
                 initialize_guess["cp_modulus"] = 1
 

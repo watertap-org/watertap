@@ -568,23 +568,21 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # Solve unit *without* flux equation
-        self.eq_flux_mass.deactivate()
+        # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warning(
+                    f"Trouble solving unit model {self.name}, trying one more time"
+                )
+                res = opt.solve(self, tee=slc.tee)
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
-
-        # Solve unit *with* flux equation
-        self.eq_flux_mass.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
 
         # release inlet state, in case this error is caught
         self.permeate_side.release_state(permeate_flags, outlvl)
         self.feed_side.release_state(feed_flags, outlvl)
         self.eq_permeate_isothermal.activate()
-        print("DOF after release state", degrees_of_freedom(self))
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
