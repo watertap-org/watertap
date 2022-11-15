@@ -235,11 +235,10 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
+        state_args_properties_in = state_args["feed_side"]
         if self._flow_direction == FlowDirection.forward:
-            state_args_properties_in = state_args["feed_side"]
             state_args_properties_out = state_args["retentate"]
         else:
-            state_args_properties_in = state_args["permeate"]
             state_args_properties_out = state_args["permeate"]
 
         source_flags = self.properties_in.initialize(

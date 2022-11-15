@@ -197,7 +197,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             return (
                 b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature
                 == b.permeate_side.properties[
-                    t, b.permeate_side.length_domain.first()
+                    t, b.permeate_side.length_domain.last()
                 ].temperature
             )
 
