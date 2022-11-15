@@ -206,6 +206,15 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
@@ -216,6 +225,9 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
 
         # Next, get the base units of measurement from the property definition
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # Check configs for errors
+        self._validate_config()
 
         # check the optional config arg 'chemical_additives'
         common_msg = (
@@ -305,14 +317,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             molar_rat[j] = self.config.chemical_additives[j]["parameter_data"][
                 "moles_salt_per_mole_additive"
             ]
-
-        if (
-            self.config.isothermal
-            and self.config.energy_balance_type != EnergyBalanceType.none
-        ):
-            raise ConfigurationError(
-                "If the isothermal assumption is used then the energy balance type must be none"
-            )
 
         # Add unit variables
         # Linear relationship between TSS (mg/L) and Turbidity (NTU)
