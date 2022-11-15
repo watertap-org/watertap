@@ -23,14 +23,14 @@ from pyomo.environ import (
     units as pyunits,
 )
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
     MomentumBalanceType,
+    EnergyBalanceType,
     UnitModelBlockData,
     useDefault,
 )
@@ -41,7 +41,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Austin Ladshaw"
 
@@ -100,23 +100,33 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # NOTE: This option is temporarily disabled
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
+    CONFIG.declare(
+        "isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
     **EnergyBalanceType.none** - exclude energy balances,
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -222,9 +232,12 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             + "     }, \n"
             + "}\n\n"
         )
+
+        # Populate temp dicts for parameter and variable setting
         mw_adds = {}
         mw_salts = {}
         molar_rat = {}
+
         for j in self.config.chemical_additives:
             if type(self.config.chemical_additives[j]) != dict:
                 raise ConfigurationError(
@@ -275,7 +288,6 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
                     + common_msg
                 )
 
-            # Populate temp dicts for parameter and variable setting
             mw_adds[j] = pyunits.convert_value(
                 self.config.chemical_additives[j]["parameter_data"]["mw_additive"][0],
                 from_units=self.config.chemical_additives[j]["parameter_data"][
@@ -293,6 +305,14 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             molar_rat[j] = self.config.chemical_additives[j]["parameter_data"][
                 "moles_salt_per_mole_additive"
             ]
+
+        if (
+            self.config.isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
 
         # Add unit variables
         # Linear relationship between TSS (mg/L) and Turbidity (NTU)
@@ -490,19 +510,13 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        # NOTE: This checks for if an energy_balance_type is defined
-        if hasattr(self.config, "energy_balance_type"):
-            self.control_volume.add_energy_balances(
-                balance_type=self.config.energy_balance_type,
-                has_enthalpy_transfer=False,
-            )
-        else:
-            # Adds isothermal constraint if no energy balance present
-            @self.control_volume.Constraint(
-                self.flowsheet().config.time, doc="Isothermal condition"
-            )
-            def eq_isothermal(b, t):
-                return b.properties_out[t].temperature == b.properties_in[t].temperature
+        self.control_volume.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.isothermal:
+            self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
