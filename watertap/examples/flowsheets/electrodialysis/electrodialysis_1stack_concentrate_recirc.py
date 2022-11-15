@@ -334,7 +334,7 @@ def simu_scenario1(m):
     # Electrochemical properties
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.general_mass_diffusivity.fix(1.6e-9)
+    m.fs.EDstack.diffus_mass.fix(1.6e-9)
     m.fs.EDstack.voltage_applied[0].fix(10)
 
     mstat.report_statistics(m)
