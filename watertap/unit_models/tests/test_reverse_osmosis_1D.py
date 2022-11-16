@@ -52,6 +52,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import MembraneChannel1DBlock
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

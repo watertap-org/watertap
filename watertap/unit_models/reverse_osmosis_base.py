@@ -96,17 +96,14 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.feed_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
         )
 
-        self.feed_side.add_isothermal_conditions()
+        self.feed_side.add_control_volume_isothermal_conditions()
+        self.feed_side.add_interface_isothermal_conditions()
 
         self.feed_side.add_extensive_flow_to_interface()
 

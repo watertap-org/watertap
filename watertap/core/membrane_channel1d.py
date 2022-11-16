@@ -163,29 +163,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
         super().add_state_blocks(has_phase_equilibrium=has_phase_equilibrium)
         self._add_interface_stateblock(has_phase_equilibrium)
 
-    def add_total_enthalpy_balances(self, **kwrags):
-        # make this a no-op for MC1D
-        return None
-
-    def add_isothermal_conditions(self, **kwargs):
-
-        super().add_isothermal_conditions(**kwargs)
-
-        ## ==========================================================================
-        # Feed-side isothermal conditions
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Isothermal assumption for feed channel",
-        )
-        def eq_feed_isothermal(b, t, x):
-            if self._skip_element(x):
-                return Constraint.Skip
-            return (
-                b.properties[t, b.length_domain.first()].temperature
-                == b.properties[t, x].temperature
-            )
-
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)
 

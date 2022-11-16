@@ -116,7 +116,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.feed_side.add_isothermal_conditions()
+        self.feed_side.add_interface_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
@@ -157,7 +157,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.permeate_side.add_isothermal_conditions()
+        self.permeate_side.add_interface_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.permeate_side.add_extensive_flow_to_interface()
