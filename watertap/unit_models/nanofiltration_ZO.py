@@ -21,11 +21,10 @@ from pyomo.environ import (
     Reference,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
     EnergyBalanceType,
@@ -41,7 +40,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 
 _log = idaeslog.getLogger(__name__)
@@ -97,13 +96,23 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
         "energy_balance_type",
         ConfigValue(
-            default=EnergyBalanceType.useDefault,
+            default=EnergyBalanceType.none,
             domain=In(EnergyBalanceType),
             description="Energy balance construction flag",
             doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -192,6 +201,15 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 "The NF model was expecting at least one solute or ion and did not receive any."
             )
 
+    def _validate_config(self):
+        if (
+            self.config.isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -200,6 +218,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # Check configs for errors
+        self._validate_config()
         self._process_config()
 
         if hasattr(self.config.property_package, "ion_set"):
@@ -291,11 +311,13 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        @self.feed_side.Constraint(
-            self.flowsheet().config.time, doc="isothermal energy balance for feed_side"
+        self.feed_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
         )
-        def eq_isothermal(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        if self.config.isothermal:
+            self.feed_side.add_isothermal_assumption()
 
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -440,15 +462,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 b.recovery_mass_phase_comp[t, "Liq", j]
                 == b.properties_permeate[t].flow_mass_phase_comp["Liq", j]
                 / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", j]
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for permeate"
-        )
-        def eq_permeate_isothermal(b, t):
-            return (
-                b.feed_side.properties_in[t].temperature
-                == b.properties_permeate[t].temperature
             )
 
     def initialize_build(
@@ -658,9 +671,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
 
         # transforming constraints
-        for ind, c in self.feed_side.eq_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].temperature)
-            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
@@ -678,9 +688,6 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.eq_permeate_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
-            iscale.constraint_scaling_transform(c, sf)
         for t, c in self.eq_recovery_vol_phase.items():
             sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, "Liq"])
             iscale.constraint_scaling_transform(c, sf)
