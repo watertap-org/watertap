@@ -274,12 +274,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             has_pressure_change=False,
         )
 
-        @self.process_flow.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for process flow"
-        )
-        def eq_isothermal(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
-
         # add port for absorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -290,16 +284,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="Material properties of spent gac",
             **tmp_dict,
         )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal assumption for absorbed contaminant",
-        )
-        def eq_isothermal_adsorbed_contam(b, t):
-            return (
-                b.process_flow.properties_in[t].temperature
-                == b.adsorbed_contam[t].temperature
-            )
 
         @self.Constraint(
             self.flowsheet().config.time,
