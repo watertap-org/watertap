@@ -16,8 +16,10 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
+    log10,
     exp,
     check_optimal_termination,
+    Set,
 )
 from pyomo.environ import units as pyunits
 
@@ -31,8 +33,9 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component
+from idaes.core.base.components import Component, Solute, Solvent
 from idaes.core.base.phases import LiquidPhase, VaporPhase
+from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -74,11 +77,9 @@ class WaterParameterData(PhysicalParameterBlock):
 
         """ References
         This package was developed from the following references:
-
         - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
-
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
@@ -429,7 +430,6 @@ class _WaterStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-
                          flow_mass_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
@@ -505,7 +505,6 @@ class _WaterStateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialisation.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -531,7 +530,6 @@ class _WaterStateBlock(StateBlock):
         be state variables or properties. This method is typically used before
         initialization to solve for state variables because non-state variables (i.e. properties)
         cannot be fixed in initialization routines.
-
         Keyword Arguments:
             var_args : dictionary with variables and their values, they can be state variables or properties
                        {(VAR_NAME, INDEX): VALUE}
@@ -542,7 +540,6 @@ class _WaterStateBlock(StateBlock):
             solver : solver name string if None is provided the default solver
                      for IDAES will be used (default = None)
             optarg : solver options dictionary object (default={})
-
         Returns:
             results object from state block solve
         """
@@ -688,7 +685,7 @@ class WaterStateBlockData(StateBlockData):
                     + b.params.dens_mass_param_A4 * t**3
                     + b.params.dens_mass_param_A5 * t**4
                 )
-                return b.dens_mass_phase["Liq"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
             else:  # phase == 'Vap'
                 dens_mass = (
                     b.params.dens_mass_param_mw
@@ -696,7 +693,7 @@ class WaterStateBlockData(StateBlockData):
                     / b.params.dens_mass_param_R
                     / b.temperature
                 )
-                return b.dens_mass_phase["Vap"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
 
         self.eq_dens_mass_phase = Constraint(
             self.params.phase_list, rule=rule_dens_mass_phase
@@ -793,12 +790,12 @@ class WaterStateBlockData(StateBlockData):
             )
 
             if phase == "Liq":
-                return b.enth_mass_phase["Liq"] == h_w
+                return b.enth_mass_phase[phase] == h_w
             else:  # phase == 'Vap'
                 # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
                 #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
                 # h_vap = h_w + dh_vap_w
-                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass
+                return b.enth_mass_phase[phase] == h_w + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -879,13 +876,13 @@ class WaterStateBlockData(StateBlockData):
                     b.params.cp_phase_param_D1
                 )  # + b.params.cp_phase_param_D2 * s + b.params.cp_phase_param_D3 * s ** 2
                 return (
-                    b.cp_mass_phase["Liq"]
+                    b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             else:  # phase == 'Vap'
                 t = b.temperature / 1000
                 return (
-                    b.cp_mass_phase["Vap"]
+                    b.cp_mass_phase[phase]
                     == b.params.cp_vap_param_A
                     + b.params.cp_vap_param_B * t
                     + b.params.cp_vap_param_C * t**2
