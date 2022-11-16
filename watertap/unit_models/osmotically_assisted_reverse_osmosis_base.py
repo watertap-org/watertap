@@ -584,7 +584,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         self.permeate_side.release_state(permeate_flags, outlvl)
         self.feed_side.release_state(feed_flags, outlvl)
         self.eq_permeate_isothermal.activate()
-        print("DOF after release state", degrees_of_freedom(self))
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
