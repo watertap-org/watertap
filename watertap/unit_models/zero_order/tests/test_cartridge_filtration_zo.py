@@ -269,7 +269,7 @@ class TestCartridgeFiltrationZO_w_default_removal:
         assert pytest.approx(817.439, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(3.8643385e-8, rel=1e-5) == value(
+        assert pytest.approx(7.26612e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0.00936, abs=1e-5) == value(model.fs.unit.electricity[0])

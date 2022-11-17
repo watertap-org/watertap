@@ -126,9 +126,11 @@ one of the configuration options as shown below.
 .. code-block::
 
     model.fs.unit = BoronRemoval(
-        property_package=model.fs.properties,
-        chemical_mapping_data=chem_dict,
-    )
+            default={
+                "property_package": model.fs.properties,
+                "chemical_mapping_data": chem_dict,
+            }
+        )
 
 **NOTE: The above example assumes you have already constructed a pyomo model named 'model' and attached an IDAES flowsheet named 'fs' to it, as well as a properties block named 'properties'**
 

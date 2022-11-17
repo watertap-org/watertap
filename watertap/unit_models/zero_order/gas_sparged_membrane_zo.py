@@ -17,6 +17,7 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import pump_electricity, ZeroOrderBaseData
 import idaes.logger as idaeslog
+from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.environ import NonNegativeReals, Var, units as pyunits, Reference
 from watertap.core.zero_order_sido import initialize_sido

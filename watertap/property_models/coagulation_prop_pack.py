@@ -24,6 +24,7 @@ from pyomo.environ import (
     Suffix,
     value,
     exp,
+    assert_optimal_termination,
     check_optimal_termination,
 )
 
@@ -40,7 +41,7 @@ from idaes.core import (
     EnergyBalanceType,
 )
 from idaes.core.base.components import Component
-from idaes.core.base.phases import LiquidPhase
+from idaes.core.base.phases import LiquidPhase, SolidPhase, PhaseType
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,

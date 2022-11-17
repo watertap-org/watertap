@@ -346,7 +346,7 @@ def display_costing(m):
         )
 
     print("\n----------Utility Costs----------\n")
-    for f in m.fs.costing.used_flows:
+    for f in m.fs.costing.flow_types:
         print(
             f,
             " :    {price:0.3f} $M/year".format(

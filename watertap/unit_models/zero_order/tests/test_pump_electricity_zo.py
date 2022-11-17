@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
+    Param,
     Block,
     value,
     Var,

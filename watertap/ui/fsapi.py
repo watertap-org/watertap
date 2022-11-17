@@ -10,6 +10,7 @@ from collections import namedtuple
 from enum import Enum
 from typing import Any, Callable, Optional, Dict, Union, TypeVar
 from types import ModuleType
+from uuid import uuid4
 
 try:
     from importlib import metadata

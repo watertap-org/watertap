@@ -121,7 +121,6 @@ thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -196,7 +195,6 @@ thermo_config = {
                 "pressure_crit": (73.825e5, pyunits.Pa),
                 "temperature_crit": (304.23, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (0.000789, pyunits.kmol * pyunits.m**-3),
                     "2": (0.000956, pyunits.dimensionless),
                     "3": (500.78, pyunits.K),
@@ -266,7 +264,6 @@ thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -298,7 +295,6 @@ thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -330,7 +326,6 @@ thermo_config = {
             "parameter_data": {
                 "mw": (62.03, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -362,7 +357,6 @@ thermo_config = {
             "parameter_data": {
                 "mw": (61.0168, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -394,7 +388,6 @@ thermo_config = {
             "parameter_data": {
                 "mw": (60.01, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),

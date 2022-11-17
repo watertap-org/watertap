@@ -19,16 +19,27 @@ from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
+    Set,
     Param,
     Var,
     units as pyunits,
+    Suffix,
     Constraint,
+    SolverFactory,
+    SolverStatus,
+    TerminationCondition,
 )
-from idaes.core import FlowsheetBlock
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialFlowBasis,
+    MaterialBalanceType,
+    EnergyBalanceType,
+)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
+from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 import re

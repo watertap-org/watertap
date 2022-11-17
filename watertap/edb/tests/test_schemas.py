@@ -16,6 +16,7 @@ Test schemas module
 import pytest
 from ..schemas import schemas
 from ..data_model import Reaction
+from ..error import ValidationError
 
 
 @pytest.mark.unit

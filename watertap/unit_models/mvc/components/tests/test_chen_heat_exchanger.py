@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+import sys
 import pytest
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value

@@ -22,7 +22,7 @@ JSON schema embedded as variables for:
   - reaction
 """
 
-from .data_model import Reaction
+from .data_model import Base, Component, Reaction
 
 
 _parameter_def = {

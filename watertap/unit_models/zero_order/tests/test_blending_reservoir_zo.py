@@ -22,6 +22,7 @@ from pyomo.environ import (
     Constraint,
     value,
     Var,
+    Param,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -106,9 +107,7 @@ class TestBlendingReservoirZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
-            model.fs.unit.electricity[0]
-        )
+        assert pytest.approx(7e-10, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):

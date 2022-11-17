@@ -11,10 +11,16 @@
 #
 ###############################################################################
 
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import Bool, ConfigValue, In
 from pyomo.environ import (
     Constraint,
+    NonNegativeReals,
+    NegativeReals,
+    Param,
     Set,
+    Var,
+    value,
+    units as pyunits,
 )
 from idaes.core import (
     declare_process_block_class,
@@ -183,7 +189,6 @@ class MembraneChannel1DBlockData(MembraneChannelMixin, ControlVolume1DBlockData)
                 b.properties[t, b.length_domain.first()].temperature
                 == b.properties[t, x].temperature
             )
-
 
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         add_object_reference(self, "dP_dx", self.deltaP)

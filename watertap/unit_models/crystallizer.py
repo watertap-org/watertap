@@ -15,32 +15,39 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
+    Set,
     Var,
-    check_optimal_termination,
     Param,
     Constraint,
+    Expression,
     Suffix,
+    NonNegativeReals,
+    Reference,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
+    ControlVolume0DBlock,
     declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
+    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
-
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
-
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.math import smooth_max
 
-from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
@@ -48,7 +55,7 @@ __author__ = "Oluwamayowa Amusat"
 
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Crystallization")
-class CrystallizationData(InitializationMixin, UnitModelBlockData):
+class CrystallizationData(UnitModelBlockData):
     """
     Zero order crystallization model
     """
@@ -559,11 +566,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
             )
 
     def initialize(
-        blk,
-        state_args=None,
-        outlvl=idaeslog.NOTSET,
-        solver=None,
-        optarg=None,
+        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -658,9 +661,6 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # Release Inlet state
         blk.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

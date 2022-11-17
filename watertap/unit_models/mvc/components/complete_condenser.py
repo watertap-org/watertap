@@ -12,7 +12,16 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Suffix, check_optimal_termination
+from pyomo.environ import (
+    Block,
+    Set,
+    Var,
+    Param,
+    Suffix,
+    NonNegativeReals,
+    Reference,
+    units as pyunits,
+)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -24,21 +33,21 @@ from idaes.core import (
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
+    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
-from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Condenser")
-class CompressorData(InitializationMixin, UnitModelBlockData):
+class CompressorData(UnitModelBlockData):
     """
     Condenser model for MVC
     """
@@ -270,18 +279,13 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         if hold_state:
-            pass
+            return flags
         else:
             # Release Inlet state
             blk.control_volume.release_state(flags, outlvl=outlvl)
             init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         if has_guessed_heat:
             blk.control_volume.heat.unfix()
-
-        if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
-
-        return flags
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Heat duty": self.control_volume.heat[time_point]}

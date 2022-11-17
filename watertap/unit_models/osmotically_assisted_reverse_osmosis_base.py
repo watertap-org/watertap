@@ -35,8 +35,6 @@ from watertap.core.membrane_channel_base import (
     ConcentrationPolarizationType,
 )
 
-from watertap.core import InitializationMixin
-
 
 def _add_has_full_reporting(config_obj):
     config_obj.declare(
@@ -55,9 +53,7 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-class OsmoticallyAssistedReverseOsmosisBaseData(
-    InitializationMixin, UnitModelBlockData
-):
+class OsmoticallyAssistedReverseOsmosisBaseData(UnitModelBlockData):
     """
     Osmotically Assisted Reverse Osmosis base class
 
@@ -114,7 +110,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.feed_side.add_interface_isothermal_conditions()
+        self.feed_side.add_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
@@ -155,7 +151,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.permeate_side.add_interface_isothermal_conditions()
+        self.permeate_side.add_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.permeate_side.add_extensive_flow_to_interface()
@@ -491,6 +487,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -559,7 +556,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {self.name} failed to initialize")
+            if raise_on_failure:
+                raise InitializationError(
+                    f"Unit model {self.name} failed to initialize"
+                )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

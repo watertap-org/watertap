@@ -11,6 +11,9 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor, CellExecutionError
 import pytest
 
+# package
+from watertap.edb import ElectrolyteDB
+
 # Logging setup
 
 _log = logging.getLogger(__name__)

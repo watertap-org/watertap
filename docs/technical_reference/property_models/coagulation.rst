@@ -99,7 +99,7 @@ The user can specify the scaling factors for component mass flowrates with the f
 
   # relevant assignments
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(dynamic=False)
+  m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = props.CoagulationParameterBlock()
 
   # set scaling for component mass flowrate

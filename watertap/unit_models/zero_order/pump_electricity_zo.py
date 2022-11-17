@@ -14,9 +14,10 @@
 This module contains a zero-order representation of a low pressure pump unit
 """
 
-from pyomo.environ import units as pyunits, Var
+from pyomo.environ import Constraint, Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
-from watertap.core import build_pt, ZeroOrderBaseData
+
+from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
 from idaes.core.util.constants import Constants
 
 # Some more information about this module

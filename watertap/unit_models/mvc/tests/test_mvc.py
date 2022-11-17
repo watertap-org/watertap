@@ -10,7 +10,9 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+import sys
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     ConcreteModel,

@@ -30,7 +30,7 @@ users to model the chemical and physical properties of simple systems without th
     m.fs.properties = props.NaClParameterBlock()
 
     # Build the state block and specify a time (0 = steady state).
-    m.fs.state_block = m.fs.properties.build_state_block([0])
+    m.fs.state_block = m.fs.properties.build_state_block([0], default={})
 
     # Fully specify the system.
     feed_flow_mass = 1

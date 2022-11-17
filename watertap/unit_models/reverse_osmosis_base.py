@@ -12,9 +12,11 @@
 ###############################################################################
 
 from copy import deepcopy
+from enum import Enum, auto
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import Bool, ConfigValue
 from pyomo.environ import (
+    Block,
     NonNegativeReals,
     Param,
     Suffix,
@@ -32,7 +34,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     CONFIG_Template,
@@ -57,7 +58,7 @@ def _add_has_full_reporting(config_obj):
     )
 
 
-class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
+class ReverseOsmosisBaseData(UnitModelBlockData):
     """
     Reverse Osmosis base class
     """
@@ -96,14 +97,17 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
+        self.feed_side.add_energy_balances(
+            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
+        )
+
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
             has_pressure_change=self.config.has_pressure_change,
         )
 
-        self.feed_side.add_control_volume_isothermal_conditions()
-        self.feed_side.add_interface_isothermal_conditions()
+        self.feed_side.add_isothermal_conditions()
 
         self.feed_side.add_extensive_flow_to_interface()
 
@@ -485,6 +489,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_failure=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -562,12 +567,14 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
                 res = opt.solve(self, tee=slc.tee)
 
         # release inlet state, in case this error is caught
-
         self.feed_side.release_state(source_flags, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {self.name} failed to initialize")
+            if raise_on_failure:
+                raise InitializationError(
+                    f"Unit model {self.name} failed to initialize"
+                )
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

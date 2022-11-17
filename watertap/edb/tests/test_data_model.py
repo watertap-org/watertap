@@ -44,6 +44,7 @@ from ..data_model import (
     Reaction,
     Result,
     Base,
+    ThermoConfig,
 )
 
 # For validating DataWrapper contents

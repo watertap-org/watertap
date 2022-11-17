@@ -269,7 +269,7 @@ class TestBioActiveFiltrationZO_w_default_removal:
         assert pytest.approx(625.0, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(5.318295897e-8, rel=1e-5) == value(
+        assert pytest.approx(1e-6, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(0.013 * 0 * 3600, abs=1e-5) == value(

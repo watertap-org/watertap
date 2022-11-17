@@ -12,14 +12,7 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import (
-    Block,
-    Var,
-    Suffix,
-    units as pyunits,
-    ExternalFunction,
-    check_optimal_termination,
-)
+from pyomo.environ import Block, Var, Suffix, units as pyunits, ExternalFunction
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -33,18 +26,20 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+# From watertap
+from watertap.unit_models.mvc.components.complete_condenser import Condenser
 
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Evaporator")
-class EvaporatorData(InitializationMixin, UnitModelBlockData):
+class EvaporatorData(UnitModelBlockData):
     """
     Evaporator model for MVC
     """
@@ -227,7 +222,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_feed = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of feed inlet",
-            **tmp_dict,
+            **tmp_dict
         )
 
         # Brine state block
@@ -235,7 +230,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_brine = self.config.property_package_feed.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of brine outlet",
-            **tmp_dict,
+            **tmp_dict
         )
 
         # Vapor state block
@@ -246,7 +241,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         self.properties_vapor = self.config.property_package_vapor.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of vapor outlet",
-            **tmp_dict,
+            **tmp_dict
         )
 
         # Add block for condenser constraints
@@ -473,9 +468,6 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             blk.connection_to_condenser.activate()
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-
-        if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {

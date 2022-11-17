@@ -13,7 +13,7 @@
 import numpy as np
 import pyomo.environ as pyo
 import warnings
-import copy
+import copy, pprint
 
 from abc import abstractmethod, ABC
 from idaes.core.solvers import get_solver

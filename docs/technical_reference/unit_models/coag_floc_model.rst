@@ -137,9 +137,11 @@ one of the configuration options as shown below.
 .. code-block::
 
     model.fs.unit = CoagulationFlocculation(
-        property_package=model.fs.properties,
-        chemical_additives=chem_dict,
-    )
+            default={
+                "property_package": model.fs.properties,
+                "chemical_additives": chem_dict,
+            }
+        )
 
 **NOTE: The above example assumes you have already constructed a pyomo model named 'model' and attached an IDAES flowsheet named 'fs' to it, as well as a properties block named 'properties'**
 

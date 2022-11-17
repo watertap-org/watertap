@@ -1044,7 +1044,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.costing.annual_costs_revenues.annual_disposal_cost,
+        obj=fs.costing.aggregate_flow_costs["waste_disposal"],
         name="Waste disposal",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",

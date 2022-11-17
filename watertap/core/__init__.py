@@ -11,7 +11,6 @@
 #
 ###############################################################################
 
-from .initialization_mixin import InitializationMixin
 from .membrane_channel_base import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,

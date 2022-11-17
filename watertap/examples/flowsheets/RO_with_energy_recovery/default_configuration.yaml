@@ -102,6 +102,7 @@ fs.RO.feed_side.dP_dx[0.0,0.0]: -12678.679050434575
 fs.RO.feed_side.dP_dx[0.0,1.0]: -5318.296444828698
 fs.RO.feed_side.dh: 0.001691998543711759
 fs.RO.feed_side.deltaP[0.0]: -144220.12194869615
+fs.RO.feed_side.enthalpy_transfer[0.0]: -51702.861568992426
 fs.RO.feed_side.mass_transfer_term[0.0,Liq,H2O]: -0.49285444999999994
 fs.RO.feed_side.mass_transfer_term[0.0,Liq,NaCl]: -0.00016337190673426118
 fs.RO.feed_side.properties_in[0.0].conc_mass_phase_comp[Liq,H2O]: 985.7089

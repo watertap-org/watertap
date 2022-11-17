@@ -20,6 +20,7 @@
 Validate input for electrolyte database.
 """
 # stdlib
+import argparse
 import json
 import logging
 from pathlib import Path

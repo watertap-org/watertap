@@ -17,7 +17,10 @@ from pyomo.environ import (
     NonNegativeReals,
     NegativeReals,
     value,
+    check_optimal_termination,
+    Set,
 )
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -25,12 +28,13 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util import scaling as iscale
+from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 
 from watertap.core import (
+    MembraneChannel1DBlock,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
-    MembraneChannel1DBlock,
     PressureChangeType,
 )
 from watertap.core.membrane_channel1d import CONFIG_Template

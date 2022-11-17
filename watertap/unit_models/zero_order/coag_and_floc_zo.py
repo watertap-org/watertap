@@ -15,10 +15,10 @@ This module contains a zero-order representation of a coagulation/flocculation u
 operation.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import Constraint, units as pyunits, Var, Expression
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_pt, ZeroOrderBaseData
+from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Adam Atia"

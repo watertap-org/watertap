@@ -247,7 +247,7 @@ class TestAirFlotationZO_w_default_removal:
         assert pytest.approx(998.890, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(4.722127e-8, rel=1e-5) == value(
+        assert pytest.approx(8.8790e-7, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(12.96, abs=1e-5) == value(model.fs.unit.electricity[0])

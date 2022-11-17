@@ -25,6 +25,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Param,
     Set,
     value,
     Var,

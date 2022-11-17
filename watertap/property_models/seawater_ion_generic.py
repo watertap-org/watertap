@@ -26,6 +26,7 @@ Vol. 276.
 from pyomo.environ import Param, units as pyunits
 
 from idaes.core import (
+    LiquidPhase,
     AqueousPhase,
     Solvent,
     Apparent,
@@ -36,6 +37,7 @@ from idaes.core import (
 from idaes.models.properties.modular_properties.eos.enrtl import ENRTL
 from idaes.models.properties.modular_properties.eos.enrtl_reference_states import (
     Symmetric,
+    Unsymmetric,
 )
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.models.properties.modular_properties.state_definitions import FpcTP

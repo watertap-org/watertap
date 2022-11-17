@@ -140,20 +140,20 @@ class TestAnaerobicMBRMECZO:
         assert pytest.approx(1500 / 3600 / 24 / 1000, rel=1e-2) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(2.895771, rel=1e-5) == value(
+        assert pytest.approx(2.8958, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["cod"]
         )
-        assert pytest.approx(1.5972836e-09, rel=1e-5) == value(
+        assert pytest.approx(4.60445e-05, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]
         )
 
         assert pytest.approx(2280 / 3600 / 24 / 1000, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.0521862e-09, rel=1e-5) == value(
+        assert pytest.approx(3.0331e-05, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]
         )
-        assert pytest.approx(1.907545, rel=1e-5) == value(
+        assert pytest.approx(1.90757, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]
         )
         assert pytest.approx(4.347, rel=1e-3) == value(

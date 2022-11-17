@@ -288,7 +288,7 @@ def display_costing(m):
     print(f"Operating cost fraction: {opex_fraction:.3f} $ opex / $ annual")
 
     print("Operating Cost Breakdown")
-    for f in m.fs.costing.used_flows:
+    for f in m.fs.costing.flow_types:
         print(
             f.title(),
             " :    {price:0.3f} $/m3 feed".format(

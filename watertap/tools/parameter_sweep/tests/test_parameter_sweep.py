@@ -15,6 +15,7 @@ import pytest
 import os
 import numpy as np
 import pyomo.environ as pyo
+import warnings
 
 from pyomo.environ import value
 

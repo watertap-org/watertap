@@ -14,16 +14,22 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    Set,
     NonNegativeReals,
+    NegativeReals,
+    Reference,
+    units as pyunits,
+    exp,
     value,
+    check_optimal_termination,
 )
 
 from idaes.core import declare_process_block_class
 from idaes.core.util import scaling as iscale
 from idaes.core.util.misc import add_object_reference
 from watertap.core import (
-    ConcentrationPolarizationType,
     MembraneChannel0DBlock,
+    ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
@@ -32,6 +38,7 @@ from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
 )
+import idaes.logger as idaeslog
 
 
 __author__ = "Tim Bartholomew, Adam Atia"
@@ -86,12 +93,23 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
                 == b.mixed_permeate[t].flow_vol_phase["Liq"]
             )
 
+        # not in 1DRO
         @self.Expression(self.flowsheet().config.time, doc="Over pressure ratio")
         def over_pressure_ratio(b, t):
             return (
                 b.feed_side.properties_out[t].pressure_osm_phase["Liq"]
                 - b.permeate_side[t, 1.0].pressure_osm_phase["Liq"]
             ) / b.feed_side.properties_out[t].pressure
+
+        # not in 1DRO
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
+        )
+        def eq_connect_enthalpy_transfer(b, t):
+            return (
+                b.mixed_permeate[t].get_enthalpy_flow_terms("Liq")
+                == -b.feed_side.enthalpy_transfer[t]
+            )
 
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):
