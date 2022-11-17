@@ -96,16 +96,6 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # not in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
-        )
-        def eq_connect_enthalpy_transfer(b, t):
-            return (
-                b.permeate_side.enthalpy_transfer[t]
-                == -b.feed_side.enthalpy_transfer[t]
-            )
-
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):
             return value(
@@ -162,11 +152,6 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
             )
 
     def calculate_scaling_factors(self):
-        if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(
-                self.feed_side.properties_in[0].dens_mass_phase["Liq"]
-            )
-            iscale.set_scaling_factor(self.dens_solvent, sf)
 
         super().calculate_scaling_factors()
 
