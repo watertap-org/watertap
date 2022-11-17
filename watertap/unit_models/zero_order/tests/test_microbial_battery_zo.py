@@ -151,44 +151,44 @@ class TestMicrobialBattery:
         assert pytest.approx(1e-5, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(8.4e-10, rel=1e-3) == value(
+        assert pytest.approx(4.00e-11, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["arsenic"]
         )
-        assert pytest.approx(8.6e-10, rel=1e-3) == value(
+        assert pytest.approx(6.00e-11, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["uranium"]
         )
-        assert pytest.approx(2.58e-8, rel=1e-3) == value(
+        assert pytest.approx(2.50e-8, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["nitrate"]
         )
-        assert pytest.approx(9e-10, rel=1e-3) == value(
+        assert pytest.approx(1.00e-10, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["phosphates"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["iron"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["filtration_media"]
         )
 
-        assert pytest.approx(9.39e-11, rel=1e-3) == value(
+        assert pytest.approx(8.8300e-11, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.16e-9, rel=1e-3) == value(
+        assert pytest.approx(3.600e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["arsenic"]
         )
-        assert pytest.approx(1.34e-9, rel=1e-3) == value(
+        assert pytest.approx(5.400e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["uranium"]
         )
-        assert pytest.approx(7.58e-8, rel=1e-3) == value(
+        assert pytest.approx(7.500e-8, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["nitrate"]
         )
-        assert pytest.approx(1.7e-9, rel=1e-3) == value(
+        assert pytest.approx(9.000e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["phosphates"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["iron"]
         )
-        assert pytest.approx(1.23e-8, rel=1e-3) == value(
+        assert pytest.approx(1.150e-8, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["filtration_media"]
         )
 

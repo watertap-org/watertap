@@ -1,7 +1,6 @@
 """
 Tests for fsapi module
 """
-from collections import OrderedDict
 import logging
 import pytest
 

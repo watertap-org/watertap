@@ -15,10 +15,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Param,
     Var,
-    Constraint,
-    Expression,
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
@@ -50,11 +47,11 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 
 from watertap.core import MembraneChannel1DBlock
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -306,7 +303,7 @@ class TestReverseOsmosis:
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        initialization_tester(RO_frame)
+        initialization_tester(RO_frame, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -454,7 +451,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -580,7 +577,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
         # Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -703,7 +700,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -827,7 +824,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -953,7 +950,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -1080,7 +1077,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []

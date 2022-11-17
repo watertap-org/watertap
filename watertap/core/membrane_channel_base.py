@@ -19,11 +19,8 @@ from pyomo.environ import (
     Constraint,
     Expression,
     Param,
-    NegativeReals,
     NonNegativeReals,
     Var,
-    check_optimal_termination,
-    exp,
     units as pyunits,
 )
 
@@ -36,7 +33,7 @@ from idaes.core import (
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 
 
@@ -326,7 +323,7 @@ class MembraneChannelMixin:
         if pressure_change_type == PressureChangeType.calculated:
             self._add_calculated_pressure_change()
 
-    def add_isothermal_conditions(self):
+    def add_interface_isothermal_conditions(self):
 
         # ==========================================================================
         # Bulk and interface connections on the feed-side
@@ -342,6 +339,23 @@ class MembraneChannelMixin:
             return (
                 b.properties[t, x].temperature
                 == b.properties_interface[t, x].temperature
+            )
+
+    def add_control_volume_isothermal_conditions(self):
+
+        ## ==========================================================================
+        # Feed-side isothermal conditions
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Isothermal assumption for feed channel",
+        )
+        def eq_feed_isothermal(b, t, x):
+            if x == b.length_domain.first():
+                return Constraint.Skip
+            return (
+                b.properties[t, b.length_domain.first()].temperature
+                == b.properties[t, x].temperature
             )
 
     def add_extensive_flow_to_interface(self):

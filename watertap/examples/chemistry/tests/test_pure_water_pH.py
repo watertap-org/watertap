@@ -157,6 +157,7 @@ def thermo_config(base_units):
                     "temperature_crit": (647, pyunits.K),
                     # Comes from Perry's Handbook:  p. 2-98
                     "dens_mol_liq_comp_coeff": {
+                        "eqn_type": 1,
                         "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
@@ -230,6 +231,7 @@ def thermo_config(base_units):
                 "parameter_data": {
                     "mw": (1.00784, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": {
+                        "eqn_type": 1,
                         "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),
@@ -262,6 +264,7 @@ def thermo_config(base_units):
                 "parameter_data": {
                     "mw": (17.008, pyunits.g / pyunits.mol),
                     "dens_mol_liq_comp_coeff": {
+                        "eqn_type": 1,
                         "1": (5.459, pyunits.kmol * pyunits.m**-3),
                         "2": (0.30542, pyunits.dimensionless),
                         "3": (647.13, pyunits.K),

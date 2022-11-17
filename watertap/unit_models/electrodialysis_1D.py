@@ -14,10 +14,10 @@
 from pyomo.environ import (
     Set,
     Var,
+    check_optimal_termination,
     Suffix,
     Constraint,
     NonNegativeReals,
-    NonNegativeIntegers,
     value,
     units as pyunits,
     log,
@@ -43,11 +43,13 @@ from idaes.core.util.constants import Constants
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.misc import add_object_reference
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from enum import Enum
+
+from watertap.core import InitializationMixin
 
 __author__ = "Xiangyu Bi, Austin Ladshaw"
 
@@ -67,7 +69,7 @@ class ElectricalOperationMode(Enum):
 
 # Name of the unit model
 @declare_process_block_class("Electrodialysis1D")
-class Electrodialysis1DData(UnitModelBlockData):
+class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
     """
     1D Electrodialysis Model
     """
@@ -1745,6 +1747,9 @@ class Electrodialysis1DData(UnitModelBlockData):
         blk.diluate.release_state(flags_diluate, outlvl)
         blk.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

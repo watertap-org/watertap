@@ -19,9 +19,7 @@ from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.errors import ApplicationError
 from idaes.core.util.scaling import (
     set_scaling_factor,
-    get_scaling_factor,
     constraints_with_scale_factor_generator,
-    unscaled_constraints_generator,
 )
 from idaes.core.solvers import get_solver
 from watertap.core.plugins.solvers import IpoptWaterTAP
