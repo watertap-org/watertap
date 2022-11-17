@@ -275,6 +275,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
             perm_flow_mass * perm_mass_frac_H2O
         )
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_outlet.temperature[0].fix(feed_temperature)
 
         m.fs.unit.permeate_side.cp_modulus.fix(permeate_cp_mod)
         m.fs.unit.feed_side.deltaP_stage.fix(0)
@@ -300,8 +301,8 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
         # test statistics
         assert number_variables(m) == 757
-        assert number_total_constraints(m) == 105
-        assert number_unused_variables(m) == 7
+        assert number_total_constraints(m) == 684
+        assert number_unused_variables(m) == 35
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -391,7 +392,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
                     + perm_flow_mass_inlet
                     * b.permeate_side.properties[0, 1].enth_mass_phase["Liq"]
                     - perm_flow_mass_outlet
-                    * b.permeate_side.propertiest[0, 0].enth_mass_phase["Liq"]
+                    * b.permeate_side.properties[0, 0].enth_mass_phase["Liq"]
                 )
             )
             <= 1e-5
@@ -400,47 +401,59 @@ class TestOsmoticallyAssistedReverseOsmosis:
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert pytest.approx(6.712e-03, rel=1e-3) == value(
+        assert pytest.approx(6.376e-03, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "H2O"]
         )
-        assert pytest.approx(5.2729e-7, rel=1e-3) == value(
+        assert pytest.approx(5.415e-7, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp_avg[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.62939, rel=1e-3) == value(
+        assert pytest.approx(0.64622, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
         assert pytest.approx(0.03497, rel=1e-3) == value(
             m.fs.unit.feed_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
         assert pytest.approx(
-            value(m.fs.unit.feed_side.cp_modulus[0, 0.0, "NaCl"]), rel=1e-3
+            value(
+                m.fs.unit.feed_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
         ) == value(
-            m.fs.unit.feed_side.properties_interface[0, 0.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
+            m.fs.unit.feed_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
         ) / value(
-            m.fs.unit.feed_side.properties[0, 0].conc_mass_phase_comp["Liq", "NaCl"]
+            m.fs.unit.feed_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
         )
         assert pytest.approx(
-            value(m.fs.unit.feed_side.cp_modulus[0, 1.0, "NaCl"]), rel=1e-3
+            value(m.fs.unit.feed_side.cp_modulus[0, 1, "NaCl"]), rel=1e-3
         ) == value(
-            m.fs.unit.feed_side.properties_interface[0, 1.0].conc_mass_phase_comp[
+            m.fs.unit.feed_side.properties_interface[0, 1].conc_mass_phase_comp[
                 "Liq", "NaCl"
             ]
         ) / value(
-            m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp["Liq", "NaCl"]
+            m.fs.unit.feed_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
         )
 
         assert pytest.approx(
-            value(m.fs.unit.permeate_side.cp_modulus[0, 0.0, "NaCl"]), rel=1e-3
+            value(
+                m.fs.unit.permeate_side.cp_modulus[
+                    0, m.fs.unit.difference_elements.first(), "NaCl"
+                ]
+            ),
+            rel=1e-3,
         ) == value(
-            m.fs.unit.permeate_side.properties_interface[0, 0.0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
+            m.fs.unit.permeate_side.properties_interface[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
         ) / value(
-            m.fs.unit.permeate_side.properties_out[0].conc_mass_phase_comp[
-                "Liq", "NaCl"
-            ]
+            m.fs.unit.permeate_side.properties[
+                0, m.fs.unit.difference_elements.first()
+            ].conc_mass_phase_comp["Liq", "NaCl"]
         )
         assert pytest.approx(
             value(m.fs.unit.permeate_side.cp_modulus[0, 1.0, "NaCl"]), rel=1e-3
@@ -451,8 +464,10 @@ class TestOsmoticallyAssistedReverseOsmosis:
         ) / value(
             m.fs.unit.permeate_side.properties[0, 1].conc_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(0, abs=1e-3) == value(m.fs.unit.feed_side.deltaP[0])
-        assert pytest.approx(0, abs=1e-3) == value(m.fs.unit.permeate_side.deltaP[0])
+        assert pytest.approx(0, abs=1e-3) == value(m.fs.unit.feed_side.deltaP_stage[0])
+        assert pytest.approx(0, abs=1e-3) == value(
+            m.fs.unit.permeate_side.deltaP_stage[0]
+        )
 
     @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
@@ -522,7 +537,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.permeate_side.K[0, 1.0, "NaCl"].fix(kp)
 
         # test statistics
-        assert number_variables(m) == 146
+        assert number_variables(m) == 790
         assert number_total_constraints(m) == 111
         assert number_unused_variables(m) == 2
 
@@ -691,7 +706,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 174
+        assert number_variables(m) == 896
         assert number_total_constraints(m) == 138
         assert number_unused_variables(m) == 0
 
@@ -829,7 +844,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
 
         # test statistics
-        assert number_variables(m) == 186
+        assert number_variables(m) == 940
         assert number_total_constraints(m) == 152
         assert number_unused_variables(m) == 0
 
@@ -1004,7 +1019,7 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.permeate_side.dP_dx.fix(perm_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 176
+        assert number_variables(m) == 896
         assert number_total_constraints(m) == 140
         assert number_unused_variables(m) == 0
 
