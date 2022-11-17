@@ -11,7 +11,7 @@ users to model the chemical and physical properties of simple systems without th
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. doctest::
+.. testcode::
 
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
@@ -24,15 +24,13 @@ users to model the chemical and physical properties of simple systems without th
     # Import utility tool for calculating scaling factors
     import idaes.core.util.scaling as iscale
 
-
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
 
-
     # Build the state block and specify a time (0 = steady state).
-    m.fs.state_block = m.fs.properties.build_state_block([0], default={})
+    m.fs.state_block = m.fs.properties.build_state_block([0])
 
     # Fully specify the system.
     feed_flow_mass = 1
@@ -55,16 +53,33 @@ users to model the chemical and physical properties of simple systems without th
     m.fs.state_block[0].dens_mass_phase['Liq']
     m.fs.state_block[0].conc_mass_phase_comp['Liq', 'NaCl']
     m.fs.state_block[0].flow_vol_phase['Liq']
-    m.fs.state_block[0].molality_comp['NaCl']
+    m.fs.state_block[0].molality_phase_comp['Liq', 'NaCl']
     m.fs.state_block[0].visc_d_phase['Liq']
-    m.fs.state_block[0].diffus_phase['Liq']
+    m.fs.state_block[0].diffus_phase_comp['Liq', 'NaCl']
     m.fs.state_block[0].enth_mass_phase['Liq']
-    m.fs.state_block[0].pressure_osm
+    m.fs.state_block[0].pressure_osm_phase['Liq']
 
     # Create the solver object.
     solver = get_solver()
 
     # Solve the model and display the output.
-    results = solver.solve(m, tee=False)
-    #m.fs.state_block[0].display()
+    solver.solve(m, tee=False)
+    m.fs.state_block[0].display()
 
+A portion of the displayed output is shown below.
+
+.. testoutput::
+
+   Block fs.state_block[0]
+
+     Variables:
+       flow_mass_phase_comp : Mass flow rate
+           Size=2, Index=fs.state_block[0].flow_mass_phase_comp_index, Units=kg/s
+           Key             : Lower : Value : Upper : Fixed : Stale : Domain
+            ('Liq', 'H2O') :   0.0 : 0.965 :  None :  True :  True : NonNegativeReals
+           ('Liq', 'NaCl') :   0.0 : 0.035 :  None :  True :  True : NonNegativeReals
+       temperature : State temperature
+           Size=1, Index=None, Units=K
+           Key  : Lower  : Value  : Upper  : Fixed : Stale : Domain
+           None : 273.15 : 298.15 : 373.15 :  True :  True : NonNegativeReals
+       ...

@@ -80,93 +80,58 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={
-            "solute_list": [
-                "cod",
-                "nonbiodegradable_cod",
-                "ammonium_as_nitrogen",
-                "phosphates",
-            ]
-        }
+        solute_list=[
+            "cod",
+            "nonbiodegradable_cod",
+            "ammonium_as_nitrogen",
+            "phosphates",
+        ]
     )
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.mbr_mec = AnaerobicMBRMECZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
-    m.fs.vfa_recovery = VFARecoveryZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
+    m.fs.mbr_mec = AnaerobicMBRMECZO(property_package=m.fs.prop, database=m.db)
+    m.fs.vfa_recovery = VFARecoveryZO(property_package=m.fs.prop, database=m.db)
     m.fs.gas_sparged_membrane = GasSpargedMembraneZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
     m.fs.ion_exchange = IonExchangeZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "clinoptilolite",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="clinoptilolite"
     )
     m.fs.sedimentation = SedimentationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "phosphorus_capture",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="phosphorus_capture"
     )
-    m.fs.food_waste = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.food_waste = FeedZO(property_package=m.fs.prop)
 
-    m.fs.cofermentation = CofermentationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
-    )
+    m.fs.cofermentation = CofermentationZO(property_package=m.fs.prop, database=m.db)
     m.fs.constructed_wetlands = ConstructedWetlandsZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-        },
+        property_package=m.fs.prop, database=m.db
     )
     m.fs.mixer_to_vfa_recovery = Mixer(
-        default={
-            "property_package": m.fs.prop,
-            "inlet_list": ["inlet1", "inlet2"],
-            "momentum_mixing_type": MomentumMixingType.none,
-            "energy_mixing_type": MixingType.none,
-        },
+        property_package=m.fs.prop,
+        inlet_list=["inlet1", "inlet2"],
+        momentum_mixing_type=MomentumMixingType.none,
+        energy_mixing_type=MixingType.none,
     )
 
     m.fs.mixer_to_cofermentation = Mixer(
-        default={
-            "property_package": m.fs.prop,
-            "inlet_list": ["inlet1", "inlet2"],
-            "momentum_mixing_type": MomentumMixingType.none,
-            "energy_mixing_type": MixingType.none,
-        },
+        property_package=m.fs.prop,
+        inlet_list=["inlet1", "inlet2"],
+        momentum_mixing_type=MomentumMixingType.none,
+        energy_mixing_type=MixingType.none,
     )
 
-    m.fs.product_water = Product(default={"property_package": m.fs.prop})
-    m.fs.product_phosphate = Product(default={"property_package": m.fs.prop})
-    m.fs.product_ammonia = Product(default={"property_package": m.fs.prop})
-    m.fs.product_vfa = Product(default={"property_package": m.fs.prop})
-    m.fs.waste_vfa = Product(default={"property_package": m.fs.prop})
+    m.fs.product_water = Product(property_package=m.fs.prop)
+    m.fs.product_phosphate = Product(property_package=m.fs.prop)
+    m.fs.product_ammonia = Product(property_package=m.fs.prop)
+    m.fs.product_vfa = Product(property_package=m.fs.prop)
+    m.fs.waste_vfa = Product(property_package=m.fs.prop)
     # TODO: because of gas-sparged membrane formulation, H2 gas flow is a unit variable
     #  instead of a mass flow via property model; hence, gas flow exiting the unit is
     #  not connected to a port or state block
-    # m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
+    # m.fs.product_hydrogen = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.mbr_mec.inlet)
@@ -320,13 +285,13 @@ def add_costing(m):
         "swine_wwt_global_costing.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     m.fs.watertap_costing = WaterTAPCosting()
     # typing aid
     m.fs.mixer_to_vfa_recovery.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.watertap_costing}
+        flowsheet_costing_block=m.fs.watertap_costing
     )
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
 
     # NOTE: costing not applied directly to gas-sparged membrane unit;
     # accounted for in mbr_mec for now
@@ -748,15 +713,13 @@ def display_metrics_results(m):
         )
     )
     print(f"Levelized Cost of COD Removal: {LCOCOD_no_revenue:.2f} $/kg")
-    LCOT_no_revenue = value(
+    LCOT = value(
         pyunits.convert(
-            costing.levelized_costs.LCOT_no_revenue,
+            costing.levelized_costs.LCOT,
             to_units=m.fs.costing.base_currency / pyunits.m**3,
         )
     )
-    print(
-        f"Levelized Cost of Treatment with Revenue: {LCOT_no_revenue:.2f} $/m3 of feed"
-    )
+    print(f"Levelized Cost of Treatment with Revenue: {LCOT:.2f} $/m3 of feed")
     LCOW = value(
         pyunits.convert(
             costing.levelized_costs.LCOW,
@@ -804,14 +767,13 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.mbr_mec.costing.capital_cost
-                + m.fs.vfa_recovery.costing.capital_cost
-                + m.fs.ion_exchange.costing.capital_cost
-                + m.fs.sedimentation.costing.capital_cost
-                + m.fs.cofermentation.costing.capital_cost
-                + m.fs.constructed_wetlands.costing.capital_cost
+                m.fs.mbr_mec.costing.direct_capital_cost
+                + m.fs.vfa_recovery.costing.direct_capital_cost
+                + m.fs.ion_exchange.costing.direct_capital_cost
+                + m.fs.sedimentation.costing.direct_capital_cost
+                + m.fs.cofermentation.costing.direct_capital_cost
+                + m.fs.constructed_wetlands.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )
@@ -1038,6 +1000,7 @@ def display_additional_results(m):
             + costing.annual_costs_revenues.annual_ammonia_revenue
             + costing.annual_costs_revenues.annual_phosphorus_revenue
             + costing.annual_costs_revenues.annual_vfa_revenue
+            + costing.annual_costs_revenues.annual_food_waste_revenue
         )
     )
     print(f"Total revenue: {total_revenue:.2f} $/year")

@@ -32,9 +32,9 @@ import watertap.examples.flowsheets.full_treatment_train.model_components.seawat
 def test_property_seawater_ions():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = property_seawater_ions.PropParameterBlock()
-    m.fs.stream = m.fs.properties.build_state_block([0], default={})
+    m.fs.stream = m.fs.properties.build_state_block([0])
 
     # specify
     feed_flow_mass = 1

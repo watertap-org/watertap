@@ -15,7 +15,7 @@ This module contains a zero-order representation of a clarifier unit
 operation.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
@@ -39,3 +39,35 @@ class ClarifierZOData(ZeroOrderBaseData):
 
         build_sido(self)
         constant_intensity(self)
+
+        if (
+            self.config.process_subtype == "default"
+            or self.config.process_subtype is None
+        ):
+            constant_intensity(self)
+        else:
+
+            self.ferric_chloride_dose = Var(
+                self.flowsheet().time,
+                units=pyunits.mg / pyunits.L,
+                bounds=(0, None),
+                doc="Dosing rate of ferric chloride",
+            )
+            self._fixed_perf_vars.append(self.ferric_chloride_dose)
+
+            self.ferric_chloride_demand = Var(
+                self.flowsheet().time,
+                units=pyunits.kg / pyunits.hr,
+                bounds=(0, None),
+                doc="Consumption rate of ferric chloride",
+            )
+            self._perf_var_dict["Ferric Chloride Demand"] = self.ferric_chloride_demand
+
+            @self.Constraint(
+                self.flowsheet().time, doc="ferric chloride demand constraint"
+            )
+            def ferric_chloride_demand_equation(b, t):
+                return b.ferric_chloride_demand[t] == pyunits.convert(
+                    b.ferric_chloride_dose[t] * b.properties_in[t].flow_vol,
+                    to_units=pyunits.kg / pyunits.hr,
+                )

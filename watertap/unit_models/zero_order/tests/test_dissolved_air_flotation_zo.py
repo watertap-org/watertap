@@ -46,14 +46,10 @@ class TestAirDissolvedFloatationZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["bod", "oil_and_grease", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["bod", "oil_and_grease", "tss"])
 
-        m.fs.unit = DissolvedAirFlotationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = DissolvedAirFlotationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(1)
@@ -180,14 +176,12 @@ class TestDissolvedAirFlotationZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["bod", "oil_and_grease", "tss", "foo"]}
+            solute_list=["bod", "oil_and_grease", "tss", "foo"]
         )
 
-        m.fs.unit = DissolvedAirFlotationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = DissolvedAirFlotationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(1)
@@ -297,7 +291,7 @@ class TestDissolvedAirFlotationZO_w_default_removal:
         assert pytest.approx(199.958, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
         )
-        assert pytest.approx(1.68386e-7, rel=1e-5) == value(
+        assert pytest.approx(8.9552446e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
         )
         assert pytest.approx(2.88, abs=1e-5) == value(model.fs.unit.electricity[0])
@@ -312,15 +306,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = DissolvedAirFlotationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = DissolvedAirFlotationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -329,9 +321,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.dissolved_air_flotation, Block)
     assert isinstance(m.fs.costing.dissolved_air_flotation.capital_a_parameter, Var)

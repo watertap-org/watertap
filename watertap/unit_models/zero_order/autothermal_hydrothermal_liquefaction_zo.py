@@ -14,10 +14,9 @@
 This module contains a zero-order representation of an autothermal hydrothermal liquefaction unit.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
-
-from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
+from watertap.core import build_sido_reactive, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -76,7 +75,7 @@ class ATHTLZOData(ZeroOrderBaseData):
 
         @self.Constraint(
             self.flowsheet().time,
-            doc="Constraint for electricity consumption based on inlet flowrate.",
+            doc="Constraint for electricity consumption based on inlet flow rate.",
         )
         def electricity_consumption(b, t):
             return b.electricity[t] == pyunits.convert(
@@ -95,3 +94,21 @@ class ATHTLZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.catalyst_dosage)
 
         self._perf_var_dict["Dosage of catalyst per inlet flow"] = self.catalyst_dosage
+
+        self.catalyst_flow = Var(
+            self.flowsheet().time,
+            units=pyunits.pound / pyunits.hr,
+            bounds=(0, None),
+            doc="Catalyst flow",
+        )
+        self._perf_var_dict["Catalyst flow"] = self.catalyst_flow
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for catalyst flow based on inlet flow rate.",
+        )
+        def eq_catalyst_flow(b, t):
+            return b.catalyst_flow[t] == pyunits.convert(
+                b.catalyst_dosage * b.flow_mass_in[t],
+                to_units=pyunits.pound / pyunits.hr,
+            )

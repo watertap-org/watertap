@@ -45,21 +45,17 @@ class TestCANDOPZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "nitrogen",
-                    "phosphates",
-                    "bioconcentrated_phosphorous",
-                    "nitrous_oxide",
-                ]
-            }
+            solute_list=[
+                "nitrogen",
+                "phosphates",
+                "bioconcentrated_phosphorous",
+                "nitrous_oxide",
+            ]
         )
 
-        m.fs.unit = CANDOPZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = CANDOPZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -210,19 +206,17 @@ class TestCANDOPZO:
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "nitrogen",
-                "phosphates",
-                "bioconcentrated_phosphorous",
-                "nitrous_oxide",
-            ]
-        }
+        solute_list=[
+            "nitrogen",
+            "phosphates",
+            "bioconcentrated_phosphorous",
+            "nitrous_oxide",
+        ]
     )
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = CANDOPZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = CANDOPZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -233,9 +227,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.CANDO_P, Block)
     assert isinstance(m.fs.costing.CANDO_P.sizing_parameter, Var)
@@ -248,6 +240,6 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(42.651167, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(70.3744, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

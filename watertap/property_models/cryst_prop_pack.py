@@ -29,7 +29,6 @@ from pyomo.environ import (
     Param,
     exp,
     log,
-    Suffix,
     value,
     check_optimal_termination,
 )
@@ -46,12 +45,11 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Solute, Solvent
 from idaes.core.base.phases import (
     LiquidPhase,
     VaporPhase,
     SolidPhase,
-    Phase,
     PhaseType as PT,
 )
 from idaes.core.util.constants import Constants
@@ -60,7 +58,7 @@ from idaes.core.util.initialization import (
     revert_state_vars,
     solve_indexed_blocks,
 )
-from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.misc import extract_data
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -116,17 +114,13 @@ class NaClParameterData(PhysicalParameterBlock):
         self._state_block_class = NaClStateBlock
 
         # Component
-        self.H2O = Solvent(
-            default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]}
-        )
-        self.NaCl = Solute(
-            default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]}
-        )
+        self.H2O = Solvent(valid_phase_types=[PT.liquidPhase, PT.vaporPhase])
+        self.NaCl = Solute(valid_phase_types=[PT.liquidPhase, PT.solidPhase])
 
         # Phases
-        self.Liq = LiquidPhase(default={"component_list": ["H2O", "NaCl"]})
-        self.Vap = VaporPhase(default={"component_list": ["H2O"]})
-        self.Sol = SolidPhase(default={"component_list": ["NaCl"]})
+        self.Liq = LiquidPhase(component_list=["H2O", "NaCl"])
+        self.Vap = VaporPhase(component_list=["H2O"])
+        self.Sol = SolidPhase(component_list=["NaCl"])
 
         """
        References

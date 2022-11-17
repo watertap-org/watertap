@@ -46,22 +46,20 @@ class TestMBRZOdefault:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "tss",
-                    "nonvolatile_toc",
-                    "toc",
-                    "eeq",
-                    "viruses_enteric",
-                    "total_coliforms_fecal_ecoli",
-                    "cryptosporidium",
-                ]
-            }
+            solute_list=[
+                "tss",
+                "nonvolatile_toc",
+                "toc",
+                "eeq",
+                "viruses_enteric",
+                "total_coliforms_fecal_ecoli",
+                "cryptosporidium",
+            ]
         )
 
-        m.fs.unit = MBRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = MBRZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -240,23 +238,21 @@ class TestMBRZO_w_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "tss",
-                    "nonvolatile_toc",
-                    "toc",
-                    "eeq",
-                    "viruses_enteric",
-                    "total_coliforms_fecal_ecoli",
-                    "cryptosporidium",
-                    "foo",
-                ]
-            }
+            solute_list=[
+                "tss",
+                "nonvolatile_toc",
+                "toc",
+                "eeq",
+                "viruses_enteric",
+                "total_coliforms_fecal_ecoli",
+                "cryptosporidium",
+                "foo",
+            ]
         )
 
-        m.fs.unit = MBRZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = MBRZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
@@ -451,22 +447,20 @@ class TestMBRZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "tss",
-                    "nonvolatile_toc",
-                    "toc",
-                    "eeq",
-                    "viruses_enteric",
-                    "total_coliforms_fecal_ecoli",
-                    "cryptosporidium",
-                ]
-            }
+            solute_list=[
+                "tss",
+                "nonvolatile_toc",
+                "toc",
+                "eeq",
+                "viruses_enteric",
+                "total_coliforms_fecal_ecoli",
+                "cryptosporidium",
+            ]
         )
 
-        m.fs.unit = MBRZO(default={"property_package": m.fs.params, "database": db})
+        m.fs.unit = MBRZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -500,18 +494,14 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tds"]})
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tds"])
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = MBRZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -521,9 +511,7 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.mbr, Block)
     assert isinstance(m.fs.costing.mbr.capital_a_parameter, Var)

@@ -39,14 +39,10 @@ class TestLandfillZOdefault:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
-        m.fs.unit = LandfillZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = LandfillZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(10)
@@ -118,14 +114,10 @@ class TestLandfillZOsubtype:
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
-        m.fs.unit = LandfillZO(
-            default={"property_package": m.fs.params, "database": db}
-        )
+        m.fs.unit = LandfillZO(property_package=m.fs.params, database=db)
 
         return m
 
@@ -156,15 +148,11 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = LandfillZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
@@ -174,9 +162,7 @@ def test_costing(subtype):
 
     m.fs.unit.load_parameters_from_database()
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.landfill, Block)
     assert isinstance(m.fs.costing.landfill.capital_a_parameter, Var)

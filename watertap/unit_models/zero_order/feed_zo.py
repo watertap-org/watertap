@@ -29,6 +29,8 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
+from watertap.core import InitializationMixin
+
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
@@ -37,7 +39,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("FeedZO")
-class FeedZOData(FeedData):
+class FeedZOData(InitializationMixin, FeedData):
     """
     Zero-Order feed block.
     """
@@ -71,7 +73,9 @@ class FeedZOData(FeedData):
                 for j in self.properties[t].component_list
             )
 
-        self.flow_vol_constraint = Constraint(self.flowsheet().time, rule=rule_Q)
+        self.flow_vol_constraint = Constraint(
+            self.flowsheet().time, rule=rule_Q, doc="Volumetric flowrate of the feed"
+        )
 
         def rule_C(blk, t, j):
             return (
@@ -84,7 +88,10 @@ class FeedZOData(FeedData):
             )
 
         self.conc_mass_constraint = Constraint(
-            self.flowsheet().time, comp_list, rule=rule_C
+            self.flowsheet().time,
+            comp_list,
+            rule=rule_C,
+            doc="Component mass concentrations",
         )
 
     def load_feed_data_from_database(self, overwrite=False):
@@ -143,7 +150,7 @@ class FeedZOData(FeedData):
                 value(self.flow_vol[t] * 1000)
             )
 
-    def initialize(
+    def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """

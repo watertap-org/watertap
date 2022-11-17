@@ -24,7 +24,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -48,20 +47,12 @@ class TestSaltPrecipitationZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "organic_solid",
-                    "organic_liquid",
-                    "inorganic_solid",
-                ]
-            }
+            solute_list=["organic_solid", "organic_liquid", "inorganic_solid"]
         )
 
-        m.fs.unit = SaltPrecipitationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = SaltPrecipitationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
         m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(7.1)
@@ -187,16 +178,10 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "organic_solid",
-                "organic_liquid",
-                "inorganic_solid",
-            ]
-        }
+        solute_list=["organic_solid", "organic_liquid", "inorganic_solid"]
     )
 
     source_file = os.path.join(
@@ -212,11 +197,9 @@ def test_costing():
         "supercritical_sludge_to_gas_global_costing.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit = SaltPrecipitationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit = SaltPrecipitationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(400)
     m.fs.unit.inlet.flow_mass_comp[0, "organic_solid"].fix(7.1)
@@ -225,9 +208,7 @@ def test_costing():
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.supercritical_salt_precipitation, Block)
     assert isinstance(

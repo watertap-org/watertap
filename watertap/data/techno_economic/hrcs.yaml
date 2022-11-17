@@ -1,0 +1,50 @@
+default:
+  energy_electric_flow_vol_inlet:  # Aeration energy
+    value: 0.07
+    units: kWh/m^3
+  capital_cost:
+    basis: flow_vol
+    cost_factor: TIC
+    SRT: # Solids retention time
+      value: 2.3
+      units: hr
+    sizing_cost:
+      value: 34.35
+      units: USD_2020/m^3
+  ferric_chloride_dose:
+    value: 0.00999352
+    units: kg/m^3
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_comp:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_comp:
+    tss:
+      value: 0
+      units: dimensionless
+      constituent_longform: Total Suspended Solids
+    oxygen:
+      value: 1              # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Oxygen
+    cod:
+      value: 0              # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+    carbon_dioxide:
+      value: 1              # Reactive removal is handled in reaction
+      units: dimensionless
+      constituent_longform: Carbon Dioxide
+  reactions:
+    oxidation:
+      key_reactant: cod
+      conversion: 0.21
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        oxygen:
+          conversion_ratio: -1
+        carbon_dioxide:
+          conversion_ratio: 1

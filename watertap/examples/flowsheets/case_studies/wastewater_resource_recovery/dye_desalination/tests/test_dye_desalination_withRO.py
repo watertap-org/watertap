@@ -15,7 +15,7 @@ from pyomo.environ import (
     value,
     assert_optimal_termination,
 )
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_withRO import (
@@ -109,7 +109,7 @@ class TestDyewithROFlowsheet:
             m.fs.dye_retentate.flow_mass_comp[0, "H2O"]
         )
 
-        assert pytest.approx(11.9714, rel=1e-5) == value(
+        assert pytest.approx(11.9716, rel=1e-5) == value(
             m.fs.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
         )
 
@@ -128,8 +128,8 @@ class TestDyewithROFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert pytest.approx(0.652394, rel=1e-3) == value(m.LCOW)
-        assert pytest.approx(0.269625, rel=1e-3) == value(m.LCOT)
+        assert pytest.approx(0.653284, rel=1e-3) == value(m.fs.LCOW)
+        assert pytest.approx(0.270094, rel=1e-3) == value(m.fs.LCOT)
 
     @pytest.mark.component
     def test_display(self, system_frame):

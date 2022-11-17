@@ -46,20 +46,18 @@ class TestUVAOPZO_with_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "tss",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "tss",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
-        m.fs.unit = UVAOPZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = UVAOPZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -171,24 +169,20 @@ class TestUVAOPZO_subtype_no_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
         m.fs.unit = UVAOPZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "hydrogen_peroxide",
-            }
+            property_package=m.fs.params,
+            database=m.db,
+            process_subtype="hydrogen_peroxide",
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -305,15 +299,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["viruses_enteric", "toc", "cryptosporidium"]}
+        solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit = UVAOPZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = UVAOPZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -323,9 +317,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.unit.chemical_flow_mass, Var)
     assert isinstance(m.fs.costing.uv_aop, Block)

@@ -50,6 +50,7 @@ Properties
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
    "Diffusivity", ":math:`D`", "diffus_phase", "[p]", ":math:`\text{m}^2\text{/s}`"
+   "Boiling point elevation", ":math:`BPE`", "boiling_point_elevation_phase", "[p]", ":math:`\text{K}`"
 
 
 **The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
@@ -84,6 +85,7 @@ Relationships
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
    "Diffusivity", "Equation 6 in Bartholomew et al. (2019)"
+   "Boiling point elevation", "Equation 36 in Sharqawy et al. (2010)"
 
 
 
@@ -108,7 +110,7 @@ The user can specify the scaling factors for component mass flowrates with the f
 
    # relevant assignments
    m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs = FlowsheetBlock(dynamic=False)
    m.fs.properties = props.SeawaterParameterBlock()
 
    # set scaling for component mass flowrate
@@ -131,6 +133,7 @@ The default scaling factors are as follows:
    * 1 for thermal conductivity
    * 1e-6 for latent heat of vaporization
    * 1e9 for diffusivity
+   * 1 for boiling point elevation
 
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    

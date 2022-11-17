@@ -71,9 +71,7 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
     if hasattr(m.fs, "NF"):
         if kwargs["NF_type"] == "ZO":
             m.fs.NF.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                }
+                flowsheet_costing_block=m.fs.costing
             )
         elif kwargs["NF_type"] == "Sep":
             raise NotImplementedError(
@@ -81,19 +79,15 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
             )
     if hasattr(m.fs, "pump_NF"):
         m.fs.pump_NF.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"pump_type": PumpType.low_pressure},
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.low_pressure},
         )
 
     # Reverse Osmosis
     if hasattr(m.fs, "RO"):
         if kwargs["RO_type"] == "0D" or kwargs["RO_type"] == "1D":
             m.fs.RO.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                }
+                flowsheet_costing_block=m.fs.costing
             )
         elif kwargs["RO_type"] == "Sep":
             raise NotImplementedError(
@@ -103,72 +97,58 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
     # Stage 2 RO
     if hasattr(m.fs, "RO2"):
         m.fs.RO2.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"ro_type": ROType.high_pressure},
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"ro_type": ROType.high_pressure},
         )
 
     # Pump
     if hasattr(m.fs, "pump_RO"):
         m.fs.pump_RO.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"pump_type": PumpType.high_pressure},
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.high_pressure},
         )
 
     # Stage 2 pump
     if hasattr(m.fs, "pump_RO2"):
         m.fs.pump_RO2.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"pump_type": PumpType.high_pressure},
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"pump_type": PumpType.high_pressure},
         )
 
     # ERD
     if hasattr(m.fs, "ERD"):
         m.fs.ERD.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
-                },
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
+            },
         )
 
     # Pretreatment
     if hasattr(m.fs, "stoich_softening_mixer_unit"):
         m.fs.stoich_softening_mixer_unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "mixer_type": MixerType.CaOH2,
-                    "dosing_rate": m.fs.stoich_softening_mixer_unit.dosing_rate,
-                },
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "mixer_type": MixerType.CaOH2,
+                "dosing_rate": m.fs.stoich_softening_mixer_unit.dosing_rate,
+            },
         )
 
     # Post-treatment
     if hasattr(m.fs, "ideal_naocl_mixer_unit"):
         # print('FOUND CHLORINATION UNIT')
         m.fs.ideal_naocl_mixer_unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "mixer_type": MixerType.NaOCl,
-                    "dosing_rate": m.fs.ideal_naocl_mixer_unit.dosing_rate,
-                },
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "mixer_type": MixerType.NaOCl,
+                "dosing_rate": m.fs.ideal_naocl_mixer_unit.dosing_rate,
+            },
         )
 
     if hasattr(m.fs, "mixer_permeate"):
         m.fs.mixer_permeate.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"mixer_type": MixerType.default},
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"mixer_type": MixerType.default},
         )
 
     # call get_system_costing for whole flowsheet

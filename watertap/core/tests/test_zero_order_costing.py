@@ -313,11 +313,9 @@ class TestWorkflow:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]}
-        )
+        m.fs.params = WaterParameterBlock(solute_list=["sulfur", "toc", "tss"])
 
         m.fs.costing = ZeroOrderCosting()
 
@@ -326,7 +324,7 @@ class TestWorkflow:
     @pytest.mark.component
     def test_nf_costing(self, model):
         model.fs.unit1 = NanofiltrationZO(
-            default={"property_package": model.fs.params, "database": model.db}
+            property_package=model.fs.params, database=model.db
         )
 
         model.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
@@ -337,7 +335,7 @@ class TestWorkflow:
         assert degrees_of_freedom(model.fs.unit1) == 0
 
         model.fs.unit1.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
 
         assert isinstance(model.fs.costing.nanofiltration, Block)
@@ -359,11 +357,7 @@ class TestWorkflow:
     @pytest.mark.component
     def test_chem_addition_costing(self, model):
         model.fs.unit2 = ChemicalAdditionZO(
-            default={
-                "property_package": model.fs.params,
-                "process_subtype": "alum",
-                "database": model.db,
-            }
+            property_package=model.fs.params, process_subtype="alum", database=model.db
         )
 
         model.fs.unit2.inlet.flow_mass_comp[0, "H2O"].fix(1000)
@@ -374,10 +368,8 @@ class TestWorkflow:
         assert degrees_of_freedom(model.fs.unit2) == 0
 
         model.fs.unit2.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": model.fs.costing,
-                "costing_method_arguments": {"number_of_parallel_units": 2},
-            }
+            flowsheet_costing_block=model.fs.costing,
+            costing_method_arguments={"number_of_parallel_units": 2},
         )
 
         assert isinstance(model.fs.costing.chemical_addition, Block)

@@ -15,7 +15,7 @@ This module contains a zero-order representation of seawater onshore intake unit
 operation.
 """
 
-from pyomo.environ import Reference, units as pyunits
+from pyomo.environ import Reference
 from idaes.core import declare_process_block_class
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
 

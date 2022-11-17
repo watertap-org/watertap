@@ -17,7 +17,6 @@ from idaes.core import declare_process_block_class
 
 from watertap.core import pump_electricity, ZeroOrderBaseData
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.environ import NonNegativeReals, Var, units as pyunits, Reference
 from watertap.core.zero_order_sido import initialize_sido
@@ -75,7 +74,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         tmp_dict["defined_state"] = True
 
         self.properties_in = self.config.property_package.build_state_block(
-            self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+            self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
         )
 
         tmp_dict_2 = dict(**tmp_dict)
@@ -84,12 +83,12 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self.properties_treated = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of treated water",
-            default=tmp_dict_2,
+            **tmp_dict_2
         )
         self.properties_byproduct = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of byproduct stream",
-            default=tmp_dict_2,
+            **tmp_dict_2
         )
 
         # Create Ports

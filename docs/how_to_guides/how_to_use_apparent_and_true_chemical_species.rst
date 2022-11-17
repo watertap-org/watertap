@@ -38,7 +38,7 @@ an ``"Apparent"`` species.
    idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
    idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
 
-.. doctest::
+.. testcode::
 
   from pyomo.environ import units as pyunits
   from idaes.core import AqueousPhase
@@ -68,6 +68,7 @@ an ``"Apparent"`` species.
                       "mw": (18.0153, pyunits.g/pyunits.mol),
                       # Parameters here come from Perry's Handbook:  p. 2-98
                       "dens_mol_liq_comp_coeff": {
+                          'eqn_type': 1,
                           '1': (5.459, pyunits.kmol*pyunits.m**-3),
                           '2': (0.30542, pyunits.dimensionless),
                           '3': (647.13, pyunits.K),
