@@ -95,16 +95,6 @@ class OsmoticallyAssistedReverseOsmosisData(OsmoticallyAssistedReverseOsmosisBas
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # not in 1DRO
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Enthalpy transfer from feed to permeate"
-        )
-        def eq_connect_enthalpy_transfer(b, t):
-            return (
-                b.permeate_side.enthalpy_transfer[t]
-                == -b.feed_side.enthalpy_transfer[t]
-            )
-
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):
             return value(

@@ -18,6 +18,7 @@ from pyomo.environ import (
     Param,
     Suffix,
     Var,
+    Constraint,
     check_optimal_termination,
     exp,
     units as pyunits,
@@ -105,10 +106,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.feed_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
@@ -117,6 +114,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Add constraint for equal temperature between bulk and interface
         self.feed_side.add_interface_isothermal_conditions()
+
+        # Add constraint for equal temperature between inlet and outlet
+        self.feed_side.add_control_volume_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
@@ -146,10 +146,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.permeate_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.permeate_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
@@ -158,6 +154,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Add constraint for equal temperature between bulk and interface
         self.permeate_side.add_interface_isothermal_conditions()
+
+        # NOTE: We do *not* add a constraint for equal temperature
+        #       between inlet and outlet, that is handled by
+        #       eq_permeate_isothermal below and checks in initialization
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.permeate_side.add_extensive_flow_to_interface()
@@ -191,12 +191,20 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         # Feed and permeate-side isothermal conditions
         @self.Constraint(
             self.flowsheet().config.time,
+            self.length_domain,
             doc="Isothermal assumption for permeate",
         )
-        def eq_permeate_isothermal(b, t):
+        def eq_permeate_isothermal(b, t, x):
+            if x == self.length_domain.last():
+                return Constraint.Skip
             return (
-                b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature
-                == b.permeate_side.properties[
+                b.permeate_side.properties_out[t].temperature
+                == 0.5
+                * b.feed_side.properties[
+                    t, b.feed_side.length_domain.first()
+                ].temperature
+                + 0.5
+                * b.permeate_side.properties[
                     t, b.permeate_side.length_domain.last()
                 ].temperature
             )
@@ -483,6 +491,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_isothermal_violation=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -528,15 +537,17 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                 value(self.feed_inlet.temperature[t]),
                 value(self.permeate_inlet.temperature[t]),
             ):
-                init_log.warning(
-                    f"Feed temperatures are different at time {t}, but OARO makes isothermal assumption"
-                )
+                msg = f"Feed temperatures are different at time {t}, but OARO makes isothermal assumption"
+
+                if raise_on_isothermal_violation:
+                    raise InitializationError(msg)
+                else:
+                    init_log.warning(msg)
+
             # set them equal
             self.permeate_inlet.temperature[t].set_value(
                 value(self.feed_inlet.temperature[t])
             )
-
-        self.eq_permeate_isothermal.deactivate()
 
         feed_flags = self.feed_side.initialize(
             state_args=state_args_feed,
@@ -583,7 +594,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         # release inlet state, in case this error is caught
         self.permeate_side.release_state(permeate_flags, outlvl)
         self.feed_side.release_state(feed_flags, outlvl)
-        self.eq_permeate_isothermal.activate()
 
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
