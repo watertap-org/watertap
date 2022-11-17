@@ -316,24 +316,3 @@ see reaction package for documentation.}""",
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, year=None, module=costing, **kwargs):  # TODO-DEPR: remove
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year, module=module)
-
-        self.costing = Block()
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.length = Var(initialize=1, units=units_meta("length"), doc="vessel length")
-        self.diameter = Var(
-            initialize=1, units=units_meta("length"), doc="vessel diameter"
-        )
-        time = self.flowsheet().time.first()
-        self.volume_eq = Constraint(
-            expr=self.volume[time] == self.length * self.diameter
-        )
-        module.cstr_costing(self.costing, **kwargs)
