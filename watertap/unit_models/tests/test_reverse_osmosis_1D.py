@@ -12,7 +12,6 @@
 ###############################################################################
 
 import pytest
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     value,
