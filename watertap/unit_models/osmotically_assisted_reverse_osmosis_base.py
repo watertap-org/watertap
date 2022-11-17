@@ -198,7 +198,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             if x == self.length_domain.last():
                 return Constraint.Skip
             return (
-                b.permeate_side.properties_out[t].temperature
+                b.permeate_side.properties[t, x].temperature
                 == 0.5
                 * b.feed_side.properties[
                     t, b.feed_side.length_domain.first()
@@ -226,12 +226,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             return (
                 b.recovery_vol_phase[t, "Liq"]
                 == (
-                    b.permeate_side.properties_out[t].flow_vol_phase["Liq"]
-                    - b.permeate_side.properties_in[t].flow_vol_phase["Liq"]
+                    b.permeate_side.properties[t, b.first_element].flow_vol_phase["Liq"]
+                    - b.permeate_side.properties[
+                        t, b.permeate_side.length_domain.last()
+                    ].flow_vol_phase["Liq"]
                 )
-                / b.feed_side.properties[
-                    t, self.feed_side.first_element
-                ].flow_vol_phase["Liq"]
+                / b.feed_side.properties[t, b.first_element].flow_vol_phase["Liq"]
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -267,9 +267,15 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         def eq_recovery_mass_phase_comp(b, t, j):
             return (
                 b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", j]
-                == b.permeate_side.properties_out[t].flow_mass_phase_comp["Liq", j]
-                - b.permeate_side.properties_in[t].flow_mass_phase_comp["Liq", j]
+                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", j
+                ]
+                == b.permeate_side.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", j
+                ]
+                - b.permeate_side.properties[
+                    t, b.permeate_side.length_domain.last()
+                ].flow_mass_phase_comp["Liq", j]
             )
 
         # rejection
@@ -279,8 +285,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         @self.Constraint(self.flowsheet().config.time, solute_set)
         def eq_rejection_phase_comp(b, t, j):
             return b.rejection_phase_comp[t, "Liq", j] == 1 - (
-                b.permeate_side.properties_out[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties_in[t].conc_mass_phase_comp["Liq", j]
+                b.permeate_side.properties[t, b.first_element].conc_mass_phase_comp[
+                    "Liq", j
+                ]
+                / b.feed_side.properties[t, b.first_element].conc_mass_phase_comp[
+                    "Liq", j
+                ]
             )
 
         self._add_flux_balance()
@@ -781,7 +791,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(
-                self.feed_side.properties_in[0].dens_mass_phase["Liq"]
+                self.feed_side.properties[0, self.first_element].dens_mass_phase["Liq"]
             )
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
