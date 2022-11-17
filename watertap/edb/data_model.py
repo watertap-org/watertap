@@ -214,6 +214,11 @@ class ConfigGenerator:
                 params[param_key] = (item["v"], built_units)
                 if debugging:
                     _log.debug(f"done: transform single parameter key={param_key}")
+        # we use pop() so that `parameter_data_extra` doesn't end up in the final dict
+        # since it's not an allowed config field
+        extra = comp.pop("parameter_data_extra", {})
+        for param_key, update_for_param in extra.items():
+            params[param_key].update(update_for_param)
 
     @staticmethod
     def _iterate_dict_or_list(value):
