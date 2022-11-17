@@ -287,6 +287,16 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
+            doc="Isothermal assumption for absorbed contaminant",
+        )
+        def eq_isothermal_adsorbed_contam(b, t):
+            return (
+                b.process_flow.properties_in[t].temperature
+                == b.adsorbed_contam[t].temperature
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
             doc="Isobaric assumption for absorbed contaminant",
         )
         def eq_isobaric_adsorbed_contam(b, t):

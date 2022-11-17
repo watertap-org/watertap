@@ -151,8 +151,8 @@ class TestGACSimplified:
 
         # test statistics
         assert number_variables(ms) == 77
-        assert number_total_constraints(ms) == 43
-        assert number_unused_variables(ms) == 11  # dens parameters from properties
+        assert number_total_constraints(ms) == 44
+        assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
     def test_dof_simplified(self, gac_frame_simplified):
@@ -318,8 +318,8 @@ class TestGACRobust:
 
         # test statistics
         assert number_variables(mr) == 88
-        assert number_total_constraints(mr) == 52
-        assert number_unused_variables(mr) == 11  # dens parameters from properties
+        assert number_total_constraints(mr) == 53
+        assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
     def test_dof_robust(self, gac_frame_robust):
