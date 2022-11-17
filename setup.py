@@ -130,6 +130,7 @@ setup(
             "pytest",  # test framework
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
+            "nbmake",
         ],
     },
     package_data={  # Optional
