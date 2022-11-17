@@ -735,11 +735,6 @@ class MembraneChannelMixin:
             initialize_guess["solvent_recovery"] = 0.5
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.01
-        if "cp_modulus" not in initialize_guess:
-            if hasattr(self, "cp_modulus"):
-                initialize_guess["cp_modulus"] = 1.1
-            else:
-                initialize_guess["cp_modulus"] = 1
 
         # Get source block
         # TODO: need to re-visit for counterflow
@@ -783,8 +778,39 @@ class MembraneChannelMixin:
                 1 - initialize_guess["solute_recovery"]
             )
 
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
+        # slightly modify initial values for other state blocks
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_permeate["pressure"] = 101325  # 1 bar
+        for j in self.config.property_package.solvent_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solvent_recovery"
+            ]
+        for j in self.config.property_package.solute_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solute_recovery"
+            ]
+
+        return {
+            "feed_side": state_args,
+            "retentate": state_args_retentate,
+            "permeate": state_args_permeate,
+        }
+
+    def _get_state_args_interface(self, initialize_guess, prop_in, prop_out):
+        if initialize_guess is None:
+            initialize_guess = {}
+        if "cp_modulus" not in initialize_guess:
+            if hasattr(self, "cp_modulus"):
+                if self._flow_direction == FlowDirection.forward:
+                    initialize_guess["cp_modulus"] = 1.1
+                else:
+                    initialize_guess["cp_modulus"] = 0.9
+            else:
+                initialize_guess["cp_modulus"] = 1
+
+        state_args_interface_in = deepcopy(prop_in)
+        state_args_interface_out = deepcopy(prop_out)
 
         for j in self.config.property_package.solute_set:
             state_args_interface_in["flow_mass_phase_comp"][
@@ -793,32 +819,6 @@ class MembraneChannelMixin:
             state_args_interface_out["flow_mass_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
-
-        # TODO: I think this is what we'd like to do, but IDAES needs to be changed
-        # state_args_interface = {}
-        # for t in self.flowsheet().config.time:
-        #     for x in self.length_domain:
-        #         assert 0.0 <= x <= 1.0
-        #         state_args_tx = {}
-        #         for k in state_args_interface_in:
-        #             if isinstance(state_args_interface_in[k], dict):
-        #                 if k not in state_args_tx:
-        #                     state_args_tx[k] = {}
-        #                 for index in state_args_interface_in[k]:
-        #                     state_args_tx[k][index] = (
-        #                         1.0 - x
-        #                     ) * state_args_interface_in[k][
-        #                         index
-        #                     ] + x * state_args_interface_out[
-        #                         k
-        #                     ][
-        #                         index
-        #                     ]
-        #             else:
-        #                 state_args_tx[k] = (1.0 - x) * state_args_interface_in[
-        #                     k
-        #                 ] + x * state_args_interface_out[k]
-        #         state_args_interface[t, x] = state_args_tx
 
         x = 0.5
         state_args_tx = {}
@@ -836,11 +836,7 @@ class MembraneChannelMixin:
                 ] + x * state_args_interface_out[k]
         state_args_interface = state_args_tx
 
-        return {
-            "feed_side": state_args,
-            "retentate": state_args_retentate,
-            "interface": state_args_interface,
-        }
+        return state_args_interface
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
