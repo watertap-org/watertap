@@ -537,11 +537,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # The model is isothermal, but the initialize methods
-        # (or the user) will fix the permeate-side temperature.
-        # Therefore, for initialization we need to deactivate
-        # the isothermal constraint but check that it will
-        # be enforced.
         for t in self.flowsheet().config.time:
             if not math.isclose(
                 value(self.feed_inlet.temperature[t]),
