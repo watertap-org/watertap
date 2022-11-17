@@ -464,6 +464,15 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", j]
             )
 
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Isothermal assumption for permeate"
+        )
+        def eq_permeate_isothermal(b, t):
+            return (
+                b.feed_side.properties_in[t].temperature
+                == b.properties_permeate[t].temperature
+            )
+
     def initialize_build(
         blk,
         state_args=None,
@@ -686,6 +695,10 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         for ind, c in self.eq_rejection_phase_comp.items():
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_permeate_isothermal.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_recovery_vol_phase.items():

@@ -154,8 +154,8 @@ class TestNanofiltration:
 
         # test statistics
         assert number_variables(m) == 89
-        assert number_total_constraints(m) == 73
-        assert number_unused_variables(m) == 2
+        assert number_total_constraints(m) == 74
+        assert number_unused_variables(m) == 1
 
     @pytest.mark.unit
     def test_dof(self, unit_frame):
