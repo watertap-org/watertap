@@ -18,7 +18,7 @@ defaults:
 env:
   # --color=yes needed for colorized output to be shown in GHA logs
   # --pyargs watertap is needed to be able to define CLI options in watertap/conftest.py
-  PYTEST_ADDOPTS: "--color=yes --pyargs watertap"
+  PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
 
@@ -135,7 +135,7 @@ jobs:
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov-report=xml" >> $GITHUB_ENV
     - name: Test with pytest
       run: |
-        pytest
+        pytest --pyargs watertap
     - name: Upload coverage report to Codecov
       if: matrix.cov_report
       uses: codecov/codecov-action@v2
@@ -201,7 +201,7 @@ jobs:
         echo '::endgroup::'
     - name: Run pytest
       run: |
-        pytest
+        pytest --pyargs watertap
 
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
@@ -286,4 +286,4 @@ jobs:
         pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       run: |
-        pytest
+        pytest --pyargs watertap
