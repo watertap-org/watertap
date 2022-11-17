@@ -43,6 +43,7 @@ jobs:
           black --check .
 
   tests:
+    if: "false"
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
 # TODO: Grab cloud database password from encrypted repo secrets
@@ -149,6 +150,7 @@ jobs:
         make -C docs linkcheck -d
 
   user-mode-pytest:
+    if: "false"
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     strategy:
@@ -247,6 +249,7 @@ jobs:
 
   macos:
     name: macOS setup (EXPERIMENTAL)
+    if: "false"
     runs-on: macos-11
     strategy:
       fail-fast: false
