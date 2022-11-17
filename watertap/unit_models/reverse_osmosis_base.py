@@ -181,7 +181,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.4,
-            bounds=(1e-4, 1 - 1e-6),
+            bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Volumetric recovery rate",
         )
@@ -204,7 +204,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, p, j: 0.4037 if j in solvent_set else 0.0033,
-            bounds=lambda b, t, p, j: (1e-4, 1 - 1e-6)
+            bounds=lambda b, t, p, j: (1e-2, 1 - 1e-6)
             if j in solvent_set
             else (1e-5, 1 - 1e-6),
             units=pyunits.dimensionless,
@@ -334,7 +334,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b, t, x, p, j: 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b, t, x, p, j: (1e-5, 3e-2)
+            bounds=lambda b, t, x, p, j: (1e-4, 3e-2)
             if j in solvent_set
             else (1e-8, 1e-3),
             units=units_meta("mass")

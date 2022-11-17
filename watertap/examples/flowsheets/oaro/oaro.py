@@ -23,13 +23,17 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
     assert_optimal_termination,
-    SolverFactory,
+    check_optimal_termination,
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import solve_indexed_blocks, propagate_state
+from idaes.core.util.initialization import (
+    solve_indexed_blocks,
+    propagate_state,
+)
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
@@ -46,17 +50,13 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
-    ConcentrationPolarizationType,
+    # ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
-from watertap.core.util.initialization import check_dof
-from idaes.core.util.model_diagnostics import DegeneracyHunter
-from idaes.core.util.scaling import *
-from watertap.core.util.infeasible import *
 
 
 class ERDtype(StrEnum):
@@ -76,65 +76,45 @@ def main(erd_type=ERDtype.pump_as_turbine):
     # build, set, and initialize
     m = build(erd_type=erd_type)
     set_operating_conditions(m)
-    # try:
     initialize_system(m, solver=solver)
-    # except:
-    #     pass
 
-    # Use of Degeneracy Hunter for troubleshooting model.
-    # m.fs.dummy_objective = Objective(expr=0)
-    # solver.options["max_iter"] = 0
-    # solver.solve(m, tee=True)
-    # dh = DegeneracyHunter(m, solver=SolverFactory("cbc"))
-    # dh.check_residuals(tol=0.1)
+    results = solve(m, solver=solver)
 
-    # optimize and display
-    # optimize_set_up(m)
-
-    # solve(m, solver=solver, tee=True)
-    # print_close_to_bounds(m)
-    # print_infeasible_constraints(m)
-
-    try:
-        solve(m, solver=solver, tee=True)
-        print_close_to_bounds(m)
-        print_infeasible_constraints(m)
-    except:
-        print("Solve Failed...")
-
-    # print("\n***---Simulation results---***")
-    # display_system(m)
-    # display_design(m)
-    # if erd_type == ERDtype.pump_as_turbine:
-    #     display_state(m)
-    # else:
-    #     pass
+    print("\n***---Simulation results---***")
+    display_system(m)
+    if erd_type == ERDtype.pump_as_turbine:
+        display_state(m)
+    else:
+        pass
 
     return m
 
 
 def build(erd_type=ERDtype.pump_as_turbine):
+    # TODO: add costing later (OARO unit model does not have costing method)
+
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.costing = WaterTAPCosting()
+    # m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.product2 = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P2 = Pump(property_package=m.fs.properties)
-    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P3 = Pump(property_package=m.fs.properties)
-    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
@@ -145,7 +125,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
@@ -164,32 +144,45 @@ def build(erd_type=ERDtype.pump_as_turbine):
         m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
         m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
-        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
     # process costing and add system level metrics
-    m.fs.costing.cost_process()
-    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    m.fs.costing.add_specific_electrical_carbon_intensity(
-        m.fs.product.properties[0].flow_vol
-    )
+    # m.fs.costing.cost_process()
+    # m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    # m.fs.costing.add_specific_electrical_carbon_intensity(
+    #     m.fs.product.properties[0].flow_vol
+    # )
 
     # system water recovery
-    # m.fs.water_recovery = Var(
-    #     initialize=0.5,
-    #     bounds=(0, 1),
-    #     domain=NonNegativeReals,
-    #     units=pyunits.dimensionless,
-    #     doc="System Water Recovery",
-    # )
-    # m.fs.eq_water_recovery = Constraint(
-    #     expr=m.fs.feed.properties[0].flow_vol * m.fs.water_recovery
-    #     == m.fs.product.properties[0].flow_vol
-    # )
+    m.fs.volumetric_recovery = Var(
+        initialize=0.5,
+        bounds=(0, 1),
+        domain=NonNegativeReals,
+        units=pyunits.dimensionless,
+        doc="System Volumetric Recovery of Water",
+    )
+    m.fs.eq_volumetric_recovery = Constraint(
+        expr=m.fs.feed.properties[0].flow_vol_phase["Liq"] * m.fs.volumetric_recovery
+        == m.fs.product.properties[0].flow_vol_phase["Liq"]
+    )
+
+    m.fs.water_recovery = Var(
+        initialize=0.5,
+        bounds=(0, 1),
+        domain=NonNegativeReals,
+        units=pyunits.dimensionless,
+        doc="System Water Recovery",
+    )
+    m.fs.eq_water_recovery = Constraint(
+        expr=m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+        * m.fs.water_recovery
+        == m.fs.product.properties[0].flow_mass_phase_comp["Liq", "H2O"]
+    )
 
     # connections
     if erd_type == ERDtype.pump_as_turbine:
@@ -199,10 +192,11 @@ def build(erd_type=ERDtype.pump_as_turbine):
         m.fs.s04 = Arc(source=m.fs.ERD1.outlet, destination=m.fs.disposal.inlet)
         m.fs.s05 = Arc(source=m.fs.OARO.permeate_outlet, destination=m.fs.P2.inlet)
         m.fs.s06 = Arc(source=m.fs.P2.outlet, destination=m.fs.RO.inlet)
-        m.fs.s07 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD2.inlet)
-        m.fs.s08 = Arc(source=m.fs.ERD2.outlet, destination=m.fs.P3.inlet)
-        m.fs.s09 = Arc(source=m.fs.P3.outlet, destination=m.fs.OARO.permeate_inlet)
-        m.fs.s10 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s07 = Arc(source=m.fs.RO.permeate, destination=m.fs.product.inlet)
+        m.fs.s08 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD2.inlet)
+        m.fs.s09 = Arc(source=m.fs.ERD2.outlet, destination=m.fs.P3.inlet)
+        m.fs.s10 = Arc(source=m.fs.P3.outlet, destination=m.fs.OARO.permeate_inlet)
+
     else:
         # this case should be caught in the previous conditional
         erd_type_not_found(erd_type)
@@ -219,8 +213,8 @@ def build(erd_type=ERDtype.pump_as_turbine):
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P3.control_volume.work, 1e-3)
-    # iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    # iscale.set_scaling_factor(m.fs.OARO.area, 1e-2)
+    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
+    iscale.set_scaling_factor(m.fs.OARO.area, 1e-2)
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
     if erd_type == ERDtype.pump_as_turbine:
@@ -237,77 +231,66 @@ def build(erd_type=ERDtype.pump_as_turbine):
 
 def set_operating_conditions(
     m,
-    water_recovery=0.5,
-    over_pressure=0.3,
     solver=None,
 ):
 
     if solver is None:
         solver = get_solver()
+
     # ---specifications---
     # feed
     # state variables
-    feed_pressure = 101325
+    pressure_atmospheric = 101325
+    feed_pressure = pressure_atmospheric
     feed_temperature = 273.15 + 25
-    print("Degrees of Freedom of feed before fixed:", degrees_of_freedom(m.fs.feed))
-
     m.fs.feed.properties[0].pressure.fix(feed_pressure)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(feed_temperature)  # feed temperature [K]
+
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    m.fs.feed.properties.calculate_state(
-        var_args={
-            ("flow_vol_phase", "Liq"): 1e-3,  # feed volumetric flow rate [m3/s]
-            ("mass_frac_phase_comp", ("Liq", "NaCl")): 0.035,
-        },  # feed NaCl mass fraction [-]
-        hold_state=True,  # fixes the calculated component mass flow rates
+    feed_flow_mass = 1
+    feed_mass_frac_NaCl = 0.035
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
+        feed_flow_mass * feed_mass_frac_NaCl
     )
-    print("Degrees of Freedom of feed after fixed:", degrees_of_freedom(m.fs.feed))
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].fix(
+        feed_flow_mass * feed_mass_frac_H2O
+    )
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    print("Degrees of Freedom of P1 before fixed:", degrees_of_freedom(m.fs.P1))
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.feed.properties[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
-        NaCl_passage=0.01,
-        solver=solver,
-    )
     m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
-    print("Degrees of Freedom of P1 after fixed:", degrees_of_freedom(m.fs.P1))
 
-    # OARO
-    print("Degrees of Freedom of OARO before fixed:", degrees_of_freedom(m.fs.OARO))
+    # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
+    m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    m.fs.P2.control_volume.properties_out[0].pressure.fix(18e5)
+
+    # pump 3, 2 degrees of freedom (efficiency, outlet pressure)
+    m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    m.fs.P3.control_volume.properties_out[0].pressure.fix(4e5)
+
+    # initial guess for states of pump 3 output (temperature and concentrations)
+    m.fs.P3.control_volume.properties_out[0].temperature.value = feed_temperature
+    permeate_flow_mass = 0.75
+    permeate_mass_frac_NaCl = 0.015
+    permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
+    m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
+        "Liq", "H2O"
+    ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
+    m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
+        "Liq", "NaCl"
+    ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
+
+    # Initialize OARO
     membrane_area = 50
     A = 4.2e-12
     B = 1.3e-8
-    pressure_atmospheric = 101325
 
-    # m.fs.OARO.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-    # )
-    # m.fs.OARO.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    # )
-    # m.fs.OARO.feed_inlet.pressure[0].fix(
-    #     m.fs.P1.control_volume.properties_out[0].pressure
-    # )
-    # m.fs.OARO.feed_inlet.temperature[0].fix(m.fs.feed.properties[0].temperature)
     m.fs.OARO.area.fix(membrane_area)
 
     m.fs.OARO.A_comp.fix(A)
     m.fs.OARO.B_comp.fix(B)
 
-    perm_flow_mass = 1
-    perm_mass_frac_NaCl = 0.005
-    perm_mass_frac_H2O = 1 - perm_mass_frac_NaCl
-    m.fs.OARO.permeate_outlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
-        perm_flow_mass * perm_mass_frac_NaCl
-    )
-    m.fs.OARO.permeate_outlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
-        perm_flow_mass * perm_mass_frac_H2O
-    )
-    m.fs.OARO.permeate_outlet.pressure[0].fix(pressure_atmospheric)
     m.fs.OARO.structural_parameter.fix(300e-6)
 
     m.fs.OARO.permeate_side.channel_height.fix(0.001)
@@ -316,23 +299,6 @@ def set_operating_conditions(
     m.fs.OARO.feed_side.spacer_porosity.fix(0.75)
     m.fs.OARO.feed_side.velocity[0, 0].fix(0.1)
 
-    print("Degrees of Freedom of OARO after fixed:", degrees_of_freedom(m.fs.OARO))
-
-    # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
-    print("Degrees of Freedom of P2 before fixed:", degrees_of_freedom(m.fs.P2))
-    m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.OARO.permeate_side.properties_out[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
-        NaCl_passage=0.01,
-        solver=solver,
-    )
-    m.fs.P2.control_volume.properties_out[0].pressure = 50e5
-    print("Degrees of Freedom of P2 after fixed:", degrees_of_freedom(m.fs.P2))
-
-    print("Degrees of Freedom of RO before fixed:", degrees_of_freedom(m.fs.RO))
-
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
@@ -340,226 +306,91 @@ def set_operating_conditions(
     m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]
-    m.fs.RO.area.fix(50)  # stage width [m]
-
-    print("Degrees of Freedom of RO after fixed:", degrees_of_freedom(m.fs.RO))
-
-    # pump 3, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    operating_pressure = calculate_operating_pressure(
-        feed_state_block=m.fs.ERD2.control_volume.properties_out[0],
-        over_pressure=over_pressure,
-        water_recovery=water_recovery,
-        NaCl_passage=0.01,
-        solver=solver,
-    )
-    m.fs.P3.control_volume.properties_out[0].pressure = pressure_atmospheric + 3e5
-    m.fs.P3.control_volume.properties_out[0].pressure.setub(5e5)
-    # initialize RO
-    # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]
-    # )
-    # m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"] = value(
-    #     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"]
-    # )
-    # m.fs.RO.feed_side.properties_in[0].temperature = value(
-    #     m.fs.feed.properties[0].temperature
-    # )
-    # m.fs.RO.feed_side.properties_in[0].pressure = value(
-    #     m.fs.P1.control_volume.properties_out[0].pressure
-    # )
-
-    # m.fs.RO.area.fix(50)  # guess area for RO initialization
+    m.fs.RO.area.fix(50)  # guess area for RO initialization
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
         m.fs.ERD1.efficiency_pump.fix(0.95)
-        m.fs.ERD1.deltaP.setub(0)
+        m.fs.ERD1.control_volume.properties_out[0].pressure.fix(101325)
 
-        m.fs.ERD1.control_volume.properties_out[0].pressure = 101325
         m.fs.ERD2.efficiency_pump.fix(0.95)
-        m.fs.ERD2.deltaP.setub(0)
-
-        m.fs.ERD2.control_volume.properties_out[0].pressure = 101325
-        m.fs.ERD2.control_volume.properties_out[0].pressure.setub(101325)
+        m.fs.ERD2.control_volume.properties_out[0].pressure.fix(101325)
     else:
         erd_type_not_found(m.fs.erd_type)
 
-    # m.fs.RO.initialize(optarg=solver.options)
-
-    # unfix guessed area, and fix water recovery
-    # m.fs.RO.area.unfix()
-    #
-    # m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(water_recovery)
-
     # check degrees of freedom
-    check_dof(m, fail_flag=True)
-    # if degrees_of_freedom(m) != 0:
-    #     raise RuntimeError(
-    #         "The set_operating_conditions function resulted in {} "
-    #         "degrees of freedom rather than 0. This error suggests "
-    #         "that too many or not enough variables are fixed for a "
-    #         "simulation.".format(degrees_of_freedom(m))
-    #     )
+    if degrees_of_freedom(m) != 0:
+        print(
+            "The set_operating_conditions function resulted in {} "
+            "degrees of freedom rather than 0. This error suggests "
+            "that too many or not enough variables are fixed for a "
+            "simulation.".format(degrees_of_freedom(m))
+        )
+        raise
 
 
-def calculate_operating_pressure(
-    feed_state_block=None,
-    over_pressure=0.15,
-    water_recovery=0.5,
-    NaCl_passage=0.01,
-    solver=None,
-):
-    """
-    estimate operating pressure for RO unit model given the following arguments:
-
-    Arguments:
-        feed_state_block:   the state block of the RO feed that has the non-pressure state
-                            variables initialized to their values (default=None)
-        over_pressure:  the amount of operating pressure above the brine osmotic pressure
-                        represented as a fraction (default=0.15)
-        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
-                        (default=0.5)
-        NaCl_passage:   the mass-based fraction of inlet NaCl that becomes permeate
-                        (default=0.01)
-        solver:     solver object to be used (default=None)
-    """
-    t = ConcreteModel()  # create temporary model
-    prop = feed_state_block.config.parameters
-    t.brine = prop.build_state_block([0])
-
-    # specify state block
-    t.brine[0].flow_mass_phase_comp["Liq", "H2O"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "H2O"])
-        * (1 - water_recovery)
-    )
-    t.brine[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
-        value(feed_state_block.flow_mass_phase_comp["Liq", "NaCl"]) * (1 - NaCl_passage)
-    )
-    t.brine[0].pressure.fix(
-        101325
-    )  # valid when osmotic pressure is independent of hydraulic pressure
-    t.brine[0].temperature.fix(value(feed_state_block.temperature))
-
-    # calculate osmotic pressure
-    # since properties are created on demand, we must touch the property to create it
-    t.brine[0].pressure_osm_phase
-    # solve state block
-    results = solve_indexed_blocks(solver, [t.brine])
-    assert_optimal_termination(results)
-
-    return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
-
-
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, tee=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
+    if not check_optimal_termination(results):
+        results = solver.solve(blk, tee=tee)
     return results
 
 
-def initialize_system(m, solver=None):
-    if solver is None:
-        solver = get_solver()
-    optarg = solver.options
+def initialize_loop(m, solver):
 
-    # ---initialize feed block---
-    m.fs.feed.initialize(optarg=optarg)
-    propagate_state(m.fs.s01)
-
-    # ---initialize Pump 1---
-    m.fs.P1.initialize(optarg=optarg)
-    propagate_state(m.fs.s02)
-
-    # ---initialize OARO---
-    m.fs.OARO.initialize(optarg=optarg)
-
-    # propagate state from oaro perm outlet to pump 2
     propagate_state(m.fs.s05)
-
-    # ---initialize Pump 2---
-    m.fs.P2.initialize(optarg=optarg)
-    propagate_state(m.fs.s06)
+    m.fs.P2.initialize()
 
     # ---initialize RO---
-    m.fs.RO.initialize(optarg=optarg)
-
-    propagate_state(m.fs.s07)
-    propagate_state(m.fs.s08)
-    propagate_state(m.fs.s09)
-    propagate_state(m.fs.s10)
-
-    # --- initialize ERD ---
-    if m.fs.erd_type == ERDtype.pump_as_turbine:
-        initialize_pump_as_turbine(m, optarg)
-
-    else:
-        erd_type_not_found(m.fs.erd_type)
-
-    m.fs.costing.initialize()
-
-
-def initialize_pump_as_turbine(m, optarg):
-    propagate_state(m.fs.s04)
-    m.fs.ERD1.initialize(optarg=optarg)
-    propagate_state(m.fs.s08)
-    m.fs.ERD2.initialize(optarg=optarg)
-    propagate_state(m.fs.s01)
-    m.fs.P1.initialize(optarg=optarg)
-    propagate_state(m.fs.s02)
-    propagate_state(m.fs.s05)
-    m.fs.P2.initialize(optarg=optarg)
     propagate_state(m.fs.s06)
+    m.fs.RO.initialize()
+    propagate_state(m.fs.s07)
+
     propagate_state(m.fs.s08)
-    m.fs.P3.initialize(optarg=optarg)
+    m.fs.ERD2.initialize()
+
     propagate_state(m.fs.s09)
+    m.fs.P3.initialize()
+
+    propagate_state(m.fs.s10)
+    propagate_state(m.fs.s02)
+    m.fs.OARO.initialize()
+
+    propagate_state(m.fs.s03)
+    m.fs.ERD1.initialize()
+    propagate_state(m.fs.s04)
+    m.fs.disposal.initialize()
 
 
-def optimize_set_up(m):
-    # add objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+def initialize_system(m, solver=None, verbose=True):
+    if solver is None:
+        solver = get_solver()
 
-    # unfix decision variables and add bounds
-    # pump 1 and pump 2
-    m.fs.P1.control_volume.properties_out[0].pressure.unfix()
-    m.fs.P1.control_volume.properties_out[0].pressure.setlb(10e5)
-    m.fs.P1.control_volume.properties_out[0].pressure.setub(80e5)
-    m.fs.P1.deltaP.setlb(0)
+    # ---initialize feed block---
+    m.fs.feed.initialize()
 
-    # RO
-    m.fs.RO.area.unfix()
-    m.fs.RO.area.setlb(1)
-    m.fs.RO.area.setub(150)
+    propagate_state(m.fs.s01)
+    m.fs.P1.initialize()
 
-    # additional specifications
-    m.fs.product_salinity = Param(
-        initialize=500e-6, mutable=True
-    )  # product NaCl mass fraction [-]
-    m.fs.minimum_water_flux = Param(
-        initialize=1.0 / 3600.0, mutable=True
-    )  # minimum water flux [kg/m2-s]
+    # ---initialize OARO---
+    propagate_state(m.fs.s02)
+    propagate_state(m.fs.s10)
+    m.fs.OARO.initialize()
 
-    # additional constraints
-    m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
-        <= m.fs.product_salinity
-    )
-    iscale.constraint_scaling_transform(
-        m.fs.eq_product_quality, 1e3
-    )  # scaling constraint
-    m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
-    )
+    initialize_loop(m, solver)
 
-    # ---checking model---
-    assert_degrees_of_freedom(m, 1)
+    print(f"DOF: {degrees_of_freedom(m)}")
 
+    # Now that the units are initialized, we can fix the
+    # permeate side outlet pressure and unfix the RO pump
+    # (which allows for control over the flow mass composition
+    # into the OARO permeate_side).
+    m.fs.OARO.permeate_side.properties_out[0].pressure.fix(101325)
+    m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
-# def optimize(m, solver=None, check_termination=True):
-#     # --solve---
-#     return solve(m, solver=solver, check_termination=check_termination)
+    print(f"DOF: {degrees_of_freedom(m)}")
 
 
 def display_system(m):
@@ -580,19 +411,15 @@ def display_system(m):
     )
     print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
-    print(
-        "Volumetric recovery: %.1f%%"
-        % (value(m.fs.RO.recovery_vol_phase[0, "Liq"]) * 100)
-    )
-    print(
-        "Water recovery: %.1f%%"
-        % (value(m.fs.RO.recovery_mass_phase_comp[0, "Liq", "H2O"]) * 100)
-    )
-    print(
-        "Energy Consumption: %.1f kWh/m3"
-        % value(m.fs.costing.specific_energy_consumption)
-    )
-    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    print("Volumetric recovery: %.1f%%" % (value(m.fs.volumetric_recovery) * 100))
+    print("Water recovery: %.1f%%" % (value(m.fs.water_recovery) * 100))
+
+    # TODO: add costing display once costing is added
+    # print(
+    #     "Energy Consumption: %.1f kWh/m3"
+    #     % value(m.fs.costing.specific_energy_consumption)
+    # )
+    # print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
 
 
 def display_design(m):
@@ -637,10 +464,17 @@ def display_state(m):
 
     print_state("Feed      ", m.fs.feed.outlet)
     print_state("P1 out    ", m.fs.P1.outlet)
-    print_state("RO perm   ", m.fs.RO.permeate)
+    print_state("OARO Feed in", m.fs.OARO.feed_inlet)
+    print_state("OARO Feed out", m.fs.OARO.feed_outlet)
+    print_state("OARO Perm in", m.fs.OARO.permeate_inlet)
+    print_state("OARO Perm out", m.fs.OARO.permeate_outlet)
+    print_state("ERD1 out    ", m.fs.ERD1.outlet)
+    print_state("P2 out    ", m.fs.P2.outlet)
     print_state("RO reten  ", m.fs.RO.retentate)
+    print_state("RO perm   ", m.fs.RO.permeate)
+    print_state("ERD2 out    ", m.fs.ERD2.outlet)
+    print_state("P3 out    ", m.fs.P3.outlet)
 
 
 if __name__ == "__main__":
-    # m = main(erd_type=ERDtype.pressure_exchanger)
     m = main(erd_type=ERDtype.pump_as_turbine)

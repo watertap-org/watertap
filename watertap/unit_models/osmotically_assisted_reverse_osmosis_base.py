@@ -215,7 +215,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.4,
-            bounds=(1e-3, 1 - 1e-6),
+            bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc="Volumetric recovery rate",
         )
@@ -574,12 +574,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         init_log.info_high("Initialization Step 1b (permeate side) Complete")
 
-        # if degrees_of_freedom(self) != 0:
-        #     # TODO: should we have a separate error for DoF?
-        #     raise Exception(
-        #         f"{self.name} degrees of freedom were not 0 at the beginning "
-        #         f"of initialization. DoF = {degrees_of_freedom(self)}"
-        #     )
+        if degrees_of_freedom(self) != 0:
+            # TODO: should we have a separate error for DoF?
+            raise Exception(
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
+            )
 
         # Create solver
         opt = get_solver(solver, optarg)
