@@ -201,6 +201,50 @@ jobs:
       run: |
         pytest
 
+  notebooks:
+    name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.7'
+          - '3.10'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap-dev
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip setuptools wheel pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Run pytest with nbmake
+      run:
+        pytest --nbmake **/*.ipynb
+
   macos:
     name: macOS setup (EXPERIMENTAL)
     runs-on: macos-11
