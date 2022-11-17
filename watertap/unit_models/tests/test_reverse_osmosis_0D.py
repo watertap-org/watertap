@@ -49,6 +49,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import MembraneChannel0DBlock
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -252,9 +253,9 @@ class TestReverseOsmosis:
         assert isinstance(m.fs.unit.feed_side, MembraneChannel0DBlock)
 
         # test statistics
-        assert number_variables(m) == 125
-        assert number_total_constraints(m) == 96
-        assert number_unused_variables(m) == 7  # vars from property package parameters
+        assert number_variables(m) == 121
+        assert number_total_constraints(m) == 92
+        assert number_unused_variables(m) == 13  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -282,7 +283,7 @@ class TestReverseOsmosis:
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        initialization_tester(RO_frame)
+        initialization_tester(RO_frame, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -418,9 +419,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.K[0, 1.0, "NaCl"].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 127
-        assert number_total_constraints(m) == 98
-        assert number_unused_variables(m) == 7  # vars from property package parameters
+        assert number_variables(m) == 123
+        assert number_total_constraints(m) == 94
+        assert number_unused_variables(m) == 13  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -450,7 +451,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # # test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -538,9 +539,9 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 143
-        assert number_total_constraints(m) == 113
-        assert number_unused_variables(m) == 0  # vars from property package parameters
+        assert number_variables(m) == 139
+        assert number_total_constraints(m) == 109
+        assert number_unused_variables(m) == 6  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -566,7 +567,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -652,9 +653,9 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 149
-        assert number_total_constraints(m) == 120
-        assert number_unused_variables(m) == 0  # vars from property package parameters
+        assert number_variables(m) == 145
+        assert number_total_constraints(m) == 116
+        assert number_unused_variables(m) == 6  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -680,7 +681,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -779,9 +780,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 144
-        assert number_total_constraints(m) == 114
-        assert number_unused_variables(m) == 0
+        assert number_variables(m) == 140
+        assert number_total_constraints(m) == 110
+        assert number_unused_variables(m) == 6
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -807,7 +808,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
