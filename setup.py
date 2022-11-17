@@ -114,6 +114,7 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
+            "nbmake",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
