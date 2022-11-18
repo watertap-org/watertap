@@ -62,7 +62,7 @@ class ControlVolume0DBlockData(_IsothermalEnergyBalanceCheckerMixin, _CV0D):
         if hasattr(self, "isothermal_assumption_eq"):
             for t, c in self.isothermal_assumption_eq.items():
                 sf = iscale.get_scaling_factor(
-                    self.properties_in[t].temperature, default=1e2, warning=True
+                    self.properties_in[t].temperature, default=1e-2, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
@@ -90,6 +90,6 @@ class ControlVolume1DBlockData(_IsothermalEnergyBalanceCheckerMixin, _CV1D):
         if hasattr(self, "isothermal_assumption_eq"):
             for (t, x), c in self.isothermal_assumption_eq.items():
                 sf = iscale.get_scaling_factor(
-                    self.properties[t, x].temperature, default=1e2, warning=True
+                    self.properties[t, x].temperature, default=1e-2, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
