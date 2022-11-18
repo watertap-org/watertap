@@ -25,7 +25,7 @@ from pyomo.environ import (
     assert_optimal_termination,
     check_optimal_termination,
 )
-from pyomo.network import Arc, SequentialDecomposition
+from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
@@ -35,7 +35,6 @@ from idaes.core.util.initialization import (
     propagate_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
-from idaes.models.unit_models.mixer import MomentumMixingType
 from idaes.core import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -50,7 +49,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
     OsmoticallyAssistedReverseOsmosis0D,
-    # ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
 )
@@ -103,7 +101,6 @@ def build(erd_type=ERDtype.pump_as_turbine):
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
-    m.fs.product2 = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
     # --- Main pump ---
@@ -241,9 +238,8 @@ def set_operating_conditions(
     # feed
     # state variables
     pressure_atmospheric = 101325
-    feed_pressure = pressure_atmospheric
     feed_temperature = 273.15 + 25
-    m.fs.feed.properties[0].pressure.fix(feed_pressure)  # feed pressure [Pa]
+    m.fs.feed.properties[0].pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
     m.fs.feed.properties[0].temperature.fix(feed_temperature)  # feed temperature [K]
 
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
@@ -311,10 +307,10 @@ def set_operating_conditions(
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
         m.fs.ERD1.efficiency_pump.fix(0.95)
-        m.fs.ERD1.control_volume.properties_out[0].pressure.fix(101325)
+        m.fs.ERD1.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
 
         m.fs.ERD2.efficiency_pump.fix(0.95)
-        m.fs.ERD2.control_volume.properties_out[0].pressure.fix(101325)
+        m.fs.ERD2.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
     else:
         erd_type_not_found(m.fs.erd_type)
 
