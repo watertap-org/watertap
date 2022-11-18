@@ -34,7 +34,7 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_base import (
 import idaes.logger as idaeslog
 
 
-__author__ = "Adam Atia"
+__author__ = "Adam Atia, Chenyu Wang"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
