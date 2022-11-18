@@ -67,7 +67,7 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(erd_type=ERDtype.pump_as_turbine):
+def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     # set up solver
     solver = get_solver()
 
@@ -77,6 +77,12 @@ def main(erd_type=ERDtype.pump_as_turbine):
     initialize_system(m, solver=solver)
 
     results = solve(m, solver=solver)
+    if not check_optimal_termination(results):
+        msg = "Simulation did not converge"
+        if raise_on_failure:
+            raise RuntimeError(msg)
+        else:
+            print(f"WARNING: {msg}")
 
     print("\n***---Simulation results---***")
     display_system(m)

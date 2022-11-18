@@ -29,6 +29,7 @@ from watertap.unit_models.osmotically_assisted_reverse_osmosis_0D import (
 
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.examples.flowsheets.oaro.oaro import (
+    main,
     build,
     set_operating_conditions,
     initialize_system,
@@ -118,3 +119,7 @@ class TestOAROwithTurbine:
     def test_config_error(self, system_frame):
         with pytest.raises(Exception):
             build(erd_type="not_a_configuration")
+
+    @pytest.mark.component
+    def test_main(self):
+        main(raise_on_failure=True)
