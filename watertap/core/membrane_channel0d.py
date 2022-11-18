@@ -235,8 +235,14 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         state_args = self._get_state_args(initialize_guess, state_args)
 
         # intialize self.properties
+        state_args_properties_in = state_args["feed_side"]
+        if self._flow_direction == FlowDirection.forward:
+            state_args_properties_out = state_args["retentate"]
+        else:
+            state_args_properties_out = state_args["permeate"]
+
         source_flags = self.properties_in.initialize(
-            state_args=state_args["feed_side"],
+            state_args=state_args_properties_in,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -244,17 +250,20 @@ class MembraneChannel0DBlockData(MembraneChannelMixin, ControlVolume0DBlockData)
         )
 
         self.properties_out.initialize(
-            state_args=state_args["retentate"],
+            state_args=state_args_properties_out,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
         )
 
+        state_args_interface = self._get_state_args_interface(
+            initialize_guess, state_args_properties_in, state_args_properties_out
+        )
         self.properties_interface.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args["interface"],
+            state_args=state_args_interface,
         )
 
         init_log.info("Initialization Complete")
