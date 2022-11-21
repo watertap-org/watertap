@@ -15,9 +15,8 @@ This module contains a zero-order representation of a buffer tank unit
 operation.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
-from idaes.core import declare_process_block_class
 
+from idaes.core import declare_process_block_class
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module

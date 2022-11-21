@@ -23,7 +23,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -155,10 +154,10 @@ class TestDMBRZO:
         assert pytest.approx(4.5e-3, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
+        assert pytest.approx(9.45475e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
         )
-        assert pytest.approx(1.77778e-7, rel=1e-5) == value(
+        assert pytest.approx(9.45475e-9, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
         )
         assert pytest.approx(8.64, rel=1e-5) == value(model.fs.unit.electricity[0])

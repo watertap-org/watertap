@@ -20,19 +20,14 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
+    gibbs_energy,
     van_t_hoff,
 )
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     ConcentrationForm,
 )
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    gibbs_energy,
-    van_t_hoff,
-)
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
+
 
 _reaction = {
     "stoichiometry": {"Liq": {"NH4 +": -1, "H +": 1, "NH3": 1}},
