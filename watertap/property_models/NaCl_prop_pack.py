@@ -146,42 +146,117 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
         # TODO: update for NaCl solution, relationship from Sharqawy is for seawater
-        # specific enthalpy parameters, eq. 55 and 43 in Sharqawy (2010)
+        # specific enthalpy parameters, Table 9 in Nayar et al. (2016)
+        enth_mass_units = pyunits.J / pyunits.kg
+        t_inv_units = pyunits.K**-1
+
         self.enth_mass_param_A1 = Var(
             within=Reals,
-            initialize=124.790,
-            units=pyunits.J / pyunits.kg,
+            initialize=996.7767,
+            units=enth_mass_units,
             doc="Specific enthalpy parameter A1",
         )
         self.enth_mass_param_A2 = Var(
             within=Reals,
-            initialize=4203.075,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-1,
+            initialize=-3.2406,
+            units=enth_mass_units * t_inv_units,
             doc="Specific enthalpy parameter A2",
         )
         self.enth_mass_param_A3 = Var(
             within=Reals,
-            initialize=-0.552,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-2,
+            initialize=0.0127,
+            units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter A3",
         )
         self.enth_mass_param_A4 = Var(
             within=Reals,
-            initialize=0.004,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-3,
+            initialize=-4.7723e-5,
+            units=enth_mass_units * t_inv_units**3,
             doc="Specific enthalpy parameter A4",
+        )
+        self.enth_mass_param_A5 = Var(
+            within=Reals,
+            initialize=-1.1748,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter A5",
+        )
+        self.enth_mass_param_A6 = Var(
+            within=Reals,
+            initialize=0.01169,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter A6",
+        )
+        self.enth_mass_param_A7 = Var(
+            within=Reals,
+            initialize=-2.6185e-5,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter A7",
+        )
+        self.enth_mass_param_A8 = Var(
+            within=Reals,
+            initialize=7.0661e-8,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter A8",
         )
         self.enth_mass_param_B1 = Var(
             within=Reals,
-            initialize=27062.623,
-            units=pyunits.dimensionless,
+            initialize=-2.34825e4,
+            units=enth_mass_units,
             doc="Specific enthalpy parameter B1",
         )
         self.enth_mass_param_B2 = Var(
             within=Reals,
-            initialize=4835.675,
-            units=pyunits.dimensionless,
+            initialize=3.15183e5,
+            units=enth_mass_units,
             doc="Specific enthalpy parameter B2",
+        )
+        self.enth_mass_param_B3 = Var(
+            within=Reals,
+            initialize=2.80269e6,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B3",
+        )
+        self.enth_mass_param_B4 = Var(
+            within=Reals,
+            initialize=-1.44606e7,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter B4",
+        )
+        self.enth_mass_param_B5 = Var(
+            within=Reals,
+            initialize=7.82607e3,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B5",
+        )
+        self.enth_mass_param_B6 = Var(
+            within=Reals,
+            initialize=-4.41733,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter B6",
+        )
+        self.enth_mass_param_B7 = Var(
+            within=Reals,
+            initialize=2.1394e-1,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter B7",
+        )
+        self.enth_mass_param_B8 = Var(
+            within=Reals,
+            initialize=-1.99108e4,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B8",
+        )
+        self.enth_mass_param_B9 = Var(
+            within=Reals,
+            initialize=2.77846e4,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter B9",
+        )
+        self.enth_mass_param_B10 = Var(
+            within=Reals,
+            initialize=9.72801,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter B10",
         )
 
         # traditional parameters are the only Vars currently on the block and should be fixed
@@ -749,26 +824,37 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_mass_phase(
             b,
-        ):  # specific enthalpy, eq. 55 and 43 in Sharqawy  # TODO: remove enthalpy when all units can be isothermal
+        ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)  # TODO: remove enthalpy when all units can be isothermal
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp["Liq", "NaCl"]
-            h_w = (
+            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            P = b.pressure - 0.101 * pyunits.MPa
+            h_w = 141.355 + 4202.07 * t - 0.535 * t**2 + 0.004 * t**3
+            h_sw0 = h_w - S * (
+                b.params.enth_mass_param_B1
+                + b.params.enth_mass_param_B2 * S
+                + b.params.enth_mass_param_B3 * S**2
+                + b.params.enth_mass_param_B4 * S**3
+                + b.params.enth_mass_param_B5 * t
+                + b.params.enth_mass_param_B6 * t**2
+                + b.params.enth_mass_param_B7 * t**3
+                + b.params.enth_mass_param_B8 * S * t
+                + b.params.enth_mass_param_B9 * S**2 * t
+                + b.params.enth_mass_param_B10 * S * t**2
+            )
+            h_sw = h_sw0 + P * (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
                 + b.params.enth_mass_param_A3 * t**2
                 + b.params.enth_mass_param_A4 * t**3
-            )
-            # relationship requires dimensionless calculation and units added at end
-            h_sw = (
-                h_w
-                - (
-                    S * (b.params.enth_mass_param_B1 + S)
-                    + S * (b.params.enth_mass_param_B2 + S) * t / pyunits.K
+                + S
+                * (
+                    +b.params.enth_mass_param_A5
+                    + b.params.enth_mass_param_A6 * t
+                    + b.params.enth_mass_param_A7 * t**2
+                    + b.params.enth_mass_param_A8 * t**3
                 )
-                * pyunits.J
-                / pyunits.kg
             )
             return b.enth_mass_phase["Liq"] == h_sw
 
