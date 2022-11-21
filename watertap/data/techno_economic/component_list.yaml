@@ -90,6 +90,8 @@ nonbiodegradable_cod:
   constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
 nonvolatile_toc:
   constituent_longform: Nonvolatile Total Organic Carbon (TOC)
+oil:
+  constituent_longform: Oil
 oil_and_grease:
   constituent_longform: Oil and Grease
 oily_matter:
