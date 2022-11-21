@@ -100,6 +100,7 @@ def test_unit_parameter_files(tech):
         "photothermal_membrane",
         "pump_electricity",
         "storage_tank",
+        "selective_oil_permeation",
         "supercritical_salt_precipitation",
         "surface_discharge",
         "sw_onshore_intake",
