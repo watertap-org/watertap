@@ -829,7 +829,7 @@ class NaClStateBlockData(StateBlockData):
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
             S = b.mass_frac_phase_comp["Liq", "NaCl"]
-            P = b.pressure - 0.101 * pyunits.MPa
+            P = b.pressure - 1.01e+5 * pyunits.Pa
             h_w = 141.355 + 4202.07 * t - 0.535 * t**2 + 0.004 * t**3
             h_sw0 = h_w - S * (
                 b.params.enth_mass_param_B1
