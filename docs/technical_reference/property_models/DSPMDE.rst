@@ -1,18 +1,16 @@
-Seawater Property Package
-=========================
+Multi-Component Aqueous Solution (MCAS) Property Package
 
-This package implements property relationships for seawater as provided in `Sharqawy et al. (2010) <https://doi.org/10.5004/dwt.2010.1079>`_ and `Nayar et al. (2016) <https://doi.org/10.5004/dwt.2010.1079>`_.
+============================================
 
-This seawater property package:
-   * supports only H2O (solvent) and TDS (solute) components 
+This property package implements property relationships for an aqueous solution that may contain multiple neutral and/or ionic solutes.
+
+This MCAS property package
+   * sets H2O as the solvent 
+   * supports multiple solute componnets including ions and neutral molecules.
    * supports only liquid phase
-   * is formulated on a mass basis
-   * estimates molar basis properties based on an average molecular weight of sea salt
+   * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables.  
    * does not support dynamics
-   * properties do not incorporate validity ranges for temperature and salinity
-   * pressure-dependencies for property relationships are not incorporated
-   * assumes diffusivity of NaCl based on `Bartholomew & Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_
-
+   
 Sets
 ----
 .. csv-table::
