@@ -93,7 +93,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "isothermal",
+        "is_isothermal",
         ConfigValue(
             default=True,
             domain=Bool,
@@ -176,7 +176,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
 
     def _validate_config(self):
         if (
-            self.config.isothermal
+            self.config.is_isothermal
             and self.config.energy_balance_type != EnergyBalanceType.none
         ):
             raise ConfigurationError(
@@ -242,7 +242,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.high_pressure_side.add_isothermal_assumption()
 
         self.high_pressure_side.add_momentum_balances(
@@ -276,7 +276,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.low_pressure_side.add_isothermal_assumption()
 
         self.low_pressure_side.add_momentum_balances(

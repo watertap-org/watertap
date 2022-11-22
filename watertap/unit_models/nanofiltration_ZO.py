@@ -96,7 +96,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "isothermal",
+        "is_isothermal",
         ConfigValue(
             default=True,
             domain=Bool,
@@ -203,7 +203,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
     def _validate_config(self):
         if (
-            self.config.isothermal
+            self.config.is_isothermal
             and self.config.energy_balance_type != EnergyBalanceType.none
         ):
             raise ConfigurationError(
@@ -316,7 +316,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.feed_side.add_isothermal_assumption()
 
         self.feed_side.add_momentum_balances(

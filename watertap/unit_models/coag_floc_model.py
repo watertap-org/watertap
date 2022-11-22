@@ -101,7 +101,7 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "isothermal",
+        "is_isothermal",
         ConfigValue(
             default=True,
             domain=Bool,
@@ -208,7 +208,7 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
 
     def _validate_config(self):
         if (
-            self.config.isothermal
+            self.config.is_isothermal
             and self.config.energy_balance_type != EnergyBalanceType.none
         ):
             raise ConfigurationError(
@@ -519,7 +519,7 @@ class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(

@@ -121,7 +121,7 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "isothermal",
+        "is_isothermal",
         ConfigValue(
             default=True,
             domain=Bool,
@@ -279,7 +279,7 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
                 "\n Did not provide a tuple for 'mw_additive' \n" + common_msg
             )
         if (
-            self.config.isothermal
+            self.config.is_isothermal
             and self.config.energy_balance_type != EnergyBalanceType.none
         ):
             raise ConfigurationError(
@@ -561,7 +561,7 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.control_volume.add_isothermal_assumption()
 
         self.control_volume.add_momentum_balances(

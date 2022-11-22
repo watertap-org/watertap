@@ -188,7 +188,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
     )
 
     CONFIG.declare(
-        "isothermal",
+        "is_isothermal",
         ConfigValue(
             default=True,
             domain=Bool,
@@ -322,7 +322,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
     def _validate_config(self):
         if (
-            self.config.isothermal
+            self.config.is_isothermal
             and self.config.energy_balance_type != EnergyBalanceType.none
         ):
             raise ConfigurationError(
@@ -385,7 +385,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.diluate.add_isothermal_assumption()
 
         self.diluate.add_momentum_balances(
@@ -436,7 +436,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             has_enthalpy_transfer=False,
         )
 
-        if self.config.isothermal:
+        if self.config.is_isothermal:
             self.concentrate.add_isothermal_assumption()
 
         self.concentrate.add_momentum_balances(
