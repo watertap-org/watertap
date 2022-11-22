@@ -181,7 +181,6 @@ class TestATHTLZO:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 
