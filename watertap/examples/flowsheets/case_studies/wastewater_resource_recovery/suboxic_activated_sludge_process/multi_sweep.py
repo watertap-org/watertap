@@ -83,7 +83,8 @@ def run_analysis(case_num=1, nx=11, interpolate_nan_outputs=True):
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(
-            "Usage: python multi_sweep.py case_number number_of_samples interpolate_nan_outputs"
+            "Usage: run 'python multi_sweep.py case_number number_of_samples interpolate_nan_outputs', where "
+            "case_number is an integer, number_of_samples is an integer, and interpolate_nan_outputs is a boolean"
         )
         print(
             f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"

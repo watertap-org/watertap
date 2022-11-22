@@ -51,6 +51,9 @@ from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
 
 def automate_rescale_variables(m):
     for var, sv in iscale.badly_scaled_var_generator(m):
@@ -397,7 +400,12 @@ def build_flowsheet():
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m, tee=False)
 
-    pyo.assert_optimal_termination(results)
+    if not pyo.check_optimal_termination(results):
+        _log.warning(
+            "The solver failed to converge to an optimal solution."
+            "This suggests that the user provided infeasible inputs or that the model "
+            "is poorly scaled, poorly initialized, or degenerate. "
+        )
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R5.KLa.fix(240)

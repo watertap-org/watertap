@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import os
+import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     Block,
@@ -60,6 +61,9 @@ from watertap.unit_models.zero_order import (
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
 from watertap.costing import WaterTAPCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -365,7 +369,12 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        check_optimal_termination(results)
+        if not check_optimal_termination(results):
+            _log.warning(
+                "The solver failed to converge to an optimal solution."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate. "
+            )
     return results
 
 

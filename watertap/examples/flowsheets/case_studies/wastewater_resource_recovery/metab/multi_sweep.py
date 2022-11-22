@@ -163,4 +163,13 @@ def main(case_num=1, nx=11, interpolate_nan_outputs=True):
 
 
 if __name__ == "__main__":
-    global_results, sweep_params = main(*sys.argv[1:])
+    if len(sys.argv) == 1:
+        print(
+            "Usage: run 'python multi_sweep.py case_number number_of_samples interpolate_nan_outputs', where "
+            "case_number is an integer, number_of_samples is an integer, and interpolate_nan_outputs is a boolean"
+        )
+        print(
+            f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
+        )
+    else:
+        results, sweep_params, m = run_analysis(*sys.argv[1:])

@@ -21,6 +21,7 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
+import idaes.logger as idaeslog
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
@@ -37,6 +38,9 @@ from watertap.costing.watertap_costing_package import (
     WaterTAPCosting,
 )
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Xiangyu Bi"
 
@@ -224,7 +228,12 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=True)
     if check_termination:
-        check_optimal_termination(results)
+        if not check_optimal_termination(results):
+            _log.warning(
+                "The solver failed to converge to an optimal solution."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate. "
+            )
     return results
 
 

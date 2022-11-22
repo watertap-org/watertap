@@ -12,6 +12,7 @@
 ###############################################################################
 
 import os
+import idaes.logger as idaeslog
 
 from pyomo.environ import (
     ConcreteModel,
@@ -31,7 +32,6 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from idaes.core.util.model_statistics import degrees_of_freedom
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
@@ -43,6 +43,9 @@ from watertap.unit_models.zero_order import (
     StruviteClassifierZO,
 )
 from watertap.core.zero_order_costing import ZeroOrderCosting
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def main():
@@ -151,7 +154,12 @@ def solve(blk, solver=None, tee=False, check_termination=True):
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
     if check_termination:
-        check_optimal_termination(results)
+        if not check_optimal_termination(results):
+            _log.warning(
+                "The solver failed to converge to an optimal solution."
+                "This suggests that the user provided infeasible inputs or that the model "
+                "is poorly scaled, poorly initialized, or degenerate. "
+            )
     return results
 
 
