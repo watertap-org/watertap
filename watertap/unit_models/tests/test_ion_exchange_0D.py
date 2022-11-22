@@ -366,6 +366,7 @@ class TestIonExchangeNoInert:
         m = IX_frame_no_inert
         initialization_tester(m)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -374,6 +375,7 @@ class TestIonExchangeNoInert:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -390,6 +392,7 @@ class TestIonExchangeNoInert:
             <= 1e-6
         )
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame_no_inert):
         m = IX_frame_no_inert
