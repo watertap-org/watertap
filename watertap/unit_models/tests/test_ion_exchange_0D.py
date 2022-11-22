@@ -50,6 +50,7 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 from pyomo.util.check_units import assert_units_consistent
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -364,18 +365,16 @@ class TestIonExchangeNoInert:
     @pytest.mark.component
     def test_initialize(self, IX_frame_no_inert):
         m = IX_frame_no_inert
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame_no_inert):
         m = IX_frame_no_inert
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
         assert_units_consistent(m)
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -392,7 +391,6 @@ class TestIonExchangeNoInert:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -709,12 +707,12 @@ class TestIonExchangeWithInert:
     @pytest.mark.component
     def test_initialize(self, IX_frame_with_inert):
         m = IX_frame_with_inert
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.component
     def test_solve(self, IX_frame_with_inert):
         m = IX_frame_with_inert
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -903,7 +901,6 @@ class TestIonExchangeCosting:
 
         return m
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, IX_frame_costing):
         m = IX_frame_costing
@@ -913,7 +910,8 @@ class TestIonExchangeCosting:
             ix.properties_regen[0].flow_mol_phase_comp["Liq", target_ion], 1
         )
 
-        initialization_tester(m)
+        m.fs.unit.initialize(outlvl=idaeslog.DEBUG)
+        m.fs.costing.initialize()
 
         def obj_rule(m):
             return m.fs.costing.LCOW
@@ -922,16 +920,16 @@ class TestIonExchangeCosting:
 
         assert degrees_of_freedom(m) == 0
 
-        results = solver.solve(m, tee=False)
+        results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(440372.278, rel=1e-5) == value(
+        assert pytest.approx(414128.114, rel=1e-5) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(1023195.441, rel=1e-5) == value(
+        assert pytest.approx(1025349.176, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(880744.556, rel=1e-5) == value(
+        assert pytest.approx(828256.228, rel=1e-5) == value(
             m.fs.costing.total_investment_cost
         )
-        assert pytest.approx(0.78532, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.781896, rel=1e-5) == value(m.fs.costing.LCOW)
