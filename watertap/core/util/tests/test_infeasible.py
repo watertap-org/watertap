@@ -13,7 +13,6 @@
 
 import pytest
 from pyomo.environ import ConcreteModel, Var, Constraint
-from idaes.core.solvers import get_solver
 from watertap.core.util.infeasible import (
     print_infeasible_constraints,
     print_infeasible_bounds,

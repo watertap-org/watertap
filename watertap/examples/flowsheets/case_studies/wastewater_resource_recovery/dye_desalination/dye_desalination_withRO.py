@@ -253,10 +253,12 @@ def set_operating_conditions(m):
     desal.P2.control_volume.properties_out[0].pressure.fix(operating_pressure)
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability
-    desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    desal.RO.feed_side.spacer_porosity.fix(
+        0.97
+    )  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(pressure)  # atmospheric pressure [Pa]
-    desal.RO.velocity[0, 0].fix(0.25)
+    desal.RO.feed_side.velocity[0, 0].fix(0.25)
     desal.RO.recovery_vol_phase[0, "Liq"].fix(0.5)
     m.fs.tb_nf_ro.properties_out[0].temperature.fix(temperature)
     m.fs.tb_nf_ro.properties_out[0].pressure.fix(pressure)
@@ -337,9 +339,9 @@ def optimize_operation(m):
     desal.P2.control_volume.properties_out[0].pressure.setlb(100000)
 
     # RO inlet velocity
-    desal.RO.velocity[0, 0].unfix()
-    desal.RO.velocity[0, 0].setub(0.3)
-    desal.RO.velocity[0, 0].setlb(0.1)
+    desal.RO.feed_side.velocity[0, 0].unfix()
+    desal.RO.feed_side.velocity[0, 0].setub(0.3)
+    desal.RO.feed_side.velocity[0, 0].setlb(0.1)
 
     # RO membrane area
     desal.RO.area.unfix()

@@ -14,7 +14,7 @@
 This module contains a zero-order representation of a deep well injection unit.
 """
 
-from pyomo.environ import Constraint, Reference, units as pyunits, Var
+from pyomo.environ import Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
