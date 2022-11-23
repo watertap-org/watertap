@@ -1,6 +1,8 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
+    TerminationCondition,
+    SolverStatus,
     value,
     Var,
     Constraint,
@@ -39,6 +41,10 @@ from idaes.core.util.scaling import (
     unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
+
+# -----------------------------------------------------------------------------
+# Get default solver for testing
+solver = get_solver()
 
 
 class TestLTMED:
@@ -93,11 +99,51 @@ class TestLTMED:
             assert len(port.vars) == 3
 
         # test statistics
-        assert number_variables(m) == 183
+        assert number_variables(m) == 182
         assert number_total_constraints(m) == 53
-        assert number_unused_variables(m) == 90  # vars from property package parameters
+        assert number_unused_variables(m) == 89  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, LT_MED_frame):
         m = LT_MED_frame
         assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, LT_MED_frame):
+        m = LT_MED_frame
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        print(unscaled_var_list)
+
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_var_scaling(self, LT_MED_frame):
+        m = LT_MED_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, LT_MED_frame):
+        m = LT_MED_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution(self, LT_MED_frame):
+        m = LT_MED_frame
+        assert pytest.approx(9.9127, rel=1e-3) == value(m.fs.unit.GOR)
+        assert pytest.approx(3.9592, rel=1e-3) == value(m.fs.unit.sA)
+        assert pytest.approx(6.4290e1, rel=1e-3) == value(m.fs.unit.STEC)
+        assert pytest.approx(5.3575e3, rel=1e-3) == value(m.fs.unit.P_req)
+        assert pytest.approx(2.3211, rel=1e-3) == value(
+            m.fs.unit.steam_props[0].flow_mass_phase_comp["Vap", "H2O"]
+        )
