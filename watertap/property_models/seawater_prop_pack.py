@@ -436,6 +436,30 @@ class SeawaterParameterData(PhysicalParameterBlock):
             units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter B10",
         )
+        self.enth_mass_param_C1 = Var(
+            within=Reals,
+            initialize=141.355,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter C1",
+        )
+        self.enth_mass_param_C2 = Var(
+            within=Reals,
+            initialize=4202.07,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter C2",
+        )
+        self.enth_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-0.535,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter C3",
+        )
+        self.enth_mass_param_C4 = Var(
+            within=Reals,
+            initialize=0.004,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter C4",
+        )
 
         # vapor pressure parameters,  eq. 5 and 6 in Nayar et al.(2016)
         self.pressure_sat_param_psatw_A1 = Var(
@@ -1311,8 +1335,13 @@ class SeawaterStateBlockData(StateBlockData):
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
             S = b.mass_frac_phase_comp["Liq", "TDS"]
-            P = b.pressure - 1.01e+5 * pyunits.Pa
-            h_w = 141.355 + 4202.07 * t - 0.535 * t**2 + 0.004 * t**3
+            P = b.pressure - 101325 * pyunits.Pa
+            h_w = (
+                b.params.enth_mass_param_C1
+                + b.params.enth_mass_param_C2 * t
+                + b.params.enth_mass_param_C3 * t**2
+                + b.params.enth_mass_param_C4 * t**3
+            )
             h_sw0 = h_w - S * (
                 b.params.enth_mass_param_B1
                 + b.params.enth_mass_param_B2 * S
