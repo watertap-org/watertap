@@ -57,7 +57,7 @@ import idaes.logger as idaeslog
 solver = get_solver()
 
 
-def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4, sf_inert=1e6):
+def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4):
 
     ix = m.fs.unit
     prop_in = ix.properties_in[0]
@@ -88,7 +88,11 @@ def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4, sf_iner
                 prop_out.flow_mol_phase_comp["Liq", ion],
                 1 / (prop_in.flow_mol_phase_comp["Liq", ion].value),
             )
-            set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf_inert)
+            set_scaling_factor(
+                prop_regen.flow_mol_phase_comp["Liq", ion],
+                1 / (prop_in.flow_mol_phase_comp["Liq", ion].value),
+            )
+
     calculate_scaling_factors(m)
     set_scaling_factor(ix.mass_in[target_ion], 1 / sf_mass)
     set_scaling_factor(ix.mass_removed[target_ion], 1 / sf_mass)
@@ -181,11 +185,11 @@ class TestIonExchangeNoInert:
         ix.resin_max_capacity.fix(3)
         ix.service_flow_rate.fix(15)
         ix.number_columns.fix(4)
+        ix.bed_depth.fix(1.7007982766166505)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -201,8 +205,6 @@ class TestIonExchangeNoInert:
         ix.bed_expansion_frac_C.fix()
         ix.service_to_regen_flow_ratio.fix()
         ix.number_columns_redund.fix()
-
-        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
 
         return m
 
@@ -523,11 +525,11 @@ class TestIonExchangeWithInert:
         ix.resin_max_capacity.fix(1.5)
         ix.service_flow_rate.fix(10)
         ix.number_columns.fix(5)
+        ix.bed_depth.fix(1.7634969859421077)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -543,8 +545,6 @@ class TestIonExchangeWithInert:
         ix.bed_expansion_frac_C.fix()
         ix.service_to_regen_flow_ratio.fix()
         ix.number_columns_redund.fix()
-
-        m = ix_scaling(m, sf=1, est_recov=0.95, est_removal=0.95, sf_mass=1)
 
         return m
 
@@ -871,11 +871,11 @@ class TestIonExchangeCosting:
         ix.resin_max_capacity.fix(3)
         ix.service_flow_rate.fix(15)
         ix.number_columns.fix(4)
+        ix.bed_depth.fix(1.6975735806794794)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -897,39 +897,34 @@ class TestIonExchangeCosting:
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(ix.properties_out[0].flow_vol_phase["Liq"])
 
-        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
-
-        return m
-
-    @pytest.mark.component
-    def test_costing(self, IX_frame_costing):
-        m = IX_frame_costing
-        ix = m.fs.unit
-        target_ion = ix.config.target_ion
-        set_scaling_factor(
-            ix.properties_regen[0].flow_mol_phase_comp["Liq", target_ion], 1
-        )
-
-        m.fs.unit.initialize(outlvl=idaeslog.DEBUG)
-        m.fs.costing.initialize()
+        m = ix_scaling(m, sf=1, est_recov=0.99, est_removal=0.99, sf_mass=1e2)
 
         def obj_rule(m):
             return m.fs.costing.LCOW
 
         m.obj = Objective(rule=obj_rule)
 
+        return m
+
+    @pytest.mark.component
+    def test_costing(self, IX_frame_costing):
+        m = IX_frame_costing
+
+        m.fs.unit.initialize(outlvl=idaeslog.DEBUG)
+        m.fs.costing.initialize()
+
         assert degrees_of_freedom(m) == 0
 
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(414128.114, rel=1e-5) == value(
+        assert pytest.approx(414120.357, rel=1e-5) == value(
             m.fs.costing.total_capital_cost
         )
         assert pytest.approx(1025349.176, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(828256.228, rel=1e-5) == value(
+        assert pytest.approx(828240.715, rel=1e-5) == value(
             m.fs.costing.total_investment_cost
         )
         assert pytest.approx(0.781896, rel=1e-5) == value(m.fs.costing.LCOW)
