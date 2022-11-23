@@ -327,53 +327,54 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         # specific enthalpy parameters, Table 9 in Nayar et al. (2016)
         enth_mass_units = pyunits.J / pyunits.kg
+        P_inv_units = pyunits.Pa**-1
 
         self.enth_mass_param_A1 = Var(
             within=Reals,
             initialize=996.7767,
-            units=enth_mass_units,
+            units=enth_mass_units * P_inv_units,
             doc="Specific enthalpy parameter A1",
         )
         self.enth_mass_param_A2 = Var(
             within=Reals,
             initialize=-3.2406,
-            units=enth_mass_units * t_inv_units,
+            units=enth_mass_units * P_inv_units * t_inv_units,
             doc="Specific enthalpy parameter A2",
         )
         self.enth_mass_param_A3 = Var(
             within=Reals,
             initialize=0.0127,
-            units=enth_mass_units * t_inv_units**2,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
             doc="Specific enthalpy parameter A3",
         )
         self.enth_mass_param_A4 = Var(
             within=Reals,
             initialize=-4.7723e-5,
-            units=enth_mass_units * t_inv_units**3,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
             doc="Specific enthalpy parameter A4",
         )
         self.enth_mass_param_A5 = Var(
             within=Reals,
             initialize=-1.1748,
-            units=enth_mass_units,
+            units=enth_mass_units * P_inv_units,
             doc="Specific enthalpy parameter A5",
         )
         self.enth_mass_param_A6 = Var(
             within=Reals,
             initialize=0.01169,
-            units=enth_mass_units * t_inv_units,
+            units=enth_mass_units * P_inv_units * t_inv_units,
             doc="Specific enthalpy parameter A6",
         )
         self.enth_mass_param_A7 = Var(
             within=Reals,
             initialize=-2.6185e-5,
-            units=enth_mass_units * t_inv_units**2,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
             doc="Specific enthalpy parameter A7",
         )
         self.enth_mass_param_A8 = Var(
             within=Reals,
             initialize=7.0661e-8,
-            units=enth_mass_units * t_inv_units**3,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
             doc="Specific enthalpy parameter A8",
         )
         self.enth_mass_param_B1 = Var(
