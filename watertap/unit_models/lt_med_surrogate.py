@@ -45,7 +45,7 @@ __author__ = "Zhuoran Zhang"
 @declare_process_block_class("LT_MED_surrogate")
 class LTMEDData(UnitModelBlockData):
     """
-    Zero order filtration model
+    Low-temperature multi-effect distillation model
     """
 
     CONFIG = ConfigBlock()
