@@ -16,15 +16,19 @@ Sets
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "component_list", ":math:`j`", "['H2O', 'TDS']"
-   "Phases", ":math:`p`", "['Liq']"
+   "AqueousPhase", :math:`p`", "['Liq']"
+   "component_list", ":math:`j`", "['H2O', 'provided via config "solute_list"']"
+   "solute_set", ":math:`j`", "['provided via config "solute_list"']"
+   "ion_set", ":math:`j`", "['provided via config "solute_list"']"
+   "cation_set", ":math:`j`", "['provided via config "solute_list"']"
+   "anion_set", ":math:`j`", "['provided via config "solute_list"']"
 
 State variables
 ---------------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass flowrate", ":math:`M_j`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg/s}`"
+   "Component molar flowrate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mols^{-1}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
 
@@ -33,21 +37,33 @@ Properties
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass fraction", ":math:`x_j`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
-   "Mass density of seawater", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass density of pure water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Phase volumetric flowrate", ":math:`Q_p`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{/s}`"
-   "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
-   "Mass concentration", ":math:`C_j`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg/}\text{m}^3`"
-   "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`"
-   "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
-   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
-   "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
-   "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
-   "Specific heat capacity", ":math:`c_p`", "cp_phase", "[p]", ":math:`\text{J/kg/K}`"
-   "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
-   "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
-   "Diffusivity", ":math:`D`", "diffus_phase", "[p]", ":math:`\text{m}^2\text{/s}`"
+   "Component mass flow rate", ":math:`M`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kgs^{-1}`"
+   "Component charge-equivalent molar flow rate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mols^{-1}`"
+   "Component charge-equivalent molar concentration", ":math:`\tilde{n}`", "conc_equiv_phase_comp", "[p, j]", ":math:`\text{molm^{-3}`"
+   "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
+   "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m^{-3}}`"
+   "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m^{-3}}`"
+   "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m^3 s^{-1}}`"
+   "Total volumetric flowrate", ":math:`Q_tot`", "flow_vol", "None", ":math:`\text{m^3 s^{-1}}`"
+   "Component molar concentration", ":math:`n`", "conc_mol_phase_comp", "[p, j]", ":math:`\text{mol m^{-3}}`"
+   "Component mass concentration", ":math:`m`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg m^{-3}}`"
+   "Component molar fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
+   "Component molality", ":math:`b`", "molality_phase_comp", "[p, j]", ":math:`\text{mol kg^{-1}`"
+   "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{mol kg^{-1}`"
+   "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`"
+   "Kinematic viscosity", ":math:`\nu`", "visc_k_phase", "[p]", ":math:`\text{m^2 s^{-1}}`"
+   "Phase osmotic pressure", ":math:`\Pi`", "pressure_osm_phase", "None", ":math:`\text{Pa}`"
+   "Component stokes radius", ":math:`\r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`"
+   "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol^{-1}`"
+   "Ion component electrical mobility", ":math:`\mu_e`", "elec_mobility_phase_comp", "[p,j]", ":math:`\text{m^2 V^{-1} s^{-1}}`"
+   "Ion component transport number", ":math:`t`", "trans_num_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
+   "Phase equivalent conductivity", ":math:`\Lambda`", "equiv_conductivity_phase", "[p]", ":math:`\text{m^2 \ohm^{-1} mol^{-1}}`"
+   "Phase electrical conductivity", ":math:`\lambda`", "elec_cond_phase", "[p]", ":math:`\text{ohm^{-1}m^{-1}}`"
+   "Ion component charge", ":math:`z`", "charge_comp", "[j]", ":math:`\text{dimensionless}`"
+   "Component activity coefficient", ":math:`\gamma`", "act_coeff_phase_comp", "[j]", ":math:`\text{dimensionless}`"
+   "Dielectric constant", ":math:`\epsilon`", "dielectric_constant", "none", ":math:`\text{dimensionless}`"
+   "Debye-Huckel constant", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`"
+   "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg^{-1}}`"
 
 
 **The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
@@ -55,8 +71,8 @@ Properties
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
-   "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
+   "Component mole flowrate", ":math:`N`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
+   "Component mole fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
    "Molality", ":math:`Cm`", "molality_comp", "['TDS']", ":math:`\text{mole/kg}`"
    "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
 
@@ -65,16 +81,16 @@ Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component mass fraction", ":math:`x_j = \frac{M_j}{\sum_{j} M_j}`"
+   "Component mass fraction", ":math:`x = \frac{M}{\sum_{j} M}`"
    "Mass density", "Equation 8 in Sharqawy et al. (2010)"
-   "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
-   "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
+   "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M}{\rho}`"
+   "Mass concentration", ":math:`C = x \cdotp \rho`"
    "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
    "Osmotic coefficient", "Equation 49 in Sharqawy et al. (2010)"
    "Specific enthalpy", "Equations 43 and 55 in Sharqawy et al. (2010)"
-   "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
-   "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
-   "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
+   "Enthalpy flow", ":math:`H = \sum_{j} M \cdotp \widehat{H}`"
+   "Component mole flowrate", ":math:`N = \frac{M}{MW}`"
+   "Component mole fraction", ":math:`y = \frac{N}{\sum_{j} N}`"
    "Molality", ":math:`Cm = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
    "Osmotic pressure", ":math:`\pi = \phi \cdotp Cm \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
    "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
