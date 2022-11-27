@@ -5,11 +5,11 @@ Multi-Component Aqueous Solution (MCAS) Property Package
 This property package implements property relationships for an aqueous solution that may contain multiple neutral and/or ionic solutes.
 
 This MCAS property package
-   * sets H2O as the solvent 
-   * supports multiple solute components including ions and neutral molecules.
-   * supports only liquid phase
-   * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables.  
-   * does not support dynamics
+   * sets H2O as the solvent;
+   * supports multiple solute components including ions and neutral molecules;
+   * supports only liquid phase;
+   * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables;
+   * does not support dynamics.
    
 .. module:: watertap.property_models.multicomp_aq_sol_prop_pack 
 
