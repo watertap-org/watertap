@@ -1871,7 +1871,12 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )
         else:  # PressureDropMethod.Darcy_Weisbach is used
-            self._get_fluid_dimensionless_quantities()
+            if not (
+                self.config.has_Nernst_diffusion_layer
+                and self.config.limiting_current_density_method
+                == LimitingCurrentDensityMethod.Theoretical
+            ):
+                self._get_fluid_dimensionless_quantities()
             self.friction_factor = Var(
                 initialize=10,
                 bounds=(0, 10000),  # arbitrary upper bound
