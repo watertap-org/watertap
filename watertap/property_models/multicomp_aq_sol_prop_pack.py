@@ -101,8 +101,8 @@ class TransportNumberCalculation(Enum):
     ElectricalMobility = auto()
 
 
-@declare_process_block_class("DSPMDEParameterBlock")
-class DSPMDEParameterData(PhysicalParameterBlock):
+@declare_process_block_class("MCASParameterBlock")
+class MCASParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare(
@@ -262,7 +262,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         """
         super().build()
 
-        self._state_block_class = DSPMDEStateBlock
+        self._state_block_class = MCASStateBlock
 
         # phases
         self.Liq = AqueousPhase()
@@ -495,7 +495,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         )
 
 
-class _DSPMDEStateBlock(StateBlock):
+class _MCASStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -862,8 +862,8 @@ class _DSPMDEStateBlock(StateBlock):
         return results
 
 
-@declare_process_block_class("DSPMDEStateBlock", block_class=_DSPMDEStateBlock)
-class DSPMDEStateBlockData(StateBlockData):
+@declare_process_block_class("MCASStateBlock", block_class=_MCASStateBlock)
+class MCASStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
         super().build()
@@ -1278,7 +1278,7 @@ class DSPMDEStateBlockData(StateBlockData):
         )
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
-    # the MIT's DSPMDE paper indicates usage of molar concentration
+    # the MIT's MCAS paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
             initialize=1,

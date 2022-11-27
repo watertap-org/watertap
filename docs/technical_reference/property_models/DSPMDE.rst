@@ -11,6 +11,11 @@ This MCAS property package
    * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables.  
    * does not support dynamics
    
+.. module:: watertap.property_models.multicomp_aq_sol_prop_pack 
+
+.. autoclass:: MCASParameterBlock
+    :members:
+
 Sets
 ----
 .. csv-table::
@@ -45,8 +50,8 @@ Calculated Properties
    "Component charge-equivalent molar flow rate", ":math:`\tilde{N}`", "flow_equiv_phase_comp", "[p, j]", ":math:`\text{mol\ s^{-1}}`", ":math:`\tilde{N}=N\left|z\right|`"
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}`", "conc_equiv_phase_comp", "[p, j]", ":math:`\text{mol\ m^{-3}}`", ":math:`\tilde{n}=n\left|z\right|`"
    "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
-   "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m^{-3}}`", ":math:`\rho=1000 \text{kg m^{-3}}` or :math:`\rho=\rho_w \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)`"
-   "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m^{-3}}`",":math:`\rho_w=\textbf{f}\left(T\right)`"
+   "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m^{-3}}`", ":math:`\rho=1000 \text{kg m^{-3}}` or :math:`\rho=\rho_w \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
+   "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m^{-3}}`",":math:`\rho_w=\textbf{f}\left(T\right)` :sup:`1`"
    "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m^3 s^{-1}}`", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
    "Total volumetric flowrate", ":math:`Q_tot`", "flow_vol", "None", ":math:`\text{m^3 s^{-1}}`",":math:`Q_tot=\sum_p{Q_p}`" 
    "Component molar concentration", ":math:`n`", "conc_mol_phase_comp", "[p, j]", ":math:`\text{mol m^{-3}}`",":math:`nm_N=m`"
@@ -69,84 +74,30 @@ Calculated Properties
    "Debye-Huckel constant", ":math:`A`", "deby_huckel_constant", "none", ":math:`\text{dimensionless}`", ":math:`A=\frac{\left(2 \pi N_A\right)^{0.5}}{log(10)} \left(\frac{\textbf{e}^2}{4 \pi \epsilon \epsilon_0 kT}\right)^{\left(\frac{3}{2}\right)}`"
    "Ionic Strength", ":math:`I`", "ionic_strength_molal", "none", ":math:`\text{mol kg^{-1}}`", ":math:`I=0.5\sum_{j\in solute}{z_j^2b_j}`"
 
+**Notes** 
+   :sup:`1`  :math:`\textbf{f}(\cdot)` refers to empirical correlations of solution density to water salinity and temperature following the study of Sharqawy et al. (2010). 
 
-
-
-   "Component mass fraction", ":math:`x = \frac{M}{\sum_{j} M}`"
-   "Mass density", "Equation 8 in Sharqawy et al. (2010)"
-   "Volumetric flow rate", ":math:`Q = \frac{\sum_{j} M}{\rho}`"
-   "Mass concentration", ":math:`C = x \cdotp \rho`"
-   "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
-   "Osmotic coefficient", "Equation 49 in Sharqawy et al. (2010)"
-   "Specific enthalpy", "Equations 43 and 55 in Sharqawy et al. (2010)"
-   "Enthalpy flow", ":math:`H = \sum_{j} M \cdotp \widehat{H}`"
-   "Component mole flow rate", ":math:`N = \frac{M}{MW}`"
-   "Component mole fraction", ":math:`y = \frac{N}{\sum_{j} N}`"
-   "Molality", ":math:`Cm = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
-   "Osmotic pressure", ":math:`\pi = \phi \cdotp Cm \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
-   "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
-   "Specific heat capacity", "Equation 9 in Sharqawy et al. (2010)"
-   "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
-   "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
-   "Diffusivity", "Equation 6 in Bartholomew et al. (2019)"
-
-
-
-Note: Osmotic pressure calculation (based on equation 48 in Nayar et al. (2016)) uses the density of water as a function of temperature (:math:`\rho_w`) and the ideal gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`), in addition to previously defined variables.
 
 Scaling
 -------
-This seawater property package includes support for scaling, such as providing default or calculating scaling factors for almost all variables. The only variables that do not have scaling factors are the component mass flow rate and the user will receive a warning if these are not set.
+A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and} p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually requires a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
+.. code-block::
 
-The user can specify the scaling factors for component mass flow rates with the following:
+   m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq','{component name}')) 
+   # m is the model name, and fs is the instanced flowsheet block of m. 
+   calculate_scaling_factors(m)
 
-.. testsetup::
+Users also have the authority to set a scaling factor for non-state variables via the following codes: 
+.. code-block::
 
-   from pyomo.environ import ConcreteModel
-   from idaes.core import FlowsheetBlock
+   import idaes.core.util.scaling as iscale #import the needed utility package
+   iscale.set_scaling_factor(m.fs.properties.{property name}, 100) 
 
-.. doctest::
-   
-   # relevant imports
-   import watertap.property_models.seawater_prop_pack as props
-   from idaes.core.util.scaling import calculate_scaling_factors
+Proper scaling of variables is, in many cases, crucial to solver's performance in finding an optimal solution of a problem. While designing scaling can have a mathematical sophistication, a general rule is to scale all variables as close to 1 as possible, e.g., in the range of 1e-2 to 1e2. 
 
-   # relevant assignments
-   m = ConcreteModel()
-   m.fs = FlowsheetBlock(default={"dynamic": False})
-   m.fs.properties = props.SeawaterParameterBlock()
-
-   # set scaling for component mass flow rate
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq','H2O'))
-   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq','TDS'))
-
-   # calculate scaling factors
-   calculate_scaling_factors(m.fs)
-
-The default scaling factors are as follows:
-
-   * 1e-2 for temperature
-   * 1e-6 for pressure
-   * 1e-3 for mass density
-   * 1e3 for dynamic viscosity
-   * 1 for the osmotic coefficient
-   * 1e-5 for the specific enthalpy
-   * 1e-5 for saturation pressure
-   * 1e-3 for the specific heat capacity
-   * 1 for thermal conductivity
-   * 1e-6 for latent heat of vaporization
-   * 1e9 for diffusivity
-
-Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
 Reference
 ---------
 
-K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
-
 M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater )
-
-F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
-
-T.V. Bartholomew, M.S. Mauter, Computational framework for modeling membrane processes without process and solution property simplifications, Journal of Membrane Science. 573 (2019) 682–693. https://doi.org/10.1016/j.memsci.2018.11.067.
 
