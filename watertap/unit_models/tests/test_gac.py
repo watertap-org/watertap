@@ -40,8 +40,8 @@ from idaes.core.util.scaling import (
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -62,7 +62,7 @@ class TestGACSimplified:
         ms = ConcreteModel()
         ms.fs = FlowsheetBlock(dynamic=False)
 
-        ms.fs.properties = DSPMDEParameterBlock(
+        ms.fs.properties = MCASParameterBlock(
             solute_list=["DCE"], mw_data={"H2O": 0.018, "DCE": 0.09896}
         )
 
@@ -220,7 +220,7 @@ class TestGACRobust:
         mr = ConcreteModel()
         mr.fs = FlowsheetBlock(dynamic=False)
 
-        mr.fs.properties = DSPMDEParameterBlock(
+        mr.fs.properties = MCASParameterBlock(
             solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
         )
 
@@ -498,7 +498,7 @@ class TestGACMulti:
         mm.fs = FlowsheetBlock(dynamic=False)
 
         # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-        mm.fs.properties = DSPMDEParameterBlock(
+        mm.fs.properties = MCASParameterBlock(
             solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
             mw_data={
                 "H2O": 0.018,

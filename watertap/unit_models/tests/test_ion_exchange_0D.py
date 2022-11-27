@@ -23,9 +23,9 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
 )
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
@@ -147,7 +147,7 @@ class TestIonExchangeNoInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -341,7 +341,7 @@ class TestIonExchangeNoInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 123
@@ -489,7 +489,7 @@ class TestIonExchangeWithInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -687,7 +687,7 @@ class TestIonExchangeWithInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 161
@@ -845,7 +845,7 @@ class TestIonExchangeCosting:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,

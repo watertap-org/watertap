@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import pytest
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
     Electrodialysis1D,
@@ -64,7 +64,7 @@ class TestElectrodialysisVoltageConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -311,7 +311,7 @@ class TestElectrodialysisCurrentConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -522,7 +522,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -750,7 +750,7 @@ class Test_ED_MembNonohm_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -972,7 +972,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1182,7 +1182,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,

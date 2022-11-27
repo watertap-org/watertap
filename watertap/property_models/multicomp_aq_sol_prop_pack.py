@@ -11,8 +11,12 @@
 #
 ###############################################################################
 """
-Initial property package for multi-ionic system for use in the
-Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
+This property package computes a multi-component aqueous solution that can
+contain ionic and/or neutral solute species. It supports basic calculation 
+of component quanitities and some physical, chemical and electrical properties. 
+
+This property package was formerly named as "ion_DSPMDE_prop_pack" for its use of
+Donnan Steric Pore Model with Dielectric Exclusion (DSPMDE).
 """
 
 # TODO:
@@ -52,8 +56,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
-from idaes.core.base.phases import LiquidPhase, AqueousPhase
+from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
