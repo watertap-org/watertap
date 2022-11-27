@@ -11,7 +11,7 @@ This MCAS property package
    * uses molar flow rate (in mol/s), temperature and pressure as the initial state variables;
    * does not support dynamics.
    
-.. module:: watertap.property_models.multicomp_aq_sol_prop_pack 
+.. currentmodule:: watertap.property_models.multicomp_aq_sol_prop_pack 
 
 .. autoclass:: MCASParameterBlock
     :members:
