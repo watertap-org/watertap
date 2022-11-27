@@ -15,9 +15,11 @@ This MCAS property package
 
 .. autoclass:: MCASParameterBlock
     :members:
+    :noindex:
 
 .. autoclass:: MCASParameterData
     :members:
+    :noindex:
 
 Sets
 ----
