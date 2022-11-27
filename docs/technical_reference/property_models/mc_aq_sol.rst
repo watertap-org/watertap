@@ -16,6 +16,9 @@ This MCAS property package
 .. autoclass:: MCASParameterBlock
     :members:
 
+.. autoclass:: MCASParameterData
+    :members:
+
 Sets
 ----
 .. csv-table::
