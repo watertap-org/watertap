@@ -1702,7 +1702,7 @@ def test_pressure_recovery_step_2_ions():
     "Test optimal termination across a range of pressures and recovery rates for 2 ion system"
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-"],
         diffusivity_data={("Liq", "Na_+"): 1.33e-09, ("Liq", "Cl_-"): 2.03e-09},
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.035},
@@ -1834,7 +1834,7 @@ def test_pressure_recovery_step_5_ions():
         "density_calculation": DensityCalculation.constant,
     }
 
-    m.fs.properties = DSPMDEParameterBlock(**property_kwds)
+    m.fs.properties = MCASParameterBlock(**property_kwds)
 
     m.fs.feed = Feed(property_package=m.fs.properties)
 
