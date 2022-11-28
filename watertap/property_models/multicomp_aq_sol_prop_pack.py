@@ -523,8 +523,7 @@ class _MCASStateBlock(StateBlock):
                          volume, and if initial guesses were not provided at the unit model 
                          level, the control volume passes the inlet values as initial guess. 
                          The keys for the state_args dictionary are: 
-                         flow_mol_phase_comp : value at which to initialize phase component 
-                                               flows;
+                         flow_mol_phase_comp : value to initialize phase component flows;
                          pressure : value at which to initialize pressure; 
                          temperature : value at which to initialize temperature.
             outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
@@ -760,7 +759,7 @@ class _MCASStateBlock(StateBlock):
         optarg=None,
     ):
         """
-        Solves state blocks given a set of variables and their values.These variables can be 
+        Solves state blocks given a set of variables and their values. These variables can be 
         state variables or properties. This method is typically used before initialization to 
         solve for state variables because non-state variables (i.e. properties) cannot be fixed 
         in initialization routines.
