@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Thermophysical property package to be used in conjunction with ASM2d reactions. 
+Thermophysical property package to be used in conjunction with ASM2d reactions.
 
 Reference:
 [1] Henze, M., Gujer, W., Mino, T., Matsuo, T., Wentzel, M.C., Marais, G.v.R.,
@@ -290,7 +290,7 @@ class ASM2dStateBlockData(StateBlockData):
         self.temperature = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=298.15,
-            bounds=(298.15, 323.15),
+            bounds=(298.14, 323.15),
             doc="Temperature",
             units=pyo.units.K,
         )

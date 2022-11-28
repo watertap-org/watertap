@@ -24,7 +24,6 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
 
@@ -168,7 +167,6 @@ class TestSaltPrecipitationZO:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 

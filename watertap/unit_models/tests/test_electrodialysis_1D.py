@@ -22,30 +22,20 @@ from pyomo.environ import (
     assert_optimal_termination,
     value,
     Set,
-    Param,
     Var,
-    units as pyunits,
-    Suffix,
     Constraint,
-    SolverFactory,
-    SolverStatus,
-    TerminationCondition,
 )
 from idaes.core import (
     FlowsheetBlock,
-    MaterialFlowBasis,
     MaterialBalanceType,
     MomentumBalanceType,
-    EnergyBalanceType,
     UnitModelCostingBlock,
 )
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-import re
 
 __author__ = "Xiangyu Bi"
 
@@ -650,7 +640,6 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-5)
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -680,7 +669,6 @@ class TestElectrodialysis_withNeutralSPecies:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -692,7 +680,6 @@ class TestElectrodialysis_withNeutralSPecies:
         }
         assert not badly_scaled_var_values
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -722,7 +709,6 @@ class TestElectrodialysis_withNeutralSPecies:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
         ) == pytest.approx(7.496e-05, rel=5e-3)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3

@@ -419,8 +419,10 @@ def set_operating_conditions(m):
     # RO unit
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
+    desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    desal.RO.feed_side.spacer_porosity.fix(
+        0.97
+    )  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     desal.RO.width.fix(1000)  # stage width [m]
     desal.RO.area.fix(
@@ -594,8 +596,7 @@ def add_costing(m):
     # Add costing to zero order units
     # Pre-treatment units
     # This really looks like it should be a feed block in its own right
-    # prtrt.intake.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    # prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.zo_costing)
 
     prtrt.ferric_chloride_addition.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.zo_costing
@@ -630,8 +631,7 @@ def add_costing(m):
     )
     desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
     if m.erd_type == "pressure_exchanger":
-        # desal.S1.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
+        # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
         desal.M1.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.ro_costing
         )
@@ -644,8 +644,7 @@ def add_costing(m):
         )
     elif m.erd_type == "pump_as_turbine":
         pass
-        # desal.ERD.costing = UnitModelCostingBlock(default={
-        #     "flowsheet_costing_block": m.fs.ro_costing})
+        # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.ro_costing)
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
@@ -766,7 +765,7 @@ def display_costing(m):
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.zo_costing.flow_types:
+    for f in m.fs.zo_costing.used_flows:
         print(
             f,
             " :   ",

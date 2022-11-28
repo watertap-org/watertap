@@ -11,7 +11,6 @@
 #
 ###############################################################################
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent

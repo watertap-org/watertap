@@ -13,10 +13,10 @@
 
 from pyomo.environ import (
     Var,
+    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
-    PositiveReals,
     units as pyunits,
     check_optimal_termination,
 )
@@ -34,8 +34,11 @@ from idaes.core import (
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 __author__ = "Hunter Barber"
 
@@ -57,7 +60,7 @@ class SurfaceDiffusionCoefficientType(Enum):
 
 # ---------------------------------------------------------------------
 @declare_process_block_class("GAC")
-class GACData(UnitModelBlockData):
+class GACData(InitializationMixin, UnitModelBlockData):
     """
     Initial Granular Activated Carbon Model -
     currently should be used for only with ion_DSPMDE_prop_pack with
@@ -978,7 +981,11 @@ class GACData(UnitModelBlockData):
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for initialization routines
@@ -1059,17 +1066,14 @@ class GACData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            # occasionally worth retrying solve
-            if not check_optimal_termination(res):
-                init_log.warning("Trouble solving GAC unit model, trying one more time")
-                res = opt.solve(blk, tee=slc.tee)
-
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.process_flow.release_state(flags, outlvl + 1)
-
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     # ---------------------------------------------------------------------
 

@@ -49,7 +49,6 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     set_scaling_factor,
 )
-import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
@@ -362,7 +361,6 @@ class TestIonExchangeNoInert:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -708,13 +706,11 @@ class TestIonExchangeWithInert:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_frame_with_inert):
         m = IX_frame_with_inert
         initialization_tester(m)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame_with_inert):
         m = IX_frame_with_inert
@@ -723,7 +719,6 @@ class TestIonExchangeWithInert:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame_with_inert):
         m = IX_frame_with_inert
@@ -751,7 +746,6 @@ class TestIonExchangeWithInert:
                 <= 1e-6
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame_with_inert):
         m = IX_frame_with_inert

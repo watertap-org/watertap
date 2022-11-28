@@ -16,12 +16,11 @@ Tests for zero-order gas-sparged membrane unit
 import pytest
 
 
-from idaes.core import declare_process_block_class, FlowsheetBlock
+from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.config import bin_directory as idaes_bin_directory
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -250,7 +249,6 @@ class TestGasSpargedMembraneZO:
                     <= 1e-6
                 )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 
