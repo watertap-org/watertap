@@ -501,8 +501,7 @@ class MCASParameterData(PhysicalParameterBlock):
 
 class _MCASStateBlock(StateBlock):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to Property Blocks as a whole, rather than individual elements of indexed Property Blocks.
     """
 
     def initialize(
