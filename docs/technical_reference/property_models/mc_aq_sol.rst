@@ -66,19 +66,19 @@ Calculated Properties
    "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
    "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m}^{-3}`", ":math:`\rho=1000 \text{kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
    "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m}^{-3}`",":math:`\rho_w=\textbf{f}\left(T\right)` :sup:`1`"
-   "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{} \text{s}^{-1}`", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
-   "Total volumetric flowrate", ":math:`Q_{tot}`", "flow_vol", "None", ":math:`\text{m}^3\text{} \text{s}^{-1}`",":math:`Q_{tot}=\sum_p{Q_p}`" 
+   "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{ } \text{s}^{-1}`", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
+   "Total volumetric flowrate", ":math:`Q_{tot}`", "flow_vol", "None", ":math:`\text{m}^3\text{ } \text{s}^{-1}`",":math:`Q_{tot}=\sum_p{Q_p}`" 
    "Component molar concentration", ":math:`n`", "conc_mol_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`",":math:`nm_N=m`"
    "Component mass concentration", ":math:`m`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg m}^{-3}`",":math:`m=\rho x`"
    "Component molar fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`y_j=\frac{N_j}{\sum_j{N_j}}`"
    "Component molality", ":math:`b`", "molality_phase_comp", "[p, j]", ":math:`\text{mol kg}^{-1}`",":math:`b=\frac{N}{N_{H_2O} m_{N\text{H_2O}}}`"
-   "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{} \text{s}^{-1}`", ":math:`D=` input from users"
+   "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ } \text{s}^{-1}`", ":math:`D=` input from users"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`", ":math:`\mu=` input from users"
    "Kinematic viscosity", ":math:`\nu`", "visc_k_phase", "[p]", ":math:`\text{m}^2 \text{s}^{-1}`",":math:`\nu=\mu\rho^{-1}`"
    "Phase osmotic pressure", ":math:`\Pi`", "pressure_osm_phase", "None", ":math:`\text{Pa}`",":math:`\Pi=RT\sum_{j\in solute}{n_j}`"
    "Component stokes radius", ":math:`r_h`", "radius_stokes_comp", "[j]", ":math:`\text{m}`", ":math:`r_h=` input from users"
    "Component molecular weight", ":math:`m_N`", "mw_comp", "[j]", ":math:`\text{kg mol}^{-1}`",":math:`m_N=` input from users"
-   "Ion component electrical mobility", ":math:`\mu_e`", "elec_mobility_phase_comp", "[p,j]", ":math:`\text{m}^2\text{}\text{V}^{-1}\text{}\text{s}^{-1}`", ":math:`\mu_e=` input from users or :math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
+   "Ion component electrical mobility", ":math:`\mu_e`", "elec_mobility_phase_comp", "[p,j]", ":math:`\text{m}^2\text{ }\text{V}^{-1}\text{ }\text{s}^{-1}`", ":math:`\mu_e=` input from users or :math:`\mu_e=\frac{D\left|z\right|F}{RT}`"
    "Ion component transport number", ":math:`t`", "trans_num_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`t=` input from users or :math:`t_j=\frac{\left|z_j\right|\mu_{ej} n_j}{\sum_{j\in ion}{\left|z_j\right|\mu_{ej} n_j}}`"
    "Phase equivalent conductivity", ":math:`\Lambda`", "equiv_conductivity_phase", "[p]", ":math:`\text{m}^2 \Omega^{-1} \text{mol}^{-1}`", ":math:`\Lambda=` input from users or :math:`\Lambda=\frac{\sum_{j\in ion}{F\left|z_j\right|\mu_{ej} n_j}}{\sum_{j\in cation}{\left|z_j\right|n_j}}`"
    "Phase electrical conductivity", ":math:`\lambda`", "elec_cond_phase", "[p]", ":math:`\Omega^{-1} \text{m}^{-1}`", ":math:`\lambda=\Lambda\sum_{j\in cation}{\left|z_j\right|n_j}`"
@@ -105,7 +105,7 @@ Physical/chemical constants
 
 Scaling
 -------
-A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and}  p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually require a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
+A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and }  p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually require a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
 
 .. code-block::
 
