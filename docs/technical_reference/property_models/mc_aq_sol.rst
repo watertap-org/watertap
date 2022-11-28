@@ -105,7 +105,7 @@ Physical/chemical constants
 
 Scaling
 -------
-A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and} p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually requires a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
+A comprehensive scaling factor calculation method is coded in this property package.  Among the state variables (:math:`N, T, \text{and}  p`), default scaling factors for :math:`T` and :math:`p` were set and do not need users' input, while, for :math:`N`, usually require a user input via an interface. The coding interface to set defalut scaling factor for :math:`N` and call the scaling calculation for other variables is the following. 
 
 .. code-block::
 
