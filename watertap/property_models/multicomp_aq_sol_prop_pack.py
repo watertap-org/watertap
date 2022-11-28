@@ -524,18 +524,16 @@ class _MCASStateBlock(StateBlock):
                          level, the control volume passes the inlet values as initial guess. 
                          The keys for the state_args dictionary are:
                          flow_mol_phase_comp : value at which to initialize phase component 
-                                               flows
-                         pressure : value at which to initialize pressure temperature : value 
-                         at which to initialize temperature
+                                               flows;
+                         pressure : value at which to initialize pressure; 
+                         temperature : value at which to initialize temperature.
             outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
             optarg : solver options dictionary object (default=None)
             state_vars_fixed : Flag to denote if state vars have already
                                been fixed.
                                - True - states have already been fixed by the control volume 
-                               1D. Control volume 0D
-                               does not fix the state vars, so will
-                               be False if this state block is used
-                               with 0D blocks.
+                               1D. Control volume 0D does not fix the state vars, so will be 
+                               False if this state block is used with 0D blocks. 
                                - False - states have not been fixed. The state block will deal 
                                with fixing/unfixing.
             solver : Solver object to use during initialization. If None 
@@ -766,7 +764,7 @@ class _MCASStateBlock(StateBlock):
     ):
         """
         Solves state blocks given a set of variables and their values.These variables can be 
-        state variables or properties. This method is typically used before initialization to 
+        state variables or properties. This method is typically used before initialization to  
         solve for state variables because non-state variables (i.e. properties) cannot be fixed 
         in initialization routines.
 
