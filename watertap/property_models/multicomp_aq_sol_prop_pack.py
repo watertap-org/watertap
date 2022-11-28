@@ -515,6 +515,7 @@ class _MCASStateBlock(StateBlock):
     ):
         """
         Initialization routine for property package.
+        
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -522,24 +523,22 @@ class _MCASStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-
                          flow_mol_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
-            outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
+            outlvl : sets output level of initialization
+                     routine (default=idaeslog.NOTSET)
             optarg : solver options dictionary object (default=None)
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
-            solver : Solver object to use during initialization if None is provided
-                     it will use the default solver for IDAES (default = None)
+            state_vars_fixed : Flag to denote if state vars have already
+                               been fixed.
+                               - True - states have already been fixed by the control volume 1D. Control volume 0D
+                               does not fix the state vars, so will
+                               be False if this state block is used
+                               with 0D blocks.
+                               - False - states have not been fixed. The state block will deal with fixing/unfixing.
+            solver : Solver object to use during initialization. If None 
+                     is provided, it will use the default solver for IDAES (default = None)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -547,7 +546,7 @@ class _MCASStateBlock(StateBlock):
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
-                        - False - state variables are unfixed after
+                         - False - state variables are unfixed after
                                  initialization by calling the
                                  release_state method
         Returns:
@@ -770,14 +769,17 @@ class _MCASStateBlock(StateBlock):
         cannot be fixed in initialization routines.
 
         Keyword Arguments:
-            var_args : dictionary with variables and their values, they can be state variables or properties
+            var_args : dictionary with variables and their values, they 
+                       can be state variables or properties
                        {(VAR_NAME, INDEX): VALUE}
-            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
+            hold_state : flag indicating whether all of the state 
+                         variables should be fixed after calculate state.
                          True - State variables will be fixed.
                          False - State variables will remain unfixed, unless already fixed.
-            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
-            solver : solver name string if None is provided the default solver
-                     for IDAES will be used (default = None)
+            outlvl : idaes logger object that sets output level of solve 
+                     call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default 
+                     solver for IDAES will be used (default = None)
             optarg : solver options dictionary object (default={})
 
         Returns:
