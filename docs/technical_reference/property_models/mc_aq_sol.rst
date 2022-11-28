@@ -67,7 +67,7 @@ Calculated Properties
    "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m}^{-3}`", ":math:`\rho=1000 \text{kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
    "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m}^{-3}`",":math:`\rho_w=\textbf{f}\left(T\right)` :sup:`1`"
    "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{} \text{s}^{-1}`", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
-   "Total volumetric flowrate", ":math:`Q_tot`", "flow_vol", "None", ":math:`\text{m}^3\text{} \text{s}^{-1}`",":math:`Q_{tot}=\sum_p{Q_p}`" 
+   "Total volumetric flowrate", ":math:`Q_{tot}`", "flow_vol", "None", ":math:`\text{m}^3\text{} \text{s}^{-1}`",":math:`Q_{tot}=\sum_p{Q_p}`" 
    "Component molar concentration", ":math:`n`", "conc_mol_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`",":math:`nm_N=m`"
    "Component mass concentration", ":math:`m`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg m}^{-3}`",":math:`m=\rho x`"
    "Component molar fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`y_j=\frac{N_j}{\sum_j{N_j}}`"
