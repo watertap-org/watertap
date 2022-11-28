@@ -1282,7 +1282,7 @@ class MCASStateBlockData(StateBlockData):
         )
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
-    # the MIT's MCAS paper indicates usage of molar concentration
+    # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength_molal(self):
         self.ionic_strength_molal = Var(
             initialize=1,
@@ -1294,7 +1294,7 @@ class MCASStateBlockData(StateBlockData):
         def rule_ionic_strength_molal(b):
             return b.ionic_strength_molal == 0.5 * sum(
                 b.charge_comp[j] ** 2 * b.molality_phase_comp["Liq", j]
-                for j in self.params.ion_set | self.params.solute_set
+                for j in self.params.ion_set
             )
 
         self.eq_ionic_strength_molal = Constraint(rule=rule_ionic_strength_molal)
