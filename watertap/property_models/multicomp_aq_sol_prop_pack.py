@@ -549,6 +549,7 @@ class _MCASStateBlock(StateBlock):
                          - False - state variables are unfixed after
                                  initialization by calling the
                                  release_state method
+        
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -763,10 +764,7 @@ class _MCASStateBlock(StateBlock):
         optarg=None,
     ):
         """
-        Solves state blocks given a set of variables and their values. These variables can
-        be state variables or properties. This method is typically used before
-        initialization to solve for state variables because non-state variables (i.e. properties)
-        cannot be fixed in initialization routines.
+        Solves state blocks given a set of variables and their values. These variables can be state variables or properties. This method is typically used before initialization to solve for state variables because non-state variables (i.e. properties) cannot be fixed in initialization routines.
 
         Keyword Arguments:
             var_args : dictionary with variables and their values, they 
