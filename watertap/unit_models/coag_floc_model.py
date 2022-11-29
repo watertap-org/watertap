@@ -14,6 +14,7 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -36,9 +37,11 @@ from idaes.core import (
 from idaes.core.util.constants import Constants
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+from watertap.core import InitializationMixin
 
 __author__ = "Austin Ladshaw"
 
@@ -46,7 +49,7 @@ _log = idaeslog.getLogger(__name__)
 
 # Name of the unit model
 @declare_process_block_class("CoagulationFlocculation")
-class CoagulationFlocculationData(UnitModelBlockData):
+class CoagulationFlocculationData(InitializationMixin, UnitModelBlockData):
     """
     Zero order Coagulation-Flocculation model based on Jar Tests
     """
@@ -846,7 +849,11 @@ class CoagulationFlocculationData(UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -889,6 +896,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

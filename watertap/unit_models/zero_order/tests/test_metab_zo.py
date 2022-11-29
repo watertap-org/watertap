@@ -87,7 +87,6 @@ class TestMetabZO_hydrogen:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -95,7 +94,6 @@ class TestMetabZO_hydrogen:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -109,7 +107,6 @@ class TestMetabZO_hydrogen:
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
@@ -126,7 +123,6 @@ class TestMetabZO_hydrogen:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
@@ -182,7 +178,6 @@ class TestMetabZO_methane:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -190,7 +185,6 @@ class TestMetabZO_methane:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -204,7 +198,6 @@ class TestMetabZO_methane:
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
@@ -221,7 +214,6 @@ class TestMetabZO_methane:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
@@ -300,7 +292,6 @@ class TestMetabZO_hydrogen_cost:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -308,7 +299,6 @@ class TestMetabZO_hydrogen_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):
@@ -406,7 +396,6 @@ class TestMetabZO_methane_cost:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -414,7 +403,6 @@ class TestMetabZO_methane_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):

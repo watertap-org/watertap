@@ -15,6 +15,7 @@
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import (
     Var,
+    check_optimal_termination,
     Suffix,
     NonNegativeReals,
     value,
@@ -34,15 +35,18 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
+
+from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("PressureExchanger")
-class PressureExchangerData(UnitModelBlockData):
+class PressureExchangerData(InitializationMixin, UnitModelBlockData):
     """
     Standard Pressure Exchanger Unit Model Class:
     - steady state only
@@ -447,6 +451,9 @@ class PressureExchangerData(UnitModelBlockData):
         # release state of fixed variables
         self.low_pressure_side.properties_in.release_state(flags_low_in)
         self.high_pressure_side.properties_in.release_state(flags_high_in)
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         # reactivate volumetric flow constraint
         self.eq_equal_flow_vol.activate()

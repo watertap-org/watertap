@@ -154,10 +154,10 @@ class TestElectroNPZO:
         assert pytest.approx(0.00183, rel=1e-2) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(5.4645e-08, rel=1e-5) == value(
+        assert pytest.approx(1.54559e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]
         )
-        assert pytest.approx(5.4645e-08, rel=1e-5) == value(
+        assert pytest.approx(1.54559e-06, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphorus"]
         )
         assert pytest.approx(1350.54, abs=1e-5) == value(model.fs.unit.electricity[0])
@@ -179,7 +179,6 @@ class TestElectroNPZO:
                 )
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
 
