@@ -10,6 +10,7 @@ from watertap.tools.parameter_sweep.sampling_types import (
 from watertap.tools.parameter_sweep.parameter_sweep_functions import (
     parameter_sweep,
     recursive_parameter_sweep,
+    differential_parameter_sweep,
 )
 from watertap.tools.parameter_sweep.parameter_sweep_reader import (
     get_sweep_params_from_yaml,
@@ -19,6 +20,10 @@ from watertap.tools.parameter_sweep.parameter_sweep_reader import (
 from watertap.tools.parameter_sweep.parameter_sweep import (
     ParameterSweep,
     RecursiveParameterSweep,
+)
+
+from watertap.tools.parameter_sweep.parameter_sweep_differential import (
+    DifferentialParameterSweep,
 )
 
 # TODO: should this be removed?

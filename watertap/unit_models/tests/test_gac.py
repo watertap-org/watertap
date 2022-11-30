@@ -187,7 +187,6 @@ class TestGACSimplified:
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
@@ -354,7 +353,6 @@ class TestGACRobust:
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -385,7 +383,6 @@ class TestGACRobust:
         mr = gac_frame_robust
         mr.fs.unit.report()
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -430,7 +427,6 @@ class TestGACRobust:
             mr.fs.unit.costing.fixed_operating_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_modular_contactors_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -461,7 +457,6 @@ class TestGACRobust:
             mr.fs.unit.costing.capital_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_max_gac_ref_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -608,11 +603,10 @@ class TestGACMulti:
     def test_var_scaling_init_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
+            badly_scaled_var_generator(mm, large=1e2, small=1e-3, zero=1e-8)
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_multi(self, gac_frame_multi):
         mm = gac_frame_multi
