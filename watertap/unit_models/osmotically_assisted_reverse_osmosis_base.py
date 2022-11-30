@@ -11,15 +11,18 @@
 #
 ###############################################################################
 
+import math
 from pyomo.common.config import Bool, ConfigValue
 from pyomo.environ import (
     NonNegativeReals,
     Param,
     Suffix,
     Var,
+    Constraint,
     check_optimal_termination,
     exp,
     units as pyunits,
+    value,
 )
 from idaes.core import UnitModelBlockData, FlowDirection
 from idaes.core.solvers import get_solver
@@ -103,10 +106,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.feed_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
@@ -114,7 +113,10 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.feed_side.add_isothermal_conditions()
+        self.feed_side.add_interface_isothermal_conditions()
+
+        # Add constraint for equal temperature between inlet and outlet
+        self.feed_side.add_control_volume_isothermal_conditions()
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.feed_side.add_extensive_flow_to_interface()
@@ -144,10 +146,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
 
-        self.permeate_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_enthalpy_transfer=True
-        )
-
         self.permeate_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             pressure_change_type=self.config.pressure_change_type,
@@ -155,7 +153,11 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         )
 
         # Add constraint for equal temperature between bulk and interface
-        self.permeate_side.add_isothermal_conditions()
+        self.permeate_side.add_interface_isothermal_conditions()
+
+        # NOTE: We do *not* add a constraint for equal temperature
+        #       between inlet and outlet, that is handled by
+        #       eq_permeate_isothermal below and checks in initialization
 
         # Add constraint for volumetric flow equality between interface and bulk
         self.permeate_side.add_extensive_flow_to_interface()
@@ -193,9 +195,18 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             doc="Isothermal assumption for permeate",
         )
         def eq_permeate_isothermal(b, t, x):
+            if x == self.length_domain.last():
+                return Constraint.Skip
             return (
-                b.feed_side.properties[t, x].temperature
-                == b.permeate_side.properties[t, x].temperature
+                b.permeate_side.properties[t, x].temperature
+                == 0.5
+                * b.feed_side.properties[
+                    t, b.feed_side.length_domain.first()
+                ].temperature
+                + 0.5
+                * b.permeate_side.properties[
+                    t, b.permeate_side.length_domain.last()
+                ].temperature
             )
 
         # ==========================================================================
@@ -215,12 +226,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             return (
                 b.recovery_vol_phase[t, "Liq"]
                 == (
-                    b.permeate_side.properties_out[t].flow_vol_phase["Liq"]
-                    - b.permeate_side.properties_in[t].flow_vol_phase["Liq"]
+                    b.permeate_side.properties[t, b.first_element].flow_vol_phase["Liq"]
+                    - b.permeate_side.properties[
+                        t, b.permeate_side.length_domain.last()
+                    ].flow_vol_phase["Liq"]
                 )
-                / b.feed_side.properties[
-                    t, self.feed_side.first_element
-                ].flow_vol_phase["Liq"]
+                / b.feed_side.properties[t, b.first_element].flow_vol_phase["Liq"]
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -256,9 +267,15 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         def eq_recovery_mass_phase_comp(b, t, j):
             return (
                 b.recovery_mass_phase_comp[t, "Liq", j]
-                * b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", j]
-                == b.permeate_side.properties_out[t].flow_mass_phase_comp["Liq", j]
-                - b.permeate_side.properties_in[t].flow_mass_phase_comp["Liq", j]
+                * b.feed_side.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", j
+                ]
+                == b.permeate_side.properties[t, b.first_element].flow_mass_phase_comp[
+                    "Liq", j
+                ]
+                - b.permeate_side.properties[
+                    t, b.permeate_side.length_domain.last()
+                ].flow_mass_phase_comp["Liq", j]
             )
 
         # rejection
@@ -268,8 +285,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         @self.Constraint(self.flowsheet().config.time, solute_set)
         def eq_rejection_phase_comp(b, t, j):
             return b.rejection_phase_comp[t, "Liq", j] == 1 - (
-                b.permeate_side.properties_out[t].conc_mass_phase_comp["Liq", j]
-                / b.feed_side.properties_in[t].conc_mass_phase_comp["Liq", j]
+                b.permeate_side.properties[t, b.first_element].conc_mass_phase_comp[
+                    "Liq", j
+                ]
+                / b.feed_side.properties[t, b.first_element].conc_mass_phase_comp[
+                    "Liq", j
+                ]
             )
 
         self._add_flux_balance()
@@ -475,10 +496,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
     def initialize_build(
         self,
         initialize_guess=None,
-        state_args=None,
+        state_args_feed=None,
+        state_args_permeate=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        raise_on_isothermal_violation=True,
     ):
         """
         General wrapper for RO initialization routines
@@ -494,9 +517,13 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                                'solvent_recovery': 0.5,
                                'solute_recovery': 0.01,
                                'cp_modulus': 1.1})
-            state_args : a dict of arguments to be passed to the property
+            state_args_feed : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for the inlet
                          feed side state block (see documentation of the specific
+                         property package) (default = None).
+            state_args_permeate : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         permeate side state block (see documentation of the specific
                          property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
@@ -507,15 +534,45 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
             None
         """
 
-        source_flags = self.feed_side.initialize(
-            state_args=state_args,
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        for t in self.flowsheet().config.time:
+            if not math.isclose(
+                value(self.feed_inlet.temperature[t]),
+                value(self.permeate_inlet.temperature[t]),
+            ):
+                msg = f"Feed temperatures are different at time {t}, but OARO makes isothermal assumption"
+
+                if raise_on_isothermal_violation:
+                    raise InitializationError(msg)
+                else:
+                    init_log.warning(msg)
+
+            # set them equal
+            self.permeate_inlet.temperature[t].set_value(
+                value(self.feed_inlet.temperature[t])
+            )
+
+        feed_flags = self.feed_side.initialize(
+            state_args=state_args_feed,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             initialize_guess=initialize_guess,
         )
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        init_log.info_high("Initialization Step 1a (feed side) Complete")
+
+        permeate_flags = self.permeate_side.initialize(
+            state_args=state_args_permeate,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            initialize_guess=initialize_guess,
+        )
+
+        init_log.info_high("Initialization Step 1b (permeate side) Complete")
 
         if degrees_of_freedom(self) != 0:
             # TODO: should we have a separate error for DoF?
@@ -526,25 +583,24 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # Create solver
         opt = get_solver(solver, optarg)
-        # ---------------------------------------------------------------------
-        # Solve unit
+
+        # Solve unit *without* flux equation
+        self.eq_flux_mass.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-            print("DOF after 1st solve", degrees_of_freedom(self))
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
 
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {self.name}, trying one more time"
-                )
-                res = opt.solve(self, tee=slc.tee)
-                print("DOF after 2nd solve", degrees_of_freedom(self))
+        # Solve unit *with* flux equation
+        self.eq_flux_mass.activate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}")
 
         # release inlet state, in case this error is caught
-        self.feed_side.release_state(source_flags, outlvl)
-        print("DOF after release state", degrees_of_freedom(self))
+        self.permeate_side.release_state(permeate_flags, outlvl)
+        self.feed_side.release_state(feed_flags, outlvl)
 
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {self.name} failed to initialize")
@@ -728,6 +784,12 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
     def calculate_scaling_factors(self):
 
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(
+                self.feed_side.properties[0, self.first_element].dens_mass_phase["Liq"]
+            )
+            iscale.set_scaling_factor(self.dens_solvent, sf)
+
         super().calculate_scaling_factors()
 
         # these variables should have user input, if not there will be a warning
@@ -780,3 +842,5 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                         self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]
                     )
                     iscale.set_scaling_factor(v, sf)
+                sf = iscale.get_scaling_factor(v)
+                iscale.constraint_scaling_transform(self.eq_flux_mass[t, x, p, j], sf)
