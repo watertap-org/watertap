@@ -274,20 +274,16 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         # Other component sets
         self.solute_set = Set()  # All components except Solvent() ("H2O")
-        self.ion_set = Set()  # Components wtih charge != zero
         self.cation_set = Set()  # Components with charge >0
         self.anion_set = Set()  # Components with charge <0
         self.neutral_set = Set()  # Components with charge =0
 
+        # Group components into different sets
         for j in self.config.solute_list:
             if j == "H2O":
                 raise ConfigurationError(
                     "'H2O'is reserved as the default solvent and cannot be a solute."
                 )
-            self.add_component(
-                j, Component()
-            )  # To trigger adding H2O (Solvent()) onto component_list
-            self.del_component(j)
             self.add_component(j, Solute())
             if j in self.config.charge:
                 if self.config.charge[j] == 0:
@@ -296,6 +292,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                             j
                         )
                     )
+                self.del_component(j)
                 if self.config.charge[j] > 0:
                     self.del_component(j)
                     self.add_component(
@@ -310,7 +307,9 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                     )
             else:
                 self.neutral_set.add(j)
-        self.ion_set = self.cation_set | self.anion_set
+        self.ion_set = (
+            self.cation_set | self.anion_set
+        )  # All Ion Components (cations + anions)
         # reference
         # Todo: enter any relevant references
 

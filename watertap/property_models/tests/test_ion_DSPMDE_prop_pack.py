@@ -1121,11 +1121,8 @@ def test_parameter_block_comparison(model4):
 
     assert isinstance(m_ion.fs.properties.solute_set, Set)
     assert isinstance(m_generic.fs.properties.solute_set, Set)
-    assert len(m_ion.fs.properties.solute_set) == len(
-        m_generic.fs.properties.solute_set
-    )
     for j in m_ion.fs.properties.solute_set:
-        assert j in ["E"]
+        assert j in ["A", "B", "C", "D", "E"]
 
     assert m_ion.fs.properties.charge_comp["B"].value == -2
     # NOTE: Below is how you grab charge from the generic package
