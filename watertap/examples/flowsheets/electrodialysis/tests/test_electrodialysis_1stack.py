@@ -47,10 +47,7 @@ from watertap.core.util.initialization import (
     assert_degrees_of_freedom,
 )
 
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-    make_capital_cost_var,
-)
+from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
