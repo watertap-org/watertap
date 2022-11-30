@@ -29,8 +29,8 @@ from idaes.core import (
 )
 from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
 import watertap.property_models.NDMA_prop_pack as props
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
@@ -486,7 +486,7 @@ class TestUV_with_multiple_comps:
     def UV_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["NDMA", "DCE"],
             mw_data={"H2O": 0.018, "NDMA": 0.0740819, "DCE": 0.09896},
         )
