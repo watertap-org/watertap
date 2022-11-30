@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: "WaterTAP contributors"
+title: "WaterTAP: An open-source water treatment model library"
+url: "https://github.com/watertap-org/watertap"
+license-url: "https://github.com/watertap-org/watertap/blob/main/LICENSE.md"
+version: 0.6
+date-released: "2022-09-30"

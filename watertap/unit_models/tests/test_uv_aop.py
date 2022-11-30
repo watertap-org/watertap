@@ -239,7 +239,6 @@ class TestUV:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
@@ -456,7 +455,6 @@ class TestUV_standard:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
@@ -697,7 +695,6 @@ class TestUV_with_multiple_comps:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
@@ -925,7 +922,6 @@ class TestUV_detailed:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
@@ -1148,7 +1144,6 @@ class TestUVAOP:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
