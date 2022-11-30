@@ -354,7 +354,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             self.ion_set,
             mutable=True,
             default=1,
-            # initialize=self.config.charge,
+            initialize=self.config.charge,
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
