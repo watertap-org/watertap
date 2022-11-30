@@ -31,9 +31,9 @@ from idaes.core import (
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
     ActivityCoefficientModel,
     DensityCalculation,
     ElectricalMobilityCalculation,
@@ -74,7 +74,7 @@ def model():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D"],
         diffusivity_data={
             ("Liq", "A"): 1e-09,
@@ -112,7 +112,7 @@ def test_parameter_block(model):
     for j in model.fs.properties.phase_list:
         assert j in ["Liq"]
 
-    assert model.fs.properties._state_block_class is DSPMDEStateBlock
+    assert model.fs.properties._state_block_class is MCASStateBlock
 
     assert isinstance(model.fs.properties.mw_comp, Param)
     assert model.fs.properties.mw_comp["A"].value == 10e-3
@@ -205,7 +205,7 @@ def model2():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D"], charge={"A": 1, "B": -2, "C": 2, "D": -1}
     )
 
@@ -271,7 +271,7 @@ def model3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -435,7 +435,7 @@ def test_scaling(model3):
 def test_seawater_data():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -695,7 +695,7 @@ def test_seawater_data():
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         diffusivity_data={
             ("Liq", "Ca_2+"): 7.92e-10,
@@ -788,7 +788,7 @@ def test_assert_electroneutrality_get_property():
 def test_assert_electroneutrality_get_property_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = DSPMDEParameterBlock(
+    m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         mw_data={
             "H2O": 0.018,
@@ -890,7 +890,7 @@ def model4():
     m4 = ConcreteModel()
 
     m4.fs = FlowsheetBlock(dynamic=False)
-    m4.fs.properties = DSPMDEParameterBlock(
+    m4.fs.properties = MCASParameterBlock(
         solute_list=["A", "B", "C", "D", "E"],
         diffusivity_data={
             ("Liq", "A"): 1e-09,
@@ -1157,8 +1157,8 @@ def model5():
     m2 = ConcreteModel()
     m1.fs = FlowsheetBlock(dynamic=False)
     m2.fs = FlowsheetBlock(dynamic=False)
-    m1.fs.properties = DSPMDEParameterBlock(**dic0)
-    m2.fs.properties = DSPMDEParameterBlock(**dic1)
+    m1.fs.properties = MCASParameterBlock(**dic0)
+    m2.fs.properties = MCASParameterBlock(**dic1)
     m1.fs.stream = m1.fs.properties.build_state_block([0], defined_state=True)
     m2.fs.stream = m2.fs.properties.build_state_block([0], defined_state=True)
     for m in (m1, m2):
@@ -1267,8 +1267,8 @@ def model6():
     m1.fs = FlowsheetBlock(dynamic=False)
     m2.fs = FlowsheetBlock(dynamic=False)
     m3.fs = FlowsheetBlock(dynamic=False)
-    m2.fs.properties = DSPMDEParameterBlock(**dic2)
-    m3.fs.properties = DSPMDEParameterBlock(**dic3)
+    m2.fs.properties = MCASParameterBlock(**dic2)
+    m3.fs.properties = MCASParameterBlock(**dic3)
     m2.fs.stream = m2.fs.properties.build_state_block([0], defined_state=True)
     m3.fs.stream = m3.fs.properties.build_state_block([0], defined_state=True)
     for m in (m2, m3):
@@ -1302,12 +1302,12 @@ def test_elec_properties_errormsg(model6):
         ConfigurationError,
         match="The charge property should not be assigned to the neutral component",
     ):
-        m[0].fs.properties = DSPMDEParameterBlock(
+        m[0].fs.properties = MCASParameterBlock(
             solute_list=["Na_+", "Cl_-", "N"],
             mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
             charge={"N": 0, "Na_+": 1, "Cl_-": -1},
         )
-    m[0].fs.properties = DSPMDEParameterBlock(
+    m[0].fs.properties = MCASParameterBlock(
         solute_list=["Na_+", "Cl_-", "N"],
         mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
         charge={"Na_+": 1, "Cl_-": -1},
