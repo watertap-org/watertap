@@ -199,7 +199,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.1)
@@ -214,6 +214,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
@@ -263,7 +264,7 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.01)
+    m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(1)
     m.fs.EDstack.cell_pair_num.setub(500)
