@@ -29,6 +29,8 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
+from watertap.core import InitializationMixin
+
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
@@ -37,7 +39,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("FeedZO")
-class FeedZOData(FeedData):
+class FeedZOData(InitializationMixin, FeedData):
     """
     Zero-Order feed block.
     """

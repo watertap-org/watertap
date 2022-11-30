@@ -649,7 +649,6 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-5)
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -679,7 +678,6 @@ class TestElectrodialysis_withNeutralSPecies:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -691,7 +689,6 @@ class TestElectrodialysis_withNeutralSPecies:
         }
         assert not badly_scaled_var_values
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -721,7 +718,6 @@ class TestElectrodialysis_withNeutralSPecies:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
         ) == pytest.approx(7.496e-05, rel=5e-3)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
