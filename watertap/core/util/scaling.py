@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from pyomo.environ import Expression, Param
+import pyomo.environ as pyo
 import idaes.core.util.scaling as iscale
 
 
@@ -20,7 +20,7 @@ def transform_property_constraints(self):
         var_str = metadata_dic["name"]
         if metadata_dic["method"] is not None and self.is_property_constructed(var_str):
             var = getattr(self, var_str)
-            if not isinstance(var, Var):
+            if not isinstance(var, pyo.Var):
                 continue  # properties that are not vars do not have constraints
             con = getattr(self, "eq_" + var_str)
             for ind, c in con.items():
