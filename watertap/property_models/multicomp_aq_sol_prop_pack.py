@@ -1158,7 +1158,9 @@ class MCASStateBlockData(StateBlockData):
             )
 
         self.eq_molality_phase_comp = Constraint(
-            self.params.solute_set, rule=rule_molality_phase_comp
+            self.params.phase_list,
+            self.params.solute_set,
+            rule=rule_molality_phase_comp,
         )
 
     def _visc_k_phase(self):
@@ -1291,7 +1293,9 @@ class MCASStateBlockData(StateBlockData):
                 )
 
         self.eq_act_coeff_phase_comp = Constraint(
-            self.params.solute_set, rule=rule_act_coeff_phase_comp
+            self.params.phase_list,
+            self.params.solute_set,
+            rule=rule_act_coeff_phase_comp,
         )
 
     # TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
@@ -1362,8 +1366,8 @@ class MCASStateBlockData(StateBlockData):
 
         def rule_pressure_osm_phase(b, p):
             return (
-                b.pressure_osm_phase["Liq"]
-                == sum(b.conc_mol_phase_comp["Liq", j] for j in self.params.solute_set)
+                b.pressure_osm_phase[p]
+                == sum(b.conc_mol_phase_comp[p, j] for j in self.params.solute_set)
                 * Constants.gas_constant
                 * b.temperature
             )

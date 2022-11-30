@@ -571,7 +571,7 @@ class TestGACMulti:
         mm = gac_frame_multi
 
         # checking non-unity solute set and nonzero ion set handling
-        assert len(mm.fs.unit.config.property_package.solute_set) == 2
+        assert len(mm.fs.unit.config.property_package.solute_set) == 4
         assert len(mm.fs.unit.config.property_package.solvent_set) == 1
         assert len(mm.fs.unit.config.property_package.ion_set) == 2
 
