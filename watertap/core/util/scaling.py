@@ -21,7 +21,7 @@ def transform_property_constraints(self):
         if metadata_dic["method"] is not None and self.is_property_constructed(var_str):
             var = getattr(self, var_str)
             if not isinstance(var, Var):
-                continue  # properties that are vars do not have constraints
+                continue  # properties that are not vars do not have constraints
             con = getattr(self, "eq_" + var_str)
             for ind, c in con.items():
                 sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
