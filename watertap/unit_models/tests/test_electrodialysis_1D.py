@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+import re
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
