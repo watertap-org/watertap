@@ -51,7 +51,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Solute, Solvent, Cation, Anion
+from idaes.core.base.components import Component, Solute, Solvent, Cation, Anion
 from idaes.core.base.phases import AqueousPhase
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
@@ -271,14 +271,21 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
         # components
         self.H2O = Solvent()
-
         # blank sets
         self.cation_set = Set()
         self.anion_set = Set()
         self.solute_set = Set()
         self.ion_set = Set()
+        self.neutral_set = Set()
 
         for j in self.config.solute_list:
+            if j == "H2O":
+                raise ConfigurationError(
+                    "'H2O'is reserved as the default solvent and cannot be a solute."
+                )
+            self.add_component(j, Component())
+            self.del_component(j)
+            self.add_component(j, Solute())
             if j in self.config.charge:
                 if self.config.charge[j] == 0:
                     raise ConfigurationError(
@@ -286,22 +293,21 @@ class DSPMDEParameterData(PhysicalParameterBlock):
                             j
                         )
                     )
-                elif self.config.charge[j] > 0:
+                self.ion_set.add(j)
+                if self.config.charge[j] > 0:
+                    self.del_component(j)
                     self.add_component(
                         str(j),
                         Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
                 else:
+                    self.del_component(j)
                     self.add_component(
                         str(j),
                         Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
-                    self.component_list.add(str(j))
-                    self.ion_set.add(str(j))
             else:
-                self.add_component(str(j), Solute())
+                self.neutral_set.add(j)
 
         # reference
         # Todo: enter any relevant references
@@ -348,7 +354,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             self.ion_set,
             mutable=True,
             default=1,
-            initialize=self.config.charge,
+            # initialize=self.config.charge,
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
@@ -1750,7 +1756,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
                     is None
                 ):
-                    if comp.is_solute():
+                    if comp in self.params.solute_set:
                         sf = iscale.get_scaling_factor(
                             self.flow_mass_phase_comp["Liq", j]
                         ) / iscale.get_scaling_factor(
