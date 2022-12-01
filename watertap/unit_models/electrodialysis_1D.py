@@ -637,14 +637,14 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.dimensionless,
             doc="water recovery ratio calculated by mass",
         )
-        self.velocity_D = Var(
+        self.velocity_diluate = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.01,
             units=pyunits.meter * pyunits.second**-1,
             doc="Linear velocity of flow",
         )
-        self.velocity_C = Var(
+        self.velocity_concentrate = Var(
             self.flowsheet().time,
             self.diluate.length_domain,
             initialize=0.01,
@@ -752,9 +752,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.diluate.length_domain,
             doc="Calculate flow velocity in a single diluate channel",
         )
-        def eq_get_velocity_D(self, t, x):
+        def eq_get_velocity_diluate(self, t, x):
             return (
-                self.velocity_D[t, x]
+                self.velocity_diluate[t, x]
                 * self.cell_width
                 * self.channel_height
                 * self.spacer_porosity
@@ -767,9 +767,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             self.diluate.length_domain,
             doc="Calculate flow velocity in a single concentrate channel",
         )
-        def eq_get_velocity_C(self, t, x):
+        def eq_get_velocity_concentrate(self, t, x):
             return (
-                self.velocity_C[t, x]
+                self.velocity_concentrate[t, x]
                 * self.cell_width
                 * self.channel_height
                 * self.spacer_porosity
@@ -1369,7 +1369,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
             def eq_current_dens_lim_x(self, t, x):
 
-                return self.current_dens_lim_x[t, x] == self.param_a * self.velocity_D[
+                return self.current_dens_lim_x[t, x] == self.param_a * self.velocity_diluate[
                     t, x
                 ] ** self.param_b * sum(
                     self.config.property_package.charge_comp[j]
@@ -1831,7 +1831,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             return (
                 self.N_Re
                 == self.dens_mass
-                * self.velocity_D[0, 0]
+                * self.velocity_diluate[0, 0]
                 * self.hydraulic_diameter
                 * self.visc_d**-1
             )
@@ -1893,7 +1893,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     self.pressure_drop[t]
                     == self.dens_mass
                     * self.friction_factor
-                    * self.velocity_D[0, 0] ** 2
+                    * self.velocity_diluate[0, 0] ** 2
                     * 0.5
                     * self.hydraulic_diameter**-1
                 )
@@ -2171,8 +2171,8 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             iscale.set_scaling_factor(self.spacer_porosity, 1)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
-        for ind in self.velocity_D:
-            if iscale.get_scaling_factor(self.velocity_D[ind], warning=False) is None:
+        for ind in self.velocity_diluate:
+            if iscale.get_scaling_factor(self.velocity_diluate[ind], warning=False) is None:
                 sf = (
                     iscale.get_scaling_factor(
                         self.diluate.properties[ind].flow_vol_phase["Liq"]
@@ -2183,8 +2183,8 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                     * iscale.get_scaling_factor(self.cell_pair_num) ** -1
                 )
 
-                iscale.set_scaling_factor(self.velocity_D[ind], sf)
-                iscale.set_scaling_factor(self.velocity_C[ind], sf)
+                iscale.set_scaling_factor(self.velocity_diluate[ind], sf)
+                iscale.set_scaling_factor(self.velocity_concentrate[ind], sf)
         if hasattr(self, "voltage_applied") and (
             iscale.get_scaling_factor(self.voltage_applied, warning=True) is None
         ):
@@ -2206,7 +2206,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         ):
             sf = (
                 iscale.get_scaling_factor(self.dens_mass)
-                * iscale.get_scaling_factor(self.velocity_D[0, 0])
+                * iscale.get_scaling_factor(self.velocity_diluate[0, 0])
                 * iscale.get_scaling_factor(self.hydraulic_diameter)
                 * iscale.get_scaling_factor(self.visc_d) ** -1
             )
@@ -2252,7 +2252,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 sf = (
                     iscale.get_scaling_factor(self.dens_mass)
                     * iscale.get_scaling_factor(self.friction_factor)
-                    * iscale.get_scaling_factor(self.velocity_D[0, 0]) ** 2
+                    * iscale.get_scaling_factor(self.velocity_diluate[0, 0]) ** 2
                     * 2
                     * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
                 )
@@ -2541,14 +2541,14 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.voltage_x[ind])
             )
-        for ind, c in self.eq_get_velocity_D.items():
+        for ind, c in self.eq_get_velocity_diluate.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
                     self.diluate.properties[ind].flow_vol_phase["Liq"]
                 ),
             )
-        for ind, c in self.eq_get_velocity_C.items():
+        for ind, c in self.eq_get_velocity_concentrate.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
