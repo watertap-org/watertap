@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import pytest
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_0D import (
     ElectricalOperationMode,
     Electrodialysis0D,
@@ -55,7 +55,7 @@ class TestElectrodialysisVoltageConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
             property_package=m.fs.properties, operation_mode="Constant_Voltage"
         )
@@ -267,14 +267,14 @@ class TestElectrodialysisVoltageConst:
         #       and not be here after everything else (see next test)
         m.fs.costing = WaterTAPCosting()
 
-        # Set costing var
-        m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
-        m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
-        m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
-
         m.fs.unit.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing, costing_method_arguments={}
         )
+
+        # Set costing parameters
+        m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
+        m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
+        m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
 
         m.fs.costing.cost_process()
 
@@ -307,7 +307,7 @@ class TestElectrodialysisCurrentConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(property_package=m.fs.properties)
         m.fs.unit.config.operation_mode = ElectricalOperationMode.Constant_Current
 
@@ -534,7 +534,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -761,7 +761,7 @@ class Test_ED_MembNonohm_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -982,7 +982,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1204,7 +1204,7 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
