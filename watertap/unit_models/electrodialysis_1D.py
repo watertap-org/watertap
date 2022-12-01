@@ -1369,9 +1369,9 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             )
             def eq_current_dens_lim_x(self, t, x):
 
-                return self.current_dens_lim_x[t, x] == self.param_a * self.velocity_diluate[
+                return self.current_dens_lim_x[
                     t, x
-                ] ** self.param_b * sum(
+                ] == self.param_a * self.velocity_diluate[t, x] ** self.param_b * sum(
                     self.config.property_package.charge_comp[j]
                     * self.diluate.properties[t, x].conc_mol_phase_comp["Liq", j]
                     for j in self.cation_set
@@ -2172,7 +2172,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
         for ind in self.velocity_diluate:
-            if iscale.get_scaling_factor(self.velocity_diluate[ind], warning=False) is None:
+            if (
+                iscale.get_scaling_factor(self.velocity_diluate[ind], warning=False)
+                is None
+            ):
                 sf = (
                     iscale.get_scaling_factor(
                         self.diluate.properties[ind].flow_vol_phase["Liq"]
