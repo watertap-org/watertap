@@ -1770,14 +1770,23 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         )
         self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
         self.N_Re = Var(
-            initialize=100, units=pyunits.dimensionless, doc="Reynolds Number"
-        )
+            initialize=50,
+            bounds=(0, 2000),
+            units=pyunits.dimensionless,
+            doc="Reynolds Number",
+        )  # arbitrary upper bound
         self.N_Sc = Var(
-            initialize=2000, units=pyunits.dimensionless, doc="Schmidt Number"
-        )
+            initialize=2000,
+            bounds=(0, 2000),
+            units=pyunits.dimensionless,
+            doc="Schmidt Number",
+        )  # arbitrary upper bound
         self.N_Sh = Var(
-            initialize=100, units=pyunits.dimensionless, doc="Sherwood Number"
-        )
+            initialize=100,
+            bounds=(0, 200000),
+            units=pyunits.dimensionless,
+            doc="Sherwood Number",
+        )  # arbitrary upper bound
 
         if self.config.hydraulic_diameter_method == HydraulicDiameterMethod.fixed:
             _log.warning("Do not forget to FIX the channel hydraulic diameter in [m]!")
@@ -1856,18 +1865,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             units=pyunits.pascal,
             doc="pressure drop over an entire ED stack",
         )
-        self.friction_factor = Var(
-            initialize=10,
-            units=pyunits.dimensionless,
-            doc="friction factor of the channel fluid",
-        )
 
         if self.config.pressure_drop_method == PressureDropMethod.experimental:
             _log.warning(
                 "Do not forget to FIX the experimental pressure drop value in [Pa/m]!"
             )
         else:  # PressureDropMethod.Darcy_Weisbach is used
-            self._get_fluid_dimensionless_quantities()
+            if not (
+                self.config.has_Nernst_diffusion_layer
+                and self.config.limiting_current_density_method
+                == LimitingCurrentDensityMethod.Theoretical
+            ):
+                self._get_fluid_dimensionless_quantities()
+            self.friction_factor = Var(
+                initialize=10,
+                bounds=(0, 10000),  # arbitrary upper bound
+                units=pyunits.dimensionless,
+                doc="friction factor of the channel fluid",
+            )
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -2152,12 +2167,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.channel_height, warning=True) is None:
             iscale.set_scaling_factor(self.channel_height, 1e4)
+        if iscale.get_scaling_factor(self.spacer_porosity, warning=True) is None:
+            iscale.set_scaling_factor(self.spacer_porosity, 1)
         if iscale.get_scaling_factor(self.electrodes_resistance, warning=True) is None:
             iscale.set_scaling_factor(self.electrodes_resistance, 1e4)
-        if iscale.get_scaling_factor(self.velocity_D, warning=True) is None:
-            iscale.set_scaling_factor(self.velocity_D, 1e2)
-        if iscale.get_scaling_factor(self.velocity_C, warning=True) is None:
-            iscale.set_scaling_factor(self.velocity_C, 1e2)
+        for ind in self.velocity_D:
+            if iscale.get_scaling_factor(self.velocity_D[ind], warning=False) is None:
+                sf = (
+                    iscale.get_scaling_factor(
+                        self.diluate.properties[ind].flow_vol_phase["Liq"]
+                    )
+                    * iscale.get_scaling_factor(self.cell_width) ** -1
+                    * iscale.get_scaling_factor(self.channel_height) ** -1
+                    * iscale.get_scaling_factor(self.spacer_porosity) ** -1
+                    * iscale.get_scaling_factor(self.cell_pair_num) ** -1
+                )
+
+                iscale.set_scaling_factor(self.velocity_D[ind], sf)
+                iscale.set_scaling_factor(self.velocity_C[ind], sf)
         if hasattr(self, "voltage_applied") and (
             iscale.get_scaling_factor(self.voltage_applied, warning=True) is None
         ):
@@ -2166,22 +2193,24 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
             iscale.get_scaling_factor(self.current_applied, warning=True) is None
         ):
             iscale.set_scaling_factor(self.current_applied, 1)
-        if hasattr(self, "friction_factor") and (
-            iscale.get_scaling_factor(self.friction_factor, warning=True) is None
-        ):
-            iscale.set_scaling_factor(self.friction_factor, 0.1)
-        if hasattr(self, "hydraulic_diameter") and (
-            iscale.get_scaling_factor(self.hydraulic_diameter, warning=True) is None
-        ):
-            iscale.set_scaling_factor(self.hydraulic_diameter, 1e3)
         if hasattr(self, "spacer_specific_area") and (
             iscale.get_scaling_factor(self.spacer_specific_area, warning=True) is None
         ):
             iscale.set_scaling_factor(self.spacer_specific_area, 1e-4)
+        if hasattr(self, "hydraulic_diameter") and (
+            iscale.get_scaling_factor(self.hydraulic_diameter, warning=True) is None
+        ):
+            iscale.set_scaling_factor(self.hydraulic_diameter, 1e4)
         if hasattr(self, "N_Re") and (
             iscale.get_scaling_factor(self.N_Re, warning=True) is None
         ):
-            iscale.set_scaling_factor(self.N_Re, 0.01)
+            sf = (
+                iscale.get_scaling_factor(self.dens_mass)
+                * iscale.get_scaling_factor(self.velocity_D[0, 0])
+                * iscale.get_scaling_factor(self.hydraulic_diameter)
+                * iscale.get_scaling_factor(self.visc_d) ** -1
+            )
+            iscale.set_scaling_factor(self.N_Re, sf)
         if hasattr(self, "N_Sc") and (
             iscale.get_scaling_factor(self.N_Sc, warning=True) is None
         ):
@@ -2200,16 +2229,33 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 * iscale.get_scaling_factor(self.N_Sc) ** 0.33
             )
             iscale.set_scaling_factor(self.N_Sh, sf)
+        if hasattr(self, "friction_factor") and (
+            iscale.get_scaling_factor(self.friction_factor, warning=True) is None
+        ):
+            if self.config.friction_factor_method == FrictionFactorMethod.fixed:
+                sf = 0.1
+            elif self.config.friction_factor_method == FrictionFactorMethod.Gurreri:
+                sf = (
+                    (4 * 50.6) ** -1
+                    * (iscale.get_scaling_factor(self.spacer_porosity)) ** -7.06
+                    * iscale.get_scaling_factor(self.N_Re) ** -1
+                )
+            elif self.config.friction_factor_method == FrictionFactorMethod.Kuroda:
+                sf = (4 * 9.6) ** -1 * iscale.get_scaling_factor(self.N_Re) ** -0.5
+            iscale.set_scaling_factor(self.friction_factor, sf)
         if hasattr(self, "pressure_drop") and (
             iscale.get_scaling_factor(self.pressure_drop, warning=True) is None
         ):
-            sf = (
-                0.004
-                * iscale.get_scaling_factor(self.friction_factor)
-                * iscale.get_scaling_factor(self.cell_length)
-                * iscale.get_scaling_factor(self.velocity_D) ** 2
-                * iscale.get_scaling_factor(self.channel_height) ** -1
-            )
+            if self.config.pressure_drop_method == PressureDropMethod.experimental:
+                sf = 1e-5
+            else:
+                sf = (
+                    iscale.get_scaling_factor(self.dens_mass)
+                    * iscale.get_scaling_factor(self.friction_factor)
+                    * iscale.get_scaling_factor(self.velocity_D[0, 0]) ** 2
+                    * 2
+                    * iscale.get_scaling_factor(self.hydraulic_diameter) ** -1
+                )
             iscale.set_scaling_factor(self.pressure_drop, sf)
         if hasattr(self, "pressure_drop_total") and (
             iscale.get_scaling_factor(self.pressure_drop_total, warning=True) is None
