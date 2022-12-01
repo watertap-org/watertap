@@ -1769,15 +1769,12 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("mass_frac_phase_comp"):
             for j in self.params.component_list:
+                comp = self.params.get_component(j)
                 if (
                     iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
                     is None
                 ):
-                    if j == "H2O":
-                        iscale.set_scaling_factor(
-                            self.mass_frac_phase_comp["Liq", j], 1
-                        )
-                    else:
+                    if comp.is_solute():
                         sf = iscale.get_scaling_factor(
                             self.flow_mass_phase_comp["Liq", j]
                         ) / iscale.get_scaling_factor(
@@ -1785,6 +1782,10 @@ class MCASStateBlockData(StateBlockData):
                         )
                         iscale.set_scaling_factor(
                             self.mass_frac_phase_comp["Liq", j], sf
+                        )
+                    else:
+                        iscale.set_scaling_factor(
+                            self.mass_frac_phase_comp["Liq", j], 1
                         )
 
         if self.is_property_constructed("conc_mass_phase_comp"):
