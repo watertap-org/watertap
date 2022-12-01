@@ -1265,7 +1265,7 @@ class MCASStateBlockData(StateBlockData):
 
     def _act_coeff_phase_comp(self):
         self.act_coeff_phase_comp = Var(
-            self.phase_list,
+            self.params.phase_list,
             self.params.solute_set,
             initialize=0.7,
             domain=NonNegativeReals,
