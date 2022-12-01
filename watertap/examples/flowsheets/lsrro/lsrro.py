@@ -53,9 +53,10 @@ from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
+from watertap.costing import (
     WaterTAPCosting,
     make_capital_cost_var,
+    register_costing_parameter_block,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -148,18 +149,6 @@ def build(
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
-
-    # explicitly set the costing parameters used
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.factor_total_investment.fix(2)
-    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
-    m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.electricity_base_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -297,6 +286,19 @@ def build(
     )
 
     # costing and summary quantities
+
+    # explicitly set the costing parameters used
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    m.fs.costing.factor_capital_annualization.fix(0.1)
+    m.fs.costing.electricity_base_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
     m.fs.costing.cost_process()
 
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
@@ -545,6 +547,18 @@ def build(
     return m
 
 
+def build_high_pressure_pump_cost_param_block(blk):
+    blk.cost = Var(
+        initialize=53 / 1e5 * 3600,
+        doc="High pressure pump cost",
+        units=pyunits.USD_2018 / pyunits.watt,
+    )
+
+
+@register_costing_parameter_block(
+    build_rule=build_high_pressure_pump_cost_param_block,
+    parameter_block_name="high_pressure_pump",
+)
 def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
