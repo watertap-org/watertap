@@ -33,10 +33,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
+
+from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 
 __author__ = "Xiangyu Bi"
 
