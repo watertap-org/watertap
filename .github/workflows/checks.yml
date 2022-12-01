@@ -126,7 +126,7 @@ jobs:
         |
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --edb-no-mock" >> $GITHUB_ENV
     - name: Test EDB client
-      run: pytest -k test_edb_client
+      run: pytest --pyargs watertap -k test_edb_client
     - name: Add coverage report pytest options
       if: matrix.cov_report
       run:
