@@ -49,6 +49,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants
+from idaes.core.util.misc import add_object_reference
 from watertap.core.util.initialization import check_dof
 
 import idaes.logger as idaeslog
@@ -290,17 +291,14 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         # These two sets should always be present
         #   and their union is the full set of dissolved species
-        if hasattr(self.config.property_package, "ion_set") and hasattr(
-            self.config.property_package, "solute_set"
-        ):
-            self.solute_set = solute_set = (
-                self.config.property_package.ion_set
-                | self.config.property_package.solute_set
+        if hasattr(self.config.property_package, "solute_set"):
+            add_object_reference(
+                self, "solute_set", self.config.property_package.solute_set
             )
+            solute_set = self.solute_set
         else:
             raise ConfigurationError(
-                "This NF model was expecting an "
-                "ion_set and solute_set and did not them."
+                "This NF model was expecting a " "solute_set and did not have it."
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -645,7 +643,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             return (
                 sum(
                     pore_loc.conc_mol_phase_comp[p, j] * pore_loc.charge_comp[j]
-                    for j in solute_set
+                    for j in self.config.property_package.ion_set
                 )
                 + b.membrane_charge_density[t]
                 == 0
@@ -663,7 +661,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 sum(
                     b.permeate_side[t, x].conc_mol_phase_comp[p, j]
                     * b.permeate_side[t, x].charge_comp[j]
-                    for j in solute_set
+                    for j in self.config.property_package.ion_set
                 )
                 == 0
             )
@@ -744,7 +742,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             phase_list,
-            solute_set,
+            self.config.property_package.ion_set,
             doc="Electromigrative transport across membrane pore",
         )
         def electromigration_term(b, t, x, p, j):
@@ -782,7 +780,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             phase_list,
-            solute_set,
+            self.config.property_package.ion_set,
             doc="Feed-interface mass transfer resistance accounting for concentration polarization",
         )
         def eq_solute_flux_concentration_polarization(b, t, x, p, j):
@@ -927,7 +925,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     sum(
                         b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
                         * b.feed_side.properties_interface[t, x].charge_comp[j]
-                        for j in solute_set
+                        for j in self.config.property_package.ion_set
                     )
                     == 0
                 )
@@ -1174,7 +1172,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(
             self.flowsheet().config.time,
-            solute_set,
+            self.config.property_package.ion_set,
             doc="Gibbs free energy of solvation for each ion",
         )
         def gibbs_solvation_comp(b, t, j):
@@ -1210,7 +1208,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         @self.Expression(
             self.flowsheet().config.time,
             io_list,
-            solute_set,
+            self.config.property_package.ion_set,
             doc="Donnan exclusion contribution to partitioning on feed side",
         )
         def partition_factor_donnan_comp_feed(b, t, x, j):
@@ -1224,7 +1222,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         @self.Expression(
             self.flowsheet().config.time,
             io_list,
-            solute_set,
+            self.config.property_package.ion_set,
             doc="Donnan exclusion contribution to partitioning on permeate side",
         )
         def partition_factor_donnan_comp_permeate(b, t, x, j):
@@ -1709,10 +1707,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                     f"Molar Concentration of {j} @ Permeate, {io}"
                 ] = self.permeate_side[time_point, x].conc_mol_phase_comp["Liq", j]
 
-        for j in (
-            self.config.property_package.solute_set
-            | self.config.property_package.ion_set
-        ):
+        for j in self.config.property_package.solute_set:
             expr_dict[f"Stokes radius of {j}"] = self.feed_side.properties_in[
                 time_point
             ].radius_stokes_comp[j]
@@ -1892,10 +1887,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             state_args_permeate["flow_mol_phase_comp"][("Liq", j)] *= initialize_guess[
                 "solvent_recovery"
             ]
-        for j in (
-            self.config.property_package.solute_set
-            | self.config.property_package.ion_set
-        ):
+        for j in self.config.property_package.solute_set:
             state_args_retentate["flow_mol_phase_comp"][("Liq", j)] *= (
                 1 - initialize_guess["solute_recovery"]
             )
@@ -1906,10 +1898,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         state_args_interface_in = deepcopy(state_args)
         state_args_interface_out = deepcopy(state_args_retentate)
 
-        for j in (
-            self.config.property_package.solute_set
-            | self.config.property_package.ion_set
-        ):
+        for j in self.config.property_package.solute_set:
             state_args_interface_in["flow_mol_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
@@ -2016,11 +2005,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 iscale.set_scaling_factor(v, 1e1)
 
         for j in self.config.property_package.component_list:
-            if (
-                j
-                in self.config.property_package.solute_set
-                | self.config.property_package.ion_set
-            ):
+            if j in self.config.property_package.solute_set:
                 iscale.set_scaling_factor(
                     self.feed_side.mass_transfer_term[0, "Liq", j], 1e4
                 )
