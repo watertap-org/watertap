@@ -742,22 +742,28 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             phase_list,
-            self.config.property_package.ion_set,
+            solute_set,
             doc="Electromigrative transport across membrane pore",
         )
         def electromigration_term(b, t, x, p, j):
-            return (
-                -b.feed_side.properties_in[t].charge_comp[j]
-                * b.conc_mol_phase_comp_pore_avg[t, x, p, j]
-                * b.diffus_pore_comp[t, j]
-                * Constants.faraday_constant
-                / (Constants.gas_constant * b.feed_side.properties_in[t].temperature)
-                * (
-                    b.electric_potential[t, x, "pore_exit"]
-                    - b.electric_potential[t, x, "pore_entrance"]
+            if j in self.config.property_package.ion_set:
+                return (
+                    -b.feed_side.properties_in[t].charge_comp[j]
+                    * b.conc_mol_phase_comp_pore_avg[t, x, p, j]
+                    * b.diffus_pore_comp[t, j]
+                    * Constants.faraday_constant
+                    / (
+                        Constants.gas_constant
+                        * b.feed_side.properties_in[t].temperature
+                    )
+                    * (
+                        b.electric_potential[t, x, "pore_exit"]
+                        - b.electric_potential[t, x, "pore_entrance"]
+                    )
+                    / b.membrane_thickness_effective
                 )
-                / b.membrane_thickness_effective
-            )
+            else:
+                return 0 * pyunits.kg * pyunits.meter**-2 * pyunits.s**-1
 
         # 7. Extended Nernst Planck equation, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(
@@ -780,7 +786,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             phase_list,
-            self.config.property_package.ion_set,
+            solute_set,
             doc="Feed-interface mass transfer resistance accounting for concentration polarization",
         )
         def eq_solute_flux_concentration_polarization(b, t, x, p, j):
@@ -793,22 +799,33 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 self.config.concentration_polarization_type
                 == ConcentrationPolarizationType.calculated
             ):
-                return (
-                    b.flux_mol_phase_comp[t, x, p, j]
-                    == -b.Kf_comp[t, x, j]
-                    * (
-                        interface.conc_mol_phase_comp[p, j]
-                        - bulk.conc_mol_phase_comp[p, j]
+                if j in self.config.property_package.ion_set:
+                    return (
+                        b.flux_mol_phase_comp[t, x, p, j]
+                        == -b.Kf_comp[t, x, j]
+                        * (
+                            interface.conc_mol_phase_comp[p, j]
+                            - bulk.conc_mol_phase_comp[p, j]
+                        )
+                        + b.flux_vol_water[t, x] * interface.conc_mol_phase_comp[p, j]
+                        - interface.charge_comp[j]
+                        * interface.conc_mol_phase_comp[p, j]
+                        * interface.diffus_phase_comp[p, j]
+                        * Constants.faraday_constant
+                        / Constants.gas_constant
+                        / interface.temperature
+                        * b.electric_potential_grad_feed_interface[t, x]
                     )
-                    + b.flux_vol_water[t, x] * interface.conc_mol_phase_comp[p, j]
-                    - interface.charge_comp[j]
-                    * interface.conc_mol_phase_comp[p, j]
-                    * interface.diffus_phase_comp[p, j]
-                    * Constants.faraday_constant
-                    / Constants.gas_constant
-                    / interface.temperature
-                    * b.electric_potential_grad_feed_interface[t, x]
-                )
+                else:
+                    return (
+                        b.flux_mol_phase_comp[t, x, p, j]
+                        == -b.Kf_comp[t, x, j]
+                        * (
+                            interface.conc_mol_phase_comp[p, j]
+                            - bulk.conc_mol_phase_comp[p, j]
+                        )
+                        + b.flux_vol_water[t, x] * interface.conc_mol_phase_comp[p, j]
+                    )
             elif (
                 self.config.concentration_polarization_type
                 == ConcentrationPolarizationType.none
@@ -1172,24 +1189,27 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
 
         @self.Expression(
             self.flowsheet().config.time,
-            self.config.property_package.ion_set,
+            solute_set,
             doc="Gibbs free energy of solvation for each ion",
         )
         def gibbs_solvation_comp(b, t, j):
-            return (
-                b.feed_side.properties_in[t].charge_comp[j] ** 2
-                * Constants.elemental_charge**2
-                / (
-                    8
-                    * Constants.pi
-                    * Constants.vacuum_electric_permittivity
-                    * b.feed_side.properties_in[t].radius_stokes_comp[j]
+            if j in self.config.property_package.ion_set:
+                return (
+                    b.feed_side.properties_in[t].charge_comp[j] ** 2
+                    * Constants.elemental_charge**2
+                    / (
+                        8
+                        * Constants.pi
+                        * Constants.vacuum_electric_permittivity
+                        * b.feed_side.properties_in[t].radius_stokes_comp[j]
+                    )
+                    * (
+                        -1 / b.feed_side.properties_in[t].dielectric_constant
+                        + 1 / b.dielectric_constant_pore[t]
+                    )
                 )
-                * (
-                    -1 / b.feed_side.properties_in[t].dielectric_constant
-                    + 1 / b.dielectric_constant_pore[t]
-                )
-            )
+            else:
+                return 0 * pyunits.joule
 
         @self.Expression(
             self.flowsheet().config.time,
@@ -1208,33 +1228,39 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         @self.Expression(
             self.flowsheet().config.time,
             io_list,
-            self.config.property_package.ion_set,
+            solute_set,
             doc="Donnan exclusion contribution to partitioning on feed side",
         )
         def partition_factor_donnan_comp_feed(b, t, x, j):
-            return exp(
-                -b.feed_side.properties_in[t].charge_comp[j]
-                * Constants.faraday_constant
-                / (Constants.gas_constant * b.pore_entrance[t, x].temperature)
-                * b.electric_potential[t, x, "pore_entrance"]
-            )
+            if j in self.config.property_package.ion_set:
+                return exp(
+                    -b.feed_side.properties_in[t].charge_comp[j]
+                    * Constants.faraday_constant
+                    / (Constants.gas_constant * b.pore_entrance[t, x].temperature)
+                    * b.electric_potential[t, x, "pore_entrance"]
+                )
+            else:
+                return 1 * pyunits.dimensionless
 
         @self.Expression(
             self.flowsheet().config.time,
             io_list,
-            self.config.property_package.ion_set,
+            solute_set,
             doc="Donnan exclusion contribution to partitioning on permeate side",
         )
         def partition_factor_donnan_comp_permeate(b, t, x, j):
-            return exp(
-                -b.feed_side.properties_in[t].charge_comp[j]
-                * Constants.faraday_constant
-                / (Constants.gas_constant * b.pore_exit[t, x].temperature)
-                * (
-                    b.electric_potential[t, x, "pore_exit"]
-                    - b.electric_potential[t, x, "permeate"]
+            if j in self.config.property_package.ion_set:
+                return exp(
+                    -b.feed_side.properties_in[t].charge_comp[j]
+                    * Constants.faraday_constant
+                    / (Constants.gas_constant * b.pore_exit[t, x].temperature)
+                    * (
+                        b.electric_potential[t, x, "pore_exit"]
+                        - b.electric_potential[t, x, "permeate"]
+                    )
                 )
-            )
+            else:
+                return 1 * pyunits.dimensionless
 
         # Volumetric Water Flux at inlet and outlet ------------------------------------#
         @self.Expression(
