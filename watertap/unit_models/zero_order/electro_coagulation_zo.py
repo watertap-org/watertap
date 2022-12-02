@@ -19,12 +19,13 @@ from pyomo.environ import log
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, ZeroOrderBaseData
+from idaes.core.util.constants import Constants
 
 
 @declare_process_block_class("ElectroCoagulationZO")
 class ElectroCoagulationZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for an electrocoagulation unit operation.
+    Zero-Order model for an electro coagulation unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -36,56 +37,51 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
 
         build_sido(self)
 
-        if "tds" not in self.config.property_package.solute_set:
-            raise KeyError(
-                "TDS must be included in the solute list for determining"
-                " electricity intensity and power consumption of the electrocoagulation "
-                "reversal unit."
-            )
+        self.electrode_spacing = Var(
+            units=pyunits.cm,
+            doc="Distance between the electrodes",
+        )
+        self.solution_conductivity = Var(
+            units=pyunits.S / pyunits.cm,
+            doc="Electrical conductivity of solution",
+        )
+
+        self.ohmic_resistance = Var(
+            self.flowsheet().config.time,
+            units=pyunits.cm**2 * pyunits.ohm,
+            doc="Ohmic resistance in an EC reactor",
+        )
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Ohmic resistance in an EC reactor"
+        )
+        def electricity_constraint(b, t):
+            return b.ohmic_resistance[t] == b.electrode_spacing/ b.solution_conductivity
 
         self.power_density_k_1 = Var(
-            units=pyunits.kWh / pyunits.m**3,
+            units=pyunits.dimensionless,
             doc="Constant 1 in power density equation",
         )
         self.power_density_k_2 = Var(
-            units=pyunits.L / pyunits.mg * pyunits.kWh / pyunits.m**3,
+            units=pyunits.dimensionless,
             doc="Constant 2 in power density equation",
         )
 
         self._fixed_perf_vars.append(self.power_density_k_1)
         self._fixed_perf_vars.append(self.power_density_k_2)
 
-        self.electricity = Var(
+        self.energy_consumption = Var(
             self.flowsheet().config.time,
-            units=pyunits.kW,
-            bounds=(0, None),
-            doc="Power consumption of brine concentrator",
+            units=pyunits.kWh / pyunits.m**3 / pyunits.mol,
+            doc="Energy required for treating a given volume",
         )
-        self.power_density = Var(
-            self.flowsheet().config.time,
-            units=pyunits.kWh / pyunits.m**2,
-            doc="Dissipated power per unit surface area",
-        )
-
-        @self.Constraint(self.flowsheet().config.time, doc="Power density constraint")
-        def power_density_constraint(b, t):
-
-            return b.power_density[t] == (
-                b.current_density[t] * b.current_density[t]
-            ) * b.resistance_ohmic[t] + b.current_density[t] * (
-                b.power_density_k_1 * log(b.current_density[t]) + b.power_density_k_2
-            )
 
         @self.Constraint(
-            self.flowsheet().config.time, doc="Power consumption constraint"
+            self.flowsheet().config.time, doc="Energy requirement constraint"
         )
         def electricity_constraint(b, t):
-            q_in = pyunits.convert(
-                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+            current_density_in = pyunits.convert(
+                b.properties_in[t].current_density, to_units=pyunits.Amp / pyunits.cm**2
             )
-            return b.electricity[t] == b.electricity_intensity[t] * q_in
+            return b.energy_consumption[t] == (current_density_in*b.ohmic_resistance + b.power_density_k_1 * log(b.current_density[t]) + b.power_density_k_2) * self.z * Constants.faraday_constant/3600*10**6
 
-        self._perf_var_dict["Power Consumption (kW)"] = self.electricity
-        self._perf_var_dict[
-            "Electricity intensity per Inlet Flowrate  (kWh/m3)"
-        ] = self.electricity_intensity
+        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = self.energy_consumption
