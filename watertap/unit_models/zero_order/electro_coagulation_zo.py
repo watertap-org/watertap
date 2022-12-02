@@ -56,7 +56,9 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
             self.flowsheet().config.time, doc="Ohmic resistance in an EC reactor"
         )
         def ohmic_resistance_constraint(b, t):
-            return b.ohmic_resistance[t] == b.electrode_spacing/ b.solution_conductivity
+            return (
+                b.ohmic_resistance[t] == b.electrode_spacing / b.solution_conductivity
+            )
 
         self.power_density_k_1 = Var(
             units=pyunits.dimensionless,
@@ -81,8 +83,15 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
         )
         def energy_consumption_constraint(b, t):
             current_density_in = pyunits.convert(
-                b.properties_in[t].current_density, to_units=pyunits.Amp / pyunits.cm**2
+                b.properties_in[t].current_density,
+                to_units=pyunits.Amp / pyunits.cm**2,
             )
-            return b.energy_consumption[t] == (current_density_in*b.ohmic_resistance + b.power_density_k_1 * log(b.current_density[t]) + b.power_density_k_2) * self.z * Constants.faraday_constant/3600*10**6
+            return b.energy_consumption[t] == (
+                current_density_in * b.ohmic_resistance
+                + b.power_density_k_1 * log(b.current_density[t])
+                + b.power_density_k_2
+            ) * (self.z * Constants.faraday_constant / (3600 * 10**6))
 
-        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = self.energy_consumption
+        self._perf_var_dict[
+            "Energy Consumption (kWh/m3/Mole)"
+        ] = self.energy_consumption
