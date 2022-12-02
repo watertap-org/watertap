@@ -51,10 +51,11 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
             units=pyunits.cm**2 * pyunits.ohm,
             doc="Ohmic resistance in an EC reactor",
         )
+
         @self.Constraint(
             self.flowsheet().config.time, doc="Ohmic resistance in an EC reactor"
         )
-        def electricity_constraint(b, t):
+        def ohmic_resistance_constraint(b, t):
             return b.ohmic_resistance[t] == b.electrode_spacing/ b.solution_conductivity
 
         self.power_density_k_1 = Var(
@@ -78,7 +79,7 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
         @self.Constraint(
             self.flowsheet().config.time, doc="Energy requirement constraint"
         )
-        def electricity_constraint(b, t):
+        def energy_consumption_constraint(b, t):
             current_density_in = pyunits.convert(
                 b.properties_in[t].current_density, to_units=pyunits.Amp / pyunits.cm**2
             )
