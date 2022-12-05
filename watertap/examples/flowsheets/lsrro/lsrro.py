@@ -292,7 +292,7 @@ def build(
     m.fs.costing.factor_total_investment.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.electricity_base_cost.set_value(0.07)
+    m.fs.costing.electricity_cost.set_value(0.07)
     m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
     m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
     m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)

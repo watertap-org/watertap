@@ -318,7 +318,7 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     # System costs
-    v = fs.ro_costing.electricity_base_cost
+    v = fs.ro_costing.electricity_cost
     exports.add(
         obj=v,
         name="Electricity cost",
