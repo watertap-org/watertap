@@ -60,10 +60,16 @@ class _DefinedFlowsDict(MutableMapping, dict):
     __iter__ = dict.__iter__
     __len__ = dict.__len__
 
-    def __setitem__(self, key, value):
+    def _setitem(self, key, value):
         if key in self and self[key] is not value:
             raise KeyError(f"{key} has already been defined as a flow")
         dict.__setitem__(self, key, value)
+
+    def __setitem__(self, key, value):
+        raise KeyError(
+            "Please use the `WaterTAPCosting.add_defined_flow` "
+            "method to add defined flows."
+        )
 
     def __delitem__(self, key):
         raise KeyError("defined flows cannot be removed")
@@ -134,13 +140,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=pyo.units.year**-1,
         )
 
-        self.electricity_base_cost = pyo.Param(
+        self.electricity_cost = pyo.Param(
             mutable=True,
             initialize=0.07,
             doc="Electricity cost",
             units=pyo.units.USD_2018 / pyo.units.kWh,
         )
-        self.defined_flows["electricity"] = self.electricity_base_cost
+        self.add_defined_flow("electricity", self.electricity_cost)
 
         self.electrical_carbon_intensity = pyo.Param(
             mutable=True,
@@ -151,6 +157,36 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # fix the parameters
         self.fix_all_vars()
+
+    def add_defined_flow(self, flow_name, flow_cost):
+        """
+        This method adds a defined flow to the costing block.
+
+        NOTE: Use this method to add `defined_flows` to the costing block
+              to ensure updates to `flow_cost` get propagated in the model.
+              See https://github.com/IDAES/idaes-pse/pull/1014 for details.
+
+        Args:
+            flow_name: string containing the name of the flow to register
+            flow_cost: Pyomo expression that represents the flow unit cost
+
+        Returns:
+            None
+        """
+        flow_cost_name = flow_name + "_cost"
+        current_flow_cost = self.component(flow_cost_name)
+        if current_flow_cost is None:
+            self.add_component(flow_cost_name, pyo.Expression(expr=flow_cost))
+            self.defined_flows._setitem(flow_name, self.component(flow_cost_name))
+        elif current_flow_cost is flow_cost:
+            self.defined_flows._setitem(flow_name, current_flow_cost)
+        else:
+            # if we get here then there's an attribute named
+            # flow_cost_name on the block, which is an error
+            raise RuntimeError(
+                f"Attribute {flow_cost_name} already exists "
+                f"on the costing block, but is not {flow_cost}"
+            )
 
     def cost_flow(self, flow_expr, flow_type):
         """
