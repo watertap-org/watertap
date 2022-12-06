@@ -11,18 +11,18 @@
 #
 ###############################################################################
 
-from .watertap_costing_package import WaterTAPCosting
+import pyomo.environ as pyo
+import idaes.core.util.scaling as iscale
 
-from .util import (
-    register_costing_parameter_block,
-    make_capital_cost_var,
-    make_fixed_operating_cost_var,
-    cost_by_flow_volume,
-    cost_membrane,
-)
 
-from .units.crystallizer import CrystallizerCostType
-from .units.energy_recovery_device import EnergyRecoveryDeviceType
-from .units.mixer import MixerType
-from .units.pump import PumpType
-from .units.reverse_osmosis import ROType
+def transform_property_constraints(self):
+    for metadata_dic in self.params.get_metadata().properties.values():
+        var_str = metadata_dic["name"]
+        if metadata_dic["method"] is not None and self.is_property_constructed(var_str):
+            var = getattr(self, var_str)
+            if not isinstance(var, pyo.Var):
+                continue  # properties that are not vars do not have constraints
+            con = getattr(self, "eq_" + var_str)
+            for ind, c in con.items():
+                sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf)

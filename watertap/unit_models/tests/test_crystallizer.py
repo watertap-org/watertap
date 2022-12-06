@@ -40,8 +40,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
