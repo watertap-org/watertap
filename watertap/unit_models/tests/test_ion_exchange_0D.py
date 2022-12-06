@@ -926,12 +926,12 @@ class TestIonExchangeCosting:
         assert_optimal_termination(results)
 
         assert pytest.approx(453807.598, rel=1e-5) == value(
-            m.fs.costing.total_capital_cost
+            m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(1023617.357, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(907615.190, rel=1e-5) == value(
-            m.fs.costing.total_investment_cost
+            m.fs.costing.total_capital_cost
         )
         assert pytest.approx(0.78791, rel=1e-5) == value(m.fs.costing.LCOW)

@@ -232,7 +232,7 @@ fs.S1.split_fraction[0.0,P1]: 0.49475489729022726
 fs.S1.split_fraction[0.0,PXR]: 0.5052451027097727
 fs.costing.LCOW: 0.46090440122852394
 fs.costing.aggregate_capital_cost: 12709.589772436626
-fs.costing.total_investment_cost: 25419.179544873252
+fs.costing.total_capital_cost: 25419.179544873252
 fs.costing.maintenance_labor_chemical_operating_cost: 762.5753863461975
 fs.costing.total_operating_cost: 3942.7469500005436
 fs.disposal.properties[0.0].flow_mass_phase_comp[Liq,H2O]: 0.49285444999999994
