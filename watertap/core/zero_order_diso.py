@@ -67,20 +67,18 @@ def build_diso(self):
     tmp_dict["defined_state"] = True
 
     self.properties_in1 = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties at inlet 1", default=tmp_dict
+        self.flowsheet().time, doc="Material properties at inlet 1", **tmp_dict
     )
 
     self.properties_in2 = self.config.property_package.build_state_block(
-        self.flowsheet().time, doc="Material properties at inlet 2", default=tmp_dict
+        self.flowsheet().time, doc="Material properties at inlet 2", **tmp_dict
     )
 
     tmp_dict_2 = dict(**tmp_dict)
     tmp_dict_2["defined_state"] = False
 
     self.properties_treated = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties of treated water",
-        default=tmp_dict_2,
+        self.flowsheet().time, doc="Material properties of treated water", **tmp_dict_2
     )
 
     # Create Ports

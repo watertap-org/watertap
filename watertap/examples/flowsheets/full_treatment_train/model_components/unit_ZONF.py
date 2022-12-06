@@ -41,9 +41,7 @@ def build_ZONF(m, base="ion"):
         )
     prop = property_models.get_prop(m, base=base)
 
-    m.fs.NF = NanofiltrationZO(
-        default={"property_package": prop, "has_pressure_change": False}
-    )
+    m.fs.NF = NanofiltrationZO(property_package=prop, has_pressure_change=False)
 
     # specify
     m.fs.NF.flux_vol_solvent.fix(1.67e-6)
@@ -71,7 +69,7 @@ def build_ZONF(m, base="ion"):
 
 def solve_ZONF(base="ion"):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     property_models.build_prop(m, base=base)
     build_ZONF(m, base=base)

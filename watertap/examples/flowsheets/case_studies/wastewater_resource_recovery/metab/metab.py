@@ -72,30 +72,20 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["cod", "hydrogen", "methane"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["cod", "hydrogen", "methane"])
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.metab_hydrogen = MetabZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "hydrogen",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="hydrogen"
     )
     m.fs.metab_methane = MetabZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "methane",
-        },
+        property_package=m.fs.prop, database=m.db, process_subtype="methane"
     )
-    m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
-    m.fs.product_methane = Product(default={"property_package": m.fs.prop})
-    m.fs.product_H2O = Product(default={"property_package": m.fs.prop})
+    m.fs.product_hydrogen = Product(property_package=m.fs.prop)
+    m.fs.product_methane = Product(property_package=m.fs.prop)
+    m.fs.product_H2O = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.metab_hydrogen.inlet)
@@ -165,9 +155,9 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "metab_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.metab_hydrogen.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.metab_methane.costing = UnitModelCostingBlock(**costing_kwargs)
 
@@ -564,10 +554,9 @@ def display_metrics_results(m):
     DCC_normalized = value(
         pyunits.convert(
             (
-                m.fs.metab_hydrogen.costing.capital_cost
-                + m.fs.metab_methane.costing.capital_cost
+                m.fs.metab_hydrogen.costing.direct_capital_cost
+                + m.fs.metab_methane.costing.direct_capital_cost
             )
-            / m.fs.costing.TIC
             / m.fs.feed.properties[0].flow_vol,
             to_units=m.fs.costing.base_currency / (pyunits.m**3 / pyunits.day),
         )

@@ -30,7 +30,7 @@ def test_build_and_scale_translator_block():
     ]
     for kwargs in tb_kwargs_list:
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         property_models.build_prop(m, base=kwargs["base_inlet"])
         property_models.build_prop(m, base=kwargs["base_outlet"])
 

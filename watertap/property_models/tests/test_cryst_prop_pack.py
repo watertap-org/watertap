@@ -12,9 +12,9 @@
 ###############################################################################
 import pytest
 import watertap.property_models.cryst_prop_pack as props
-from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
-from idaes.generic_models.properties.tests.test_harness import (
+from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
 from watertap.property_models.tests.property_test_harness import (
@@ -39,22 +39,14 @@ class TestDefaultNaClwaterProperty:
 
     # Create block and stream for running default tests
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock(
-        default={
-            "heat_of_crystallization_model": props.HeatOfCrystallizationModel.constant
-        }
+        heat_of_crystallization_model=props.HeatOfCrystallizationModel.constant
     )
-    m.fs.stream = m.fs.properties.build_state_block(
-        [0], default={"defined_state": True}
-    )
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "property_package": m.fs.properties,
-        }
+        dynamic=False, has_holdup=False, property_package=m.fs.properties
     )
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances()

@@ -46,23 +46,19 @@ class TestMicrobialBattery:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "arsenic",
-                    "uranium",
-                    "nitrate",
-                    "phosphates",
-                    "iron",
-                    "filtration_media",
-                ]
-            }
+            solute_list=[
+                "arsenic",
+                "uranium",
+                "nitrate",
+                "phosphates",
+                "iron",
+                "filtration_media",
+            ]
         )
 
-        m.fs.unit = MicrobialBatteryZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = MicrobialBatteryZO(property_package=m.fs.params, database=m.db)
 
         # Inlet mass flowrates in kg/s
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.01)
@@ -155,44 +151,44 @@ class TestMicrobialBattery:
         assert pytest.approx(1e-5, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(8.4e-10, rel=1e-3) == value(
+        assert pytest.approx(4.00e-11, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["arsenic"]
         )
-        assert pytest.approx(8.6e-10, rel=1e-3) == value(
+        assert pytest.approx(6.00e-11, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["uranium"]
         )
-        assert pytest.approx(2.58e-8, rel=1e-3) == value(
+        assert pytest.approx(2.50e-8, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["nitrate"]
         )
-        assert pytest.approx(9e-10, rel=1e-3) == value(
+        assert pytest.approx(1.00e-10, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["phosphates"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["iron"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["filtration_media"]
         )
 
-        assert pytest.approx(9.39e-11, rel=1e-3) == value(
+        assert pytest.approx(8.8300e-11, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(1.16e-9, rel=1e-3) == value(
+        assert pytest.approx(3.600e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["arsenic"]
         )
-        assert pytest.approx(1.34e-9, rel=1e-3) == value(
+        assert pytest.approx(5.400e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["uranium"]
         )
-        assert pytest.approx(7.58e-8, rel=1e-3) == value(
+        assert pytest.approx(7.500e-8, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["nitrate"]
         )
-        assert pytest.approx(1.7e-9, rel=1e-3) == value(
+        assert pytest.approx(9.000e-10, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["phosphates"]
         )
-        assert pytest.approx(8e-10, rel=1e-3) == value(
+        assert pytest.approx(2.7753e-14, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["iron"]
         )
-        assert pytest.approx(1.23e-8, rel=1e-3) == value(
+        assert pytest.approx(1.150e-8, rel=1e-3) == value(
             model.fs.unit.properties_byproduct[0].flow_mass_comp["filtration_media"]
         )
 
@@ -221,18 +217,16 @@ class TestMicrobialBattery:
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "arsenic",
-                "uranium",
-                "nitrate",
-                "phosphates",
-                "iron",
-                "filtration_media",
-            ]
-        }
+        solute_list=[
+            "arsenic",
+            "uranium",
+            "nitrate",
+            "phosphates",
+            "iron",
+            "filtration_media",
+        ]
     )
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -246,10 +240,8 @@ def test_costing():
         "groundwater_treatment",
         "groundwater_treatment_case_study.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
-    m.fs.unit = MicrobialBatteryZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
+    m.fs.unit = MicrobialBatteryZO(property_package=m.fs.params, database=m.db)
 
     # Inlet mass flowrates in kg/s
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.01)
@@ -265,9 +257,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.costing.cost_process()
 
@@ -280,7 +270,7 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert pytest.approx(4320.05, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(8640.097, rel=1e-3) == value(m.fs.unit.costing.capital_cost)
 
     assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
     assert "filtration_media" in m.fs.costing._registered_flows

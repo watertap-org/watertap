@@ -22,14 +22,11 @@ from pyomo.environ import (
     value,
     Var,
     assert_optimal_termination,
-    TransformationFactory,
     units as pyunits,
     Param,
-    Expression,
     Block,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
@@ -37,7 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import CofermentationZO, FeedZO
+from watertap.unit_models.zero_order import CofermentationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -51,14 +48,12 @@ class TestCofermentationZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod", "nonbiodegradable_cod", "foo"]}
+            solute_list=["cod", "nonbiodegradable_cod", "foo"]
         )
 
-        m.fs.unit = CofermentationZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = CofermentationZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
@@ -123,16 +118,16 @@ class TestCofermentationZO:
         assert pytest.approx(4.3692908e-5, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].flow_vol
         )
-        assert pytest.approx(5.0314895e-8, rel=1e-5) == value(
+        assert pytest.approx(5.0312500e-8, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].flow_vol
         )
-        assert pytest.approx(4.347069, rel=1e-5) == value(
+        assert pytest.approx(4.3470000, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+        assert pytest.approx(2.3979758e-9, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_treated[0].flow_mass_comp[
                     "nonbiodegradable_cod"
@@ -140,13 +135,13 @@ class TestCofermentationZO:
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(6.9120e-5, rel=1e-5) == value(
+        assert pytest.approx(2.3979758e-9, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_byproduct[0].flow_mass_comp["cod"],
                 to_units=pyunits.kg / pyunits.day,
             )
         )
-        assert pytest.approx(4.347069, rel=1e-5) == value(
+        assert pytest.approx(4.347000, rel=1e-5) == value(
             pyunits.convert(
                 model.fs.unit.properties_byproduct[0].flow_mass_comp[
                     "nonbiodegradable_cod"
@@ -184,15 +179,15 @@ def test_COD_not_in_solute_list():
     model = ConcreteModel()
     model.db = Database()
 
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
+    model.fs = FlowsheetBlock(dynamic=False)
+    model.fs.params = WaterParameterBlock(solute_list=["foo"])
     with pytest.raises(
         ValueError,
         match="cod must be included in the solute list since"
         " this unit model converts cod to nonbiodegradable_cod.",
     ):
         model.fs.unit = CofermentationZO(
-            default={"property_package": model.fs.params, "database": model.db}
+            property_package=model.fs.params, database=model.db
         )
 
 
@@ -200,17 +195,13 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["cod", "nonbiodegradable_cod"]}
-    )
+    m.fs.params = WaterParameterBlock(solute_list=["cod", "nonbiodegradable_cod"])
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = CofermentationZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = CofermentationZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(0.043642594)
     m.fs.unit1.inlet.flow_mass_comp[0, "cod"].fix(1.00625e-4)
@@ -219,9 +210,7 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.cofermentation, Block)
     assert isinstance(m.fs.costing.cofermentation.unit_capex, Var)

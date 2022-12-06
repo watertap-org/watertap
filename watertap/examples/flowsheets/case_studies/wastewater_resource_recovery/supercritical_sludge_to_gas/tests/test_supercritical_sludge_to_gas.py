@@ -12,7 +12,7 @@
 ###############################################################################
 
 import pytest
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 from pyomo.environ import value, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from watertap.core.util.initialization import assert_degrees_of_freedom
@@ -101,10 +101,12 @@ class TestSupercritical_Sludge_to_GasFlowsheet:
         assert_optimal_termination(results)
 
         # check costing
-        assert value(m.fs.costing.LCOW) == pytest.approx(466.187, rel=1e-3)  # in $/m**3
-        assert value(m.fs.costing.LCOG) == pytest.approx(3.1357, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOC) == pytest.approx(53.751, rel=1e-3)  # in $/kg
-        assert value(m.fs.costing.LCOS) == pytest.approx(6.2438, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOW) == pytest.approx(
+            485.72599, rel=1e-3
+        )  # in $/m**3
+        assert value(m.fs.costing.LCOG) == pytest.approx(3.26709, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOC) == pytest.approx(56.00387, rel=1e-3)  # in $/kg
+        assert value(m.fs.costing.LCOS) == pytest.approx(6.505542, rel=1e-3)  # in $/kg
 
     @pytest.mark.component
     def test_display(self, system_frame):

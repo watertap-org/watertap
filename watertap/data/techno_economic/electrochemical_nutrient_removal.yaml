@@ -26,7 +26,7 @@ default:    # Electrochemical Nutrient Recovery
     units: dimensionless
   capital_cost:
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TIC
     reference_state:
       value: 37.9
       units: m^3/hr

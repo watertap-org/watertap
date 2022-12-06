@@ -65,7 +65,7 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type="ZO", NF_base="ion"):
         unit_separator.build_SepNF(m, base=NF_base)
     elif NF_type == "ZO":
         unit_ZONF.build_ZONF(m, base=NF_base)
-        m.fs.pump_NF = Pump(default={"property_package": prop})
+        m.fs.pump_NF = Pump(property_package=prop)
     else:
         raise ValueError(
             "Unexpected model type {NF_type} provided to build_NF_no_bypass"
@@ -75,16 +75,12 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type="ZO", NF_base="ion"):
     if has_bypass:
         # build auxiliary units
         m.fs.splitter = Separator(
-            default={
-                "property_package": prop,
-                "outlet_list": ["pretreatment", "bypass"],
-                "split_basis": SplittingType.totalFlow,
-                "energy_split_basis": EnergySplittingType.equal_temperature,
-            }
+            property_package=prop,
+            outlet_list=["pretreatment", "bypass"],
+            split_basis=SplittingType.totalFlow,
+            energy_split_basis=EnergySplittingType.equal_temperature,
         )
-        m.fs.mixer = Mixer(
-            default={"property_package": prop, "inlet_list": ["pretreatment", "bypass"]}
-        )
+        m.fs.mixer = Mixer(property_package=prop, inlet_list=["pretreatment", "bypass"])
 
         # connect models
         m.fs.s_pretrt_feed_splitter = Arc(
@@ -231,7 +227,7 @@ def display_pretreatment_NF(m, **kwargs):
 
 def solve_pretreatment_NF(**kwargs):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     property_models.build_prop(m, base=kwargs["NF_base"])
     build_pretreatment_NF(m, **kwargs)

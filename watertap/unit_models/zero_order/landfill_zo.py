@@ -14,9 +14,8 @@
 This module contains a zero-order representation of a landfill unit.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
-
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
 
 # Some more inforation about this module

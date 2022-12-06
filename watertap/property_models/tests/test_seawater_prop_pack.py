@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 import watertap.property_models.seawater_prop_pack as props
-from idaes.generic_models.properties.tests.test_harness import (
+from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
 )
 from watertap.property_models.tests.property_test_harness import (
@@ -39,8 +39,8 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1e2,
         }
         self.stateblock_statistics = {
-            "number_variables": 25,
-            "number_total_constraints": 21,
+            "number_variables": 26,
+            "number_total_constraints": 22,
             "number_unused_variables": 1,  # pressure is unused
             "default_degrees_of_freedom": 3,
         }  # 4 state vars, but pressure is not active
@@ -66,6 +66,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("therm_cond_phase", "Liq"): 0.6086,
             ("dh_vap_mass", None): 2.356e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
+            ("boiling_point_elevation_phase", "Liq"): 0.3093,
         }
 
 
@@ -110,6 +111,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("therm_cond_phase", "Liq"): 0.6400,
             ("dh_vap_mass", None): 2.358e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.493e-9,
+            ("boiling_point_elevation_phase", "Liq"): 0.0989,
         }
 
 
@@ -154,6 +156,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("therm_cond_phase", "Liq"): 0.5854,
             ("dh_vap_mass", None): 2.353e6,
             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
+            ("boiling_point_elevation_phase", "Liq"): 0.4069,
         }
 
 

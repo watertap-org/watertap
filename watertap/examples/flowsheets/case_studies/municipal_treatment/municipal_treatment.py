@@ -75,70 +75,38 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(
-        default={"solute_list": ["tds", "tss", "toc"]}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["tds", "tss", "toc"])
 
     # unit models
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
     m.fs.intake_pump = WaterPumpingStationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "raw",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="raw"
     )
     m.fs.coag_and_floc = CoagulationFlocculationZO(
-        default={"property_package": m.fs.prop, "database": m.db}
+        property_package=m.fs.prop, database=m.db
     )
-    m.fs.sedimentation = SedimentationZO(
-        default={"property_package": m.fs.prop, "database": m.db}
-    )
-    m.fs.ozonation = OzoneZO(default={"property_package": m.fs.prop, "database": m.db})
+    m.fs.sedimentation = SedimentationZO(property_package=m.fs.prop, database=m.db)
+    m.fs.ozonation = OzoneZO(property_package=m.fs.prop, database=m.db)
     m.fs.gravity_basin = FixedBedZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "gravity_basin",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="gravity_basin"
     )
     m.fs.gac = GACZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "pressure_vessel",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="pressure_vessel"
     )
     m.fs.backwash_pump = WaterPumpingStationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "treated",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="treated"
     )
-    m.fs.uv = UVZO(default={"property_package": m.fs.prop, "database": m.db})
+    m.fs.uv = UVZO(property_package=m.fs.prop, database=m.db)
     m.fs.anion_exchange = IonExchangeZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "anion_exchange",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="anion_exchange"
     )
-    m.fs.chlorination = ChlorinationZO(
-        default={"property_package": m.fs.prop, "database": m.db}
-    )
-    m.fs.storage = StorageTankZO(
-        default={"property_package": m.fs.prop, "database": m.db}
-    )
+    m.fs.chlorination = ChlorinationZO(property_package=m.fs.prop, database=m.db)
+    m.fs.storage = StorageTankZO(property_package=m.fs.prop, database=m.db)
     m.fs.recharge_pump = WaterPumpingStationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "treated",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="treated"
     )
-    m.fs.product = Product(default={"property_package": m.fs.prop})
+    m.fs.product = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.intake_pump.inlet)
@@ -210,6 +178,7 @@ def set_operating_conditions(m):
 
     # anion exchange
     m.fs.anion_exchange.load_parameters_from_database(use_default_removal=True)
+    m.fs.anion_exchange.removal_frac_mass_comp[0, "tds"].fix(0.9)
 
     # chlorination
     m.fs.chlorination.load_parameters_from_database(use_default_removal=True)
@@ -264,7 +233,7 @@ def display_results(m):
 def add_costing(m):
     m.fs.costing = ZeroOrderCosting()
     # typing aid
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.costing}
     m.fs.intake_pump.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.coag_and_floc.costing = UnitModelCostingBlock(**costing_kwargs)
     m.fs.sedimentation.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -302,7 +271,7 @@ def display_costing(m):
         )
 
     print("\nUtility Costs\n")
-    for f in m.fs.costing.flow_types:
+    for f in m.fs.costing.used_flows:
         print(
             f,
             " :   ",

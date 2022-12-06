@@ -8,9 +8,8 @@ __author__ = "Dan Gunter"
 import logging
 from collections import namedtuple
 from enum import Enum
-from typing import Callable, Optional, Dict, Union, TypeVar
+from typing import Any, Callable, Optional, Dict, Union, TypeVar
 from types import ModuleType
-from uuid import uuid4
 
 try:
     from importlib import metadata
@@ -30,10 +29,35 @@ FSI = TypeVar("FSI", bound="FlowsheetInterface")
 _log = idaeslog.getLogger(__name__)
 
 
+class UnsupportedObjType(TypeError):
+    def __init__(
+        self,
+        obj: Any,
+        supported: Optional = None,
+    ):
+        msg = f"Object '{obj}' of type '{type(obj)}' is not supported."
+        if supported is not None:
+            msg += f"\nSupported: {supported}"
+        super().__init__(msg)
+        self.obj = obj
+        self.supported = supported
+
+
 class ModelExport(BaseModel):
     """A variable, expression, or parameter."""
 
-    obj: object = Field(default=None, exclude=True)
+    _SupportedObjType = Union[
+        pyo.Var,
+        pyo.Expression,
+        pyo.Param,
+    ]
+    "Used for type hints and as a shorthand in error messages (i.e. not for runtime checks)"
+
+    # TODO: if Optional[_SupportedObjType] is used for the `obj` type hint,
+    # pydantic will run the runtime instance check which is not what we want
+    # (as we want/need to use the pyomo is_xxx_type() methods instead)
+    # so we're using Optional[object] unless we find a way to tell pydantic to skip this check
+    obj: Optional[object] = Field(default=None, exclude=True)
     name: str = ""
     value: float = 0.0
     ui_units: object = Field(default=None, exclude=True)
@@ -50,12 +74,49 @@ class ModelExport(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @validator("obj", always=True, pre=True)
+    def ensure_obj_is_supported(cls, v):
+        if v is not None:
+            cls._ensure_supported_type(v)
+        return v
+
+    @classmethod
+    def _ensure_supported_type(cls, obj: object):
+        is_valid = (
+            obj.is_variable_type()
+            or obj.is_expression_type()
+            or obj.is_parameter_type()
+            # TODO: add support for numbers with pyo.numvalue.is_numeric_data()
+        )
+        if is_valid:
+            return True
+        raise UnsupportedObjType(obj, supported=cls._SupportedObjType)
+
+    @classmethod
+    def _get_supported_obj(
+        cls, values: dict, field_name: str = "obj", allow_none: bool = False
+    ):
+        obj = values.get(field_name, None)
+        if not allow_none and obj is None:
+            raise TypeError(f"'{field_name}' is None but allow_none is False")
+        cls._ensure_supported_type(obj)
+        return obj
+
+    # NOTE: IMPORTANT: all validators used to set a dynamic default value
+    # should have the `always=True` option, or the validator won't be called
+    # when the value for that field is not passed
+    # (which is precisely when we need the default value)
+    # additionally, `pre=True` should be given if the field can at any point
+    # have a value that doesn't match its type annotation
+    # (e.g. `None` for a strict (non-`Optional` `bool` field)
+
     # Get value from object
     @validator("value", always=True)
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
-        return pyo.value(values["obj"])
+        obj = cls._get_supported_obj(values, allow_none=False)
+        return pyo.value(obj)
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
@@ -66,39 +127,30 @@ class ModelExport(BaseModel):
         return v
 
     # set name dynamically from object
-    @validator("name")
+    @validator("name", always=True)
     def validate_name(cls, v, values):
         if not v:
+            obj = cls._get_supported_obj(values, allow_none=False)
             try:
-                v = values["obj"].name
+                v = obj.name
             except AttributeError:
                 pass
-        return v
-
-    @validator("obj")
-    def ensure_obj_is_supported(cls, v, values):
-        if v is not None:
-            assert v.is_variable_type() or v.is_expression_type()
         return v
 
     @validator("is_readonly", always=True, pre=True)
     def set_readonly_default(cls, v, values):
         if v is None:
-            obj = values["obj"]
-            assert (
-                obj is not None
-            ), "If ``is_readonly`` is not specified as a bool, then ``obj`` must be a Pyomo object"
-            v = True if not obj.is_variable_type() else False
+            v = True
+            obj = cls._get_supported_obj(values, allow_none=False)
+            if obj.is_variable_type() or (obj.is_parameter_type() and obj.mutable):
+                v = False
         return v
 
     @validator("obj_key", always=True, pre=True)
     def set_obj_key_default(cls, v, values):
         if v is None:
-            obj = values["obj"]
-            assert (
-                obj is not None
-            ), "If ``obj_key`` is not specified, then ``obj`` must be a Pyomo object"
-            v = str(values["obj"])
+            obj = cls._get_supported_obj(values, allow_none=False)
+            v = str(obj)
         return v
 
 
@@ -286,7 +338,7 @@ class FlowsheetInterface:
         try:
             self.run_action(Actions.build, **kwargs)
         except Exception as err:
-            _log.error(f"Building flowsheet: {err}")
+            raise RuntimeError(f"Building flowsheet: {err}") from err
         return
 
     def solve(self, **kwargs):
@@ -304,7 +356,7 @@ class FlowsheetInterface:
         try:
             result = self.run_action(Actions.solve, **kwargs)
         except Exception as err:
-            raise RuntimeError(f"Solving flowsheet: {err}")
+            raise RuntimeError(f"Solving flowsheet: {err}") from err
         return result
 
     def dict(self) -> Dict:
@@ -472,9 +524,15 @@ class FlowsheetInterface:
         Returns:
             Mapping with keys the module names and values FlowsheetInterface objects
         """
+        eps = metadata.entry_points()
         try:
-            entry_points = list(metadata.entry_points()[group_name])
-        except KeyError:
+            # this happens for Python 3.7 (via importlib_metadata) and Python 3.10+
+            entry_points = list(eps.select(group=group_name))
+        except AttributeError:
+            # this will happen on Python 3.8 and 3.9, where entry_points() has dict-like group selection
+            entry_points = list(eps[group_name])
+
+        if not entry_points:
             _log.error(f"No interfaces found for entry points group: {group_name}")
             return {}
 

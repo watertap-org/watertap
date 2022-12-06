@@ -47,7 +47,7 @@ class TestStruviteClassifierZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["struvite"]})
+        m.fs.params = WaterParameterBlock(solute_list=["struvite"])
 
         m.fs.unit = StruviteClassifierZO(property_package=m.fs.params, database=m.db)
 
@@ -107,7 +107,9 @@ class TestStruviteClassifierZO:
                 value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
             ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert pytest.approx(7e-10, rel=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(8.4491446e-11, rel=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -118,9 +120,9 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.params = WaterParameterBlock(default={"solute_list": ["struvite"]})
+    m.fs.params = WaterParameterBlock(solute_list=["struvite"])
 
     source_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -135,20 +137,16 @@ def test_costing():
         "magprex_case_1575.yaml",
     )
 
-    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    m.fs.unit1 = StruviteClassifierZO(
-        default={"property_package": m.fs.params, "database": m.db}
-    )
+    m.fs.unit1 = StruviteClassifierZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(1)
     m.fs.unit1.inlet.flow_mass_comp[0, "struvite"].fix(10)
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.struvite_classifier, Block)
     assert isinstance(m.fs.costing.struvite_classifier.HRT, Var)

@@ -159,17 +159,17 @@ class TestAMO1690Flowsheet:
         results = solve(m)
         assert_optimal_termination(results)
 
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.0743298, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.133052087, rel=1e-3)
         assert value(m.fs.costing.LCOT_with_revenue) == pytest.approx(
-            -0.0184702, rel=1e-3
+            0.040252087, rel=1e-3
         )
-        assert value(m.fs.costing.LC_biogas) == pytest.approx(0.464561, rel=1e-3)
+        assert value(m.fs.costing.LC_biogas) == pytest.approx(0.8315755, rel=1e-3)
         assert value(m.fs.costing.LC_biogas_with_revenue) == pytest.approx(
-            0.284561, rel=1e-3
+            0.6515755, rel=1e-3
         )
-        assert value(m.fs.costing.LC_fertilizer) == pytest.approx(1.290448, rel=1e-3)
+        assert value(m.fs.costing.LC_fertilizer) == pytest.approx(2.309932, rel=1e-3)
         assert value(m.fs.costing.LC_fertilizer_with_revenue) == pytest.approx(
-            0.179337, rel=1e-3
+            1.1988209569997055, rel=1e-3
         )
 
     @pytest.mark.component

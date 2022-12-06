@@ -15,10 +15,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Param,
     Var,
-    Constraint,
-    Expression,
     assert_optimal_termination,
 )
 from pyomo.util.check_units import assert_units_consistent
@@ -50,11 +47,11 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 
 from watertap.core import MembraneChannel1DBlock
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -65,9 +62,9 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
-    m.fs.unit = ReverseOsmosis1D(default={"property_package": m.fs.properties})
+    m.fs.unit = ReverseOsmosis1D(property_package=m.fs.properties)
 
     assert len(m.fs.unit.config) == 17
     assert not m.fs.unit.config.dynamic
@@ -90,50 +87,46 @@ def test_config():
 @pytest.mark.unit
 def test_option_has_pressure_change():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(
-        default={"property_package": m.fs.properties, "has_pressure_change": True}
+        property_package=m.fs.properties, has_pressure_change=True
     )
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
-    assert isinstance(m.fs.unit.dP_dx, Var)
+    assert isinstance(m.fs.unit.feed_side.dP_dx, Var)
     assert isinstance(m.fs.unit.deltaP, Var)
 
 
 @pytest.mark.unit
 def test_option_concentration_polarization_type_fixed():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": False,
-            "concentration_polarization_type": ConcentrationPolarizationType.fixed,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.fixed,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
     )
 
     assert (
         m.fs.unit.config.concentration_polarization_type
         == ConcentrationPolarizationType.fixed
     )
-    assert isinstance(m.fs.unit.cp_modulus, Var)
+    assert isinstance(m.fs.unit.feed_side.cp_modulus, Var)
 
 
 @pytest.mark.unit
 def test_option_concentration_polarization_type_calculated_kf_fixed():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": False,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.fixed,
     )
 
     assert (
@@ -141,21 +134,19 @@ def test_option_concentration_polarization_type_calculated_kf_fixed():
         == ConcentrationPolarizationType.calculated
     )
     assert m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.fixed
-    assert isinstance(m.fs.unit.Kf, Var)
+    assert isinstance(m.fs.unit.feed_side.K, Var)
 
 
 @pytest.mark.unit
 def test_option_concentration_polarization_type_calculated_kf_calculated():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": False,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=False,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
     )
 
     assert (
@@ -165,28 +156,26 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
     assert (
         m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
     )
-    assert isinstance(m.fs.unit.Kf, Var)
-    assert isinstance(m.fs.unit.channel_height, Var)
-    assert isinstance(m.fs.unit.dh, Var)
-    assert isinstance(m.fs.unit.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.N_Sc, Var)
-    assert isinstance(m.fs.unit.N_Sh, Var)
-    assert isinstance(m.fs.unit.N_Re, Var)
+    assert isinstance(m.fs.unit.feed_side.K, Var)
+    assert isinstance(m.fs.unit.feed_side.channel_height, Var)
+    assert isinstance(m.fs.unit.feed_side.dh, Var)
+    assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sc, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Re, Var)
 
 
 @pytest.mark.unit
 def test_option_pressure_change_calculated():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.none,
-            "mass_transfer_coefficient": MassTransferCoefficient.none,
-            "pressure_change_type": PressureChangeType.calculated,
-        }
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.none,
+        mass_transfer_coefficient=MassTransferCoefficient.none,
+        pressure_change_type=PressureChangeType.calculated,
     )
 
     assert (
@@ -196,34 +185,32 @@ def test_option_pressure_change_calculated():
     assert m.fs.unit.config.mass_transfer_coefficient == MassTransferCoefficient.none
     assert m.fs.unit.config.pressure_change_type == PressureChangeType.calculated
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
-    assert isinstance(m.fs.unit.dP_dx, Var)
+    assert isinstance(m.fs.unit.feed_side.dP_dx, Var)
     assert isinstance(m.fs.unit.deltaP, Var)
-    assert isinstance(m.fs.unit.channel_height, Var)
-    assert isinstance(m.fs.unit.dh, Var)
-    assert isinstance(m.fs.unit.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.N_Re, Var)
+    assert isinstance(m.fs.unit.feed_side.channel_height, Var)
+    assert isinstance(m.fs.unit.feed_side.dh, Var)
+    assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Re, Var)
 
 
 class TestReverseOsmosis:
     @pytest.fixture(scope="class")
     def RO_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "pressure_change_type": PressureChangeType.calculated,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-                "has_full_reporting": True,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.calculated,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
+            has_full_reporting=True,
         )
 
         # fully specify system
@@ -250,10 +237,10 @@ class TestReverseOsmosis:
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.N_Re[0, 0].fix(400)
+        m.fs.unit.feed_side.N_Re[0, 0].fix(400)
         m.fs.unit.recovery_mass_phase_comp[0, "Liq", "H2O"].fix(0.5)
-        m.fs.unit.spacer_porosity.fix(0.97)
-        m.fs.unit.channel_height.fix(0.001)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.97)
+        m.fs.unit.feed_side.channel_height.fix(0.001)
 
         return m
 
@@ -316,7 +303,7 @@ class TestReverseOsmosis:
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        initialization_tester(RO_frame)
+        initialization_tester(RO_frame, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -363,7 +350,7 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-1.755e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(7.992e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -389,29 +376,27 @@ class TestReverseOsmosis:
         assert pytest.approx(6.3195e-5, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
-        assert pytest.approx(371.01, rel=1e-3) == value(m.fs.unit.N_Re_avg[0])
+        assert pytest.approx(371.01, rel=1e-3) == value(m.fs.unit.feed_side.N_Re_avg[0])
         assert pytest.approx(107.48, rel=1e-3) == value(
-            m.fs.unit.Kf_avg[0, "NaCl"] * 3.6e6
+            m.fs.unit.feed_side.K_avg[0, "NaCl"] * 3.6e6
         )
         assert pytest.approx(26.63, rel=1e-3) == value(m.fs.unit.area)
 
     @pytest.mark.component
     def testReverseOsmosis_basic(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": False,
-                "concentration_polarization_type": ConcentrationPolarizationType.none,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=False,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -466,7 +451,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -504,7 +489,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(4.841e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -528,20 +513,18 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def testReverseOsmosis_cp_mod_fixed(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": False,
-                "concentration_polarization_type": ConcentrationPolarizationType.fixed,
-                "mass_transfer_coefficient": MassTransferCoefficient.none,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=False,
+            concentration_polarization_type=ConcentrationPolarizationType.fixed,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -569,7 +552,7 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
-        m.fs.unit.cp_modulus.fix(1.1)
+        m.fs.unit.feed_side.cp_modulus.fix(1.1)
 
         # test statistics
         assert number_variables(m) == 205
@@ -594,7 +577,7 @@ class TestReverseOsmosis:
         assert len(unscaled_var_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
         # Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -631,7 +614,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.449e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -655,20 +638,18 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def testReverseOsmosis_cp_calculated_kf_fixed(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": False,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.fixed,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=False,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.fixed,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -697,7 +678,7 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
-        m.fs.unit.Kf.fix(2e-5)
+        m.fs.unit.feed_side.K.fix(2e-5)
 
         # test statistics
         assert number_variables(m) == 209
@@ -719,7 +700,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -755,7 +736,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.792e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -779,20 +760,18 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def testReverseOsmosis_cp_calculated_kf_calculated(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": False,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=False,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -820,8 +799,8 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
-        m.fs.unit.spacer_porosity.fix(0.75)
-        m.fs.unit.channel_height.fix(0.002)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
 
         # test statistics
         assert number_variables(m) == 232
@@ -845,7 +824,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -881,7 +860,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(2.383e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
@@ -905,21 +884,19 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def testRO_cp_calculated_kf_calculated_pdrop_fixed_by_dx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "pressure_change_type": PressureChangeType.fixed_per_unit_length,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.fixed_per_unit_length,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -947,9 +924,9 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
-        m.fs.unit.spacer_porosity.fix(0.75)
-        m.fs.unit.channel_height.fix(0.002)
-        m.fs.unit.dP_dx.fix(-0.1e5)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
+        m.fs.unit.feed_side.dP_dx.fix(-0.1e5)
 
         # test statistics
         assert number_variables(m) == 237
@@ -973,7 +950,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -1009,7 +986,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-8.000e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(2.249e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
@@ -1034,21 +1011,19 @@ class TestReverseOsmosis:
     @pytest.mark.component
     def testRO_cp_calculated_kf_calculated_pdrop_fixed_by_stage(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
         m.fs.unit = ReverseOsmosis1D(
-            default={
-                "property_package": m.fs.properties,
-                "has_pressure_change": True,
-                "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                "pressure_change_type": PressureChangeType.fixed_per_stage,
-                "transformation_scheme": "BACKWARD",
-                "transformation_method": "dae.finite_difference",
-                "finite_elements": 3,
-            }
+            property_package=m.fs.properties,
+            has_pressure_change=True,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            pressure_change_type=PressureChangeType.fixed_per_stage,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
         )
 
         # fully specify system
@@ -1076,8 +1051,8 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
-        m.fs.unit.spacer_porosity.fix(0.75)
-        m.fs.unit.channel_height.fix(0.002)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
         m.fs.unit.deltaP.fix(-62435.6)
 
         # test statistics
@@ -1102,7 +1077,7 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -1138,7 +1113,7 @@ class TestReverseOsmosis:
         )
 
         # Test solution
-        x_interface_in = m.fs.unit.feed_side.length_domain[2]
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-6.2436e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(2.278e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]

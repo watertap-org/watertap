@@ -35,7 +35,7 @@ def test_solve():
 def test_build_and_scale():
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # check_build(m, build_func=pretreatment_softening.build)  # assert_units_consistent fails for stoich_reactor
     pretreatment_softening.build(m)

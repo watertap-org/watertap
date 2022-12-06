@@ -28,18 +28,10 @@ from watertap.core import pump_electricity, constant_intensity
 from pyomo.environ import Reference
 import os
 from glob import glob
+from pathlib import Path
 
 
 sidor_db_path = os.path.dirname(os.path.abspath(__file__))
-# test_path = os.path.relpath(os.path.join('watertap','data','techno_economic'), os.getcwd())
-#
-# # os.chdir(test_path)
-# test_path = os.path.join(test_path,'*.yaml')
-# # file_types = [".yaml"]
-# fnames = []
-# # for ext in file_types:
-# for fname in glob(test_path):
-#     fnames.append(fname)
 
 
 def grab_unit_components(unit_class):
@@ -50,23 +42,27 @@ def grab_unit_components(unit_class):
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = WaterParameterBlock(
-        default={
-            "solute_list": [
-                "toc",
-                "tss",
-                "cod",
-                "tds",
-                "nitrogen",
-                "phosphates",
-                "phosphorus",
-                "struvite",
-                "nonbiodegradable_cod",
-                "hydrogen",
-                "ammonium_as_nitrogen",
-                "nitrate",
-                "bod",
-            ]
-        }
+        solute_list=[
+            "toc",
+            "tss",
+            "tkn",
+            "cod",
+            "tds",
+            "nitrogen",
+            "phosphates",
+            "phosphorus",
+            "struvite",
+            "nonbiodegradable_cod",
+            "hydrogen",
+            "ammonium_as_nitrogen",
+            "nitrate",
+            "bod",
+            "organic_solid",
+            "organic_liquid",
+            "iron",
+            "peracetic_acid",
+            "total_coliforms_fecal_ecoli",
+        ]
     )
     unit = getattr(zo, unit_class)
     if unit_class == "MetabZO":
@@ -74,11 +70,9 @@ def grab_unit_components(unit_class):
     else:
         p_subtype = "default"
     m.fs.unit = unit(
-        default={
-            "property_package": m.fs.props,
-            "database": m.db,
-            "process_subtype": p_subtype,
-        }
+        property_package=m.fs.props,
+        database=m.db,
+        process_subtype=p_subtype,
     )
 
     if model_type_short_list[i] == "SIDO reactive":
@@ -86,11 +80,9 @@ def grab_unit_components(unit_class):
     else:
         zdb = m.db
     m.fs.zo_base = DerivedZOBase(
-        default={
-            "property_package": m.fs.props,
-            "database": zdb,
-            # "process_subtype": process_subtype,
-        }
+        property_package=m.fs.props,
+        database=zdb,
+        # process_subtype = process_subtype,
     )
 
     if model_type_short_list[i] == "PT":
@@ -173,6 +165,7 @@ def grab_unit_components_feed(unit_class):
     m.fs.props = WaterParameterBlock(
         solute_list=[
             "toc",
+            "tkn",
             "tss",
             "cod",
             "tds",
@@ -257,6 +250,7 @@ title_exceptions = {
     "co2_addition_zo": "CO2 Addition",
     "dmbr_zo": "Recirculating Dynamic Membrane Bioreactor",
     "gac_zo": "Granular Activated Carbon",
+    "hrcs_zo": "High-Rate Contact Stabilization",
     "mabr_zo": "Membrane Aerated Biofilm Reactor",
     "mbr_zo": "Membrane Bioreactor",
     "metab_zo": "Modular Encapsulated Two-stage Anaerobic Biological Reactor",
@@ -316,7 +310,6 @@ for i, u in enumerate(unit_name_list):
             f.write("\n")
             f.write("=" * (5 + len(u)))
         f.write("\n")
-        count = 0
 
         if zo_name_list[i] == "feed_zo":
             f.write(
@@ -332,18 +325,18 @@ for i, u in enumerate(unit_name_list):
         f.write("-" * len("Model Type"))
         if not (zo_name_list[i] == "feed_zo"):
             # write Model Type section
-            f.write(f"\n{list[count]}")
-            count += 1
-            f.write(f"\n{list[count]}\n")
+            f.write(f"\n{list[0]}")
+            f.write(f"\n{list[1]}\n")
         else:
             f.write(
                 "\nThe Feed (ZO) block for zero-order flowsheets contains "
                 "methods for getting concentration data from the database, and it "
                 "has been created to work with the zero-order property package.\n"
             )
-        count += 1
 
-        if not (zo_name_list[i] == "feed_zo"):
+        if not (zo_name_list[i] == "feed_zo") and not (
+            zo_name_list[i] == "constructed_wetlands_zo"
+        ):
             # write Electricity Consumption section
             f.write("\nElectricity Consumption\n")
             f.write("-" * len("Electricity Consumption"))
@@ -364,10 +357,8 @@ for i, u in enumerate(unit_name_list):
                     f.write(
                         "\nThe constraint used to calculate energy consumption is described in the Additional Constraints section below. More details can be found in the unit model class.\n"
                     )
-                count += 1
             else:
-                f.write(f"\n{list[count]}")
-                count += 1
+                f.write(f"\n{list[2]}")
                 f.write(
                     f"\nSee documentation for :ref:`Helper Methods for Electricity Demand<electricity_methods>`.\n"
                 )
@@ -378,10 +369,8 @@ for i, u in enumerate(unit_name_list):
             f.write("-" * len("Costing Method"))
             if not cost_func_list[i]:
                 f.write("\nThis unit does not include costing.\n")
-                count += 1
             else:
-                f.write(f"\n{list[count]}")
-                count += 1
+                f.write(f"\n{list[3]}")
                 f.write(
                     f"\nSee documentation for the :ref:`zero-order costing package<zero_order_costing>`.\n"
                 )
@@ -450,13 +439,11 @@ for i, u in enumerate(unit_name_list):
 
         if not (zo_name_list[i] == "feed_zo"):
             f.write("\n.. index::")
-            f.write(f"\n{list[count]}\n")
-            count += 1
-            f.write(f"\n{list[count]}\n")
-            count += 1
+            f.write(f"\n{list[4]}\n")
+            f.write(f"\n{list[5]}\n")
             f.write("\nClass Documentation\n")
             f.write("-" * len("Class Documentation"))
-            f.write(f"\n\n{list[count]}\n")
+            f.write(f"\n\n{list[6]}\n")
             f.write("    :members:\n")
             f.write("    :noindex:\n")
         else:

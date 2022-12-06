@@ -23,9 +23,9 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
 )
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
@@ -49,7 +49,6 @@ from idaes.core.util.scaling import (
     unscaled_variables_generator,
     set_scaling_factor,
 )
-import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
@@ -146,14 +145,14 @@ class TestIonExchangeNoInert:
         ions = [target_ion]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 50 * pyunits.kg / pyunits.s
         ix_prop_in = {target_ion: mass_frac}
         for ion, x in ix_prop_in.items():
@@ -341,7 +340,7 @@ class TestIonExchangeNoInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 123
@@ -362,7 +361,6 @@ class TestIonExchangeNoInert:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -488,15 +486,15 @@ class TestIonExchangeWithInert:
         ions = [target_ion] + [x for x in inert_ions.keys()]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
 
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 5 * pyunits.kg / pyunits.s
         ix_prop_in = inert_ions
         ix_prop_in[target_ion] = mass_frac
@@ -687,7 +685,7 @@ class TestIonExchangeWithInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 161
@@ -708,13 +706,11 @@ class TestIonExchangeWithInert:
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, IX_frame_with_inert):
         m = IX_frame_with_inert
         initialization_tester(m)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame_with_inert):
         m = IX_frame_with_inert
@@ -723,7 +719,6 @@ class TestIonExchangeWithInert:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame_with_inert):
         m = IX_frame_with_inert
@@ -751,7 +746,6 @@ class TestIonExchangeWithInert:
                 <= 1e-6
             )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame_with_inert):
         m = IX_frame_with_inert
@@ -844,14 +838,14 @@ class TestIonExchangeCosting:
         ions = [target_ion]
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = DSPMDEParameterBlock(default=ix_in)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
             "hazardous_waste": False,
         }
-        ix = m.fs.unit = IonExchange0D(default=ix_unit_in)
+        ix = m.fs.unit = IonExchange0D(**ix_unit_in)
         mass_flow_in = 50 * pyunits.kg / pyunits.s
         ix_prop_in = {target_ion: mass_frac}
         for ion, x in ix_prop_in.items():
@@ -901,9 +895,7 @@ class TestIonExchangeCosting:
         ix.number_columns_redund.fix()
 
         m.fs.costing = WaterTAPCosting()
-        ix.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        ix.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(ix.properties_out[0].flow_vol_phase["Liq"])
 
@@ -933,13 +925,13 @@ class TestIonExchangeCosting:
         results = solver.solve(m, tee=False)
         assert_optimal_termination(results)
 
-        assert pytest.approx(440372.278, rel=1e-5) == value(
+        assert pytest.approx(453807.598, rel=1e-5) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(1023195.441, rel=1e-5) == value(
+        assert pytest.approx(1023617.357, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(880744.556, rel=1e-5) == value(
+        assert pytest.approx(907615.190, rel=1e-5) == value(
             m.fs.costing.total_investment_cost
         )
-        assert pytest.approx(0.78532, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.78791, rel=1e-5) == value(m.fs.costing.LCOW)

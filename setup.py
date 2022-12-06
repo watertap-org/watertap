@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.0.0a2",  # from PyPI
+    "idaes-pse>=2.0.0b2",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a3.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0b2.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.6.0dev",
+    version="0.7.0dev",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -114,6 +114,7 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
+            "nbmake",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
@@ -129,6 +130,7 @@ setup(
             "pytest",  # test framework
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
+            "nbmake",
         ],
     },
     package_data={  # Optional
@@ -159,6 +161,7 @@ setup(
             "groundwater_treatment = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.groundwater_treatment.groundwater_treatment_ui",
             "dye_desalination = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.dye_desalination.dye_desalination_ui",
             "swine_wwt = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.swine_wwt.swine_wwt_ui",
+            "GLSD anaerobic digestion = watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.GLSD_anaerobic_digester.GLSD_anaerobic_digestion_ui",
         ],
     },
 )

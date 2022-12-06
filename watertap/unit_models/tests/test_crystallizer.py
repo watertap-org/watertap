@@ -14,19 +14,13 @@
 import pytest
 from pyomo.environ import (
     ConcreteModel,
-    Constraint,
     TerminationCondition,
     SolverStatus,
     value,
     Var,
 )
 from pyomo.network import Port
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 from pyomo.util.check_units import assert_units_consistent
 from watertap.unit_models.crystallizer import Crystallization
 import watertap.property_models.cryst_prop_pack as props
@@ -42,13 +36,11 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (
     calculate_scaling_factors,
     unscaled_variables_generator,
-    unscaled_constraints_generator,
     badly_scaled_var_generator,
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -59,15 +51,11 @@ class TestCrystallization:
     @pytest.fixture(scope="class")
     def Crystallizer_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit = Crystallization(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = Crystallization(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -107,15 +95,11 @@ class TestCrystallization:
     @pytest.fixture(scope="class")
     def Crystallizer_frame_2(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit = Crystallization(
-            default={
-                "property_package": m.fs.properties,
-            }
-        )
+        m.fs.unit = Crystallization(property_package=m.fs.properties)
 
         # fully specify system
         feed_flow_mass = 1
@@ -345,12 +329,8 @@ class TestCrystallization:
         m = Crystallizer_frame
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": CrystallizerCostType.mass_basis
-                },
-            },
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_type": CrystallizerCostType.mass_basis},
         )
         m.fs.costing.cost_process()
 
@@ -531,12 +511,8 @@ class TestCrystallization:
 
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "cost_type": CrystallizerCostType.volume_basis
-                },
-            },
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"cost_type": CrystallizerCostType.volume_basis},
         )
         m.fs.costing.cost_process()
         assert_units_consistent(m)

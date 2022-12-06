@@ -140,9 +140,9 @@ class TestMetabFlowsheet:
         assert_optimal_termination(results)
 
         # check values
-        assert pytest.approx(2.6895e3, rel=1e-3) == value(m.fs.costing.LCOW)
-        assert pytest.approx(2.716e4, rel=1e-3) == value(m.fs.costing.LCOH)
-        assert pytest.approx(7.867e3, rel=1e-3) == value(m.fs.costing.LCOM)
+        assert pytest.approx(2687.854, rel=1e-3) == value(m.fs.costing.LCOW)
+        assert pytest.approx(27161.581, rel=1e-3) == value(m.fs.costing.LCOH)
+        assert pytest.approx(7865.39, rel=1e-3) == value(m.fs.costing.LCOM)
 
     @pytest.mark.component
     def test_display(self, system_frame):

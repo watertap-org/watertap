@@ -37,7 +37,7 @@ HRCS_clarifier:
   capital_cost:
     cost_method: cost_HRCS_clarifier
     basis: flow_vol
-    cost_factor: None
+    cost_factor: TIC
     HRT: # Hydraulic retention time
       value: 3
       units: hr
