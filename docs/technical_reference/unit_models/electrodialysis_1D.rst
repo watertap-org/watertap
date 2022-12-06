@@ -188,6 +188,8 @@ All equations are coded as "constraints" (Pyomo). Isothermal and isobaric condit
 
 Extended simulation 
 -------------------
+Membrane and interfacial potentials
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This model supports extensive simulations of (1) the nonohmic potential across ion exchange membranes and (2) the Nernst diffusion layer. 
 Users can customize these extenions via two configurations: `has_nonohmic_potential_membrane` that triggers the calculation of nonohmic
 potentials across ion exchange membranes and `has_Nernst_diffusion_layer` that triggers the simulation of a concentration-polarized Nernst 
@@ -235,6 +237,16 @@ Some other modifications to previously defined equations are made to accommodate
 **Note**
 
  :sup:`1` :math:`\phi_m(x), \phi_d^{ohm}(x)` or  :math:`\phi_d^{nonohm}(x)` takes 0 if its corresponding configuration is turned off (`value == False`).
+
+Frictional pressure drop
+^^^^^^^^^^^^^^^^^^^^^^^^
+This model can optionally calculate pressured drops along the flow path in the diluate and concentrate channels through config ``has_pressure_change`` and ``pressure_drop_method``.  Under the assumption of identical diluate and concentrate channels and starting flow rates, the flow velocities in the two channels are approximated equal and invariant over the channel length when calculating the frictional pressure drops. This approximation is based on the evaluation that the actual velocity variation over the channel length caused by water mass transfer across the concecutive channel leads to negligible error as compared to the uncenrtainties carried by the frictional pressure method itself. **Table 7** gives essential equations to simulate the pressure drop. 
+
+.. csv-table:: **Table 7** Essential equations supporting the pressure drop calculation
+   :header: "Description", "Equation", "Condition"
+
+   "Nonohmic potential, membrane", ":math:`\phi_m(x)=\frac{RT}{F} \left( t_+^{iem} - t_-^{iem} \right) \ln \left( \frac{c_s^R(x)}{c_s^L(x)} \right)`", "`has_nonohmic_potential_membrane == True`"
+
  
 Nomenclature
 ------------
