@@ -42,9 +42,9 @@ from watertap.core import Database, WaterParameterBlock, WaterStateBlock
 def model():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+    m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "C"])
 
     return m
 
@@ -207,9 +207,7 @@ def test_initialize_state_block(model):
 
 @pytest.mark.component
 def test_CV_integration(model):
-    model.fs.cv = ControlVolume0DBlock(
-        default={"property_package": model.fs.water_props}
-    )
+    model.fs.cv = ControlVolume0DBlock(property_package=model.fs.water_props)
 
     model.fs.cv.add_geometry()
 
@@ -224,7 +222,7 @@ def test_CV_integration(model):
 def test_no_solute_list_defined():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -241,9 +239,9 @@ def test_solute_list_from_database():
 
     db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(default={"database": db})
+    m.fs.water_props = WaterParameterBlock(database=db)
 
     assert m.fs.water_props.solute_set == db.get_solute_set()
 
@@ -258,11 +256,9 @@ def test_solute_list_with_database(caplog):
 
     db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.water_props = WaterParameterBlock(
-        default={"solute_list": ["A", "B", "tds"], "database": db}
-    )
+    m.fs.water_props = WaterParameterBlock(solute_list=["A", "B", "tds"], database=db)
 
     assert (
         "fs.water_props component A is not defined in the water_sources "

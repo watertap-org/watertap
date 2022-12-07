@@ -19,11 +19,8 @@ from pyomo.environ import (
     Constraint,
     Expression,
     Param,
-    NegativeReals,
     NonNegativeReals,
     Var,
-    check_optimal_termination,
-    exp,
     units as pyunits,
 )
 
@@ -36,7 +33,7 @@ from idaes.core import (
 )
 from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 
 
@@ -325,7 +322,7 @@ class MembraneChannelMixin:
         if pressure_change_type == PressureChangeType.calculated:
             self._add_calculated_pressure_change()
 
-    def add_isothermal_conditions(self):
+    def add_interface_isothermal_conditions(self):
 
         # ==========================================================================
         # Bulk and interface connections on the feed-side
@@ -341,6 +338,23 @@ class MembraneChannelMixin:
             return (
                 b.properties[t, x].temperature
                 == b.properties_interface[t, x].temperature
+            )
+
+    def add_control_volume_isothermal_conditions(self):
+
+        ## ==========================================================================
+        # Feed-side isothermal conditions
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Isothermal assumption for feed channel",
+        )
+        def eq_feed_isothermal(b, t, x):
+            if x == b.length_domain.first():
+                return Constraint.Skip
+            return (
+                b.properties[t, b.length_domain.first()].temperature
+                == b.properties[t, x].temperature
             )
 
     def add_extensive_flow_to_interface(self):
@@ -529,7 +543,7 @@ class MembraneChannelMixin:
         # NOTE: This function could be called by either
         # `_add_calculated_pressure_change` *and/or*
         # `_add_calculated_mass_transfer_coefficient`.
-        # Therefore, we add this simple gaurd against it being called twice.
+        # Therefore, we add this simple guard against it being called twice.
         if hasattr(self, "channel_height"):
             return
 
@@ -626,7 +640,7 @@ class MembraneChannelMixin:
             self.flowsheet().config.time,
             self.length_domain,
             doc="Material properties of feed-side membrane interface",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
     def _add_calculated_pressure_change(self):
@@ -721,11 +735,6 @@ class MembraneChannelMixin:
             initialize_guess["solvent_recovery"] = 0.5
         if "solute_recovery" not in initialize_guess:
             initialize_guess["solute_recovery"] = 0.01
-        if "cp_modulus" not in initialize_guess:
-            if hasattr(self, "cp_modulus"):
-                initialize_guess["cp_modulus"] = 1.1
-            else:
-                initialize_guess["cp_modulus"] = 1
 
         # Get source block
         # TODO: need to re-visit for counterflow
@@ -769,8 +778,39 @@ class MembraneChannelMixin:
                 1 - initialize_guess["solute_recovery"]
             )
 
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
+        # slightly modify initial values for other state blocks
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_permeate["pressure"] = 101325  # 1 bar
+        for j in self.config.property_package.solvent_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solvent_recovery"
+            ]
+        for j in self.config.property_package.solute_set:
+            state_args_permeate["flow_mass_phase_comp"][("Liq", j)] *= initialize_guess[
+                "solute_recovery"
+            ]
+
+        return {
+            "feed_side": state_args,
+            "retentate": state_args_retentate,
+            "permeate": state_args_permeate,
+        }
+
+    def _get_state_args_interface(self, initialize_guess, prop_in, prop_out):
+        if initialize_guess is None:
+            initialize_guess = {}
+        if "cp_modulus" not in initialize_guess:
+            if hasattr(self, "cp_modulus"):
+                if self._flow_direction == FlowDirection.forward:
+                    initialize_guess["cp_modulus"] = 1.1
+                else:
+                    initialize_guess["cp_modulus"] = 0.9
+            else:
+                initialize_guess["cp_modulus"] = 1
+
+        state_args_interface_in = deepcopy(prop_in)
+        state_args_interface_out = deepcopy(prop_out)
 
         for j in self.config.property_package.solute_set:
             state_args_interface_in["flow_mass_phase_comp"][
@@ -779,32 +819,6 @@ class MembraneChannelMixin:
             state_args_interface_out["flow_mass_phase_comp"][
                 ("Liq", j)
             ] *= initialize_guess["cp_modulus"]
-
-        # TODO: I think this is what we'd like to do, but IDAES needs to be changed
-        # state_args_interface = {}
-        # for t in self.flowsheet().config.time:
-        #     for x in self.length_domain:
-        #         assert 0.0 <= x <= 1.0
-        #         state_args_tx = {}
-        #         for k in state_args_interface_in:
-        #             if isinstance(state_args_interface_in[k], dict):
-        #                 if k not in state_args_tx:
-        #                     state_args_tx[k] = {}
-        #                 for index in state_args_interface_in[k]:
-        #                     state_args_tx[k][index] = (
-        #                         1.0 - x
-        #                     ) * state_args_interface_in[k][
-        #                         index
-        #                     ] + x * state_args_interface_out[
-        #                         k
-        #                     ][
-        #                         index
-        #                     ]
-        #             else:
-        #                 state_args_tx[k] = (1.0 - x) * state_args_interface_in[
-        #                     k
-        #                 ] + x * state_args_interface_out[k]
-        #         state_args_interface[t, x] = state_args_tx
 
         x = 0.5
         state_args_tx = {}
@@ -822,11 +836,7 @@ class MembraneChannelMixin:
                 ] + x * state_args_interface_out[k]
         state_args_interface = state_args_tx
 
-        return {
-            "feed_side": state_args,
-            "retentate": state_args_retentate,
-            "interface": state_args_interface,
-        }
+        return state_args_interface
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

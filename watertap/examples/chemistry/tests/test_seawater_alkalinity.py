@@ -105,6 +105,9 @@ from pyomo.environ import log10
 
 __author__ = "Austin Ladshaw"
 
+EPS = 1e-20
+
+
 # Configuration dictionary
 thermo_config = {
     "components": {
@@ -122,6 +125,7 @@ thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -195,6 +199,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -227,6 +232,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -259,6 +265,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (22.989769, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.252, pyunits.kmol * pyunits.m**-3),
                     "2": (0.347, pyunits.dimensionless),
                     "3": (1595.8, pyunits.K),
@@ -288,6 +295,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (35.453, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (4.985, pyunits.kmol * pyunits.m**-3),
                     "2": (0.36, pyunits.dimensionless),
                     "3": (1464.06, pyunits.K),
@@ -320,6 +328,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (62.03, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -352,6 +361,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (61.0168, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -384,6 +394,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (60.01, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
@@ -416,6 +427,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (84.007, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.252, pyunits.kmol * pyunits.m**-3),
                     "2": (0.347, pyunits.dimensionless),
                     "3": (1595.8, pyunits.K),
@@ -691,27 +703,25 @@ class TestSeawaterAlkalinity:
     @pytest.fixture(scope="class")
     def inherent_reactions_config(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
-        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix(0.0)
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix(EPS)
 
         total_nacl_inlet = 0.55  # mol/L
         total_carbonate_inlet = 0.00206  # mol/L
@@ -745,27 +755,25 @@ class TestSeawaterAlkalinity:
     @pytest.fixture(scope="class")
     def equilibrium_reactions_config(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_only_config)
+        model.fs = FlowsheetBlock(dynamic=False)
+        model.fs.thermo_params = GenericParameterBlock(**thermo_only_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+            property_package=model.fs.thermo_params, **reaction_config
         )
         model.fs.unit = EquilibriumReactor(
-            default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": True,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.thermo_params,
+            reaction_package=model.fs.rxn_params,
+            has_rate_reactions=False,
+            has_equilibrium_reactions=True,
+            has_heat_transfer=False,
+            has_heat_of_reaction=False,
+            has_pressure_change=False,
         )
 
-        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix(0.0)
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(EPS)
+        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix(EPS)
 
         total_nacl_inlet = 0.55  # mol/L
         total_carbonate_inlet = 0.00206  # mol/L

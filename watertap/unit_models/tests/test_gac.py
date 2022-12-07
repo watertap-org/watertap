@@ -40,8 +40,8 @@ from idaes.core.util.scaling import (
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -60,18 +60,16 @@ class TestGACSimplified:
     @pytest.fixture(scope="class")
     def gac_frame_simplified(self):
         ms = ConcreteModel()
-        ms.fs = FlowsheetBlock(default={"dynamic": False})
+        ms.fs = FlowsheetBlock(dynamic=False)
 
-        ms.fs.properties = DSPMDEParameterBlock(
-            default={"solute_list": ["DCE"], "mw_data": {"H2O": 18e-3, "DCE": 98.96e-3}}
+        ms.fs.properties = MCASParameterBlock(
+            solute_list=["DCE"], mw_data={"H2O": 0.018, "DCE": 0.09896}
         )
 
         ms.fs.unit = GAC(
-            default={
-                "property_package": ms.fs.properties,
-                "film_transfer_coefficient_type": "fixed",
-                "surface_diffusion_coefficient_type": "fixed",
-            }
+            property_package=ms.fs.properties,
+            film_transfer_coefficient_type="fixed",
+            surface_diffusion_coefficient_type="fixed",
         )
 
         # feed specifications
@@ -196,7 +194,6 @@ class TestGACSimplified:
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
@@ -229,18 +226,16 @@ class TestGACRobust:
     @pytest.fixture(scope="class")
     def gac_frame_robust(self):
         mr = ConcreteModel()
-        mr.fs = FlowsheetBlock(default={"dynamic": False})
+        mr.fs = FlowsheetBlock(dynamic=False)
 
-        mr.fs.properties = DSPMDEParameterBlock(
-            default={"solute_list": ["TCE"], "mw_data": {"H2O": 18e-3, "TCE": 131.4e-3}}
+        mr.fs.properties = MCASParameterBlock(
+            solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
         )
 
         mr.fs.unit = GAC(
-            default={
-                "property_package": mr.fs.properties,
-                "film_transfer_coefficient_type": "calculated",
-                "surface_diffusion_coefficient_type": "calculated",
-            }
+            property_package=mr.fs.properties,
+            film_transfer_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="calculated",
         )
 
         # feed specifications
@@ -373,7 +368,6 @@ class TestGACRobust:
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -404,7 +398,6 @@ class TestGACRobust:
         mr = gac_frame_robust
         mr.fs.unit.report()
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -413,9 +406,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
         results = solver.solve(mr)
@@ -451,7 +442,6 @@ class TestGACRobust:
             mr.fs.unit.costing.fixed_operating_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_modular_contactors_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -460,9 +450,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
 
@@ -484,7 +472,6 @@ class TestGACRobust:
             mr.fs.unit.costing.capital_cost
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing_max_gac_ref_robust(self, gac_frame_robust):
         mr = gac_frame_robust
@@ -501,9 +488,7 @@ class TestGACRobust:
         mr.fs.costing.base_currency = pyo.units.USD_2020
 
         mr.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": mr.fs.costing,
-            },
+            flowsheet_costing_block=mr.fs.costing
         )
         mr.fs.costing.cost_process()
         # not necessarily an optimum solution because poor scaling but just checking the conditional
@@ -523,31 +508,27 @@ class TestGACMulti:
     @pytest.fixture(scope="class")
     def gac_frame_multi(self):
         mm = ConcreteModel()
-        mm.fs = FlowsheetBlock(default={"dynamic": False})
+        mm.fs = FlowsheetBlock(dynamic=False)
 
         # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
-        mm.fs.properties = DSPMDEParameterBlock(
-            default={
-                "solute_list": ["TCE", "BGSOL", "BGCAT", "BGAN"],
-                "mw_data": {
-                    "H2O": 18e-3,
-                    "TCE": 131.4e-3,
-                    "BGSOL": 0.1,
-                    "BGCAT": 0.1,
-                    "BGAN": 0.1,
-                },
-                "charge": {"BGCAT": 1, "BGAN": -2},
-            }
+        mm.fs.properties = MCASParameterBlock(
+            solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
+            mw_data={
+                "H2O": 0.018,
+                "TCE": 0.1314,
+                "BGSOL": 0.1,
+                "BGCAT": 0.1,
+                "BGAN": 0.1,
+            },
+            charge={"BGCAT": 1, "BGAN": -2},
         )
 
         # testing target_species arg
         mm.fs.unit = GAC(
-            default={
-                "property_package": mm.fs.properties,
-                "film_transfer_coefficient_type": "calculated",
-                "surface_diffusion_coefficient_type": "calculated",
-                "target_species": {"TCE"},
-            }
+            property_package=mm.fs.properties,
+            film_transfer_coefficient_type="calculated",
+            surface_diffusion_coefficient_type="calculated",
+            target_species={"TCE"},
         )
 
         # feed specifications
@@ -637,11 +618,10 @@ class TestGACMulti:
     def test_var_scaling_init_multi(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
+            badly_scaled_var_generator(mm, large=1e2, small=1e-3, zero=1e-8)
         )
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve_multi(self, gac_frame_multi):
         mm = gac_frame_multi

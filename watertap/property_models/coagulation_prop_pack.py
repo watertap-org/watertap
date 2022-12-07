@@ -24,7 +24,6 @@ from pyomo.environ import (
     Suffix,
     value,
     exp,
-    assert_optimal_termination,
     check_optimal_termination,
 )
 
@@ -41,7 +40,7 @@ from idaes.core import (
     EnergyBalanceType,
 )
 from idaes.core.base.components import Component
-from idaes.core.base.phases import LiquidPhase, SolidPhase, PhaseType
+from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -59,6 +58,7 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from watertap.core.util.scaling import transform_property_constraints
 
 __author__ = "Austin Ladshaw"
 
@@ -551,9 +551,9 @@ class CoagulationStateBlockData(StateBlockData):
         def rule_dens_mass_phase(b, p):
             return b.dens_mass_phase[p] == (
                 b.params.ref_dens_liq
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TDS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "TSS"]
-                + b.params.dens_slope * b.mass_frac_phase_comp["Liq", "Sludge"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TDS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "TSS"]
+                + b.params.dens_slope * b.mass_frac_phase_comp[p, "Sludge"]
             ) * (
                 b.params.dens_param_A * b.temperature**2
                 + b.params.dens_param_B * b.temperature
@@ -580,10 +580,10 @@ class CoagulationStateBlockData(StateBlockData):
             return (
                 b.flow_vol_phase[p]
                 == (
-                    b.flow_mass_phase_comp["Liq", "H2O"]
-                    + b.flow_mass_phase_comp["Liq", "TDS"]
-                    + b.flow_mass_phase_comp["Liq", "TSS"]
-                    + b.flow_mass_phase_comp["Liq", "Sludge"]
+                    b.flow_mass_phase_comp[p, "H2O"]
+                    + b.flow_mass_phase_comp[p, "TDS"]
+                    + b.flow_mass_phase_comp[p, "TSS"]
+                    + b.flow_mass_phase_comp[p, "Sludge"]
                 )
                 / b.dens_mass_phase[p]
             )
@@ -743,17 +743,11 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase, 1e-3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.dens_mass_phase)
-            iscale.constraint_scaling_transform(self.eq_dens_mass_phase["Liq"], sf)
-
         if self.is_property_constructed("flow_vol_phase"):
             sf = iscale.get_scaling_factor(
                 self.flow_mass_phase_comp["Liq", "H2O"]
             ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
             iscale.set_scaling_factor(self.flow_vol_phase["Liq"], sf)
-            # transforming constraints
-            iscale.constraint_scaling_transform(self.eq_flow_vol_phase["Liq"], sf)
 
         if self.is_property_constructed("conc_mass_phase_comp"):
             # Apply variable scaling
@@ -782,10 +776,6 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.visc_d_phase) is None:
                 iscale.set_scaling_factor(self.visc_d_phase, 1e3)
 
-            # transforming constraints
-            sf = iscale.get_scaling_factor(self.visc_d_phase)
-            iscale.constraint_scaling_transform(self.eq_visc_d_phase["Liq"], sf)
-
         if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
                 sf = (
@@ -794,6 +784,9 @@ class CoagulationStateBlockData(StateBlockData):
                     * 1e-1
                 )
                 iscale.set_scaling_factor(self.enth_flow, sf)
+
+        # transforming constraints
+        transform_property_constraints(self)
 
     # ------------------------------------------------------------------
     # # TODO: Create functions for easier user access to setup intial values

@@ -31,11 +31,9 @@ solver = get_solver()
 def test_property_seawater_ions():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = GenericParameterBlock(default=configuration)
-    m.fs.stream = m.fs.properties.build_state_block(
-        [0], default={"defined_state": True}
-    )
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = GenericParameterBlock(**configuration)
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
 
     # specify
     m.fs.stream[0].flow_mol_phase_comp["Liq", "Na_+"].fix(0.008845)

@@ -98,7 +98,7 @@ class TestGroundwaterTreatmentFlowsheet:
         assert value(m.fs.costing.disinfection_solution_volume) == pytest.approx(
             208109.9, rel=1e-3
         )
-        assert value(m.fs.costing.LCOT) == pytest.approx(0.027444, rel=1e-3)
+        assert value(m.fs.costing.LCOT) == pytest.approx(0.032923, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

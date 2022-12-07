@@ -19,27 +19,16 @@ from pyomo.environ import (
     ConcreteModel,
     assert_optimal_termination,
     value,
-    Set,
     Param,
     Var,
     units as pyunits,
-    Suffix,
     Constraint,
-    SolverFactory,
-    SolverStatus,
-    TerminationCondition,
 )
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialFlowBasis,
-    MaterialBalanceType,
-    EnergyBalanceType,
-)
+from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
-from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 import re
@@ -54,7 +43,7 @@ class TestCoagulation_withChemicals:
     @pytest.fixture(scope="class")
     def coag_obj_w_chems(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
         ## NOTE: These values provided are just DUMMY values for the purposes
         #        of testing. They are not meant to be representative of any
@@ -76,10 +65,7 @@ class TestCoagulation_withChemicals:
             },
         }
         model.fs.unit = CoagulationFlocculation(
-            default={
-                "property_package": model.fs.properties,
-                "chemical_additives": chem_dict,
-            }
+            property_package=model.fs.properties, chemical_additives=chem_dict
         )
 
         return model
@@ -300,11 +286,9 @@ class TestCoagulation_withNoChemicals:
     @pytest.fixture(scope="class")
     def coag_obj_wo_chems(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
-        model.fs.unit = CoagulationFlocculation(
-            default={"property_package": model.fs.properties}
-        )
+        model.fs.unit = CoagulationFlocculation(property_package=model.fs.properties)
 
         return model
 
@@ -462,7 +446,7 @@ class TestCoagulation_withBadConfig:
     @pytest.fixture(scope="class")
     def coag_obj_bad_config(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
         model.fs.properties = CoagulationParameterBlock()
 
         return model
@@ -484,10 +468,7 @@ class TestCoagulation_withBadConfig:
             ConfigurationError, match="Did not provide a 'parameter_data' for chemical"
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict1,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict1
             )
 
         bad_dict2 = {
@@ -503,10 +484,7 @@ class TestCoagulation_withBadConfig:
             ConfigurationError, match="Did not provide a 'mw_additive' for chemical"
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict2,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict2
             )
 
         bad_dict3 = {
@@ -523,10 +501,7 @@ class TestCoagulation_withBadConfig:
             match="Did not provide a number for 'moles_salt_per_mole_additive'",
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict3,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict3
             )
 
         bad_dict4 = {
@@ -543,10 +518,7 @@ class TestCoagulation_withBadConfig:
             match="Did not provide a 'moles_salt_per_mole_additive' for chemical",
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict4,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict4
             )
 
         bad_dict5 = {
@@ -562,10 +534,7 @@ class TestCoagulation_withBadConfig:
             ConfigurationError, match="Did not provide a 'mw_salt' for chemical"
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict5,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict5
             )
 
         bad_dict6 = {
@@ -581,10 +550,7 @@ class TestCoagulation_withBadConfig:
             ConfigurationError, match="Did not provide a tuple for 'mw_additive'"
         ):
             model.fs.unit = CoagulationFlocculation(
-                default={
-                    "property_package": model.fs.properties,
-                    "chemical_additives": bad_dict6,
-                }
+                property_package=model.fs.properties, chemical_additives=bad_dict6
             )
 
 
@@ -594,7 +560,7 @@ class TestCoagulation_withBadProperties:
     @pytest.fixture(scope="class")
     def coag_obj_bad_properties(self):
         model = ConcreteModel()
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
 
         return model
 
@@ -610,7 +576,7 @@ class TestCoagulation_withBadProperties:
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = NaClParameterBlock()
             model.fs.unit = CoagulationFlocculation(
-                default={"property_package": model.fs.properties}
+                property_package=model.fs.properties
             )
 
         error_msg = (
@@ -621,7 +587,7 @@ class TestCoagulation_withBadProperties:
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = SeawaterParameterBlock()
             model.fs.unit = CoagulationFlocculation(
-                default={"property_package": model.fs.properties}
+                property_package=model.fs.properties
             )
 
         # NOTE: package must also contain ('Liq','TSS') as a component

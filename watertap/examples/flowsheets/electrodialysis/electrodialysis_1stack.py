@@ -33,10 +33,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 
 __author__ = "Xiangyu Bi"
 
@@ -63,33 +63,29 @@ def main():
 def build():
     # ---building model---
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     ion_dict = {
         "solute_list": ["Na_+", "Cl_-"],
         "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+    m.fs.properties = MCASParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
-        default={
-            "property_package": m.fs.properties,
-            "outlet_list": ["inlet_diluate", "inlet_concentrate"],
-        }
+        property_package=m.fs.properties,
+        outlet_list=["inlet_diluate", "inlet_concentrate"],
     )  # "inlet_diluate" and "inlet_concentrate" are two separator's outlet ports that are connected to the two inlets of the ED stack.
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
-        default={
-            "property_package": m.fs.properties,
-            "operation_mode": "Constant_Voltage",
-            "finite_elements": 20,
-        },
+        property_package=m.fs.properties,
+        operation_mode="Constant_Voltage",
+        finite_elements=20,
     )
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # Touching needed variables for initialization and displaying results
     m.fs.feed.properties[0].conc_mass_phase_comp[...]
@@ -105,9 +101,7 @@ def build():
     m.fs.disposal.properties[0].flow_vol_phase[...]
 
     # costing
-    m.fs.EDstack.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     m.fs.costing.cost_process()
     m.fs.costing.add_annual_water_production(
         m.fs.product.properties[0].flow_vol_phase["Liq"]
@@ -205,7 +199,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.1)
@@ -220,6 +214,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
@@ -269,7 +264,7 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.01)
+    m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
     m.fs.EDstack.cell_pair_num.setlb(1)
     m.fs.EDstack.cell_pair_num.setub(500)

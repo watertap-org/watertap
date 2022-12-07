@@ -20,7 +20,6 @@ from pyomo.environ import (
     ConcreteModel,
     Constraint,
     Param,
-    Block,
     value,
     Var,
     assert_optimal_termination,
@@ -47,14 +46,12 @@ class TestWellFieldZO:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]}
+            solute_list=["toc", "nitrate", "sulfate", "bar", "crux"]
         )
 
-        m.fs.unit = WellFieldZO(
-            default={"property_package": m.fs.params, "database": m.db}
-        )
+        m.fs.unit = WellFieldZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
@@ -147,17 +144,13 @@ class TestWellFieldZOsubtype:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]}
+            solute_list=["toc", "nitrate", "sulfate", "bar", "crux"]
         )
 
         m.fs.unit = WellFieldZO(
-            default={
-                "property_package": m.fs.params,
-                "database": m.db,
-                "process_subtype": "emwd",
-            }
+            property_package=m.fs.params, database=m.db, process_subtype="emwd"
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
@@ -254,17 +247,13 @@ def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]}
+        solute_list=["toc", "nitrate", "sulfate", "bar", "crux"]
     )
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = WellFieldZO(
-        default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": subtype,
-        }
+        property_package=m.fs.params, database=m.db, process_subtype=subtype
     )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
@@ -277,9 +266,7 @@ def test_costing(subtype):
     m.fs.unit.load_parameters_from_database()
 
     assert degrees_of_freedom(m.fs.unit) == 0
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)

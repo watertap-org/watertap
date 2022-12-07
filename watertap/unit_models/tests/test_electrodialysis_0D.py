@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import pytest
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_0D import (
     ElectricalOperationMode,
     Electrodialysis0D,
@@ -24,28 +24,19 @@ from pyomo.environ import (
     Set,
     Param,
     Var,
-    units as pyunits,
-    Suffix,
     Constraint,
-    SolverFactory,
-    SolverStatus,
-    TerminationCondition,
 )
 from idaes.core import (
     FlowsheetBlock,
-    MaterialFlowBasis,
     MaterialBalanceType,
     MomentumBalanceType,
-    EnergyBalanceType,
 )
-from idaes.generic_models.costing import UnitModelCostingBlock
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-import re
 
 __author__ = "Xiangyu Bi"
 
@@ -57,19 +48,16 @@ class TestElectrodialysisVoltageConst:
     @pytest.fixture(scope="class")
     def electrodialysis_cell1(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": "Constant_Voltage",
-            }
+            property_package=m.fs.properties, operation_mode="Constant_Voltage"
         )
         return m
 
@@ -279,17 +267,14 @@ class TestElectrodialysisVoltageConst:
         #       and not be here after everything else (see next test)
         m.fs.costing = WaterTAPCosting()
 
-        # Set costing var
+        m.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing, costing_method_arguments={}
+        )
+
+        # Set costing parameters
         m.fs.costing.electrodialysis.aem_membrane_cost.set_value(45)
         m.fs.costing.electrodialysis.cem_membrane_cost.set_value(41)
         m.fs.costing.electrodialysis.factor_membrane_housing_replacement.set_value(0.2)
-
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {},
-            },
-        )
 
         m.fs.costing.cost_process()
 
@@ -315,24 +300,21 @@ class TestElectrodialysisCurrentConst:
     @pytest.fixture(scope="class")
     def electrodialysis_cell2(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
-        m.fs.unit = Electrodialysis0D(default={"property_package": m.fs.properties})
+        m.fs.properties = MCASParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis0D(property_package=m.fs.properties)
         m.fs.unit.config.operation_mode = ElectricalOperationMode.Constant_Current
 
         # Adding costing at model construction for testing
         m.fs.costing = WaterTAPCosting()
         m.fs.unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {},
-            },
+            flowsheet_costing_block=m.fs.costing, costing_method_arguments={}
         )
         # This function constructs all the costing vars and constraints
         m.fs.costing.cost_process()
@@ -545,19 +527,17 @@ class TestElectrodialysis_withNeutralSPecies:
     @pytest.fixture(scope="class")
     def electrodialysis_cell3(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-", "N"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3, "N": 61.8e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Current,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Current,
         )
         return m
 
@@ -774,21 +754,19 @@ class Test_ED_MembNonohm_On_ConstV:
     @pytest.fixture(scope="class")
     def EDcell(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Voltage,
-                "has_nonohmic_potential_membrane": True,
-                "has_Nernst_diffusion_layer": False,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=False,
         )
         return m
 
@@ -997,22 +975,20 @@ class Test_ED_MembNonohm_On_NDL_On_ConstV:
     @pytest.fixture(scope="class")
     def EDcell(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Voltage,
-                "has_nonohmic_potential_membrane": True,
-                "has_Nernst_diffusion_layer": True,
-                "limiting_current_density_data": 500,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_data=500,
         )
         return m
 
@@ -1221,22 +1197,20 @@ class Test_ED_MembNonohm_On_NDL_On_ConstC:
     @pytest.fixture(scope="class")
     def EDcell(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         ion_dict = {
             "solute_list": ["Na_+", "Cl_-"],
             "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis0D(
-            default={
-                "property_package": m.fs.properties,
-                "operation_mode": ElectricalOperationMode.Constant_Current,
-                "has_nonohmic_potential_membrane": True,
-                "has_Nernst_diffusion_layer": True,
-                "limiting_current_density_data": 500,
-            }
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Current,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_data=500,
         )
         return m
 

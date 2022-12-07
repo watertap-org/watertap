@@ -70,33 +70,25 @@ def build():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(default={"solute_list": ["dye", "tds"]})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop = prop_ZO.WaterParameterBlock(solute_list=["dye", "tds"])
 
     # unit model
-    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.feed = FeedZO(property_package=m.fs.prop)
 
     # define block to integrate with dye_desalination_withRO
     dye_sep = m.fs.dye_separation = Block()
 
     dye_sep.P1 = PumpElectricityZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "default",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="default"
     )
 
     dye_sep.nanofiltration = NanofiltrationZO(
-        default={
-            "property_package": m.fs.prop,
-            "database": m.db,
-            "process_subtype": "rHGO_dye_rejection",
-        }
+        property_package=m.fs.prop, database=m.db, process_subtype="rHGO_dye_rejection"
     )
 
-    m.fs.permeate = Product(default={"property_package": m.fs.prop})
-    m.fs.dye_retentate = Product(default={"property_package": m.fs.prop})
+    m.fs.permeate = Product(property_package=m.fs.prop)
+    m.fs.dye_retentate = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=dye_sep.P1.inlet)
@@ -167,9 +159,9 @@ def add_costing(m):
     )
 
     # zero order costing
-    m.fs.zo_costing = ZeroOrderCosting(default={"case_study_definition": source_file})
+    m.fs.zo_costing = ZeroOrderCosting(case_study_definition=source_file)
 
-    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.zo_costing}}
+    costing_kwargs = {"flowsheet_costing_block": m.fs.zo_costing}
 
     # create costing blocks
     dye_sep.nanofiltration.costing = UnitModelCostingBlock(**costing_kwargs)

@@ -44,43 +44,16 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
 def test_ASM1_reactor():
     m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.props = ASM1ParameterBlock()
-    m.fs.rxn_props = ASM1ReactionParameterBlock(
-        default={"property_package": m.fs.props}
-    )
+    m.fs.rxn_props = ASM1ReactionParameterBlock(property_package=m.fs.props)
 
-    m.fs.R1 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R2 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R3 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R4 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
-    m.fs.R5 = CSTR(
-        default={
-            "property_package": m.fs.props,
-            "reaction_package": m.fs.rxn_props,
-        }
-    )
+    m.fs.R1 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R2 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R3 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R4 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
+    m.fs.R5 = CSTR(property_package=m.fs.props, reaction_package=m.fs.rxn_props)
 
     # Link units
     m.fs.stream1 = Arc(source=m.fs.R1.outlet, destination=m.fs.R2.inlet)

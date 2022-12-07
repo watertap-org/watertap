@@ -812,17 +812,13 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Normalized cost metrics",
     )
     direct_capital_norm = (
-        (
-            fs.mbr_mec.costing.capital_cost
-            + fs.vfa_recovery.costing.capital_cost
-            + fs.ion_exchange.costing.capital_cost
-            + fs.sedimentation.costing.capital_cost
-            + fs.cofermentation.costing.capital_cost
-            + fs.constructed_wetlands.costing.capital_cost
-        )
-        / fs.costing.TIC
-        / fs.feed.properties[0].flow_vol
-    )
+        fs.mbr_mec.costing.direct_capital_cost
+        + fs.vfa_recovery.costing.direct_capital_cost
+        + fs.ion_exchange.costing.direct_capital_cost
+        + fs.sedimentation.costing.direct_capital_cost
+        + fs.cofermentation.costing.direct_capital_cost
+        + fs.constructed_wetlands.costing.direct_capital_cost
+    ) / fs.feed.properties[0].flow_vol
     exports.add(
         obj=direct_capital_norm,
         name="Direct capital",
@@ -1048,7 +1044,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Operating costs",
     )
     exports.add(
-        obj=fs.costing.aggregate_flow_costs["waste_disposal"],
+        obj=fs.costing.annual_costs_revenues.annual_disposal_cost,
         name="Waste disposal",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",

@@ -53,9 +53,10 @@ from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
+from watertap.costing import (
     WaterTAPCosting,
     make_capital_cost_var,
+    register_costing_parameter_block,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -145,21 +146,9 @@ def build(
     # ---building model---
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = props.NaClParameterBlock()
     m.fs.costing = WaterTAPCosting()
-
-    # explicitly set the costing parameters used
-    m.fs.costing.utilization_factor.fix(0.9)
-    m.fs.costing.factor_total_investment.fix(2)
-    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
-    m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.electricity_base_cost.set_value(0.07)
-    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
-    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
-    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
-    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
-    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
@@ -172,40 +161,32 @@ def build(
     m.fs.FirstStage = m.fs.Stages.first()
     m.fs.LastStage = m.fs.Stages.last()
 
-    m.fs.feed = Feed(default={"property_package": m.fs.properties})
-    m.fs.product = Product(default={"property_package": m.fs.properties})
-    m.fs.disposal = Product(default={"property_package": m.fs.properties})
+    m.fs.feed = Feed(property_package=m.fs.properties)
+    m.fs.product = Product(property_package=m.fs.properties)
+    m.fs.disposal = Product(property_package=m.fs.properties)
 
     # Add the mixers
     m.fs.Mixers = Mixer(
         m.fs.NonFinalStages,
-        default={
-            "property_package": m.fs.properties,
-            "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-            "inlet_list": ["upstream", "downstream"],
-        },
+        property_package=m.fs.properties,
+        momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["upstream", "downstream"],
     )
 
     # Add the pumps
-    m.fs.PrimaryPumps = Pump(m.fs.Stages, default={"property_package": m.fs.properties})
+    m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
     for pump in m.fs.PrimaryPumps.values():
         pump.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method": cost_high_pressure_pump_lsrro,
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
         )
 
     # Add the equalizer pumps
-    m.fs.BoosterPumps = Pump(
-        m.fs.LSRRO_Stages, default={"property_package": m.fs.properties}
-    )
+    m.fs.BoosterPumps = Pump(m.fs.LSRRO_Stages, property_package=m.fs.properties)
     for pump in m.fs.BoosterPumps.values():
         pump.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method": cost_high_pressure_pump_lsrro,
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=cost_high_pressure_pump_lsrro,
         )
 
     m.fs.total_pump_work = Expression(
@@ -232,33 +213,27 @@ def build(
 
     m.fs.ROUnits = ReverseOsmosis1D(
         m.fs.Stages,
-        default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": has_calculated_ro_pressure_drop,
-            "pressure_change_type": pressure_change_type,
-            "mass_transfer_coefficient": kf_type,
-            "concentration_polarization_type": cp_type,
-            "transformation_scheme": "BACKWARD",
-            "transformation_method": "dae.finite_difference",
-            "finite_elements": number_of_RO_finite_elements,
-            "has_full_reporting": True,
-        },
+        property_package=m.fs.properties,
+        has_pressure_change=has_calculated_ro_pressure_drop,
+        pressure_change_type=pressure_change_type,
+        mass_transfer_coefficient=kf_type,
+        concentration_polarization_type=cp_type,
+        transformation_scheme="BACKWARD",
+        transformation_method="dae.finite_difference",
+        finite_elements=number_of_RO_finite_elements,
+        has_full_reporting=True,
     )
 
     for idx, ro_stage in m.fs.ROUnits.items():
         if idx == m.fs.FirstStage:
             ro_stage.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                    "costing_method_arguments": {"ro_type": "standard"},
-                }
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "standard"},
             )
         else:
             ro_stage.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": m.fs.costing,
-                    "costing_method_arguments": {"ro_type": "high_pressure"},
-                }
+                flowsheet_costing_block=m.fs.costing,
+                costing_method_arguments={"ro_type": "high_pressure"},
             )
 
     # Add EnergyRecoveryDevices
@@ -268,19 +243,14 @@ def build(
         else [m.fs.LastStage]
     )
     m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
-        m.fs.EnergyRecoveryDeviceSet,
-        default={
-            "property_package": m.fs.properties,
-        },
+        m.fs.EnergyRecoveryDeviceSet, property_package=m.fs.properties
     )
     for erd in m.fs.EnergyRecoveryDevices.values():
         erd.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {
-                    "energy_recovery_device_type": "pressure_exchanger"
-                },
-            }
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={
+                "energy_recovery_device_type": "pressure_exchanger"
+            },
         )
 
     m.fs.recovered_pump_work = Expression(
@@ -316,6 +286,19 @@ def build(
     )
 
     # costing and summary quantities
+
+    # explicitly set the costing parameters used
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    m.fs.costing.factor_capital_annualization.fix(0.1)
+    m.fs.costing.electricity_base_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
     m.fs.costing.cost_process()
 
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
@@ -564,6 +547,18 @@ def build(
     return m
 
 
+def build_high_pressure_pump_cost_param_block(blk):
+    blk.cost = Var(
+        initialize=53 / 1e5 * 3600,
+        doc="High pressure pump cost",
+        units=pyunits.USD_2018 / pyunits.watt,
+    )
+
+
+@register_costing_parameter_block(
+    build_rule=build_high_pressure_pump_cost_param_block,
+    parameter_block_name="high_pressure_pump",
+)
 def cost_high_pressure_pump_lsrro(blk, cost_electricity_flow=True):
     t0 = blk.flowsheet().time.first()
     make_capital_cost_var(blk)
@@ -643,8 +638,8 @@ def set_operating_conditions(m, Cin=None):
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or stage.config.pressure_change_type == PressureChangeType.calculated:
-            stage.channel_height.fix(height)
-            stage.spacer_porosity.fix(spacer_porosity)
+            stage.feed_side.channel_height.fix(height)
+            stage.feed_side.spacer_porosity.fix(spacer_porosity)
 
     # energy recovery devices
     for erd in m.fs.EnergyRecoveryDevices.values():
@@ -732,7 +727,10 @@ def do_forward_initialization_pass(m, optarg, guess_mixers):
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
 
-        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
+        try:
+            m.fs.ROUnits[stage].initialize(optarg=optarg)
+        except InitializationError:
+            pass
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
@@ -763,7 +761,10 @@ def do_backward_initialization_pass(m, optarg):
     for stage in reversed(m.fs.NonFinalStages):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
-        m.fs.ROUnits[stage].initialize(optarg=optarg, raise_on_failure=False)
+        try:
+            m.fs.ROUnits[stage].initialize(optarg=optarg)
+        except InitializationError:
+            pass
         if stage == first_stage:
             if value(m.fs.NumberOfStages) > 1:
                 propagate_state(m.fs.primary_ERD_to_pump)
@@ -801,12 +802,10 @@ def initialize(m, verbose=True, solver=None):
     # run SD tool
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
-        if "ROUnits" in unit.name:
-            unit.initialize(
-                optarg=solver.options, outlvl=outlvl, raise_on_failure=False
-            )
-        else:
+        try:
             unit.initialize(optarg=solver.options, outlvl=outlvl)
+        except InitializationError:
+            pass
 
     seq.run(m, func_initialize)
 
@@ -960,7 +959,7 @@ def optimize_set_up(
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or (stage.config.pressure_change_type == PressureChangeType.calculated):
-            stage.N_Re[0, 0].unfix()
+            stage.feed_side.N_Re[0, 0].unfix()
 
         if idx > m.fs.Stages.first():
             stage.B_comp.unfix()

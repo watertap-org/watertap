@@ -1,7 +1,6 @@
 """
 Tests for fsapi module
 """
-from collections import OrderedDict
 import logging
 import pytest
 
@@ -126,8 +125,17 @@ def test_build():
     assert len(data["model_objects"]) == 1
 
 
+@pytest.mark.parametrize(
+    "add_variant",
+    [
+        "obj_kwarg",
+        "model_export_arg",
+        "model_export_data_kwarg",
+        "model_export_dict_data_kwarg",
+    ],
+)
 @pytest.mark.unit
-def test_actions():
+def test_actions(add_variant: str):
     fsi = flowsheet_interface()
     built = False
     garbage = {"trash": True}
@@ -149,11 +157,21 @@ def test_actions():
     def fake_export(flowsheet=None, exports=None):
         with pytest.raises(Exception):
             exports.add(obj=garbage)
-        exports.add(obj=v1)  # form 1
-        exports.add(v1)  # form 2
-        exports.add(data=v1)  # form 3
-        ve1 = fsapi.ModelExport(obj=v1)
-        exports.add(data=ve1.dict())  # form 4
+
+        # NOTE we use exclusive variants here
+        # to avoid triggering the error when adding an object with the same obj_key
+        # which happens when multiple ModelExport are created from the same pyomo object
+        if add_variant == "obj_kwarg":
+            exports.add(obj=v1)  # form 1
+        elif add_variant == "model_export_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(ve1)  # form 2
+        elif add_variant == "model_export_data_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(data=ve1)  # form 3
+        elif add_variant == "model_export_dict_data_kwarg":
+            ve1 = fsapi.ModelExport(obj=v1)
+            exports.add(data=ve1.dict())  # form 4
         with pytest.raises(ValueError):
             exports.add(v1, v1)
 

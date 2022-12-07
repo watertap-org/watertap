@@ -32,7 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import UVZO, UVAOPZO
+from watertap.unit_models.zero_order import UVZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -46,20 +46,18 @@ class TestUVZO_with_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "tss",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "tss",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
-        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -159,19 +157,17 @@ class TestUVZO_w_o_default_removal:
         m = ConcreteModel()
         m.db = Database()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.params = WaterParameterBlock(
-            default={
-                "solute_list": [
-                    "viruses_enteric",
-                    "toc",
-                    "cryptosporidium",
-                    "total_coliforms_fecal_ecoli",
-                ]
-            }
+            solute_list=[
+                "viruses_enteric",
+                "toc",
+                "cryptosporidium",
+                "total_coliforms_fecal_ecoli",
+            ]
         )
 
-        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
+        m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -275,15 +271,15 @@ def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["viruses_enteric", "toc", "cryptosporidium"]}
+        solute_list=["viruses_enteric", "toc", "cryptosporidium"]
     )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
+    m.fs.unit = UVZO(property_package=m.fs.params, database=m.db)
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -293,9 +289,7 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(
-        default={"flowsheet_costing_block": m.fs.costing}
-    )
+    m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.uv, Block)
     assert isinstance(m.fs.costing.uv.reactor_cost, Var)

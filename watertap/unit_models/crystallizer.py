@@ -15,39 +15,32 @@ from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
-    Set,
     Var,
+    check_optimal_termination,
     Param,
     Constraint,
-    Expression,
     Suffix,
-    NonNegativeReals,
-    Reference,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
-    MaterialFlowBasis,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util.math import smooth_max
 
+from watertap.core import InitializationMixin
 
 _log = idaeslog.getLogger(__name__)
 
@@ -55,7 +48,7 @@ __author__ = "Oluwamayowa Amusat"
 
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Crystallization")
-class CrystallizationData(UnitModelBlockData):
+class CrystallizationData(InitializationMixin, UnitModelBlockData):
     """
     Zero order crystallization model
     """
@@ -269,9 +262,7 @@ class CrystallizationData(UnitModelBlockData):
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True  # inlet block is an inlet
         self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,  # time domain for the state block, just 0 in this case
-            doc="Material properties of inlet",
-            default=tmp_dict,
+            self.flowsheet().config.time, doc="Material properties of inlet", **tmp_dict
         )
 
         # Add outlet and waste block
@@ -279,19 +270,19 @@ class CrystallizationData(UnitModelBlockData):
         self.properties_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of liquid outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         self.properties_solids = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of solid crystals at outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         self.properties_vapor = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of water vapour at outlet",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Add ports - oftentimes users interact with these rather than the state blocks
@@ -568,7 +559,11 @@ class CrystallizationData(UnitModelBlockData):
             )
 
     def initialize(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -663,6 +658,9 @@ class CrystallizationData(UnitModelBlockData):
         # Release Inlet state
         blk.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

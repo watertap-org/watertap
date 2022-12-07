@@ -17,10 +17,7 @@ from pyomo.environ import (
     NonNegativeReals,
     NegativeReals,
     value,
-    check_optimal_termination,
-    Set,
 )
-from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -28,20 +25,18 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util import scaling as iscale
-from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 
 from watertap.core import (
-    MembraneChannel1DBlock,
     ConcentrationPolarizationType,
     MassTransferCoefficient,
+    MembraneChannel1DBlock,
     PressureChangeType,
 )
 from watertap.core.membrane_channel1d import CONFIG_Template
 from watertap.unit_models.reverse_osmosis_base import (
     ReverseOsmosisBaseData,
     _add_has_full_reporting,
-    _add_object_reference_if_exists,
 )
 
 __author__ = "Adam Atia"
@@ -85,17 +80,15 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
 
         # Build 1D Membrane Channel
         self.feed_side = MembraneChannel1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": self.config.area_definition,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=self.config.area_definition,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
         self._add_length_and_width()
         self.feed_side.add_geometry(length_var=self.length, width_var=self.width)
@@ -119,7 +112,7 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
                 doc="Fixed pressure drop across unit",
             )
             def eq_pressure_drop(b, t, x):
-                return b.deltaP[t] == b.length * b.dP_dx[t, x]
+                return b.deltaP[t] == b.length * b.feed_side.dP_dx[t, x]
 
         else:
 
@@ -128,7 +121,8 @@ class ReverseOsmosis1DData(ReverseOsmosisBaseData):
             )
             def eq_pressure_drop(b, t):
                 return b.deltaP[t] == sum(
-                    b.dP_dx[t, x] * b.length / b.nfe for x in b.difference_elements
+                    b.feed_side.dP_dx[t, x] * b.length / b.nfe
+                    for x in b.difference_elements
                 )
 
     def _add_mass_transfer(self):
