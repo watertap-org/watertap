@@ -629,7 +629,7 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Capital costs",
     )
     exports.add(
-        obj=fs.ro_costing.total_investment_cost,
+        obj=fs.ro_costing.total_capital_cost,
         name="RO system costs",
         ui_units=fs.zo_costing.base_currency,
         display_units="$",
