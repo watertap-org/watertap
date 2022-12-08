@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-import numpy as np
+import math
 from pyomo.environ import (
     Var,
     Param,
@@ -792,7 +792,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Adsorber bed area")
         def eq_bed_area(b):
-            return b.bed_area == np.pi * (b.bed_diameter**2) / 4
+            return b.bed_area == math.pi * (b.bed_diameter**2) / 4
 
         @self.Constraint(doc="Adsorber bed dimensions")
         def eq_bed_dimensions(b):
