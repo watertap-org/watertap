@@ -92,7 +92,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.EDstack.costing.fixed_operating_cost, Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
