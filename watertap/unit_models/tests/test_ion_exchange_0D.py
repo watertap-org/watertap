@@ -23,9 +23,9 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
 )
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
@@ -151,7 +151,7 @@ class TestIonExchangeNoInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -343,7 +343,7 @@ class TestIonExchangeNoInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 123
@@ -487,7 +487,7 @@ class TestIonExchangeWithInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -683,7 +683,7 @@ class TestIonExchangeWithInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 161
@@ -837,7 +837,7 @@ class TestIonExchangeCosting:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -918,13 +918,13 @@ class TestIonExchangeCosting:
         results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(414120.357, rel=1e-5) == value(
+        assert pytest.approx(453807.598, rel=1e-5) == value(
             m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(1025349.176, rel=1e-5) == value(
+        assert pytest.approx(1023617.357, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(828240.715, rel=1e-5) == value(
+        assert pytest.approx(907615.190, rel=1e-5) == value(
             m.fs.costing.total_investment_cost
         )
-        assert pytest.approx(0.781896, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.78791, rel=1e-5) == value(m.fs.costing.LCOW)
