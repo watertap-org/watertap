@@ -14,7 +14,6 @@
 import numpy as np
 from pyomo.environ import (
     Var,
-    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
