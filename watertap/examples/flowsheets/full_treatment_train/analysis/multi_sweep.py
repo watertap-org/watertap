@@ -244,7 +244,7 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
         outputs["Ca Removal"] = m.fs.removal_Ca
         outputs["Mg Removal"] = m.fs.removal_Mg
         outputs["Annual Water Production"] = m.fs.costing.annual_water_production
-        outputs["capital_cost_total"] = m.fs.costing.total_capital_cost
+        outputs["capital_cost_total"] = m.fs.costing.aggregate_capital_cost
         outputs["operating_cost_total"] = m.fs.costing.total_operating_cost
 
         output_filename = base_path + f"output/fs_softening/results_{case_num}.csv"

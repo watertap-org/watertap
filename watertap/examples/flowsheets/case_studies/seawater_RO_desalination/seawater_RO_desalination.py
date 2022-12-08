@@ -704,7 +704,7 @@ def add_costing(m):
             pyunits.convert(
                 m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
             )
-            + m.fs.ro_costing.total_investment_cost
+            + m.fs.ro_costing.total_capital_cost
         )
 
     @m.Expression()
