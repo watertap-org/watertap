@@ -11,7 +11,6 @@
 #
 ###############################################################################
 
-import math
 from pyomo.environ import (
     Var,
     Param,
@@ -32,6 +31,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -792,7 +792,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Adsorber bed area")
         def eq_bed_area(b):
-            return b.bed_area == math.pi * (b.bed_diameter**2) / 4
+            return b.bed_area == Constants.pi * (b.bed_diameter**2) / 4
 
         @self.Constraint(doc="Adsorber bed dimensions")
         def eq_bed_dimensions(b):
