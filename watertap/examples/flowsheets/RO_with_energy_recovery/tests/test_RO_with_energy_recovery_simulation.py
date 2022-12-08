@@ -121,7 +121,7 @@ class TestROwithPX:
             assert isinstance(getattr(c_blk, "capital_cost"), Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
