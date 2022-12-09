@@ -22,6 +22,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
     FlowsheetBlock,
+    EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
 )
@@ -121,11 +122,12 @@ class TestGACSimplified:
     def test_config_simplified(self, gac_frame_simplified):
         ms = gac_frame_simplified
         # check unit config arguments
-        assert len(ms.fs.unit.config) == 9
+        assert len(ms.fs.unit.config) == 11
 
         assert not ms.fs.unit.config.dynamic
         assert not ms.fs.unit.config.has_holdup
         assert ms.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert ms.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             ms.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -295,11 +297,12 @@ class TestGACRobust:
     def test_config_robust(self, gac_frame_robust):
         mr = gac_frame_robust
         # check unit config arguments
-        assert len(mr.fs.unit.config) == 9
+        assert len(mr.fs.unit.config) == 11
 
         assert not mr.fs.unit.config.dynamic
         assert not mr.fs.unit.config.has_holdup
         assert mr.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert mr.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             mr.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
