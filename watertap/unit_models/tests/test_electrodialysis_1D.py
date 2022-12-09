@@ -1635,11 +1635,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
 
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            5332.605, rel=1e-3
+            6424.825, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            8958.776, rel=1e-3
+            10793.706, rel=1e-3
         )
 
         # Test ed_m5
@@ -1653,11 +1653,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
 
         assert value(ed_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
-            3694.099, rel=1e-3
+            4450.722, rel=1e-3
         )
 
         assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            6206.087, rel=1e-3
+            7477.213, rel=1e-3
         )
 
         # Test ed_m6
@@ -1671,15 +1671,15 @@ class Test_ED_pressure_drop_components:
         assert_optimal_termination(results)
         assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
         assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
-            182512.397, rel=1e-3
+            178659.214, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
-            11197.978, rel=1e-3
+            13491.540, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            18812.603, rel=1e-3
+            22665.786, rel=1e-3
         )
 
     @pytest.mark.unit
