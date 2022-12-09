@@ -13,7 +13,6 @@
 
 from pyomo.environ import (
     Var,
-    check_optimal_termination,
     Param,
     Suffix,
     NonNegativeReals,
@@ -32,6 +31,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.constants import Constants
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -357,7 +357,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         self.equil_conc = Var(
             initialize=1e-4,
-            bounds=(1e-8, None),
+            bounds=(1e-20, None),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Equilibrium concentration of adsorbed phase with liquid phase",
@@ -402,7 +402,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
             bounds=(0, None),
             domain=NonNegativeReals,
             units=units_meta("length") ** 2,
-            doc="Adsorber bed area",
+            doc="Adsorber bed area, single adsorber area or sum of areas for adsorbers in parallel",
+        )
+
+        self.bed_diameter = Var(
+            initialize=1,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="Adsorber bed diameter, valid if considering only a single adsorber",
         )
 
         self.bed_length = Var(
@@ -823,6 +831,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == b.bed_volume
             )
 
+        @self.Constraint(doc="Adsorber bed area")
+        def eq_bed_area(b):
+            return b.bed_area == Constants.pi * (b.bed_diameter**2) / 4
+
+        @self.Constraint(doc="Adsorber bed dimensions")
+        def eq_bed_dimensions(b):
+            return b.bed_volume == b.bed_area * b.bed_length
+
         @self.Constraint(doc="Total gac mass in the adsorbed bed")
         def eq_mass_gac_bed(b):
             return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
@@ -830,13 +846,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Relating velocities")
         def eq_velocity_relation(b):
             return b.velocity_int * b.bed_voidage == b.velocity_sup
-
-        @self.Constraint(doc="Adsorber bed area")
-        def eq_area_bed(b):
-            return (
-                b.bed_area * b.velocity_sup
-                == b.process_flow.properties_in[0].flow_vol_phase["Liq"]
-            )
 
         @self.Constraint(doc="Adsorber bed length")
         def eq_length_bed(b):
@@ -943,12 +952,13 @@ class GACData(InitializationMixin, UnitModelBlockData):
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
         ):
+            # TODO check N_Re formulation for packed beds
             self.N_Re = Var(
                 initialize=1,
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Reynolds number, Re < 2e4",  # TODO check N_Re formulation for packed beds
+                doc="Reynolds number, correlation using Schmidt number valid in Re < 2e4",
             )
 
             self.N_Sc = Var(
@@ -956,7 +966,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 bounds=(0, None),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
-                doc="Schmidt number, 0.7< Sc < 1e4",
+                doc="Schmidt number, correlation using Schmidt number valid in 0.7 < Sc < 1e4",
             )
 
             self.sphericity = Var(
@@ -1133,6 +1143,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
         var_dict["Adsorber bed void fraction"] = self.bed_voidage
         var_dict["Adsorber bed volume"] = self.bed_volume
         var_dict["Adsorber bed area"] = self.bed_area
+        var_dict["Adsorber bed diameter"] = self.bed_diameter
         var_dict["Adsorber bed length"] = self.bed_length
         var_dict["Mass of fresh GAC in the adsorber bed"] = self.bed_mass_gac
         var_dict["Superficial velocity"] = self.velocity_sup
@@ -1280,6 +1291,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.bed_area) is None:
             iscale.set_scaling_factor(self.bed_area, sf_solvent * 1e1)
+
+        if iscale.get_scaling_factor(self.bed_diameter) is None:
+            iscale.set_scaling_factor(self.bed_diameter, sf_solvent * 1e2)
 
         if iscale.get_scaling_factor(self.bed_mass_gac) is None:
             iscale.set_scaling_factor(self.bed_mass_gac, sf_solvent * 1e-1)

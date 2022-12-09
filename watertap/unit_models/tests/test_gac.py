@@ -88,15 +88,24 @@ class TestGACSimplified:
         )
 
         # trial problem from Hand, 1984 for removal of trace DCE
-        ms.fs.unit.conc_ratio_replace.fix(0.50)
+        # adsorption isotherm
         ms.fs.unit.freund_k.fix(37.9e-6 * (1e6**0.8316))
         ms.fs.unit.freund_ninv.fix(0.8316)
-        ms.fs.unit.ebct.fix(300)  # seconds
-        ms.fs.unit.bed_voidage.fix(0.449)
-        ms.fs.unit.bed_length.fix(6)  # assumed
+
+        # gac particle specifications
         ms.fs.unit.particle_porosity.fix(0.5)
         ms.fs.unit.particle_dens_app.fix(722)
         ms.fs.unit.particle_dia.fix(0.00106)
+
+        # adsorber bed specifications
+        ms.fs.unit.ebct.fix(300)  # seconds
+        ms.fs.unit.bed_voidage.fix(0.449)
+        ms.fs.unit.bed_length.fix(6)  # assumed
+
+        # design spec
+        ms.fs.unit.conc_ratio_replace.fix(0.50)
+
+        # parameters
         ms.fs.unit.kf.fix(3.29e-5)
         ms.fs.unit.ds.fix(1.77e-13)
         ms.fs.unit.a0.fix(3.68421)
@@ -150,8 +159,8 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 77
-        assert number_total_constraints(ms) == 44
+        assert number_variables(ms) == 78
+        assert number_total_constraints(ms) == 45
         assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -252,15 +261,24 @@ class TestGACRobust:
         mr.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
-        mr.fs.unit.conc_ratio_replace.fix(0.80)
+        # adsorption isotherm
         mr.fs.unit.freund_k.fix(1062e-6 * (1e6**0.48))
         mr.fs.unit.freund_ninv.fix(0.48)
-        mr.fs.unit.ebct.fix(10 * 60)
-        mr.fs.unit.bed_voidage.fix(0.44)
+
+        # gac particle specifications
         mr.fs.unit.particle_porosity.fix(0.641)
         mr.fs.unit.particle_dens_app.fix(803.4)
         mr.fs.unit.particle_dia.fix(0.001026)
+
+        # adsorber bed specifications
+        mr.fs.unit.ebct.fix(10 * 60)
+        mr.fs.unit.bed_voidage.fix(0.44)
         mr.fs.unit.velocity_sup.fix(5 / 3600)
+
+        # design spec
+        mr.fs.unit.conc_ratio_replace.fix(0.80)
+
+        # parameters
         mr.fs.unit.molal_volume.fix(9.81e-5)
         mr.fs.unit.tort.fix(1)
         mr.fs.unit.spdfr.fix(1)
@@ -316,8 +334,8 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 88
-        assert number_total_constraints(mr) == 53
+        assert number_variables(mr) == 89
+        assert number_total_constraints(mr) == 54
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
