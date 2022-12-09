@@ -92,7 +92,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.EDstack.costing.fixed_operating_cost, Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
@@ -117,7 +117,7 @@ class TestElectrodialysisVoltageConst:
 
         # Test the primary EDstack properties
         # test configrations
-        assert len(m.fs.EDstack.config) == 19
+        assert len(m.fs.EDstack.config) == 21
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup
         assert (

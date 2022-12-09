@@ -217,13 +217,10 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         super().cost_flow(flow_expr, flow_type)
 
     def build_process_costs(self):
-        self.total_capital_cost = pyo.Expression(
-            expr=self.aggregate_capital_cost, doc="Total capital cost"
-        )
-        self.total_investment_cost = pyo.Var(
+        self.total_capital_cost = pyo.Var(
             initialize=1e3,
             domain=pyo.NonNegativeReals,
-            doc="Total investment cost",
+            doc="Total capital cost",
             units=self.base_currency,
         )
         self.maintenance_labor_chemical_operating_cost = pyo.Var(
@@ -239,13 +236,13 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             units=self.base_currency / self.base_period,
         )
 
-        self.total_investment_cost_constraint = pyo.Constraint(
-            expr=self.total_investment_cost
-            == self.factor_total_investment * self.total_capital_cost
+        self.total_capital_cost_constraint = pyo.Constraint(
+            expr=self.total_capital_cost
+            == self.factor_total_investment * self.aggregate_capital_cost
         )
         self.maintenance_labor_chemical_operating_cost_constraint = pyo.Constraint(
             expr=self.maintenance_labor_chemical_operating_cost
-            == self.factor_maintenance_labor_chemical * self.total_investment_cost
+            == self.factor_maintenance_labor_chemical * self.total_capital_cost
         )
 
         self.total_operating_cost_constraint = pyo.Constraint(
@@ -258,7 +255,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
     def initialize_build(self):
         calculate_variable_from_constraint(
-            self.total_investment_cost, self.total_investment_cost_constraint
+            self.total_capital_cost, self.total_capital_cost_constraint
         )
         calculate_variable_from_constraint(
             self.maintenance_labor_chemical_operating_cost,
@@ -289,7 +286,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         LCOW_constraint = pyo.Constraint(
             expr=LCOW
             == (
-                self.total_investment_cost * self.factor_capital_annualization
+                self.total_capital_cost * self.factor_capital_annualization
                 + self.total_operating_cost
             )
             / (
