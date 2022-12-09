@@ -316,8 +316,8 @@ def initialize_system(m):
     desal.RO.feed_side.properties_in[0].pressure = value(
         desal.P2.control_volume.properties_out[0].pressure
     )
-    solve(desal)
     desal.RO.initialize()
+    solve(desal)
     return
 
 

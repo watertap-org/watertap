@@ -20,13 +20,13 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 from enum import Enum, auto
 
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
@@ -38,7 +38,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = "Hunter Barber"
 
@@ -135,6 +135,34 @@ class GACData(InitializationMixin, UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
+    CONFIG.declare(
         "momentum_balance_type",
         ConfigValue(
             default=MomentumBalanceType.pressureTotal,
@@ -193,6 +221,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
     )
 
     # ---------------------------------------------------------------------
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
 
         super().build()
@@ -201,6 +238,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         # get default units from property package
         units_meta = self.config.property_package.get_metadata().get_derived_units
+        # Check configs for errors
+        self._validate_config()
 
         # separate target species to be adsorbed and other species considered inert
         component_set = self.config.property_package.component_list
@@ -222,16 +261,18 @@ class GACData(InitializationMixin, UnitModelBlockData):
         self.process_flow.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.process_flow.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.process_flow.add_isothermal_assumption()
+
         self.process_flow.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=False,
         )
-
-        @self.process_flow.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for process flow"
-        )
-        def eq_isothermal(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
 
         # add port for absorbed contaminant contained in nearly saturated GAC particles
         tmp_dict = dict(**self.config.property_package_args)
