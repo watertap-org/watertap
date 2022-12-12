@@ -21,6 +21,7 @@ from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.scaling import *
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
 from idaes.models.unit_models import Mixer, Product, Feed
 
 from watertap.property_models.ion_DSPMDE_prop_pack import (
@@ -131,8 +132,7 @@ def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.95, sf_mass=1e4):
         set_scaling_factor(ix.costing.capital_cost_regen_tank_constraint, 1e-5)
 
     props.set_default_scaling("flow_mol_phase_comp", 1, index=("Liq", "H2O"))
-    
-    
+
     calculate_scaling_factors(m)
 
     set_scaling_factor(ix.mass_in[target_ion], 1 / sf_mass)
@@ -184,6 +184,7 @@ def get_ion_props(ions):
         ix_in["charge"][ion] = charge_data[ion]
     return ix_in
 
+
 def set_operating_conditions(m, feed_mass_frac={}, mass_flow_in=43.81264, solver=None):
     if solver is None:
         solver = get_solver()
@@ -193,14 +194,23 @@ def set_operating_conditions(m, feed_mass_frac={}, mass_flow_in=43.81264, solver
     mass_flow_in = mass_flow_in * (pyunits.kg / pyunits.s)
 
     for ion, x in feed_mass_frac.items():
-        mol_flow = (x * (pyunits.kg / pyunits.kg) * mass_flow_in / ix.config.property_package.mw_comp[ion])
+        mol_flow = (
+            x
+            * (pyunits.kg / pyunits.kg)
+            * mass_flow_in
+            / ix.config.property_package.mw_comp[ion]
+        )
         feed.flow_mol_phase_comp["Liq", ion].fix(mol_flow)
 
     h2o_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
-    h2o_mol_flow = (h2o_mass_frac *  (pyunits.kg / pyunits.kg) * mass_flow_in / ix.config.property_package.mw_comp["H2O"])
+    h2o_mol_flow = (
+        h2o_mass_frac
+        * (pyunits.kg / pyunits.kg)
+        * mass_flow_in
+        / ix.config.property_package.mw_comp["H2O"]
+    )
     feed.flow_mol_phase_comp["Liq", "H2O"].fix(h2o_mol_flow)
 
-    
 
 target_ion = "Ca_2+"
 target_ion_mass_frac = 2.5e-4
@@ -215,3 +225,6 @@ for ion in ions:
 m = ix_build(target_ion, target_ion=target_ion)
 ix_scaling(m)
 set_operating_conditions(m, feed_mass_frac=feed_mass_frac)
+
+print(f"DOF = {degrees_of_freedom(m)}")
+report_statistics(m)
