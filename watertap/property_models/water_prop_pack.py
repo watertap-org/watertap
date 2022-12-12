@@ -49,6 +49,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+from watertap.core.util.scaling import transform_property_constraints
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -1038,15 +1039,4 @@ class WaterStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
 
         # transforming constraints
-        for metadata_dic in self.params.get_metadata().properties.values():
-            var_str = metadata_dic["name"]
-            if metadata_dic["method"] is not None and self.is_property_constructed(
-                var_str
-            ):
-                var = getattr(self, var_str)
-                if isinstance(var, Expression):
-                    continue  # properties that are expressions do not have constraints
-                con = getattr(self, "eq_" + var_str)
-                for ind in con.keys():
-                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
-                    iscale.constraint_scaling_transform(con[ind], sf)
+        transform_property_constraints(self)

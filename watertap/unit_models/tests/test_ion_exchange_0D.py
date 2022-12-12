@@ -23,9 +23,9 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 from idaes.core import FlowsheetBlock, UnitModelCostingBlock
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
-    DSPMDEStateBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    MCASStateBlock,
 )
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
@@ -50,13 +50,14 @@ from idaes.core.util.scaling import (
     set_scaling_factor,
 )
 from pyomo.util.check_units import assert_units_consistent
+import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
 
-def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4, sf_inert=1e6):
+def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4):
 
     ix = m.fs.unit
     prop_in = ix.properties_in[0]
@@ -87,7 +88,11 @@ def ix_scaling(m, sf=1e4, est_removal=0.99, est_recov=0.99, sf_mass=1e4, sf_iner
                 prop_out.flow_mol_phase_comp["Liq", ion],
                 1 / (prop_in.flow_mol_phase_comp["Liq", ion].value),
             )
-            set_scaling_factor(prop_regen.flow_mol_phase_comp["Liq", ion], sf_inert)
+            set_scaling_factor(
+                prop_regen.flow_mol_phase_comp["Liq", ion],
+                1 / (prop_in.flow_mol_phase_comp["Liq", ion].value),
+            )
+
     calculate_scaling_factors(m)
     set_scaling_factor(ix.mass_in[target_ion], 1 / sf_mass)
     set_scaling_factor(ix.mass_removed[target_ion], 1 / sf_mass)
@@ -146,7 +151,7 @@ class TestIonExchangeNoInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -180,11 +185,11 @@ class TestIonExchangeNoInert:
         ix.resin_max_capacity.fix(3)
         ix.service_flow_rate.fix(15)
         ix.number_columns.fix(4)
+        ix.bed_depth.fix(1.7007982766166505)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -200,8 +205,6 @@ class TestIonExchangeNoInert:
         ix.bed_expansion_frac_C.fix()
         ix.service_to_regen_flow_ratio.fix()
         ix.number_columns_redund.fix()
-
-        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
 
         return m
 
@@ -340,7 +343,7 @@ class TestIonExchangeNoInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 123
@@ -364,18 +367,16 @@ class TestIonExchangeNoInert:
     @pytest.mark.component
     def test_initialize(self, IX_frame_no_inert):
         m = IX_frame_no_inert
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, IX_frame_no_inert):
         m = IX_frame_no_inert
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
         assert_units_consistent(m)
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -392,7 +393,6 @@ class TestIonExchangeNoInert:
             <= 1e-6
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, IX_frame_no_inert):
         m = IX_frame_no_inert
@@ -487,7 +487,7 @@ class TestIonExchangeWithInert:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -525,11 +525,11 @@ class TestIonExchangeWithInert:
         ix.resin_max_capacity.fix(1.5)
         ix.service_flow_rate.fix(10)
         ix.number_columns.fix(5)
+        ix.bed_depth.fix(1.7634969859421077)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -545,8 +545,6 @@ class TestIonExchangeWithInert:
         ix.bed_expansion_frac_C.fix()
         ix.service_to_regen_flow_ratio.fix()
         ix.number_columns_redund.fix()
-
-        m = ix_scaling(m, sf=1, est_recov=0.95, est_removal=0.95, sf_mass=1)
 
         return m
 
@@ -685,7 +683,7 @@ class TestIonExchangeWithInert:
 
         for sb_str in stateblock_lst:
             sb = getattr(ix, sb_str)
-            assert isinstance(sb, DSPMDEStateBlock)
+            assert isinstance(sb, MCASStateBlock)
 
         # test statistics
         assert number_variables(m) == 161
@@ -709,12 +707,12 @@ class TestIonExchangeWithInert:
     @pytest.mark.component
     def test_initialize(self, IX_frame_with_inert):
         m = IX_frame_with_inert
-        initialization_tester(m)
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
 
     @pytest.mark.component
     def test_solve(self, IX_frame_with_inert):
         m = IX_frame_with_inert
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -839,7 +837,7 @@ class TestIonExchangeCosting:
         ix_in = get_ix_in(ions)
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(**ix_in)
+        m.fs.properties = MCASParameterBlock(**ix_in)
         ix_unit_in = {
             "property_package": m.fs.properties,
             "target_ion": target_ion,
@@ -873,11 +871,11 @@ class TestIonExchangeCosting:
         ix.resin_max_capacity.fix(3)
         ix.service_flow_rate.fix(15)
         ix.number_columns.fix(4)
+        ix.bed_depth.fix(1.6975735806794794)
         ix.resin_diam.fix()
         ix.resin_bulk_dens.fix()
         ix.bed_porosity.fix()
         ix.dimensionless_time.fix()
-        ix.lh.fix()
         ix.regen_dose.fix()
         ix.regen_recycle.fix()
         ix.t_regen.fix()
@@ -899,39 +897,34 @@ class TestIonExchangeCosting:
         m.fs.costing.cost_process()
         m.fs.costing.add_LCOW(ix.properties_out[0].flow_vol_phase["Liq"])
 
-        m = ix_scaling(m, sf=1, est_recov=0.9, est_removal=0.9, sf_mass=1)
-
-        return m
-
-    @pytest.mark.requires_idaes_solver
-    @pytest.mark.component
-    def test_costing(self, IX_frame_costing):
-        m = IX_frame_costing
-        ix = m.fs.unit
-        target_ion = ix.config.target_ion
-        set_scaling_factor(
-            ix.properties_regen[0].flow_mol_phase_comp["Liq", target_ion], 1
-        )
-
-        initialization_tester(m)
+        m = ix_scaling(m, sf=1, est_recov=0.99, est_removal=0.99, sf_mass=1e2)
 
         def obj_rule(m):
             return m.fs.costing.LCOW
 
         m.obj = Objective(rule=obj_rule)
 
+        return m
+
+    @pytest.mark.component
+    def test_costing(self, IX_frame_costing):
+        m = IX_frame_costing
+
+        m.fs.unit.initialize(outlvl=idaeslog.DEBUG)
+        m.fs.costing.initialize()
+
         assert degrees_of_freedom(m) == 0
 
-        results = solver.solve(m, tee=False)
+        results = solver.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        assert pytest.approx(440372.278, rel=1e-5) == value(
-            m.fs.costing.total_capital_cost
+        assert pytest.approx(418913.095, rel=1e-5) == value(
+            m.fs.costing.aggregate_capital_cost
         )
-        assert pytest.approx(1023195.441, rel=1e-5) == value(
+        assert pytest.approx(1025648.186, rel=1e-5) == value(
             m.fs.costing.total_operating_cost
         )
-        assert pytest.approx(880744.556, rel=1e-5) == value(
-            m.fs.costing.total_investment_cost
+        assert pytest.approx(837826.191, rel=1e-5) == value(
+            m.fs.costing.total_capital_cost
         )
-        assert pytest.approx(0.78532, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.7827819, rel=1e-5) == value(m.fs.costing.LCOW)
