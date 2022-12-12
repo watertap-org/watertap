@@ -41,8 +41,8 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.stateblock_statistics = {
             "number_variables": 26,
             "number_total_constraints": 22,
-            "number_unused_variables": 1,  # pressure is unused
-            "default_degrees_of_freedom": 3,
+            "number_unused_variables": 0,
+            "default_degrees_of_freedom": 4,
         }  # 4 state vars, but pressure is not active
         self.default_solution = {
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
@@ -60,7 +60,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 9.588e-4,
             ("osm_coeff", None): 0.9068,
             ("pressure_osm_phase", "Liq"): 2.588e6,
-            ("enth_mass_phase", "Liq"): 9.9765e4,
+            ("enth_mass_phase", "Liq"): 9.89629e4,
             ("pressure_sat", None): 3111,
             ("cp_mass_phase", "Liq"): 4001,
             ("therm_cond_phase", "Liq"): 0.6086,
@@ -105,7 +105,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 5.596e-4,
             ("osm_coeff", None): 0.9029,
             ("pressure_osm_phase", "Liq"): 7.710e5,
-            ("enth_mass_phase", "Liq"): 2.066e5,
+            ("enth_mass_phase", "Liq"): 8.5118e7,
             ("pressure_sat", None): 1.229e4,
             ("cp_mass_phase", "Liq"): 4.130e3,
             ("therm_cond_phase", "Liq"): 0.6400,

@@ -717,7 +717,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_solvent", 1e-3)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("osm_coeff", 1e0)
-        self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-6, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
@@ -1340,12 +1340,12 @@ class SeawaterStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(
-            b,
+            b, p
         ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            S = b.mass_frac_phase_comp[p, "TDS"]
             P = b.pressure - 101325 * pyunits.Pa
             h_w = (
                 b.params.enth_mass_param_C1
@@ -1378,9 +1378,11 @@ class SeawaterStateBlockData(StateBlockData):
                     + b.params.enth_mass_param_A8 * t**3
                 )
             )
-            return b.enth_mass_phase["Liq"] == h_sw
+            return b.enth_mass_phase[p] == h_sw
 
-        self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
+        self.eq_enth_mass_phase = Constraint(
+            self.params.phase_list, rule=rule_enth_mass_phase
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
