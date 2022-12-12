@@ -729,33 +729,17 @@ class NaClStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(
-            b, p
-        ):  # specific enthalpy, eq. 55 and 43 in Sharqawy  # TODO: remove enthalpy when all units can be isothermal
+            b,
+        ):  # specific enthalpy, H' = Cp(T-Tref) + (P-Pref)/rho  # TODO: remove enthalpy when all units can be isothermal
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp[p, "NaCl"]
-            h_w = (
-                b.params.enth_mass_param_A1
-                + b.params.enth_mass_param_A2 * t
-                + b.params.enth_mass_param_A3 * t**2
-                + b.params.enth_mass_param_A4 * t**3
-            )
-            # relationship requires dimensionless calculation and units added at end
-            h_sw = (
-                h_w
-                - (
-                    S * (b.params.enth_mass_param_B1 + S)
-                    + S * (b.params.enth_mass_param_B2 + S) * t / pyunits.K
-                )
-                * pyunits.J
-                / pyunits.kg
-            )
-            return b.enth_mass_phase[p] == h_sw
+            P = b.pressure - 101325 * pyunits.Pa
+            h_w = b.params.cp_w * t + P / self.dens_mass_phase["Liq"]
 
-        self.eq_enth_mass_phase = Constraint(
-            self.params.phase_list, rule=rule_enth_mass_phase
-        )
+            return b.enth_mass_phase["Liq"] == h_w
+
+        self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method

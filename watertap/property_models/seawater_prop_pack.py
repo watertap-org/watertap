@@ -1339,18 +1339,21 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Specific enthalpy",
         )
 
-        def rule_enth_mass_phase(b, p):  # specific enthalpy, eq. 55 and 43 in Sharqawy
+        def rule_enth_mass_phase(
+            b,
+        ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp[p, "TDS"]
+            S = b.mass_frac_phase_comp["Liq", "TDS"]
+            P = b.pressure - 101325 * pyunits.Pa
             h_w = (
                 b.params.enth_mass_param_C1
                 + b.params.enth_mass_param_C2 * t
                 + b.params.enth_mass_param_C3 * t**2
                 + b.params.enth_mass_param_C4 * t**3
             )
-            h_sw = h_w - S * (
+            h_sw0 = h_w - S * (
                 b.params.enth_mass_param_B1
                 + b.params.enth_mass_param_B2 * S
                 + b.params.enth_mass_param_B3 * S**2
@@ -1362,11 +1365,22 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.enth_mass_param_B9 * S**2 * t
                 + b.params.enth_mass_param_B10 * S * t**2
             )
-            return b.enth_mass_phase[p] == h_sw
+            h_sw = h_sw0 + P * (
+                b.params.enth_mass_param_A1
+                + b.params.enth_mass_param_A2 * t
+                + b.params.enth_mass_param_A3 * t**2
+                + b.params.enth_mass_param_A4 * t**3
+                + S
+                * (
+                    +b.params.enth_mass_param_A5
+                    + b.params.enth_mass_param_A6 * t
+                    + b.params.enth_mass_param_A7 * t**2
+                    + b.params.enth_mass_param_A8 * t**3
+                )
+            )
+            return b.enth_mass_phase["Liq"] == h_sw
 
-        self.eq_enth_mass_phase = Constraint(
-            self.params.phase_list, rule=rule_enth_mass_phase
-        )
+        self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
