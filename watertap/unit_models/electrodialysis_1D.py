@@ -1771,19 +1771,19 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
         self.N_Re = Var(
             initialize=50,
-            bounds=(0, 2000),
+            bounds=(0, 2e5),
             units=pyunits.dimensionless,
             doc="Reynolds Number",
         )  # arbitrary upper bound
         self.N_Sc = Var(
             initialize=2000,
-            bounds=(0, 2000),
+            bounds=(0, 2e5),
             units=pyunits.dimensionless,
             doc="Schmidt Number",
         )  # arbitrary upper bound
         self.N_Sh = Var(
             initialize=100,
-            bounds=(0, 200000),
+            bounds=(0, 2e7),
             units=pyunits.dimensionless,
             doc="Sherwood Number",
         )  # arbitrary upper bound
