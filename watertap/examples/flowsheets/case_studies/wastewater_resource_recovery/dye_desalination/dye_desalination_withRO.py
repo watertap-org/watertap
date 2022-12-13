@@ -405,7 +405,7 @@ def add_costing(m):
         flowsheet_costing_block=m.fs.ro_costing,
         costing_method_arguments={"cost_electricity_flow": True},
     )
-    m.fs.ro_costing.electricity_base_cost = value(m.fs.zo_costing.electricity_cost)
+    m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
     m.fs.ro_costing.base_currency = pyunits.USD_2020
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
