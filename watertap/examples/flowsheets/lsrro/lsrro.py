@@ -292,7 +292,7 @@ def build(
     m.fs.costing.factor_total_investment.fix(2)
     m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
     m.fs.costing.factor_capital_annualization.fix(0.1)
-    m.fs.costing.electricity_base_cost.set_value(0.07)
+    m.fs.costing.electricity_cost.set_value(0.07)
     m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
     m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
     m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
@@ -424,7 +424,7 @@ def build(
 
     m.fs.costing.indirect_capex_lcow = Expression(
         expr=m.fs.costing.factor_capital_annualization
-        * (m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost)
+        * (m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost)
         / m.fs.costing.annual_water_production
     )
 
@@ -1195,7 +1195,7 @@ def display_system(m):
     )
     print(
         f"Indirect Capital Cost ($/m3): "
-        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost) / m.fs.costing.annual_water_production)}"
+        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
     )
     electricity_cost = value(
         m.fs.costing.aggregate_flow_costs["electricity"]
