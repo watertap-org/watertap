@@ -1769,22 +1769,22 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         self.hydraulic_diameter = Var(initialize=1e-3, units=pyunits.meter)
         self.N_Re = Var(
             initialize=50,
-            bounds=(0, 2e5),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Reynolds Number",
-        )  # arbitrary upper bound
+        )
         self.N_Sc = Var(
             initialize=2000,
-            bounds=(0, 2e5),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Schmidt Number",
-        )  # arbitrary upper bound
+        )
         self.N_Sh = Var(
             initialize=100,
-            bounds=(0, 2e7),
+            bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Sherwood Number",
-        )  # arbitrary upper bound
+        )
 
         if self.config.hydraulic_diameter_method == HydraulicDiameterMethod.fixed:
             _log.warning("Do not forget to FIX the channel hydraulic diameter in [m]!")
@@ -1875,9 +1875,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 == LimitingCurrentDensityMethod.Theoretical
             ):
                 self._get_fluid_dimensionless_quantities()
+
             self.friction_factor = Var(
                 initialize=10,
-                bounds=(0, 10000),  # arbitrary upper bound
+                bounds=(0, None),
                 units=pyunits.dimensionless,
                 doc="friction factor of the channel fluid",
             )
