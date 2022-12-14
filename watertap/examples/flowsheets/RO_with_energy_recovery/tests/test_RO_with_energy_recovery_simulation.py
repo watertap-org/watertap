@@ -189,6 +189,8 @@ class TestROwithPX:
         assert value(m.fs.RO.B_comp[0, "NaCl"]) == 3.5e-8
         assert m.fs.RO.feed_side.channel_height.is_fixed()
         assert value(m.fs.RO.feed_side.channel_height) == 1e-3
+        assert m.fs.RO.feed_side.channel_length.is_fixed()
+        assert value(m.fs.RO.feed_side.channel_length) == 1e1
         assert m.fs.RO.feed_side.spacer_porosity.is_fixed()
         assert value(m.fs.RO.feed_side.spacer_porosity) == 0.97
         assert m.fs.RO.permeate.pressure[0].is_fixed()
@@ -412,7 +414,7 @@ class TestROwithTurbine:
     def test_solution(self, system_frame):
         m = system_frame
         fs = m.fs
-        assert pytest.approx(120.154, rel=1e-5) == value(fs.RO.area)
+        assert pytest.approx(101.920186, rel=1e-5) == value(fs.RO.area)
         assert pytest.approx(2.42916, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
         )
