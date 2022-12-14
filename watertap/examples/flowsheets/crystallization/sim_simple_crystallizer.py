@@ -35,8 +35,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models import cryst_prop_pack as props
 from watertap.unit_models.crystallizer import Crystallization
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 from io import StringIO
 from pyomo.util.infeasible import (

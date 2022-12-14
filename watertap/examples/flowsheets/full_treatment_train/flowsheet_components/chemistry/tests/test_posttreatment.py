@@ -69,7 +69,6 @@ def test_ideal_naocl_chlorination():
 
 
 @pytest.mark.component
-@pytest.mark.requires_idaes_solver
 def test_ideal_naocl_chlorination_full_block():
     model = run_chlorination_block_example(fix_free_chlorine=True)
     assert model.fs.ideal_naocl_mixer_unit.dosing_rate.value == pytest.approx(

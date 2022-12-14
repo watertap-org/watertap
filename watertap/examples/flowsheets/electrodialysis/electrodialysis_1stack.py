@@ -33,10 +33,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 
 __author__ = "Xiangyu Bi"
 
@@ -70,7 +70,7 @@ def build():
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+    m.fs.properties = MCASParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
@@ -266,7 +266,7 @@ def optimize_system(m, solver=None):
     # Give narrower bounds to optimizing variables if available
     m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
-    m.fs.EDstack.cell_pair_num.setlb(1)
+    m.fs.EDstack.cell_pair_num.setlb(5)
     m.fs.EDstack.cell_pair_num.setub(500)
 
     # Set a treatment goal

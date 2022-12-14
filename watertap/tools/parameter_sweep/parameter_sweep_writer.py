@@ -15,6 +15,7 @@ import os, pathlib, warnings
 import h5py
 import itertools
 import pprint
+import copy
 import numpy as np
 
 from scipy.interpolate import griddata
@@ -152,6 +153,7 @@ class ParameterSweepWriter:
 
         self.comm.Barrier()
 
+        # self.config.display()
         # Handle values in the debugging data_directory
         if self.config["debugging_data_dir"] is not None:
             self._write_debug_data(
@@ -220,8 +222,6 @@ class ParameterSweepWriter:
         # We will also create a companion txt file by default which contains
         # the metadata of the h5 file in a user readable format.
         txt_fname = self.config["h5_results_file_name"] + ".txt"
-        if "solve_successful" in output_dict.keys():
-            output_dict.pop("solve_successful")
         if txt_options == "metadata":
             my_dict = copy.deepcopy(output_dict)
             for key, value in my_dict.items():
@@ -230,7 +230,8 @@ class ParameterSweepWriter:
         elif txt_options == "keys":
             my_dict = {}
             for key, value in output_dict.items():
-                my_dict[key] = list(value.keys())
+                if key != "solve_successful":
+                    my_dict[key] = list(value.keys())
         else:
             my_dict = output_dict
 

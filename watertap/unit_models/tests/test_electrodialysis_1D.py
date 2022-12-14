@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 import re
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 from watertap.unit_models.electrodialysis_1D import (
     ElectricalOperationMode,
     Electrodialysis1D,
@@ -32,6 +32,7 @@ from pyomo.environ import (
 )
 from idaes.core import (
     FlowsheetBlock,
+    EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
     UnitModelCostingBlock,
@@ -60,7 +61,7 @@ class TestElectrodialysisVoltageConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -73,13 +74,14 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -114,8 +116,8 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell1):
@@ -288,13 +290,13 @@ class TestElectrodialysisVoltageConst:
         assert_optimal_termination(results)
 
         assert pytest.approx(388.6800, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
+            m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(45.86804, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(777.3600, rel=1e-3) == value(
-            m.fs.costing.total_investment_cost
+            m.fs.costing.total_capital_cost
         )
 
 
@@ -309,7 +311,7 @@ class TestElectrodialysisCurrentConst:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -323,13 +325,14 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -364,8 +367,8 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell2):
@@ -521,7 +524,7 @@ class TestElectrodialysis_withNeutralSPecies:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -534,13 +537,14 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -575,8 +579,8 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
@@ -650,7 +654,6 @@ class TestElectrodialysis_withNeutralSPecies:
         m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"].fix(7.38e-5)
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialization_scaling(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -680,7 +683,6 @@ class TestElectrodialysis_withNeutralSPecies:
         # check to make sure DOF does not change
         assert degrees_of_freedom(m) == 0
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -692,7 +694,6 @@ class TestElectrodialysis_withNeutralSPecies:
         }
         assert not badly_scaled_var_values
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -722,7 +723,6 @@ class TestElectrodialysis_withNeutralSPecies:
             m.fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "N"]
         ) == pytest.approx(7.496e-05, rel=5e-3)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_performance_contents(self, electrodialysis_1d_cell3):
         m = electrodialysis_1d_cell3
@@ -750,7 +750,7 @@ class Test_ED_MembNonohm_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -763,13 +763,14 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -806,8 +807,8 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
 
@@ -972,7 +973,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -987,13 +988,14 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell5):
         m = electrodialysis_1d_cell5
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -1034,8 +1036,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1182,7 +1184,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1203,7 +1205,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1358,7 +1360,7 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Current,
@@ -1373,13 +1375,14 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
     def test_build_model(self, electrodialysis_1d_cell6):
         m = electrodialysis_1d_cell6
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -1420,8 +1423,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1568,7 +1571,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1590,7 +1593,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1614,7 +1617,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1638,7 +1641,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1662,7 +1665,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1686,7 +1689,7 @@ class Test_ED_pressure_drop_components:
             "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
             "charge": {"Na_+": 1, "Cl_-": -1},
         }
-        m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+        m.fs.properties = MCASParameterBlock(**ion_dict)
         m.fs.unit = Electrodialysis1D(
             property_package=m.fs.properties,
             operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1816,11 +1819,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
 
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            5332.605, rel=1e-3
+            6424.825, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            8958.776, rel=1e-3
+            10793.706, rel=1e-3
         )
 
         # Test ed_m5
@@ -1834,11 +1837,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
 
         assert value(ed_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
-            3694.099, rel=1e-3
+            4450.722, rel=1e-3
         )
 
         assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            6206.087, rel=1e-3
+            7477.213, rel=1e-3
         )
 
         # Test ed_m6
@@ -1852,15 +1855,15 @@ class Test_ED_pressure_drop_components:
         assert_optimal_termination(results)
         assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
         assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
-            182512.397, rel=1e-3
+            178659.214, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
-            11197.978, rel=1e-3
+            13491.540, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            18812.603, rel=1e-3
+            22665.786, rel=1e-3
         )
 
     @pytest.mark.unit
@@ -1883,7 +1886,7 @@ class Test_ED_pressure_drop_components:
             m = ConcreteModel()
             m.fs = FlowsheetBlock(dynamic=False)
 
-            m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+            m.fs.properties = MCASParameterBlock(**ion_dict)
             m.fs.unit = Electrodialysis1D(
                 property_package=m.fs.properties,
                 operation_mode=ElectricalOperationMode.Constant_Voltage,
@@ -1895,7 +1898,7 @@ class Test_ED_pressure_drop_components:
             )
             m1 = ConcreteModel()
             m1.fs = FlowsheetBlock(dynamic=False)
-            m1.fs.properties = DSPMDEParameterBlock(**ion_dict)
+            m1.fs.properties = MCASParameterBlock(**ion_dict)
             m1.fs.unit = Electrodialysis1D(
                 property_package=m.fs.properties,
                 operation_mode=ElectricalOperationMode.Constant_Voltage,
