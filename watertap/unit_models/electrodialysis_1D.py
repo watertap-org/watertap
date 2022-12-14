@@ -1920,7 +1920,10 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                         self.config.friction_factor_method
                         == FrictionFactorMethod.Kuroda
                     ):
-                        return self.friction_factor == 4 * 9.6 * self.N_Re**-0.5
+                        return (
+                            self.friction_factor
+                            == 4 * 9.6 * self.spacer_porosity**-1 * self.N_Re**-0.5
+                        )
 
         @self.Constraint(
             self.flowsheet().time,
