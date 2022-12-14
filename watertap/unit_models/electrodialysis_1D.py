@@ -1905,7 +1905,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 == LimitingCurrentDensityMethod.Theoretical
             ):
                 self._get_fluid_dimensionless_quantities()
-
             self.friction_factor = Var(
                 initialize=10,
                 bounds=(0, None),
