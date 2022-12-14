@@ -49,7 +49,6 @@ from watertap.unit_models.electrodialysis_1D import (
 )
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 from watertap.costing.watertap_costing_package import (
-    MixerType,
     WaterTAPCosting,
 )
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
@@ -60,14 +59,13 @@ __author__ = "Xiangyu Bi"
 def main():
     # set up solver
     solver = get_solver()
+
     # Simulate a fully defined operation
     m = build()
-    # set_operating_conditions(m)
-    # simu_scenario1(m)
-    opt_0_base(m)
+    DOF0_base(m) #A fully-defined system simulation, dof=0
     initialize_system(m, solver=solver)
     solve(m, solver=solver)
-    print("\n***---Simulation results---***")
+    print("\n***---Fully-defined simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
@@ -97,7 +95,7 @@ def opt_multiC0():
     solver = get_solver()
     for k in initarg:
         m = build()
-        opt_0_base(m)
+        DOF0_base(m)
         # print(conc_mol_in["C0"][initarg.index(k)]*0.1)
         m.fs.feed.properties.calculate_state(
             k,  # feed molar concentration of Na and Cl ions
@@ -186,7 +184,7 @@ def opt_multiC0():
 def opt0():
     solver = get_solver()
     m = build()
-    opt_0_base(m)
+    DOF0_base(m)
     init_arg = {
         ("flow_vol_phase", ("Liq")): 5.2e-4,
         ("conc_mol_phase_comp", ("Liq", "Na_+")): 34.188,
@@ -523,7 +521,7 @@ def simu_scenario1(m):
     assert mstat.degrees_of_freedom(m.fs) == 0
 
 
-def opt_0_base(m):
+def DOF0_base(m):
     # ---specifications---
     # Here is simulated a scenario of a defined EDstack and
     # specific water recovery and product salinity.
@@ -775,6 +773,6 @@ def display_model_metrics(m):
 
 
 if __name__ == "__main__":
-    opt_multiC0()
+    main()
 # if __name__ == "__opt0__":
 #   opt0()
