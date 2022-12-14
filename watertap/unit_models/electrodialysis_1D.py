@@ -778,36 +778,6 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().time,
             self.diluate.length_domain,
-            doc="Calculate flow velocity in a single diluate channel",
-        )
-        def eq_get_velocity_D(self, t, x):
-            return (
-                self.velocity_D[t, x]
-                * self.cell_width
-                * self.channel_height
-                * self.spacer_porosity
-                * self.cell_pair_num
-                == self.diluate.properties[t, x].flow_vol_phase["Liq"]
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            self.diluate.length_domain,
-            doc="Calculate flow velocity in a single concentrate channel",
-        )
-        def eq_get_velocity_C(self, t, x):
-            return (
-                self.velocity_C[t, x]
-                * self.cell_width
-                * self.channel_height
-                * self.spacer_porosity
-                * self.cell_pair_num
-                == self.concentrate.properties[t, x].flow_vol_phase["Liq"]
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            self.diluate.length_domain,
             doc="Calculate the total areal resistance of a stack",
         )
         def eq_get_total_areal_resistance_x(self, t, x):
@@ -1905,6 +1875,7 @@ class Electrodialysis1DData(InitializationMixin, UnitModelBlockData):
                 == LimitingCurrentDensityMethod.Theoretical
             ):
                 self._get_fluid_dimensionless_quantities()
+            
             self.friction_factor = Var(
                 initialize=10,
                 bounds=(0, None),
