@@ -519,7 +519,12 @@ class MembraneChannelMixin:
             self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
         )
         def eq_N_Sh(b, t, x):
-            return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
+            return (
+                b.N_Sh[t, x]
+                == 2.401
+                * ((b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297)
+                * (b.channel_length / b.dh) ** -0.279
+            )
 
         @self.Constraint(
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
@@ -570,6 +575,14 @@ class MembraneChannelMixin:
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="membrane-channel height",
+        )
+
+        self.channel_length = Var(
+            initialize=1e1,
+            bounds=(1, 1e4),
+            domain=NonNegativeReals,
+            units=units_meta("length"),
+            doc="membrane-channel length",
         )
 
         self.dh = Var(
