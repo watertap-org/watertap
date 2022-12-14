@@ -858,6 +858,10 @@ class MembraneChannelMixin:
             if iscale.get_scaling_factor(self.channel_height) is None:
                 iscale.set_scaling_factor(self.channel_height, 1e3)
 
+        if hasattr(self, "channel_length"):
+            if iscale.get_scaling_factor(self.channel_length) is None:
+                iscale.set_scaling_factor(self.channel_length, 1e-1)
+
         if hasattr(self, "spacer_porosity"):
             if iscale.get_scaling_factor(self.spacer_porosity) is None:
                 iscale.set_scaling_factor(self.spacer_porosity, 1)
