@@ -51,7 +51,7 @@ from watertap.costing.watertap_costing_package import (
     MixerType,
     WaterTAPCosting,
 )
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 __author__ = "Xiangyu Bi"
 
@@ -85,7 +85,7 @@ def build():
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+    m.fs.properties = MCASParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.sepa0 = Separator(
@@ -153,9 +153,6 @@ def build():
     m.fs.disp.properties[0].flow_vol_phase[...]
     m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
     m.fs.EDstack.concentrate.properties[...].flow_vol_phase[...]
-
-    # m.fs.EDstack.inlet_diluate.flow_vol_phase[...]
-    # m.fs.EDstack.inlet_concentrate.flow_vol_phase[...]
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
