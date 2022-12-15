@@ -102,6 +102,8 @@ def main():
     print("\n***---Optimization results, Product conc = 100 ppb---***")
     display_model_metrics(m)
 
+    return m
+
 
 def build():
     # ---building model---
