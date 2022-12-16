@@ -37,6 +37,7 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1e2,
+            ("enth_mass_phase", ("Liq")): 1e-4,
         }
         self.stateblock_statistics = {
             "number_variables": 26,
@@ -150,7 +151,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 1.443e-3,
             ("osm_coeff", None): 0.9106,
             ("pressure_osm_phase", "Liq"): 3.591e6,
-            ("enth_mass_phase", "Liq"): 3.897e4,
+            ("enth_mass_phase", "Liq"): 9.558e9,
             ("pressure_sat", None): 1.194e3,
             ("cp_mass_phase", "Liq"): 3.916e3,
             ("therm_cond_phase", "Liq"): 0.5854,

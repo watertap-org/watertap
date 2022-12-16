@@ -717,7 +717,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_solvent", 1e-3)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("osm_coeff", 1e0)
-        self.set_default_scaling("enth_mass_phase", 1e-6, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-8, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
@@ -1334,7 +1334,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(1, 1e9),
+            bounds=(1, 1e12),
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
