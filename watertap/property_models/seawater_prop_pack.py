@@ -1346,24 +1346,25 @@ class SeawaterStateBlockData(StateBlockData):
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
             S = b.mass_frac_phase_comp[p, "TDS"]
-            P = b.pressure - 101325 * pyunits.Pa
+            s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
+            P = (b.pressure - 101325) * 1e-6 * pyunits.MPa
             h_w = (
                 b.params.enth_mass_param_C1
                 + b.params.enth_mass_param_C2 * t
                 + b.params.enth_mass_param_C3 * t**2
                 + b.params.enth_mass_param_C4 * t**3
             )
-            h_sw0 = h_w - S * (
+            h_sw0 = h_w - s * (
                 b.params.enth_mass_param_B1
-                + b.params.enth_mass_param_B2 * S
-                + b.params.enth_mass_param_B3 * S**2
-                + b.params.enth_mass_param_B4 * S**3
+                + b.params.enth_mass_param_B2 * s
+                + b.params.enth_mass_param_B3 * s**2
+                + b.params.enth_mass_param_B4 * s**3
                 + b.params.enth_mass_param_B5 * t
                 + b.params.enth_mass_param_B6 * t**2
                 + b.params.enth_mass_param_B7 * t**3
-                + b.params.enth_mass_param_B8 * S * t
-                + b.params.enth_mass_param_B9 * S**2 * t
-                + b.params.enth_mass_param_B10 * S * t**2
+                + b.params.enth_mass_param_B8 * s * t
+                + b.params.enth_mass_param_B9 * s**2 * t
+                + b.params.enth_mass_param_B10 * s * t**2
             )
             h_sw = h_sw0 + P * (
                 b.params.enth_mass_param_A1
