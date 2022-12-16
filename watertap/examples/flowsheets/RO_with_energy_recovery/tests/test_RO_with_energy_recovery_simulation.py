@@ -252,7 +252,7 @@ class TestROwithPX:
             0.4954, rel=1e-3
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            2.727, rel=1e-3
+            2.782, rel=1e-3
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4394, rel=1e-3)
 
@@ -298,7 +298,7 @@ Levelized cost of water: 0.44 $/m3
             captured.out
             == """---decision variables---
 Operating pressure 74.9 bar
-Membrane area 60.2 m2
+Membrane area 151.4 m2
 ---design variables---
 Pump 1
 outlet pressure: 74.9 bar
@@ -325,10 +325,10 @@ Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
 Split 1   : 0.505 kg/s, 35000 ppm, 1.0 bar
 P1 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
 Split 2   : 0.516 kg/s, 35000 ppm, 1.0 bar
-PXR LP out: 0.516 kg/s, 35000 ppm, 70.3 bar
+PXR LP out: 0.516 kg/s, 35000 ppm, 68.8 bar
 P2 out    : 0.516 kg/s, 35000 ppm, 74.9 bar
 Mix out   : 1.021 kg/s, 35000 ppm, 74.9 bar
-RO perm   : 0.493 kg/s, 280 ppm, 1.0 bar
+RO perm   : 0.493 kg/s, 837 ppm, 1.0 bar
 RO reten  : 0.528 kg/s, 67389 ppm, 73.9 bar
 PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
 """
@@ -400,7 +400,7 @@ class TestROwithTurbine:
     def test_initialize_system(self, system_frame):
         m = system_frame
         initialize_system(m, solver=solver)
-        assert pytest.approx(60.1545, rel=1e-5) == value(m.fs.RO.area)
+        assert pytest.approx(151.44997, rel=1e-5) == value(m.fs.RO.area)
 
     @pytest.mark.component
     def test_optimize_setup(self, system_frame):
@@ -414,8 +414,8 @@ class TestROwithTurbine:
     def test_solution(self, system_frame):
         m = system_frame
         fs = m.fs
-        assert pytest.approx(101.920186, rel=1e-5) == value(fs.RO.area)
-        assert pytest.approx(2.42916, rel=1e-5) == value(
+        assert pytest.approx(89.99931, rel=1e-5) == value(fs.RO.area)
+        assert pytest.approx(3.45216, rel=1e-5) == value(
             fs.costing.specific_energy_consumption
         )
         assert pytest.approx(1.15385, rel=1e-3) == value(
