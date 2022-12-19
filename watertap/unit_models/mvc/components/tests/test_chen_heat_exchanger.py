@@ -82,14 +82,14 @@ def test_heat_exchanger():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(268194.66, rel=1e-4) == value(m.fs.unit.heat_duty[0])
+    assert pytest.approx(90384.223, rel=1e-4) == value(m.fs.unit.heat_duty[0])
     assert pytest.approx(1.0, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.hot_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
     )
-    assert pytest.approx(351.287, rel=1e-4) == value(
+    assert pytest.approx(328.611, rel=1e-4) == value(
         m.fs.unit.hot_outlet.temperature[0]
     )
     assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.hot_outlet.pressure[0])
@@ -99,7 +99,7 @@ def test_heat_exchanger():
     assert pytest.approx(0.01, rel=1e-4) == value(
         m.fs.unit.cold_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
     )
-    assert pytest.approx(296.008, rel=1e-4) == value(
+    assert pytest.approx(340.402, rel=1e-4) == value(
         m.fs.unit.cold_outlet.temperature[0]
     )
     assert pytest.approx(2.0e5, rel=1e-4) == value(m.fs.unit.cold_outlet.pressure[0])

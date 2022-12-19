@@ -325,7 +325,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         # specific enthalpy parameters, Table 9 in Nayar et al. (2016)
         enth_mass_units = pyunits.J / pyunits.kg
-        P_inv_units = pyunits.Pa**-1
+        P_inv_units = pyunits.MPa**-1
 
         self.enth_mass_param_A1 = Var(
             within=Reals,
@@ -717,7 +717,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mass_solvent", 1e-3)
         self.set_default_scaling("visc_d_phase", 1e3, index="Liq")
         self.set_default_scaling("osm_coeff", 1e0)
-        self.set_default_scaling("enth_mass_phase", 1e-8, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("cp_mass_phase", 1e-3, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
@@ -1334,7 +1334,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             self.params.phase_list,
             initialize=1e6,
-            bounds=(1, 1e12),
+            bounds=(1, 1e9),
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy",
         )
@@ -1346,8 +1346,10 @@ class SeawaterStateBlockData(StateBlockData):
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
             S = b.mass_frac_phase_comp[p, "TDS"]
-            s = b.mass_frac_phase_comp["Liq", "TDS"] * 1000 * pyunits.g / pyunits.kg
-            P = (b.pressure - 101325) * 1e-6 * pyunits.MPa
+            s = S / 1000
+            P = b.pressure - 101325 * pyunits.Pa
+            P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
+
             h_w = (
                 b.params.enth_mass_param_C1
                 + b.params.enth_mass_param_C2 * t
@@ -1366,7 +1368,7 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.enth_mass_param_B9 * s**2 * t
                 + b.params.enth_mass_param_B10 * s * t**2
             )
-            h_sw = h_sw0 + P * (
+            h_sw = h_sw0 + P_MPa * (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
                 + b.params.enth_mass_param_A3 * t**2

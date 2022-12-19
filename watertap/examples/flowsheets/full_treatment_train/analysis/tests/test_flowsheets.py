@@ -81,9 +81,9 @@ def test_flowsheet_softening():
 def test_flowsheet_softening_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_softening_two_stage.optimize_flowsheet(
-        system_recovery=0.80, **desal_kwargs
+        system_recovery=0.70, **desal_kwargs
     )
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.9277, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.549963, rel=1e-3)
 
 
 @pytest.mark.component
