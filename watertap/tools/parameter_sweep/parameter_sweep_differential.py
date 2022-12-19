@@ -169,7 +169,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         num_local_samples = len(local_results_dict["solve_successful"])
         local_inputs = np.zeros(
             (num_local_samples, len(local_results_dict["sweep_params"])),
-            dtype=np.float64,
+            dtype=float,
         )
 
         for i, (key, item) in enumerate(local_results_dict["sweep_params"].items()):
@@ -181,7 +181,7 @@ class DifferentialParameterSweep(_ParameterSweepBase):
 
         global_values = np.zeros(
             (num_global_samples, len(global_results_dict["sweep_params"])),
-            dtype=np.float64,
+            dtype=float,
         )
 
         if self.rank == 0:
