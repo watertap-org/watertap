@@ -29,8 +29,8 @@ from idaes.core import (
 )
 from watertap.unit_models.uv_aop import Ultraviolet0D, UVDoseType
 import watertap.property_models.NDMA_prop_pack as props
-from watertap.property_models.ion_DSPMDE_prop_pack import (
-    DSPMDEParameterBlock,
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import (
@@ -239,13 +239,11 @@ class TestUV:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -259,7 +257,7 @@ class TestUV:
         assert pytest.approx(53286.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0202303, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0203553, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.component
     def test_reporting(self, UV_frame):
@@ -457,13 +455,11 @@ class TestUV_standard:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -477,7 +473,7 @@ class TestUV_standard:
         assert pytest.approx(23525, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0137057, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0137705, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.component
     def test_reporting(self, UV_frame):
@@ -490,7 +486,7 @@ class TestUV_with_multiple_comps:
     def UV_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = DSPMDEParameterBlock(
+        m.fs.properties = MCASParameterBlock(
             solute_list=["NDMA", "DCE"],
             mw_data={"H2O": 0.018, "NDMA": 0.0740819, "DCE": 0.09896},
         )
@@ -699,13 +695,11 @@ class TestUV_with_multiple_comps:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -719,7 +713,7 @@ class TestUV_with_multiple_comps:
         assert pytest.approx(90400.7, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.02023034, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.02035533, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.component
     def test_reporting(self, UV_frame):
@@ -928,13 +922,11 @@ class TestUV_detailed:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -948,7 +940,7 @@ class TestUV_detailed:
         assert pytest.approx(38511.4, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0181887, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0182949, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.component
     def test_reporting(self, UV_frame):
@@ -1152,13 +1144,11 @@ class TestUVAOP:
             pyunits.convert(m.fs.unit.electricity_demand[0], to_units=pyunits.kW)
         )
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_costing(self, UV_frame):
         m = UV_frame
 
         m.fs.costing = WaterTAPCosting()
-        m.fs.costing.base_currency = pyunits.USD_2020
 
         m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         m.fs.costing.cost_process()
@@ -1172,7 +1162,7 @@ class TestUVAOP:
         assert pytest.approx(64870.2, rel=1e-5) == value(
             m.fs.unit.costing.fixed_operating_cost
         )
-        assert pytest.approx(0.0231786, rel=1e-5) == value(m.fs.costing.LCOW)
+        assert pytest.approx(0.0233307, rel=1e-5) == value(m.fs.costing.LCOW)
 
     @pytest.mark.component
     def test_reporting(self, UV_frame):

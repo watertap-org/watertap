@@ -320,8 +320,8 @@ def initialize_system(m):
     desal.RO.feed_side.properties_in[0].pressure = value(
         desal.P2.control_volume.properties_out[0].pressure
     )
-    solve(desal)
     desal.RO.initialize()
+    solve(desal)
     return
 
 
@@ -414,7 +414,7 @@ def add_costing(m):
         flowsheet_costing_block=m.fs.ro_costing,
         costing_method_arguments={"cost_electricity_flow": True},
     )
-    m.fs.ro_costing.electricity_base_cost = value(m.fs.zo_costing.electricity_cost)
+    m.fs.ro_costing.electricity_cost = value(m.fs.zo_costing.electricity_cost)
     m.fs.ro_costing.base_currency = pyunits.USD_2020
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
@@ -492,7 +492,7 @@ def add_costing(m):
         return pyunits.convert(
             m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2020
         ) + pyunits.convert(
-            m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
+            m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2020
         )
 
     @m.fs.Expression(doc="Total operating cost of the treatment train")
@@ -682,9 +682,7 @@ def display_costing(m):
     )
 
     ro_capex = value(
-        pyunits.convert(
-            m.fs.ro_costing.total_investment_cost, to_units=pyunits.USD_2020
-        )
+        pyunits.convert(m.fs.ro_costing.total_capital_cost, to_units=pyunits.USD_2020)
     )
 
     opex = value(

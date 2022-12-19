@@ -237,7 +237,7 @@ def add_costing(m):
         return pyunits.convert(
             m.fs.costing.total_capital_cost, to_units=m.fs.costing.base_currency
         ) + pyunits.convert(
-            m.fs.watertap_costing.total_investment_cost,
+            m.fs.watertap_costing.total_capital_cost,
             to_units=m.fs.costing.base_currency,
         )
 

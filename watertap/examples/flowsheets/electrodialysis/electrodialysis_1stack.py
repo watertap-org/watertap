@@ -34,10 +34,10 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -74,7 +74,7 @@ def build():
         "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
         "charge": {"Na_+": 1, "Cl_-": -1},
     }
-    m.fs.properties = DSPMDEParameterBlock(**ion_dict)
+    m.fs.properties = MCASParameterBlock(**ion_dict)
     m.fs.costing = WaterTAPCosting()
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.separator = Separator(
@@ -203,7 +203,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.electrodes_resistance.fix(0)
     m.fs.EDstack.cell_pair_num.fix(100)
     m.fs.EDstack.current_utilization.fix(1)
-    m.fs.EDstack.spacer_thickness.fix(2.7e-4)
+    m.fs.EDstack.channel_height.fix(2.7e-4)
     m.fs.EDstack.membrane_areal_resistance["cem"].fix(1.89e-4)
     m.fs.EDstack.membrane_areal_resistance["aem"].fix(1.77e-4)
     m.fs.EDstack.cell_width.fix(0.1)
@@ -218,6 +218,7 @@ def set_operating_conditions(m):
     m.fs.EDstack.ion_trans_number_membrane["aem", "Na_+"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
     m.fs.EDstack.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+    m.fs.EDstack.spacer_porosity.fix(1)
 
     # check zero degrees of freedom
     check_dof(m)
@@ -272,9 +273,9 @@ def optimize_system(m, solver=None):
     m.fs.EDstack.cell_pair_num.unfix()
     m.fs.EDstack.cell_pair_num.set_value(10)
     # Give narrower bounds to optimizing variables if available
-    m.fs.EDstack.voltage_applied[0].setlb(0.01)
+    m.fs.EDstack.voltage_applied[0].setlb(0.5)
     m.fs.EDstack.voltage_applied[0].setub(20)
-    m.fs.EDstack.cell_pair_num.setlb(1)
+    m.fs.EDstack.cell_pair_num.setlb(5)
     m.fs.EDstack.cell_pair_num.setub(500)
 
     # Set a treatment goal

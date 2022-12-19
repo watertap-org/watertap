@@ -102,7 +102,6 @@ class _ParameterSweepBase(ABC):
         "probe_function",
         ConfigValue(
             default=None,
-            # domain=function,
             description="Function to probe if a flowsheet configuration will work",
         ),
     )
@@ -135,7 +134,7 @@ class _ParameterSweepBase(ABC):
 
             for k, v in d.items():
                 # Build a vector of discrete values for this parameter
-                p = v.sample(num_samples)
+                p = v.sample()
                 param_values.append(p)
 
             if sampling_type == SamplingType.FIXED:
@@ -152,7 +151,7 @@ class _ParameterSweepBase(ABC):
                 lb = [val[0] for val in param_values]
                 ub = [val[1] for val in param_values]
                 lhs = sampling.LatinHypercubeSampling(
-                    [lb, ub], number_of_samples=num_samples, sampling_type="creation"
+                    [lb, ub], number_of_samples=v.num_samples, sampling_type="creation"
                 )
                 global_combo_array = lhs.sample_points()
                 sorting = np.argsort(global_combo_array[:, 0])
@@ -175,6 +174,12 @@ class _ParameterSweepBase(ABC):
                 sampling_type == SamplingType.RANDOM
                 or sampling_type == SamplingType.RANDOM_LHS
             ):
+                # Make sure num_samples are the same here and across the SamplingTypes
+                for k, v in d.items():
+                    if v.num_samples != num_samples:
+                        raise RuntimeError(
+                            "The number of samples should be the same across all sweep parameters."
+                        )
                 nx = num_samples
             else:
                 raise ValueError(f"Unknown sampling type: {sampling_type}")
@@ -316,7 +321,7 @@ class _ParameterSweepBase(ABC):
         return comp_dict
 
     def _update_local_output_dict(
-        self, model, sweep_params, case_number, sweep_vals, run_successful, output_dict
+        self, sweep_params, case_number, run_successful, output_dict
     ):
 
         # Get the inputs
@@ -336,7 +341,7 @@ class _ParameterSweepBase(ABC):
             for label in output_dict["outputs"].keys():
                 output_dict["outputs"][label]["value"][case_number] = np.nan
 
-    def _create_global_output(self, local_output_dict, req_num_samples):
+    def _create_global_output(self, local_output_dict, req_num_samples=None):
 
         # Before we can create the global dictionary, we need to delete the pyomo
         # object contained within the dictionary
@@ -354,6 +359,8 @@ class _ParameterSweepBase(ABC):
         # Gather the size of the value array on each MPI rank
         sample_split_arr = self.comm.allgather(local_num_cases)
         num_total_samples = sum(sample_split_arr)
+        if req_num_samples is None:
+            req_num_samples = num_total_samples
 
         # Create the global value array on rank 0
         if self.rank == 0:
@@ -402,7 +409,10 @@ class _ParameterSweepBase(ABC):
                 )
 
                 if self.rank == 0:
-                    global_output_dict[key] = global_solve_successful[0:req_num_samples]
+                    # Trim to the exact number
+                    global_output_dict[key] = list(
+                        global_solve_successful[0:req_num_samples]
+                    )
 
         return global_output_dict
 
@@ -457,10 +467,37 @@ class _ParameterSweepBase(ABC):
 
         return run_successful
 
-    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
+    def _run_sample(
+        self,
+        model,
+        reinitialize_values,
+        local_value_k,
+        k,
+        sweep_params,
+        local_output_dict,
+    ):
+        # Update the model values with a single combination from the parameter space
+        self._update_model_values(model, sweep_params, local_value_k)
 
-        # Create easy to read variables for configurations
-        probe_function = self.config["probe_function"]
+        if self.config.probe_function is None or self.config.probe_function(model):
+            run_successful = self._param_sweep_kernel(
+                model,
+                reinitialize_values,
+            )
+        else:
+            run_successful = False
+
+        # Update the loop based on the reinitialization
+        self._update_local_output_dict(
+            sweep_params,
+            k,
+            run_successful,
+            local_output_dict,
+        )
+
+        return run_successful
+
+    def _do_param_sweep(self, model, sweep_params, outputs, local_values):
 
         # Initialize space to hold results
         local_num_cases = np.shape(local_values)[0]
@@ -469,8 +506,6 @@ class _ParameterSweepBase(ABC):
         local_output_dict = self._create_local_output_skeleton(
             model, sweep_params, outputs, local_num_cases
         )
-
-        local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
 
         local_solve_successful_list = []
 
@@ -486,27 +521,14 @@ class _ParameterSweepBase(ABC):
         # ================================================================
 
         for k in range(local_num_cases):
-            # Update the model values with a single combination from the parameter space
-            self._update_model_values(model, sweep_params, local_values[k, :])
-
-            if probe_function is None or probe_function(model):
-                run_successful = self._param_sweep_kernel(
-                    model,
-                    reinitialize_values,
-                )
-            else:
-                run_successful = False
-
-            # Update the loop based on the reinitialization
-            self._update_local_output_dict(
+            run_successful = self._run_sample(
                 model,
-                sweep_params,
-                k,
+                reinitialize_values,
                 local_values[k, :],
-                run_successful,
+                k,
+                sweep_params,
                 local_output_dict,
             )
-
             local_solve_successful_list.append(run_successful)
 
         local_output_dict["solve_successful"] = local_solve_successful_list
@@ -584,7 +606,7 @@ class ParameterSweep(_ParameterSweepBase):
             global_results_arr,
         )
 
-        return global_save_data
+        return global_save_data, global_results_dict
 
 
 class RecursiveParameterSweep(_ParameterSweepBase):
@@ -667,6 +689,11 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         return global_filtered_dict, global_filtered_results, global_filtered_values
 
+    @staticmethod
+    def _update_sweep_params(sweep_params, num_total_samples):
+        for obj in sweep_params.values():
+            obj.num_samples = num_total_samples
+
     def parameter_sweep(
         self,
         model,
@@ -686,8 +713,15 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         num_total_samples = req_num_samples
 
         local_output_collection = {}
-        loop_ctr = 0
-        while n_samples_remaining > 0 and loop_ctr < 10:
+        for loop_ctr in range(10):
+
+            if n_samples_remaining <= 0:
+                break
+
+            if loop_ctr > 0:
+                # We need to rebuild the sweep_params since these are single use objects
+                self._update_sweep_params(sweep_params, num_total_samples)
+
             # Enumerate/Sample the parameter space
             global_values = self._build_combinations(
                 sweep_params, sampling_type, num_total_samples
@@ -738,7 +772,6 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
             scale_factor = 2.0 / max(success_prob, 0.10)
             num_total_samples = int(np.ceil(scale_factor * n_samples_remaining))
-            loop_ctr += 1
 
         # Now that we have all of the local output dictionaries, we need to construct
         # a consolidated dictionary based on a filter, e.g., optimal solves.

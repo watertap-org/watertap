@@ -207,14 +207,14 @@ def display_costing(m):
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     cost_dict = {
         "LCOW": m.fs.costing.LCOW,  # Total LCOW
-        "Total CAPEX": m.fs.costing.total_investment_cost
+        "Total CAPEX": m.fs.costing.total_capital_cost
         * crf
         / m.fs.costing.annual_water_production,  # Direct + Indirect CAPEX
-        "Direct CAPEX": m.fs.costing.total_capital_cost
+        "Direct CAPEX": m.fs.costing.aggregate_capital_cost
         * crf
         / m.fs.costing.annual_water_production,  # Direct CAPEX for all system components
         "Indirect CAPEX": (
-            m.fs.costing.total_investment_cost - m.fs.costing.total_capital_cost
+            m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost
         )
         * crf
         / m.fs.costing.annual_water_production,  # Indirect CAPEX for miscellaneous items
