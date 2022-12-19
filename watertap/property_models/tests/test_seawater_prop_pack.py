@@ -37,7 +37,6 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.scaling_args = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 1,
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1e2,
-            ("enth_mass_phase", ("Liq")): 1e-4,
         }
         self.stateblock_statistics = {
             "number_variables": 26,
