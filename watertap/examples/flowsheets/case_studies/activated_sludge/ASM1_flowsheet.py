@@ -311,7 +311,6 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
-    pyo.check_optimal_termination(results)
 
     return m, results
 

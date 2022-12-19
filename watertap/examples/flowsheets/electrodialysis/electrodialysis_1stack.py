@@ -286,7 +286,6 @@ def optimize_system(m, solver=None):
     if solver is None:
         solver = get_solver()
     results = solver.solve(m, tee=True)
-    check_optimal_termination(results)
 
 
 def display_model_metrics(m):

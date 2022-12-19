@@ -56,7 +56,6 @@ def main():
     initialize_system(m)
 
     results = solve(m)
-    check_optimal_termination(results)
     # display_reports(m)
 
     add_costing(m)
@@ -65,7 +64,6 @@ def main():
     assert_units_consistent(m)
 
     results = solve(m)
-    check_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)

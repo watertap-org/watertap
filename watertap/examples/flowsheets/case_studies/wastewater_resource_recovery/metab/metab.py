@@ -54,7 +54,6 @@ def main():
     initialize_system(m)
 
     results = solve(m)
-    check_optimal_termination(results)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
@@ -63,7 +62,6 @@ def main():
     # adjust_default_parameters(m)
 
     results = solve(m)
-    check_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)

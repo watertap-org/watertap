@@ -63,7 +63,6 @@ def main():
     initialize_system(m)
 
     results = solve(m)
-    check_optimal_termination(results)
     # display_results(m.fs)
 
     add_costing(m)
@@ -71,7 +70,6 @@ def main():
     m.fs.costing.initialize()
 
     results = solve(m)
-    check_optimal_termination(results)
 
     display_metrics_results(m)
     display_additional_results(m)
