@@ -203,7 +203,7 @@ class TestPumpIsothermal:
         assert pytest.approx(298.15, rel=1e-5) == value(
             m.fs.unit.control_volume.properties_out[0].temperature
         )
-        assert pytest.approx(1.05283e5, rel=1e-5) == value(
+        assert pytest.approx(9.9318e4, rel=1e-5) == value(
             m.fs.unit.control_volume.properties_out[0].enth_flow
         )
 
@@ -388,7 +388,7 @@ class TestPumpVariable_Flow:
         m = Pump_frame
 
         default_flow_vol = m.fs.unit.bep_flow()
-        assert pytest.approx(1.05283e5, rel=1e-5) == value(
+        assert pytest.approx(9.9318e4, rel=1e-5) == value(
             m.fs.unit.control_volume.properties_out[0].enth_flow
         )
         assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
