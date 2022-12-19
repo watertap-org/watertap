@@ -1345,8 +1345,8 @@ class SeawaterStateBlockData(StateBlockData):
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp[p, "TDS"]
-            s = S / 1000
+            S_kg_kg = b.mass_frac_phase_comp[p, "TDS"]
+            S_g_kg = S_kg_kg * 1000
             P = b.pressure - 101325 * pyunits.Pa
             P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
 
@@ -1356,24 +1356,24 @@ class SeawaterStateBlockData(StateBlockData):
                 + b.params.enth_mass_param_C3 * t**2
                 + b.params.enth_mass_param_C4 * t**3
             )
-            h_sw0 = h_w - s * (
+            h_sw0 = h_w - S_kg_kg * (
                 b.params.enth_mass_param_B1
-                + b.params.enth_mass_param_B2 * s
-                + b.params.enth_mass_param_B3 * s**2
-                + b.params.enth_mass_param_B4 * s**3
+                + b.params.enth_mass_param_B2 * S_kg_kg
+                + b.params.enth_mass_param_B3 * S_kg_kg**2
+                + b.params.enth_mass_param_B4 * S_kg_kg**3
                 + b.params.enth_mass_param_B5 * t
                 + b.params.enth_mass_param_B6 * t**2
                 + b.params.enth_mass_param_B7 * t**3
-                + b.params.enth_mass_param_B8 * s * t
-                + b.params.enth_mass_param_B9 * s**2 * t
-                + b.params.enth_mass_param_B10 * s * t**2
+                + b.params.enth_mass_param_B8 * S_kg_kg * t
+                + b.params.enth_mass_param_B9 * S_kg_kg**2 * t
+                + b.params.enth_mass_param_B10 * S_kg_kg * t**2
             )
             h_sw = h_sw0 + P_MPa * (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
                 + b.params.enth_mass_param_A3 * t**2
                 + b.params.enth_mass_param_A4 * t**3
-                + S
+                + S_g_kg
                 * (
                     +b.params.enth_mass_param_A5
                     + b.params.enth_mass_param_A6 * t
