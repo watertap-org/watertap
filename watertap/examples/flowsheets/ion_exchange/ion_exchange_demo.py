@@ -27,35 +27,33 @@ solver = get_solver()
 
 def main():
     target_ion = "Ca_2+"
-    # target_ion = "Na_+"
-    for target_ion in ["Ca_2+", "SO4_2-"]:
-        ions = [target_ion]
-        mass_frac = 1e-4
-        feed_mass_frac = {target_ion: mass_frac}
-        m = ix_build(ions)
-        set_operating_conditions(m, feed_mass_frac=feed_mass_frac)
-        initialize_system(m)
-        check_dof(m)
-        results = solver.solve(m)
-        assert_optimal_termination(results)
-        print(f"\nDOF = {degrees_of_freedom(m)}")
-        print(f"Model solve {results.solver.termination_condition.swapcase()}")
-        display_results(m)
+    ions = [target_ion]
+    mass_frac = 1e-4
+    feed_mass_frac = {target_ion: mass_frac}
+    m = ix_build(ions)
+    set_operating_conditions(m, feed_mass_frac=feed_mass_frac)
+    initialize_system(m)
+    check_dof(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    print(f"\nDOF = {degrees_of_freedom(m)}")
+    print(f"Model solve {results.solver.termination_condition.swapcase()}")
+    display_results(m)
 
-        optimize_system(m)
-        ix = m.fs.ion_exchange
-        num_col = np.ceil(
-            ix.number_columns()
-        )  # To eliminate fractional number of columns
-        bed_depth = ix.bed_depth()
-        ix.bed_depth.fix(bed_depth)
-        ix.number_columns.fix(num_col)
-        check_dof(m)
-        results = solver.solve(m)
-        assert_optimal_termination(results)
-        print(f"\nDOF = {degrees_of_freedom(m)}")
-        print(f"Model solve {results.solver.termination_condition.swapcase()}")
-        display_results(m)
+    optimize_system(m)
+    ix = m.fs.ion_exchange
+    num_col = np.ceil(
+        ix.number_columns()
+    )  # To eliminate fractional number of columns
+    bed_depth = ix.bed_depth()
+    ix.bed_depth.fix(bed_depth)
+    ix.number_columns.fix(num_col)
+    check_dof(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+    print(f"\nDOF = {degrees_of_freedom(m)}")
+    print(f"Model solve {results.solver.termination_condition.swapcase()}")
+    display_results(m)
 
 
 def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):

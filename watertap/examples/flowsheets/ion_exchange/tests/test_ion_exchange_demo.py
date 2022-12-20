@@ -208,14 +208,14 @@ class TestIXDemo:
         assert_optimal_termination(results)
         assert degrees_of_freedom(m) == 0
         assert value(m.fs.ion_exchange.number_columns) == 5
-        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.8795, abs=1e-4)
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.24567, abs=1e-4)
         assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
             1.10981, abs=1e-4
         )
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
-            0.0695, abs=0.0001
+            0.032097, abs=0.0001
         )
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.157, abs=0.001)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.160, abs=0.001)
 
     @pytest.mark.unit
     def test_main_fun(self):
