@@ -5,21 +5,18 @@ from pyomo.environ import (
     TransformationFactory,
     units as pyunits,
 )
+from pyomo.network import Arc
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, UnitModelCostingBlock
 from idaes.core.solvers.get_solver import get_solver
-from idaes.core.util.model_statistics import *  # model_statistics
-from idaes.core.util.scaling import *
-from idaes.core.util.testing import initialization_tester
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import set_scaling_factor, calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state
 from idaes.models.unit_models import Product, Feed
-from idaes.core import UnitModelCostingBlock
+
 from watertap.core.util.initialization import check_dof
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
-
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
-
-from watertap.core.util.infeasible import *
 from watertap.costing import WaterTAPCosting
 
 import numpy as np
@@ -31,20 +28,27 @@ solver = get_solver()
 def main():
     target_ion = "Ca_2+"
     # target_ion = "Na_+"
-    # for target_ion in ["Ca_2+", "SO4_2-"]:
-    ions = [target_ion]
-    mass_frac = 1e-4
-    feed_mass_frac = {target_ion: mass_frac}
-    m = ix_build(ions)
-    set_operating_conditions(m, feed_mass_frac=feed_mass_frac)
-    initialize_system(m)
-    check_dof(m)
-    results = solver.solve(m)
-    assert_optimal_termination(results)
-    report_statistics(m)
-    print(f"\nDOF = {degrees_of_freedom(m)}")
-    print(f"Model solve {results.solver.termination_condition.swapcase()}")
-    display_results(m)
+    for target_ion in ["Ca_2+", "SO4_2-"]:
+        ions = [target_ion]
+        mass_frac = 1e-4
+        feed_mass_frac = {target_ion: mass_frac}
+        m = ix_build(ions)
+        set_operating_conditions(m, feed_mass_frac=feed_mass_frac)
+        initialize_system(m)
+        check_dof(m)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+        print(f"\nDOF = {degrees_of_freedom(m)}")
+        print(f"Model solve {results.solver.termination_condition.swapcase()}")
+        display_results(m)
+
+        optimize_system(m)
+        check_dof(m)
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+        print(f"\nDOF = {degrees_of_freedom(m)}")
+        print(f"Model solve {results.solver.termination_condition.swapcase()}")
+        display_results(m)
 
 
 def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
@@ -214,7 +218,6 @@ def optimize_system(m):
     results = solver.solve(m)
     num_col = np.ceil(ix.number_columns())
     ix.number_columns.fix(num_col)
-    ix.initialize()
 
 
 def get_ion_config(ions):
