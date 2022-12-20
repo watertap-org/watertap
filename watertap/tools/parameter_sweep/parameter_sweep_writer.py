@@ -198,7 +198,7 @@ class ParameterSweepWriter:
             data_header = ",".join(itertools.chain(sweep_params))
             local_results = np.zeros(
                 (np.shape(local_values)[0], len(local_results_dict["outputs"])),
-                dtype=np.float64,
+                dtype=float,
             )
             for i, (key, item) in enumerate(local_results_dict["outputs"].items()):
                 data_header = ",".join([data_header, key])
