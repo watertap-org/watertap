@@ -205,18 +205,25 @@ def initialize_system(m):
 
 
 def optimize_system(m):
-
+    # Example of optimizing number of IX columns based on desired effluent equivalent concentration
     m.fs.obj = Objective(expr=m.fs.costing.LCOW)
     ix = m.fs.ion_exchange
-    ix.properties_out[0].conc_equiv_phase_comp["Liq", ix.config.target_ion].fix(0.5)
+    target_ion = m.fs.ion_exchange.config.target_ion
+    ix.properties_out[0].conc_equiv_phase_comp["Liq", target_ion].fix(0.5)
     propagate_state(m.fs.ix_to_product)
     propagate_state(m.fs.ix_to_regen)
     m.fs.product.initialize()
     m.fs.regen.initialize()
+
+    # To adjust solution to fixed-pattern to achieve desired effluent, must unfix dimensionless_time
     ix.dimensionless_time.unfix()
+    # Could also optimize around different design variables, e.g., bed_depth, service_flow_rate (or combinations of these)
     ix.number_columns.unfix()
-    results = solver.solve(m)
-    num_col = np.ceil(ix.number_columns())
+    ix.bed_depth.unfix()
+    solver.solve(ix)
+    num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
+    bed_depth = ix.bed_depth()
+    ix.bed_depth.fix(bed_depth)
     ix.number_columns.fix(num_col)
 
 
@@ -296,6 +303,9 @@ def display_results(m):
     )
     print(f'{"Water Vol. Recovery":<40s}{recovery:<40.2%}{"%":<40s}')
     print(f'{"Breakthrough Time [hr]":<40s}{ix.t_breakthru() / 3600:<40.3f}{"hr":<40s}')
+    print(f'{"Number Columns":<40s}{ix.number_columns():<40.2f}{"---":<40s}')
+    print(f'{"Column Vol.":<40s}{ix.col_vol_per():<40.2f}{"m3":<40s}')
+    print(f'{"Bed Depth":<40s}{ix.bed_depth():<40.2f}{"m":<40s}')
     for ion in ion_set:
         print(
             f'{f"Removal [{ion}]":<40s}{1 - prop_out.conc_mass_phase_comp[liq, ion]() / prop_in.conc_mass_phase_comp[liq, ion]():<40.4%}{"%":<40s}'
