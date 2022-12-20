@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.7.0dev",
+    version="0.8.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
