@@ -42,9 +42,7 @@ def main():
 
     optimize_system(m)
     ix = m.fs.ion_exchange
-    num_col = np.ceil(
-        ix.number_columns()
-    )  # To eliminate fractional number of columns
+    num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
     bed_depth = ix.bed_depth()
     ix.bed_depth.fix(bed_depth)
     ix.number_columns.fix(num_col)
