@@ -217,7 +217,8 @@ def optimize_system(m):
 
     # To adjust solution to fixed-pattern to achieve desired effluent, must unfix dimensionless_time
     ix.dimensionless_time.unfix()
-    # Could also optimize around different design variables, e.g., bed_depth, service_flow_rate (or combinations of these)
+    # Can optimize around different design variables, e.g., bed_depth, service_flow_rate (or combinations of these)
+    # Here demonstrates optimization around column design
     ix.number_columns.unfix()
     ix.bed_depth.unfix()
     solver.solve(ix)
