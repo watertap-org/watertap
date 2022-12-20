@@ -43,6 +43,13 @@ def main():
         display_results(m)
 
         optimize_system(m)
+        ix = m.fs.ion_exchange
+        num_col = np.ceil(
+            ix.number_columns()
+        )  # To eliminate fractional number of columns
+        bed_depth = ix.bed_depth()
+        ix.bed_depth.fix(bed_depth)
+        ix.number_columns.fix(num_col)
         check_dof(m)
         results = solver.solve(m)
         assert_optimal_termination(results)
@@ -77,6 +84,10 @@ def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
     ## Touch properties so they are available for initialization and arc propagation...
     feed.properties[0].flow_vol_phase[...]
     feed.properties[0].conc_equiv_phase_comp[...]
+    prod.properties[0].flow_vol_phase[...]
+    prod.properties[0].conc_equiv_phase_comp[...]
+    regen.properties[0].flow_vol_phase[...]
+    regen.properties[0].conc_equiv_phase_comp[...]
 
     # costing
     m.fs.ion_exchange.costing = UnitModelCostingBlock(
@@ -222,10 +233,10 @@ def optimize_system(m):
     ix.number_columns.unfix()
     ix.bed_depth.unfix()
     solver.solve(ix)
-    num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
-    bed_depth = ix.bed_depth()
-    ix.bed_depth.fix(bed_depth)
-    ix.number_columns.fix(num_col)
+    # num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
+    # bed_depth = ix.bed_depth()
+    # ix.bed_depth.fix(bed_depth)
+    # ix.number_columns.fix(num_col)
 
 
 def get_ion_config(ions):
