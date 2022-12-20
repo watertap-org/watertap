@@ -63,6 +63,8 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 
+from watertap.core.util.optimal_termination import optimal_termination
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -295,13 +297,7 @@ def build_flowsheet():
     # Solve overall flowsheet to close recycle loop
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m)
-
-    if not pyo.check_optimal_termination(results):
-        _log.warning(
-            "The solver failed to converge to an optimal solution."
-            "This suggests that the user provided infeasible inputs or that the model "
-            "is poorly scaled, poorly initialized, or degenerate. "
-        )
+    optimal_termination(results)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R3.KLa.fix(10)

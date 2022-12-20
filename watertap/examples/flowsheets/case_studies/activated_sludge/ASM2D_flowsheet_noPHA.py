@@ -47,6 +47,8 @@ from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
 
+from watertap.core.util.optimal_termination import optimal_termination
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -348,12 +350,7 @@ def build_flowsheet():
 
     solver = get_solver(options={"bound_push": 1e-4})
     results = solver.solve(m, tee=False)
-    if not pyo.check_optimal_termination(results):
-        _log.warning(
-            "The solver failed to converge to an optimal solution."
-            "This suggests that the user provided infeasible inputs or that the model "
-            "is poorly scaled, poorly initialized, or degenerate. "
-        )
+    optimal_termination(results)
 
     return m, results
 

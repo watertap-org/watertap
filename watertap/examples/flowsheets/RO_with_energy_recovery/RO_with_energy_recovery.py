@@ -46,6 +46,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.core.util.optimal_termination import optimal_termination
 from watertap.costing import WaterTAPCosting
 
 # Set up logger
@@ -346,13 +347,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    if check_termination:
-        if not check_optimal_termination(results):
-            _log.warning(
-                "The solver failed to converge to an optimal solution."
-                "This suggests that the user provided infeasible inputs or that the model "
-                "is poorly scaled, poorly initialized, or degenerate. "
-            )
+    optimal_termination(results)
     return results
 
 

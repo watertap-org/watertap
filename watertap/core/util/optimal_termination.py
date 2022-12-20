@@ -11,8 +11,11 @@
 #
 ###############################################################################
 
-import pyomo.environ as pyo
 from pyomo.environ import check_optimal_termination
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def optimal_termination(self):
@@ -20,5 +23,5 @@ def optimal_termination(self):
         _log.warning(
             "The solver failed to converge to an optimal solution."
             "This suggests that the user provided infeasible inputs or that the model "
-            "is poorly scaled, poorly initialized, or degenerate. "
+            "is poorly scaled, poorly initialized, or degenerate."
         )

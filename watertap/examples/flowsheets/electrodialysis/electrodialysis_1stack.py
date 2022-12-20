@@ -33,6 +33,7 @@ from pandas import DataFrame
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.core.util.initialization import check_dof
+from watertap.core.util.optimal_termination import optimal_termination
 from watertap.unit_models.electrodialysis_1D import Electrodialysis1D
 
 from watertap.costing import WaterTAPCosting
@@ -228,13 +229,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=True)
-    if check_termination:
-        if not check_optimal_termination(results):
-            _log.warning(
-                "The solver failed to converge to an optimal solution."
-                "This suggests that the user provided infeasible inputs or that the model "
-                "is poorly scaled, poorly initialized, or degenerate. "
-            )
+    optimal_termination(results)
     return results
 
 
