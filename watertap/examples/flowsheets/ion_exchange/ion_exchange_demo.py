@@ -1,15 +1,7 @@
 from pyomo.environ import (
     ConcreteModel,
     Objective,
-    Expression,
-    value,
-    Var,
-    Param,
-    Constraint,
-    Set,
     assert_optimal_termination,
-    check_optimal_termination,
-    Block,
     TransformationFactory,
     units as pyunits,
 )
@@ -29,6 +21,8 @@ from watertap.unit_models.ion_exchange_0D import IonExchange0D
 
 from watertap.core.util.infeasible import *
 from watertap.costing import WaterTAPCosting
+
+import numpy as np
 
 
 solver = get_solver()
@@ -204,6 +198,23 @@ def initialize_system(m):
     m.fs.regen.initialize()
     m.fs.product.initialize()
     m.fs.costing.initialize()
+
+
+def optimize_system(m):
+
+    m.fs.obj = Objective(expr=m.fs.costing.LCOW)
+    ix = m.fs.ion_exchange
+    ix.properties_out[0].conc_equiv_phase_comp["Liq", ix.config.target_ion].fix(0.5)
+    propagate_state(m.fs.ix_to_product)
+    propagate_state(m.fs.ix_to_regen)
+    m.fs.product.initialize()
+    m.fs.regen.initialize()
+    ix.dimensionless_time.unfix()
+    ix.number_columns.unfix()
+    results = solver.solve(m)
+    num_col = np.ceil(ix.number_columns())
+    ix.number_columns.fix(num_col)
+    ix.initialize()
 
 
 def get_ion_config(ions):
