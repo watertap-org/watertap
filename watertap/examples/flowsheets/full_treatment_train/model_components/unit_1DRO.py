@@ -71,6 +71,7 @@ def build_RO(m, base="TDS", level="simple", name_str="RO"):
         blk.B_comp.fix(3.5e-8)
         blk.mixed_permeate[0].pressure.fix(101325)
         blk.feed_side.channel_height.fix(1e-3)
+        blk.feed_side.channel_length.fix(1)
         blk.feed_side.spacer_porosity.fix(0.97)
         blk.feed_side.N_Re[0, 0].fix(500)
 

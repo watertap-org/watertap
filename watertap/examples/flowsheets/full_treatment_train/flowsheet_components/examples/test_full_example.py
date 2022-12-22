@@ -38,12 +38,12 @@ def test_flowsheet_mvp_NF_bypass_twostage_1():
     ) == pytest.approx(1.669e-4, rel=1e-3)
     assert value(
         m.fs.RO2.retentate.flow_mass_phase_comp[0, "Liq", "H2O"]
-    ) == pytest.approx(0.2408, rel=1e-3)
+    ) == pytest.approx(0.3113, rel=1e-3)
     assert value(
         m.fs.RO2.retentate.flow_mass_phase_comp[0, "Liq", "TDS"]
     ) == pytest.approx(2.605e-2, rel=1e-3)
     assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(
-        0.4082, rel=1e-3
+        0.3730, rel=1e-3
     )
 
 
@@ -64,4 +64,4 @@ def test_flowsheet_mvp_cost_optimization():
     assert value(
         m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
     ) == pytest.approx(0.6778, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5569, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.6262, rel=1e-3)

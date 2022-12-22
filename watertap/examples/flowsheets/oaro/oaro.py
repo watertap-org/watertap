@@ -296,8 +296,10 @@ def set_operating_conditions(
     m.fs.OARO.structural_parameter.fix(300e-6)
 
     m.fs.OARO.permeate_side.channel_height.fix(0.001)
+    m.fs.OARO.permeate_side.channel_length.fix(1)
     m.fs.OARO.permeate_side.spacer_porosity.fix(0.75)
     m.fs.OARO.feed_side.channel_height.fix(0.002)
+    m.fs.OARO.feed_side.channel_length.fix(1)
     m.fs.OARO.feed_side.spacer_porosity.fix(0.75)
     m.fs.OARO.feed_side.velocity[0, 0].fix(0.1)
 
@@ -305,6 +307,7 @@ def set_operating_conditions(
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    m.fs.RO.feed_side.channel_length.fix(1)  # distance from RO module entrance [m]
     m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # stage width [m]

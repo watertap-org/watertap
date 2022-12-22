@@ -29,6 +29,7 @@ previously fixed variables, we typically fix the following variables to fully sp
 
     * feed-spacer porosity
     * feed-channel height
+    * feed-channel length
     * membrane length *or* membrane width *or* inlet Reynolds number
 
 Model Structure
@@ -100,6 +101,7 @@ or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Feed-channel height", ":math:`h_{ch}`", "feed_side.channel_height", "None", ":math:`\text{m}`"
+   "Feed-channel length", ":math:`x_{ch}`", "feed_side.channel_length", "None", ":math:`\text{m}`"
    "Hydraulic diameter", ":math:`d_h`", "feed_side.dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp}`", "feed_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
    "Reynolds number", ":math:`Re`", "feed_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"

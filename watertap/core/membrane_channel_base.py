@@ -575,8 +575,8 @@ class MembraneChannelMixin:
         )
 
         self.channel_length = Var(
-            initialize=1e1,
-            bounds=(1e-1, 1e4),
+            initialize=1,
+            bounds=(1e-2, 1e2),
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="membrane-channel length",
@@ -857,7 +857,7 @@ class MembraneChannelMixin:
 
         if hasattr(self, "channel_length"):
             if iscale.get_scaling_factor(self.channel_length) is None:
-                iscale.set_scaling_factor(self.channel_length, 1e-1)
+                iscale.set_scaling_factor(self.channel_length, 1)
 
         if hasattr(self, "spacer_porosity"):
             if iscale.get_scaling_factor(self.spacer_porosity) is None:
