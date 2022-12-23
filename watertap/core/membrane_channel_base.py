@@ -525,7 +525,7 @@ class MembraneChannelMixin:
             self.config.property_package.solute_set,
             doc="Sherwood number",
         )
-        def eq__comp(b, t, x, j):
+        def eq_N_Sh_comp(b, t, x, j):
             return (
                 b.N_Sh_comp[t, x, j]
                 == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
