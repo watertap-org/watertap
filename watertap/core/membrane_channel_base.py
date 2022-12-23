@@ -74,6 +74,16 @@ class PressureChangeType(Enum):
     calculated = auto()
 
 
+class SherwoodNumberEq(Enum):
+    """
+    new: Sherwood number relationship depicted in https://doi.org/10.1016/j.seppur.2022.122121v
+    old: Sherwood numberr relationship depicted in Guillen and Hoek (2009)
+    """
+
+    new = auto()
+    old = auto()
+
+
 CONFIG_Template = ConfigDict()
 
 CONFIG_Template.declare(
@@ -259,6 +269,26 @@ CONFIG_Template.declare(
         "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
         "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
         "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+    """,
+    ),
+)
+
+CONFIG_Template.declare(
+    "sherwood_number_eq",
+    ConfigValue(
+        default=SherwoodNumberEq.new,
+        domain=In(SherwoodNumberEq),
+        description="Sherwood number relationship",
+        doc="""
+        Options to account for Sherwood number relationships.
+
+        **default** - ``SherwoodNumberEq.new``
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``SherwoodNumberEq.new``", "Sherwood number relationship that considers length"
+        "``SherwoodNumberEq.old``", "Sherwood number relationship that does not consider length"
     """,
     ),
 )
@@ -519,9 +549,13 @@ class MembraneChannelMixin:
             self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
         )
         def eq_N_Sh(b, t, x):
-            return b.N_Sh[t, x] == 2.401 * ((b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297) * (
-                (b.channel_length / b.dh) ** -0.279
-            )
+            if sherwood_number_eq == SherwoodNumberEq.new:
+                return b.N_Sh[t, x] == 2.401 * (
+                    (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297
+                ) * ((b.channel_length / b.dh) ** -0.279)
+
+            if sherwood_number_eq == SherwoodNumberEq.old:
+                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
 
         @self.Constraint(
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
