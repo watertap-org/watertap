@@ -110,8 +110,8 @@ if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated`
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Schmidt number", ":math:`Sc`", "feed_side.N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
-   "Sherwood number", ":math:`Sh`", "feed_side.N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
+   "Schmidt number", ":math:`Sc`", "feed_side.N_Sc_comp", "[t, x, j]", ":math:`\text{dimensionless}`"
+   "Sherwood number", ":math:`Sh`", "feed_side.N_Sh_comp", "[t, x, j]", ":math:`\text{dimensionless}`"
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
 or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
