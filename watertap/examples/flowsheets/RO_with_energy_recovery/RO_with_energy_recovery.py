@@ -181,62 +181,6 @@ def build(erd_type=ERDtype.pressure_exchanger):
     )
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.P1.control_volume.properties_in[0].pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.P1.control_volume.properties_out[0].pressure, 1e-5)
-    iscale.set_scaling_factor(
-        m.fs.P1.control_volume.properties_in[0].enth_mass_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.P1.control_volume.properties_out[0].enth_mass_phase["Liq"], 1e-4
-    )
-    iscale.set_scaling_factor(m.fs.P1.costing.capital_cost, 1e-5)
-
-    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_in[0].pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.properties_out[0].pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.RO.mixed_permeate[0].pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.RO.B_comp[0, "NaCl"], 1e8)
-    iscale.set_scaling_factor(m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "H2O"], 1e4)
-    iscale.set_scaling_factor(m.fs.RO.flux_mass_phase_comp[0, 0, "Liq", "NaCl"], 1e6)
-    iscale.set_scaling_factor(m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"], 1e4)
-    iscale.set_scaling_factor(m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "NaCl"], 1e6)
-    iscale.set_scaling_factor(m.fs.RO.mass_transfer_phase_comp[0, "Liq", "NaCl"], 1e4)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.dP_dx[0, 0], 1e-4)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.dP_dx[0, 1], 1e-4)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.area, 1e4)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.K[0, 0, "NaCl"], 1e5)
-    iscale.set_scaling_factor(m.fs.RO.feed_side.K[0, 1, "NaCl"], 1e5)
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_in[0].diffus_phase_comp["Liq", "NaCl"], 1e9
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_out[0].diffus_phase_comp["Liq", "NaCl"], 1e9
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_in[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_out[0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_interface[0, 0].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_interface[0, 1].pressure_osm_phase["Liq"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_interface[0, 0].pressure, 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.RO.feed_side.properties_interface[0, 1].pressure, 1e-6
-    )
-
-    iscale.set_scaling_factor(m.fs.feed.properties[0].pressure, 1e-5)
-
-    iscale.set_scaling_factor(m.fs.product.properties[0].pressure, 1e-5)
-
-    iscale.set_scaling_factor(m.fs.disposal.properties[0].pressure, 1e-5)
-
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
     if erd_type == ERDtype.pressure_exchanger:
@@ -252,23 +196,6 @@ def build(erd_type=ERDtype.pressure_exchanger):
         erd_type_not_found(erd_type)
     # unused scaling factors needed by IDAES base costing module
     # calculate and propagate scaling factors
-
-    from idaes.core.util.scaling import (
-        unscaled_constraints_generator,
-        unscaled_variables_generator,
-        badly_scaled_var_generator,
-    )
-
-    print("\nUnscaled Constraints")
-    for i in unscaled_constraints_generator(m):
-        print(i)
-    print("\nUnscaled Vars")
-    for i in unscaled_variables_generator(m):
-        print(i)
-    print("\nBadly Scaled Vars")
-    for i in badly_scaled_var_generator(m):
-        print(i[0], i[1])
-
     iscale.calculate_scaling_factors(m)
 
     return m
