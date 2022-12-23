@@ -49,6 +49,7 @@ from watertap.unit_models.reverse_osmosis_1D import (
     PressureChangeType,
 )
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
+from watertap.core.membrane_channel_base import SherwoodNumberEq
 from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
@@ -214,6 +215,7 @@ def build(
         property_package=m.fs.properties,
         has_pressure_change=has_calculated_ro_pressure_drop,
         pressure_change_type=pressure_change_type,
+        sherwood_number_eq=SherwoodNumberEq.old,
         mass_transfer_coefficient=kf_type,
         concentration_polarization_type=cp_type,
         transformation_scheme="BACKWARD",
@@ -584,7 +586,6 @@ def set_operating_conditions(m, Cin=None):
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
-    length = 1  # distance from RO module entrance [m]
     spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
     width = 5  # effective membrane width [m]
     area = 100  # membrane area [m^2]
@@ -634,7 +635,6 @@ def set_operating_conditions(m, Cin=None):
         stage.area.fix(area / float(idx))
         stage.width.fix(width)
         stage.mixed_permeate[0].pressure.fix(pressure_atm)
-        stage.feed_side.channel_length.fix(length)
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or stage.config.pressure_change_type == PressureChangeType.calculated:

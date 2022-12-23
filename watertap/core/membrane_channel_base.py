@@ -298,6 +298,9 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
+    def _add_sherwood_number(self, sherwood_number_eq=SherwoodNumberEq.new):
+        raise NotImplementedError()
+
     def _skip_element(self, x):
         raise NotImplementedError()
 
@@ -508,7 +511,9 @@ class MembraneChannelMixin:
                 return sum(b.K[t, x, j] for x in self.difference_elements) / self.nfe
 
     ## should be called by add concentration polarization
-    def _add_calculated_mass_transfer_coefficient(self):
+    def _add_calculated_mass_transfer_coefficient(
+        self, sherwood_number_eq=SherwoodNumberEq.new
+    ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
         self.N_Sc = Var(
@@ -545,17 +550,23 @@ class MembraneChannelMixin:
                 == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh[t, x]
             )
 
-        @self.Constraint(
-            self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
-        )
-        def eq_N_Sh(b, t, x):
-            if b.config.sherwood_number_eq == SherwoodNumberEq.old:
-                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
+        if sherwood_number_eq == SherwoodNumberEq.new:
 
-            else:
+            @self.Constraint(
+                self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
+            )
+            def eq_N_Sh(b, t, x):
                 return b.N_Sh[t, x] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297
                 ) * ((b.channel_length / b.dh) ** -0.279)
+
+        if sherwood_number_eq == SherwoodNumberEq.old:
+
+            @self.Constraint(
+                self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
+            )
+            def eq_N_Sh(b, t, x):
+                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
 
         @self.Constraint(
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
