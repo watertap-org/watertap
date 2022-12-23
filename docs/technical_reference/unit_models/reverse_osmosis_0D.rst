@@ -156,7 +156,7 @@ Equations
    "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
    "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
    "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
-   "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
+   "Sherwood number",":math:`Sh = 2.401(Re Sc)^{0.297}(\frac{x}{d_h})^{-0.279}`"
    "Schmidt number",":math:`Sc = \frac{\mu}{\rho D}`"
    "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
    "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
