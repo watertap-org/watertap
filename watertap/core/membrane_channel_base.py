@@ -77,7 +77,7 @@ class PressureChangeType(Enum):
 class SherwoodNumberEq(Enum):
     """
     new: Sherwood number relationship depicted in https://doi.org/10.1016/j.seppur.2022.122121v
-    old: Sherwood numberr relationship depicted in Guillen and Hoek (2009)
+    old: Sherwood number relationship depicted in Guillen and Hoek (2009)
     """
 
     new = auto()
@@ -549,13 +549,13 @@ class MembraneChannelMixin:
             self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
         )
         def eq_N_Sh(b, t, x):
-            if sherwood_number_eq == SherwoodNumberEq.new:
+            if b.config.sherwood_number_eq == SherwoodNumberEq.old:
+                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
+
+            else:
                 return b.N_Sh[t, x] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297
                 ) * ((b.channel_length / b.dh) ** -0.279)
-
-            if sherwood_number_eq == SherwoodNumberEq.old:
-                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
 
         @self.Constraint(
             self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
