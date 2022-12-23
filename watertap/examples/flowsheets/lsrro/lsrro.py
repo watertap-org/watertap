@@ -133,7 +133,7 @@ def run_lsrro_case(
         display_state(m)
         display_RO_reports(m)
 
-        return m, res
+    return m, res
 
 
 def build(
