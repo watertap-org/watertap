@@ -63,7 +63,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 12
+    assert len(m.fs.unit.config) == 13
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
