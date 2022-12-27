@@ -22,30 +22,16 @@ from pyomo.environ import (
 )
 from pyomo.network import Port
 
-from idaes.core import (
-    FlowsheetBlock,
-    UnitModelCostingBlock,
-    MaterialBalanceType,
-    MomentumBalanceType,
-)
+from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.initialization import propagate_state
-from idaes.core.util.model_statistics import degrees_of_freedom, report_statistics
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import Feed, Product
-from pandas import DataFrame
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 from watertap.unit_models.ion_exchange_0D import (
     IonExchange0D,
     IonExchangeType,
     RegenerantChem,
 )
-from watertap.core.util.initialization import (
-    assert_no_degrees_of_freedom,
-    assert_degrees_of_freedom,
-)
-
-from watertap.costing import WaterTAPCosting
 from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
 
 import watertap.examples.flowsheets.ion_exchange.ion_exchange_demo as ixf
