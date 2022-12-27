@@ -113,7 +113,7 @@ class TestIXDemo:
 
         assert m.fs.ion_exchange.config.property_package is m.fs.properties
         assert "H2O" in m.fs.properties.component_list
-    
+
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_specific_operating_conditions(self, ix_0D):
