@@ -22,7 +22,7 @@ from pyomo.environ import (
     Param,
     TransformationFactory,
     units as pyunits,
-    check_optimal_termination,
+    assert_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -45,8 +45,7 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.core.util.optimal_termination import optimal_termination
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 from watertap.costing import WaterTAPCosting
 
 # Set up logger
@@ -339,15 +338,16 @@ def calculate_operating_pressure(
     t.brine[0].pressure_osm_phase
     # solve state block
     results = solve_indexed_blocks(solver, [t.brine])
+    assert_optimal_termination(results)
 
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint="solve", tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 
@@ -492,9 +492,9 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 1)
 
 
-def optimize(m, solver=None, check_termination=True):
+def optimize(m, solver=None, checkpoint="optimize", tee=False, fail_flag=True):
     # --solve---
-    return solve(m, solver=solver, check_termination=check_termination)
+    return solve(m, solver=solver, checkpoint=checkpoint, tee=tee, fail_flag=fail_flag)
 
 
 def display_system(m):
