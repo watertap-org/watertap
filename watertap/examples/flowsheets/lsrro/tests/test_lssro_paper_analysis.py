@@ -74,7 +74,7 @@ _test_cases = [
 ]
 
 # comment out this line if you want to run the entire baseline
-# _test_cases = get_test_cases_subset(_test_cases)
+_test_cases = get_test_cases_subset(_test_cases)
 
 
 @pytest.mark.parametrize("csv_file, row_index", _test_cases)
