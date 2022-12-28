@@ -91,6 +91,7 @@ def run_lsrro_case(
     has_NaCl_solubility_limit=None,
     has_calculated_concentration_polarization=None,
     has_calculated_ro_pressure_drop=None,
+    has_calculated_mass_transfer=None,
     permeate_quality_limit=None,
     AB_gamma_factor=None,
     B_max=None,
@@ -101,6 +102,7 @@ def run_lsrro_case(
         has_NaCl_solubility_limit,
         has_calculated_concentration_polarization,
         has_calculated_ro_pressure_drop,
+        has_calculated_mass_transfer,
         number_of_RO_finite_elements,
         B_max,
     )
@@ -141,6 +143,7 @@ def build(
     has_NaCl_solubility_limit=True,
     has_calculated_concentration_polarization=True,
     has_calculated_ro_pressure_drop=True,
+    has_calculated_mass_transfer=True,
     number_of_RO_finite_elements=10,
     B_max=None,
 ):
@@ -205,6 +208,9 @@ def build(
     else:
         pressure_change_type = PressureChangeType.fixed_per_stage
 
+    if has_calculated_mass_transfer:
+        sherwood_number_eq = SherwoodNumberEq.old
+
     if has_calculated_concentration_polarization:
         cp_type = ConcentrationPolarizationType.calculated
         kf_type = MassTransferCoefficient.calculated
@@ -217,7 +223,7 @@ def build(
         property_package=m.fs.properties,
         has_pressure_change=has_calculated_ro_pressure_drop,
         pressure_change_type=pressure_change_type,
-        sherwood_number_eq=SherwoodNumberEq.old,
+        sherwood_number_eq=sherwood_number_eq,
         mass_transfer_coefficient=kf_type,
         concentration_polarization_type=cp_type,
         transformation_scheme="BACKWARD",
@@ -588,6 +594,7 @@ def set_operating_conditions(m, Cin=None):
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
+    length = 1  # distance from RO module entrance [m]
     spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
     width = 5  # effective membrane width [m]
     area = 100  # membrane area [m^2]
@@ -637,6 +644,7 @@ def set_operating_conditions(m, Cin=None):
         stage.area.fix(area / float(idx))
         stage.width.fix(width)
         stage.mixed_permeate[0].pressure.fix(pressure_atm)
+        stage.feed_side.channel_length.fix(length)
         if (
             stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ) or stage.config.pressure_change_type == PressureChangeType.calculated:

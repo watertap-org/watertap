@@ -62,7 +62,7 @@ class ReverseOsmosisData(ReverseOsmosisBaseData):
         if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
             self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
         ):
-            self._add_length_and_width()  # Does this need to be changed to just width?
+            self._add_length_and_width()
             self.feed_side.add_geometry(length_var=self.length, width_var=self.width)
             self._add_area(include_constraint=True)
         else:

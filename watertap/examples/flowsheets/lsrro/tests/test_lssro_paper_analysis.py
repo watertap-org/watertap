@@ -93,6 +93,7 @@ def test_against_paper_analysis(csv_file, row_index):
         permeate_quality_limit=1000e-6,
         has_calculated_concentration_polarization=True,
         has_calculated_ro_pressure_drop=True,
+        has_calculated_mass_transfer=True,
         A_value=5 / 3.6e11,
         B_max=None,
         number_of_RO_finite_elements=10
