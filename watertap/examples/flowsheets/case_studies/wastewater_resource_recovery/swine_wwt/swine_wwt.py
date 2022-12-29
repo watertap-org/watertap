@@ -14,12 +14,10 @@ import os
 import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
-    Set,
     Expression,
     value,
     TransformationFactory,
     units as pyunits,
-    check_optimal_termination,
     Block,
 )
 from pyomo.network import Arc, SequentialDecomposition
@@ -31,8 +29,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.core.util.optimal_termination import optimal_termination
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -63,14 +60,14 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m)
-    # display_results(m.fs)
+    results = solve(m, checkpoint="initialize system")
+    display_results(m)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m)
+    results = solve(m, checkpoint="solve flowsheet")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -213,7 +210,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_po4)
     m.fs.feed.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="set feed operating conditions")
 
     # anaerobic fermentation and MEC
     m.fs.mbr_mec.load_parameters_from_database(use_default_removal=True)
@@ -228,7 +225,7 @@ def set_operating_conditions(m):
     m.fs.food_waste.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "phosphates"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.food_waste)
+    solve(m.fs.food_waste, checkpoint="set food waste operating conditions")
 
     # cofermentation
     m.fs.cofermentation.load_parameters_from_database(use_default_removal=True)
@@ -255,11 +252,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 

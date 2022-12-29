@@ -63,7 +63,7 @@ from watertap.property_models.activated_sludge.asm1_reactions import (
     ASM1ReactionParameterBlock,
 )
 
-from watertap.core.util.optimal_termination import optimal_termination
+from watertap.core.util.initialization import check_solve
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -297,7 +297,7 @@ def build_flowsheet():
     # Solve overall flowsheet to close recycle loop
     solver = get_solver(options={"bound_push": 1e-8})
     results = solver.solve(m)
-    optimal_termination(results)
+    check_solve(results, checkpoint="closing recycle", logger=_log, fail_flag=True)
 
     # Switch to fixed KLa in R3 and R4 (S_O concentration is controlled in R5)
     m.fs.R3.KLa.fix(10)
@@ -307,6 +307,7 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=True)
+    check_solve(results, checkpoint="controls in place", logger=_log, fail_flag=True)
 
     return m, results
 

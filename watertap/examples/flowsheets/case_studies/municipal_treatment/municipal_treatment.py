@@ -15,7 +15,6 @@ from pyomo.environ import (
     value,
     TransformationFactory,
     units as pyunits,
-    check_optimal_termination,
 )
 import idaes.logger as idaeslog
 from pyomo.network import Arc, SequentialDecomposition
@@ -27,8 +26,7 @@ from idaes.models.unit_models import Product
 import idaes.core.util.scaling as iscale
 from idaes.core import UnitModelCostingBlock
 
-from watertap.core.util.initialization import assert_degrees_of_freedom
-from watertap.core.util.optimal_termination import optimal_termination
+from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
@@ -62,7 +60,7 @@ def main():
 
     initialize_system(m)  # initialization needed for ozone unit
 
-    results = solve(m)
+    results = solve(m, checkpoint="initialize system")
     display_results(m)
 
     add_costing(m)
@@ -70,7 +68,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m)
+    results = solve(m, checkpoint="solve flowsheet")
     display_costing(m)
     return m, results
 
@@ -151,7 +149,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
     m.fs.feed.conc_mass_comp[0, "toc"].fix(conc_mass_toc)
-    solve(m.fs.feed)
+    solve(m.fs.feed, checkpoint="set operating conditions")
 
     # intake pump
     m.fs.intake_pump.load_parameters_from_database()
@@ -204,11 +202,11 @@ def initialize_system(m):
     seq.run(m, lambda u: u.initialize())
 
 
-def solve(blk, solver=None, tee=False, check_termination=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    optimal_termination(results)
+    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 

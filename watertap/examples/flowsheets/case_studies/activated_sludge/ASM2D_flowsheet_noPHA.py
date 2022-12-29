@@ -31,7 +31,7 @@ from idaes.models.unit_models import (
 )
 from idaes.models.unit_models.separator import SplittingType
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.tables import (
@@ -47,7 +47,7 @@ from watertap.property_models.activated_sludge.asm2d_reactions import (
     ASM2dReactionParameterBlock,
 )
 
-from watertap.core.util.optimal_termination import optimal_termination
+from watertap.core.util.initialization import check_solve
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -350,7 +350,7 @@ def build_flowsheet():
 
     solver = get_solver(options={"bound_push": 1e-4})
     results = solver.solve(m, tee=False)
-    optimal_termination(results)
+    check_solve(results, logger=_log, fail_flag=True)
 
     return m, results
 

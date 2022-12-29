@@ -343,7 +343,7 @@ def calculate_operating_pressure(
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, checkpoint="solve", tee=False, fail_flag=True):
+def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
