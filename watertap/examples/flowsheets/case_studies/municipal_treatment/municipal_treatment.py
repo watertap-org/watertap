@@ -60,7 +60,7 @@ def main():
 
     initialize_system(m)  # initialization needed for ozone unit
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
@@ -68,7 +68,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet with costing")
     display_costing(m)
     return m, results
 
@@ -149,7 +149,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
     m.fs.feed.conc_mass_comp[0, "toc"].fix(conc_mass_toc)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # intake pump
     m.fs.intake_pump.load_parameters_from_database()

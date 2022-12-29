@@ -50,14 +50,16 @@ def main():
     m = build()
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
-    solve(m, solver=solver, checkpoint="initialize system")
+    solve(m, solver=solver, checkpoint="solve flowsheet after initializing system")
 
     print("\n***---Simulation results---***")
     display_model_metrics(m)
 
     # Perform an optimization over selected variables
     initialize_system(m, solver=solver)
-    optimize_system(m, solver=solver, checkpoint="optimize system")
+    optimize_system(
+        m, solver=solver, checkpoint="solve flowsheet after optimizing system"
+    )
     print("\n***---Optimization results---***")
     display_model_metrics(m)
 

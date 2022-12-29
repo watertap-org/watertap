@@ -53,14 +53,14 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
 
     display_results(m)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
 
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_costing(m)
     return m, results
@@ -119,7 +119,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # nanofiltration
     dye_sep.nanofiltration.load_parameters_from_database(use_default_removal=True)

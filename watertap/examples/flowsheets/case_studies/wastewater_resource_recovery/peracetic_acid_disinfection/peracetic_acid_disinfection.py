@@ -56,7 +56,7 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
@@ -64,7 +64,7 @@ def main():
 
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet after costing")
     display_costing(m)
 
     return m, results
@@ -119,7 +119,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "peracetic_acid"].fix(conc_mass_PAA)
     m.fs.feed.conc_mass_comp[0, "total_coliforms_fecal_ecoli"].fix(conc_mass_ecoli)
 
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.PAA.load_parameters_from_database(use_default_removal=True)
 

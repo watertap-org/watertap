@@ -11,7 +11,6 @@
 #
 ###############################################################################
 import os
-import idaes.logger as idaeslog
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -45,11 +44,8 @@ from watertap.unit_models.reverse_osmosis_0D import (
 )
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
+from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 
 class ERDtype(StrEnum):
@@ -304,7 +300,6 @@ def calculate_operating_pressure(
 ):
     """
     estimate operating pressure for RO unit model given the following arguments:
-
     Arguments:
         feed_state_block:   the state block of the RO feed that has the non-pressure state
                             variables initialized to their values (default=None)
@@ -343,11 +338,12 @@ def calculate_operating_pressure(
     return value(t.brine[0].pressure_osm_phase["Liq"]) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 
@@ -492,9 +488,9 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 1)
 
 
-def optimize(m, solver=None, checkpoint="optimize", tee=False, fail_flag=True):
+def optimize(m, solver=None, check_termination=True):
     # --solve---
-    return solve(m, solver=solver, checkpoint=checkpoint, tee=tee, fail_flag=fail_flag)
+    return solve(m, solver=solver, check_termination=check_termination)
 
 
 def display_system(m):

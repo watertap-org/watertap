@@ -81,12 +81,12 @@ def solve_flowsheet(flowsheet=None):
     m = flowsheet.parent_block()  # UI block is 'm.fs' but funcs below use 'm'
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="initialize system")
+    solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
-    solve(m, checkpoint="solve flowsheet")
+    solve(m, checkpoint="solve flowsheet with costing")
 
 
 def main(erd_type="pressure_exchanger"):
@@ -99,14 +99,14 @@ def main(erd_type="pressure_exchanger"):
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, checkpoint=f" initialize {erd_type} system")
+    solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system")
     display_results(m)
 
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, tee=True, checkpoint=f" solve {erd_type} flowsheet")
+    solve(m, tee=True, checkpoint=f" solve {erd_type} flowsheet with costing")
     display_costing(m)
 
     return m
@@ -370,7 +370,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     m.fs.tb_prtrt_desal.properties_out[0].temperature.fix(temperature)
     m.fs.tb_prtrt_desal.properties_out[0].pressure.fix(pressure)
@@ -489,12 +489,12 @@ def initialize_system(m):
     psttrt = m.fs.posttreatment
 
     # initialize feed
-    solve(m.fs.feed, checkpoint="initialize feed")
+    solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
     # initialize pretreatment
     propagate_state(m.fs.s_feed)
     flags = fix_state_vars(prtrt.intake.properties)
-    solve(prtrt, checkpoint="initialize pre-treatment")
+    solve(prtrt, checkpoint="solve flowsheet after initializing pre-treatment")
     revert_state_vars(prtrt.intake.properties, flags)
 
     # initialize desalination
@@ -523,11 +523,17 @@ def initialize_system(m):
     propagate_state(m.fs.s_tb_desal)
     if m.erd_type == "pressure_exchanger":
         flags = fix_state_vars(desal.S1.mixed_state)
-        solve(desal, checkpoint=f"initialize {m.erd_type} desalination")
+        solve(
+            desal,
+            checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
+        )
         revert_state_vars(desal.S1.mixed_state, flags)
     elif m.erd_type == "pump_as_turbine":
         flags = fix_state_vars(desal.P1.control_volume.properties_in)
-        solve(desal, checkpoint=f"initialize {m.erd_type} desalination")
+        solve(
+            desal,
+            checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
+        )
         revert_state_vars(desal.P1.control_volume.properties_in, flags)
 
     # initialize posttreatment
@@ -541,7 +547,7 @@ def initialize_system(m):
 
     propagate_state(m.fs.s_tb_psttrt)
     flags = fix_state_vars(psttrt.storage_tank_2.properties)
-    solve(psttrt, checkpoint="initialize post-treatment")
+    solve(psttrt, checkpoint="solve flowsheet after initializing post-treatment")
     revert_state_vars(psttrt.storage_tank_2.properties, flags)
 
 

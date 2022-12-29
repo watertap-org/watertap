@@ -413,7 +413,12 @@ def build_flowsheet():
 
     # Resolve with controls in place
     results = solver.solve(m, tee=False)
-    check_solve(results, checkpoint="controls in place", logger=_log, fail_flag=True)
+    check_solve(
+        results,
+        checkpoint="re-solve with controls in place",
+        logger=_log,
+        fail_flag=True,
+    )
 
     return m, results
 

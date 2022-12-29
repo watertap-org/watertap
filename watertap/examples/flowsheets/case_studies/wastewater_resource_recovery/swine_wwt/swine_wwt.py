@@ -60,14 +60,14 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
     assert_degrees_of_freedom(m, 0)
     m.fs.costing.initialize()
 
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -210,7 +210,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(conc_mass_nh4)
     m.fs.feed.conc_mass_comp[0, "phosphates"].fix(conc_mass_po4)
     m.fs.feed.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.feed, checkpoint="set feed operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # anaerobic fermentation and MEC
     m.fs.mbr_mec.load_parameters_from_database(use_default_removal=True)
@@ -225,7 +225,7 @@ def set_operating_conditions(m):
     m.fs.food_waste.conc_mass_comp[0, "ammonium_as_nitrogen"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "phosphates"].fix(1e-8)
     m.fs.food_waste.conc_mass_comp[0, "nonbiodegradable_cod"].fix(1e-8)
-    solve(m.fs.food_waste, checkpoint="set food waste operating conditions")
+    solve(m.fs.food_waste, checkpoint="solve food waste block")
 
     # cofermentation
     m.fs.cofermentation.load_parameters_from_database(use_default_removal=True)

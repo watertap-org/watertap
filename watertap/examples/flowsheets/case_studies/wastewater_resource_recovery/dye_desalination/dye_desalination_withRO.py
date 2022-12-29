@@ -76,7 +76,7 @@ def main():
     initialize_system(m)
     assert_degrees_of_freedom(m, 0)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
 
     add_costing(m)
     initialize_costing(m)
@@ -84,7 +84,7 @@ def main():
 
     optimize_operation(m)  # unfixes specific variables for cost optimization
 
-    solve(m, checkpoint="solve flowsheet")
+    solve(m, checkpoint="solve flowsheet after costing")
     display_results(m)
     display_costing(m)
 
@@ -236,7 +236,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "dye"].fix(conc_mass_dye)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # pretreatment
     prtrt.wwtp.load_parameters_from_database(use_default_removal=True)
@@ -281,7 +281,7 @@ def initialize_system(m):
     desal = m.fs.desalination
 
     # initialize feed
-    solve(m.fs.feed, checkpoint="initialize feed")
+    solve(m.fs.feed, checkpoint="solve flowsheet after initializing feed")
 
     # pretreatment
     propagate_state(m.fs.s_feed)
@@ -321,7 +321,7 @@ def initialize_system(m):
         desal.P2.control_volume.properties_out[0].pressure
     )
     desal.RO.initialize()
-    solve(desal, checkpoint="initialize desalination")
+    solve(desal, checkpoint="solve flowsheet after initializing desalination")
     return
 
 

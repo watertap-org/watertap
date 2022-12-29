@@ -53,7 +53,7 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
@@ -61,7 +61,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -132,7 +132,7 @@ def set_operating_conditions(m):
     m.fs.feed.flow_mass_comp[0, "organic_solid"].fix(flow_mass_organic_solid)
     m.fs.feed.conc_mass_comp[0, "organic_liquid"].fix(1e-5)
     m.fs.feed.conc_mass_comp[0, "carbon_dioxide"].fix(1e-5)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # ATHTL
     m.fs.ATHTL.load_parameters_from_database(use_default_removal=True)

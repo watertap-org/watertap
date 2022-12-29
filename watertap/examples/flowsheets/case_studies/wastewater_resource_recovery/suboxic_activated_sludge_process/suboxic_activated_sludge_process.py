@@ -51,7 +51,7 @@ def main():
 
     initialize_system(m)
 
-    results = solve(m, checkpoint="initialize system")
+    results = solve(m, checkpoint="solve flowsheet after initializing system")
     display_results(m)
 
     add_costing(m)
@@ -59,7 +59,7 @@ def main():
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
-    results = solve(m, checkpoint="solve flowsheet")
+    results = solve(m, checkpoint="solve flowsheet after costing")
 
     display_metrics_results(m)
     display_additional_results(m)
@@ -105,7 +105,7 @@ def set_operating_conditions(m):
     m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_tss)
     m.fs.feed.conc_mass_comp[0, "tkn"].fix(conc_tkn)
     m.fs.feed.conc_mass_comp[0, "phosphorus"].fix(conc_phosphorus)
-    solve(m.fs.feed, checkpoint="set operating conditions")
+    solve(m.fs.feed, checkpoint="solve feed block")
 
     # suboxicASM
     m.fs.suboxicASM.load_parameters_from_database(use_default_removal=True)
