@@ -995,7 +995,7 @@ class TestReverseOsmosis:
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
         assert pytest.approx(-8.000e4, rel=1e-3) == value(m.fs.unit.deltaP[0])
-        assert pytest.approx(1.4e-3, rel=1e-1) == value(
+        assert pytest.approx(1.431e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
         assert pytest.approx(1.951e-6, rel=1e-3) == value(
