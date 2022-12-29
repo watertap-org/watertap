@@ -300,6 +300,7 @@ def calculate_operating_pressure(
 ):
     """
     estimate operating pressure for RO unit model given the following arguments:
+
     Arguments:
         feed_state_block:   the state block of the RO feed that has the non-pressure state
                             variables initialized to their values (default=None)
