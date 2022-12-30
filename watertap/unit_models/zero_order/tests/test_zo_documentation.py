@@ -94,7 +94,7 @@ def test_py_path():
 
 @pytest.mark.integration
 def test_lists_match():
+    assert len(py_list) == len(rst_list)
+
     # Run pytest -vv to see how the lists are different
     assert sorted(py_list) == sorted(rst_list)
-
-    assert len(py_list) == len(rst_list)
