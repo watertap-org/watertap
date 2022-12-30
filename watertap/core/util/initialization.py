@@ -46,9 +46,9 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
     if check_optimal_termination(results):
         if checkpoint is None:
-            logger.info("Solve successful")
+            logger.info("Solve successful.")
         else:
-            logger.info(f" {checkpoint} successful")
+            logger.info(f"{checkpoint} successful.")
     else:
         if checkpoint is None:
             msg = (
