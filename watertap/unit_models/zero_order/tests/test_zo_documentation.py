@@ -59,12 +59,37 @@ def test_rst_path():
         "zero_order_unit_models",
     )
 
+    for file in os.listdir(rst_path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".rst") and filename not in exclude_rst_files:
+            file_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "..",
+                "..",
+                "..",
+                "docs",
+                "technical_reference",
+                "unit_models",
+                "zero_order_unit_models",
+                f"{file}",
+            )
+            assert os.path.isfile(file_path) == True
+
 
 @pytest.mark.unit
 def test_py_path():
     assert os.path.exists(py_path) == True
 
     assert py_path == os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+    for file in os.listdir(py_path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".py") and filename not in exclude_py_files:
+            file_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "..", f"{file}"
+            )
+            assert os.path.isfile(file_path) == True
 
 
 @pytest.mark.integration
