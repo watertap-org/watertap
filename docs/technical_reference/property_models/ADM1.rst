@@ -136,8 +136,6 @@ Kinetic Parameters
    "KW, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
    "Ka_va, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
 
-
-
 Properties
 ----------
 .. csv-table::
@@ -163,13 +161,35 @@ Process Rate Equations
    "Uptake of propionate", ":math:`\rho_{10} = k_{m_{pro}} \frac{C_{S_pro}}{K_{S_{pro}}+C_{S_pro}} C_{X_pro} \cdot \frac{1}{1 + K_{S_IN}/C_{S_IN}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_pro}} I_{pH,aa}`"
    "Uptake of acetate", ":math:`\rho_{11} = k_{m_ac} \frac{C_{S_ac}}{K_{S_ac}+C_{S_ac}} C_{X_ac} \cdot \frac{1}{1 + K_{S_IN}/C_{S_IN}/14} \cdot \frac{1}{1 + C_{NH3}/K_{I,nh3}} I_{pH,ac}`"
    "Uptake of hydrogen", ":math:`\rho_{12} = k_{m_{h2}} \frac{C_{S_{h2}}}{K_{S_{h2}}+C_{S_{h2}}} C_{X_{h2}} \cdot \frac{1}{1 + K_{S_IN}/C_{S_IN}/14} I_{pH,h2}`"
-   "Decay of X_su",
-   "Decay of X_aa",
-   "Decay of X_fa",
-   "Decay of X_c4",
-   "Decay of X_pro",
-   "Decay of X_ac",
-   "Decay of X_h2",
+   "Decay of X_su", ":math:`\rho_{13} = k_{dec, X_su} C_{X_su}`"
+   "Decay of X_aa", ":math:`\rho_{14} = k_{dec, X_aa} C_{X_aa}`"
+   "Decay of X_fa", ":math:`\rho_{15} = k_{dec, X_fa} C_{X_fa}`"
+   "Decay of X_c4", ":math:`\rho_{16} = k_{dec, X_{c4}} C_{X_{c4}}`"
+   "Decay of X_pro", ":math:`\rho_{17} = k_{dec, X_pro} C_{X_pro}`"
+   "Decay of X_ac", ":math:`\rho_{18} = k_{dec, X_ac} C_{X_ac}`"
+   "Decay of X_h2", ":math:`\rho_{19} = k_{dec, X_{h2}} C_{X_{h2}}`"
+
+The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH,aa}`), acetate-utilizing microorganisms (:math:`I_{pH,ac}`), and hydrogen-utilizing microorganisms (:math:`I_{pH,h2}`) are:
+
+    .. math::
+
+       I_{pH,aa}=
+       \begin{cases}
+         \exp{-3 (\frac{pH - pH_{UL,aa}}{pH_{UL,aa} - pH_{LL,aa}})^2} & \text{for } pH \le pH_{UL,aa}\\
+         1 & \text{for } pH > pH_{UL,aa}
+       \end{cases}
+
+       I_{pH,ac}=
+       \begin{cases}
+         \exp{-3 (\frac{pH - pH_{UL,ac}}{pH_{UL,ac} - pH_{LL,ac}})^2} & \text{for } pH \le pH_{UL,ac}\\
+         1 & \text{for } pH > pH_{UL,ac}
+       \end{cases}
+
+       I_{pH,aa}=
+       \begin{cases}
+         \exp{-3 (\frac{pH - pH_{UL,h2}}{pH_{UL,h2} - pH_{LL,h2}})^2} & \text{for } pH \le pH_{UL,h2}\\
+         1 & \text{for } pH > pH_{UL,h2}
+       \end{cases}
 
 References
 ----------
