@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-Tests that documentation exists for all zero-order unit models
+Tests that documentation exists for all zero-order unit models.
+To create new documentation, update the unit classification excel sheet and run the automation script.
 """
 import pytest
 import os
@@ -94,7 +95,5 @@ def test_py_path():
 
 @pytest.mark.integration
 def test_lists_match():
-    assert len(py_list) == len(rst_list)
-
     # Run pytest -vv to see how the lists are different
     assert sorted(py_list) == sorted(rst_list)
