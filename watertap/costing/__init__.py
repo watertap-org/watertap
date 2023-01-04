@@ -11,11 +11,18 @@
 #
 ###############################################################################
 
-from .watertap_costing_package import (
-    WaterTAPCosting,
-    ROType,
-    PumpType,
-    MixerType,
-    EnergyRecoveryDeviceType,
-    CrystallizerCostType,
+from .watertap_costing_package import WaterTAPCosting
+
+from .util import (
+    register_costing_parameter_block,
+    make_capital_cost_var,
+    make_fixed_operating_cost_var,
+    cost_by_flow_volume,
+    cost_membrane,
 )
+
+from .units.crystallizer import CrystallizerCostType
+from .units.energy_recovery_device import EnergyRecoveryDeviceType
+from .units.mixer import MixerType
+from .units.pump import PumpType
+from .units.reverse_osmosis import ROType
