@@ -16,8 +16,12 @@ Tests that documentation exists for all zero-order unit models
 import pytest
 import os
 
+from pyomo.common.fileutils import this_file_dir
+
+this_file_dir = this_file_dir()
+
 doc_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
+    this_file_dir,
     "..",
     "..",
     "..",
@@ -31,7 +35,8 @@ rst_path = os.path.join(
     "unit_models",
     "zero_order_unit_models",
 )
-py_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+py_path = os.path.join(this_file_dir, "..")
 
 
 def generate_model_list(path, extension, exclude):
@@ -41,7 +46,7 @@ def generate_model_list(path, extension, exclude):
         if filename.endswith(extension) and filename not in exclude:
             file_path = os.path.join(
                 path,
-                f"{file}",
+                file,
             )
             assert os.path.isfile(file_path)
             file_list.append(filename[: -len(extension)])
