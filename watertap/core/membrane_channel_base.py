@@ -516,18 +516,22 @@ class MembraneChannelMixin:
     ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
-        self.N_Sc = Var(
+        solute_set = self.config.property_package.solute_set
+
+        self.N_Sc_comp = Var(
             self.flowsheet().config.time,
             self.length_domain,
+            solute_set,
             initialize=5e2,
             bounds=(1e2, 2e3),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Schmidt number in membrane channel",
         )
-        self.N_Sh = Var(
+        self.N_Sh_comp = Var(
             self.flowsheet().config.time,
             self.length_domain,
+            solute_set,
             initialize=1e2,
             bounds=(1, 3e2),
             domain=NonNegativeReals,
@@ -547,40 +551,47 @@ class MembraneChannelMixin:
             return (
                 b.K[t, x, j] * b.dh
                 # TODO: add diff coefficient to SW prop and consider multi-components
-                == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh[t, x]
+                == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh_comp[t, x, j]
             )
 
         if sherwood_number_eq == SherwoodNumberEq.new:
 
             @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.solute_set,
+                doc="Sherwood number",
             )
-            def eq_N_Sh(b, t, x):
-                return b.N_Sh[t, x] == 2.401 * (
-                    (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.297
+            def eq_N_Sh_comp(b, t, x, j):
+                return b.N_Sh_comp[t, x, j] == 2.401 * (
+                    (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
                 ) * ((b.channel_length / b.dh) ** -0.279)
 
         if sherwood_number_eq == SherwoodNumberEq.old:
 
             @self.Constraint(
-                self.flowsheet().config.time, self.length_domain, doc="Sherwood number"
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.solute_set,
+                doc="Sherwood number",
             )
-            def eq_N_Sh(b, t, x):
-                return b.N_Sh[t, x] == 0.46 * (b.N_Re[t, x] * b.N_Sc[t, x]) ** 0.36
+            def eq_N_Sh_comp(b, t, x, j):
+                return (
+                    b.N_Sh_comp[t, x, j]
+                    == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
+                )
 
         @self.Constraint(
-            self.flowsheet().config.time, self.length_domain, doc="Schmidt number"
+            self.flowsheet().config.time,
+            self.length_domain,
+            self.config.property_package.solute_set,
+            doc="Schmidt number",
         )
-        def eq_N_Sc(b, t, x):
-            # # TODO: This needs to be revisted. Diffusion is now by component, but
-            #   not H2O and this var should also be by component, but the implementation
-            #   is not immediately clear.
+        def eq_N_Sc_comp(b, t, x, j):
             return (
-                b.N_Sc[t, x]
+                b.N_Sc_comp[t, x, j]
                 * b.properties[t, x].dens_mass_phase["Liq"]
-                * b.properties[t, x].diffus_phase_comp[
-                    "Liq", b.properties[t, x].params.component_list.last()
-                ]
+                * b.properties[t, x].diffus_phase_comp["Liq", j]
                 == b.properties[t, x].visc_d_phase["Liq"]
             )
 
@@ -922,15 +933,15 @@ class MembraneChannelMixin:
                 if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
                     iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
 
-        if hasattr(self, "N_Sc"):
-            for t, x in self.N_Sc.keys():
-                if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
+        if hasattr(self, "N_Sc_comp"):
+            for v in self.N_Sc_comp.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-2)
 
-        if hasattr(self, "N_Sh"):
-            for t, x in self.N_Sh.keys():
-                if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
+        if hasattr(self, "N_Sh_comp"):
+            for v in self.N_Sh_comp.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-2)
 
         if hasattr(self, "velocity"):
             for v in self.velocity.values():

@@ -175,11 +175,11 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
     assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
     assert isinstance(m.fs.unit.permeate_side.dh, Var)
     assert isinstance(m.fs.unit.permeate_side.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sc, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sc_comp, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sh_comp, Var)
     assert isinstance(m.fs.unit.feed_side.N_Re, Var)
-    assert isinstance(m.fs.unit.permeate_side.N_Sc, Var)
-    assert isinstance(m.fs.unit.permeate_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.permeate_side.N_Sc_comp, Var)
+    assert isinstance(m.fs.unit.permeate_side.N_Sh_comp, Var)
     assert isinstance(m.fs.unit.permeate_side.N_Re, Var)
 
 
