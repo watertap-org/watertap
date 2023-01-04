@@ -91,10 +91,10 @@ fs.RO.feed_side.K[0.0,0.0,NaCl]: 3.4512803512388215e-05
 fs.RO.feed_side.K[0.0,1.0,NaCl]: 2.7060824531310153e-05
 fs.RO.feed_side.N_Re[0.0,0.0]: 339.4894225951861
 fs.RO.feed_side.N_Re[0.0,1.0]: 164.77295340586087
-fs.RO.feed_side.N_Sc[0.0,0.0]: 701.8820660532529
-fs.RO.feed_side.N_Sc[0.0,1.0]: 727.7593431217747
-fs.RO.feed_side.N_Sh[0.0,0.0]: 39.674400521449414
-fs.RO.feed_side.N_Sh[0.0,1.0]: 30.98506199148124
+fs.RO.feed_side.N_Sc_comp[0.0,0.0,NaCl]: 701.8820660532529
+fs.RO.feed_side.N_Sc_comp[0.0,1.0,NaCl]: 727.7593431217747
+fs.RO.feed_side.N_Sh_comp[0.0,0.0,NaCl]: 39.674400521449414
+fs.RO.feed_side.N_Sh_comp[0.0,1.0,NaCl]: 30.98506199148124
 fs.RO.area: 80.13575502542317
 fs.RO.costing.capital_cost: 2404.0726507626946
 fs.RO.costing.fixed_operating_cost: 480.81453015253896
