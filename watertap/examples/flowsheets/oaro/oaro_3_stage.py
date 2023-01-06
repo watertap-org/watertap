@@ -14,18 +14,16 @@ import os
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Param,
-    Var,
     Constraint,
     Expression,
     Objective,
-    TransformationFactory,
-    Block,
+    Var,
+    Param,
     NonNegativeReals,
-    RangeSet,
-    Set,
-    check_optimal_termination,
+    TransformationFactory,
     units as pyunits,
+    assert_optimal_termination,
+    check_optimal_termination,
 )
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -96,7 +94,8 @@ def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     return m
 
 
-def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
+def build(erd_type=ERDtype.pump_as_turbine):
+    # TODO: add costing later (OARO unit model does not have costing method)
 
     # flowsheet set up
     m = ConcreteModel()
@@ -105,36 +104,26 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
     m.fs.properties = props.NaClParameterBlock()
     # m.fs.costing = WaterTAPCosting()
 
-    # stage set up
-    m.fs.NumberOfStages = Param(initialize=number_of_stages)
-    m.fs.Stages = RangeSet(m.fs.NumberOfStages)
-    m.fs.LSRRO_Stages = RangeSet(2, m.fs.NumberOfStages)
-    m.fs.NonFinalStages = RangeSet(m.fs.NumberOfStages - 1)
-    if number_of_stages > 1:
-        m.fs.IntermediateStages = RangeSet(2, m.fs.NumberOfStages - 1)
-    else:
-        m.fs.IntermediateStages = RangeSet(0)
-    m.fs.FirstStage = m.fs.Stages.first()
-    m.fs.LastStage = m.fs.Stages.last()
-
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.product = Product(property_package=m.fs.properties)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
     # --- Main pump ---
-    m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
-    # for pump in m.fs.PrimaryPumps.values():
-    #     pump.costing = UnitModelCostingBlock(
-    #         flowsheet_costing_block=m.fs.costing,
-    #     )
+    m.fs.P1 = Pump(property_package=m.fs.properties)
+    # m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
-    # --- Recycle pump ---
-    m.fs.RecyclePumps = Pump(m.fs.Stages, property_package=m.fs.properties)
-    # for pump in m.fs.PrimaryPumps.values():
-    #     pump.costing = UnitModelCostingBlock(
-    #         flowsheet_costing_block=m.fs.costing,
-    #     )
+    m.fs.P2 = Pump(property_package=m.fs.properties)
+    # m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.P3 = Pump(property_package=m.fs.properties)
+    # m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.P4 = Pump(property_package=m.fs.properties)
+    # m.fs.P4.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+
+    m.fs.P5 = Pump(property_package=m.fs.properties)
+    # m.fs.P5.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
