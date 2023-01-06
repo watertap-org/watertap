@@ -130,7 +130,7 @@ dmypy.json
 .pyre/
 
 # Pycharm
-.idea
+.idea/
 
 # Emacs
 *~
@@ -140,6 +140,20 @@ dmypy.json
 *.elc
 auto-save-list
 .\#*
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
 
 # MAC File System
 .DS_Store
