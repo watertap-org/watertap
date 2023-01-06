@@ -389,6 +389,8 @@ def initialize_system(m, solver=None, verbose=True):
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
+    m.fs.costing.initialize()
+
 
 def optimize_set_up(m):
     # add objective
