@@ -157,36 +157,9 @@ def build():
     m.fs.prod = Product(property_package=m.fs.properties)
     m.fs.disp = Product(property_package=m.fs.properties)
 
-    # Touching needed variables for initialization and displaying results
-    m.fs.feed.properties[0].conc_mass_phase_comp[...]
-    m.fs.sepa0.to_dil_in_state[0].conc_mass_phase_comp[...]
-    m.fs.sepa0.to_conc_in0_state[0].conc_mass_phase_comp[...]
-    m.fs.sepa1.to_disp_state[0].conc_mass_phase_comp[...]
-    m.fs.sepa1.to_conc_in1_state[0].conc_mass_phase_comp[...]
-    m.fs.mix0.from_feed_state[0].conc_mass_phase_comp[...]
-    m.fs.mix0.from_conc_out_state[0].conc_mass_phase_comp[...]
-    m.fs.pump0.control_volume.properties_in[0].conc_mass_phase_comp[...]
-    m.fs.pump0.control_volume.properties_in[0].conc_mass_phase_comp[...]
-    m.fs.pump1.control_volume.properties_in[0].conc_mass_phase_comp[...]
-    m.fs.pump1.control_volume.properties_in[0].conc_mass_phase_comp[...]
-    m.fs.prod.properties[0].conc_mass_phase_comp[...]
-    m.fs.disp.properties[0].conc_mass_phase_comp[...]
-
-    m.fs.feed.properties[0].flow_vol_phase[...]
-    m.fs.sepa0.to_dil_in_state[0].flow_vol_phase[...]
-    m.fs.sepa0.to_conc_in0_state[0].flow_vol_phase[...]
-    m.fs.sepa1.to_disp_state[0].flow_vol_phase[...]
-    m.fs.sepa1.to_conc_in1_state[0].flow_vol_phase[...]
-    m.fs.mix0.from_feed_state[0].flow_vol_phase[...]
-    m.fs.mix0.from_conc_out_state[0].flow_vol_phase[...]
-    m.fs.pump0.control_volume.properties_in[0].flow_vol_phase[...]
-    m.fs.pump0.control_volume.properties_in[0].flow_vol_phase[...]
-    m.fs.pump1.control_volume.properties_in[0].flow_vol_phase[...]
-    m.fs.pump1.control_volume.properties_in[0].flow_vol_phase[...]
+    # touch necessary variables to ensure they are constructed and solved
     m.fs.prod.properties[0].flow_vol_phase[...]
     m.fs.disp.properties[0].flow_vol_phase[...]
-    m.fs.EDstack.diluate.properties[...].flow_vol_phase[...]
-    m.fs.EDstack.concentrate.properties[...].flow_vol_phase[...]
 
     # costing
     m.fs.EDstack.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
