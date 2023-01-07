@@ -367,12 +367,6 @@ def initialize_system(m, solver=None):
     m.fs.costing.initialize()
 
     iscale.calculate_scaling_factors(m)
-    print("BADLY SCALED VARS & CONSTRAINS")
-    badly_scaled_var_values = {
-        var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
-    }
-    for j, k in badly_scaled_var_values.items():
-        print(j, ":", k)
 
 
 def display_model_metrics(m):
@@ -465,4 +459,4 @@ def display_model_metrics(m):
 
 
 if __name__ == "__main__":
-    main()
+    m = main()
