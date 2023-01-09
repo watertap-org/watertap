@@ -205,7 +205,7 @@ following format.
         ix_in["charge"][ion] = charge_data[ion]
     return ix_in
 
-**NOTE: 'ions' is an ion_set, which is a configuration argument of the property package as shown below **
+**NOTE: 'ions' is an ion_set, which is a configuration argument of the property package as shown below**
 
 
 .. code-block::
