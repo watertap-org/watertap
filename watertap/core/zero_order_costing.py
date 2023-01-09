@@ -25,6 +25,7 @@ from idaes.core.base.costing_base import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
+from idaes.core.util.math import smooth_min
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
@@ -1255,32 +1256,87 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer"
         )
 
-    def cost_gac(blk):
+    def cost_gac(blk, number_of_parallel_units=1, gac_bulk_density=500):
         """
-        General method for costing granular activated carbon processes. Capital
-        cost is based on the inlet flow rate of liquid and the empty bed
-        contacting time.
-        This method also registers electricity and activated carbon consumption
-        as costed flows.
+        Adapted from core GAC costing model initially released in v0.6.0
+
+        3 equation capital cost estimation for GAC systems with: (i), contactor/pressure vessel cost by polynomial
+        as a function of individual contactor volume; (ii), initial charge of GAC adsorbent cost by exponential as a
+        function of required mass of GAC adsorbent; and (iii), other process costs (vessels, pipes, instrumentation, and
+        controls) calculated by power law as a function of total contactor(s) volume. Operating costs calculated as the
+        required makeup and regeneration of GAC adsorbent. Energy for backwash and booster pumps considered negligible
+        compared to regeneration costs
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units in operation (default: 1)
+            gac_bulk_density (optional) - estimated bulk density
+                        (mass of gac [kg]/ volume of bed [m^3]) (default: 500)
         """
         t0 = blk.flowsheet().time.first()
 
         Q = blk.unit_model.properties_in[t0].flow_vol
         T = blk.unit_model.empty_bed_contact_time
 
+        # total bed volume
+        V = Q * pyo.units.convert(T, to_units=pyo.units.seconds)
+
+        # mass of gac in bed
+        bed_mass_gac = V * (gac_bulk_density * pyo.units.kg / pyo.units.m**3)
+
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
             blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
         )
 
-        A, B, C = _get_tech_parameters(
+        # Call contactor, adsorbent (GAC) initial charge cost, and other process cost parameters
+        (A0, A1, A2, A3, B0, B1, C0, C1, bed_mass_max_ref) = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
-            ["capital_a_parameter", "capital_b_parameter", "capital_c_parameter"],
+            [
+                "contactor_cost_coeff_0",
+                "contactor_cost_coeff_1",
+                "contactor_cost_coeff_2",
+                "contactor_cost_coeff_3",
+                "adsorbent_unit_cost_coeff",
+                "adsorbent_unit_cost_exp_coeff",
+                "other_cost_coeff",
+                "other_cost_exp",
+                "bed_mass_max_ref",
+            ],
         )
 
-        # Call general power law costing method
+        contactor_cost = number_of_parallel_units * pyo.units.convert(
+            (
+                A3 * (V / number_of_parallel_units) ** 3
+                + A2 * (V / number_of_parallel_units) ** 2
+                + A1 * (V / number_of_parallel_units) ** 1
+                + A0
+            ),
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        bed_mass_gac_ref = (
+            smooth_min(
+                bed_mass_max_ref / pyo.units.kg,
+                pyo.units.convert(bed_mass_gac, to_units=pyo.units.kg) / pyo.units.kg,
+            )
+            * pyo.units.kg
+        )
+
+        adsorbent_unit_cost = pyo.units.convert(
+            B0 * pyo.exp(bed_mass_gac_ref * B1),
+            to_units=blk.config.flowsheet_costing_block.base_currency
+            * pyo.units.kg**-1,
+        )
+
+        adsorbent_cost = adsorbent_unit_cost * bed_mass_gac
+
+        other_process_cost = pyo.units.convert(
+            (C0 * ((pyo.units.m**3) ** -C1) * V**C1),
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
         blk.capital_cost = pyo.Var(
             initialize=1,
             units=blk.config.flowsheet_costing_block.base_currency,
@@ -1288,17 +1344,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Capital cost of unit operation",
         )
 
-        expr = (
-            pyo.units.convert(
-                A * Q, to_units=blk.config.flowsheet_costing_block.base_currency
-            )
-            + pyo.units.convert(
-                B * T, to_units=blk.config.flowsheet_costing_block.base_currency
-            )
-            + pyo.units.convert(
-                C * Q * T, to_units=blk.config.flowsheet_costing_block.base_currency
-            )
-        )
+        expr = contactor_cost + adsorbent_cost + other_process_cost
 
         ZeroOrderCostingData._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
@@ -1309,6 +1355,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Register flows
+        # electricity was not implemented in core GAC but retained in ZO update
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
