@@ -372,6 +372,3 @@ def test_costing(subtype):
         m.fs.unit1.activated_carbon_demand[0]
         in m.fs.costing._registered_flows["activated_carbon"]
     )
-
-    solver.solve(m)
-    m.fs.unit1.display()
