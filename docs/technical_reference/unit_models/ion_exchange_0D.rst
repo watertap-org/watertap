@@ -31,7 +31,7 @@ and the resin is favorable, and thus the mass transfer zone is narrow.
 Important phenomena for this process based on the above assumptions are illustrated in Figure 1.
 
 .. figure:: ../../_static/unit_models/ion_exchange.png
-    :width: 1200
+    :width: 600
     :align: center
 
    Figure 1. (a) Impact to effluent concentration and breakthrough time for a monovalent (Na+) and divalent (Ca2+)
@@ -275,7 +275,7 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Separation factor", ":math:`\alpha = \frac{1}{La}`"
+   "Separation factor", ":math:` \alpha = \frac{1}{La}`"
    "Langmuir isotherm", ":math:`\alpha \frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu} `"
    "Schmidt number", ":math:`Sc = \frac{\mu}{D}`"
