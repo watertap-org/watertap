@@ -28,24 +28,6 @@ At this time, the mass transfer zone is approaching the end of the ion exchange 
 and the regeneration cycle can begin. Fundamental to this model is the assumption that the isotherm between the solute
 and the resin is favorable, and thus the mass transfer zone is narrow.
 
-Important phenomena for this process based on the above assumptions are illustrated in Figure 1.
-
-.. figure:: ../../_static/unit_models/ion_exchange_0D.png
-    :width: 1200
-    :align: center
-
-   Figure 1. (a) Impact to effluent concentration and breakthrough time for a monovalent (Na+) and divalent (Ca2+)
-   ion with varying resin capacity and selectivity coefficients. (b) Self-sharpening behavior - the concentration
-   front has the same shape as it moves through the ion exchange bed. (c) Demonstration of stoichiometric center
-   in constant-pattern analysis. The La from this reference corresponds to the separation factor R discussed in this
-   document. The y-axis is normalized concentration, and the x-axis is the value of the left-hand side of the
-   governing dimensionless equation.
-
-.. note::
-
-    Not sure if this figure should be included to begin with, but if we do want it here, the caption likely
-    needs to be revised to stand alone w/o the background context of Kurby's report/documentation.
-
 
 Ports
 -----
@@ -269,13 +251,13 @@ following format.
 
 **NOTE: The above example assumes you have already constructed a pyomo model named 'm' and attached an IDAES flowsheet named 'fs' to it.**
 
+
 Equations and Relationships
 ---------------------------
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Resin capacity mass balance", ":math:`q_{max} = q_{avail} + q_{eq}`"
    "Separation factor", ":math:`\alpha = \frac{1}{La}`"
    "Langmuir isotherm", ":math:`\alpha \frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu} `"
@@ -283,6 +265,7 @@ Equations and Relationships
    "Sherwood number", ":math:`Sh = \frac{1.09}{\epsilon}Re^{0.33}Sc^{0.33}`"
    "Bed Peclet number", ":math:`Pe_{bed} = Pe_{p} \frac{Z}{d}`"
    "Particle Peclet number", ":math:`Pe_{p} = 0.05 Re^{0.48}`"
+   "Resin capacity mass balance", ":math:`q_{max} = q_{avail} + q_{eq}`"
    "Interstitial velocity", ":math:`u{inter} = \frac{u{bed}}{\epsilon}`"
    "Resin surface area per vol", ":math:`a_{s} = 6 \frac{1-\epsilon}{d}`"
    "Contact time", ":math:`t_{contact} = \frac{Z}{u_{inter}}`"
