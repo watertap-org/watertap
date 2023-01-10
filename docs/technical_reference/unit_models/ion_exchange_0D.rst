@@ -257,7 +257,6 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions}`"
    "Separation factor", ":math:`\alpha = \frac{1}{La}`"
    "Langmuir isotherm", ":math:`\alpha \frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
    "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu}`"
@@ -278,7 +277,7 @@ Equations and Relationships
    "Column diameter calculation", ":math:`(\frac{D_{col}}{2})^{2} = (\frac{H}{2X})^{2}`"
    "Fluid mass transfer coeff", ":math:`k_{f} = \frac{D Sh}{d}`"
    "Rate coefficient", ":math:`k = 6 \frac{(1-\epsilon)k_{f}}{\rho_{b}d}`"
-   "Height of transfer unit", ":math:`HTU = \frac{u_{bed}}{\rho_{b}k} `"
+   "Height of transfer unit", ":math:`HTU = \frac{u_{bed}}{\rho_{b}k}`"
    "Partition ratio", ":math:`\Lambda = \frac{q_{eq} \rho_{b}}{ñ_{in}}`"
    "Left hand side of constant pattern solution", ":math:`lh = N(\tau - 1)`"
    "Right hand side of constant pattern solution", ":math:`lh = 1 + \frac{\log{C_{b}/C_{0} \log{1 - C_{b}/C_{0}}} - La}{1 - La}`"
