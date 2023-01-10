@@ -1256,7 +1256,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer"
         )
 
-    def cost_gac(blk, number_of_parallel_units=1, gac_bulk_density=500):
+    def cost_gac(blk, number_of_parallel_units=5, gac_bulk_density=500):
         """
         Adapted from core GAC costing model initially released in v0.6.0
 
@@ -1268,7 +1268,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         compared to regeneration costs
         Args:
             number_of_parallel_units (int, optional) - cost this unit as
-                        number_of_parallel_units parallel units in operation (default: 1)
+                        number_of_parallel_units parallel units in operation (default: 5)
             gac_bulk_density (optional) - estimated bulk density
                         (mass of gac [kg]/ volume of bed [m^3]) (default: 500)
         """
@@ -1281,7 +1281,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         V = Q * pyo.units.convert(T, to_units=pyo.units.seconds)
 
         # mass of gac in bed
-        bed_mass_gac = V * (gac_bulk_density * pyo.units.kg / pyo.units.m**3)
+        bed_mass_gac = pyo.units.convert(V, to_units=pyo.units.m**3) * (
+            gac_bulk_density * pyo.units.kg / pyo.units.m**3
+        )
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
