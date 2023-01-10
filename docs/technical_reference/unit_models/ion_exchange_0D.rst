@@ -251,16 +251,16 @@ following format.
 
 **NOTE: The above example assumes you have already constructed a pyomo model named 'm' and attached an IDAES flowsheet named 'fs' to it.**
 
-
 Equations and Relationships
 ---------------------------
 
 .. csv-table::
    :header: "Description", "Equation"
 
+   "Electroneutrality Constraint", ":math:`C_{out,H} = C_{out,OH} + C_{out,A} + Res_{ions}`"
    "Separation factor", ":math:`\alpha = \frac{1}{La}`"
    "Langmuir isotherm", ":math:`\alpha \frac{C_{b}}{C_{0}} (1-\frac{q_{eq}}{q_{max}}) = (1-\frac{C_{b}}{C_{0}})\frac{q_{eq}}{q_{max}}`"
-   "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu} `"
+   "Reynolds number", ":math:`Re = \frac{u_{bed}d}{\mu}`"
    "Schmidt number", ":math:`Sc = \frac{\mu}{D}`"
    "Sherwood number", ":math:`Sh = \frac{1.09}{\epsilon}Re^{0.33}Sc^{0.33}`"
    "Bed Peclet number", ":math:`Pe_{bed} = Pe_{p} \frac{Z}{d}`"
@@ -284,7 +284,7 @@ Equations and Relationships
    "Right hand side of constant pattern solution", ":math:`lh = 1 + \frac{\log{C_{b}/C_{0} \log{1 - C_{b}/C_{0}}} - La}{1 - La}`"
    "Dimensionless time", ":math:`\tau = (\frac{u_{inter}t_{breakthru} \epsilon}{Z} - \epsilon) / \Lambda`"
    "Number of mass-transfer units", ":math:`N = /frac{k_{f}a_{s}Z}{u_{bed}}`"
-   "Flow conservation", ":math:`Q_{p, in} - \frac{Q_{bw}t_{bw} + Q_{rinse}t_{rinse}{t_{cycle}} = Q_{p, out} - \frac{Q_{regen}t_{regen}}{t_{cycle}} `"
+   "Flow conservation", ":math:`Q_{p, in} - \frac{Q_{bw}t_{bw} + Q_{rinse}t_{rinse}{t_{cycle}} = Q_{p, out} - \frac{Q_{regen}t_{regen}}{t_{cycle}}`"
    "Influent total mass of ion", ":math:`M_{in} = Q_{p, in}t_{breakthru}ñ_{in}`"
    "Removed total mass of ion", ":math:`M_{rem} = V_{bed}q_{eq}n_{op} \rho_{b}`"
    "Mass of ion in effluent", ":math:`M_{out} = M_{in} - M_{rem}`"
@@ -304,7 +304,7 @@ Equations and Relationships
    "Rinse flow rate", ":math:`Q_{rinse} = u{bed} \frac{V_{bed}}{Z}n_{op}`"
    "Rinse pump power", ":math:`P_{rinse} = \frac{9.81 \rho_{in} 0.70325P_{drop}Q_{rinse}}{\eta}`"
    "Main pump power", ":math:`P_{main} = \frac{9.81 \rho_{in} 0.70325P_{drop}Q_{p, in}}{\eta}`"
-   "Pressure drop (T = 20C)", ":math:`P_{drop} = Z(P_{drop,A} + P_{drop,B}u_{bed} + P_{drop,C}u_{bed}^{2}) `"
+   "Pressure drop (T = 20C)", ":math:`P_{drop} = Z(P_{drop,A} + P_{drop,B}u_{bed} + P_{drop,C}u_{bed}^{2})`"
    "Total column volume required", ":math:`V_{col, tot} = n_{op}V_{col}`"
 
 
