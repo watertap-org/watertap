@@ -1,0 +1,8 @@
+# Usage:
+# addheader -c .addheader.yml
+root: watertap
+text: header_text.txt
+patterns:
+   - "*.py"
+verbose: 1
+sep-len: 80

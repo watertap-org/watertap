@@ -1,5 +1,5 @@
-###############################################################################
-# WaterTAP Copyright (c) 2021, The Regents of the University of California,
+#################################################################################
+# WaterTAP Copyright (c) 2021-2023, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -9,7 +9,7 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #
-###############################################################################
+#################################################################################
 from watertap.ui.fsapi import FlowsheetInterface
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1595_photothermal_membrane_candoP.amo_1595 import (
