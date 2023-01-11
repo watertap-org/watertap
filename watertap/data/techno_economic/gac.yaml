@@ -24,6 +24,9 @@ default: # TODO: confirm any differentiation in removal across subtypes
   activated_carbon_replacement:
     value: 0.0550884
     units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
+    units: kg/m^3
   capital_cost:
     cost_factor: None
     contactor_cost_coeff_0:
@@ -79,6 +82,9 @@ pressure_vessel:
   activated_carbon_replacement:
     value: 0.0550884
     units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
+    units: kg/m^3
   capital_cost:
     cost_factor: None
     contactor_cost_coeff_0:
@@ -133,6 +139,9 @@ gravity:
     units: min
   activated_carbon_replacement:
     value: 0.0550884
+    units: kg/m^3
+  activated_carbon_bulk_density:
+    value: 500
     units: kg/m^3
   capital_cost:
     cost_factor: None

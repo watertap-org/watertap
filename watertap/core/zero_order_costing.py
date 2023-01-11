@@ -1256,7 +1256,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer"
         )
 
-    def cost_gac(blk, number_of_parallel_units=5, gac_bulk_density=500):
+    def cost_gac(blk, number_of_parallel_units=5):
         """
         Adapted from core GAC costing model initially released in v0.6.0
 
@@ -1269,21 +1269,22 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         Args:
             number_of_parallel_units (int, optional) - cost this unit as
                         number_of_parallel_units parallel units in operation (default: 5)
-            gac_bulk_density (optional) - estimated bulk density
-                        (mass of gac [kg]/ volume of bed [m^3]) (default: 500)
         """
         t0 = blk.flowsheet().time.first()
 
         Q = blk.unit_model.properties_in[t0].flow_vol
         T = blk.unit_model.empty_bed_contact_time
+        gac_dens = blk.unit_model.activated_carbon_bulk_density
 
         # total bed volume
-        V = Q * pyo.units.convert(T, to_units=pyo.units.seconds)
+        V = pyo.units.convert(
+            Q, to_units=pyo.units.m**3 / pyo.units.seconds
+        ) * pyo.units.convert(T, to_units=pyo.units.seconds)
 
         # mass of gac in bed
-        bed_mass_gac = pyo.units.convert(V, to_units=pyo.units.m**3) * (
-            gac_bulk_density * pyo.units.kg / pyo.units.m**3
-        )
+        bed_mass_gac = pyo.units.convert(
+            V, to_units=pyo.units.m**3
+        ) * pyo.units.convert(gac_dens, to_units=pyo.units.kg / pyo.units.m**3)
 
         # Get parameter dict from database
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(

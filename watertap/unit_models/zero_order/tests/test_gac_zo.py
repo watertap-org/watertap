@@ -66,6 +66,7 @@ class TestGACZO_w_o_default_removal:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.activated_carbon_replacement, Var)
         assert isinstance(model.fs.unit.activated_carbon_demand, Var)
+        assert isinstance(model.fs.unit.activated_carbon_bulk_density, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.electricity_intensity_constraint, Constraint)
