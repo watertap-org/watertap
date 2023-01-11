@@ -23,7 +23,11 @@ class OAROType(StrEnum):
 
 
 def build_osmotically_assisted_reverse_osmosis_cost_param_block(blk):
-
+    """
+    Reference parameter values are provided from:
+    Bartholomew, T. V., Mey, L., Arena, J. T., Siefert, N. S., & Mauter, M. S. (2017).
+    Osmotically assisted reverse osmosis for high salinity brine treatment. Desalination, 421, 3-11.
+    """
     blk.factor_membrane_replacement = pyo.Var(
         initialize=0.15,
         doc="Membrane replacement factor [fraction of membrane replaced/year]",
