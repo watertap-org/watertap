@@ -1,5 +1,5 @@
-Ion Exchange 0D
-===============
+Ion Exchange (0D)
+=================
 
 .. index::
    pair: watertap.unit_models.ion_exchange_0D;ion_exchange_0D
@@ -40,16 +40,16 @@ The model provides three ports (Pyomo notation in parenthesis):
 
 Sets
 ----
-
 .. csv-table::
-   :header: "Description", "Symbol", "Index"
+   :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
    "Components", ":math:`j`", "['H2O', 'Na_+', 'Ca_2+', '\Cl_-', 'Mg2+', 'SO4_2-', '\PFAS_-', 'Hardness_2+']"
-   "Ion", ":math:`j`", "['Na_+', 'Ca_2+', '\Cl_-', 'Mg2+', 'SO4_2-', '\PFAS_-', 'Hardness_2+'] \  :sup:`1`"
+   "Ions", ":math:`j`", "['Na_+', 'Ca_2+', '\Cl_-', 'Mg2+', 'SO4_2-', '\PFAS_-', 'Hardness_2+']*"
 
- :sup:`1` "Ion" is a subset of "Component" and uses the same symbol j.
+\*"Ion" is a subset of "Component" and uses the same symbol j.
+
 
 Degrees of Freedom
 ------------------
@@ -89,7 +89,8 @@ the user must specify. The table below gives an outline of these.
    "Bed expansion fraction equation C parameter", ":math:`H_{expan,C}`", "bed_expansion_frac_C", "None", ":math:`\text{dimensionless}`"
    "Service-to-regeneration flow ratio", ":math:`R`", "service_to_regen_flow_ratio", "None", ":math:`\text{dimensionless}`"
 
-**Users must provide values for and 'fix' these variables to solve the model with DOF=0. However, users may also leave variables unfixed for optimization purposes.**
+
+**Users must provide values for and 'fix' the following variables to solve the model with DOF=0: 'pressure', 'temperature', 'flow_mol_phase_comp', 'langmuir', 'resin_max_capacity', 'service_flow_rate', 'number_columns', and 'bed_depth'. The other variables can simply be fixed to their default values ('.fix()').**
 
 **NOTE: Variables for 'temperature', 'pressure', and 'flow_mol_phase_comp' come from the associated property package as state variables and are accessed via {port_name}.{state_var_name}**
 
