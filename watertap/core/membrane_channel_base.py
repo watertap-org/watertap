@@ -276,18 +276,18 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "sherwood_number_eq",
     ConfigValue(
-        default=SherwoodNumberEq.new,
+        default=SherwoodNumberEq.old,
         domain=In(SherwoodNumberEq),
         description="Sherwood number relationship",
         doc="""
         Options to account for Sherwood number relationships.
 
-        **default** - ``SherwoodNumberEq.new``
+        **default** - ``SherwoodNumberEq.old``
 
     .. csv-table::
         :header: "Configuration Options", "Description"
 
-        "``SherwoodNumberEq.new``", "Sherwood number relationship that considers length"
+        "``SherwoodNumberEq.new``", "Sherwood number relationship that considers length (distance from the RO module entrance)"
         "``SherwoodNumberEq.old``", "Sherwood number relationship that does not consider length"
     """,
     ),
@@ -296,9 +296,6 @@ CONFIG_Template.declare(
 
 class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
-        raise NotImplementedError()
-
-    def _add_sherwood_number(self, sherwood_number_eq=SherwoodNumberEq.new):
         raise NotImplementedError()
 
     def _skip_element(self, x):
@@ -512,7 +509,7 @@ class MembraneChannelMixin:
 
     ## should be called by add concentration polarization
     def _add_calculated_mass_transfer_coefficient(
-        self, sherwood_number_eq=SherwoodNumberEq.new
+        self, sherwood_number_eq=SherwoodNumberEq.old
     ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
