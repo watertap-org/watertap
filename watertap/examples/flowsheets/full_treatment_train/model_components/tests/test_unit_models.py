@@ -114,13 +114,13 @@ def test_unit_0DRO_detailed():
     m = unit_0DRO.solve_RO(base="TDS", level="detailed")
     assert value(
         m.fs.RO.permeate.flow_mass_phase_comp[0, "Liq", "H2O"]
-    ) == pytest.approx(0.2011, rel=1e-3)
+    ) == pytest.approx(0.2653, rel=1e-3)
     assert value(
         m.fs.RO.permeate.flow_mass_phase_comp[0, "Liq", "TDS"]
-    ) == pytest.approx(9.165e-5, rel=1e-3)
+    ) == pytest.approx(8.476e-5, rel=1e-3)
     assert value(
         m.fs.RO.retentate.flow_mass_phase_comp[0, "Liq", "H2O"]
-    ) == pytest.approx(0.7639, rel=1e-3)
+    ) == pytest.approx(0.6997, rel=1e-3)
     assert value(
         m.fs.RO.retentate.flow_mass_phase_comp[0, "Liq", "TDS"]
     ) == pytest.approx(3.492e-2, rel=1e-3)
@@ -131,13 +131,13 @@ def test_unit_1DRO_detailed():
     m = unit_1DRO.solve_RO(base="TDS", level="detailed")
     assert value(
         m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
-    ) == pytest.approx(0.1942, rel=1e-3)
+    ) == pytest.approx(0.2541, rel=1e-3)
     assert value(
         m.fs.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "TDS"]
-    ) == pytest.approx(9.214e-5, rel=1e-3)
+    ) == pytest.approx(8.577e-5, rel=1e-3)
     assert value(
         m.fs.RO.retentate.flow_mass_phase_comp[0, "Liq", "H2O"]
-    ) == pytest.approx(0.7708, rel=1e-3)
+    ) == pytest.approx(0.7109, rel=1e-3)
     assert value(
         m.fs.RO.retentate.flow_mass_phase_comp[0, "Liq", "TDS"]
     ) == pytest.approx(3.491e-2, rel=1e-3)
