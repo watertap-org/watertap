@@ -856,6 +856,7 @@ def optimize_set_up(
                  'none' no constraint relating B value to A value
 
     A_value: if A_case='fixed', then provide a value to fix A with
+
     Returns
     -------
     model (Pyomo ConcreteModel) : The LSRRO flowsheet.
