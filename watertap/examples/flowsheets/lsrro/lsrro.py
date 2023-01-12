@@ -844,17 +844,22 @@ def optimize_set_up(
 ):
     """
     Get the LSRRO flowsheet ready to optimize
+
     Attributes
     ----------
     B_case: 'single_optimum' or anything else to optimize B value at every LSR stage
+
     A_case: 'fixed' or 'optimize' or 'single_optimum' A at every LSR stage
+
     AB_tradeoff: 'inequality_constraint' B >= function of A
                  'equality_constraint' B = function of A
                  'none' no constraint relating B value to A value
+
     A_value: if A_case='fixed', then provide a value to fix A with
     Returns
     -------
     model (Pyomo ConcreteModel) : The LSRRO flowsheet.
+
     """
 
     for idx, pump in m.fs.PrimaryPumps.items():

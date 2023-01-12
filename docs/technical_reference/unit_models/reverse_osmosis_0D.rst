@@ -29,7 +29,6 @@ previously fixed variables, we typically fix the following variables to fully sp
 
     * feed-spacer porosity
     * feed-channel height
-    * feed-channel length
     * membrane length *or* membrane width *or* inlet Reynolds number
 
 Model Structure
@@ -101,7 +100,6 @@ or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Feed-channel height", ":math:`h_{ch}`", "feed_side.channel_height", "None", ":math:`\text{m}`"
-   "Feed-channel length", ":math:`x_{ch}`", "feed_side.channel_length", "None", ":math:`\text{m}`"
    "Hydraulic diameter", ":math:`d_h`", "feed_side.dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp}`", "feed_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
    "Reynolds number", ":math:`Re`", "feed_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"
@@ -156,7 +154,7 @@ Equations
    "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
    "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
    "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
-   "Sherwood number",":math:`Sh = 2.401(Re Sc)^{0.297}(\frac{x}{d_h})^{-0.279}`"
+   "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
    "Schmidt number",":math:`Sc = \frac{\mu}{\rho D}`"
    "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
    "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"

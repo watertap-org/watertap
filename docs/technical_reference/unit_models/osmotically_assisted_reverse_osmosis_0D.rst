@@ -35,11 +35,9 @@ previously fixed variables, we typically fix the following variables to fully sp
 
     * feed-spacer porosity
     * feed-channel height
-    * feed-channel length
     * feed-velocity
     * permeate-space porosity
     * permeate-channel height
-    * permeate-channel length
     * membrane length *or* membrane width *or* inlet Reynolds number
 
 Model Structure
@@ -113,12 +111,10 @@ or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Feed-channel height", ":math:`h_{ch,f}`", "feed_side.channel_height", "None", ":math:`\text{m}`"
-   "Feed-channel length", ":math:`x_{ch,f}`", "feed_side.channel_length", "None", ":math:`\text{m}`"
    "Hydraulic diameter", ":math:`d_{h,f}`", "feed_side.dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp,f}`", "feed_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
    "Reynolds number", ":math:`Re_{f}`", "feed_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"
    "Permeate-channel height", ":math:`h_{ch,p}`", "permeate_side.channel_height", "None", ":math:`\text{m}`"
-   "Permeate-channel length", ":math:`x_{ch,p}`", "permeate_side.channel_length", "None", ":math:`\text{m}`"
    "Hydraulic diameter", ":math:`d_{h,p}`", "permeate_side.dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp,p}`", "permeate_side.spacer_porosity", "None", ":math:`\text{dimensionless}`"
    "Reynolds number", ":math:`Re_{p}`", "permeate_side.N_Re", "[t, x]", ":math:`\text{dimensionless}`"

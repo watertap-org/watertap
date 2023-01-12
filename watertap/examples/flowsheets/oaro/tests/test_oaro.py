@@ -110,7 +110,7 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(2.861410e-5, rel=1e-5) == value(
+        assert pytest.approx(2.8614e-5, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
         assert pytest.approx(0.253447, rel=1e-5) == value(fs.water_recovery)

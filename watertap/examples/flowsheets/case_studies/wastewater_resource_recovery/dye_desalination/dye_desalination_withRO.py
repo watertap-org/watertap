@@ -254,7 +254,6 @@ def set_operating_conditions(m):
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability
     desal.RO.B_comp.fix(3.5e-8)  # membrane salt permeability
     desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    desal.RO.feed_side.channel_length.fix(1)  # distance from RO module entrance [m]
     desal.RO.feed_side.spacer_porosity.fix(
         0.97
     )  # spacer porosity in membrane stage [-]
