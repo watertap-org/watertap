@@ -51,6 +51,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import MembraneChannel1DBlock
+from watertap.core.membrane_channel_base import SherwoodNumberEq
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
@@ -1132,6 +1133,135 @@ class TestReverseOsmosis:
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
         assert pytest.approx(5.792e-4, rel=1e-3) == value(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
+        )
+
+    @pytest.mark.component
+    def testReverseOsmosis_new_sherwood_eq(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = ReverseOsmosis1D(
+            property_package=m.fs.properties,
+            has_pressure_change=False,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            sherwood_number_eq=SherwoodNumberEq.new,
+            transformation_scheme="BACKWARD",
+            transformation_method="dae.finite_difference",
+            finite_elements=3,
+        )
+
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_NaCl = 0.035
+        feed_pressure = 50e5
+        feed_temperature = 273.15 + 25
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 101325
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "NaCl"].fix(
+            feed_flow_mass * feed_mass_frac_NaCl
+        )
+
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.length.fix(8)
+        m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
+
+        # test statistics
+        assert number_variables(m) == 201
+        assert number_total_constraints(m) == 162
+        assert number_unused_variables(m) == 25
+
+        # Test units
+        assert_units_consistent(m.fs.unit)
+
+        # Check degrees of freedom = 0
+        assert degrees_of_freedom(m) == 0
+
+        # Scaling
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e3, index=("Liq", "NaCl")
+        )
+
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        # Test initialization
+        initialization_tester(m, outlvl=idaeslog.DEBUG)
+
+        # Test variable scaling
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+        # Solve
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check mass conservation
+        b = m.fs.unit
+        comp_lst = ["NaCl", "H2O"]
+
+        flow_mass_inlet = sum(
+            b.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_retentate = sum(
+            b.feed_side.properties[0, 1].flow_mass_phase_comp["Liq", j]
+            for j in comp_lst
+        )
+        flow_mass_permeate = sum(
+            b.mixed_permeate[0].flow_mass_phase_comp["Liq", j] for j in comp_lst
+        )
+
+        assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.6097, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(0.3898, rel=1e-3)
+
+        assert (
+            abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate))
+            <= 1e-2
+        )
+
+        # Test solution
+        x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
+        assert pytest.approx(4.841e-3, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
+        )
+        assert pytest.approx(1.629e-6, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
+        )
+        assert pytest.approx(144.31, rel=1e-3) == value(m.fs.unit.area)
+        assert pytest.approx(1.019e-3, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
+        )
+        assert pytest.approx(2.000e-6, rel=1e-3) == value(
+            m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
+        )
+        assert pytest.approx(0.3895, rel=1e-3) == value(
+            m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
+        )
+        assert pytest.approx(2.652e-4, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 
