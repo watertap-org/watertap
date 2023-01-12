@@ -25,14 +25,10 @@ def test_lazy_flow_costing():
     m.fs = idc.FlowsheetBlock(dynamic=False)
 
     m.fs.costing = WaterTAPCosting()
-    # electricity should not be pre-registered
-    assert "electricity" in m.fs.costing.flow_types
 
     m.fs.electricity = pyo.Var(units=pyo.units.kW)
 
     m.fs.costing.cost_flow(m.fs.electricity, "electricity")
-    # electricity should now be registered
-    assert "electricity" in m.fs.costing.flow_types
 
     assert "foo" not in m.fs.costing.flow_types
     with pytest.raises(
@@ -43,20 +39,52 @@ def test_lazy_flow_costing():
     ):
         m.fs.costing.cost_flow(m.fs.electricity, "foo")
 
-    m.fs.costing.foo_base_cost = pyo.Var(
+    m.fs.costing.foo_cost = foo_cost = pyo.Var(
         initialize=42, doc="foo", units=pyo.units.USD_2020 / pyo.units.m
     )
 
-    m.fs.costing.defined_flows["foo"] = m.fs.costing.foo_base_cost
+    m.fs.costing.add_defined_flow("foo", m.fs.costing.foo_cost)
+
+    # make sure the component was not replaced
+    # by add_defined_flow
+    assert foo_cost is m.fs.costing.foo_cost
 
     assert "foo" in m.fs.costing.defined_flows
+    # not registered until used
     assert "foo" not in m.fs.costing.flow_types
 
     m.fs.foo = pyo.Var(units=pyo.units.m)
 
     m.fs.costing.cost_flow(m.fs.foo, "foo")
 
+    # now should be registered
     assert "foo" in m.fs.costing.flow_types
+
+    m.fs.costing.bar_base_cost = pyo.Var(
+        initialize=0.42, doc="bar", units=pyo.units.USD_2020 / pyo.units.g
+    )
+    m.fs.costing.bar_purity = pyo.Param(
+        initialize=0.50, doc="bar purity", units=pyo.units.dimensionless
+    )
+
+    m.fs.costing.add_defined_flow(
+        "bar", m.fs.costing.bar_base_cost * m.fs.costing.bar_purity
+    )
+
+    bar_cost = m.fs.costing.bar_cost
+    assert isinstance(bar_cost, pyo.Expression)
+    assert pyo.value(bar_cost) == 0.21
+
+    m.fs.costing.bar_base_cost.value = 1.5
+    assert pyo.value(bar_cost) == 0.75
+
+    m.fs.costing.baz_cost = pyo.Var()
+
+    with pytest.raises(
+        RuntimeError,
+        match="Attribute baz_cost already exists on the costing block, but is not ",
+    ):
+        m.fs.costing.add_defined_flow("baz", 42 * pyo.units.USD_2020 / pyo.units.m**2)
 
 
 @pytest.mark.component
@@ -65,8 +93,14 @@ def test_defined_flows_dict():
     d = _DefinedFlowsDict()
 
     # test __setitem__; set unused keys
-    d["a"] = 1
-    d["b"] = 2
+    with pytest.raises(
+        KeyError,
+        match="Please use the `WaterTAPCosting.add_defined_flow` method to add defined flows.",
+    ):
+        d["a"] = 1
+
+    d._setitem("a", 1)
+    d._setitem("b", 2)
 
     # test __delitem__; raise error on delete
     with pytest.raises(
@@ -80,7 +114,7 @@ def test_defined_flows_dict():
         KeyError,
         match="a has already been defined as a flow",
     ):
-        d["a"] = 2
+        d._setitem("a", 2)
 
     # test __getitem__
     assert d["a"] == 1

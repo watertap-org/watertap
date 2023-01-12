@@ -19,6 +19,7 @@ from watertap.unit_models.electrodialysis_1D import (
     PressureDropMethod,
     FrictionFactorMethod,
     HydraulicDiameterMethod,
+    LimitingCurrentDensityMethod,
 )
 from watertap.costing import WaterTAPCosting
 from pyomo.environ import (
@@ -31,6 +32,7 @@ from pyomo.environ import (
 )
 from idaes.core import (
     FlowsheetBlock,
+    EnergyBalanceType,
     MaterialBalanceType,
     MomentumBalanceType,
     UnitModelCostingBlock,
@@ -72,13 +74,14 @@ class TestElectrodialysisVoltageConst:
     def test_build_model(self, electrodialysis_1d_cell1):
         m = electrodialysis_1d_cell1
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -113,8 +116,8 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell1):
@@ -287,13 +290,13 @@ class TestElectrodialysisVoltageConst:
         assert_optimal_termination(results)
 
         assert pytest.approx(388.6800, rel=1e-3) == value(
-            m.fs.costing.total_capital_cost
+            m.fs.costing.aggregate_capital_cost
         )
         assert pytest.approx(45.86804, rel=1e-3) == value(
             m.fs.costing.total_operating_cost
         )
         assert pytest.approx(777.3600, rel=1e-3) == value(
-            m.fs.costing.total_investment_cost
+            m.fs.costing.total_capital_cost
         )
 
 
@@ -322,13 +325,14 @@ class TestElectrodialysisCurrentConst:
         m = electrodialysis_1d_cell2
 
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -363,8 +367,8 @@ class TestElectrodialysisCurrentConst:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell2):
@@ -533,13 +537,14 @@ class TestElectrodialysis_withNeutralSPecies:
         m = electrodialysis_1d_cell3
 
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -574,8 +579,8 @@ class TestElectrodialysis_withNeutralSPecies:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
 
     @pytest.mark.unit
     def test_stats_constant_vol(self, electrodialysis_1d_cell3):
@@ -758,13 +763,14 @@ class Test_ED_MembNonohm_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell4):
         m = electrodialysis_1d_cell4
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -801,8 +807,8 @@ class Test_ED_MembNonohm_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
 
@@ -982,13 +988,14 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
     def test_build_model(self, electrodialysis_1d_cell5):
         m = electrodialysis_1d_cell5
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Voltage
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -1029,8 +1036,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1166,6 +1173,182 @@ class Test_ED_MembNonohm_On_DL_On_ConstV:
         )
 
 
+class Test_ED_MembNonohm_On_DL_On_ConstV_ilimimethods:
+    @pytest.fixture(scope="class")
+    def edcell_ilim_empi(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        m.fs.properties = MCASParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            limiting_current_density_method=LimitingCurrentDensityMethod.Empirical,
+        )
+        return m
+
+    @pytest.fixture(scope="class")
+    def edcell_ilim_theo(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ion_dict = {
+            "solute_list": ["Na_+", "Cl_-"],
+            "mw_data": {"H2O": 18e-3, "Na_+": 23e-3, "Cl_-": 35.5e-3},
+            "elec_mobility_data": {("Liq", "Na_+"): 5.19e-8, ("Liq", "Cl_-"): 7.92e-8},
+            "charge": {"Na_+": 1, "Cl_-": -1},
+        }
+        m.fs.properties = MCASParameterBlock(**ion_dict)
+        m.fs.unit = Electrodialysis1D(
+            property_package=m.fs.properties,
+            operation_mode=ElectricalOperationMode.Constant_Voltage,
+            finite_elements=10,
+            has_nonohmic_potential_membrane=True,
+            has_Nernst_diffusion_layer=True,
+            hydraulic_diameter_method=HydraulicDiameterMethod.spacer_specific_area_known,
+            limiting_current_density_method=LimitingCurrentDensityMethod.Theoretical,
+        )
+        return m
+
+    @pytest.mark.unit
+    def test_stats_constant_vol(self, edcell_ilim_empi, edcell_ilim_theo):
+        model = (edcell_ilim_empi, edcell_ilim_theo)
+        # Specify a system
+        for m in model:
+            m.fs.unit.water_trans_number_membrane["cem"].fix(5.8)
+            m.fs.unit.water_trans_number_membrane["aem"].fix(4.3)
+            m.fs.unit.water_permeability_membrane["cem"].fix(2.16e-14)
+            m.fs.unit.water_permeability_membrane["aem"].fix(1.75e-14)
+            m.fs.unit.voltage_applied.fix(0.8)
+            m.fs.unit.electrodes_resistance.fix(0)
+            m.fs.unit.cell_pair_num.fix(10)
+            m.fs.unit.current_utilization.fix(1)
+            m.fs.unit.channel_height.fix(5e-4)
+            m.fs.unit.membrane_areal_resistance["cem"].fix(1.89e-4)
+            m.fs.unit.membrane_areal_resistance["aem"].fix(1.77e-4)
+            m.fs.unit.cell_width.fix(0.1)
+            m.fs.unit.cell_length.fix(0.79)
+            m.fs.unit.membrane_thickness["aem"].fix(1.3e-4)
+            m.fs.unit.membrane_thickness["cem"].fix(1.3e-4)
+            m.fs.unit.solute_diffusivity_membrane["cem", "Na_+"].fix(1.8e-10)
+            m.fs.unit.solute_diffusivity_membrane["aem", "Na_+"].fix(1.25e-10)
+            m.fs.unit.solute_diffusivity_membrane["cem", "Cl_-"].fix(1.8e-10)
+            m.fs.unit.solute_diffusivity_membrane["aem", "Cl_-"].fix(1.25e-10)
+            m.fs.unit.ion_trans_number_membrane["cem", "Na_+"].fix(1)
+            m.fs.unit.ion_trans_number_membrane["aem", "Na_+"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["cem", "Cl_-"].fix(0)
+            m.fs.unit.ion_trans_number_membrane["aem", "Cl_-"].fix(1)
+            m.fs.unit.spacer_porosity.fix(0.83)
+
+            # set the inlet stream
+            m.fs.unit.inlet_diluate.pressure.fix(101325)
+            m.fs.unit.inlet_diluate.temperature.fix(298.15)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(2.40e-1)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(7.38e-4)
+            m.fs.unit.inlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(7.38e-4)
+            m.fs.unit.inlet_concentrate.pressure.fix(101325)
+            m.fs.unit.inlet_concentrate.temperature.fix(298.15)
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"].fix(
+                2.40e-1
+            )
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"].fix(
+                7.38e-4
+            )
+            m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"].fix(
+                7.38e-4
+            )
+
+        model[0].fs.unit.param_a = 25
+        model[0].fs.unit.param_b = 0.5
+        model[1].fs.unit.spacer_specific_area.fix(10700)
+        model[1].fs.unit.diffus_mass.fix(1.6e-9)
+
+    @pytest.mark.component
+    def test_model_solutions(self, edcell_ilim_empi, edcell_ilim_theo):
+        model = (edcell_ilim_empi, edcell_ilim_theo)
+        for m in model:
+
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e1, index=("Liq", "H2O")
+            )
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
+            )
+            m.fs.properties.set_default_scaling(
+                "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
+            )
+            # set scaling factors for some vars
+            iscale.set_scaling_factor(m.fs.unit.cell_width, 10)
+            iscale.set_scaling_factor(m.fs.unit.cell_length, 20)
+            iscale.set_scaling_factor(m.fs.unit.cell_pair_num, 0.01)
+            iscale.calculate_scaling_factors(m.fs)
+            assert degrees_of_freedom(m) == 0
+            initialization_tester(m)
+            badly_scaled_var_values = {
+                var.name: val for (var, val) in iscale.badly_scaled_var_generator(m)
+            }
+            assert not badly_scaled_var_values
+            results = solver.solve(m)
+            assert_optimal_termination(results)
+
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.3470e-1, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(5.1988e-04, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(5.1988e-04, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.4530e-1, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(9.5612e-4, rel=1e-3)
+        assert value(
+            model[0].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(9.5612e-4, rel=1e-3)
+        assert value(model[0].fs.unit.current_dens_lim_x[0, 0]) == pytest.approx(
+            433.5819, rel=1e-3
+        )
+        assert value(model[0].fs.unit.current_dens_lim_x[0, 1]) == pytest.approx(
+            309.2965, rel=1e-3
+        )
+
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.3468e-1, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(5.1654e-04, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_diluate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(5.1654e-04, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(2.4532e-1, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Na_+"]
+        ) == pytest.approx(9.5946e-4, rel=1e-3)
+        assert value(
+            model[1].fs.unit.outlet_concentrate.flow_mol_phase_comp[0, "Liq", "Cl_-"]
+        ) == pytest.approx(9.5946e-4, rel=1e-3)
+        assert value(model[1].fs.unit.current_dens_lim_x[0, 0]) == pytest.approx(
+            450.2808, rel=1e-3
+        )
+        assert value(model[1].fs.unit.current_dens_lim_x[0, 1]) == pytest.approx(
+            323.2072, rel=1e-3
+        )
+
+
 class Test_ED_MembNonohm_On_DL_On_ConstC:
     @pytest.fixture(scope="class")
     def electrodialysis_1d_cell6(self):
@@ -1192,13 +1375,14 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
     def test_build_model(self, electrodialysis_1d_cell6):
         m = electrodialysis_1d_cell6
         # test configrations
-        assert len(m.fs.unit.config) == 19
+        assert len(m.fs.unit.config) == 21
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
         assert (
             m.fs.unit.config.operation_mode == ElectricalOperationMode.Constant_Current
         )
         assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
         assert (
             m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
         )
@@ -1239,8 +1423,8 @@ class Test_ED_MembNonohm_On_DL_On_ConstC:
         assert isinstance(m.fs.unit.eq_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_specific_power_electrical, Constraint)
         assert isinstance(m.fs.unit.eq_current_efficiency_x, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_diluate, Constraint)
-        assert isinstance(m.fs.unit.eq_isothermal_concentrate, Constraint)
+        assert isinstance(m.fs.unit.diluate.isothermal_assumption_eq, Constraint)
+        assert isinstance(m.fs.unit.concentrate.isothermal_assumption_eq, Constraint)
         assert isinstance(m.fs.unit.eq_set_surface_conc, Constraint)
         assert isinstance(m.fs.unit.eq_potential_nonohm_membrane_x, Constraint)
         assert isinstance(m.fs.unit.eq_current_dens_lim_x, Constraint)
@@ -1635,11 +1819,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[3].fs.unit.N_Re) == pytest.approx(58.708, rel=1e-3)
 
         assert value(ed_m[3].fs.unit.pressure_drop[0]) == pytest.approx(
-            5332.605, rel=1e-3
+            6424.825, rel=1e-3
         )
 
         assert value(ed_m[3].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            8958.776, rel=1e-3
+            10793.706, rel=1e-3
         )
 
         # Test ed_m5
@@ -1653,11 +1837,11 @@ class Test_ED_pressure_drop_components:
         assert value(ed_m[4].fs.unit.N_Re) == pytest.approx(74.987, rel=1e-3)
 
         assert value(ed_m[4].fs.unit.pressure_drop[0]) == pytest.approx(
-            3694.099, rel=1e-3
+            4450.722, rel=1e-3
         )
 
         assert value(ed_m[4].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            6206.087, rel=1e-3
+            7477.213, rel=1e-3
         )
 
         # Test ed_m6
@@ -1671,15 +1855,15 @@ class Test_ED_pressure_drop_components:
         assert_optimal_termination(results)
         assert value(ed_m[5].fs.unit.N_Re) == pytest.approx(35.801, rel=1e-3)
         assert value(ed_m[5].fs.unit.outlet_diluate.pressure[0]) == pytest.approx(
-            182512.397, rel=1e-3
+            178659.214, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop[0]) == pytest.approx(
-            11197.978, rel=1e-3
+            13491.540, rel=1e-3
         )
 
         assert value(ed_m[5].fs.unit.pressure_drop_total[0]) == pytest.approx(
-            18812.603, rel=1e-3
+            22665.786, rel=1e-3
         )
 
     @pytest.mark.unit
