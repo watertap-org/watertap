@@ -54,7 +54,11 @@ def generate_model_list(path, extension, exclude):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not os.path.exists(doc_path), reason="No docs directory")
+doc_path = Path(doc_path).resolve()
+
+...
+
+@pytest.mark.skipif(not os.path.exists(doc_path / "index.rst"), reason="No RST files found")
 def test_lists_match():
 
     rst_list = generate_model_list(rst_path, ".rst", ("index.rst",))
