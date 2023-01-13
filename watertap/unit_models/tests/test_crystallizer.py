@@ -40,8 +40,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core import UnitModelCostingBlock
 
-from watertap.costing import WaterTAPCosting
-from watertap.costing.watertap_costing_package import CrystallizerCostType
+from watertap.costing import WaterTAPCosting, CrystallizerCostType
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -452,7 +451,9 @@ class TestCrystallization:
         # Residence time
         assert pytest.approx(1.0228, rel=1e-3) == value(b.t_res)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(300000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_capcosting_by_mass(self, Crystallizer_frame):
@@ -480,7 +481,9 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Mass-basis costing
-        assert pytest.approx(300000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(300000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_capcosting_by_volume(self, Crystallizer_frame_2):
@@ -536,7 +539,9 @@ class TestCrystallization:
         # Minimum active volume
         assert pytest.approx(0.959, rel=1e-3) == value(b.volume_suspension)
         # Volume-basis costing
-        assert pytest.approx(199000, rel=1e-3) == value(m.fs.costing.total_capital_cost)
+        assert pytest.approx(199000, rel=1e-3) == value(
+            m.fs.costing.aggregate_capital_cost
+        )
 
     @pytest.mark.component
     def test_solution2_operatingcost(self, Crystallizer_frame_2):

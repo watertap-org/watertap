@@ -35,7 +35,7 @@ from idaes.core.util.scaling import (
 )
 
 import watertap.property_models.seawater_prop_pack as props
-import watertap.property_models.ion_DSPMDE_prop_pack as props2
+import watertap.property_models.multicomp_aq_sol_prop_pack as props2
 from watertap.unit_models.pressure_changer import (
     Pump,
     EnergyRecoveryDevice,
@@ -178,11 +178,6 @@ class TestPumpIsothermal:
                     )
                     <= 1e-6
                 )
-            # energy balance
-            assert (
-                abs(value(b.properties_in[t].enth_flow - b.properties_out[t].enth_flow))
-                <= 1e-6
-            )
 
     @pytest.mark.component
     def test_solution(self, Pump_frame):
@@ -207,6 +202,9 @@ class TestPumpIsothermal:
         )
         assert pytest.approx(298.15, rel=1e-5) == value(
             m.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(9.9318e4, rel=1e-5) == value(
+            m.fs.unit.control_volume.properties_out[0].enth_flow
         )
 
 
@@ -380,11 +378,6 @@ class TestPumpVariable_Flow:
                     )
                     <= 1e-6
                 )
-            # energy balance
-            assert (
-                abs(value(b.properties_in[t].enth_flow - b.properties_out[t].enth_flow))
-                <= 1e-6
-            )
 
     @pytest.mark.unit
     def test_units(self, Pump_frame):
@@ -395,6 +388,9 @@ class TestPumpVariable_Flow:
         m = Pump_frame
 
         default_flow_vol = m.fs.unit.bep_flow()
+        assert pytest.approx(9.9318e4, rel=1e-5) == value(
+            m.fs.unit.control_volume.properties_out[0].enth_flow
+        )
         assert pytest.approx(1, rel=1e-3) == value(m.fs.unit.eta_ratio[0])
 
         # Test low bep flow case
@@ -420,7 +416,7 @@ class TestPumpIsothermal_with_energybalancetype_none:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = props2.DSPMDEParameterBlock(solute_list=["TDS"])
+        m.fs.properties = props2.MCASParameterBlock(solute_list=["TDS"])
 
         m.fs.unit = Pump(property_package=m.fs.properties)
 

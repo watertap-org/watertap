@@ -46,11 +46,10 @@ from watertap.core.util.initialization import (
     assert_no_degrees_of_freedom,
     assert_degrees_of_freedom,
 )
-from watertap.costing.watertap_costing_package import (
-    WaterTAPCosting,
-    make_capital_cost_var,
-)
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
+
+from watertap.costing import WaterTAPCosting
+from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock
+
 import watertap.examples.flowsheets.electrodialysis.electrodialysis_1stack as edfs
 
 __author__ = "Xiangyu Bi"
@@ -69,7 +68,7 @@ class TestElectrodialysisVoltageConst:
         # Test basic build
         assert isinstance(m, ConcreteModel)
         assert isinstance(m.fs, FlowsheetBlock)
-        assert isinstance(m.fs.properties, DSPMDEParameterBlock)
+        assert isinstance(m.fs.properties, MCASParameterBlock)
         assert isinstance(m.fs.costing, Block)
         assert isinstance(m.fs.feed, Feed)
         assert isinstance(m.fs.separator, Separator)
@@ -93,7 +92,7 @@ class TestElectrodialysisVoltageConst:
         assert isinstance(m.fs.EDstack.costing.fixed_operating_cost, Var)
 
         var_str_list = [
-            "total_investment_cost",
+            "total_capital_cost",
             "maintenance_labor_chemical_operating_cost",
             "total_operating_cost",
         ]
@@ -118,7 +117,7 @@ class TestElectrodialysisVoltageConst:
 
         # Test the primary EDstack properties
         # test configrations
-        assert len(m.fs.EDstack.config) == 16
+        assert len(m.fs.EDstack.config) == 21
         assert not m.fs.EDstack.config.dynamic
         assert not m.fs.EDstack.config.has_holdup
         assert (

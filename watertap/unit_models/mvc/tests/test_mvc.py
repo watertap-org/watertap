@@ -154,20 +154,20 @@ def test_mvc():
     brine_blk = m.fs.evaporator.properties_brine[0]
     # evaporator values
     assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
-    assert m.fs.evaporator.lmtd.value == pytest.approx(30.44, rel=1e-3)
-    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.2176e7, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(30.50, rel=1e-3)
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.220e7, rel=1e-3)
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
         5.8521e5, rel=1e-3
     )
-    assert compressed_blk.pressure.value == pytest.approx(3.9720e4, rel=1e-3)
+    assert compressed_blk.pressure.value == pytest.approx(3.9656e4, rel=1e-3)
     assert compressed_blk.temperature.value == pytest.approx(407.70, rel=1e-3)
 
     # condenser values
     condensed_blk = m.fs.condenser.control_volume.properties_out[0]
     assert m.fs.condenser.control_volume.heat[0].value == pytest.approx(
-        -1.2176e7, rel=1e-3
+        -1.220e7, rel=1e-3
     )
     assert condensed_blk.temperature.value == pytest.approx(342.20, rel=1e-3)
