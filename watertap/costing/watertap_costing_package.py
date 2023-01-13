@@ -28,6 +28,7 @@ from idaes.models.unit_models import Mixer
 from watertap.unit_models import (
     ReverseOsmosis0D,
     ReverseOsmosis1D,
+    OsmoticallyAssistedReverseOsmosis0D,
     NanoFiltration0D,
     NanofiltrationZO,
     PressureExchanger,
@@ -48,6 +49,9 @@ from .units.gac import cost_gac
 from .units.ion_exchange import cost_ion_exchange
 from .units.nanofiltration import cost_nanofiltration
 from .units.mixer import cost_mixer
+from .units.osmotically_assisted_reverse_osmosis import (
+    cost_osmotically_assisted_reverse_osmosis,
+)
 from .units.pressure_exchanger import cost_pressure_exchanger
 from .units.pump import cost_pump
 from .units.reverse_osmosis import cost_reverse_osmosis
@@ -85,6 +89,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         PressureExchanger: cost_pressure_exchanger,
         ReverseOsmosis0D: cost_reverse_osmosis,
         ReverseOsmosis1D: cost_reverse_osmosis,
+        OsmoticallyAssistedReverseOsmosis0D: cost_osmotically_assisted_reverse_osmosis,
         NanoFiltration0D: cost_nanofiltration,
         NanofiltrationZO: cost_nanofiltration,
         Crystallization: cost_crystallizer,
