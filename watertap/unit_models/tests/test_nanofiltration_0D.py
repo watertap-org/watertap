@@ -185,7 +185,7 @@ class TestNanoFiltration:
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 73
+        assert number_variables(m) == 68
         assert number_total_constraints(m) == 45
         assert number_unused_variables(m) == 7  # vars from property package parameters
 

@@ -292,9 +292,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         assert isinstance(m.fs.unit.permeate_side, MembraneChannel0DBlock)
 
         # test statistics
-        assert number_variables(m) == 133
+        assert number_variables(m) == 128
         assert number_total_constraints(m) == 98
-        assert number_unused_variables(m) == 13
+        assert number_unused_variables(m) == 8
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -512,9 +512,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.permeate_side.K[0, 1.0, "NaCl"].fix(kp)
 
         # test statistics
-        assert number_variables(m) == 140
+        assert number_variables(m) == 135
         assert number_total_constraints(m) == 104
-        assert number_unused_variables(m) == 8
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -695,9 +695,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 170
+        assert number_variables(m) == 165
         assert number_total_constraints(m) == 131
-        assert number_unused_variables(m) == 8
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -847,9 +847,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
 
         # test statistics
-        assert number_variables(m) == 182
+        assert number_variables(m) == 177
         assert number_total_constraints(m) == 145
-        assert number_unused_variables(m) == 8
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -1021,9 +1021,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.permeate_side.dP_dx.fix(perm_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 172
+        assert number_variables(m) == 167
         assert number_total_constraints(m) == 133
-        assert number_unused_variables(m) == 8
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -1248,9 +1248,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 170
+        assert number_variables(m) == 165
         assert number_total_constraints(m) == 131
-        assert number_unused_variables(m) == 8
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
