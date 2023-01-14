@@ -86,7 +86,10 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
-    packages=find_namespace_packages(),
+    # just include watertap and everything under it
+    packages=find_namespace_packages(
+        include=("watertap*",),
+    ),
     python_requires=">=3.7",
     install_requires=[
         # primary requirements for unit and property models
