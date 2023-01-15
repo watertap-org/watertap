@@ -131,11 +131,9 @@ def build():
     )
 
     m.fs.pump0 = Pump(property_package=m.fs.properties)
-    m.fs.pump0.del_component("ratioP")
-    m.fs.pump0.del_component("ratioP_calculation")
+    m.fs.pump0.ratioP_calculation.deactivate()
     m.fs.pump1 = Pump(property_package=m.fs.properties)
-    m.fs.pump1.del_component("ratioP")
-    m.fs.pump1.del_component("ratioP_calculation")
+    m.fs.pump0.ratioP_calculation.deactivate()
 
     # Add electrodialysis (ED) stacks
     m.fs.EDstack = Electrodialysis1D(
