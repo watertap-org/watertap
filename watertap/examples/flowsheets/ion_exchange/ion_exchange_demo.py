@@ -19,7 +19,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlo
 from watertap.unit_models.ion_exchange_0D import IonExchange0D
 from watertap.costing import WaterTAPCosting
 
-import numpy as np
+import math
 
 
 solver = get_solver()
@@ -42,7 +42,9 @@ def main():
 
     optimize_system(m)
     ix = m.fs.ion_exchange
-    num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
+    num_col = math.ceil(
+        ix.number_columns()
+    )  # To eliminate fractional number of columns
     bed_depth = ix.bed_depth()
     ix.bed_depth.fix(bed_depth)
     ix.number_columns.fix(num_col)
@@ -231,10 +233,6 @@ def optimize_system(m):
     ix.number_columns.unfix()
     ix.bed_depth.unfix()
     solver.solve(ix)
-    # num_col = np.ceil(ix.number_columns())  # To eliminate fractional number of columns
-    # bed_depth = ix.bed_depth()
-    # ix.bed_depth.fix(bed_depth)
-    # ix.number_columns.fix(num_col)
 
 
 def get_ion_config(ions):
