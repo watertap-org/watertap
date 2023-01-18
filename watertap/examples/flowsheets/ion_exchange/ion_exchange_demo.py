@@ -53,6 +53,8 @@ def main():
     print(f"Model solve {results.solver.termination_condition.swapcase()}")
     display_results(m)
 
+    return m
+
 
 def ix_build(ions, target_ion=None, hazardous_waste=False, regenerant="NaCl"):
 
@@ -330,4 +332,4 @@ def display_results(m):
 
 
 if __name__ == "__main__":
-    main()
+    m = main()
