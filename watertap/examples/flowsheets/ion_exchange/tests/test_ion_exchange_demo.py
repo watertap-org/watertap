@@ -36,7 +36,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlo
 
 import watertap.examples.flowsheets.ion_exchange.ion_exchange_demo as ixf
 
-import numpy as np
+import math
 
 __author__ = "Kurban Sitterley"
 
@@ -186,7 +186,7 @@ class TestIXDemo:
             0.016666, abs=1e-6
         )
         ix = m.fs.ion_exchange
-        num_col = np.ceil(
+        num_col = math.ceil(
             ix.number_columns()
         )  # To eliminate fractional number of columns
         bed_depth = ix.bed_depth()
@@ -205,6 +205,18 @@ class TestIXDemo:
         )
         assert value(m.fs.costing.LCOW) == pytest.approx(0.160, abs=0.001)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.unit
     def test_main_fun(self):
-        ixf.main()
+        m = ixf.main()
+
+        assert degrees_of_freedom(m) == 0
+        assert value(m.fs.ion_exchange.number_columns) == 5
+        assert value(m.fs.ion_exchange.bed_depth) == pytest.approx(1.24567, abs=1e-4)
+        assert value(m.fs.ion_exchange.dimensionless_time) == pytest.approx(
+            1.10981, abs=1e-4
+        )
+        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
+            0.032097, abs=0.0001
+        )
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.160, abs=0.001)
