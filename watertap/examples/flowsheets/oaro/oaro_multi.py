@@ -108,7 +108,7 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
     # stage set up
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.Stages = RangeSet(m.fs.NumberOfStages)
-    m.fs.LSRRO_Stages = RangeSet(2, m.fs.NumberOfStages)
+    m.fs.NonFirstStages = RangeSet(2, m.fs.NumberOfStages)
     m.fs.NonFinalStages = RangeSet(m.fs.NumberOfStages - 1)
     if number_of_stages > 1:
         m.fs.IntermediateStages = RangeSet(2, m.fs.NumberOfStages - 1)
@@ -130,7 +130,7 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
     #     )
 
     # --- Recycle pump ---
-    m.fs.RecyclePumps = Pump(m.fs.Stages, property_package=m.fs.properties)
+    m.fs.RecyclePumps = Pump(m.fs.NonFirstStages, property_package=m.fs.properties)
     # for pump in m.fs.PrimaryPumps.values():
     #     pump.costing = UnitModelCostingBlock(
     #         flowsheet_costing_block=m.fs.costing,
@@ -148,7 +148,8 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
     # m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
-    m.fs.OARO1 = OsmoticallyAssistedReverseOsmosis0D(
+    m.fs.OAROUnits = OsmoticallyAssistedReverseOsmosis0D(
+        m.fs.NonFinalStages,
         property_package=m.fs.properties,
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
@@ -156,24 +157,13 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    # m.fs.OARO1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-
-    m.fs.OARO2 = OsmoticallyAssistedReverseOsmosis0D(
-        property_package=m.fs.properties,
-        has_pressure_change=True,
-        pressure_change_type=PressureChangeType.calculated,
-        mass_transfer_coefficient=MassTransferCoefficient.calculated,
-        concentration_polarization_type=ConcentrationPolarizationType.calculated,
-        has_full_reporting=True,
-    )
-    # m.fs.OARO2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
         # add energy recovery turbine block
-        m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
-        m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
-        m.fs.ERD3 = EnergyRecoveryDevice(property_package=m.fs.properties)
+        m.fs.EnergyRecoveryDevices = EnergyRecoveryDevice(
+            m.fs.Stages, property_package=m.fs.properties
+        )
         # add costing for ERD config
         # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -218,38 +208,76 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
 
     # connections
     if erd_type == ERDtype.pump_as_turbine:
-        m.fs.feed_to_P1 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-        m.fs.P1_to_OARO1 = Arc(source=m.fs.P1.outlet, destination=m.fs.OARO1.feed_inlet)
-        m.fs.OARO1_to_ERD1 = Arc(
-            source=m.fs.OARO1.feed_outlet, destination=m.fs.ERD1.inlet
-        )
-        m.fs.ERD1_to_disposal = Arc(
-            source=m.fs.ERD1.outlet, destination=m.fs.disposal.inlet
-        )
-        m.fs.OARO1_to_P2 = Arc(
-            source=m.fs.OARO1.permeate_outlet, destination=m.fs.P2.inlet
+        # Connect the feed to the first pump
+        m.fs.feed_to_pump = Arc(
+            source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet
         )
 
-        m.fs.P2_to_OARO2 = Arc(source=m.fs.P2.outlet, destination=m.fs.OARO2.feed_inlet)
-        m.fs.OARO2_to_ERD2 = Arc(
-            source=m.fs.OARO2.feed_outlet, destination=m.fs.ERD2.inlet
-        )
-        m.fs.ERD2_to_P3 = Arc(source=m.fs.ERD2.outlet, destination=m.fs.P3.inlet)
-        m.fs.P3_to_OARO1 = Arc(
-            source=m.fs.P3.outlet, destination=m.fs.OARO1.permeate_inlet
+        # Connect first EnergyRecoveryDevice to disposal
+        m.fs.ERD_to_disposal = Arc(
+            source=m.fs.EnergyRecoveryDevices[1].outlet, destination=m.fs.disposal.inlet
         )
 
-        m.fs.OARO2_to_P4 = Arc(
-            source=m.fs.OARO2.permeate_outlet, destination=m.fs.P4.inlet
+        # Connect the Pump n to OARO n
+        m.fs.pump_to_OARO = Arc(
+            m.fs.NonFinalStages,
+            rule=lambda fs, n: {
+                "source": fs.PrimaryPumps[n].outlet,
+                "destination": fs.OAROUnits[n].feed_inlet,
+            },
         )
-        m.fs.P4_to_ro = Arc(source=m.fs.P4.outlet, destination=m.fs.RO.inlet)
+
+        # Connect OARO n permeate outlet to Pump n+1
+        m.fs.OARO_to_pump = Arc(
+            m.fs.NonFinalStages,
+            rule=lambda fs, n: {
+                "source": fs.OAROUnits[n].permeate_outlet,
+                "destination": fs.PrimaryPumps[n + 1].inlet,
+            },
+        )
+
+        # Connect OARO n feed outlet to EnergyRecoveryDevice n
+        m.fs.OARO_to_ERD = Arc(
+            m.fs.NonFinalStages,
+            rule=lambda fs, n: {
+                "source": fs.OAROUnits[n].feed_outlet,
+                "destination": fs.EnergyRecoveryDevices[n].inlet,
+            },
+        )
+
+        # Connect EnergyRecoveryDevice n to RecyclePumps n
+        m.fs.ERD_to_recyclepump = Arc(
+            m.fs.NonFirstStages,
+            rule=lambda fs, n: {
+                "source": fs.EnergyRecoveryDevices[n].outlet,
+                "destination": fs.RecyclePumps[n].inlet,
+            },
+        )
+
+        # Connect RecyclePumps n to OARO n-1 permeate_inlet
+        m.fs.recyclepump_to_OARO = Arc(
+            m.fs.NonFinalStages,
+            rule=lambda fs, n: {
+                "source": fs.RecyclePumps[n].outlet,
+                "destination": fs.OAROUnits[n - 1].permeate_inlet,
+            },
+        )
+
+        last_stage = m.fs.LastStage
+        # Connect the last Pump to RO
+        m.fs.pump_to_ro = Arc(
+            source=m.fs.PrimaryPumps[last_stage].outlet, destination=m.fs.RO.inlet
+        )
+
+        # Connect the primary RO permeate to the product
         m.fs.ro_to_product = Arc(
             source=m.fs.RO.permeate, destination=m.fs.product.inlet
         )
-        m.fs.ro_to_ERD3 = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD3.inlet)
-        m.fs.ERD3_to_P5 = Arc(source=m.fs.ERD3.outlet, destination=m.fs.P5.inlet)
-        m.fs.P5_to_OARO2 = Arc(
-            source=m.fs.P5.outlet, destination=m.fs.OARO2.permeate_inlet
+
+        # Connect RO retentate to the last EnergyRecoveryDevice
+        m.fs.ro_to_ERD = Arc(
+            source=m.fs.RO.retentate,
+            destination=m.fs.EnergyRecoveryDevices[last_stage].inlet,
         )
 
     else:
@@ -265,20 +293,23 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
         "flow_mass_phase_comp", 1e2, index=("Liq", "NaCl")
     )
     # set unit model values
-    iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.P3.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.P4.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(m.fs.P5.control_volume.work, 1e-3)
+    for pump in m.fs.PrimaryPumps.values():
+        iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
+
+    for pump in m.fs.RecyclePumps.values():
+        iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
+
     iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
-    iscale.set_scaling_factor(m.fs.OARO1.area, 1e-2)
-    iscale.set_scaling_factor(m.fs.OARO2.area, 1e-2)
+
+    # iscale.set_scaling_factor(m.fs.OARO1.area, 1e-2)
+    # iscale.set_scaling_factor(m.fs.OARO2.area, 1e-2)
+
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+
     if erd_type == ERDtype.pump_as_turbine:
-        iscale.set_scaling_factor(m.fs.ERD1.control_volume.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.ERD2.control_volume.work, 1e-3)
-        iscale.set_scaling_factor(m.fs.ERD3.control_volume.work, 1e-3)
+        for erd in m.fs.EnergyRecoveryDevices.values():
+            iscale.set_scaling_factor(erd.control_volume.work, 1e-3)
     else:
         erd_type_not_found(erd_type)
     # unused scaling factors needed by IDAES base costing module
@@ -315,25 +346,36 @@ def set_operating_conditions(
         feed_flow_mass * feed_mass_frac_H2O
     )
 
-    # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
+    # primary pumps
+    for pump in m.fs.PrimaryPumps.values():
+        pump.control_volume.properties_out[0].pressure = 50e5
+        pump.efficiency_pump.fix(0.80)
+        pump.control_volume.properties_out[0].pressure.fix()
 
-    # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(30e5)
+    for pump in m.fs.RecyclePumps.values():
+        pump.control_volume.properties_out[0].pressure = 4e5
+        pump.efficiency_pump.fix(0.80)
+        pump.control_volume.properties_out[0].pressure.fix()
 
-    # pump 3, 2 degrees of freedom (efficiency, outlet pressure)
-    m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P3.control_volume.properties_out[0].pressure.fix(4e5)
-
-    # pump 4, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P4.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P4.control_volume.properties_out[0].pressure.fix(18e5)
-
-    # pump 5, 2 degrees of freedom (efficiency, outlet pressure)
-    m.fs.P5.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P5.control_volume.properties_out[0].pressure.fix(4e5)
+    # # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
+    # m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
+    #
+    # # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
+    # m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # m.fs.P2.control_volume.properties_out[0].pressure.fix(30e5)
+    #
+    # # pump 3, 2 degrees of freedom (efficiency, outlet pressure)
+    # m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # m.fs.P3.control_volume.properties_out[0].pressure.fix(4e5)
+    #
+    # # pump 4, 2 degrees of freedom (efficiency and outlet pressure)
+    # m.fs.P4.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # m.fs.P4.control_volume.properties_out[0].pressure.fix(18e5)
+    #
+    # # pump 5, 2 degrees of freedom (efficiency, outlet pressure)
+    # m.fs.P5.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    # m.fs.P5.control_volume.properties_out[0].pressure.fix(4e5)
 
     # initial guess for states of pump 3 output (temperature and concentrations)
     m.fs.P3.control_volume.properties_out[0].temperature.value = feed_temperature
@@ -359,41 +401,25 @@ def set_operating_conditions(
         "Liq", "NaCl"
     ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
 
-    # Initialize OARO1
+    # Initialize OARO
     membrane_area = 50
     A = 4.2e-12
     B = 1.3e-8
 
-    m.fs.OARO1.area.fix(membrane_area)
+    for stage in m.fs.OAROUnits.values():
 
-    m.fs.OARO1.A_comp.fix(A)
-    m.fs.OARO1.B_comp.fix(B)
+        stage.area.fix(membrane_area)
 
-    m.fs.OARO1.structural_parameter.fix(300e-6)
+        stage.A_comp.fix(A)
+        stage.B_comp.fix(B)
 
-    m.fs.OARO1.permeate_side.channel_height.fix(0.001)
-    m.fs.OARO1.permeate_side.spacer_porosity.fix(0.75)
-    m.fs.OARO1.feed_side.channel_height.fix(0.002)
-    m.fs.OARO1.feed_side.spacer_porosity.fix(0.75)
-    m.fs.OARO1.feed_side.velocity[0, 0].fix(0.1)
+        stage.structural_parameter.fix(300e-6)
 
-    # Initialize OARO2
-    membrane_area = 50
-    A = 4.2e-12
-    B = 1.3e-8
-
-    m.fs.OARO2.area.fix(membrane_area)
-
-    m.fs.OARO2.A_comp.fix(A)
-    m.fs.OARO2.B_comp.fix(B)
-
-    m.fs.OARO2.structural_parameter.fix(300e-6)
-
-    m.fs.OARO2.permeate_side.channel_height.fix(0.001)
-    m.fs.OARO2.permeate_side.spacer_porosity.fix(0.75)
-    m.fs.OARO2.feed_side.channel_height.fix(0.002)
-    m.fs.OARO2.feed_side.spacer_porosity.fix(0.75)
-    m.fs.OARO2.feed_side.velocity[0, 0].fix(0.1)
+        stage.permeate_side.channel_height.fix(0.001)
+        stage.permeate_side.spacer_porosity.fix(0.75)
+        stage.feed_side.channel_height.fix(0.002)
+        stage.feed_side.spacer_porosity.fix(0.75)
+        stage.feed_side.velocity[0, 0].fix(0.1)
 
     # RO unit
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -406,14 +432,9 @@ def set_operating_conditions(
 
     if m.fs.erd_type == ERDtype.pump_as_turbine:
         # energy recovery turbine - efficiency and outlet pressure
-        m.fs.ERD1.efficiency_pump.fix(0.95)
-        m.fs.ERD1.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
-
-        m.fs.ERD2.efficiency_pump.fix(0.95)
-        m.fs.ERD2.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
-
-        m.fs.ERD3.efficiency_pump.fix(0.95)
-        m.fs.ERD3.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
+        for erd in m.fs.EnergyRecoveryDevices.values():
+            erd.efficiency_pump.fix(0.95)
+            erd.control_volume.properties_out[0].pressure.fix(pressure_atmospheric)
     else:
         erd_type_not_found(m.fs.erd_type)
 
@@ -486,12 +507,12 @@ def initialize_system(m, solver=None, verbose=True):
     # ---initialize feed block---
     m.fs.feed.initialize()
 
-    propagate_state(m.fs.feed_to_P1)
+    propagate_state(m.fs.feed_to_pump)
     m.fs.P1.initialize()
 
     # ---initialize OARO1---
-    propagate_state(m.fs.P1_to_OARO1)
-    propagate_state(m.fs.P3_to_OARO1)
+    propagate_state(m.fs.pump_to_OARO)
+    propagate_state(m.fs.recyclepump_to_OARO)
     m.fs.OARO1.initialize()
 
     initialize_loop(m, solver)
