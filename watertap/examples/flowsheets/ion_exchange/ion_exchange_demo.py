@@ -237,7 +237,7 @@ def optimize_system(m):
 
 def get_ion_config(ions):
 
-    if not isinstance(ions, list):
+    if not isinstance(ions, (list, tuple)):
         ions = [ions]
     diff_data = {
         "Na_+": 1.33e-9,
