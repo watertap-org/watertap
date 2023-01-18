@@ -194,8 +194,9 @@ def run_analysis(
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print(
-            "Usage: run 'python dye_sweep.py case_number number_of_samples interpolate_nan_outputs', where "
-            "case_number is an integer, number_of_samples is an integer, and interpolate_nan_outputs is a boolean"
+            "Usage: Specify the conditions in the run_analysis function and then run 'python multi_sweep.py' "
+            "Case number (case_num) is an integer, number_of_samples (nx) is an integer, interpolate_nan_outputs is a"
+            "boolean and results_path is the file path where the results will be created and displayed."
         )
         print(
             f"Results will be written to {os.path.dirname(os.path.abspath(__file__))}"
