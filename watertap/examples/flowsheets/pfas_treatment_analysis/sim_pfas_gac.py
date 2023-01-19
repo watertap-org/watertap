@@ -77,7 +77,7 @@ def build():
     m.fs.feed = Feed(property_package=m.fs.properties)
     m.fs.gac = GAC(
         property_package=m.fs.properties,
-        film_transfer_coefficient_type="fixed",
+        film_transfer_coefficient_type="calculated",
         surface_diffusion_coefficient_type="fixed",
     )
 
@@ -115,8 +115,11 @@ def build():
     # gac specifications
     # parameters for PFOS on Calgon F400 (Burkhardt et al., 2022)
     # adsorption isotherm
-    m.fs.gac.freund_k.fix(120e-6 * (1e6**1))  # Phase II post biological filtration
-    m.fs.gac.freund_ninv.fix(1)
+    m.fs.gac.freund_k.fix(
+        4.28e-6 * (1e6**0.45)
+    )  # Phase II post biological filtration
+    m.fs.gac.freund_ninv.fix(0.45)
+    m.fs.gac.ds.fix(4.70e-14)
     # gac particle specifications
     m.fs.gac.particle_porosity.fix(0.690)  # (Morlay & Joly, 2010)
     m.fs.gac.particle_dens_app.fix(540)
@@ -127,9 +130,10 @@ def build():
     m.fs.gac.bed_length.fix(4)  # assumed
     # design spec
     m.fs.gac.conc_ratio_replace.fix(0.5)
+    # film transfer coefficient parameters
+    m.fs.gac.molal_volume.fix(500.13 / 1800)
+    m.fs.gac.sphericity.fix(0.60)  # (Kunii & Levenspiel, 1939)
     # parameters
-    m.fs.gac.kf.fix()
-    m.fs.gac.ds.fix()
     m.fs.gac.a0.fix()
     m.fs.gac.a1.fix()
     m.fs.gac.b0.fix()
