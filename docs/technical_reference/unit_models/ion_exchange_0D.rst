@@ -26,7 +26,7 @@ Critical to predicting performance of an ion exchange process is having an estim
 or the duration of treatment before the solute begins exiting the column at a concentration unacceptable to the operator.
 At this time, the mass transfer zone is approaching the end of the ion exchange bed, the resin is nearing exhaustion,
 and the regeneration cycle can begin. Fundamental to this model is the assumption that the isotherm between the solute
-and the resin is favorable, and thus the mass transfer zone is narrow.
+and the resin is favorable, and thus the mass transfer zone is shallow.
 
 
 Ports
@@ -49,6 +49,7 @@ Sets
    "Ions", ":math:`j`", "['Na_+', 'Ca_2+', '\Cl_-', 'Mg2+', 'SO4_2-', '\PFAS_-', 'Hardness_2+']*"
 
 \*"Ion" is a subset of "Component" and uses the same symbol j.
+**NOTE:The "Components" and "Ions" lists can include any ion as long as the ion is configured into the property package.**
 
 
 Degrees of Freedom
@@ -316,3 +317,7 @@ Journal of Environmental Engineering, 110(2), 440-456.
 
 Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
 EditorialJohn Wiley & Sons.
+
+LeVan, M. D., Carta, G., & Yon, C. M. (2019). Section 16: Adsorption and Ion Exchange. Perry's Chemical Engineers' Handbook, 9th Edition.
+
+Inamuddin, & Luqman, M. (2012). Ion Exchange Technology I: Theory and Materials.
