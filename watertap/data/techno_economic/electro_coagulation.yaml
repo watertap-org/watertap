@@ -1,0 +1,19 @@
+default:
+  electrode_spacing:
+    value: 99
+    units: cm
+  solution_conductivity:
+    value: 99
+    units: S/cm
+  ohmic_resistance:
+    value: 99
+    units: ohm*cm^2
+  power_density_k_1:
+    value: 99
+    units: dimensionless
+  power_density_k_2:
+    value: 99
+    units: dimensionless
+  energy_consumption:
+    value: 99
+    units: kWh/m^3/mol
