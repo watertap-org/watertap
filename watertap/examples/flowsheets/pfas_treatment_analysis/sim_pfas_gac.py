@@ -61,10 +61,10 @@ def main():
     m = build()
 
     # solve simulation
-    results = solver.solve(m, tee=True)
+    results = solver.solve(m, tee=False)
     assert pyo.check_optimal_termination(results)
 
-    m.fs.feed.display()
+    m.fs.gac.report()
 
 
 def build():
@@ -113,19 +113,20 @@ def build():
     )
 
     # gac specifications
+    # parameters for PFOS on Calgon F400 (Burkhardt et al., 2022)
     # adsorption isotherm
-    m.fs.gac.freund_k.fix()  # e-6 * (1e6 ** 0.8316))
-    m.fs.gac.freund_ninv.fix()
+    m.fs.gac.freund_k.fix(120e-6 * (1e6**1))  # Phase II post biological filtration
+    m.fs.gac.freund_ninv.fix(1)
     # gac particle specifications
-    m.fs.gac.particle_porosity.fix()
-    m.fs.gac.particle_dens_app.fix()
-    m.fs.gac.particle_dia.fix()
+    m.fs.gac.particle_porosity.fix(0.690)  # (Morlay & Joly, 2010)
+    m.fs.gac.particle_dens_app.fix(540)
+    m.fs.gac.particle_dia.fix(0.650 / 1000 / 2)
     # adsorber bed specifications
-    m.fs.gac.ebct.fix()  # seconds
-    m.fs.gac.bed_voidage.fix()
-    m.fs.gac.bed_length.fix()  # assumed
+    m.fs.gac.ebct.fix(10 * 3600)  # seconds
+    m.fs.gac.bed_voidage.fix(0.5)
+    m.fs.gac.bed_length.fix(4)  # assumed
     # design spec
-    m.fs.gac.conc_ratio_replace.fix()
+    m.fs.gac.conc_ratio_replace.fix(0.5)
     # parameters
     m.fs.gac.kf.fix()
     m.fs.gac.ds.fix()
