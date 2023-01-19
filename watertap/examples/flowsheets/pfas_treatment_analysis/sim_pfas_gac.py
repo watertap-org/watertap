@@ -15,6 +15,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.network import Arc
 
 import idaes.core.util.scaling as iscale
 from idaes.core import (
@@ -51,17 +52,17 @@ from watertap.costing import WaterTAPCosting
 
 __author__ = "Hunter Barber"
 
+# set up solver
+solver = get_solver()
+
 
 def main():
-    # set up solver
-    solver = get_solver()
-
-    # run simulation
+    # set up simulation
     m = build()
 
-    # run simulation
-    results = solver.solve(m, tee=False)
-    assert results.solver.termination_condition == pyo.TerminationCondition.optimal
+    # solve simulation
+    results = solver.solve(m, tee=True)
+    assert pyo.check_optimal_termination(results)
 
     m.fs.feed.display()
 
@@ -74,6 +75,15 @@ def build():
         solute_list=["PFOS"], mw_data={"H2O": 0.018, "PFOS": 0.50013}
     )
     m.fs.feed = Feed(property_package=m.fs.properties)
+    m.fs.gac = GAC(
+        property_package=m.fs.properties,
+        film_transfer_coefficient_type="fixed",
+        surface_diffusion_coefficient_type="fixed",
+    )
+
+    # streams
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.gac.inlet)
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling property variables
     m.fs.properties.set_default_scaling(
@@ -101,6 +111,41 @@ def build():
         },
         hold_state=True,  # fixes the calculated component mass flow rates
     )
+
+    # gac specifications
+    # adsorption isotherm
+    m.fs.gac.freund_k.fix()  # e-6 * (1e6 ** 0.8316))
+    m.fs.gac.freund_ninv.fix()
+    # gac particle specifications
+    m.fs.gac.particle_porosity.fix()
+    m.fs.gac.particle_dens_app.fix()
+    m.fs.gac.particle_dia.fix()
+    # adsorber bed specifications
+    m.fs.gac.ebct.fix()  # seconds
+    m.fs.gac.bed_voidage.fix()
+    m.fs.gac.bed_length.fix()  # assumed
+    # design spec
+    m.fs.gac.conc_ratio_replace.fix()
+    # parameters
+    m.fs.gac.kf.fix()
+    m.fs.gac.ds.fix()
+    m.fs.gac.a0.fix()
+    m.fs.gac.a1.fix()
+    m.fs.gac.b0.fix()
+    m.fs.gac.b1.fix()
+    m.fs.gac.b2.fix()
+    m.fs.gac.b3.fix()
+    m.fs.gac.b4.fix()
+
+    # initialization
+    optarg = solver.options
+    m.fs.feed.initialize(optarg=optarg)
+    m.fs.gac.initialize(optarg=optarg)
+
+    # check model
+    assert_units_consistent(m)  # check that units are consistent
+    print("Degrees of freedom:", degrees_of_freedom(m))
+    assert degrees_of_freedom(m) == 0
 
     return m
 
