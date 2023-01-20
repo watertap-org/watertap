@@ -49,6 +49,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import MembraneChannel0DBlock
+from watertap.core.membrane_channel_base import FrictionFactor
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
@@ -63,7 +64,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(property_package=m.fs.properties)
 
-    assert len(m.fs.unit.config) == 12
+    assert len(m.fs.unit.config) == 13
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -191,6 +192,25 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.feed_side.dh, Var)
     assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
     assert isinstance(m.fs.unit.feed_side.N_Re, Var)
+
+
+@pytest.mark.unit
+def test_option_friction_factor_spiral_wound():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(
+        property_package=m.fs.properties,
+        has_pressure_change=True,
+        concentration_polarization_type=ConcentrationPolarizationType.calculated,
+        mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        pressure_change_type=PressureChangeType.calculated,
+        friction_factor=FrictionFactor.spiral_wound,
+    )
+
+    assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
+    assert isinstance(m.fs.unit.feed_side.velocity, Var)
+    assert isinstance(m.fs.unit.feed_side.friction_factor_darcy, Var)
 
 
 class TestReverseOsmosis:
