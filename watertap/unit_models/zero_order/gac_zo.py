@@ -105,6 +105,13 @@ class GACZOData(ZeroOrderBaseData):
             doc="Demand for activated carbon",
         )
 
+        # Demand for activated carbon
+        self.activated_carbon_bulk_density = Var(
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(0, None),
+            doc="Bulk density, total mass of GAC per total bed volume",
+        )
+
         @self.Constraint(
             self.flowsheet().time, doc="Constraint for activated carbon consumption."
         )
@@ -117,5 +124,6 @@ class GACZOData(ZeroOrderBaseData):
             )
 
         self._fixed_perf_vars.append(self.activated_carbon_replacement)
+        self._fixed_perf_vars.append(self.activated_carbon_bulk_density)
 
         self._perf_var_dict["Activated Carbon Demand"] = self.activated_carbon_demand
