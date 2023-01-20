@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import os
+import itertools
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -88,6 +89,7 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine, raise_on_failure=Fa
 
     print("\n***---Simulation results---***")
     display_system(m)
+    display_design(m)
     if erd_type == ERDtype.pump_as_turbine:
         display_state(m)
     else:
@@ -103,7 +105,7 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    # m.fs.costing = WaterTAPCosting()
+    m.fs.costing = WaterTAPCosting()
 
     # stage set up
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
@@ -124,17 +126,26 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.PrimaryPumps = Pump(m.fs.Stages, property_package=m.fs.properties)
-    # for pump in m.fs.PrimaryPumps.values():
-    #     pump.costing = UnitModelCostingBlock(
-    #         flowsheet_costing_block=m.fs.costing,
-    #     )
+    for pump in m.fs.PrimaryPumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+        )
 
     # --- Recycle pump ---
     m.fs.RecyclePumps = Pump(m.fs.NonFirstStages, property_package=m.fs.properties)
-    # for pump in m.fs.PrimaryPumps.values():
-    #     pump.costing = UnitModelCostingBlock(
-    #         flowsheet_costing_block=m.fs.costing,
-    #     )
+    for pump in m.fs.RecyclePumps.values():
+        pump.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+        )
+
+    m.fs.total_pump_work = Expression(
+        expr=sum(
+            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW)
+            for pump in itertools.chain(
+                m.fs.PrimaryPumps.values(), m.fs.RecyclePumps.values()
+            )
+        )
+    )
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
@@ -145,7 +156,7 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    # m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OAROUnits = OsmoticallyAssistedReverseOsmosis0D(
@@ -157,6 +168,11 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
+    for stage in m.fs.OAROUnits.values():
+        stage.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method_arguments={"oaro_type": "standard"},
+        )
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
@@ -165,20 +181,41 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
             m.fs.Stages, property_package=m.fs.properties
         )
         # add costing for ERD config
-        # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        # m.fs.ERD3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        for erd in m.fs.EnergyRecoveryDevices.values():
+            erd.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
+    m.fs.recovered_pump_work = Expression(
+        expr=sum(
+            pyunits.convert(erd.work_mechanical[0], to_units=pyunits.kW)
+            for erd in m.fs.EnergyRecoveryDevices.values()
+        )
+    )
+    m.fs.net_pump_work = Expression(
+        expr=m.fs.total_pump_work + m.fs.recovered_pump_work
+    )
+
     # process costing and add system level metrics
-    # m.fs.costing.cost_process()
-    # m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_specific_electrical_carbon_intensity(
-    #     m.fs.product.properties[0].flow_vol
-    # )
+    m.fs.costing.utilization_factor.fix(0.9)
+    m.fs.costing.factor_total_investment.fix(2)
+    m.fs.costing.factor_maintenance_labor_chemical.fix(0.03)
+    m.fs.costing.factor_capital_annualization.fix(0.1)
+    m.fs.costing.electricity_cost.set_value(0.07)
+    m.fs.costing.reverse_osmosis.factor_membrane_replacement.fix(0.15)
+    m.fs.costing.reverse_osmosis.membrane_cost.fix(30)
+    m.fs.costing.reverse_osmosis.high_pressure_membrane_cost.fix(50)
+    m.fs.costing.high_pressure_pump.cost.fix(53 / 1e5 * 3600)
+    m.fs.costing.energy_recovery_device.pressure_exchanger_cost.fix(535)
+
+    m.fs.costing.cost_process()
+    product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
 
     # system water recovery
     m.fs.volumetric_recovery = Var(
@@ -504,9 +541,11 @@ def initialize_system(m, solver=None, verbose=True):
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
+    m.fs.costing.initialize()
+
 
 def display_system(m):
-    print("---system metrics---")
+    print("----system metrics----")
     feed_flow_mass = sum(
         m.fs.feed.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
     )
@@ -523,44 +562,83 @@ def display_system(m):
     )
     print("Product: %.3f kg/s, %.0f ppm" % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
-    print("Volumetric recovery: %.1f%%" % (value(m.fs.volumetric_recovery) * 100))
-    print("Water recovery: %.1f%%" % (value(m.fs.water_recovery) * 100))
+    brine_flow_mass = sum(
+        m.fs.disposal.flow_mass_phase_comp[0, "Liq", j].value for j in ["H2O", "NaCl"]
+    )
+    brine_mass_frac_NaCl = (
+        m.fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"].value / brine_flow_mass
+    )
+    print("Brine: %.3f kg/s, %.0f ppm" % (brine_flow_mass, brine_mass_frac_NaCl * 1e6))
 
-    # TODO: add costing display once costing is added
-    # print(
-    #     "Energy Consumption: %.1f kWh/m3"
-    #     % value(m.fs.costing.specific_energy_consumption)
-    # )
-    # print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    print("Volumetric water recovery: %.1f%%" % (value(m.fs.water_recovery) * 100))
+    print(f"Number of Stages: {value(m.fs.NumberOfStages)}")
+    total_area = value(
+        sum(m.fs.OAROUnits[a].area for a in m.fs.NonFinalStages) + m.fs.RO.area
+    )
+    print(f"Total Membrane Area: {total_area:.2f}")
+    print(
+        "Energy Consumption: %.1f kWh/m3"
+        % value(m.fs.costing.specific_energy_consumption)
+    )
+
+    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    print(
+        f"Primary Pump Capital Cost ($/m3):"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.Stages)/ m.fs.costing.annual_water_production)}"
+    )
+    print(
+        f"Recycle Pump Capital Cost ($/m3): "
+        f"{value(m.fs.costing.factor_capital_annualization*sum(m.fs.RecyclePumps[stage].costing.capital_cost for stage in m.fs.NonFirstStages) / m.fs.costing.annual_water_production)}"
+    )
+    print(
+        f"ERD Capital Cost ($/m3):"
+        f"{value(m.fs.costing.factor_capital_annualization*sum(erd.costing.capital_cost for erd in m.fs.EnergyRecoveryDevices.values()) / m.fs.costing.annual_water_production)}"
+    )
+    print(
+        f"Membrane Capital Cost ($/m3): "
+        f"{value(m.fs.costing.factor_capital_annualization*(sum(m.fs.OAROUnits[stage].costing.capital_cost for stage in m.fs.NonFinalStages) + m.fs.RO.costing.capital_cost) / m.fs.costing.annual_water_production)}"
+    )
+    print(
+        f"Indirect Capital Cost ($/m3): "
+        f"{value(m.fs.costing.factor_capital_annualization*(m.fs.costing.total_capital_cost - m.fs.costing.aggregate_capital_cost) / m.fs.costing.annual_water_production)}"
+    )
+    electricity_cost = value(
+        m.fs.costing.aggregate_flow_costs["electricity"]
+        * m.fs.costing.utilization_factor
+        / m.fs.costing.annual_water_production
+    )
+    print(f"Electricity cost ($/m3): {electricity_cost}")
+
+    print("\n")
 
 
 def display_design(m):
-    print("---decision variables---")
-    print("Operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5))
-    print("Membrane area %.1f m2" % (m.fs.RO.area.value))
-
-    print("---design variables---")
-    print(
-        "Pump 1\noutlet pressure: %.1f bar\npower %.2f kW"
-        % (
-            m.fs.P1.outlet.pressure[0].value / 1e5,
-            m.fs.P1.work_mechanical[0].value / 1e3,
-        )
-    )
-    if m.fs.erd_type == ERDtype.pump_as_turbine:
+    print("--decision variables--")
+    for stage in m.fs.NonFinalStages:
         print(
-            "ERD\ninlet pressure: %.1f bar\npower recovered %.2f kW"
-            % (
-                m.fs.ERD.inlet.pressure[0].value / 1e5,
-                -1 * m.fs.ERD.work_mechanical[0].value / 1e3,
-            )
+            "OARO Stage %d feed operating pressure %.1f bar"
+            % (stage, m.fs.OAROUnits[stage].feed_inlet.pressure[0].value / 1e5)
         )
-    else:
-        erd_type_not_found(m.fs.erd_type)
+        print(
+            "OARO Stage %d permeate operating pressure %.1f bar"
+            % (stage, m.fs.OAROUnits[stage].permeate_inlet.pressure[0].value / 1e5)
+        )
+        print(
+            "OARO tage %d membrane area      %.1f m2"
+            % (stage, m.fs.OAROUnits[stage].area.value)
+        )
+        print(
+            "OARO Stage %d water perm. coeff.  %.1f LMH/bar"
+            % (stage, m.fs.OAROUnits[stage].A_comp[0, "H2O"].value * (3.6e11))
+        )
+        print(
+            "OARO Stage %d salt perm. coeff.  %.1f LMH"
+            % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+        )
 
 
 def display_state(m):
-    print("---state---")
+    print("--------state---------")
 
     def print_state(s, b):
         flow_mass = sum(
@@ -569,31 +647,40 @@ def display_state(m):
         mass_frac_ppm = b.flow_mass_phase_comp[0, "Liq", "NaCl"].value / flow_mass * 1e6
         pressure_bar = b.pressure[0].value / 1e5
         print(
-            s
+            s.ljust(20)
             + ": %.3f kg/s, %.0f ppm, %.1f bar"
             % (flow_mass, mass_frac_ppm, pressure_bar)
         )
 
-    # print_state("Feed      ", m.fs.feed.outlet)
-    # print_state("P1 out    ", m.fs.P1.outlet)
-    # print_state("OARO1 Feed in", m.fs.OARO1.feed_inlet)
-    # print_state("OARO1 Feed out", m.fs.OARO1.feed_outlet)
-    # print_state("OARO1 Perm in", m.fs.OARO1.permeate_inlet)
-    # print_state("OARO1 Perm out", m.fs.OARO1.permeate_outlet)
-    # print_state("ERD1 out    ", m.fs.ERD1.outlet)
-    # print_state("P2 out    ", m.fs.P2.outlet)
-    # print_state("OARO2 Feed in", m.fs.OARO1.feed_inlet)
-    # print_state("OARO2 Feed out", m.fs.OARO1.feed_outlet)
-    # print_state("OARO2 Perm in", m.fs.OARO1.permeate_inlet)
-    # print_state("OARO2 Perm out", m.fs.OARO1.permeate_outlet)
-    # print_state("ERD2 out    ", m.fs.ERD2.outlet)
-    # print_state("P3 out    ", m.fs.P3.outlet)
-    # print_state("P4 out    ", m.fs.P4.outlet)
-    # print_state("RO reten  ", m.fs.RO.retentate)
-    # print_state("RO perm   ", m.fs.RO.permeate)
-    # print_state("ERD3 out    ", m.fs.ERD2.outlet)
-    # print_state("P4 out    ", m.fs.P3.outlet)
+    print_state("Feed", m.fs.feed.outlet)
+
+    for stage in m.fs.Stages:
+
+        print_state(f"Primary Pump {stage} out", m.fs.PrimaryPumps[stage].outlet)
+        print_state(
+            f"Energy Recovery Device {stage} out",
+            m.fs.EnergyRecoveryDevices[stage].outlet,
+        )
+
+        if stage == m.fs.LastStage:
+            pass
+        else:
+            print_state(f"OARO {stage} feed outlet", m.fs.OAROUnits[stage].feed_outlet)
+            print_state(
+                f"OARO {stage} permeate outlet", m.fs.OAROUnits[stage].permeate_outlet
+            )
+
+        if stage == m.fs.FirstStage:
+            pass
+        else:
+            print_state(f"Recycle Pump {stage} out", m.fs.RecyclePumps[stage].outlet)
+
+    print_state(f"RO permeate", m.fs.RO.permeate)
+    print_state(f"RO retentate", m.fs.RO.retentate)
+
+    print_state(f"Disposal", m.fs.disposal.inlet)
+    print_state(f"Product", m.fs.product.inlet)
 
 
 if __name__ == "__main__":
-    m = main(2, erd_type=ERDtype.pump_as_turbine)
+    m = main(3, erd_type=ERDtype.pump_as_turbine)
