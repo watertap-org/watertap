@@ -695,9 +695,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 165
+        assert number_variables(m) == 163
         assert number_total_constraints(m) == 131
-        assert number_unused_variables(m) == 3
+        assert number_unused_variables(m) == 1
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -847,9 +847,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.velocity[0, 0].fix(0.1)
 
         # test statistics
-        assert number_variables(m) == 177
+        assert number_variables(m) == 175
         assert number_total_constraints(m) == 145
-        assert number_unused_variables(m) == 3
+        assert number_unused_variables(m) == 1
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -1021,9 +1021,9 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.permeate_side.dP_dx.fix(perm_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 167
+        assert number_variables(m) == 165
         assert number_total_constraints(m) == 133
-        assert number_unused_variables(m) == 3
+        assert number_unused_variables(m) == 1
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -1239,18 +1239,18 @@ class TestOsmoticallyAssistedReverseOsmosis:
         m.fs.unit.feed_side.deltaP.fix(membrane_pressure_drop)
         m.fs.unit.permeate_side.deltaP.fix(membrane_pressure_drop)
         m.fs.unit.permeate_side.channel_height.fix(0.001)
-        m.fs.unit.permeate_side.channel_length.fix(10)
+        m.fs.unit.permeate_side.length.fix(10)
         m.fs.unit.permeate_side.spacer_porosity.fix(0.75)
         m.fs.unit.feed_side.channel_height.fix(0.002)
-        m.fs.unit.feed_side.channel_length.fix(10)
+        m.fs.unit.feed_side.length.fix(10)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)
         length = 20
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 165
+        assert number_variables(m) == 163
         assert number_total_constraints(m) == 131
-        assert number_unused_variables(m) == 3
+        assert number_unused_variables(m) == 1
 
         # Test units
         assert_units_consistent(m.fs.unit)

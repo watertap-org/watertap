@@ -540,9 +540,9 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 135
+        assert number_variables(m) == 134
         assert number_total_constraints(m) == 109
-        assert number_unused_variables(m) == 2  # vars from property package parameters
+        assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -654,9 +654,9 @@ class TestReverseOsmosis:
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 141
+        assert number_variables(m) == 140
         assert number_total_constraints(m) == 116
-        assert number_unused_variables(m) == 2  # vars from property package parameters
+        assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -781,9 +781,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 136
+        assert number_variables(m) == 135
         assert number_total_constraints(m) == 110
-        assert number_unused_variables(m) == 2
+        assert number_unused_variables(m) == 1
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -894,14 +894,14 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
 
         m.fs.unit.feed_side.channel_height.fix(0.002)
-        m.fs.unit.feed_side.channel_length.fix(10)
+        m.fs.unit.feed_side.length.fix(10)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 135
+        assert number_variables(m) == 134
         assert number_total_constraints(m) == 109
-        assert number_unused_variables(m) == 2  # vars from property package parameters
+        assert number_unused_variables(m) == 1  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)

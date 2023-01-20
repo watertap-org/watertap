@@ -562,7 +562,7 @@ class MembraneChannelMixin:
             def eq_N_Sh_comp(b, t, x, j):
                 return b.N_Sh_comp[t, x, j] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
-                ) * ((b.channel_length / b.dh) ** -0.279)
+                ) * ((b.length / b.dh) ** -0.279)
 
         if sherwood_number_eq == SherwoodNumberEq.length_independent:
 
@@ -625,14 +625,6 @@ class MembraneChannelMixin:
             domain=NonNegativeReals,
             units=units_meta("length"),
             doc="membrane-channel height",
-        )
-
-        self.channel_length = Var(
-            initialize=1,
-            bounds=(1e-2, 1e2),
-            domain=NonNegativeReals,
-            units=units_meta("length"),
-            doc="membrane-channel length",
         )
 
         self.dh = Var(
@@ -907,10 +899,6 @@ class MembraneChannelMixin:
         if hasattr(self, "channel_height"):
             if iscale.get_scaling_factor(self.channel_height) is None:
                 iscale.set_scaling_factor(self.channel_height, 1e3)
-
-        if hasattr(self, "channel_length"):
-            if iscale.get_scaling_factor(self.channel_length) is None:
-                iscale.set_scaling_factor(self.channel_length, 1)
 
         if hasattr(self, "spacer_porosity"):
             if iscale.get_scaling_factor(self.spacer_porosity) is None:
