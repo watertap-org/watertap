@@ -69,12 +69,12 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
+def main(number_of_stages, erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     # set up solver
     solver = get_solver()
 
     # build, set, and initialize
-    m = build(erd_type=erd_type)
+    m = build(number_of_stages=number_of_stages, erd_type=erd_type)
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
@@ -96,7 +96,7 @@ def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     return m
 
 
-def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
+def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
 
     # flowsheet set up
     m = ConcreteModel()
@@ -256,7 +256,7 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
 
         # Connect RecyclePumps n to OARO n-1 permeate_inlet
         m.fs.recyclepump_to_OARO = Arc(
-            m.fs.NonFinalStages,
+            m.fs.NonFirstStages,
             rule=lambda fs, n: {
                 "source": fs.RecyclePumps[n].outlet,
                 "destination": fs.OAROUnits[n - 1].permeate_inlet,
@@ -301,8 +301,8 @@ def build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine):
 
     iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
 
-    # iscale.set_scaling_factor(m.fs.OARO1.area, 1e-2)
-    # iscale.set_scaling_factor(m.fs.OARO2.area, 1e-2)
+    for stage in m.fs.NonFinalStages:
+        iscale.set_scaling_factor(m.fs.OAROUnits[stage].area, 1e-2)
 
     m.fs.feed.properties[0].flow_vol_phase["Liq"]
     m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
@@ -337,7 +337,7 @@ def set_operating_conditions(
 
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     feed_flow_mass = 1
-    feed_mass_frac_NaCl = 0.035
+    feed_mass_frac_NaCl = 0.07
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
         feed_flow_mass * feed_mass_frac_NaCl
@@ -357,49 +357,20 @@ def set_operating_conditions(
         pump.efficiency_pump.fix(0.80)
         pump.control_volume.properties_out[0].pressure.fix()
 
-    # # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    # m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P1.control_volume.properties_out[0].pressure.fix(50e5)
-    #
-    # # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
-    # m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P2.control_volume.properties_out[0].pressure.fix(30e5)
-    #
-    # # pump 3, 2 degrees of freedom (efficiency, outlet pressure)
-    # m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P3.control_volume.properties_out[0].pressure.fix(4e5)
-    #
-    # # pump 4, 2 degrees of freedom (efficiency and outlet pressure)
-    # m.fs.P4.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P4.control_volume.properties_out[0].pressure.fix(18e5)
-    #
-    # # pump 5, 2 degrees of freedom (efficiency, outlet pressure)
-    # m.fs.P5.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    # m.fs.P5.control_volume.properties_out[0].pressure.fix(4e5)
-
-    # initial guess for states of pump 3 output (temperature and concentrations)
-    m.fs.P3.control_volume.properties_out[0].temperature.value = feed_temperature
-    permeate_flow_mass = 0.75
-    permeate_mass_frac_NaCl = 0.02
-    permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
-    m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "H2O"
-    ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
-    m.fs.P3.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "NaCl"
-    ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
-
-    # initial guess for states of pump 5 output (temperature and concentrations)
-    m.fs.P5.control_volume.properties_out[0].temperature.value = feed_temperature
-    permeate_flow_mass = 0.75
-    permeate_mass_frac_NaCl = 0.015
-    permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
-    m.fs.P5.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "H2O"
-    ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
-    m.fs.P5.control_volume.properties_out[0].flow_mass_phase_comp[
-        "Liq", "NaCl"
-    ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
+    # initial guess for states of recycle pumps (temperature and concentrations)
+    for stage in m.fs.NonFirstStages:
+        m.fs.RecyclePumps[stage].control_volume.properties_out[
+            0
+        ].temperature.value = feed_temperature
+        permeate_flow_mass = 0.75
+        permeate_mass_frac_NaCl = 0.02
+        permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
+        m.fs.RecyclePumps[stage].control_volume.properties_out[0].flow_mass_phase_comp[
+            "Liq", "H2O"
+        ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
+        m.fs.RecyclePumps[stage].control_volume.properties_out[0].flow_mass_phase_comp[
+            "Liq", "NaCl"
+        ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
 
     # Initialize OARO
     membrane_area = 50
@@ -460,62 +431,66 @@ def solve(blk, solver=None, tee=True):
 
 def initialize_loop(m, solver):
 
-    propagate_state(m.fs.OARO1_to_P2)
-    m.fs.P2.initialize()
+    for stage in m.fs.IntermediateStages:
+        propagate_state(m.fs.OARO_to_pump[stage - 1])
+        m.fs.PrimaryPumps[stage].initialize()
 
-    # ---initialize OARO2---
-    propagate_state(m.fs.P2_to_OARO2)
-    propagate_state(m.fs.P5_to_OARO2)
-    m.fs.OARO2.initialize()
+        # ---initialize loop---
+        propagate_state(m.fs.pump_to_OARO[stage])
+        propagate_state(m.fs.recyclepump_to_OARO[stage + 1])
+        m.fs.OAROUnits[stage].initialize()
 
-    propagate_state(m.fs.OARO2_to_ERD2)
-    m.fs.ERD2.initialize()
+        propagate_state(m.fs.OARO_to_ERD[stage])
+        m.fs.EnergyRecoveryDevices[stage].initialize()
 
-    propagate_state(m.fs.ERD2_to_P3)
-    m.fs.P3.initialize()
+        propagate_state(m.fs.ERD_to_recyclepump[stage])
+        m.fs.RecyclePumps[stage].initialize()
 
-    propagate_state(m.fs.P3_to_OARO1)
-    propagate_state(m.fs.P1_to_OARO1)
-    m.fs.OARO1.initialize()
-
-    # ---initialize P4---
-    propagate_state(m.fs.OARO2_to_P4)
-    m.fs.P4.initialize()
-
-    # ---initialize RO---
-    propagate_state(m.fs.P4_to_ro)
-    m.fs.RO.initialize()
-
-    propagate_state(m.fs.ro_to_ERD3)
-    m.fs.ERD3.initialize()
-
-    propagate_state(m.fs.ERD3_to_P5)
-    m.fs.P5.initialize()
-
-    propagate_state(m.fs.P5_to_OARO2)
-    propagate_state(m.fs.P2_to_OARO2)
-    m.fs.OARO2.initialize()
-
-    propagate_state(m.fs.OARO1_to_ERD1)
-    m.fs.ERD1.initialize()
+        propagate_state(m.fs.recyclepump_to_OARO[stage])
+        propagate_state(m.fs.pump_to_OARO[stage - 1])
+        m.fs.OAROUnits[stage - 1].initialize()
 
 
 def initialize_system(m, solver=None, verbose=True):
     if solver is None:
         solver = get_solver()
 
+    last_stage = m.fs.LastStage
+    first_stage = m.fs.FirstStage
+
     # ---initialize feed block---
     m.fs.feed.initialize()
 
     propagate_state(m.fs.feed_to_pump)
-    m.fs.P1.initialize()
+    m.fs.PrimaryPumps[first_stage].initialize()
 
-    # ---initialize OARO1---
-    propagate_state(m.fs.pump_to_OARO)
-    propagate_state(m.fs.recyclepump_to_OARO)
-    m.fs.OARO1.initialize()
+    # ---initialize first OARO unit---
+    propagate_state(m.fs.pump_to_OARO[first_stage])
+    propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
+    m.fs.OAROUnits[first_stage].initialize()
 
     initialize_loop(m, solver)
+
+    # ---initialize RO loop---
+    propagate_state(m.fs.OARO_to_pump[last_stage - 1])
+    m.fs.PrimaryPumps[last_stage].initialize()
+
+    propagate_state(m.fs.pump_to_ro)
+    m.fs.RO.initialize()
+
+    propagate_state(m.fs.ro_to_ERD)
+    m.fs.EnergyRecoveryDevices[last_stage].initialize()
+
+    propagate_state(m.fs.ERD_to_recyclepump[last_stage])
+    m.fs.RecyclePumps[last_stage].initialize()
+
+    propagate_state(m.fs.recyclepump_to_OARO[last_stage])
+    propagate_state(m.fs.pump_to_OARO[last_stage - 1])
+    m.fs.OAROUnits[last_stage - 1].initialize()
+
+    # ---initialize first ERD---
+    propagate_state(m.fs.OARO_to_ERD[first_stage])
+    m.fs.EnergyRecoveryDevices[first_stage].initialize()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -523,11 +498,9 @@ def initialize_system(m, solver=None, verbose=True):
     # permeate side outlet pressure and unfix the RO pump
     # (which allows for control over the flow mass composition
     # into the OARO permeate_side).
-    m.fs.OARO1.permeate_side.properties_out[0].pressure.fix(101325)
-    m.fs.P2.control_volume.properties_out[0].pressure.unfix()
-
-    m.fs.OARO2.permeate_side.properties_out[0].pressure.fix(101325)
-    m.fs.P4.control_volume.properties_out[0].pressure.unfix()
+    for stage in m.fs.NonFinalStages:
+        m.fs.OAROUnits[stage].permeate_side.properties_out[0].pressure.fix(101325)
+        m.fs.PrimaryPumps[stage + 1].control_volume.properties_out[0].pressure.unfix()
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
@@ -601,26 +574,26 @@ def display_state(m):
             % (flow_mass, mass_frac_ppm, pressure_bar)
         )
 
-    print_state("Feed      ", m.fs.feed.outlet)
-    print_state("P1 out    ", m.fs.P1.outlet)
-    print_state("OARO1 Feed in", m.fs.OARO1.feed_inlet)
-    print_state("OARO1 Feed out", m.fs.OARO1.feed_outlet)
-    print_state("OARO1 Perm in", m.fs.OARO1.permeate_inlet)
-    print_state("OARO1 Perm out", m.fs.OARO1.permeate_outlet)
-    print_state("ERD1 out    ", m.fs.ERD1.outlet)
-    print_state("P2 out    ", m.fs.P2.outlet)
-    print_state("OARO2 Feed in", m.fs.OARO1.feed_inlet)
-    print_state("OARO2 Feed out", m.fs.OARO1.feed_outlet)
-    print_state("OARO2 Perm in", m.fs.OARO1.permeate_inlet)
-    print_state("OARO2 Perm out", m.fs.OARO1.permeate_outlet)
-    print_state("ERD2 out    ", m.fs.ERD2.outlet)
-    print_state("P3 out    ", m.fs.P3.outlet)
-    print_state("P4 out    ", m.fs.P4.outlet)
-    print_state("RO reten  ", m.fs.RO.retentate)
-    print_state("RO perm   ", m.fs.RO.permeate)
-    print_state("ERD3 out    ", m.fs.ERD2.outlet)
-    print_state("P4 out    ", m.fs.P3.outlet)
+    # print_state("Feed      ", m.fs.feed.outlet)
+    # print_state("P1 out    ", m.fs.P1.outlet)
+    # print_state("OARO1 Feed in", m.fs.OARO1.feed_inlet)
+    # print_state("OARO1 Feed out", m.fs.OARO1.feed_outlet)
+    # print_state("OARO1 Perm in", m.fs.OARO1.permeate_inlet)
+    # print_state("OARO1 Perm out", m.fs.OARO1.permeate_outlet)
+    # print_state("ERD1 out    ", m.fs.ERD1.outlet)
+    # print_state("P2 out    ", m.fs.P2.outlet)
+    # print_state("OARO2 Feed in", m.fs.OARO1.feed_inlet)
+    # print_state("OARO2 Feed out", m.fs.OARO1.feed_outlet)
+    # print_state("OARO2 Perm in", m.fs.OARO1.permeate_inlet)
+    # print_state("OARO2 Perm out", m.fs.OARO1.permeate_outlet)
+    # print_state("ERD2 out    ", m.fs.ERD2.outlet)
+    # print_state("P3 out    ", m.fs.P3.outlet)
+    # print_state("P4 out    ", m.fs.P4.outlet)
+    # print_state("RO reten  ", m.fs.RO.retentate)
+    # print_state("RO perm   ", m.fs.RO.permeate)
+    # print_state("ERD3 out    ", m.fs.ERD2.outlet)
+    # print_state("P4 out    ", m.fs.P3.outlet)
 
 
 if __name__ == "__main__":
-    m = main(erd_type=ERDtype.pump_as_turbine)
+    m = main(2, erd_type=ERDtype.pump_as_turbine)

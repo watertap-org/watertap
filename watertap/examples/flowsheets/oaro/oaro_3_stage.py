@@ -295,7 +295,7 @@ def set_operating_conditions(
 
     # properties (cannot be fixed for initialization routines, must calculate the state variables)
     feed_flow_mass = 1
-    feed_mass_frac_NaCl = 0.035
+    feed_mass_frac_NaCl = 0.07
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "NaCl"].fix(
         feed_flow_mass * feed_mass_frac_NaCl
@@ -310,7 +310,7 @@ def set_operating_conditions(
 
     # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(30e5)
+    m.fs.P2.control_volume.properties_out[0].pressure.fix(50e5)
 
     # pump 3, 2 degrees of freedom (efficiency, outlet pressure)
     m.fs.P3.efficiency_pump.fix(0.80)  # pump efficiency [-]
@@ -318,7 +318,7 @@ def set_operating_conditions(
 
     # pump 4, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P4.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P4.control_volume.properties_out[0].pressure.fix(18e5)
+    m.fs.P4.control_volume.properties_out[0].pressure.fix(50e5)
 
     # pump 5, 2 degrees of freedom (efficiency, outlet pressure)
     m.fs.P5.efficiency_pump.fix(0.80)  # pump efficiency [-]
@@ -339,7 +339,7 @@ def set_operating_conditions(
     # initial guess for states of pump 5 output (temperature and concentrations)
     m.fs.P5.control_volume.properties_out[0].temperature.value = feed_temperature
     permeate_flow_mass = 0.75
-    permeate_mass_frac_NaCl = 0.015
+    permeate_mass_frac_NaCl = 0.02
     permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
     m.fs.P5.control_volume.properties_out[0].flow_mass_phase_comp[
         "Liq", "H2O"
