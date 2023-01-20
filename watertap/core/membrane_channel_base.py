@@ -281,12 +281,12 @@ CONFIG_Template.declare(
         description="Darcy friction factor correlation",
         doc="""
         Options to account for friction factor correlations.
-        
-        **default** - ``FrictionFactor.flat_sheet``
-        
+
+        **default** - ``FrictionFactor.flat_sheet`` 
+
     .. csv-table::
         :header: "Configuration Options", "Description"
-        
+
         "``FrictionFactor.flat_sheet``", "Friction factor correlation for flat-sheet membrane modules"
         "``FrictionFactor.spiral_wound``", "Friction factor correlation for spiral-wound membranes"
     """,
