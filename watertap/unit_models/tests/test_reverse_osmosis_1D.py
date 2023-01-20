@@ -1137,7 +1137,7 @@ class TestReverseOsmosis:
         )
 
     @pytest.mark.component
-    def testReverseOsmosis_new_sherwood_eq(self):
+    def testReverseOsmosis_length_dependent_sherwood_eq(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -1148,7 +1148,7 @@ class TestReverseOsmosis:
             has_pressure_change=False,
             concentration_polarization_type=ConcentrationPolarizationType.none,
             mass_transfer_coefficient=MassTransferCoefficient.none,
-            sherwood_number_eq=SherwoodNumberEq.new,
+            sherwood_number_eq=SherwoodNumberEq.length_dependent,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
             finite_elements=3,

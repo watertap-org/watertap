@@ -76,12 +76,12 @@ class PressureChangeType(Enum):
 
 class SherwoodNumberEq(Enum):
     """
-    new: Sherwood number relationship depicted in https://doi.org/10.1016/j.seppur.2022.122121v
-    old: Sherwood number relationship depicted in Guillen and Hoek (2009)
+    length_dependent: Sherwood number relationship depicted in Eq.18 of  https://doi.org/10.1016/j.seppur.2022.122121
+    length_independent: Sherwood number relationship depicted in Figure 6 of https://www.sciencedirect.com/science/article/abs/pii/S1385894708007055
     """
 
-    new = auto()
-    old = auto()
+    length_dependent = auto()
+    length_independent = auto()
 
 
 CONFIG_Template = ConfigDict()
@@ -276,19 +276,19 @@ CONFIG_Template.declare(
 CONFIG_Template.declare(
     "sherwood_number_eq",
     ConfigValue(
-        default=SherwoodNumberEq.old,
+        default=SherwoodNumberEq.length_independent,
         domain=In(SherwoodNumberEq),
         description="Sherwood number relationship",
         doc="""
         Options to account for Sherwood number relationships.
 
-        **default** - ``SherwoodNumberEq.old``
+        **default** - ``SherwoodNumberEq.length_independent``
 
     .. csv-table::
         :header: "Configuration Options", "Description"
 
-        "``SherwoodNumberEq.new``", "Sherwood number relationship that considers length (distance from the RO module entrance)"
-        "``SherwoodNumberEq.old``", "Sherwood number relationship that does not consider length"
+        "``SherwoodNumberEq.length_dependent``", "Sherwood number relationship that considers length (distance from the RO module entrance)"
+        "``SherwoodNumberEq.length_independent``", "Sherwood number relationship that does not consider length"
     """,
     ),
 )
@@ -509,7 +509,7 @@ class MembraneChannelMixin:
 
     ## should be called by add concentration polarization
     def _add_calculated_mass_transfer_coefficient(
-        self, sherwood_number_eq=SherwoodNumberEq.old
+        self, sherwood_number_eq=SherwoodNumberEq.length_independent
     ):
         self._add_calculated_pressure_change_mass_transfer_components()
 
@@ -551,7 +551,7 @@ class MembraneChannelMixin:
                 == b.properties[t, x].diffus_phase_comp["Liq", j] * b.N_Sh_comp[t, x, j]
             )
 
-        if sherwood_number_eq == SherwoodNumberEq.new:
+        if sherwood_number_eq == SherwoodNumberEq.length_dependent:
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -564,7 +564,7 @@ class MembraneChannelMixin:
                     (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
                 ) * ((b.channel_length / b.dh) ** -0.279)
 
-        if sherwood_number_eq == SherwoodNumberEq.old:
+        if sherwood_number_eq == SherwoodNumberEq.length_independent:
 
             @self.Constraint(
                 self.flowsheet().config.time,

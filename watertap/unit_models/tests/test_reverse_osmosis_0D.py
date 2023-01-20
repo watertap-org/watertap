@@ -850,8 +850,8 @@ class TestReverseOsmosis:
         )
 
     @pytest.mark.component
-    def test_CP_calculation_with_new_sherwood_eq(self):
-        """Testing 0D-RO with SherwoodNumberEq.new option enabled."""
+    def test_CP_calculation_with_length_dependent_sherwood_eq(self):
+        """Testing 0D-RO with SherwoodNumberEq.length_dependent option enabled."""
 
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -863,7 +863,7 @@ class TestReverseOsmosis:
             has_pressure_change=True,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            sherwood_number_eq=SherwoodNumberEq.new,
+            sherwood_number_eq=SherwoodNumberEq.length_dependent,
         )
 
         # fully specify system
