@@ -90,6 +90,11 @@ class DensityCalculation(Enum):
     )  # Laliberte correlation using apparent density #TODO add this later with reference
 
 
+class DiffusivityCalculation(Enum):
+    none = auto()
+    hayduklaudie = auto()
+
+
 class ElectricalMobilityCalculation(Enum):
     none = auto()
     EinsteinRelation = auto()
@@ -197,6 +202,25 @@ class MCASParameterData(PhysicalParameterBlock):
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "diffus_calculation",
+        ConfigValue(
+            default=DiffusivityCalculation.none,
+            domain=In(DiffusivityCalculation),
+            description="Diffusivity calculation flag",
+            doc="""
+           Options to account for ionic and molecular diffusivity.
+
+           **default** - ``DiffusivityCalculation.none``
+
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+
+           "``DiffusivityCalculation.none``", ""
+           "``DiffusivityCalculation.hayduklaudie``", ""
        """,
         ),
     )
@@ -1175,6 +1199,37 @@ class MCASStateBlockData(StateBlockData):
 
     def _diffus_phase_comp(self):
         add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
+
+        def rule_diffus_phase_comp(b, p, j):
+            if self.params.config.diffus_calculation == DiffusivityCalculation.none:
+                if (p, j) not in self.params.config.diffusivity_data.keys():
+                    raise ConfigurationError(
+                        """ 
+                        Missing the "diffusivity_data" configuration to build the elec_mobility_phase_comp 
+                        and/or its derived variables for {} in {}. 
+                        Provide this configuration or use ElectricalMobilityCalculation.EinsteinRelation.
+                        """.format(
+                            j, self.name
+                        )
+                    )
+                else:
+                    return (
+                        b.diffus_phase_comp_comp[p, j]
+                        == self.params.config.diffusivity_data[p, j]
+                        * pyunits.meter**2
+                        * pyunits.second**-1
+                    )
+            elif (
+                self.params.config.diffus_calculation
+                == DiffusivityCalculation.hayduklaudie
+            ):
+                print("placeholder")
+
+        self.eq_diffus_phase_comp = Constraint(
+            self.params.phase_list,
+            self.params.ion_set,
+            rule=rule_diffus_phase_comp,
+        )
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
