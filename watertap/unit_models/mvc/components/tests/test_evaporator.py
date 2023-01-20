@@ -68,9 +68,10 @@ def test_evaporator():
     # Evaporator specifications
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
-    m.fs.evaporator.area.fix(100)  # m^2
+    m.fs.evaporator.area.fix(28.50283)  # m^2
     m.fs.evaporator.delta_temperature_out.fix(5)
     m.fs.evaporator.delta_temperature_in.fix(30)
+    # m.fs.evaporator.properties_vapor[0].flow_mass_phase_comp["Vap", "H2O"].fix(0.4183)
 
     # check build
     assert_units_consistent(m)
@@ -87,7 +88,8 @@ def test_evaporator():
     # check values, TODO: make a report for the evaporator
     vapor_blk = m.fs.evaporator.properties_vapor[0]
     assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
-        0.4183, rel=1e-3
+        0.4155, rel=1e-3
     )
-    assert m.fs.evaporator.lmtd.value == pytest.approx(13.79, rel=1e-3)
-    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.379e6, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(13.7946, rel=1e-3)
+    # assert m.fs.evaporator.area.value == pytest.approx(100, rel=1e-3)
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(3.932e5, rel=1e-3)

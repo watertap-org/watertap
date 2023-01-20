@@ -103,12 +103,16 @@ def specify(m):
     # m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
     m.fs.evaporator.outlet_brine.temperature[0].fix(273.15 + 60)
     m.fs.evaporator.U.fix(1e3)  # W/K-m^2
-    m.fs.evaporator.area.fix(400)  # m^2
+    # m.fs.evaporator.area.fix(12.9181451955159)  # m^2
 
     # Compressor
     m.fs.compressor.pressure_ratio = 2
-    m.fs.compressor.control_volume.work.fix(5.8521e05)
+    # m.fs.compressor.control_volume.work.fix(4.4707e5)
     m.fs.compressor.efficiency.fix(0.8)
+    m.fs.compressor.control_volume.properties_out[0].temperature.fix(407.7)
+
+    # Condenser
+    m.fs.condenser.control_volume.properties_out[0].temperature.fix(342.20)
 
 
 def initialize(m, solver=None):
@@ -153,21 +157,22 @@ def test_mvc():
     m.fs.evaporator.display()
     brine_blk = m.fs.evaporator.properties_brine[0]
     # evaporator values
-    assert brine_blk.pressure.value == pytest.approx(1.9849e4, rel=1e-3)
-    assert m.fs.evaporator.lmtd.value == pytest.approx(30.50, rel=1e-3)
-    assert m.fs.evaporator.heat_transfer.value == pytest.approx(1.220e7, rel=1e-3)
+    assert brine_blk.pressure.value == pytest.approx(1.9889e4, rel=1e-3)
+    assert m.fs.evaporator.lmtd.value == pytest.approx(30.43, rel=1e-3)
+    assert m.fs.evaporator.area.value == pytest.approx(12.9181, rel=1e-3)
+    assert m.fs.evaporator.heat_transfer.value == pytest.approx(3.932e5, rel=1e-3)
 
     # compressor values
     compressed_blk = m.fs.compressor.control_volume.properties_out[0]
     assert m.fs.compressor.control_volume.work[0].value == pytest.approx(
-        5.8521e5, rel=1e-3
+        4.4707e5, rel=1e-3
     )
-    assert compressed_blk.pressure.value == pytest.approx(3.9656e4, rel=1e-3)
+    assert compressed_blk.pressure.value == pytest.approx(4.0669e4, rel=1e-3)
     assert compressed_blk.temperature.value == pytest.approx(407.70, rel=1e-3)
 
     # condenser values
     condensed_blk = m.fs.condenser.control_volume.properties_out[0]
     assert m.fs.condenser.control_volume.heat[0].value == pytest.approx(
-        -1.220e7, rel=1e-3
+        -3.932e5, rel=1e-3
     )
     assert condensed_blk.temperature.value == pytest.approx(342.20, rel=1e-3)
