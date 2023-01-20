@@ -1119,6 +1119,10 @@ def test_parameter_block_comparison(model4):
     for j in m_ion.fs.properties.ion_set:
         assert j in ["A", "B", "C", "D"]
 
+    assert isinstance(m_ion.fs.properties.neutral_set, Set)
+    for j in m_ion.fs.properties.neutral_set:
+        assert j in ["E"]
+
     assert isinstance(m_ion.fs.properties.solute_set, Set)
     assert isinstance(m_generic.fs.properties.solute_set, Set)
     for j in m_ion.fs.properties.solute_set:
