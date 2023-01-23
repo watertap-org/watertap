@@ -10,7 +10,7 @@ This seawater property package:
    * estimates molar basis properties based on an average molecular weight of sea salt
    * does not support dynamics
    * properties do not incorporate validity ranges for temperature and salinity
-   * pressure-dependencies for property relationships are not incorporated
+   * pressure-dependency of specific enthalpy is incorporated
    * assumes diffusivity of NaCl based on `Bartholomew & Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_
 
 Sets
@@ -74,7 +74,7 @@ Relationships
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
    "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
    "Osmotic coefficient", "Equation 49 in Sharqawy et al. (2010)"
-   "Specific enthalpy", "Equations 43 and 55 in Sharqawy et al. (2010)"
+   "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
    "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
