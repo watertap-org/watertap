@@ -63,4 +63,4 @@ def test_complete_condense():
     )
     assert distillate_blk.temperature.value == pytest.approx(340, rel=1e-3)
     assert distillate_blk.pressure.value == pytest.approx(50000, rel=1e-3)
-    assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.5288e5, rel=1e-3)
+    assert m.fs.unit.control_volume.heat[0].value == pytest.approx(-2.4358e6, rel=1e-3)

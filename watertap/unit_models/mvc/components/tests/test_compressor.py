@@ -61,7 +61,7 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(3.2098e5, rel=1e-4) == value(
+    assert pytest.approx(1.1539e5, rel=1e-4) == value(
         m.fs.compressor.control_volume.work[0]
     )
     assert pytest.approx(1e-08, rel=1e-4) == value(
@@ -70,7 +70,7 @@ def test_compressor():
     assert pytest.approx(1.0, rel=1e-4) == value(
         m.fs.compressor.outlet.flow_mass_phase_comp[0, "Vap", "H2O"]
     )
-    assert pytest.approx(425.64, rel=1e-4) == value(
+    assert pytest.approx(429.57, rel=1e-4) == value(
         m.fs.compressor.outlet.temperature[0]
     )
     assert pytest.approx(1.0e5, rel=1e-4) == value(m.fs.compressor.outlet.pressure[0])

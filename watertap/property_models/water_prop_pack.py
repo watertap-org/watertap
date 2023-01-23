@@ -796,7 +796,11 @@ class WaterStateBlockData(StateBlockData):
                 + b.params.enth_mass_param_A3 * t**2
                 + b.params.enth_mass_param_A4 * t**3
             )
-            return b.enth_mass_phase[p] == h_w_P
+
+            if p == "Liq":
+                return b.enth_mass_phase[p] == h_w_P
+            else:
+                return b.enth_mass_phase[p] == h_w_P + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
