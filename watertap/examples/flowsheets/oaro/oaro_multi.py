@@ -79,6 +79,7 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine, raise_on_failure=Fa
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
+    optimize_set_up(m)
     results = solve(m, solver=solver)
     if not check_optimal_termination(results):
         msg = "Simulation did not converge"
@@ -194,6 +195,18 @@ def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
     )
     m.fs.net_pump_work = Expression(
         expr=m.fs.total_pump_work + m.fs.recovered_pump_work
+    )
+
+    # additional parameters, variables or expressions ---------------------------------------------------------------------------
+    m.fs.oaro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
+    m.fs.oaro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
+    m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
+    m.fs.ro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
+    m.fs.recycle_pump_min_pressure = Param(
+        initialize=1e5, units=pyunits.Pa, mutable=True
+    )
+    m.fs.recycle_pump_max_pressure = Param(
+        initialize=10e5, units=pyunits.Pa, mutable=True
     )
 
     # process costing and add system level metrics
@@ -544,6 +557,94 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.costing.initialize()
 
 
+def optimize_set_up(m):
+    # add objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    # Primary pumps
+    for idx, pump in m.fs.PrimaryPumps.items():
+        pump.control_volume.properties_out[0].pressure.unfix()
+        pump.deltaP.setlb(0)
+        if idx < m.fs.Stages.last():
+            pump.max_oaro_pressure_con = Constraint(
+                expr=(
+                    m.fs.oaro_min_pressure,
+                    pump.control_volume.properties_out[0].pressure,
+                    m.fs.oaro_max_pressure,
+                )
+            )
+            iscale.constraint_scaling_transform(
+                pump.max_oaro_pressure_con,
+                iscale.get_scaling_factor(
+                    pump.control_volume.properties_out[0].pressure
+                ),
+            )
+        else:
+            pump.max_ro_pressure_con = Constraint(
+                expr=(
+                    m.fs.ro_min_pressure,
+                    pump.control_volume.properties_out[0].pressure,
+                    m.fs.ro_max_pressure,
+                )
+            )
+            iscale.constraint_scaling_transform(
+                pump.max_ro_pressure_con,
+                iscale.get_scaling_factor(
+                    pump.control_volume.properties_out[0].pressure
+                ),
+            )
+
+    # Recycle pumps
+    for idx, pump in m.fs.RecyclePumps.items():
+        pump.control_volume.properties_out[0].pressure.unfix()
+        pump.max_recycle_pump_pressure_con = Constraint(
+            expr=(
+                m.fs.recycle_pump_min_pressure,
+                pump.control_volume.properties_out[0].pressure,
+                m.fs.recycle_pump_max_pressure,
+            )
+        )
+        iscale.constraint_scaling_transform(
+            pump.max_recycle_pump_pressure_con,
+            iscale.get_scaling_factor(pump.control_volume.properties_out[0].pressure),
+        )
+        pump.deltaP.setlb(0)
+
+    # OARO Units
+    for stage in m.fs.OAROUnits.values():
+        stage.area.unfix()
+        stage.area.setlb(1)
+        stage.area.setub(2000)
+
+    # RO
+    m.fs.RO.area.unfix()
+    m.fs.RO.area.setlb(1)
+    m.fs.RO.area.setub(2000)
+
+    # additional specifications
+    m.fs.product_salinity = Param(
+        initialize=500e-6, mutable=True
+    )  # product NaCl mass fraction [-]
+    m.fs.minimum_water_flux = Param(
+        initialize=1.0 / 3600.0, mutable=True
+    )  # minimum water flux [kg/m2-s]
+
+    # additional constraints
+    m.fs.eq_product_quality = Constraint(
+        expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+        <= m.fs.product_salinity
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.eq_product_quality, 1e3
+    )  # scaling constraint
+    m.fs.eq_minimum_water_flux = Constraint(
+        expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
+    )
+
+    # ---checking model---
+    assert_degrees_of_freedom(m, 2 * m.fs.NumberOfStages)
+
+
 def display_system(m):
     print("----system metrics----")
     feed_flow_mass = sum(
@@ -635,6 +736,22 @@ def display_design(m):
             "OARO Stage %d salt perm. coeff.  %.1f LMH"
             % (stage, m.fs.OAROUnits[stage].B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
         )
+    print(
+        "RO feed operating pressure %.1f bar" % (m.fs.RO.inlet.pressure[0].value / 1e5)
+    )
+    print(
+        "RO permeate operating pressure %.1f bar"
+        % (m.fs.RO.permeate.pressure[0].value / 1e5)
+    )
+    print("RO membrane area      %.1f m2" % (m.fs.RO.area.value))
+    print(
+        "RO water perm. coeff.  %.1f LMH/bar"
+        % (m.fs.RO.A_comp[0, "H2O"].value * (3.6e11))
+    )
+    print(
+        "RO salt perm. coeff.  %.1f LMH"
+        % (m.fs.RO.B_comp[0, "NaCl"].value * (1000.0 * 3600.0))
+    )
 
 
 def display_state(m):
