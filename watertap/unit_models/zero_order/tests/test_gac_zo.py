@@ -66,6 +66,7 @@ class TestGACZO_w_o_default_removal:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.activated_carbon_replacement, Var)
         assert isinstance(model.fs.unit.activated_carbon_demand, Var)
+        assert isinstance(model.fs.unit.activated_carbon_bulk_density, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.electricity_intensity_constraint, Constraint)
@@ -351,9 +352,15 @@ def test_costing(subtype):
     m.fs.unit1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     assert isinstance(m.fs.costing.gac, Block)
-    assert isinstance(m.fs.costing.gac.capital_a_parameter, Var)
-    assert isinstance(m.fs.costing.gac.capital_b_parameter, Var)
-    assert isinstance(m.fs.costing.gac.capital_c_parameter, Var)
+    assert isinstance(m.fs.costing.gac.contactor_cost_coeff_0, Var)
+    assert isinstance(m.fs.costing.gac.contactor_cost_coeff_1, Var)
+    assert isinstance(m.fs.costing.gac.contactor_cost_coeff_2, Var)
+    assert isinstance(m.fs.costing.gac.contactor_cost_coeff_3, Var)
+    assert isinstance(m.fs.costing.gac.adsorbent_unit_cost_coeff, Var)
+    assert isinstance(m.fs.costing.gac.adsorbent_unit_cost_exp_coeff, Var)
+    assert isinstance(m.fs.costing.gac.other_cost_coeff, Var)
+    assert isinstance(m.fs.costing.gac.other_cost_exp, Var)
+    assert isinstance(m.fs.costing.gac.bed_mass_max_ref, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
