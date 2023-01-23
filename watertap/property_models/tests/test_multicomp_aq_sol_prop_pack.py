@@ -36,6 +36,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASStateBlock,
     ActivityCoefficientModel,
     DensityCalculation,
+    DiffusivityCalculation,
     ElectricalMobilityCalculation,
     EquivalentConductivityCalculation,
     TransportNumberCalculation,
@@ -121,12 +122,6 @@ def test_parameter_block(model):
     assert model.fs.properties.mw_comp["D"].value == 125e-3
     assert model.fs.properties.mw_comp["H2O"].value == 18e-3
 
-    assert isinstance(model.fs.properties.diffus_phase_comp, Param)
-    assert model.fs.properties.diffus_phase_comp["Liq", "A"].value == 1e-9
-    assert model.fs.properties.diffus_phase_comp["Liq", "B"].value == 1e-10
-    assert model.fs.properties.diffus_phase_comp["Liq", "C"].value == 1e-7
-    assert model.fs.properties.diffus_phase_comp["Liq", "D"].value == 1e-11
-
     assert isinstance(model.fs.properties.radius_stokes_comp, Param)
     assert model.fs.properties.radius_stokes_comp["A"].value == 1e-9
     assert model.fs.properties.radius_stokes_comp["B"].value == 1e-9
@@ -206,7 +201,14 @@ def model2():
 
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D"], charge={"A": 1, "B": -2, "C": 2, "D": -1}
+        solute_list=["A", "B", "C", "D"],
+        charge={"A": 1, "B": -2, "C": 2, "D": -1},
+        diffusivity_data={
+            ("Liq", "A"): 1e-9,
+            ("Liq", "B"): 1e-10,
+            ("Liq", "C"): 1e-7,
+            ("Liq", "D"): 1e-11,
+        },
     )
 
     return m
@@ -225,11 +227,6 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-
-    stream[0].diffus_phase_comp["Liq", "A"] = 1e-9
-    stream[0].diffus_phase_comp["Liq", "B"] = 1e-10
-    stream[0].diffus_phase_comp["Liq", "C"] = 1e-7
-    stream[0].diffus_phase_comp["Liq", "D"] = 1e-11
 
     stream[0].mw_comp["H2O"] = 18e-3
     stream[0].mw_comp["A"] = 10e-3
@@ -352,8 +349,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 87
-    assert number_total_constraints(m) == 69
+    assert number_variables(m) == 92
+    assert number_total_constraints(m) == 74
     [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
 
@@ -1341,3 +1338,96 @@ def test_elec_properties_errormsg(model6):
         match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
     ):
         m[2].fs.stream[0].trans_num_phase_comp
+
+
+@pytest.fixture(scope="module")
+def model7():
+    m_none = ConcreteModel()
+    m_hl = ConcreteModel()
+
+    m_none.fs = FlowsheetBlock(dynamic=False)
+    m_hl.fs = FlowsheetBlock(dynamic=False)
+
+    m_none.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D"],
+        diffusivity_data={
+            ("Liq", "A"): 1e-09,
+            ("Liq", "B"): 1e-10,
+            ("Liq", "C"): 1e-07,
+            ("Liq", "D"): 1e-11,
+        },
+    )
+    m_hl.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D"],
+        diffus_calculation=DiffusivityCalculation.hayduklaudie,
+        molar_volume_data={
+            ("Liq", "A"): 0.05,
+            ("Liq", "B"): 0.10,
+            ("Liq", "C"): 0.06,
+            ("Liq", "D"): 0.20,
+        },
+    )
+
+    return (m_none, m_hl)
+
+
+@pytest.mark.unit
+def test_diffus_none(model7):
+    m = model7[0]
+
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    # touch diffusivity property
+    m.fs.stream[0].diffus_phase_comp
+
+    m.fs.stream.initialize()
+
+    assert m.fs.properties.config.diffus_calculation == DiffusivityCalculation.none
+
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "A"].value == pytest.approx(
+        1e-9, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "B"].value == pytest.approx(
+        1e-10, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "C"].value == pytest.approx(
+        1e-7, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "D"].value == pytest.approx(
+        1e-11, rel=1e-3
+    )
+
+
+@pytest.mark.unit
+def test_diffus_hl(model7):
+    m = model7[1]
+
+    m.fs.stream = m.fs.properties.build_state_block([0], defined_state=True)
+
+    # touch diffusivity property
+    m.fs.stream[0].diffus_phase_comp
+
+    m.fs.stream.initialize()
+
+    assert (
+        m.fs.properties.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
+    )
+
+    assert isinstance(m.fs.properties.molar_volume_comp, Param)
+    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 0.05
+    assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 0.10
+    assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 0.06
+    assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 0.20
+
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "A"].value == pytest.approx(
+        1.324e-09, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "B"].value == pytest.approx(
+        8.801e-10, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "C"].value == pytest.approx(
+        1.189e-09, rel=1e-3
+    )
+    assert m.fs.stream[0].diffus_phase_comp["Liq", "D"].value == pytest.approx(
+        5.851e-10, rel=1e-3
+    )
