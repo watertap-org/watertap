@@ -1258,7 +1258,7 @@ class MCASStateBlockData(StateBlockData):
                     return (
                         b.diffus_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units
                     ) * ((b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14) * (
-                        (b.molar_volume_comp[p, j] * 1e3 * molar_volume_inv_units)
+                        (b.molar_volume_comp[p, j] * 1e6 * molar_volume_inv_units)
                         ** 0.589
                     ) == 13.26e-5
 

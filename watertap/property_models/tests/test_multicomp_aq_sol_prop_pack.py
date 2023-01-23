@@ -1361,10 +1361,10 @@ def model7():
         solute_list=["A", "B", "C", "D"],
         diffus_calculation=DiffusivityCalculation.hayduklaudie,
         molar_volume_data={
-            ("Liq", "A"): 0.05,
-            ("Liq", "B"): 0.10,
-            ("Liq", "C"): 0.06,
-            ("Liq", "D"): 0.20,
+            ("Liq", "A"): 50e-6,
+            ("Liq", "B"): 100e-6,
+            ("Liq", "C"): 60e-6,
+            ("Liq", "D"): 200e-6,
         },
     )
 
@@ -1414,10 +1414,10 @@ def test_diffus_hl(model7):
     )
 
     assert isinstance(m.fs.properties.molar_volume_comp, Param)
-    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 0.05
-    assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 0.10
-    assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 0.06
-    assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 0.20
+    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 50e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 100e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 60e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 200e-6
 
     assert m.fs.stream[0].diffus_phase_comp["Liq", "A"].value == pytest.approx(
         1.324e-09, rel=1e-3
