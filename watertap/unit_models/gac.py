@@ -321,14 +321,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             " of the mass transfer zone, typically 0.95 or 0.99",
         )
 
-        self.dens_water = Param(
-            default=997,
-            initialize=997,
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("length") ** -3,
-            doc="Water density",
-        )
-
         # ---------------------------------------------------------------------
         # Freundlich isotherm parameters and adsorption variables
         self.freund_k = Var(
@@ -931,14 +923,17 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     b.N_Re
                     * b.process_flow.properties_in[0].visc_d_phase["Liq"]
                     * b.bed_voidage
-                    == b.dens_water * b.sphericity * b.particle_dia * b.velocity_sup
+                    == b.process_flow.properties_in[0].dens_mass_phase["Liq"]
+                    * b.sphericity
+                    * b.particle_dia
+                    * b.velocity_sup
                 )
 
             @self.Constraint(target_species, doc="Schmidt number calculation")
             def eq_schmidt_number(b, j):
                 return (
                     b.N_Sc
-                    * b.dens_water
+                    * b.process_flow.properties_in[0].dens_mass_phase["Liq"]
                     * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
                     == b.process_flow.properties_in[0].visc_d_phase["Liq"]
                 )

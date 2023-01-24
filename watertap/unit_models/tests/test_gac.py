@@ -401,7 +401,6 @@ class TestGACRobust:
     @pytest.mark.component
     def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
-        mr.display()
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
