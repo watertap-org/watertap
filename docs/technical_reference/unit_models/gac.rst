@@ -1,6 +1,7 @@
 Granular Activated Carbon (GAC)
 ===============================
-This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria and assumptions:
+This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria
+and assumptions:
    * supports a single liquid phase only
    * supports adsorption of a single solute species only while other species are considered inert
    * supports steady-state only
@@ -14,39 +15,44 @@ This is an empirical, performance-based granular activated carbon (GAC) model th
 
 Introduction
 ------------
-The implemented model for estimating GAC performance is adapted from a simplified model originally presented in Hand, 1984 and
-further elaborated in Crittenden, 2012. This formulation is denoted as the constant-pattern homogeneous surface diffusion model (CPHSDM).
-As a GAC system is operated as a batch process, a mass transfer zone (MTZ) is formed in the bed where a concentration profile, or
-breakthrough curve, develops as a function of the adsorption properties. This MTZ is bounded by saturated GAC upstream and
-fresh GAC downstream. The CPHSDM is valid under the assumption that the shape of the MTZ is constant as it travels through the
-bed and a constant pattern solution (CPS) may be determined. The CPS is calculated through a multistep procedure utilizing common
-dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be
-derived from experimental data of the intended system to produce valid results. Coefficients for common compounds treated by GAC may be
-found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore may be applied to bed lengths
-shorter than the minimum length determined by the CPHSDM within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
+The implemented model for estimating GAC performance is adapted from a simplified model originally presented in Hand,
+1984 and further elaborated in Crittenden, 2012. This formulation is denoted as the constant-pattern homogeneous
+surface diffusion model (CPHSDM). As a GAC system is operated as a batch process, a mass transfer zone (MTZ) is
+formed in the bed where a concentration profile, or breakthrough curve, develops as a function of the adsorption
+properties. This MTZ is bounded by saturated GAC upstream and fresh GAC downstream. The CPHSDM is valid under the
+assumption that the shape of the MTZ is constant as it travels through the bed and a constant pattern solution (CPS)
+may be determined. The CPS is calculated through a multistep procedure utilizing common
+dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the
+polynomial must be derived from experimental data of the intended system to produce valid results. Coefficients for
+common compounds treated by GAC may be found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have
+within 10% error and therefore may be applied to bed lengths shorter than the minimum length determined by the CPHSDM
+within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined
+by the CPHSDM).
 
-The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the model for
-flowsheet purposes. A description of the transformation is provided in Figure 1.
+The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the
+model for flowsheet purposes. A description of the transformation is provided in Figure 1.
 
 .. figure:: ../../_static/unit_models/gac.png
     :width: 1200
     :align: center
 
-    Figure 1. (a) The mass transfer zone movement as a constant pattern for an arbitrary time of operation where the entire MTZ
-    is contained within the bed length. The dimensionless concentration of the adsorbent in both the liquid and adsorbate phase is
-    variable in the range of the MTZ as plotted with respect to the dimensionless length of the bed. (b) The breakthrough curve is
-    shown as a function of the elapsed time in operation of the bed. The dashed line indicates a breakthrough time where the bed operation will
-    be stopped (and the partially saturated GAC will be replaced) when the effluent concentration is 50% of the inlet. (c) For the breakthrough
-    time in b, some of the MTZ is still contained within the bed and therefore the GAC particles in this zone are not fully saturated. The
-    trapezoid rule for integration is used to approximate the degree of saturation of the entire bed. This degree of saturation corresponds
-    to a specific mass of contaminant adsorbed during the operation time and is used to transform the process to a steady state approximation.
+    Figure 1. (a) The mass transfer zone movement as a constant pattern for an arbitrary time of operation where the
+    entire MTZ is contained within the bed length. The dimensionless concentration of the adsorbent in both the
+    liquid and adsorbate phase is variable in the range of the MTZ as plotted with respect to the dimensionless
+    length of the bed. (b) The breakthrough curve is shown as a function of the elapsed time in operation of the bed.
+    The dashed line indicates a breakthrough time where the bed operation will be stopped (and the partially
+    saturated GAC will be replaced) when the effluent concentration is 50% of the inlet. (c) For the breakthrough
+    time in b, some of the MTZ is still contained within the bed and therefore the GAC particles in this zone are not
+    fully saturated. The trapezoid rule for integration is used to approximate the degree of saturation of the entire
+    bed. This degree of saturation corresponds to a specific mass of contaminant adsorbed during the operation time
+    and is used to transform the process to a steady state approximation.
 
 Degrees of Freedom
 ------------------
-In the default configuration of the GAC unit model there are 18 degrees of freedom in addition to the inlet state variables
-(i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully specified.
-In association with using the Freundlich adsorption isotherm and empirical model, the following 9 variables are almost always fixed
-and may be derived from experimental data:
+In the default configuration of the GAC unit model there are 18 degrees of freedom in addition to the inlet state
+variables (i.e., temperature, pressure, component flowrates) that should be fixed for the model to be fully
+specified. In association with using the Freundlich adsorption isotherm and empirical model, the following 9
+variables are almost always fixed and may be derived from experimental data:
 
    * Freundlich isotherm :math:`k` parameter
    * Freundlich isotherm :math:`\frac{1}{n}` parameter
@@ -65,9 +71,9 @@ Additionally, the following 9 variables are traditionally fixed:
    * liquid phase film transfer coefficient
    * surface diffusion coefficient
 
-When setting the configuration options to calculate the liquid phase film transfer coefficient and surface diffusion coefficient,
-these respective variables are no longer specified and 4 newly introduced variables must be fixed. This is a net result of 20 degrees of freedom.
-Newly utilized variables that must be fixed include:
+When setting the configuration options to calculate the liquid phase film transfer coefficient and surface diffusion
+coefficient, these respective variables are no longer specified and 4 newly introduced variables must be fixed. This
+is a net result of 20 degrees of freedom. Newly utilized variables that must be fixed include:
 
    * molal volume of the solute
    * GAC particle sphericity
@@ -77,11 +83,12 @@ Newly utilized variables that must be fixed include:
 Model Structure
 ------------------
 The GAC model consists of 1 ControlVolume0DBlock (process_flow) for the process flow of the water treatment train.
-The process flow includes 2 StateBlocks (inlet and outlet) which are used for mass and momentum balances.
-It also includes 1 StateBlock (adsorbed) for the solute that is adsorbed into the GAC particles.
-The material removed in the adsorbed state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed
-into the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a unit model
-variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in property package specifications.
+The process flow includes 2 StateBlocks (inlet and outlet) which are used for mass and momentum balances. It also
+includes 1 StateBlock (adsorbed) for the solute that is adsorbed into the GAC particles. The material removed in the
+adsorbed state block is simulated as liquid phase solute but should be interpreted as solute that has adsorbed into
+the solid phase GAC particles. The steady state mass removal and replacement rate of the GAC itself is provided as a
+unit model variable and excluded from flowsheet material balances. Therefore, GAC is never included as a component in
+property package specifications.
 
 Sets
 ----
@@ -99,15 +106,15 @@ Sets
 
 Variables
 ----------
-Supporting only a single solute, variables concerning the adsorption of a species are respective to the target species
-although not explicitly indexed. All other species are inert from a mass balance perspective, but effects of background
-species to the adsorption of the target species may be modeled by adjusting the Freundlich isotherm parameters and other
-variables in the model.
+Supporting only a single solute, variables concerning the adsorption of a species are respective to the target
+species although not explicitly indexed. All other species are inert from a mass balance perspective, but effects of
+background species to the adsorption of the target species may be modeled by adjusting the Freundlich isotherm
+parameters and other variables in the model.
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
+   "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None",":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
    "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
    "Equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
    "Mass of contaminant adsorbed at the time of replacement", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
@@ -265,10 +272,11 @@ The following parameters are constructed when applying the GAC costing method in
    "Unit cost to makeup spent GAC adsorbent with fresh adsorbent", ":math:`C_{makeup}`", "gac_makeup_unit_cost", "4.58223", ":math:`$/kg`"
 
 
-Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation. For large systems this may be a poor
-assumption considering vessel sizing and achieving pseudo-steady state.  The number of contactors input by the user should justify reasonable
-(commercially available) dimensions of identical modular contactors in parallel. When costing several operational vessels, the area reported
-in the unit model should be interpreted as the sum of the areas across all operating GAC contactors.
+Costing GAC contactors is defaulted to purchasing 1 operational and 1 redundant contactor for alternating operation.
+For large systems this may be a poor assumption considering vessel sizing and achieving pseudo-steady state. The
+number of contactors input by the user should justify reasonable (commercially available) dimensions of identical
+modular contactors in parallel. When costing several operational vessels, the area reported in the unit model should
+be interpreted as the sum of the areas across all operating GAC contactors.
 
 The following variables are constructed when applying the GAC costing method in the ``watertap_costing_package``:
 
@@ -292,13 +300,14 @@ Capital costs are determined by the summation of three costing terms. Each term 
 
         C_{cap,tot} = C_{cap,bed}+C_{cap,carbon}+C_{cap,other}
 
-Contactor and GAC adsorbent capital costs are estimated using functions and parameters reported in US EPA, 2021. Contactors
-are assumed to be carbon steel pressure vessels with plastic internals and are determined as a polynomial function of
-individual contactor volume. The unit cost per kilogram of GAC adsorbent needed is calculated using an exponential
-function. A maximum reference mass is imposed in the costing method to define a best available price where above
-this required charge, the price would no longer be discounted. Other process costs (vessels, pipes, instrumentation,
-and controls) included in the US EPA, 2021 model are aggregated into a separate term. The parameters for the power law
-function with respect to the total system contactor volume were regressed using results from the US EPA, 2021 model.
+Contactor and GAC adsorbent capital costs are estimated using functions and parameters reported in US EPA, 2021.
+Contactors are assumed to be carbon steel pressure vessels with plastic internals and are determined as a polynomial
+function of individual contactor volume. The unit cost per kilogram of GAC adsorbent needed is calculated using an
+exponential function. A maximum reference mass is imposed in the costing method to define a best available price
+where above this required charge, the price would no longer be discounted. Other process costs (vessels, pipes,
+instrumentation, and controls) included in the US EPA, 2021 model are aggregated into a separate term. The parameters
+for the power law function with respect to the total system contactor volume were regressed using results from the US
+EPA, 2021 model.
 
     .. math::
 
@@ -313,10 +322,11 @@ may be fixed to a value (:math:`y_0`) by setting :math:`y_1=0`.
 Operating Cost Calculations
 +++++++++++++++++++++++++++
 
-Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy for backwash and booster
-pumps are considered negligible compared to the regeneration costs. Since the replacement adsorbent purchases are expected to be
-purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC adsorbent for makeup has an independent
-cost per unit mass variable, expected to be higher than the initial charge unit cost.
+Operating costs are calculated as the cost to replace spent GAC adsorbent in the contactor beds. Energy for backwash
+and booster pumps are considered negligible compared to the regeneration costs. Since the replacement adsorbent
+purchases are expected to be purchased in bulk at smaller quantities than the initial charge, the cost of fresh GAC
+adsorbent for makeup has an independent cost per unit mass variable, expected to be higher than the initial charge
+unit cost.
 
     .. math::
 
@@ -332,11 +342,11 @@ Code Documentation
 
 References
 -----------
-Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems.
-Journal of Environmental Engineering, 110(2), 440-456.
+Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems
+. Journal of Environmental Engineering, 110(2), 440-456.
 
-Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and Design.
-EditorialJohn Wiley & Sons.
+Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and
+Design. EditorialJohn Wiley & Sons.
 
-United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular Activated
-Carbon Drinking Water Treatment.
+United States Environmental Protection Agency. (2021). Work Breakdown Structure-Based Cost Model for Granular
+Activated Carbon Drinking Water Treatment.
