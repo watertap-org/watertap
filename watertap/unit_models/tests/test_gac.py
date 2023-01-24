@@ -68,6 +68,7 @@ class TestGACSimplified:
             solute_list=["DCE"],
             mw_data={"H2O": 0.018, "DCE": 0.09896},
         )
+        ms.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
 
         ms.fs.unit = GAC(
             property_package=ms.fs.properties,
@@ -238,6 +239,7 @@ class TestGACRobust:
             diffus_calculation=DiffusivityCalculation.hayduklaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
+        mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
 
         mr.fs.unit = GAC(
             property_package=mr.fs.properties,
@@ -399,6 +401,7 @@ class TestGACRobust:
     @pytest.mark.component
     def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
+        mr.display()
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
@@ -533,9 +536,18 @@ class TestGACMulti:
                 "BGAN": 0.1,
             },
             diffus_calculation=DiffusivityCalculation.hayduklaudie,
-            molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            molar_volume_data={
+                ("Liq", "TCE"): 9.81e-5,
+                ("Liq", "BGSOL"): 1e-5,
+                ("Liq", "BGCAT"): 1e-5,
+                ("Liq", "BGAN"): 1e-5,
+            },
             charge={"BGCAT": 1, "BGAN": -2},
         )
+        # only molar_volume for target_species is required in unit_model,
+        # however once molar_volume is touched in the property_package,
+        # it is constructed for all ion_set | solute_set species
+        mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
 
         # testing target_species arg
         mm.fs.unit = GAC(

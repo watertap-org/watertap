@@ -321,14 +321,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             " of the mass transfer zone, typically 0.95 or 0.99",
         )
 
-        self.visc_water = Param(
-            default=1.3097e-3,
-            initialize=1.3097e-3,
-            domain=NonNegativeReals,
-            units=units_meta("pressure") * units_meta("time"),
-            doc="Water viscosity",
-        )
-
         self.dens_water = Param(
             default=997,
             initialize=997,
@@ -904,51 +896,6 @@ class GACData(InitializationMixin, UnitModelBlockData):
             ) == b.bed_length * b.gac_saturation_replace
 
         # ---------------------------------------------------------------------
-        """
-        if (
-            self.config.film_transfer_coefficient_type
-            == FilmTransferCoefficientType.calculated
-            or self.config.surface_diffusion_coefficient_type
-            == SurfaceDiffusionCoefficientType.calculated
-        ):
-            self.process_flow.properties_in[0].diffus_phase_comp['Liq', j] = Var(
-                initialize=1e-10,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 2 * units_meta("time") ** -1,
-                doc="Molecular diffusion coefficient",
-            )
-
-            # TODO: Determine whether the LeBas method can be implemented or embed in prop pack
-            self.molal_volume = Var(
-                initialize=1e-5,
-                bounds=(0, None),
-                domain=NonNegativeReals,
-                units=units_meta("length") ** 3 * units_meta("amount") ** -1,
-                doc="Molal volume",
-            )
-
-            @self.Constraint(
-                doc="Molecular diffusion coefficient calculated by the Hayduk-Laudie correlation "
-                "in specified units for organic compounds in water",
-            )
-            def eq_molecular_diffusion_coefficient(b):
-                molecular_diffusion_coefficient_inv_units = (
-                    units_meta("time") * units_meta("length") ** -2
-                )
-                visc_water_inv_units = (
-                    units_meta("pressure") ** -1 * units_meta("time") ** -1
-                )
-                molal_volume_inv_units = (
-                    units_meta("amount") * units_meta("length") ** -3
-                )
-                return (b.process_flow.properties_in[0].diffus_phase_comp['Liq', j] * molecular_diffusion_coefficient_inv_units) * (
-                    (b.visc_water * 1e3 * visc_water_inv_units) ** 1.14
-                ) * (
-                    (b.molal_volume * 1e6 * molal_volume_inv_units) ** 0.589
-                ) == 13.26e-9
-        """
-        # ---------------------------------------------------------------------
         if (
             self.config.film_transfer_coefficient_type
             == FilmTransferCoefficientType.calculated
@@ -981,7 +928,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
             @self.Constraint(doc="Reynolds number calculation")
             def eq_reynolds_number(b):
                 return (
-                    b.N_Re * b.visc_water * b.bed_voidage
+                    b.N_Re
+                    * b.process_flow.properties_in[0].visc_d_phase["Liq"]
+                    * b.bed_voidage
                     == b.dens_water * b.sphericity * b.particle_dia * b.velocity_sup
                 )
 
@@ -991,7 +940,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     b.N_Sc
                     * b.dens_water
                     * b.process_flow.properties_in[0].diffus_phase_comp["Liq", j]
-                    == b.visc_water
+                    == b.process_flow.properties_in[0].visc_d_phase["Liq"]
                 )
 
             @self.Constraint(
