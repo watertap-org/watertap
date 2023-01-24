@@ -298,11 +298,6 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
-    def _add_sherwood_number(
-        self, sherwood_number_eq=SherwoodNumberEq.length_independent
-    ):
-        raise NotImplementedError()
-
     def _skip_element(self, x):
         raise NotImplementedError()
 
@@ -494,8 +489,9 @@ class MembraneChannelMixin:
                 )
 
             if mass_transfer_coefficient == MassTransferCoefficient.calculated:
-                self._add_calculated_mass_transfer_coefficient()
-                self._add_sherwood_number()
+                self._add_calculated_mass_transfer_coefficient(
+                    sherwood_number_eq=SherwoodNumberEq.length_independent
+                )
 
         return self.eq_cp_modulus
 
