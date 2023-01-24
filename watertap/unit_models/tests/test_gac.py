@@ -43,6 +43,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
+    DiffusivityCalculation,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -64,7 +65,8 @@ class TestGACSimplified:
         ms.fs = FlowsheetBlock(dynamic=False)
 
         ms.fs.properties = MCASParameterBlock(
-            solute_list=["DCE"], mw_data={"H2O": 0.018, "DCE": 0.09896}
+            solute_list=["DCE"],
+            mw_data={"H2O": 0.018, "DCE": 0.09896},
         )
 
         ms.fs.unit = GAC(
@@ -119,7 +121,7 @@ class TestGACSimplified:
         return ms
 
     @pytest.mark.unit
-    def test_config_simplified(self, gac_frame_simplified):
+    def test_simple_config(self, gac_frame_simplified):
         ms = gac_frame_simplified
         # check unit config arguments
         assert len(ms.fs.unit.config) == 11
@@ -145,7 +147,7 @@ class TestGACSimplified:
         assert len(ms.fs.unit.config.property_package.solvent_set) == 1
 
     @pytest.mark.unit
-    def test_build_simplified(self, gac_frame_simplified):
+    def test_simple_build(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
         # test units
@@ -164,7 +166,7 @@ class TestGACSimplified:
         assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
-    def test_dof_simplified(self, gac_frame_simplified):
+    def test_simple_dof(self, gac_frame_simplified):
         ms = gac_frame_simplified
         assert degrees_of_freedom(ms) == 0
 
@@ -185,11 +187,11 @@ class TestGACSimplified:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_initialize_simplified(self, gac_frame_simplified):
+    def test_simple_initialize(self, gac_frame_simplified):
         initialization_tester(gac_frame_simplified)
 
     @pytest.mark.component
-    def test_var_scaling_init_simplified(self, gac_frame_simplified):
+    def test_simple_var_scaling_init(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
@@ -197,7 +199,7 @@ class TestGACSimplified:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_simplified(self, gac_frame_simplified):
+    def test_simple_solve(self, gac_frame_simplified):
         ms = gac_frame_simplified
         results = solver.solve(ms)
 
@@ -205,7 +207,7 @@ class TestGACSimplified:
         assert check_optimal_termination(results)
 
     @pytest.mark.component
-    def test_var_scaling_solve_simplified(self, gac_frame_simplified):
+    def test_simple_var_scaling_solve(self, gac_frame_simplified):
         ms = gac_frame_simplified
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(ms, large=1e2, small=1e-2, zero=1e-8)
@@ -213,7 +215,7 @@ class TestGACSimplified:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_simplified(self, gac_frame_simplified):
+    def test_simple_solution(self, gac_frame_simplified):
         ms = gac_frame_simplified
 
         # Approx data pulled from graph in Hand, 1984 at ~30 days
@@ -231,7 +233,10 @@ class TestGACRobust:
         mr.fs = FlowsheetBlock(dynamic=False)
 
         mr.fs.properties = MCASParameterBlock(
-            solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
+            solute_list=["TCE"],
+            mw_data={"H2O": 0.018, "TCE": 0.1314},
+            diffus_calculation=DiffusivityCalculation.hayduklaudie,
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
 
         mr.fs.unit = GAC(
@@ -279,7 +284,6 @@ class TestGACRobust:
         mr.fs.unit.conc_ratio_replace.fix(0.80)
 
         # parameters
-        mr.fs.unit.molal_volume.fix(9.81e-5)
         mr.fs.unit.tort.fix(1)
         mr.fs.unit.spdfr.fix(1)
         mr.fs.unit.sphericity.fix(1.5)
@@ -294,7 +298,7 @@ class TestGACRobust:
         return mr
 
     @pytest.mark.unit
-    def test_config_robust(self, gac_frame_robust):
+    def test_robust_config(self, gac_frame_robust):
         mr = gac_frame_robust
         # check unit config arguments
         assert len(mr.fs.unit.config) == 11
@@ -315,12 +319,17 @@ class TestGACRobust:
             == SurfaceDiffusionCoefficientType.calculated
         )
 
+        # check properties
         assert mr.fs.unit.config.property_package is mr.fs.properties
+        assert (
+            mr.fs.properties.config.diffus_calculation
+            == DiffusivityCalculation.hayduklaudie
+        )
         assert len(mr.fs.unit.config.property_package.solute_set) == 1
         assert len(mr.fs.unit.config.property_package.solvent_set) == 1
 
     @pytest.mark.unit
-    def test_build_robust(self, gac_frame_robust):
+    def test_robust_build(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # test units
@@ -334,17 +343,17 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 89
+        assert number_variables(mr) == 88
         assert number_total_constraints(mr) == 54
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
-    def test_dof_robust(self, gac_frame_robust):
+    def test_robust_dof(self, gac_frame_robust):
         mr = gac_frame_robust
         assert degrees_of_freedom(mr) == 0
 
     @pytest.mark.unit
-    def test_calculate_scaling_robust(self, gac_frame_robust):
+    def test_robust_calculate_scaling(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.properties.set_default_scaling(
@@ -360,11 +369,11 @@ class TestGACRobust:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.component
-    def test_initialize_robust(self, gac_frame_robust):
+    def test_robust_initialize(self, gac_frame_robust):
         initialization_tester(gac_frame_robust)
 
     @pytest.mark.component
-    def test_var_scaling_init_robust(self, gac_frame_robust):
+    def test_robust_var_scaling_init(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
@@ -372,7 +381,7 @@ class TestGACRobust:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_robust(self, gac_frame_robust):
+    def test_robust_solve(self, gac_frame_robust):
         mr = gac_frame_robust
         results = solver.solve(mr)
 
@@ -380,7 +389,7 @@ class TestGACRobust:
         assert check_optimal_termination(results)
 
     @pytest.mark.component
-    def test_var_scaling_solve_robust(self, gac_frame_robust):
+    def test_robust_var_scaling_solve(self, gac_frame_robust):
         mr = gac_frame_robust
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mr, large=1e2, small=1e-2, zero=1e-8)
@@ -388,7 +397,7 @@ class TestGACRobust:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_robust(self, gac_frame_robust):
+    def test_robust_solution(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # values calculated independently and near to those reported in Crittenden, 2012
@@ -397,12 +406,12 @@ class TestGACRobust:
         assert pytest.approx(10.68, rel=1e-3) == value(mr.fs.unit.bed_area)
 
     @pytest.mark.component
-    def test_reporting_robust(self, gac_frame_robust):
+    def test_robust_reporting(self, gac_frame_robust):
         mr = gac_frame_robust
         mr.fs.unit.report()
 
     @pytest.mark.component
-    def test_costing_robust(self, gac_frame_robust):
+    def test_robust_costing(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -446,7 +455,7 @@ class TestGACRobust:
         )
 
     @pytest.mark.component
-    def test_costing_modular_contactors_robust(self, gac_frame_robust):
+    def test_robust_costing_modular_contactors(self, gac_frame_robust):
         mr = gac_frame_robust
 
         mr.fs.costing = WaterTAPCosting()
@@ -476,7 +485,7 @@ class TestGACRobust:
         )
 
     @pytest.mark.component
-    def test_costing_max_gac_ref_robust(self, gac_frame_robust):
+    def test_robust_costing_max_gac_ref(self, gac_frame_robust):
         mr = gac_frame_robust
 
         # scale flow up 10x
@@ -523,6 +532,8 @@ class TestGACMulti:
                 "BGCAT": 0.1,
                 "BGAN": 0.1,
             },
+            diffus_calculation=DiffusivityCalculation.hayduklaudie,
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
             charge={"BGCAT": 1, "BGAN": -2},
         )
 
@@ -573,7 +584,6 @@ class TestGACMulti:
         mm.fs.unit.particle_dens_app.fix(803.4)
         mm.fs.unit.particle_dia.fix(0.001026)
         mm.fs.unit.velocity_sup.fix(5 / 3600)
-        mm.fs.unit.molal_volume.fix(9.81e-5)
         mm.fs.unit.tort.fix(1)
         mm.fs.unit.spdfr.fix(1)
         mm.fs.unit.sphericity.fix(1.5)
@@ -588,7 +598,7 @@ class TestGACMulti:
         return mm
 
     @pytest.mark.unit
-    def test_config_multi(self, gac_frame_multi):
+    def test_multi_config(self, gac_frame_multi):
         mm = gac_frame_multi
 
         # checking non-unity solute set and nonzero ion set handling
@@ -599,7 +609,7 @@ class TestGACMulti:
         assert degrees_of_freedom(mm) == 0
 
     @pytest.mark.unit
-    def test_calculate_scaling_multi(self, gac_frame_multi):
+    def test_multi_calculate_scaling(self, gac_frame_multi):
         mm = gac_frame_multi
 
         mm.fs.properties.set_default_scaling(
@@ -618,7 +628,7 @@ class TestGACMulti:
         assert len(unscaled_var_list) == 0
 
     @pytest.mark.unit
-    def test_var_scaling_init_multi(self, gac_frame_multi):
+    def test_multi_var_scaling_init(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-3, zero=1e-8)
@@ -626,7 +636,7 @@ class TestGACMulti:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve_multi(self, gac_frame_multi):
+    def test_multi_solve(self, gac_frame_multi):
         mm = gac_frame_multi
         results = solver.solve(mm)
 
@@ -634,7 +644,7 @@ class TestGACMulti:
         assert check_optimal_termination(results)
 
     @pytest.mark.unit
-    def test_var_scaling_solve_multi(self, gac_frame_multi):
+    def test_multi_var_scaling_solve(self, gac_frame_multi):
         mm = gac_frame_multi
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(mm, large=1e2, small=1e-2, zero=1e-8)
@@ -642,7 +652,7 @@ class TestGACMulti:
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solution_multi(self, gac_frame_multi):
+    def test_multi_solution(self, gac_frame_multi):
         mm = gac_frame_multi
 
         # values calculated independently and near to those reported in Crittenden, 2012
@@ -651,6 +661,6 @@ class TestGACMulti:
         assert pytest.approx(10.68, rel=1e-3) == value(mm.fs.unit.bed_area)
 
     @pytest.mark.component
-    def test_reporting_multi(self, gac_frame_multi):
+    def test_multi_reporting(self, gac_frame_multi):
         mm = gac_frame_multi
         mm.fs.unit.report()
