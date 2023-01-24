@@ -331,6 +331,7 @@ class MembraneChannelMixin:
         has_pressure_change=True,
         pressure_change_type=PressureChangeType.calculated,
         custom_term=None,
+        friction_factor=FrictionFactor.flat_sheet,
     ):
         super().add_total_pressure_balances(
             has_pressure_change=has_pressure_change, custom_term=custom_term
@@ -350,7 +351,7 @@ class MembraneChannelMixin:
             self._add_pressure_change(pressure_change_type=pressure_change_type)
 
         if pressure_change_type == PressureChangeType.calculated:
-            self._add_calculated_pressure_change()
+            self._add_calculated_pressure_change(friction_factor=friction_factor)
 
     def add_interface_isothermal_conditions(self):
 
