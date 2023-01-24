@@ -1007,14 +1007,23 @@ def validate_membrane_config_args(unit):
         unit.config.sherwood_number_eq == SherwoodNumberEq.length_dependent
         and unit.config.concentration_polarization_type
         != ConcentrationPolarizationType.calculated
-        or unit.config.mass_transfer_coefficient != MassTransferCoefficient.calculated
     ):
         raise ConfigurationError(
-            "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+            "\n'concentration_polarization_type' option configured incorrectly:\n"
+            "'concentration_polarization_type' cannot be set to {} "
+            "while 'sherwood_number_eq' is set to SherwoodNumberEq.length_dependent.\n "
+            "\n\nSet 'concentration_polarization_type' to ConcentrationPolarizationType.calculated or "
+            "\nor set 'sherwood_number_eq' to SherwoodNumberEq.length_independent"
+        )
+
+    if (
+        unit.config.sherwood_number_eq == SherwoodNumberEq.length_dependent
+        and unit.config.mass_transfer_coefficient != MassTransferCoefficient.calculated
+    ):
+        raise ConfigurationError(
+            "\n'mass_transfer_coefficient' option configured incorrectly:\n"
             "'mass_transfer_coefficient' cannot be set to {} "
-            "'and/or concentration_polarization_type' cannot be set to {} "
             "while 'sherwood_number_eq' is set to SherwoodNumberEq.length_dependent.\n "
             "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.calculated or "
-            "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.calculated or "
             "\nor set 'sherwood_number_eq' to SherwoodNumberEq.length_independent"
         )
