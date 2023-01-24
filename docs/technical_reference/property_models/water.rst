@@ -112,7 +112,7 @@ Scaling factors for other variables can be calculated based on their relationshi
 References
 ----------
 
-K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
+K.G. Nayar, M.H. Sharqawy, L.D. Banchik, and J.H. Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
 
 M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater)
 
