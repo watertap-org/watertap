@@ -298,6 +298,11 @@ class MembraneChannelMixin:
     def _add_pressure_change(self, pressure_change_type=PressureChangeType.calculated):
         raise NotImplementedError()
 
+    def _add_sherwood_number(
+        self, sherwood_number_eq=SherwoodNumberEq.length_independent
+    ):
+        raise NotImplementedError()
+
     def _skip_element(self, x):
         raise NotImplementedError()
 
@@ -406,6 +411,7 @@ class MembraneChannelMixin:
         self,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         mass_transfer_coefficient=MassTransferCoefficient.calculated,
+        sherwood_number_eq=SherwoodNumberEq.length_independent,
     ):
 
         solute_set = self.config.property_package.solute_set
@@ -479,8 +485,17 @@ class MembraneChannelMixin:
                 doc="Membrane channel mass transfer coefficient",
             )
 
+            if sherwood_number_eq not in (
+                SherwoodNumberEq.length_dependent,
+                SherwoodNumberEq.length_independent,
+            ):
+                raise ConfigurationError(
+                    f"Unrecognized sherwood_number_eq {sherwood_number_eq}"
+                )
+
             if mass_transfer_coefficient == MassTransferCoefficient.calculated:
                 self._add_calculated_mass_transfer_coefficient()
+                self._add_sherwood_number()
 
         return self.eq_cp_modulus
 
@@ -990,4 +1005,20 @@ def validate_membrane_config_args(unit):
                 unit.config.mass_transfer_coefficient,
                 unit.config.concentration_polarization_type,
             )
+        )
+
+    if (
+        unit.config.sherwood_number_eq == SherwoodNumberEq.length_dependent
+        and unit.config.concentration_polarization_type
+        != ConcentrationPolarizationType.calculated
+        or unit.config.mass_transfer_coefficient != MassTransferCoefficient.calculated
+    ):
+        raise ConfigurationError(
+            "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+            "'mass_transfer_coefficient' cannot be set to {} "
+            "'and/or concentration_polarization_type' cannot be set to {} "
+            "while 'sherwood_number_eq' is set to SherwoodNumberEq.length_dependent.\n "
+            "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.calculated or "
+            "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.calculated or "
+            "\nor set 'sherwood_number_eq' to SherwoodNumberEq.length_independent"
         )
