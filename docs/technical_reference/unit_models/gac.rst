@@ -113,7 +113,7 @@ parameters and other variables in the model.
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None",":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
+   "Freundlich isotherm k parameter", ":math:`k`", "freund_k", "None", ":math:`\left(\text{m}^3\text{/kg}\right)^\left( \frac{1}{n} \right)`"
    "Freundlich isotherm 1/n parameter", ":math:`\frac{1}{n}`", "freund_ninv", "None", ":math:`\text{dimensionless}`"
    "Equilibrium concentration of adsorbed phase with liquid phase", ":math:`q_e`", "equil_conc", "None", ":math:`\left( \text{kg}_\text{adsorbate}\text{/kg}_\text{adsorbent} \right)`"
    "Mass of contaminant adsorbed at the time of replacement", ":math:`M_{solute}`", "mass_adsorbed", "None", ":math:`\text{kg}`"
