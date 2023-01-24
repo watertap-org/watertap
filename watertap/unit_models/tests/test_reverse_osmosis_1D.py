@@ -15,6 +15,7 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
+    Constraint,
     Var,
     assert_optimal_termination,
 )
@@ -210,7 +211,7 @@ def test_option_friction_factor_spiral_wound():
 
     assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
     assert isinstance(m.fs.unit.feed_side.velocity, Var)
-    assert isinstance(m.fs.unit.feed_side.friction_factor_darcy, Var)
+    assert isinstance(m.fs.unit.feed_side.eq_friction_factor_darcy, Constraint)
 
 
 class TestReverseOsmosis:
