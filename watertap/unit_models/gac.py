@@ -794,19 +794,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 b.dg + 1
             )
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate bed void fraction and GAC densities")
         def eq_bed_voidage(b):
             return b.bed_voidage == 1 - (b.particle_dens_bulk / b.particle_dens_app)
 
-        @self.Constraint(doc="Relate void fraction and GAC densities")
+        @self.Constraint(doc="Relate particle void fraction and GAC densities")
         def eq_particle_porosity(b):
             return b.particle_porosity == 1 - (
                 b.particle_dens_app / b.particle_dens_sol
             )
-
-        @self.Constraint(doc="Bed replacement mass required")
-        def eq_gac_mass_replace_rate(b):
-            return b.gac_mass_replace_rate * b.elap_time == b.bed_mass_gac
 
         @self.Constraint(doc="Adsorber bed volume")
         def eq_bed_volume(b):
@@ -819,21 +815,25 @@ class GACData(InitializationMixin, UnitModelBlockData):
         def eq_bed_area(b):
             return b.bed_area == Constants.pi * (b.bed_diameter**2) / 4
 
+        @self.Constraint(doc="Adsorber bed length")
+        def eq_length_bed(b):
+            return b.bed_length == b.velocity_sup * b.ebct
+
         @self.Constraint(doc="Adsorber bed dimensions")
         def eq_bed_dimensions(b):
             return b.bed_volume == b.bed_area * b.bed_length
-
-        @self.Constraint(doc="Total gac mass in the adsorbed bed")
-        def eq_mass_gac_bed(b):
-            return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
 
         @self.Constraint(doc="Relating velocities")
         def eq_velocity_relation(b):
             return b.velocity_int * b.bed_voidage == b.velocity_sup
 
-        @self.Constraint(doc="Adsorber bed length")
-        def eq_length_bed(b):
-            return b.bed_length == b.velocity_sup * b.ebct
+        @self.Constraint(doc="Total gac mass in the adsorbed bed")
+        def eq_mass_gac_bed(b):
+            return b.bed_mass_gac == b.particle_dens_bulk * b.bed_volume
+
+        @self.Constraint(doc="Bed replacement mass required")
+        def eq_gac_mass_replace_rate(b):
+            return b.gac_mass_replace_rate * b.elap_time == b.bed_mass_gac
 
         @self.Constraint(
             target_species,
@@ -874,7 +874,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                 == (b.mass_throughput_mtz_upstream - b.mass_throughput) * b.min_ebct
             )
 
-        @self.Constraint(doc="Adsorber bed length")
+        @self.Constraint(doc="Length of the mass transfer zone")
         def eq_length_mtz(b):
             return b.length_mtz_replace == b.velocity_sup * b.ebct_mtz_replace
 

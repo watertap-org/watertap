@@ -65,14 +65,14 @@ Calculated Properties
    "Component charge-equivalent molar concentration", ":math:`\tilde{n}`", "conc_equiv_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`", ":math:`\tilde{n}=n\left|z\right|`"
    "Component mass fraction", ":math:`x`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`x_j=\frac{M_j}{\sum_j{M_j}}`"
    "Mass density of aqueous phase", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg m}^{-3}`", ":math:`\rho=1000 \text{kg m}^{-3}` or :math:`\rho=\rho_w + \textbf{f} \left(\sum_{j\in solute}{x_j}, T\right)` :sup:`1`"
-   "Mass density of solvent water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg m}^{-3}`",":math:`\rho_w=\textbf{f}\left(T\right)` :sup:`1`"
    "Phase volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{ } \text{s}^{-1}`", ":math:`Q=\frac{\sum_j{N_j m_{Nj}}}{\rho}`"
    "Total volumetric flowrate", ":math:`Q_{tot}`", "flow_vol", "None", ":math:`\text{m}^3\text{ } \text{s}^{-1}`",":math:`Q_{tot}=\sum_p{Q_p}`" 
    "Component molar concentration", ":math:`n`", "conc_mol_phase_comp", "[p, j]", ":math:`\text{mol m}^{-3}`",":math:`nm_N=m`"
    "Component mass concentration", ":math:`m`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg m}^{-3}`",":math:`m=\rho x`"
    "Component molar fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`y_j=\frac{N_j}{\sum_j{N_j}}`"
    "Component molality", ":math:`b`", "molality_phase_comp", "[p, j]", ":math:`\text{mol kg}^{-1}`",":math:`b=\frac{N}{N_{H_2O} m_{N\text{H_2O}}}`"
-   "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ } \text{s}^{-1}`", ":math:`D=` input from users"
+   "Molar volume", ":math:`V_b`", "molar_volume_comp", "['Liq', p]", ":math:`\text{m}^3\text{ } \text{mol}^{-1}`", ":math:`V_b=` input from users"
+   "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ } \text{s}^{-1}`", ":math:`D=` input from users or :math:`D_l\left[ \frac{cm^2}{s} \right] = \frac{13.26\times 10^{-5}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`", ":math:`\mu=` input from users"
    "Kinematic viscosity", ":math:`\nu`", "visc_k_phase", "[p]", ":math:`\text{m}^2 \text{ s}^{-1}`",":math:`\nu=\mu\rho^{-1}`"
    "Phase osmotic pressure", ":math:`\Pi`", "pressure_osm_phase", "[p]", ":math:`\text{Pa}`",":math:`\Pi=RT\sum_{j\in solute}{n_j}`"
@@ -131,3 +131,4 @@ M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a r
 
 Bard, A. J., Faulkner, L. R., & White, H. S. (2022). Electrochemical methods: fundamentals and applications. John Wiley & Sons.
 
+Hayduk, W., & Laudie, H. (1974). Prediction of diffusion coefficients for nonelectrolytes in dilute aqueous solutions. AIChE Journal, 20(3), 611–615. https://doi.org/10.1002/aic.690200329

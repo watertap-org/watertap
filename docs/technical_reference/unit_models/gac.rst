@@ -71,10 +71,10 @@ Additionally, the following 9 variables are traditionally fixed:
    * surface diffusion coefficient
 
 When setting the configuration options to calculate the liquid phase film transfer coefficient and surface diffusion
-coefficient, these respective variables are no longer specified and 4 newly introduced variables must be fixed. This
-is a net result of 20 degrees of freedom. Newly utilized variables that must be fixed include:
+coefficient, these respective variables are no longer specified and 3 newly introduced variables must be fixed. This
+is a net result of 19 degrees of freedom. In addition, new property data is required to provide within the property
+package. Newly utilized variables that must be fixed include:
 
-   * molal volume of the solute
    * GAC particle sphericity
    * tortuosity of the path that the adsorbate must take as compared to the radius
    * surface-to-pore diffusion flux ratio
@@ -96,10 +96,10 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'Solute', 'Background solutes/ions]*"
+   "Components", ":math:`j`", "['H2O', 'Solute', 'Background Solutes]*"
 
-\*Adsorbed "Solute" provided in the ``target_species`` argument of the unit model.
-\*"Background solutes/ions" are provided in the imported property model.
+\*Adsorbed "Solute" is specified in the ``target_species`` argument of the unit model. "Solute(s)" and "Background
+Solutes" are provided in the imported property model.
 
 .. _GAC_variables:
 
@@ -165,7 +165,6 @@ if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` 
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Molecular diffusion coefficient", ":math:`D_l`", "diffus_liq", "None", ":math:`\text{m}^2\text{/s}`"
-   "Molal volume", ":math:`V_b`", "molal_volume", "None", ":math:`\text{m}^3\text{/mol}`"
 
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
@@ -204,12 +203,13 @@ Equations
    "Elapsed operation time", ":math:`t_{op}=t_{min}+\left( \tau-\tau_{min} \right)\left( D_g+1 \right)`"
    "Density relation to bed voidage", ":math:`\epsilon=1-\frac{\rho_b}{\rho_a}`"
    "Density relation to particle porosity", ":math:`\epsilon_p=1-\frac{\rho_a}{\rho_s}`"
-   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
    "Adsorber bed volume", ":math:`EBCT=\frac{V}{Q}`"
-   "Mass of GAC in a fresh adsorber bed", ":math:`M_{GAC}=V\rho_b`"
-   "Velocity relationship", ":math:`v_i=\frac{v_s}{\epsilon}`"
-   "Adsorbed bed area", ":math:`A=\frac{Q}{v_s}`"
+   "Adsorber bed area", ":math:`A=\frac{Q}{v_s}`"
+   "Adsorber bed dimensions", ":math:`V=AL`"
    "Adsorbed bed length", ":math:`EBCT=\frac{L}{v_s}`"
+   "Velocity relationship", ":math:`v_i=\frac{v_s}{\epsilon}`"
+   "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}=\frac{M_{GAC}}{t_{op}}`"
+   "Mass of GAC in a fresh adsorber bed", ":math:`M_{GAC}=V\rho_b`"
    "Mass of solute adsorbed if the bed was fully saturated", ":math:`M_{solute\text{,}e}=q_eM_{GAC}`"
    "Saturation fraction of the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{M_{solute}}{M_{solute\text{,}e}}`"
    "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
@@ -217,25 +217,16 @@ Equations
    "Length EBCT of the partial MTZ at the time of replacement", ":math:`EBCT_{MTZ}=\frac{L_{MTZ}}{v_s}`"
    "Saturation fraction of the bed at the time of replacement calculated by the trapezoid rule", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{1\left( L-L_{MTZ} \right)+\frac{1}{2}\left( \frac{q}{q_{e}}\bigg|_{Upstream \ MTZ \ edge}+\frac{q}{q_{e}}\bigg|_{z=L}\right)\left( L_{MTZ} \right)}{L}`"
 
-if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Equation"
-
-   "Hayduk-Laudie correlation*", ":math:`D_l\left[ \frac{m^2}{s} \right] = \frac{13.26\times 10^{-9}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
-
-\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations.
-
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_w\phi d_pv_i}{\epsilon\mu_w}`"
-   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_w}{\rho_wD_l}`"
+   "Reynolds number for packed beds*", ":math:`Re=\frac{\rho_s\phi d_pv_i}{\epsilon\mu_s}`"
+   "Schmidt number for packed beds*", ":math:`Sc=\frac{\mu_s}{\rho_sD_l}`"
    "Gnielinski correlation", ":math:`k_f=\frac{\left[ 1+1.5\left( 1-\epsilon \right) \right]D_l}{d_p}\left( 2+0.644Re^{\frac{1}{2}}Sc^{\frac{1}{3}} \right)`"
 
-\*Subscript :math:`w` denotes liquid phase properties, here those of pure water is used considering trace solute concentrations.
+\*Subscript :math:`s` denotes liquid phase properties supplied by the property package.
 
 if ``surface_diffusion_coefficient_type`` is set to ``calculated``:
 
