@@ -80,13 +80,7 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine, raise_on_failure=Fa
     initialize_system(m, solver=solver)
 
     optimize_set_up(m)
-    results = solve(m, solver=solver)
-    if not check_optimal_termination(results):
-        msg = "Simulation did not converge"
-        if raise_on_failure:
-            raise RuntimeError(msg)
-        else:
-            print(f"WARNING: {msg}")
+    solve(m, solver=solver)
 
     print("\n***---Simulation results---***")
     display_system(m)

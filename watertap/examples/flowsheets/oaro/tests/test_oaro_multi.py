@@ -43,7 +43,7 @@ solver = get_solver()
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(erd_type=ERDtype.pump_as_turbine)
+        m = build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine)
 
         return m
 
@@ -102,3 +102,7 @@ class TestOAROwithTurbine:
     def test_config_error(self, system_frame):
         with pytest.raises(Exception):
             build(erd_type="not_a_configuration")
+
+    @pytest.mark.component
+    def test_main(self, system_frame):
+        main(number_of_stages=3, raise_on_failure=True)
