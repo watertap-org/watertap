@@ -21,13 +21,12 @@ surface diffusion model (CPHSDM). As a GAC system is operated as a batch process
 formed in the bed where a concentration profile, or breakthrough curve, develops as a function of the adsorption
 properties. This MTZ is bounded by saturated GAC upstream and fresh GAC downstream. The CPHSDM is valid under the
 assumption that the shape of the MTZ is constant as it travels through the bed and a constant pattern solution (CPS)
-may be determined. The CPS is calculated through a multistep procedure utilizing common
-dimensionless groups applied in polynomial fits to determine performance. Therefore, coefficients used in the
-polynomial must be derived from experimental data of the intended system to produce valid results. Coefficients for
-common compounds treated by GAC may be found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have
-within 10% error and therefore may be applied to bed lengths shorter than the minimum length determined by the CPHSDM
-within the error threshold (in addition to being applicable to bed lengths greater than the minimum length determined
-by the CPHSDM).
+may be determined. The CPS is calculated through a multistep procedure utilizing common dimensionless groups applied
+in polynomial fits to determine performance. Therefore, coefficients used in the polynomial must be derived from
+experimental data of the intended system to produce valid results. Coefficients for common compounds treated by GAC
+may be found in both Hand, 1984 and Crittenden, 2012. The model is estimated to have within 10% error and therefore
+may be applied to bed lengths shorter than the minimum length determined by the CPHSDM within the error threshold (in
+addition to being applicable to bed lengths greater than the minimum length determined by the CPHSDM).
 
 The batch operation results of the CPS are converted to approximate steady-state results for intuitive use of the
 model for flowsheet purposes. A description of the transformation is provided in Figure 1.
@@ -342,8 +341,8 @@ Code Documentation
 
 References
 -----------
-Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems
-. Journal of Environmental Engineering, 110(2), 440-456.
+Hand, D. W., Crittenden, J. C., & Thacker, W. E. (1984). Simplified models for design of fixed-bed adsorption systems.
+Journal of Environmental Engineering, 110(2), 440-456.
 
 Crittenden, J., Rhodes, R., Hand, D., Howe, K., & Tchobanoglous, G. (2012). MWHs Water Treatment. Principles and
 Design. EditorialJohn Wiley & Sons.
