@@ -1146,8 +1146,8 @@ class TestReverseOsmosis:
         m.fs.unit = ReverseOsmosis1D(
             property_package=m.fs.properties,
             has_pressure_change=False,
-            concentration_polarization_type=ConcentrationPolarizationType.none,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
             sherwood_number_eq=SherwoodNumberEq.length_dependent,
             transformation_scheme="BACKWARD",
             transformation_method="dae.finite_difference",
@@ -1179,19 +1179,18 @@ class TestReverseOsmosis:
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
+        m.fs.unit.feed_side.spacer_porosity.fix(0.75)
+        m.fs.unit.feed_side.channel_height.fix(0.002)
 
         # test statistics
-        assert number_variables(m) == 196
-        assert number_total_constraints(m) == 162
-        assert number_unused_variables(m) == 20
+        assert number_variables(m) == 227
+        assert number_total_constraints(m) == 190
+        assert number_unused_variables(m) == 14
 
-        # Test units
         assert_units_consistent(m.fs.unit)
 
-        # Check degrees of freedom = 0
         assert degrees_of_freedom(m) == 0
 
-        # Scaling
         m.fs.properties.set_default_scaling(
             "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
         )
@@ -1205,14 +1204,11 @@ class TestReverseOsmosis:
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
-        # Test initialization
         initialization_tester(m, outlvl=idaeslog.DEBUG)
 
-        # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-        # Solve
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -1235,7 +1231,7 @@ class TestReverseOsmosis:
         )
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
-        assert value(flow_mass_retentate) == pytest.approx(0.6097, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
         assert value(flow_mass_permeate) == pytest.approx(0.3898, rel=1e-3)
 
         assert (
@@ -1245,23 +1241,23 @@ class TestReverseOsmosis:
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
-        assert pytest.approx(4.841e-3, rel=1e-3) == value(
+        assert pytest.approx(2.383e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
-        assert pytest.approx(1.629e-6, rel=1e-3) == value(
+        assert pytest.approx(1.870e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         )
-        assert pytest.approx(144.31, rel=1e-3) == value(m.fs.unit.area)
-        assert pytest.approx(1.019e-3, rel=1e-3) == value(
+        assert pytest.approx(278.49, rel=1e-3) == value(m.fs.unit.area)
+        assert pytest.approx(6.270e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
         )
-        assert pytest.approx(2.000e-6, rel=1e-3) == value(
+        assert pytest.approx(2.034e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "NaCl"]
         )
         assert pytest.approx(0.3895, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(2.652e-4, rel=1e-3) == value(
+        assert pytest.approx(5.467e-4, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 
