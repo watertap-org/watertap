@@ -109,14 +109,16 @@ The default scaling factors are as follows:
 
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
-Reference
----------
+References
+----------
 
 K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
 
-M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater )
+M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater)
 
 F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
 
 T.V. Bartholomew, M.S. Mauter, Computational framework for modeling membrane processes without process and solution property simplifications, Journal of Membrane Science. 573 (2019) 682–693. https://doi.org/10.1016/j.memsci.2018.11.067.
+
+Water Gas Phase Thermochemistry Data, National Institute of Standards and Technology, 2021, https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&amp;Mask=1#Thermo-Gas.
 
