@@ -490,7 +490,7 @@ class MembraneChannelMixin:
 
             if mass_transfer_coefficient == MassTransferCoefficient.calculated:
                 self._add_calculated_mass_transfer_coefficient(
-                    sherwood_number_eq=SherwoodNumberEq.length_independent
+                    sherwood_number_eq=sherwood_number_eq
                 )
 
         return self.eq_cp_modulus
