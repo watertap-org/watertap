@@ -63,8 +63,8 @@ class TestElectrodialysis1StackFS:
                 for j in m.fs.properties.ion_set
             )
         ) == pytest.approx(2.00, rel=1e-3)
-        assert value(m.fs.prod_salinity) == pytest.approx(1.1333, rel=1e-3)
-        assert value(m.fs.disp_salinity) == pytest.approx(4.0223, rel=1e-3)
+        assert value(m.fs.product_salinity) == pytest.approx(1.1333, rel=1e-3)
+        assert value(m.fs.disposal_salinity) == pytest.approx(4.0223, rel=1e-3)
         assert value(m.fs.mem_area) == pytest.approx(18.5338, rel=1e-3)
         assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(
             0.1105, abs=0.001
@@ -113,8 +113,8 @@ class TestElectrodialysis1StackFS:
                 for j in m.fs.properties.ion_set
             )
         ) == pytest.approx(2.00, rel=1e-3)
-        assert value(m.fs.prod_salinity) == pytest.approx(0.1000, rel=1e-3)
-        assert value(m.fs.disp_salinity) == pytest.approx(6.4333, rel=1e-3)
+        assert value(m.fs.product_salinity) == pytest.approx(0.1000, rel=1e-3)
+        assert value(m.fs.disposal_salinity) == pytest.approx(6.4333, rel=1e-3)
         assert value(m.fs.mem_area) == pytest.approx(18.1901, rel=1e-3)
         assert value(m.fs.EDstack.cell_pair_num) == pytest.approx(20, rel=1e-8)
         assert value(m.fs.EDstack.cell_length) == pytest.approx(4.6168, rel=1e-3)

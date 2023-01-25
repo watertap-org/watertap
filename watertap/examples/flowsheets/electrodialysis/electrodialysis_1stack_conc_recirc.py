@@ -48,6 +48,12 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlo
 __author__ = "Xiangyu Bi"
 _log = idaeslogger.getLogger(__name__)
 
+"""
+This flowsheet implements a single-stack electrodialysis desaliantion system in a 
+feed-and-bleed mode, which recirculate a part of concentrate solution to achieve a
+desired water reovery > 50%. 
+"""
+
 
 def main():
     m = build()
@@ -186,11 +192,17 @@ def build():
         units=pyunits.meter**2,
         doc="Total membrane area for cem (or aem) in one stack",
     )
-    m.fs.prod_salinity = Var(
-        initialize=1, bounds=(0, 1000), units=pyunits.kg * pyunits.meter**-3
+    m.fs.product_salinity = Var(
+        initialize=1,
+        bounds=(0, 1000),
+        units=pyunits.kg * pyunits.meter**-3,
+        doc="Salinity of the product water",
     )
-    m.fs.disp_salinity = Var(
-        initialize=1, bounds=(0, 1e6), units=pyunits.kg * pyunits.meter**-3
+    m.fs.disposal_salinity = Var(
+        initialize=1,
+        bounds=(0, 1e6),
+        units=pyunits.kg * pyunits.meter**-3,
+        doc="Salinity of disposal water",
     )
     m.fs.eq_recovery_vol_H2O = Constraint(
         expr=m.fs.recovery_vol_H2O
@@ -203,14 +215,14 @@ def build():
     )
 
     m.fs.eq_product_salinity = Constraint(
-        expr=m.fs.prod_salinity
+        expr=m.fs.product_salinity
         == sum(
             m.fs.prod.properties[0].conc_mass_phase_comp["Liq", j]
             for j in m.fs.properties.ion_set | m.fs.properties.solute_set
         )
     )
     m.fs.eq_disposal_salinity = Constraint(
-        expr=m.fs.disp_salinity
+        expr=m.fs.disposal_salinity
         == sum(
             m.fs.disp.properties[0].conc_mass_phase_comp["Liq", j]
             for j in m.fs.properties.ion_set | m.fs.properties.solute_set
@@ -257,9 +269,7 @@ def condition_base(m):
     m.fs.pump1.efficiency_pump.fix(0.8)
     m.fs.pump0.efficiency_pump.fix(0.8)
 
-    # m.fs.pump1.control_volume.properties_in[0].temperature.fix(298.15)
-    m.fs.prod.properties[0].pressure.fix(101325)  #
-    # m.fs.prod.properties[0].temperature.fix(298.15)
+    m.fs.prod.properties[0].pressure.fix(101325)
     m.fs.disp.properties[0].pressure.fix(101325)
     m.fs.disp.properties[0].temperature.fix(298.15)
 
@@ -369,6 +379,10 @@ def initialize_system(m, solver=None):
 
 def display_model_metrics(m):
 
+    print("---Report the ED unit---")
+
+    m.fs.EDstack.report()
+
     print("---Flow properties in feed, product and disposal---")
 
     fp = {
@@ -383,11 +397,11 @@ def display_model_metrics(m):
         ],
         "Product": [
             value(m.fs.prod.properties[0].flow_vol_phase["Liq"]),
-            value(m.fs.prod_salinity),
+            value(m.fs.product_salinity),
         ],
         "Disposal": [
             value(m.fs.disp.properties[0].flow_vol_phase["Liq"]),
-            value(m.fs.disp_salinity),
+            value(m.fs.disposal_salinity),
         ],
     }
     fp_table = pd.DataFrame(
