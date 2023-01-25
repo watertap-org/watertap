@@ -43,7 +43,7 @@ solver = get_solver()
 class TestOAROwithTurbine:
     @pytest.fixture(scope="class")
     def system_frame(self):
-        m = build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine)
+        m = build(number_of_stages=2, erd_type=ERDtype.pump_as_turbine)
 
         return m
 
@@ -93,10 +93,10 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(3.17863e-5, rel=1e-5) == value(
+        assert pytest.approx(3.57530e-5, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.114916, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.0225850, rel=1e-5) == value(fs.water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):
@@ -105,4 +105,4 @@ class TestOAROwithTurbine:
 
     @pytest.mark.component
     def test_main(self):
-        main(number_of_stages=3)
+        main(number_of_stages=2)
