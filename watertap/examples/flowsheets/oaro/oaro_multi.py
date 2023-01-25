@@ -36,6 +36,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     solve_indexed_blocks,
     propagate_state,
+    propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.core import UnitModelCostingBlock
@@ -59,6 +60,8 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom
 from watertap.costing import WaterTAPCosting
 
+# from watertap.core.util.infeasible import *
+
 
 class ERDtype(StrEnum):
     pump_as_turbine = "pump_as_turbine"
@@ -70,6 +73,12 @@ def erd_type_not_found(erd_type):
     )
 
 
+def propagate_state(arc):
+    _pro_state(arc)
+    print(arc.destination.name)
+    arc.destination.display()
+
+
 def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     # set up solver
     solver = get_solver()
@@ -79,9 +88,12 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    optimize_set_up(m)
-    solve(m, solver=solver)
+    # print_close_to_bounds(m)
+    # print_infeasible_constraints(m)
 
+    # optimize_set_up(m)
+    # solve(m, solver=solver)
+    #
     print("\n***---Simulation results---***")
     display_system(m)
     display_design(m)
@@ -392,7 +404,7 @@ def set_operating_conditions(
 
     # primary pumps
     for pump in m.fs.PrimaryPumps.values():
-        pump.control_volume.properties_out[0].pressure = 50e5
+        pump.control_volume.properties_out[0].pressure = 65e5
         pump.efficiency_pump.fix(0.80)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -406,8 +418,8 @@ def set_operating_conditions(
         m.fs.RecyclePumps[stage].control_volume.properties_out[
             0
         ].temperature.value = feed_temperature
-        permeate_flow_mass = 0.75
-        permeate_mass_frac_NaCl = 0.02
+        permeate_flow_mass = 1 / stage + 0.3
+        permeate_mass_frac_NaCl = 0.07 / stage
         permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
         m.fs.RecyclePumps[stage].control_volume.properties_out[0].flow_mass_phase_comp[
             "Liq", "H2O"
@@ -604,16 +616,16 @@ def optimize_set_up(m):
         )
         pump.deltaP.setlb(0)
 
-    # OARO Units
-    for stage in m.fs.OAROUnits.values():
-        stage.area.unfix()
-        stage.area.setlb(1)
-        stage.area.setub(2000)
-
-    # RO
-    m.fs.RO.area.unfix()
-    m.fs.RO.area.setlb(1)
-    m.fs.RO.area.setub(2000)
+    # # OARO Units
+    # for stage in m.fs.OAROUnits.values():
+    #     stage.area.unfix()
+    #     stage.area.setlb(1)
+    #     stage.area.setub(2000)
+    #
+    # # RO
+    # m.fs.RO.area.unfix()
+    # m.fs.RO.area.setlb(1)
+    # m.fs.RO.area.setub(2000)
 
     # additional specifications
     m.fs.product_salinity = Param(
@@ -636,7 +648,7 @@ def optimize_set_up(m):
     )
 
     # ---checking model---
-    assert_degrees_of_freedom(m, 2 * m.fs.NumberOfStages)
+    # assert_degrees_of_freedom(m, 2 * m.fs.NumberOfStages)
 
 
 def display_system(m):
@@ -794,4 +806,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(3, erd_type=ERDtype.pump_as_turbine)
+    m = main(4, erd_type=ERDtype.pump_as_turbine)
