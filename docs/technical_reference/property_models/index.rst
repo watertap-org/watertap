@@ -4,6 +4,7 @@ Property Models
 .. toctree::
    :maxdepth: 1
 
+   water
    NaCl
    seawater
    seawater_ion_generic
