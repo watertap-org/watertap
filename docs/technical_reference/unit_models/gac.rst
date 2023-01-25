@@ -2,6 +2,7 @@ Granular Activated Carbon (GAC)
 ===============================
 This is an empirical, performance-based granular activated carbon (GAC) model that works under the following criteria
 and assumptions:
+
    * supports a single liquid phase only
    * supports adsorption of a single solute species only while other species are considered inert
    * supports steady-state only
