@@ -90,6 +90,11 @@ class DensityCalculation(Enum):
     )  # Laliberte correlation using apparent density #TODO add this later with reference
 
 
+class DiffusivityCalculation(Enum):
+    none = auto()
+    hayduklaudie = auto()
+
+
 class ElectricalMobilityCalculation(Enum):
     none = auto()
     EinsteinRelation = auto()
@@ -127,6 +132,14 @@ class MCASParameterData(PhysicalParameterBlock):
             default={},
             domain=dict,
             description="Dict of solute species names and bulk ion diffusivity data",
+        ),
+    )
+    CONFIG.declare(
+        "molar_volume_data",
+        ConfigValue(
+            default={},
+            domain=dict,
+            description="Dict of solute species names and molar volume of aqueous species",
         ),
     )
     CONFIG.declare(
@@ -197,6 +210,22 @@ class MCASParameterData(PhysicalParameterBlock):
            "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
+       """,
+        ),
+    )
+    CONFIG.declare(
+        "diffus_calculation",
+        ConfigValue(
+            default=DiffusivityCalculation.none,
+            domain=In(DiffusivityCalculation),
+            description="Diffusivity calculation flag",
+            doc="""
+           Options to account for ionic and molecular diffusivity.
+           **default** - ``DiffusivityCalculation.none``
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+           "``DiffusivityCalculation.none``", "Specified diffusivity for ions"
+           "``DiffusivityCalculation.hayduklaudie``", "Hayduk Laudie equation for nonelectrolytes"
        """,
         ),
     )
@@ -339,6 +368,15 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Bulk diffusivity of ion",
         )
+        self.molar_volume_comp = Param(
+            ["Liq"],
+            self.solute_set,
+            mutable=True,
+            default=0.1,
+            initialize=self.config.molar_volume_data,
+            units=pyunits.m**3 / pyunits.mol,
+            doc="pure component density of solutes",
+        )
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
@@ -470,6 +508,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
                 "mole_frac_phase_comp": {"method": "_mole_frac_phase_comp"},
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
+                "molar_volume_comp": {"method": "_molar_volume_comp"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "visc_k_phase": {"method": "_visc_k_phase"},
@@ -1173,8 +1212,42 @@ class MCASStateBlockData(StateBlockData):
     def _radius_stokes_comp(self):
         add_object_reference(self, "radius_stokes_comp", self.params.radius_stokes_comp)
 
+    def _molar_volume_comp(self):
+        add_object_reference(self, "molar_volume_comp", self.params.molar_volume_comp)
+
     def _diffus_phase_comp(self):
-        add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
+
+        if self.params.config.diffus_calculation == DiffusivityCalculation.none:
+            add_object_reference(
+                self, "diffus_phase_comp", self.params.diffus_phase_comp
+            )
+        else:
+            # self.params.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
+
+            self.diffus_non_e_phase_comp = Var(
+                self.params.phase_list,
+                self.params.solute_set,
+                initialize=1e-9,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Molecular diffusivity of nonelectrolytes",
+            )
+
+            def rule_diffus_non_e_phase_comp(b, p, j):
+                # (Hayduk & Laudie, 1974)
+                diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
+                visc_solvent_inv_units = pyunits.Pa**-1 * pyunits.s**-1
+                molar_volume_inv_units = pyunits.mol * pyunits.m**-3
+                return (
+                    b.diffus_non_e_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units
+                ) * ((b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14) * (
+                    (b.molar_volume_comp[p, j] * 1e6 * molar_volume_inv_units) ** 0.589
+                ) == 13.26e-5
+
+            self.eq_diffus_non_e_phase_comp = Constraint(
+                self.params.phase_list,
+                self.params.ion_set | self.params.solute_set,
+                rule=rule_diffus_non_e_phase_comp,
+            )
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
