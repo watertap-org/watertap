@@ -730,7 +730,7 @@ class MembraneChannelMixin:
                 self.length_domain,
                 doc="Darcy friction factor constraint for flat sheet membranes",
             )
-            def eq_friction_factor_flat_sheet(b, t, x):
+            def eq_friction_factor(b, t, x):
                 return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
 
         # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
@@ -741,7 +741,7 @@ class MembraneChannelMixin:
                 self.length_domain,
                 doc="Darcy friction factor constraint for spiral-wound membranes",
             )
-            def eq_friction_factor_spiral_wound(b, t, x):
+            def eq_friction_factor(b, t, x):
                 return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
 
         ## ==========================================================================
