@@ -104,5 +104,5 @@ class TestOAROwithTurbine:
             build(erd_type="not_a_configuration")
 
     @pytest.mark.component
-    def test_main(self, system_frame):
+    def test_main(self):
         main(number_of_stages=3)
