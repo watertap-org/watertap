@@ -24,16 +24,17 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
+    MaterialFlowBasis,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
@@ -47,7 +48,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
 from enum import Enum
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 
@@ -172,14 +173,24 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # # TODO: Consider adding the EnergyBalanceType config using the following code
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.none,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -187,8 +198,9 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -234,12 +246,24 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
         super().build()
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        # Check configs for errors
+        self._validate_config()
 
         # Create essential sets.
         self.membrane_set = Set(initialize=["cem", "aem"])
@@ -446,10 +470,16 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         self.diluate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.diluate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.diluate.add_isothermal_assumption()
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
-        # # TODO: Consider adding energy balances
 
         # Build control volume for the concentrate channel
         self.concentrate = ControlVolume0DBlock(
@@ -462,6 +492,13 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         self.concentrate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.concentrate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.concentrate.add_isothermal_assumption()
         self.concentrate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
@@ -841,27 +878,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 )
                 * (self.cell_width * self.cell_length)
                 * self.cell_pair_num
-            )
-
-        # Add isothermal condition
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Isothermal condition for the diluate channel",
-        )
-        def eq_isothermal_diluate(self, t):
-            return (
-                self.diluate.properties_in[t].temperature
-                == self.diluate.properties_out[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Isothermal condition for the concentrate channel",
-        )
-        def eq_isothermal_concentrate(self, t):
-            return (
-                self.concentrate.properties_in[t].temperature
-                == self.concentrate.properties_out[t].temperature
             )
 
         @self.Constraint(
@@ -1928,15 +1944,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         for ind, c in self.eq_current_efficiency.items():
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.current[ind])
-            )
-
-        for ind, c in self.eq_isothermal_diluate.items():
-            iscale.constraint_scaling_transform(
-                c, self.diluate.properties_in[ind].temperature
-            )
-        for ind, c in self.eq_isothermal_concentrate.items():
-            iscale.constraint_scaling_transform(
-                c, self.concentrate.properties_in[ind].temperature
             )
 
     def _get_stream_table_contents(self, time_point=0):

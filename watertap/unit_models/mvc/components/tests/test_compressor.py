@@ -61,7 +61,7 @@ def test_compressor():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    assert pytest.approx(1.1534e5, rel=1e-4) == value(
+    assert pytest.approx(1.1539e5, rel=1e-4) == value(
         m.fs.compressor.control_volume.work[0]
     )
     assert pytest.approx(1e-08, rel=1e-4) == value(

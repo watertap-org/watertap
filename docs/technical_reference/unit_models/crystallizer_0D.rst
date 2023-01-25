@@ -92,8 +92,8 @@ The crystallization unit model is based on predominantly on the works by Kramer 
    "Residence time", ":math:`\tau = \frac{L_D}{3.67G}`", "Dutta[4]"
    "Suspension volume (i.e. minimum active volume)", ":math:`V_{susp} = (\phi_{liq,out} + \phi_{vapor, out}) \cdot \tau`", "Lewis et al. [2], Kramer et al. [1]" 
    "Maximum linear velocity of vapor flow",":math:`v_{max} = C_{v}\left(\frac{\rho_{liq,out}}{\rho_{vap,out}}\right)^{0.5}`", "Dutta[4], Bennett [5]"
-   "Crystallizer diameter",":math:`D = \sqrt{\frac{4(\phi_{liq,out} + \phi_{vapor, out})}{\pi v_{max}}}`", "Tavare [3], Lewis et al [2]"
-   "Slurry height",":math:`h_{slurry} = \sqrt{\frac{4V_{susp}}{\pi D^{2}}}`", "Lewis et al. [2]"
+   "Crystallizer diameter",":math:`D = \sqrt{\frac{4\phi_{vapor, out}}{\pi v_{max}}}`", "Tavare [3], Lewis et al [2]"
+   "Slurry height",":math:`h_{slurry} = \frac{4V_{susp}}{\pi D^{2}}`", "Lewis et al. [2]"
    "Crystallizer height",":math:`H = \max(1.5D, h_{slurry} + 0.75D)`"
    "Magma circulation vol. flow rate",":math:`\frac{Q}{\Delta T_{approach}\left[(1-\varepsilon)\rho_{crystal}C_{p,crystal}+\rho_{liq,out}C_{p,liq}\right]}`", "Lewis et al [2], Tavare [3]"
 

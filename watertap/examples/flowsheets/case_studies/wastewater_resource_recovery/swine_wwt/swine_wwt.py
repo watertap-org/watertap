@@ -131,7 +131,7 @@ def build():
     # TODO: because of gas-sparged membrane formulation, H2 gas flow is a unit variable
     #  instead of a mass flow via property model; hence, gas flow exiting the unit is
     #  not connected to a port or state block
-    # m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
+    # m.fs.product_hydrogen = Product(property_package=m.fs.prop)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.mbr_mec.inlet)
@@ -484,7 +484,7 @@ def add_costing(m):
         return pyunits.convert(
             m.fs.costing.total_capital_cost, to_units=m.fs.costing.base_currency
         ) + pyunits.convert(
-            m.fs.watertap_costing.total_investment_cost,
+            m.fs.watertap_costing.total_capital_cost,
             to_units=m.fs.costing.base_currency,
         )
 

@@ -16,8 +16,10 @@ from pyomo.environ import (
     Suffix,
     value,
     log,
+    log10,
     exp,
     check_optimal_termination,
+    Set,
 )
 from pyomo.environ import units as pyunits
 
@@ -31,8 +33,9 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component
+from idaes.core.base.components import Component, Solute, Solvent
 from idaes.core.base.phases import LiquidPhase, VaporPhase
+from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
@@ -46,6 +49,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
+from watertap.core.util.scaling import transform_property_constraints
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -74,11 +78,9 @@ class WaterParameterData(PhysicalParameterBlock):
 
         """ References
         This package was developed from the following references:
-
         - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
-
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
@@ -182,63 +184,58 @@ class WaterParameterData(PhysicalParameterBlock):
             doc="Vapor pressure of pure water parameter A6",
         )
 
-        # specific enthalpy parameters, eq. 55 and 43 in Sharqawy et al. (2010)
+        # specific enthalpy parameters, Table 9 in Nayar et al. (2016) - ignores salinity-based parameters
         enth_mass_units = pyunits.J / pyunits.kg
+        P_inv_units = pyunits.MPa**-1
 
         self.enth_mass_param_A1 = Var(
             within=Reals,
-            initialize=141.355,
-            units=enth_mass_units,
+            initialize=996.7767,
+            units=enth_mass_units * P_inv_units,
             doc="Specific enthalpy parameter A1",
         )
         self.enth_mass_param_A2 = Var(
             within=Reals,
-            initialize=4202.07,
-            units=enth_mass_units * t_inv_units,
+            initialize=-3.2406,
+            units=enth_mass_units * P_inv_units * t_inv_units,
             doc="Specific enthalpy parameter A2",
         )
         self.enth_mass_param_A3 = Var(
             within=Reals,
-            initialize=-0.535,
-            units=enth_mass_units * t_inv_units**2,
+            initialize=0.0127,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
             doc="Specific enthalpy parameter A3",
         )
         self.enth_mass_param_A4 = Var(
             within=Reals,
-            initialize=0.004,
-            units=enth_mass_units * t_inv_units**3,
+            initialize=-4.7723e-5,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
             doc="Specific enthalpy parameter A4",
         )
-        # self.enth_mass_param_B1 = Var(
-        #     within=Reals, initialize=-2.348e4, units=enth_mass_units,
-        #     doc='Specific enthalpy parameter B1')
-        # self.enth_mass_param_B2 = Var(
-        #     within=Reals, initialize=3.152e5, units=enth_mass_units,
-        #     doc='Specific enthalpy parameter B2')
-        # self.enth_mass_param_B3 = Var(
-        #     within=Reals, initialize=2.803e6, units=enth_mass_units,
-        #     doc='Specific enthalpy parameter B3')
-        # self.enth_mass_param_B4 = Var(
-        #     within=Reals, initialize=-1.446e7, units=enth_mass_units,
-        #     doc='Specific enthalpy parameter B4')
-        # self.enth_mass_param_B5 = Var(
-        #     within=Reals, initialize=7.826e3, units=enth_mass_units * t_inv_units,
-        #     doc='Specific enthalpy parameter B5')
-        # self.enth_mass_param_B6 = Var(
-        #     within=Reals, initialize=-4.417e1, units=enth_mass_units * t_inv_units**2,
-        #     doc='Specific enthalpy parameter B6')
-        # self.enth_mass_param_B7 = Var(
-        #     within=Reals, initialize=2.139e-1, units=enth_mass_units * t_inv_units**3,
-        #     doc='Specific enthalpy parameter B7')
-        # self.enth_mass_param_B8 = Var(
-        #     within=Reals, initialize=-1.991e4, units=enth_mass_units * t_inv_units,
-        #     doc='Specific enthalpy parameter B8')
-        # self.enth_mass_param_B9 = Var(
-        #     within=Reals, initialize=2.778e4, units=enth_mass_units * t_inv_units,
-        #     doc='Specific enthalpy parameter B9')
-        # self.enth_mass_param_B10 = Var(
-        #     within=Reals, initialize=9.728e1, units=enth_mass_units * t_inv_units**2,
-        #     doc='Specific enthalpy parameter B10')
+        self.enth_mass_param_C1 = Var(
+            within=Reals,
+            initialize=141.355,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter C1",
+        )
+        self.enth_mass_param_C2 = Var(
+            within=Reals,
+            initialize=4202.07,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter C2",
+        )
+        self.enth_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-0.535,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter C3",
+        )
+        self.enth_mass_param_C4 = Var(
+            within=Reals,
+            initialize=0.004,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter C4",
+        )
 
         # specific heat parameters from eq (9) in Sharqawy et al. (2010)
         cp_units = pyunits.J / (pyunits.kg * pyunits.K)
@@ -429,7 +426,6 @@ class _WaterStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-
                          flow_mass_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
@@ -505,7 +501,6 @@ class _WaterStateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialisation.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -531,7 +526,6 @@ class _WaterStateBlock(StateBlock):
         be state variables or properties. This method is typically used before
         initialization to solve for state variables because non-state variables (i.e. properties)
         cannot be fixed in initialization routines.
-
         Keyword Arguments:
             var_args : dictionary with variables and their values, they can be state variables or properties
                        {(VAR_NAME, INDEX): VALUE}
@@ -542,7 +536,6 @@ class _WaterStateBlock(StateBlock):
             solver : solver name string if None is provided the default solver
                      for IDAES will be used (default = None)
             optarg : solver options dictionary object (default={})
-
         Returns:
             results object from state block solve
         """
@@ -688,7 +681,7 @@ class WaterStateBlockData(StateBlockData):
                     + b.params.dens_mass_param_A4 * t**3
                     + b.params.dens_mass_param_A5 * t**4
                 )
-                return b.dens_mass_phase["Liq"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
             else:  # phase == 'Vap'
                 dens_mass = (
                     b.params.dens_mass_param_mw
@@ -696,7 +689,7 @@ class WaterStateBlockData(StateBlockData):
                     / b.params.dens_mass_param_R
                     / b.temperature
                 )
-                return b.dens_mass_phase["Vap"] == dens_mass
+                return b.dens_mass_phase[phase] == dens_mass
 
         self.eq_dens_mass_phase = Constraint(
             self.params.phase_list, rule=rule_dens_mass_phase
@@ -780,25 +773,34 @@ class WaterStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(
-            b, phase
-        ):  # specific enthalpy, eq. 55 and 43 in Sharqawy
+            b, p
+        ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
+            P = b.pressure - 101325 * pyunits.Pa
+            P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
+
+            # water enthalpy without pressure effects
             h_w = (
+                b.params.enth_mass_param_C1
+                + b.params.enth_mass_param_C2 * t
+                + b.params.enth_mass_param_C3 * t**2
+                + b.params.enth_mass_param_C4 * t**3
+            )
+
+            # water enthalpy with pressure effects
+            h_w_P = h_w + P_MPa * (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
                 + b.params.enth_mass_param_A3 * t**2
                 + b.params.enth_mass_param_A4 * t**3
             )
 
-            if phase == "Liq":
-                return b.enth_mass_phase["Liq"] == h_w
-            else:  # phase == 'Vap'
-                # dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
-                #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
-                # h_vap = h_w + dh_vap_w
-                return b.enth_mass_phase["Vap"] == h_w + b.dh_vap_mass
+            if p == "Liq":
+                return b.enth_mass_phase[p] == h_w_P
+            else:
+                return b.enth_mass_phase[p] == h_w_P + b.dh_vap_mass
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -879,13 +881,13 @@ class WaterStateBlockData(StateBlockData):
                     b.params.cp_phase_param_D1
                 )  # + b.params.cp_phase_param_D2 * s + b.params.cp_phase_param_D3 * s ** 2
                 return (
-                    b.cp_mass_phase["Liq"]
+                    b.cp_mass_phase[phase]
                     == (A + B * t + C * t**2 + D * t**3) * 1000
                 )
             else:  # phase == 'Vap'
                 t = b.temperature / 1000
                 return (
-                    b.cp_mass_phase["Vap"]
+                    b.cp_mass_phase[phase]
                     == b.params.cp_vap_param_A
                     + b.params.cp_vap_param_B * t
                     + b.params.cp_vap_param_C * t**2
@@ -1041,15 +1043,4 @@ class WaterStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
 
         # transforming constraints
-        for metadata_dic in self.params.get_metadata().properties.values():
-            var_str = metadata_dic["name"]
-            if metadata_dic["method"] is not None and self.is_property_constructed(
-                var_str
-            ):
-                var = getattr(self, var_str)
-                if isinstance(var, Expression):
-                    continue  # properties that are expressions do not have constraints
-                con = getattr(self, "eq_" + var_str)
-                for ind in con.keys():
-                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
-                    iscale.constraint_scaling_transform(con[ind], sf)
+        transform_property_constraints(self)

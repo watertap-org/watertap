@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=2.0.0a3",  # from PyPI
+    "idaes-pse>=2.0.0b2",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0a3.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/2.0.0b2.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.7.0dev",
+    version="0.8.dev0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -86,7 +86,10 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
-    packages=find_namespace_packages(),
+    # just include watertap and everything under it
+    packages=find_namespace_packages(
+        include=("watertap*",),
+    ),
     python_requires=">=3.7",
     install_requires=[
         # primary requirements for unit and property models
@@ -114,6 +117,7 @@ setup(
             "json-schema-for-humans",
             "mongomock",
             "pandas",
+            "nbmake",
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
@@ -129,6 +133,7 @@ setup(
             "pytest",  # test framework
             "pytest-cov",  # code coverage
             "mongomock",  # mongodb mocking for testing
+            "nbmake",
         ],
     },
     package_data={  # Optional
