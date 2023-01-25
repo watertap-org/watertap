@@ -4,7 +4,7 @@ Anaerobic Digestion Model No.1 (ADM1)
 Introduction
 ------------
 
-Anaerobic biological processes have been used by mankind for centuries primarily for food and beverage production.
+Anaerobic biological processes have been used for centuries primarily for food and beverage production.
 However, modern advances pertaining to anaerobic conversions have introduced various forms of
 high-rate treatment processes that have proven to be particularly useful in wastewater treatment plants.
 High organic loading rates and low sludge production gives anaerobic processes a significant advantage over other
@@ -40,13 +40,14 @@ terms and an extra port for the vapor outlet. The model relies on the following 
 Degrees of Freedom
 ------------------
 Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), the ADM1 model has
-at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
+at least 5 degrees of freedom that should be fixed for the unit to be fully specified.
 
 Typically, the following variables are fixed, in addition to state variables at the inlet:
     * cation concentration
     * anion concentration
     * liquid volume
     * vapor volume
+    * liquid outlet temperature
 
 Control Volumes
 ---------------
@@ -89,7 +90,7 @@ Variables
 
    "Liquid phase mass transfer term", ":math:`J`", "liquid_phase.mass_transfer_term_j", "[t]", ":math:`\text{kg/s}`"
    "Liquid volume", ":math:`V_ad, liq`", "volume_AD", "[t]", ":math:`\text{m}^3`"
-   "Vapor volume", ":math:`V_ad, vap`", "volume_AD", "[t]", ":math:`\text{m}^3`"
+   "Vapor volume", ":math:`V_ad, vap`", "volume_vapor", "[t]", ":math:`\text{m}^3`"
 
 .. _ADM1_equations:
 
