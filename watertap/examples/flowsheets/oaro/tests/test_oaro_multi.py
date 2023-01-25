@@ -105,4 +105,4 @@ class TestOAROwithTurbine:
 
     @pytest.mark.component
     def test_main(self, system_frame):
-        main(number_of_stages=3, raise_on_failure=True)
+        main(number_of_stages=3)

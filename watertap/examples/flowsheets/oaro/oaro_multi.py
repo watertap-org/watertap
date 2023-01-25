@@ -70,7 +70,7 @@ def erd_type_not_found(erd_type):
     )
 
 
-def main(number_of_stages, erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
+def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     # set up solver
     solver = get_solver()
 
