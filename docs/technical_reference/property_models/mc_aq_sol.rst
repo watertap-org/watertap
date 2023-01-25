@@ -71,7 +71,7 @@ Calculated Properties
    "Component mass concentration", ":math:`m`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg m}^{-3}`",":math:`m=\rho x`"
    "Component molar fraction", ":math:`y`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`", ":math:`y_j=\frac{N_j}{\sum_j{N_j}}`"
    "Component molality", ":math:`b`", "molality_phase_comp", "[p, j]", ":math:`\text{mol kg}^{-1}`",":math:`b=\frac{N}{N_{H_2O} m_{N\text{H_2O}}}`"
-   "Molar volume", ":math:`V_b`", "molar_volume_comp", "['Liq', p]", ":math:`\text{m}^3\text{ } \text{mol}^{-1}`", ":math:`V_b=` input from users"
+   "Molar volume", ":math:`V_b`", "molar_volume_comp", "['Liq', j]", ":math:`\text{m}^3\text{ } \text{mol}^{-1}`", ":math:`V_b=` input from users"
    "Component diffusivity", ":math:`D`", "diffus_phase_comp", "[p, j]", ":math:`\text{m}^2 \text{ } \text{s}^{-1}`", ":math:`D=` input from users or :math:`D_l\left[ \frac{cm^2}{s} \right] = \frac{13.26\times 10^{-5}}{\left( \mu_w\left[ cP \right] \right)^{1.14}\left( V_b \left[ \frac{cm^3}{mol} \right]\right)^{1.14}}`"
    "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa s}`", ":math:`\mu=` input from users"
    "Kinematic viscosity", ":math:`\nu`", "visc_k_phase", "[p]", ":math:`\text{m}^2 \text{ s}^{-1}`",":math:`\nu=\mu\rho^{-1}`"

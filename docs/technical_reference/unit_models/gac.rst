@@ -97,10 +97,10 @@ Sets
 
    "Time", ":math:`t`", "[0]"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'Solute', 'Background Solutes]*"
+   "Components", ":math:`j`", "['H2O', solute, background solutes]*"
 
-\*Adsorbed "Solute" is specified in the ``target_species`` argument of the unit model. "Solute(s)" and "Background
-Solutes" are provided in the imported property model.
+\*Adsorbed "Solute" is specified in the ``target_species`` argument of the unit model. Solute(s) and background
+solutes are provided in the imported property model.
 
 .. _GAC_variables:
 
@@ -159,13 +159,6 @@ parameters and other variables in the model.
    "Throughput equation parameter 4", ":math:`b_4`", "b4", "None", ":math:`\text{dimensionless}`"
 
 The following variables are only built when specific configuration options are selected.
-
-if ``film_transfer_coefficient_type`` or ``surface_diffusion_coefficient_type`` is set to ``calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Molecular diffusion coefficient", ":math:`D_l`", "diffus_liq", "None", ":math:`\text{m}^2\text{/s}`"
 
 if ``film_transfer_coefficient_type`` is set to ``calculated``:
 
