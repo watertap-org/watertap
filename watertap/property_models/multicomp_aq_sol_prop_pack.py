@@ -220,15 +220,15 @@ class MCASParameterData(PhysicalParameterBlock):
             domain=In(DiffusivityCalculation),
             description="Diffusivity calculation flag",
             doc="""
-           Options to account for ionic and molecular diffusivity.
-           
+           Options to account for ionic or molecular diffusivity.
+
            **default** - ``DiffusivityCalculation.none``
-           
+
        .. csv-table::
            :header: "Configuration Options", "Description"
-           
-           "``DiffusivityCalculation.none``", "Specified diffusivity for ions"
-           "``DiffusivityCalculation.hayduklaudie``", "Hayduk Laudie equation for nonelectrolytes"
+
+           "``DiffusivityCalculation.none``", "Users provide data via the diffusivity_data configuration"
+           "``DiffusivityCalculation.hayduklaudie``", "Calculate from the molar_volume_data by the Hayduk Laudie equation"
        """,
         ),
     )
