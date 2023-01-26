@@ -72,7 +72,7 @@ def parameter_sweep(
                                           does not write a file.
                                           Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                                           which contains the variable names contained within the H5 file.
-        
+
         h5_parent_group_name (optional) : Parent h5 groups for the parameter sweep inputs and outputs to be embedded in.
                                           The default is `None` and it accepts a string for the h5 group.
 
