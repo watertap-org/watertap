@@ -26,6 +26,7 @@ def parameter_sweep(
     outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
+    h5_parent_group=None,
     optimize_function=None,
     optimize_kwargs=None,
     reinitialize_function=None,
@@ -135,6 +136,8 @@ def parameter_sweep(
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
         kwargs["h5_results_file_name"] = h5_results_file_name
+    if h5_parent_group is not None:
+        kwargs["h5_parent_group"] = h5_parent_group
     if optimize_function is not None:
         kwargs["optimize_function"] = optimize_function
     if optimize_kwargs is not None:

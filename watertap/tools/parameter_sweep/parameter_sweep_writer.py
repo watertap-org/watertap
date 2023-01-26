@@ -20,7 +20,7 @@ import numpy as np
 
 from scipy.interpolate import griddata
 
-from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue, ListOf
 
 
 class ParameterSweepWriter:
@@ -60,12 +60,12 @@ class ParameterSweepWriter:
     )
 
     CONFIG.declare(
-        "h5_parent_group",
+        "h5_parent_group_name",
         ConfigValue(
-            default=dict(),
-            domain=dict,
-            description="Parent group (container like objects, similar to a folder/directory in a file system) for parameter sweep outputs to be saved."
-        )
+            default=None,
+            domain=str,
+            description="Parent group name (container like objects, similar to a folder/directory in a file system) for parameter sweep outputs to be saved.",
+        ),
     )
 
     def __init__(
@@ -183,37 +183,46 @@ class ParameterSweepWriter:
         # We will also create a companion txt file by default which contains
         # the metadata of the h5 file in a user readable format.
         txt_fname = self.config["h5_results_file_name"] + ".txt"
-        if txt_options == "metadata":
-            my_dict = copy.deepcopy(output_dict)
-            for key, value in my_dict.items():
-                for subkey, subvalue in value.items():
-                    subvalue.pop("value")
-        elif txt_options == "keys":
-            my_dict = {}
-            for key, value in output_dict.items():
-                if key != "solve_successful":
-                    my_dict[key] = list(value.keys())
-        else:
-            my_dict = output_dict
 
-        with open(txt_fname, "w") as log_file:
-            pprint.pprint(my_dict, log_file)
+        if self.config.h5_parent_group_name is not None and os.path.isfile(txt_fname):
+            return
+        else:
+            if txt_options == "metadata":
+                my_dict = copy.deepcopy(output_dict)
+                for key, value in my_dict.items():
+                    for subkey, subvalue in value.items():
+                        subvalue.pop("value")
+            elif txt_options == "keys":
+                my_dict = {}
+                for key, value in output_dict.items():
+                    if key != "solve_successful":
+                        my_dict[key] = list(value.keys())
+            else:
+                my_dict = output_dict
+
+            with open(txt_fname, "w") as log_file:
+                pprint.pprint(my_dict, log_file)
 
     def _write_output_to_h5(self, output_dict, h5_results_file_name):
 
-        if len(self.config.h5_parent_group) > 0 and h5_results_file_name.is_file() is False:
-            # Create a new file since none exists and add the parent group
-            f = h5py.File(h5_results_file_name, "w")
-            parent_grp =  f.create_group(self.config.h5_parent_group)
-        elif len(self.config.h5_parent_group) > 0 and h5_results_file_name.is_file():
-            # File exists, we only need to add the new parent group
-            f = h5py.File(h5_results_file_name, "a")
-            parent_grp =  f.create_group(self.config.h5_parent_group)
-        elif len(self.config.h5_parent_group) == 0:
+        if self.config.h5_parent_group_name is None:
             # No parent groups exists, a new file will be created regardless
             f = h5py.File(h5_results_file_name, "w")
             parent_grp = f
-        
+        elif (
+            len(self.config.h5_parent_group_name) > 0
+            and os.path.isfile(h5_results_file_name) is False
+        ):
+            # Create a new file since none exists and add the parent group
+            f = h5py.File(h5_results_file_name, "w")
+            parent_grp = f.create_group(self.config.h5_parent_group_name)
+        elif len(self.config.h5_parent_group_name) > 0 and os.path.isfile(
+            h5_results_file_name
+        ):
+            # File exists, we only need to add the new parent group
+            f = h5py.File(h5_results_file_name, "a")
+            parent_grp = f.create_group(self.config.h5_parent_group_name)
+
         for key, item in output_dict.items():
             grp = parent_grp.create_group(key)
             if key != "solve_successful":
@@ -284,7 +293,6 @@ class ParameterSweepWriter:
 
         return global_save_data
 
-
     def save_results(
         self,
         sweep_params,
@@ -332,5 +340,3 @@ class ParameterSweepWriter:
             self._write_outputs(global_results_dict, txt_options="keys")
 
         return global_save_data
-
-    
