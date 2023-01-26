@@ -376,7 +376,7 @@ class MCASParameterData(PhysicalParameterBlock):
             ["Liq"],
             self.solute_set,
             mutable=True,
-            default=0.1,
+            default=1e-5,
             initialize=self.config.molar_volume_data,
             units=pyunits.m**3 / pyunits.mol,
             doc="pure component density of solutes",
