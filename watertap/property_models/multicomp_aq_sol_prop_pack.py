@@ -1224,7 +1224,6 @@ class MCASStateBlockData(StateBlockData):
             )
         else:
             # self.params.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
-
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 self.params.solute_set,
@@ -1246,7 +1245,7 @@ class MCASStateBlockData(StateBlockData):
 
             self.eq_diffus_phase_comp = Constraint(
                 self.params.phase_list,
-                self.params.ion_set | self.params.solute_set,
+                self.params.solute_set,
                 rule=rule_diffus_phase_comp,
             )
 

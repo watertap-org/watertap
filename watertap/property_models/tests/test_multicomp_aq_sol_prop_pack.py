@@ -36,6 +36,7 @@ from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASStateBlock,
     ActivityCoefficientModel,
     DensityCalculation,
+    DiffusivityCalculation,
     ElectricalMobilityCalculation,
     EquivalentConductivityCalculation,
     TransportNumberCalculation,
@@ -1341,3 +1342,53 @@ def test_elec_properties_errormsg(model6):
         match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
     ):
         m[2].fs.stream[0].trans_num_phase_comp
+
+
+@pytest.fixture(scope="module")
+def model7():
+    m_hl = ConcreteModel()
+
+    m_hl.fs = FlowsheetBlock(dynamic=False)
+
+    m_hl.fs.properties = MCASParameterBlock(
+        solute_list=["A", "B", "C", "D"],
+        diffus_calculation=DiffusivityCalculation.hayduklaudie,
+        molar_volume_data={
+            ("Liq", "A"): 50e-6,
+            ("Liq", "B"): 100e-6,
+            ("Liq", "C"): 60e-6,
+            ("Liq", "D"): 200e-6,
+        },
+    )
+
+    return m_hl
+
+
+@pytest.mark.unit
+def test_diffus_hl(model7):
+    m = model7
+
+    assert (
+        m.fs.properties.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
+    )
+
+    # build state block
+    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
+    # touch on demand var
+    m.fs.sb[0].diffus_phase_comp
+    # init and solve
+    m.fs.sb.initialize()
+    m.fs.sb.display()
+
+    assert isinstance(m.fs.properties.molar_volume_comp, Param)
+    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 50e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 100e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 60e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 200e-6
+
+    sb = m.fs.sb[0]
+
+    assert sb.diffus_phase_comp["Liq", "A"].value == pytest.approx(1.324e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "B"].value == pytest.approx(8.801e-10, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "C"].value == pytest.approx(1.189e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "D"].value == pytest.approx(5.851e-10, rel=1e-3)
