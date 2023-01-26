@@ -359,15 +359,16 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.m,
             doc="Stokes radius of solute",
         )
-        self.diffus_phase_comp = Param(
-            self.phase_list,
-            self.ion_set | self.solute_set,
-            mutable=True,
-            default=1e-9,
-            initialize=self.config.diffusivity_data,
-            units=pyunits.m**2 * pyunits.s**-1,
-            doc="Bulk diffusivity of ion",
-        )
+        if self.config.diffus_calculation == DiffusivityCalculation.none:
+            self.diffus_phase_comp = Param(
+                self.phase_list,
+                self.ion_set | self.solute_set,
+                mutable=True,
+                default=1e-9,
+                initialize=self.config.diffusivity_data,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Bulk diffusivity of ion",
+            )
         self.molar_volume_comp = Param(
             ["Liq"],
             self.solute_set,
@@ -1224,7 +1225,7 @@ class MCASStateBlockData(StateBlockData):
         else:
             # self.params.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
 
-            self.diffus_non_e_phase_comp = Var(
+            self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 self.params.solute_set,
                 initialize=1e-9,
@@ -1232,21 +1233,21 @@ class MCASStateBlockData(StateBlockData):
                 doc="Molecular diffusivity of nonelectrolytes",
             )
 
-            def rule_diffus_non_e_phase_comp(b, p, j):
+            def rule_diffus_phase_comp(b, p, j):
                 # (Hayduk & Laudie, 1974)
                 diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                 visc_solvent_inv_units = pyunits.Pa**-1 * pyunits.s**-1
                 molar_volume_inv_units = pyunits.mol * pyunits.m**-3
-                return (
-                    b.diffus_non_e_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units
-                ) * ((b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14) * (
+                return (b.diffus_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units) * (
+                    (b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14
+                ) * (
                     (b.molar_volume_comp[p, j] * 1e6 * molar_volume_inv_units) ** 0.589
                 ) == 13.26e-5
 
-            self.eq_diffus_non_e_phase_comp = Constraint(
+            self.eq_diffus_phase_comp = Constraint(
                 self.params.phase_list,
                 self.params.ion_set | self.params.solute_set,
-                rule=rule_diffus_non_e_phase_comp,
+                rule=rule_diffus_phase_comp,
             )
 
     def _visc_d_phase(self):
