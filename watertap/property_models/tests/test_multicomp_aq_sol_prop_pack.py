@@ -1374,11 +1374,12 @@ def test_diffus_hl(model7):
 
     # build state block
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
-    # touch on demand var
+    # touch on demand var when hayduklaudie is selected
     m.fs.sb[0].diffus_phase_comp
     # init and solve
     m.fs.sb.initialize()
-    m.fs.sb.display()
+    results = solver.solve(m)
+    assert_optimal_termination(results)
 
     assert isinstance(m.fs.properties.molar_volume_comp, Param)
     assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 50e-6
