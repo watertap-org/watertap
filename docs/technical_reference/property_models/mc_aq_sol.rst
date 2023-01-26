@@ -136,6 +136,10 @@ Users also have the authority to set a scaling factor for non-state variables vi
 
 Proper scaling of variables is, in many cases, crucial to solver's performance in finding an optimal solution of a problem. While designing scaling can have a mathematical sophistication, a general rule is to scale all variables as close to 1 as possible, e.g., in the range of 1e-2 to 1e2. 
 
+Classes
+-------
+.. currentmodule:: watertap.property_models.multicomp_aq_sol_prop_pack
+
 .. autoclass:: MCASParameterBlock
     :members:
     :noindex:
