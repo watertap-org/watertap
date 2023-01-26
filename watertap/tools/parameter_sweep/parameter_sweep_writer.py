@@ -20,7 +20,7 @@ import numpy as np
 
 from scipy.interpolate import griddata
 
-from pyomo.common.config import ConfigDict, ConfigValue, ListOf
+from pyomo.common.config import ConfigDict, ConfigValue
 
 
 class ParameterSweepWriter:
