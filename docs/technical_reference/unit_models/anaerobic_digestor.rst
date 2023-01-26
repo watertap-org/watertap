@@ -1,10 +1,10 @@
-Anaerobic Digestion Model No.1 (ADM1)
-=====================================
+Anaerobic Digestor
+==================
 
 Introduction
 ------------
 
-Anaerobic biological processes have been used for centuries primarily for food and beverage production.
+Anaerobic biological processes have been used in food and beverage production for centuries.
 However, modern advances pertaining to anaerobic conversions have introduced various forms of
 high-rate treatment processes that have proven to be particularly useful in wastewater treatment plants.
 High organic loading rates and low sludge production gives anaerobic processes a significant advantage over other
@@ -74,7 +74,7 @@ Sets
    "Time", ":math:`t`", "[0]"
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq', 'Vap']"
-   "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'X_c', 'X_ch', ...]"
+   "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'X_fa', 'X_va', 'X_bu', 'X_pro', 'X_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', 'S_co2']"
    "Ion", ":math:`j`", "['S_cat', 'S_an'] \  :sup:`*`"
 
 **Notes**
