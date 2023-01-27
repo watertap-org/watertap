@@ -45,7 +45,7 @@ Components
   "Acetate degraders, X_ac", ":math:`X_ac`", "X_ac"
   "Hydrogen degraders, X_h2", ":math:`X_{h2}`", "X_h2"
   "Particulate inerts, X_I", ":math:`X_I`", "X_I"
-  "Total cation equivalents concentration, S_sat", ":math:`S_sat`", "S_sat"
+  "Total cation equivalents concentration, S_cat", ":math:`S_{cat}`", "S_cat"
   "Total anion equivalents concentration, S_an", ":math:`S_an`", "S_an"
   "Carbon dioxide carbon, S_co2", ":math:`S_{co2}`", "S_co2"
 
