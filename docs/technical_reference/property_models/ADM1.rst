@@ -21,7 +21,7 @@ Components
 .. csv-table::
   :header: "Description", "Symbol", "Variable"
 
-  "Monosaccharides, S_su", ":math:`S_su`", "S_su"
+  "Monosaccharides, S_su", ":math:`S_{su}`", "S_su"
   "Amino acids, S_aa", ":math:`S_aa`", "S_aa"
   "Long chain fatty acids, S_fa", ":math:`S_fa`", "S_fa"
   "Total valerate, S_va", ":math:`S_va`", "S_va"
