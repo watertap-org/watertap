@@ -35,6 +35,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -79,7 +80,8 @@ class ADM1_vaporParameterData(PhysicalParameterBlock):
         # Density of water
         self.dens_mass = pyo.Param(
             mutable=False,
-            initialize=0.804,
+            # initialize=0.927613356,
+            initialize=0.01,
             doc="Density of water",
             units=pyo.units.kg / pyo.units.m**3,
         )
@@ -240,7 +242,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
 
         # Create state variables
         self.flow_vol = pyo.Var(
-            initialize=1.0,
+            initialize=1,
             domain=pyo.NonNegativeReals,
             doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
@@ -269,67 +271,48 @@ class ADM1_vaporStateBlockData(StateBlockData):
 
         self.p_w_sat = pyo.Var(
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=5643.8025,
             doc="Component mass concentrations",
             units=pyo.units.Pa,
         )
+
+        init = {"S_ch4": 65077, "S_co2": 36255, "S_h2": 1.639}
 
         self.p_sat = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=init,
             doc="Component mass concentrations",
             units=pyo.units.Pa,
         )
 
-        self.k_p = pyo.Param(
-            default=5e4,
-            units=pyo.units.m**3 / pyo.units.day / pyo.units.Pa,
-            mutable=True,
-            doc="Component mass concentrations",
-        )
-        SF = 1e-6
-
-        # TO DO: use this as the unit conversion for the reaction package
         def p_sat_rule(b, j):
             if j == "S_h2":
-                return (
-                    self.p_sat[j] * SF
-                    == pyo.units.convert(
-                        b.conc_mass_comp[j]
-                        * (1000 * pyo.units.g / pyo.units.kg)
-                        * Constants.gas_constant
-                        * b.temperature
-                        / (16 * pyo.units.g / pyo.units.mole),
-                        to_units=pyo.units.Pa,
-                    )
-                    * SF
+                return self.p_sat[j] == pyo.units.convert(
+                    b.conc_mass_comp[j]
+                    * (1000 * pyo.units.g / pyo.units.kg)
+                    * Constants.gas_constant
+                    * b.temperature
+                    / (16 * pyo.units.g / pyo.units.mole),
+                    to_units=pyo.units.Pa,
                 )
             elif j == "S_ch4":
-                return (
-                    self.p_sat[j] * SF
-                    == pyo.units.convert(
-                        b.conc_mass_comp[j]
-                        * (1000 * pyo.units.g / pyo.units.kg)
-                        * Constants.gas_constant
-                        * b.temperature
-                        / (64 * pyo.units.g / pyo.units.mole),
-                        to_units=pyo.units.Pa,
-                    )
-                    * SF
+                return self.p_sat[j] == pyo.units.convert(
+                    b.conc_mass_comp[j]
+                    * (1000 * pyo.units.g / pyo.units.kg)
+                    * Constants.gas_constant
+                    * b.temperature
+                    / (64 * pyo.units.g / pyo.units.mole),
+                    to_units=pyo.units.Pa,
                 )
             else:
-                return (
-                    self.p_sat[j] * SF
-                    == pyo.units.convert(
-                        b.conc_mass_comp[j]
-                        * (1000 * pyo.units.g / pyo.units.kg)
-                        * Constants.gas_constant
-                        * b.temperature
-                        / (44 * pyo.units.g / pyo.units.mole),
-                        to_units=pyo.units.Pa,
-                    )
-                    * SF
+                return self.p_sat[j] == pyo.units.convert(
+                    b.conc_mass_comp[j]
+                    * (1000 * pyo.units.g / pyo.units.kg)
+                    * Constants.gas_constant
+                    * b.temperature
+                    / (12 * pyo.units.g / pyo.units.mole),
+                    to_units=pyo.units.Pa,
                 )
 
         self._p_sat = pyo.Constraint(
@@ -337,36 +320,77 @@ class ADM1_vaporStateBlockData(StateBlockData):
         )
 
         def p_w_sat_rule(b):
-            return self.p_w_sat * SF == 0.0557 * 1e6 * pyo.units.Pa * SF
+            return self.p_w_sat == 0.0557 * 101325 * pyo.units.Pa
 
         self._p_w_sat = pyo.Constraint(rule=p_w_sat_rule, doc="P for not solutes")
 
-    def get_material_flow_terms(b, p, j):
-        if j == "H2O":
-            return b.flow_vol * b.params.dens_mass
-        else:
-            return b.flow_vol * b.conc_mass_comp[j]
+        def material_flow_expression(self, j):
+            if j == "H2O":
+                return self.flow_vol * self.params.dens_mass
+            else:
+                return self.flow_vol * self.conc_mass_comp[j]
 
-    def get_enthalpy_flow_terms(b, p):
-        return (
-            b.flow_vol
-            * b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+        self.material_flow_expression = pyo.Expression(
+            self.component_list,
+            rule=material_flow_expression,
+            doc="Material flow terms",
         )
 
-    def get_material_density_terms(b, p, j):
-        if j == "H2O":
-            return b.params.dens_mass
-        else:
-            return b.conc_mass_comp[j]
+        def enthalpy_flow_expression(self):
+            return (
+                self.flow_vol
+                * self.params.dens_mass
+                * self.params.cp_mass
+                * (self.temperature - self.params.temperature_ref)
+            )
 
-    def get_energy_density_terms(b, p):
-        return (
-            b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+        self.enthalpy_flow_expression = pyo.Expression(
+            rule=enthalpy_flow_expression, doc="Enthalpy flow term"
         )
+
+        def material_density_expression(self, j):
+            if j == "H2O":
+                return self.params.dens_mass
+            else:
+                return self.conc_mass_comp[j]
+
+        self.material_density_expression = pyo.Expression(
+            self.component_list,
+            rule=material_density_expression,
+            doc="Material density terms",
+        )
+
+        def energy_density_expression(self):
+            return (
+                self.params.dens_mass
+                * self.params.cp_mass
+                * (self.temperature - self.params.temperature_ref)
+            )
+
+        self.energy_density_expression = pyo.Expression(
+            rule=energy_density_expression, doc="Energy density term"
+        )
+
+        iscale.set_scaling_factor(self.flow_vol, 1e2)
+        iscale.set_scaling_factor(self.temperature, 1e-2)
+        iscale.set_scaling_factor(self.pressure, 1e-4)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e1)
+        iscale.set_scaling_factor(self.p_sat["S_ch4"], 1e-4)
+        iscale.set_scaling_factor(self.p_sat["S_co2"], 1e-4)
+        iscale.set_scaling_factor(self.p_sat["S_h2"], 1e-1)
+        iscale.set_scaling_factor(self.p_w_sat, 1e-3)
+
+    def get_material_flow_terms(self, p, j):
+        return self.material_flow_expression[j]
+
+    def get_enthalpy_flow_terms(self, p):
+        return self.enthalpy_flow_expression
+
+    def get_material_density_terms(self, p, j):
+        return self.material_density_expression[j]
+
+    def get_energy_density_terms(self, p):
+        return self.energy_density_expression
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentPhase
@@ -392,3 +416,51 @@ class ADM1_vaporStateBlockData(StateBlockData):
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        # No constraints in this model as yet, just need to set scaling factors
+        # for expressions
+        sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1e-2, warning=True)
+
+        # Mass flow and density terms
+        for j in self.component_list:
+            if j == "H2O":
+                sf_C = pyo.value(1 / self.params.dens_mass)
+            else:
+                sf_C = iscale.get_scaling_factor(
+                    self.conc_mass_comp[j], default=1e2, warning=True
+                )
+
+            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
+            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
+
+        # Enthalpy and energy terms
+        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
+        iscale.set_scaling_factor(
+            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
+        )
+        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)
+
+        for t, v in self._p_sat.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.p_sat,
+                    default=1,
+                    warning=True,
+                ),
+            )
+
+        for t, v in self._p_w_sat.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.p_w_sat,
+                    default=1,
+                    warning=True,
+                ),
+            )

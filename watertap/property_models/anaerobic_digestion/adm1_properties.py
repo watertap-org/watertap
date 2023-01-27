@@ -34,6 +34,7 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Some more information about this module
 __author__ = "Alejandro Garciadiego, Adam Atia"
@@ -267,7 +268,7 @@ class ADM1StateBlockData(StateBlockData):
 
         # Create state variables
         self.flow_vol = pyo.Var(
-            initialize=1.0,
+            initialize=1,
             domain=pyo.NonNegativeReals,
             doc="Total volumetric flowrate",
             units=pyo.units.m**3 / pyo.units.s,
@@ -275,7 +276,7 @@ class ADM1StateBlockData(StateBlockData):
         self.pressure = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=101325.0,
-            bounds=(1e3, 1e6),
+            bounds=(1e1, 1e6),
             doc="Pressure",
             units=pyo.units.Pa,
         )
@@ -289,61 +290,104 @@ class ADM1StateBlockData(StateBlockData):
         self.conc_mass_comp = pyo.Var(
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=0.001,
             doc="Component mass concentrations",
             units=pyo.units.kg / pyo.units.m**3,
         )
         self.anions = pyo.Var(
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=0.02,
             doc="Ions in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
         self.cations = pyo.Var(
             domain=pyo.NonNegativeReals,
-            initialize=0.1,
+            initialize=0.04,
             doc="Ions in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
-    def get_material_flow_terms(b, p, j):
-        if j == "H2O":
-            return b.flow_vol * b.params.dens_mass
-        elif j == "S_an":
-            # Convert moles of anions to mass assuming all is CL-
-            return b.flow_vol * b.anions * (35 * pyo.units.kg / pyo.units.kmol)
-        elif j == "S_cat":
-            # Convert moles of cations to mass assuming all is Na+
-            return b.flow_vol * b.cations * (23 * pyo.units.kg / pyo.units.kmol)
-        else:
-            return b.flow_vol * b.conc_mass_comp[j]
+        def material_flow_expression(self, j):
+            if j == "H2O":
+                return self.flow_vol * self.params.dens_mass
+            elif j == "S_an":
+                # Convert moles of anions to mass assuming all is CL-
+                return (
+                    self.flow_vol * self.anions * (35 * pyo.units.kg / pyo.units.kmol)
+                )
+            elif j == "S_cat":
+                # Convert moles of cations to mass assuming all is Na+
+                return (
+                    self.flow_vol * self.cations * (23 * pyo.units.kg / pyo.units.kmol)
+                )
+            else:
+                return self.flow_vol * self.conc_mass_comp[j]
 
-    def get_enthalpy_flow_terms(b, p):
-        return (
-            b.flow_vol
-            * b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+        self.material_flow_expression = pyo.Expression(
+            self.component_list,
+            rule=material_flow_expression,
+            doc="Material flow terms",
         )
 
-    def get_material_density_terms(b, p, j):
-        if j == "H2O":
-            return b.params.dens_mass
-        elif j == "S_cat":
-            # Convert moles of alkalinity to mass of catioons assuming all is Na
-            return b.cations * (23 * pyo.units.kg / pyo.units.kmol)
-        elif j == "S_an":
-            # Convert moles of alkalinity to mass of aniona assuming all is Cl
-            return b.anions * (35 * pyo.units.kg / pyo.units.kmol)
-        else:
-            return b.conc_mass_comp[j]
+        def enthalpy_flow_expression(self):
+            return (
+                self.flow_vol
+                * self.params.dens_mass
+                * self.params.cp_mass
+                * (self.temperature - self.params.temperature_ref)
+            )
 
-    def get_energy_density_terms(b, p):
-        return (
-            b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+        self.enthalpy_flow_expression = pyo.Expression(
+            rule=enthalpy_flow_expression, doc="Enthalpy flow term"
         )
+
+        def material_density_expression(self, j):
+            if j == "H2O":
+                return self.params.dens_mass
+            elif j == "S_cat":
+                # Convert moles of alkalinity to mass of catioons assuming all is Na
+                return self.cations * (23 * pyo.units.kg / pyo.units.kmol)
+            elif j == "S_an":
+                # Convert moles of alkalinity to mass of aniona assuming all is Cl
+                return self.anions * (35 * pyo.units.kg / pyo.units.kmol)
+            else:
+                return self.conc_mass_comp[j]
+
+        self.material_density_expression = pyo.Expression(
+            self.component_list,
+            rule=material_density_expression,
+            doc="Material density terms",
+        )
+
+        def energy_density_expression(self):
+            return (
+                self.params.dens_mass
+                * self.params.cp_mass
+                * (self.temperature - self.params.temperature_ref)
+            )
+
+        self.energy_density_expression = pyo.Expression(
+            rule=energy_density_expression, doc="Energy density term"
+        )
+
+        iscale.set_scaling_factor(self.flow_vol, 1e2)
+        iscale.set_scaling_factor(self.temperature, 1e-2)
+        iscale.set_scaling_factor(self.pressure, 1e-4)
+        iscale.set_scaling_factor(self.conc_mass_comp, 1e2)
+        iscale.set_scaling_factor(self.anions, 1e2)
+        iscale.set_scaling_factor(self.cations, 1e2)
+
+    def get_material_flow_terms(self, p, j):
+        return self.material_flow_expression[j]
+
+    def get_enthalpy_flow_terms(self, p):
+        return self.enthalpy_flow_expression
+
+    def get_material_density_terms(self, p, j):
+        return self.material_density_expression[j]
+
+    def get_energy_density_terms(self, p):
+        return self.energy_density_expression
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentPhase
@@ -373,3 +417,39 @@ class ADM1StateBlockData(StateBlockData):
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        # No constraints in this model as yet, just need to set scaling factors
+        # for expressions
+        sf_F = iscale.get_scaling_factor(self.flow_vol, default=1e2, warning=True)
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1e-2, warning=True)
+
+        # Mass flow and density terms
+        for j in self.component_list:
+            if j == "H2O":
+                sf_C = pyo.value(1 / self.params.dens_mass)
+            elif j == "S_cat":
+                sf_C = 1e-1 * iscale.get_scaling_factor(
+                    self.cations, default=1, warning=True
+                )
+            elif j == "S_an":
+                sf_C = 1e-1 * iscale.get_scaling_factor(
+                    self.anions, default=1, warning=True
+                )
+            else:
+                sf_C = iscale.get_scaling_factor(
+                    self.conc_mass_comp[j], default=1e2, warning=True
+                )
+
+            iscale.set_scaling_factor(self.material_flow_expression[j], sf_F * sf_C)
+            iscale.set_scaling_factor(self.material_density_expression[j], sf_C)
+
+        # Enthalpy and energy terms
+        sf_rho_cp = pyo.value(1 / (self.params.dens_mass * self.params.cp_mass))
+        iscale.set_scaling_factor(
+            self.enthalpy_flow_expression, sf_F * sf_rho_cp * sf_T
+        )
+        iscale.set_scaling_factor(self.energy_density_expression, sf_rho_cp * sf_T)

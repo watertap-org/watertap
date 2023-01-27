@@ -11,8 +11,8 @@
 # license information.
 #################################################################################
 """
-Tests for ADM1 thermo property package.
-Authors: Adam Atia
+Tests for ADM1 vapor phase thermo property package.
+Authors: Alejandro Garciadiego
 """
 
 import pytest
@@ -71,7 +71,7 @@ class TestParamBlock(object):
         assert value(model.params.cp_mass) == 1.996
 
         assert isinstance(model.params.dens_mass, Param)
-        assert value(model.params.dens_mass) == 0.804
+        assert value(model.params.dens_mass) == 0.01
 
         assert isinstance(model.params.pressure_ref, Param)
         assert value(model.params.pressure_ref) == 101325
@@ -102,7 +102,7 @@ class TestStateBlock(object):
         assert value(model.props[1].temperature) == 298.15
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
-        # H2O should not appear in conc_mass_comp
+
         assert len(model.props[1].conc_mass_comp) == 3
         for i in model.props[1].conc_mass_comp:
             assert i in ["S_h2", "S_ch4", "S_co2"]
@@ -137,7 +137,7 @@ class TestStateBlock(object):
             for j in model.params.component_list:
                 if j == "H2O":
                     assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].params.dens_mass
+                        model.props[1].flow_vol * model.props[1].params.dens_mass
                     )
                 else:
                     assert str(model.props[1].get_material_density_terms(p, j)) == str(
@@ -233,9 +233,9 @@ class TestStateBlock(object):
 
         model.props[1].conc_mass_comp["S_h2"].fix(1.024e-5)
         model.props[1].conc_mass_comp["S_ch4"].fix(1.62560)
-        model.props[1].conc_mass_comp["S_co2"].fix(0.0141 * 44)
+        model.props[1].conc_mass_comp["S_co2"].fix(0.0141 * 12)
 
-        model.props[1].flow_vol.fix(2.955)
+        model.props[1].flow_vol.fix(0.034)
         model.props[1].pressure.fix(106901)
         model.props[1].temperature.fix(308.15)
         model.props.initialize()
@@ -254,7 +254,7 @@ class TestStateBlock(object):
             1.62560, rel=1e-4
         )
         assert value(model.props[1].conc_mass_comp["S_co2"]) == pytest.approx(
-            0.6204, rel=1e-4
+            0.1692, rel=1e-4
         )
 
         assert value(model.props[1].p_sat["S_h2"]) == pytest.approx(1.6397, rel=1e-4)
@@ -265,7 +265,7 @@ class TestStateBlock(object):
             36125.633, rel=1e-4
         )
 
-        assert value(model.props[1].p_w_sat) == pytest.approx(55700.0, rel=1e-4)
+        assert value(model.props[1].p_w_sat) == pytest.approx(5643.802, rel=1e-4)
 
     @pytest.mark.component
     def check_units(self, model):

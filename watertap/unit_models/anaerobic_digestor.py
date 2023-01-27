@@ -33,6 +33,7 @@ from pyomo.environ import (
     Constraint,
     Param,
     units as pyunits,
+    check_optimal_termination,
 )
 from pyomo.common.deprecation import deprecated
 
@@ -60,7 +61,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
-__author__ = "Andrew Lee, Vibhav Dabadghao"
+__author__ = "Alejandro Garciadiego, Andrew Lee"
 
 
 def automate_rescale_variables(m):
@@ -387,7 +388,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(
             name="vapor_outlet",
             block=self.vapor_phase,
-            doc="Vapor stream from reboiler",
+            doc="Vapor stream from reactor",
         )
 
         # ---------------------------------------------------------------------
@@ -416,87 +417,203 @@ see reaction package for documentation.}""",
                 f"basis for MaterialFlowBasis."
             )
 
-        if any(j not in common_comps for j in self.vapor_phase.component_list):
-            # We have non-condensable components present, need zero-flow param
-            self.zero_flow_param = Param(
-                mutable=True, default=1e-8, units=vunits("flow_mass")
-            )
-
-        # Material balances
-        def rule_material_balance(blk, t, j):
-            if j in common_comps:
-                # Component is in equilibrium
-                # Mass transfer equals vapor flowrate
-                return blk.liquid_phase.mass_transfer_term[
-                    t, "Liq", j
-                ] == blk.vapor_phase[t].get_material_flow_terms("Vap", j)
-
-            elif j in self.liquid_phase.properties_out.component_list:
-                # No mass transfer term
-                # Set vapor flowrate to an arbitary small value
-                return blk.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * lunits(
-                    fb
-                )
-            elif j in self.vapor_phase.component_list:
-                # Mass transfer term is zero, no vapor flowrate
-
-                blk.liquid_phase.mass_transfer_term_j = Var(
-                    blk.flowsheet().time,
-                    initialize=1,
-                    units=vunits("flow_mass"),
-                )
-                return blk.liquid_phase.mass_transfer_term_j[t] == blk.vapor_phase[
-                    t
-                ].get_material_flow_terms("Vap", j)
-
-        self.unit_material_balance = Constraint(
-            self.flowsheet().time,
-            all_comps,
-            rule=rule_material_balance,
-            doc="Unit level material balances",
-        )
-
         # Add object references
         self.volume_liquid = Reference(self.liquid_phase.volume[:])
 
         self.volume_AD = Var(
             self.flowsheet().time,
-            initialize=100,
+            initialize=3700,
             units=lunits("volume"),
             doc="Volume of the liquid",
         )
 
         self.volume_vapor = Var(
             self.flowsheet().time,
-            initialize=100,
+            initialize=300,
             units=lunits("volume"),
             doc="Volume of the gas",
         )
 
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Total volume constraint",
+        self.k_p = Param(
+            initialize=5e4,
+            mutable=True,
+            units=pyunits.m**3 / pyunits.day / pyunits.bar,
+            doc="Component mass concentrations",
         )
-        def ad_total_volume(b, t):
-            return b.volume_AD[t] == (b.volume_liquid[t] + b.volume_vapor[t])
 
-        # Add AD performance equation
-        @self.Constraint(
-            self.flowsheet().time,
-            self.config.reaction_package.rate_reaction_idx,
-            doc="AD performance equation",
+        self.KH_co2 = Param(
+            initialize=0.02715,
+            units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
+            mutable=True,
+            doc="KH_co2",
         )
-        def ad_performance_eqn(b, t, r):
-            return b.liquid_phase.rate_reaction_extent[t, r] == (
-                b.volume_liquid[t] * b.liquid_phase.reactions[t].reaction_rate[r]
+        self.KH_ch4 = Param(
+            initialize=0.00116,
+            units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
+            mutable=True,
+            doc="KH_ch4",
+        )
+        self.KH_h2 = Param(
+            initialize=7.38e-4,
+            units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
+            mutable=True,
+            doc="KH_h2",
+        )
+        self.K_La = Param(
+            initialize=200,
+            units=pyunits.day**-1,
+            mutable=True,
+            doc="K_La",
+        )
+
+        def outlet_P_rule(self, t):
+            return self.vapor_phase[t].pressure == (
+                self.vapor_phase[t].p_w_sat
+                + sum(
+                    self.vapor_phase[t].p_sat[j]
+                    for j in self.config.vapor_property_package.solute_set
+                )
             )
 
-        # TO DO: include option for phase equilibrium
+        self.outlet_P = Constraint(
+            self.flowsheet().time,
+            rule=outlet_P_rule,
+            doc="Outlet vapor phase pressure",
+        )
 
+        # Material balances
+        def rule_material_balance(self, t, j):
+            if j in common_comps:
+                # Component is in equilibrium
+                # Mass transfer equals vapor flowrate
+                return self.liquid_phase.mass_transfer_term[
+                    t, "Liq", j
+                ] == -self.vapor_phase[t].get_material_flow_terms("Vap", j)
+
+            elif j == "S_IC":
+                # Mass transfer term is zero, no vapor flowrate
+                return self.liquid_phase.mass_transfer_term[
+                    t, "Liq", j
+                ] == -self.vapor_phase[t].get_material_flow_terms("Vap", "S_co2")
+
+            elif j in self.liquid_phase.properties_out.component_list:
+                # No mass transfer term
+                # Set vapor flowrate to an arbitary small value
+                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * lunits(
+                    fb
+                )
+
+        self.unit_material_balance = Constraint(
+            self.flowsheet().time,
+            self.liquid_phase.properties_out.component_list,
+            rule=rule_material_balance,
+            doc="Unit level material balances",
+        )
+
+        def Sh2_conc_rule(self, t):
+            return self.liquid_phase.mass_transfer_term[t, "Liq", "S_h2"] == -1 * (
+                pyunits.convert(self.K_La, to_units=1 / pyunits.s)
+                * (
+                    self.liquid_phase.properties_out[t].conc_mass_comp["S_h2"]
+                    - 16
+                    * pyunits.kg
+                    / pyunits.kmol
+                    * pyunits.convert(
+                        self.KH_h2,
+                        to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
+                    )
+                    * self.vapor_phase[t].p_sat["S_h2"]
+                )
+                * self.volume_liquid[t]
+            )
+
+        self.Sh2_conc = Constraint(
+            self.flowsheet().time,
+            rule=Sh2_conc_rule,
+            doc="h2 vap",
+        )
+
+        def Sch4_conc_rule(self, t):
+            return self.liquid_phase.mass_transfer_term[t, "Liq", "S_ch4"] == -1 * (
+                pyunits.convert(self.K_La, to_units=1 / pyunits.s)
+                * (
+                    self.liquid_phase.properties_out[t].conc_mass_comp["S_ch4"]
+                    - 64
+                    * pyunits.kg
+                    / pyunits.kmol
+                    * pyunits.convert(
+                        self.KH_ch4,
+                        to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
+                    )
+                    * self.vapor_phase[t].p_sat["S_ch4"]
+                )
+                * self.volume_liquid[t]
+            )
+
+        self.Sch4_conc = Constraint(
+            self.flowsheet().time,
+            rule=Sch4_conc_rule,
+            doc="ch4 vap",
+        )
+
+        def Sco2_conc_rule(self, t):
+            return self.liquid_phase.mass_transfer_term[t, "Liq", "S_IC"] == -1 * (
+                pyunits.convert(self.K_La, to_units=1 / pyunits.s)
+                * (  # 0.0099 * pyunits.kmol / pyunits.m**3
+                    self.liquid_phase.reactions[t].conc_mol_co2
+                    - pyunits.convert(
+                        self.KH_co2,
+                        to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
+                    )
+                    * self.vapor_phase[t].p_sat["S_co2"]
+                )
+                * self.volume_liquid[t]
+            ) * (1 * pyunits.kg / pyunits.kmole)
+
+        self.Sco2_conc = Constraint(
+            self.flowsheet().time,
+            rule=Sco2_conc_rule,
+            doc="co2 vap",
+        )
+
+        def flow_vol_vap_rule(self, t):
+            return self.vapor_phase[t].flow_vol == (
+                pyunits.convert(
+                    self.k_p, to_units=pyunits.m**3 / pyunits.s / pyunits.Pa
+                )
+                * (self.vapor_phase[t].pressure - 101325 * pyunits.Pa)
+            ) * (self.vapor_phase[t].pressure / (101325 * pyunits.Pa))
+
+        self.flow_vol_vap = Constraint(
+            self.flowsheet().time,
+            rule=flow_vol_vap_rule,
+            doc="Vol flow",
+        )
+
+        def ad_total_volume_rule(self, t):
+            return self.volume_AD[t] == (self.volume_liquid[t] + self.volume_vapor[t])
+
+        self.ad_total_volume = Constraint(
+            self.flowsheet().time,
+            rule=ad_total_volume_rule,
+            doc="Outlet vapor phase pressure",
+        )
+        # Add AD performance equation
+        def ad_performance_eqn_rule(self, t, r):
+            return self.liquid_phase.rate_reaction_extent[t, r] == (
+                self.volume_liquid[t] * self.liquid_phase.reactions[t].reaction_rate[r]
+            )
+
+        self.ad_performance_eqn = Constraint(
+            self.flowsheet().time,
+            self.config.reaction_package.rate_reaction_idx,
+            rule=ad_performance_eqn_rule,
+            doc="AD performance equation",
+        )
         # Temperature equality constraint
-        def rule_temperature_balance(blk, t):
-            return blk.liquid_phase.properties_out[t].temperature == pyunits.convert(
-                blk.vapor_phase[t].temperature, to_units=lunits("temperature")
+        def rule_temperature_balance(self, t):
+            return self.liquid_phase.properties_out[t].temperature == pyunits.convert(
+                self.vapor_phase[t].temperature, to_units=lunits("temperature")
             )
 
         self.unit_temperature_equality = Constraint(
@@ -505,13 +622,42 @@ see reaction package for documentation.}""",
             doc="Unit level temperature equality",
         )
 
+        if (
+            self.config.has_pressure_change is True
+            and self.config.momentum_balance_type != MomentumBalanceType.none
+        ):
+            self.deltaP = Reference(self.liquid_phase.deltaP[:])
+
+            # Pressure balance constraint
+            def rule_pressure_balance(self, t):
+                return (
+                    self.deltaP[t]
+                    == self.vapor_outlet.pressure[t]
+                    - self.liquid_phase.properties_in[t].pressure
+                )
+
+            self.unit_pressure_balance = Constraint(
+                self.flowsheet().time,
+                rule=rule_pressure_balance,
+                doc="Unit level pressure balance",
+            )
+
         # Unit level energy balance
         # Energy leaving in vapor phase must be equal and opposite to enthalpy
         # transfer from liquid phase
-        def rule_energy_balance(blk, t):
-            return -blk.liquid_phase.enthalpy_transfer[t] == pyunits.convert(
-                blk.vapor_phase[t].get_enthalpy_flow_terms("Vap"),
-                to_units=lunits("energy") / lunits("time"),
+        def rule_energy_balance(self, t):
+            return self.liquid_phase.enthalpy_transfer[
+                t
+            ] + self.liquid_phase.properties_in[t].get_enthalpy_flow_terms(
+                "Liq"
+            ) == self.liquid_phase.properties_out[
+                t
+            ].get_enthalpy_flow_terms(
+                "Liq"
+            ) + self.vapor_phase[
+                t
+            ].get_enthalpy_flow_terms(
+                "Vap"
             )
 
         self.unit_enthalpy_balance = Constraint(
@@ -523,11 +669,14 @@ see reaction package for documentation.}""",
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.liquid_phase.heat[:])
 
-        if (
-            self.config.has_pressure_change is True
-            and self.config.momentum_balance_type != MomentumBalanceType.none
-        ):
-            self.deltaP = Reference(self.liquid_phase.deltaP[:])
+        iscale.set_scaling_factor(self.volume_AD, 1e-2)
+        iscale.set_scaling_factor(self.volume_vapor, 1e-2)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_generation, 1e4)
+        iscale.set_scaling_factor(self.liquid_phase.mass_transfer_term, 1e2)
+        iscale.set_scaling_factor(self.liquid_phase.heat, 1e-2)
+        iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e2)
+        iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e-4)
+        iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume[time_point]}
@@ -538,9 +687,105 @@ see reaction package for documentation.}""",
 
         return {"vars": var_dict}
 
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        common_comps = (
+            self.vapor_phase.component_list
+            & self.liquid_phase.properties_out.component_list
+        )
+
+        for t, v in self.flow_vol_vap.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].flow_vol,
+                    default=1,
+                    warning=True,
+                ),
+            )
+
+        for (t, j), v in self.unit_material_balance.items():
+            if j in common_comps:
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.liquid_phase.mass_transfer_term[t, "Liq", j],
+                        default=1,
+                        warning=True,
+                    ),
+                )
+            else:
+                pass  # no need to scale this constraint
+
+        for t, v in self.unit_temperature_equality.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].temperature,
+                    default=1,
+                    warning=True,
+                ),
+            )
+
+        for t, v in self.unit_enthalpy_balance.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.enthalpy_transfer[t], default=1, warning=True
+                ),
+            )
+
+        for t, v in self.unit_pressure_balance.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].pressure,
+                    default=1,
+                    warning=True,
+                ),
+            )
+
+        for t, v in self.outlet_P.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].pressure,
+                    default=1,
+                    warning=True,
+                ),
+            )
+        for t, v in self.Sh2_conc.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].conc_mass_comp["S_h2"],
+                    default=1,
+                    warning=True,
+                ),
+            )
+        for t, v in self.Sch4_conc.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].conc_mass_comp["S_ch4"],
+                    default=1,
+                    warning=True,
+                ),
+            )
+        for t, v in self.Sco2_conc.items():
+            iscale.constraint_scaling_transform(
+                v,
+                iscale.get_scaling_factor(
+                    self.liquid_phase.properties_out[t].conc_mass_comp["S_ch4"],
+                    default=1,
+                    warning=True,
+                ),
+            )
+
     # TO DO: fix initialization
     def initialize_build(
-        blk,
+        self,
         liquid_state_args=None,
         vapor_state_args=None,
         outlvl=idaeslog.NOTSET,
@@ -570,21 +815,21 @@ see reaction package for documentation.}""",
             optarg = {}
 
         # Check DOF
-        if degrees_of_freedom(blk) != 0:
+        if degrees_of_freedom(self) != 0:
             raise InitializationError(
-                f"{blk.name} degrees of freedom were not 0 at the beginning "
-                f"of initialization. DoF = {degrees_of_freedom(blk)}"
+                f"{self.name} degrees of freedom were not 0 at the beginning "
+                f"of initialization. DoF = {degrees_of_freedom(self)}"
             )
 
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         solverobj = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize liquid phase control volume block
-        flags = blk.liquid_phase.initialize(
+        flags = self.liquid_phase.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -596,31 +841,34 @@ see reaction package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize vapor phase state block
         if vapor_state_args is None:
-            t_init = blk.flowsheet().time.first()
+            t_init = self.flowsheet().time.first()
             vapor_state_args = {}
-            vap_state_vars = blk.vapor_phase[t_init].define_state_vars()
+            vap_state_vars = self.vapor_phase[t_init].define_state_vars()
 
-            liq_state = blk.liquid_phase.properties_out[t_init]
+            liq_state = self.liquid_phase.properties_out[t_init]
 
             # Check for unindexed state variables
             for sv in vap_state_vars:
                 if "flow" in sv:
-                    vapor_state_args[sv] = 0.1 * value(getattr(liq_state, sv))
+                    vapor_state_args[sv] = 13 * value(getattr(liq_state, sv))
                 elif "conc" in sv:
                     # Flow is indexed by component
                     vapor_state_args[sv] = {}
                     for j in vap_state_vars[sv]:
                         if j in liq_state.component_list:
-                            vapor_state_args[sv][j] = 0.1 * value(
+                            vapor_state_args[sv][j] = 1e3 * value(
                                 getattr(liq_state, sv)[j]
                             )
                         else:
                             vapor_state_args[sv][j] = 0.5
 
+                elif "pressure" in sv:
+                    vapor_state_args[sv] = 1.05 * value(getattr(liq_state, sv))
+
                 else:
                     vapor_state_args[sv] = value(getattr(liq_state, sv))
 
-        blk.vapor_phase.initialize(
+        self.vapor_phase.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -630,15 +878,10 @@ see reaction package for documentation.}""",
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-        badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
-        for var, sv in iscale.badly_scaled_var_generator(blk):
-            print(var, ",", sv)
-        if len(badly_scaled_vars) > 0:
-            automate_rescale_variables(blk)
         # ---------------------------------------------------------------------
         # Solve unit model
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        results = solverobj.solve(blk)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solverobj.solve(self)
 
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(results))
@@ -646,14 +889,14 @@ see reaction package for documentation.}""",
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.liquid_phase.release_state(flags, outlvl)
+        self.liquid_phase.release_state(flags, outlvl)
 
         # if not check_optimal_termination(results):
         #     raise InitializationError(
-        #         f"{blk.name} failed to initialize successfully. Please check "
+        #         f"{self.name} failed to initialize successfully. Please check "
         #         f"the output logs for more information."
         #     )
-
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+        #
+        # init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
     # TODO : performance and stream table methods

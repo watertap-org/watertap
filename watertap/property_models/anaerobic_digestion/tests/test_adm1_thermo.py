@@ -12,7 +12,7 @@
 #################################################################################
 """
 Tests for ADM1 thermo property package.
-Authors: Adam Atia
+Authors: Adam Atia, Alejandro Garciadiego
 """
 
 import pytest
@@ -122,13 +122,13 @@ class TestStateBlock(object):
         assert value(model.props[1].temperature) == 298.15
 
         assert isinstance(model.props[1].anions, Var)
-        assert value(model.props[1].anions) == 0.1
+        assert value(model.props[1].anions) == 0.02
 
         assert isinstance(model.props[1].cations, Var)
-        assert value(model.props[1].cations) == 0.1
+        assert value(model.props[1].cations) == 0.04
 
         assert isinstance(model.props[1].conc_mass_comp, Var)
-        # H2O should not appear in conc_mass_comp
+
         assert len(model.props[1].conc_mass_comp) == 24
         for i in model.props[1].conc_mass_comp:
             assert i in [
@@ -157,7 +157,7 @@ class TestStateBlock(object):
                 "X_h2",
                 "X_I",
             ]
-            assert value(model.props[1].conc_mass_comp[i]) == 0.1
+            assert value(model.props[1].conc_mass_comp[i]) == 0.001
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
