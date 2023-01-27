@@ -215,13 +215,13 @@ class ParameterSweepWriter:
         ):
             # Create a new file since none exists and add the parent group
             f = h5py.File(h5_results_file_name, "w")
-            parent_grp = f.create_group(self.config.h5_parent_group_name)
+            parent_grp = f.require_group(self.config.h5_parent_group_name)
         elif len(self.config.h5_parent_group_name) > 0 and os.path.isfile(
             h5_results_file_name
         ):
             # File exists, we only need to add the new parent group
             f = h5py.File(h5_results_file_name, "a")
-            parent_grp = f.create_group(self.config.h5_parent_group_name)
+            parent_grp = f.require_group(self.config.h5_parent_group_name)
 
         for key, item in output_dict.items():
             grp = parent_grp.create_group(key)
