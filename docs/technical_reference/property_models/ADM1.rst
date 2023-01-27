@@ -5,7 +5,7 @@ This package implements properties and reactions of an anaerobic digestion model
 `Batstone, D. J. et al. (2002) <https://iwaponline.com/wst/article-abstract/45/10/65/6034>`_ and `Rosen and Jeppsson (2006) <https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf>`_.
 
 This Anaerobic Digestion Model no.1 (ADM1) property/reaction package:
-   * supports 'H2O', 'S_su', 'S_aa', 'X_fa', 'X_va', 'X_bu', 'X_pro', 'X_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', and 'S_co2' as components
+   * supports 'H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', and 'S_co2' as components
    * supports only liquid and vapor phase
 
 Sets
@@ -13,7 +13,7 @@ Sets
 .. csv-table::
   :header: "Description", "Symbol", "Indices"
 
-  "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'X_fa', 'X_va', 'X_bu', 'X_pro', 'X_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', 'S_co2']"
+  "Components", ":math:`j`", "['H2O', 'S_su', 'S_aa', 'S_fa', 'S_va', 'S_bu', 'S_pro', 'S_ac', 'S_h2', 'S_ch4', 'S_IC', 'S_IN', 'S_I', 'X_c', 'X_ch', 'X_pr', 'X_li', 'X_su', 'X_aa', 'X_fa', 'X_c4', 'X_pro', 'X_ac', 'X_h2', 'X_I', 'S_cat', 'S_an', 'S_co2']"
   "Phases", ":math:`p`", "['Liq', 'Vap']"
 
 Components
@@ -99,9 +99,9 @@ Kinetic Parameters
  :header: "Description", "Symbol", "Parameter", "Value at 20 C", "Units"
 
    "First-order kinetic parameter for disintegration, k_dis", ":math:`k_{dis}`", "k_dis", 0.5, ":math:`\text{d}^{-1}`"
-   "First-order kinetic parameter for hydrolysis of carbohydrates, k_hyd_ch", ":math:`k_{hyd_{ch}}`", "k_hyd_ch", 10, ":math:`\text{d}^{-1}`"
-   "First-order kinetic parameter for hydrolysis of proteins, k_hyd_pr", ":math:`k_{hyd_{pr}}`", "k_hyd_pr", 10, ":math:`\text{d}^{-1}`"
-   "First-order kinetic parameter for hydrolysis of lipids, k_hyd_li", ":math:`k_{hyd_{li}}`", "k_hyd_li", 10, ":math:`\text{d}^{-1}`"
+   "First-order kinetic parameter for hydrolysis of carbohydrates, k_hyd_ch", ":math:`k_{hyd,ch}`", "k_hyd_ch", 10, ":math:`\text{d}^{-1}`"
+   "First-order kinetic parameter for hydrolysis of proteins, k_hyd_pr", ":math:`k_{hyd,pr}`", "k_hyd_pr", 10, ":math:`\text{d}^{-1}`"
+   "First-order kinetic parameter for hydrolysis of lipids, k_hyd_li", ":math:`k_{hyd,li}`", "k_hyd_li", 10, ":math:`\text{d}^{-1}`"
    "Inhibition parameter for inorganic nitrogen, K_S_IN", ":math:`K_{S_{IN}}`", "K_S_IN", 1e-4, ":math:`\text{kmol/}\text{m}^3`"
    "Monod maximum specific uptake rate of sugars, k_m_su", ":math:`k_{m_{su}}`", "k_m_su", 30, ":math:`\text{d}^{-1}`"
    "Half saturation value for uptake of sugars, K_S_su", ":math:`K_{S_{su}}`", "K_S_su", 0.5, ":math:`\text{kg/}\text{m}^3`"
@@ -151,9 +151,9 @@ Process Rate Equations
    :header: "Description", "Equation"
 
    "Disintegration", ":math:`\rho_1 = k_{dis} C_{X_c}`"
-   "Hydrolysis of carbohydrates", ":math:`\rho_2 = k_{hyd_{ch}} C_{X_{ch}}`"
-   "Hydrolysis of proteins", ":math:`\rho_3 = k_{hyd_{pr}} C_{X_{pr}}`"
-   "Hydrolysis of lipids", ":math:`\rho_4 = k_{hyd_{li}} C_{X_{li}}`"
+   "Hydrolysis of carbohydrates", ":math:`\rho_2 = k_{hyd,ch} C_{X_{ch}}`"
+   "Hydrolysis of proteins", ":math:`\rho_3 = k_{hyd,pr} C_{X_{pr}}`"
+   "Hydrolysis of lipids", ":math:`\rho_4 = k_{hyd,li} C_{X_{li}}`"
    "Uptake of sugars", ":math:`\rho_5 = k_{m_{su}} \frac{C_{S_{su}}}{K_{S_{su}}+C_{S_{su}}} C_{X_{su}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} I_{pH,aa}`"
    "Uptake of amino acids", ":math:`\rho_6 = k_{m_{aa}} \frac{C_{S_{aa}}}{K_{S_{aa}}+C_{S_{aa}}} C_{X_{aa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} I_{pH,aa}`"
    "Uptake of long chain fatty acids (LCFAs)", ":math:`\rho_7 = k_{m_{fa}} \frac{C_{S_{fa}}}{K_{S_{fa}}+C_{S_{fa}}} C_{X_{fa}} \frac{1}{1 + K_{S_{IN}}/C_{S_{IN}}/14} \cdot \frac{1}{1 + C_{S_{h2}}/K_{I,h2_{fa}}} I_{pH,aa}`"
