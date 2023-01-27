@@ -185,7 +185,7 @@ class TestNanoFiltration:
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 73
+        assert number_variables(m) == 68
         assert number_total_constraints(m) == 45
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
@@ -277,3 +277,7 @@ class TestNanoFiltration:
         assert pytest.approx(1.717e-2, rel=1e-3) == value(
             m.fs.unit.properties_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
+
+    @pytest.mark.unit
+    def test_report(self, NF_frame):
+        NF_frame.fs.unit.report()

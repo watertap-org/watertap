@@ -160,8 +160,8 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
     assert isinstance(m.fs.unit.feed_side.channel_height, Var)
     assert isinstance(m.fs.unit.feed_side.dh, Var)
     assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sc, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sc_comp, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sh_comp, Var)
     assert isinstance(m.fs.unit.feed_side.N_Re, Var)
 
 
@@ -270,9 +270,9 @@ class TestReverseOsmosis:
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 245
+        assert number_variables(m) == 240
         assert number_total_constraints(m) == 203
-        assert number_unused_variables(m) == 19
+        assert number_unused_variables(m) == 14
 
     @pytest.mark.integration
     def test_units(self, RO_frame):
@@ -426,9 +426,9 @@ class TestReverseOsmosis:
         m.fs.unit.recovery_vol_phase[0, "Liq"].fix(0.4)
 
         # test statistics
-        assert number_variables(m) == 201
+        assert number_variables(m) == 196
         assert number_total_constraints(m) == 162
-        assert number_unused_variables(m) == 25
+        assert number_unused_variables(m) == 20
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -555,9 +555,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.cp_modulus.fix(1.1)
 
         # test statistics
-        assert number_variables(m) == 205
+        assert number_variables(m) == 200
         assert number_total_constraints(m) == 162
-        assert number_unused_variables(m) == 26
+        assert number_unused_variables(m) == 21
 
         assert_units_consistent(m.fs.unit)
 
@@ -681,9 +681,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.K.fix(2e-5)
 
         # test statistics
-        assert number_variables(m) == 209
+        assert number_variables(m) == 204
         assert number_total_constraints(m) == 165
-        assert number_unused_variables(m) == 27
+        assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
@@ -803,9 +803,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.channel_height.fix(0.002)
 
         # test statistics
-        assert number_variables(m) == 232
+        assert number_variables(m) == 227
         assert number_total_constraints(m) == 190
-        assert number_unused_variables(m) == 19
+        assert number_unused_variables(m) == 14
 
         assert_units_consistent(m.fs.unit)
 
@@ -929,9 +929,9 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.dP_dx.fix(-0.1e5)
 
         # test statistics
-        assert number_variables(m) == 237
+        assert number_variables(m) == 232
         assert number_total_constraints(m) == 191
-        assert number_unused_variables(m) == 20
+        assert number_unused_variables(m) == 15
 
         assert_units_consistent(m.fs.unit)
 
@@ -1056,9 +1056,9 @@ class TestReverseOsmosis:
         m.fs.unit.deltaP.fix(-62435.6)
 
         # test statistics
-        assert number_variables(m) == 237
+        assert number_variables(m) == 232
         assert number_total_constraints(m) == 194
-        assert number_unused_variables(m) == 19
+        assert number_unused_variables(m) == 14
 
         assert_units_consistent(m.fs.unit)
 

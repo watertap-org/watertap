@@ -89,7 +89,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("mole_frac_phase_comp", ("Liq", "H2O")): 1,
             ("mole_frac_phase_comp", ("Vap", "H2O")): 1e-8,
             ("enth_mass_phase", "Liq"): 2.094e5,
-            ("enth_mass_phase", "Vap"): 2.591e6,
+            ("enth_mass_phase", "Vap"): 2.592e6,
             ("dh_vap_mass", None): 2.382e6,
             ("cp_mass_phase", "Liq"): 4.181e3,
             ("cp_mass_phase", "Vap"): 1.871e3,
