@@ -36,7 +36,7 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
 )
-from idaes.core.base.components import Component, Solute, Solvent
+from idaes.core.base.components import Component
 from idaes.core.base.phases import LiquidPhase
 from idaes.core.util.initialization import (
     fix_state_vars,
@@ -282,21 +282,8 @@ class SopStateBlockData(StateBlockData):
             doc="Dynamic viscosity",
         )
 
-        def rule_visc_d_phase_comp(b, j):
-            if j == "H2O":
-                return (
-                    b.visc_d_phase_comp["Liq", j]
-                    == 1e-3 * pyunits.kg * pyunits.m**-1 * pyunits.s**-1
-                )
-            elif j == "oil":
-                return (
-                    b.visc_d_phase_comp["Liq", j]
-                    == 5e-3 * pyunits.kg * pyunits.m**-1 * pyunits.s**-1
-                )
-
-        self.eq_visc_d_phase_comp = Constraint(
-            self.params.component_list, rule=rule_visc_d_phase_comp
-        )
+        self.visc_d_phase_comp["Liq", "H2O"].fix(1e-3)
+        self.visc_d_phase_comp["Liq", "oil"].fix(5e-3)
 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
@@ -432,12 +419,6 @@ class SopStateBlockData(StateBlockData):
             for j in self.params.component_list:
                 if iscale.get_scaling_factor(self.visc_d_phase_comp["Liq", j]) is None:
                     iscale.set_scaling_factor(self.visc_d_phase_comp["Liq", j], 1e3)
-
-            for j, c in self.eq_visc_d_phase_comp.items():
-                sf = iscale.get_scaling_factor(
-                    self.visc_d_phase_comp["Liq", j], default=1e3, warning=True
-                )
-                iscale.constraint_scaling_transform(c, sf)
 
         if self.is_property_constructed("mass_frac_phase_comp"):
             for j in self.params.component_list:
