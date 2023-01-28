@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import CSTR
+from watertap.unit_models.anaerobic_digestor import AD
 from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
@@ -36,6 +36,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals
 
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
+)
+from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
+    ADM1_vaporParameterBlock,
 )
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
@@ -235,10 +238,8 @@ class TestParamBlock(object):
                 "R19",
             ]
             if i in stoic:
-                print(i)
                 assert pytest.approx(stoic[i], rel=1e-2) == value(v)
             else:
-                print(i)
                 assert pytest.approx(value(v), rel=1e-2) == 0
 
         assert isinstance(model.rparams.f_sI_xc, Var)
@@ -397,10 +398,11 @@ class TestReactionBlock(object):
     def model(self):
         model = ConcreteModel()
         model.pparams = ADM1ParameterBlock()
+        model.vparams = ADM1_vaporParameterBlock()
         model.rparams = ADM1ReactionParameterBlock(property_package=model.pparams)
 
         model.props = model.pparams.build_state_block([1])
-
+        model.props_vap = model.vparams.build_state_block([1])
         model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
 
         return model
@@ -437,51 +439,54 @@ class TestReactor:
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = ADM1ParameterBlock()
+        m.fs.props_vap = ADM1_vaporParameterBlock()
         m.fs.rxn_props = ADM1ReactionParameterBlock(property_package=m.fs.props)
 
-        m.fs.R1 = CSTR(
-            property_package=m.fs.props,
+        m.fs.unit = AD(
+            liquid_property_package=m.fs.props,
+            vapor_property_package=m.fs.props_vap,
             reaction_package=m.fs.rxn_props,
+            has_heat_transfer=True,
+            has_pressure_change=False,
         )
 
         # Feed conditions based on manual mass balance of inlet and recycle streams
-        m.fs.R1.inlet.flow_vol.fix(170 * units.m**3 / units.day)
-        m.fs.R1.inlet.temperature.fix(308.15 * units.K)
-        m.fs.R1.inlet.pressure.fix(1 * units.atm)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_su"].fix(0.01 * units.kg / units.m**3)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_aa"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_fa"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_va"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_bu"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_pro"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_ac"].fix(1 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_h2"].fix(1e-5 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-2 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "S_IC"].fix(
-            40 * units.mmol / units.liter * 12 * units.mg / units.mmol
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_IN"].fix(
-            10 * units.mmol / units.liter * 14 * units.mg / units.mmol
-        )
-        m.fs.R1.inlet.conc_mass_comp[0, "S_I"].fix(20 * units.mg / units.liter)
+        m.fs.unit.inlet.flow_vol.fix(0.001967593)
+        m.fs.unit.inlet.temperature.fix(308.15)
+        m.fs.unit.inlet.pressure.fix(101325)
 
-        m.fs.R1.inlet.conc_mass_comp[0, "X_c"].fix(2000 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_ch"].fix(5000 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_pr"].fix(20000 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_li"].fix(5000 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_su"].fix(1e-12 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_aa"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_fa"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_c4"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_pro"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_ac"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_h2"].fix(10 * units.mg / units.liter)
-        m.fs.R1.inlet.conc_mass_comp[0, "X_I"].fix(25000 * units.mg / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_bu"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_pro"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
 
-        m.fs.R1.inlet.cations[0].fix(40 * units.mmol / units.liter)
-        m.fs.R1.inlet.anions[0].fix(20 * units.mmol / units.liter)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_pro"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_ac"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_h2"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_I"].fix(25)
 
-        m.fs.R1.volume.fix(3400 * units.m**3)
+        m.fs.unit.inlet.cations[0].fix(0.04)
+        m.fs.unit.inlet.anions[0].fix(0.02)
+
+        m.fs.unit.volume_liquid.fix(3400)
+        m.fs.unit.volume_vapor.fix(300)
+        m.fs.unit.liquid_outlet.temperature.fix(308.15)
 
         return m
 
@@ -496,31 +501,32 @@ class TestReactor:
     @pytest.mark.component
     def test_solve(self, model):
 
-        print(degrees_of_freedom(model))
+        model.fs.unit.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
+        model.display()
 
-        model.fs.R1.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
-        # solver = get_solver(options={"max_iter": 0, "bound_push": 1e-8})
-        # solver = get_solver(options={"bound_push": 1e-8})
-        # results = solver.solve(model, tee=True)
+        print(large_residuals_set(model))
+        solver = get_solver(options={"bound_push": 1e-8})
+        results = solver.solve(model, tee=True)
         model.display()
         print(large_residuals_set(model))
-        model.pprint()
 
-        # assert check_optimal_termination(results)
+        assert check_optimal_termination(results)
 
     # TO DO: retest after conversion changes
     @pytest.mark.component
     def test_solution(self, model):
-        assert value(model.fs.R1.outlet.flow_vol[0]) == pytest.approx(
+        assert value(model.fs.R1.liquid_outlet.flow_vol[0]) == pytest.approx(
             0.0019675, rel=1e-4
         )
-        assert value(model.fs.R1.outlet.temperature[0]) == pytest.approx(
+        assert value(model.fs.R1.liquid_outlet.temperature[0]) == pytest.approx(
             308.15, rel=1e-4
         )
-        assert value(model.fs.R1.outlet.pressure[0]) == pytest.approx(101325, rel=1e-4)
-        assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_su"]) == pytest.approx(
-            1.195e-2, rel=1e-5
+        assert value(model.fs.R1.liquid_outlet.pressure[0]) == pytest.approx(
+            101325, rel=1e-4
         )
+        assert value(
+            model.fs.R1.liquid_outlet.conc_mass_comp[0, "S_su"]
+        ) == pytest.approx(1.195e-2, rel=1e-5)
         # assert value(model.fs.R1.outlet.conc_mass_comp[0, "S_aa"]) == pytest.approx(
         #   2.314e-3, rel=1e-2
         # )
@@ -593,38 +599,42 @@ class TestReactor:
         # assert value(model.fs.R1.outlet.conc_mass_comp[0, "X_I"]) == pytest.approx(
         #     25.00, rel=1e-2
         # )
-        assert value(model.fs.R1.outlet.anions[0]) == pytest.approx(2e-2, rel=1e-2)
-        assert value(model.fs.R1.outlet.cations[0]) == pytest.approx(4e-2, rel=1e-2)
+        assert value(model.fs.R1.liquid_outlet.anions[0]) == pytest.approx(
+            2e-2, rel=1e-2
+        )
+        assert value(model.fs.R1.liquid_outlet.cations[0]) == pytest.approx(
+            4e-2, rel=1e-2
+        )
 
         # TO DO: retest this values with revised kg/mol conversions
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mass_va
+            model.fs.R1.liquid_phase.reactions[0].conc_mass_va
         ) == pytest.approx(1.1159e-2, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mass_bu
+            model.fs.R1.liquid_phase.reactions[0].conc_mass_bu
         ) == pytest.approx(1.322e-2, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mass_ac
+            model.fs.R1.liquid_phase.reactions[0].conc_mass_ac
         ) == pytest.approx(1.9724e-1, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mass_pro
+            model.fs.R1.liquid_phase.reactions[0].conc_mass_pro
         ) == pytest.approx(1.574e-2, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mol_hco3
+            model.fs.R1.liquid_phase.reactions[0].conc_mol_hco3
         ) == pytest.approx(1.427e-4, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mol_nh3
+            model.fs.R1.liquid_phase.reactions[0].conc_mol_nh3
         ) == pytest.approx(4.09e-3, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mol_co2
+            model.fs.R1.liquid_phase.reactions[0].conc_mol_co2
         ) == pytest.approx(9.99e-3, rel=1e-2)
         assert value(
-            model.fs.R1.control_volume.reactions[0].conc_mol_nh4
+            model.fs.R1.liquid_phase.reactions[0].conc_mol_nh4
         ) == pytest.approx(1.261e-1, rel=1e-2)
 
-        assert value(model.fs.R1.control_volume.reactions[0].S_H) == pytest.approx(
+        assert value(model.fs.R1.liquid_phase.reactions[0].S_H) == pytest.approx(
             1.055e-12, rel=1e-2
         )
-        assert value(model.fs.R1.control_volume.reactions[0].S_OH) == pytest.approx(
+        assert value(model.fs.R1.liquid_phase.reactions[0].S_OH) == pytest.approx(
             1.97e-2, rel=1e-2
         )

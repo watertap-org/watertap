@@ -498,9 +498,9 @@ see reaction package for documentation.}""",
             elif j in self.liquid_phase.properties_out.component_list:
                 # No mass transfer term
                 # Set vapor flowrate to an arbitary small value
-                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * lunits(
-                    fb
-                )
+                return self.liquid_phase.mass_transfer_term[
+                    t, "Liq", j
+                ] == 1e-8 * lunits(fb)
 
         self.unit_material_balance = Constraint(
             self.flowsheet().time,

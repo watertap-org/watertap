@@ -39,6 +39,7 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
     unused_variables_set,
+    large_residuals_set,
 )
 
 from idaes.core.util.scaling import (
@@ -133,15 +134,15 @@ class TestAdm(object):
         m.fs.unit.inlet.conc_mass_comp[0, "S_ac"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_h2"].fix(1e-8)
         m.fs.unit.inlet.conc_mass_comp[0, "S_ch4"].fix(1e-5)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.56)
-        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.12)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IC"].fix(0.48)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_IN"].fix(0.14)
         m.fs.unit.inlet.conc_mass_comp[0, "S_I"].fix(0.02)
 
         m.fs.unit.inlet.conc_mass_comp[0, "X_c"].fix(2)
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-8)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-5)
         m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
@@ -213,6 +214,8 @@ class TestAdm(object):
     @pytest.mark.component
     def test_initialize(self, adm):
         initialization_tester(adm, optarg={"bound_push": 1e-8})
+        print(large_residuals_set(adm))
+        adm.display()
 
     @pytest.mark.component
     def test_var_scaling(self, adm):
@@ -227,7 +230,8 @@ class TestAdm(object):
     @pytest.mark.component
     def test_solve(self, adm):
         results = solver.solve(adm)
-
+        # adm.display()
+        # print(large_residuals_set(adm))
         # Check for optimal solution
         assert_optimal_termination(results)
 

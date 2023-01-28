@@ -1200,8 +1200,8 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
     def _rxn_rate(self):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
-            initialize=1e-5,
-            domain=pyo.NonNegativeReals,
+            initialize=1e-6,
+            bounds=(1e-9, 1e-4),
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
         )
@@ -1269,7 +1269,6 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         )
 
         mw_n = 14 * pyo.units.kg / pyo.units.kmol
-        mw_nh3 = 16 * pyo.units.kg / pyo.units.kmol
 
         def concentration_of_va_rule(self):
             return self.conc_mass_va == self.params.K_a_va * self.conc_mass_comp_ref[
@@ -1689,7 +1688,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-        iscale.set_scaling_factor(self.reaction_rate, 1e3)
+        iscale.set_scaling_factor(self.reaction_rate, 1e6)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
@@ -1707,12 +1706,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        for t, v in self.rate_expression.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.reaction_rate,
-                    default=1,
-                    warning=True,
-                ),
-            )
+        for i, c in self.rate_expression.items():
+            # TODO: Need to work out how to calculate good scaling factors
+            # instead of a fixed 1e3.
+            iscale.constraint_scaling_transform(c, 1e3, overwrite=True)

@@ -112,45 +112,30 @@ class TestStateBlock(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                if j == "H2O":
-                    assert str(model.props[1].get_material_flow_terms(p, j)) == str(
-                        model.props[1].flow_vol * model.props[1].params.dens_mass
-                    )
-                else:
-                    assert str(model.props[1].get_material_flow_terms(p, j)) == str(
-                        model.props[1].flow_vol * model.props[1].conc_mass_comp[j]
-                    )
+                assert model.props[1].get_material_flow_terms(p, j) is (
+                    model.props[1].material_flow_expression[j]
+                )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
-                model.props[1].flow_vol
-                * model.props[1].params.dens_mass
-                * model.props[1].params.cp_mass
-                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            assert model.props[1].get_enthalpy_flow_terms(p) is (
+                model.props[1].enthalpy_flow_expression
             )
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                if j == "H2O":
-                    assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].flow_vol * model.props[1].params.dens_mass
-                    )
-                else:
-                    assert str(model.props[1].get_material_density_terms(p, j)) == str(
-                        model.props[1].conc_mass_comp[j]
-                    )
+                assert model.props[1].get_material_density_terms(p, j) is (
+                    model.props[1].material_density_expression[j]
+                )
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert str(model.props[1].get_energy_density_terms(p)) == str(
-                model.props[1].params.dens_mass
-                * model.props[1].params.cp_mass
-                * (model.props[1].temperature - model.props[1].params.temperature_ref)
+            assert model.props[1].get_energy_density_terms(p) is (
+                model.props[1].energy_density_expression
             )
 
     @pytest.mark.unit
