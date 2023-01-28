@@ -1196,11 +1196,33 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         # Concentration
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
 
+        self.rates = {
+            "R1": 1.786e-06,
+            "R2": 3.235e-06,
+            "R3": 1.187e-05,
+            "R4": 3.412e-06,
+            "R5": 3.404e-06,
+            "R6": 1.187e-05,
+            "R7": 3.185e-06,
+            "R8": 2.505e-06,
+            "R9": 3.230e-06,
+            "R10": 2.636e-06,
+            "R11": 1.220e-05,
+            "R12": 4.184e-06,
+            "R13": 9.726e-08,
+            "R14": 2.730e-07,
+            "R15": 5.626e-08,
+            "R16": 9.998e-08,
+            "R17": 3.178e-08,
+            "R18": 1.761e-07,
+            "R19": 7.338e-08,
+        }
+
     # Rate of reaction method
     def _rxn_rate(self):
         self.reaction_rate = pyo.Var(
             self.params.rate_reaction_idx,
-            initialize=1e-6,
+            initialize=self.rates,
             bounds=(1e-9, 1e-4),
             doc="Rate of reaction",
             units=pyo.units.kg / pyo.units.m**3 / pyo.units.s,
@@ -1688,7 +1710,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-        iscale.set_scaling_factor(self.reaction_rate, 1e6)
+        iscale.set_scaling_factor(self.reaction_rate, 1e4)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)
@@ -1709,4 +1731,4 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         for i, c in self.rate_expression.items():
             # TODO: Need to work out how to calculate good scaling factors
             # instead of a fixed 1e3.
-            iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
+            iscale.constraint_scaling_transform(c, 1e5, overwrite=True)

@@ -10,7 +10,16 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+"""
+Tests for anaerobic digestor example.
 
+Verified against results from:
+
+Rosen, C. and Jeppsson, U., 2006.
+Aspects on ADM1 Implementation within the BSM2 Framework.
+Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
+
+"""
 
 import pytest
 from pyomo.environ import (
@@ -125,7 +134,7 @@ class TestAdm(object):
         m.fs.unit.inlet.temperature.fix(308.15)
         m.fs.unit.inlet.pressure.fix(101325)
 
-        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.010)
+        m.fs.unit.inlet.conc_mass_comp[0, "S_su"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_aa"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_fa"].fix(0.001)
         m.fs.unit.inlet.conc_mass_comp[0, "S_va"].fix(0.001)
@@ -142,7 +151,7 @@ class TestAdm(object):
         m.fs.unit.inlet.conc_mass_comp[0, "X_ch"].fix(5)
         m.fs.unit.inlet.conc_mass_comp[0, "X_pr"].fix(20)
         m.fs.unit.inlet.conc_mass_comp[0, "X_li"].fix(5)
-        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-5)
+        m.fs.unit.inlet.conc_mass_comp[0, "X_su"].fix(1e-3)
         m.fs.unit.inlet.conc_mass_comp[0, "X_aa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_fa"].fix(0.010)
         m.fs.unit.inlet.conc_mass_comp[0, "X_c4"].fix(0.010)
@@ -214,8 +223,6 @@ class TestAdm(object):
     @pytest.mark.component
     def test_initialize(self, adm):
         initialization_tester(adm, optarg={"bound_push": 1e-8})
-        print(large_residuals_set(adm))
-        adm.display()
 
     @pytest.mark.component
     def test_var_scaling(self, adm):
@@ -229,10 +236,8 @@ class TestAdm(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, adm):
+        solver = get_solver(options={"bound_push": 1e-8})
         results = solver.solve(adm)
-        # adm.display()
-        # print(large_residuals_set(adm))
-        # Check for optimal solution
         assert_optimal_termination(results)
 
     @pytest.mark.solver
@@ -248,7 +253,7 @@ class TestAdm(object):
         assert pytest.approx(1.8549, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IC"]
         )
-        assert pytest.approx(1.8647, abs=1e-2) == value(
+        assert pytest.approx(1.8235, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.conc_mass_comp[0, "S_IN"]
         )
         assert pytest.approx(0.02, abs=1e-2) == value(
@@ -257,7 +262,7 @@ class TestAdm(object):
         assert pytest.approx(0.04, abs=1e-2) == value(
             adm.fs.unit.liquid_outlet.cations[0]
         )
-        assert pytest.approx(105578, abs=1e-0) == value(
+        assert pytest.approx(106747, abs=1e-0) == value(
             adm.fs.unit.vapor_outlet.pressure[0]
         )
         assert pytest.approx(308.15, abs=1e-2) == value(
@@ -266,10 +271,10 @@ class TestAdm(object):
         assert pytest.approx(0.034, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.flow_vol[0]
         )
-        assert pytest.approx(1.6689, abs=1e-2) == value(
+        assert pytest.approx(1.59490, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_ch4"]
         )
-        assert pytest.approx(0.15181, abs=1e-2) == value(
+        assert pytest.approx(0.174485, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
         )
 
@@ -288,7 +293,7 @@ class TestAdm(object):
             <= 1e-6
         )
 
-        assert pytest.approx(-10.7219, abs=1e-2) == value(
+        assert pytest.approx(-13.8199, abs=1e-2) == value(
             adm.fs.unit.liquid_phase.enthalpy_transfer[0]
         )
         assert (
