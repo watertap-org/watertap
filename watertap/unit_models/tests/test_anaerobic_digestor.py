@@ -322,3 +322,16 @@ class TestAdm(object):
             )
             <= 1e-2
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Volume": sapon.fs.unit.volume[0],
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0],
+            }
+        }

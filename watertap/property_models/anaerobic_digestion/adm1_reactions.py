@@ -1710,7 +1710,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-        iscale.set_scaling_factor(self.reaction_rate, 1e4)
+        iscale.set_scaling_factor(self.reaction_rate, 1e6)
         iscale.set_scaling_factor(self.conc_mass_va, 1e2)
         iscale.set_scaling_factor(self.conc_mass_bu, 1e2)
         iscale.set_scaling_factor(self.conc_mass_pro, 1e2)

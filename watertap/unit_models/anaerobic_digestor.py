@@ -63,15 +63,6 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
 
-def automate_rescale_variables(m):
-    for var, sv in iscale.badly_scaled_var_generator(m):
-        if iscale.get_scaling_factor(var) is None:
-            continue
-        sf = iscale.get_scaling_factor(var)
-        iscale.set_scaling_factor(var, sf / sv)
-        iscale.calculate_scaling_factors(m)
-
-
 @declare_process_block_class("AD")
 class ADData(UnitModelBlockData):
     """
@@ -732,16 +723,6 @@ see reaction package for documentation.}""",
                 v,
                 iscale.get_scaling_factor(
                     self.liquid_phase.enthalpy_transfer[t], default=1, warning=True
-                ),
-            )
-
-        for t, v in self.unit_pressure_balance.items():
-            iscale.constraint_scaling_transform(
-                v,
-                iscale.get_scaling_factor(
-                    self.liquid_phase.properties_out[t].pressure,
-                    default=1,
-                    warning=True,
                 ),
             )
 

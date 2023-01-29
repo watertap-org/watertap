@@ -507,6 +507,19 @@ class TestReactor:
         assert_units_consistent(model) == 0
 
     @pytest.mark.component
+    def test_scaling_factors(self, model):
+
+        m = model
+        iscale.calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        for _ in iscale.badly_scaled_var_generator(m):
+            assert False
+
+    @pytest.mark.component
     def test_solve(self, model):
 
         model.fs.unit.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
