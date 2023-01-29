@@ -669,7 +669,7 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
 
     def _get_performance_contents(self, time_point=0):
-        var_dict = {"Volume": self.volume[time_point]}
+        var_dict = {"Volume": self.volume_AD[time_point]}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
         if hasattr(self, "deltaP"):
@@ -871,12 +871,12 @@ see reaction package for documentation.}""",
         # Release Inlet state
         self.liquid_phase.release_state(flags, outlvl)
 
-        # if not check_optimal_termination(results):
-        #     raise InitializationError(
-        #         f"{self.name} failed to initialize successfully. Please check "
-        #         f"the output logs for more information."
-        #     )
-        #
-        # init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
+
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
     # TODO : performance and stream table methods
