@@ -403,7 +403,7 @@ see reaction package for documentation.}""",
             fb = "flow_mass"
         else:
             raise ConfigurationError(
-                f"{self.name} SolventReboiler only supports mass or molar "
+                f"{self.name} AnerobicDigestor only supports mass or molar "
                 f"basis for MaterialFlowBasis."
             )
 
@@ -773,7 +773,7 @@ see reaction package for documentation.}""",
         optarg=None,
     ):
         """
-        Initialization routine for solvent reboiler unit model.
+        Initialization routine for anaerobic digestor unit model.
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
                 liquid property packages to provide an initial state for
