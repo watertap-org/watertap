@@ -126,4 +126,3 @@ Aspects on ADM1 Implementation within the BSM2 Framework.
 Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 https://www.iea.lth.se/WWTmodels_download/TR_ADM1.pdf
 
-
