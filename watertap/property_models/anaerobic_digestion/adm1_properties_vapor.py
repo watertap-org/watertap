@@ -272,7 +272,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
         self.p_w_sat = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=5643.8025,
-            doc="Component mass concentrations",
+            doc="Water pressure",
             units=pyo.units.Pa,
         )
 
@@ -282,7 +282,7 @@ class ADM1_vaporStateBlockData(StateBlockData):
             self.params.solute_set,
             domain=pyo.NonNegativeReals,
             initialize=init,
-            doc="Component mass concentrations",
+            doc="Component pressure",
             units=pyo.units.Pa,
         )
 

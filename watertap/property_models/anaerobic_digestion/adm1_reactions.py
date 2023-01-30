@@ -63,7 +63,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
         self._reaction_block_class = ADM1ReactionBlock
 
         # Reaction Index
-        # Reaction names based on standard numbering in ADM1 paper
+        # Reaction names based on standard numbering in ADM1
         # R1:  Disintegration
         # R2:  Hydrolysis of carbohydrates
         # R3:  Hydrolysis of proteins

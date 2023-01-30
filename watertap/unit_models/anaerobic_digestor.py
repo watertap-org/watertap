@@ -286,12 +286,12 @@ see reaction package for documentation.}""",
         # Check phase lists match assumptions
         if self.config.vapor_property_package.phase_list != ["Vap"]:
             raise ConfigurationError(
-                f"{self.name} Aneoribic digestor model requires that the vapor "
+                f"{self.name} Anaerobic digestor model requires that the vapor "
                 f"phase property package have a single phase named 'Vap'"
             )
         if self.config.liquid_property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
-                f"{self.name} Aneoribic digestor model requires that the liquid "
+                f"{self.name} Anaerobic digestor model requires that the liquid "
                 f"phase property package have a single phase named 'Liq'"
             )
 
@@ -301,7 +301,7 @@ see reaction package for documentation.}""",
             for j in self.config.liquid_property_package.component_list
         ):
             raise ConfigurationError(
-                f"{self.name} Aneoribic digestor model requires that the liquid "
+                f"{self.name} Anaerobic digestor model requires that the liquid "
                 f"and vapor phase property packages have at least one "
                 f"common component."
             )
@@ -403,7 +403,7 @@ see reaction package for documentation.}""",
             fb = "flow_mass"
         else:
             raise ConfigurationError(
-                f"{self.name} AnerobicDigestor only supports mass or molar "
+                f"{self.name} AnaerobicDigestor only supports mass or molar "
                 f"basis for MaterialFlowBasis."
             )
 
