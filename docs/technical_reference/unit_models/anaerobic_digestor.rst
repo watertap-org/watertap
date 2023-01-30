@@ -18,7 +18,8 @@ specific applications, its simplicity makes it applicable for a wide variety of 
 common basis by which future model development and validation studies can be compared.
 
 In this implementation of the model, the user MUST provide two property packages - one for the liquid phase and
-another for the vapor phase. This anaerobic digestor model is based on the standard IDAES CSTR with the addition of mass transfer
+another for the vapor phase. The reaction parameter block should utilize the property package specified for the liquid phase.
+This anaerobic digestor model is based on the standard IDAES CSTR with the addition of mass transfer
 terms and an extra port for the vapor outlet. The model relies on the following key assumptions:
 
    * supports steady-state only
