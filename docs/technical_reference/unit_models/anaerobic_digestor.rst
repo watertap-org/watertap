@@ -13,12 +13,12 @@ can help replace fossil fuel sources, lowering greenhouse gas emissions. While a
 digestion models have been developed over the years, their widespread use has been made impossible by the
 models' very specific natures. This generic anaerobic digestion model seeks to overcome this restriction by
 limiting itself to only the major biological processes and excluding many of the more niche relationships in this
-first version of the model. Likewise, while this implementation may not be as accurate as models tailored to their
+version of the model. Likewise, while this implementation may not be as accurate as models tailored to their
 specific applications, its simplicity makes it applicable for a wide variety of anaerobic processes, providing a
 common basis by which future model development and validation studies can be compared.
 
 In this implementation of the model, the user MUST provide two property packages - one for the liquid phase and
-another for the vapor phase. This ADM1 model is based on the standard IDAES CSTR with the addition of mass transfer
+another for the vapor phase. This anaerobic digestor model is based on the standard IDAES CSTR with the addition of mass transfer
 terms and an extra port for the vapor outlet. The model relies on the following key assumptions:
 
    * supports steady-state only
@@ -80,7 +80,7 @@ Sets
 **Notes**
  :sup:`*` Ion" is a subset of "Component" and uses the same symbol j.
 
-.. _ADM1_variables:
+.. _AD_variables:
 
 Variables
 ----------
@@ -98,7 +98,7 @@ Variables
    "Gas-liquid transfer coefficient", ":math:`K_{L}a`", "K_La", "None", ":math:`\text{day}^{-1}`"
    "Friction parameter", ":math:`k_{p}`", "k_p", "None", ":math:`\text{m}^{3}\text{bar}^{-1}\text{day}^{-1}`"
 
-.. _ADM1_equations:
+.. _AD_equations:
 
 Equations and Relationships
 ---------------------------
@@ -118,7 +118,7 @@ References
 ----------
 [1] Batstone, D.J., Keller, J., Angelidaki, I., Kalyuzhnyi, S.V., Pavlostathis, S.G., Rozzi, A., Sanders, W.T.M., Siegrist, H.A. and Vavilin, V.A., 2002.
 The IWA anaerobic digestion model no 1 (ADM1).
-Water Science and technology, 45(10), pp.65-73.
+Water Science and Technology, 45(10), pp.65-73.
 https://iwaponline.com/wst/article-abstract/45/10/65/6034
 
 [2] Rosen, C. and Jeppsson, U., 2006.
