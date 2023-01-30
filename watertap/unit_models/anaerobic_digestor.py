@@ -412,7 +412,7 @@ see reaction package for documentation.}""",
             self.flowsheet().time,
             initialize=3700,
             units=lunits("volume"),
-            doc="Volume of the liquid",
+            doc="Total volume of anaerobic digestor",
         )
 
         self.volume_vapor = Var(
