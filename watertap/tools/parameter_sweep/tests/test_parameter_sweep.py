@@ -1653,7 +1653,7 @@ def _build_header_list_from_csv(csv_filename):
 
 def _read_output_h5(filepath):
 
-    if type(filepath) is str:
+    if isinstance(filepath, str):
         f = h5py.File(filepath, "r")
     else:
         f = filepath
