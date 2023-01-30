@@ -1677,7 +1677,7 @@ def _read_output_h5(filepath):
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
 
-    if type(filepath) is str:
+    if isinstance(filepath, str):
         f.close()
 
     return output_dict
