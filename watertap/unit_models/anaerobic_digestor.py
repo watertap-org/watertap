@@ -772,6 +772,7 @@ see reaction package for documentation.}""",
     ):
         """
         Initialization routine for anaerobic digestor unit model.
+
         Keyword Arguments:
             liquid_state_args : a dict of arguments to be passed to the
                 liquid property packages to provide an initial state for
@@ -786,6 +787,7 @@ see reaction package for documentation.}""",
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default IDAES solver)
+
         Returns:
             None
         """
