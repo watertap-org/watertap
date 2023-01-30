@@ -879,5 +879,3 @@ see reaction package for documentation.}""",
             )
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
-
-    # TODO : performance and stream table methods
