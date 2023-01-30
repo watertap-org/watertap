@@ -218,7 +218,6 @@ property block(s) and used when constructing these,
 see property package for documentation.}""",
         ),
     )
-
     CONFIG.declare(
         "vapor_property_package",
         ConfigValue(
@@ -245,7 +244,6 @@ property block(s) and used when constructing these,
 see property package for documentation.}""",
         ),
     )
-
     CONFIG.declare(
         "reaction_package",
         ConfigValue(
@@ -280,7 +278,6 @@ see reaction package for documentation.}""",
         Returns:
             None
         """
-
         # Call UnitModel.build to setup dynamics
         super(ADData, self).build()
 
