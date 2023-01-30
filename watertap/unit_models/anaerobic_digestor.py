@@ -433,25 +433,25 @@ see reaction package for documentation.}""",
             initialize=0.02715,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             mutable=True,
-            doc="KH_co2",
+            doc="CO2 Henry's law coefficient",
         )
         self.KH_ch4 = Param(
             initialize=0.00116,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             mutable=True,
-            doc="KH_ch4",
+            doc="CH4 Henry's law coefficient",
         )
         self.KH_h2 = Param(
             initialize=7.38e-4,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
             mutable=True,
-            doc="KH_h2",
+            doc="H2 Henry's law coefficient",
         )
         self.K_La = Param(
             initialize=200,
             units=pyunits.day**-1,
             mutable=True,
-            doc="K_La",
+            doc="Gas-liquid transfer coefficient",
         )
 
         def outlet_P_rule(self, t):
@@ -518,7 +518,7 @@ see reaction package for documentation.}""",
         self.Sh2_conc = Constraint(
             self.flowsheet().time,
             rule=Sh2_conc_rule,
-            doc="h2 vap",
+            doc="Mass transfer rate of H2 gas vap",
         )
 
         def Sch4_conc_rule(self, t):
@@ -541,7 +541,7 @@ see reaction package for documentation.}""",
         self.Sch4_conc = Constraint(
             self.flowsheet().time,
             rule=Sch4_conc_rule,
-            doc="ch4 vap",
+            doc="Mass transfer rate of CH4 gas vap",
         )
 
         def Sco2_conc_rule(self, t):
@@ -561,7 +561,7 @@ see reaction package for documentation.}""",
         self.Sco2_conc = Constraint(
             self.flowsheet().time,
             rule=Sco2_conc_rule,
-            doc="co2 vap",
+            doc="Mass transfer rate of CO2 gas vap",
         )
 
         def flow_vol_vap_rule(self, t):
@@ -584,7 +584,7 @@ see reaction package for documentation.}""",
         self.ad_total_volume = Constraint(
             self.flowsheet().time,
             rule=ad_total_volume_rule,
-            doc="Outlet vapor phase pressure",
+            doc="Total anaerobic digestor volume",
         )
         # Add AD performance equation
         def ad_performance_eqn_rule(self, t, r):
