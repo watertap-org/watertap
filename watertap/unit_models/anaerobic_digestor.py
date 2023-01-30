@@ -426,7 +426,7 @@ see reaction package for documentation.}""",
             initialize=5e4,
             mutable=True,
             units=pyunits.m**3 / pyunits.day / pyunits.bar,
-            doc="Component mass concentrations",
+            doc="friction parameter",
         )
 
         self.KH_co2 = Param(
