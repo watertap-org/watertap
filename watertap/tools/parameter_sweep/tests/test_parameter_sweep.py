@@ -1655,7 +1655,7 @@ def _read_output_h5(filevar):
 
     if isinstance(filevar, str):
         f = h5py.File(filevar, "r")
-    elif isinstance(filevar, h5py._hl.group.Group):
+    elif isinstance(filevar, h5py.Group):
         f = filevar
     else:
         raise RuntimeError(f"Unrecognized type for filepath {type(filevar)}")
