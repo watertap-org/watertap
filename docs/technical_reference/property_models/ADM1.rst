@@ -134,8 +134,14 @@ Kinetic Parameters
    "First-order decay rate for X_pro, k_dec_X_pro", ":math:`k_{dec,X_{pro}}`", "k_dec_X_pro", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_ac, k_dec_X_ac", ":math:`k_{dec,X_{ac}}`", "k_dec_X_ac", 0.02, ":math:`\text{d}^{-1}`"
    "First-order decay rate for X_h2, k_dec_X_h2", ":math:`k_{dec,X_{h2}}`", "k_dec_X_h2", 0.02, ":math:`\text{d}^{-1}`"
-   "KW, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
-   "Ka_va, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Dissociation constant, KW", ":math:`KW`", "KW", 2.08e-14, ":math:`(\text{kmol/}\text{m}^3)^2`"
+   "Valerate acid-base equilibrium constant, K_a_va", ":math:`K_{a,va}`", "K_a_va", 1.38e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Butyrate acid-base equilibrium constant, K_a_bu", ":math:`K_{a,bu}`", "K_a_bu", 1.5e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Propionate acid-base equilibrium constant, K_a_pro", ":math:`K_{a,pro}`", "K_a_bu", 1.32e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Propionate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Acetate acid-base equilibrium constant, K_a_ac", ":math:`K_{a,ac}`", "K_a_ac", 1.74e-5, ":math:`\text{kmol/}\text{m}^3`"
+   "Carbon dioxide acid-base equilibrium constant, K_a_co2", ":math:`K_{a,co2}`", "K_a_co2", 4.94e-7, ":math:`\text{kmol/}\text{m}^3`"
+   "Inorganic nitrogen acid-base equilibrium constant, K_a_IN", ":math:`K_{a,IN}`", "K_a_IN", 1.11e-9, ":math:`\text{kmol/}\text{m}^3`"
 
 Properties
 ----------
