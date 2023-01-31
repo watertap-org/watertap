@@ -1655,7 +1655,10 @@ def _read_output_h5(filepath):
 
     if isinstance(filepath, str):
         f = h5py.File(filepath, "r")
+    elif isinstance(filepath, h5py.File):
+        f = filepath
     else:
+        raise RuntimeError(f"Unrecognized type for filepath {type(filepath)}"
         f = filepath
 
     l1_keys = list(f.keys())
