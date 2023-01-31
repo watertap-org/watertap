@@ -549,7 +549,7 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             initialize=1.74e-5,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Propionate acid-base equilibrium constant",
+            doc="Acetate acid-base equilibrium constant",
         )
         self.K_a_co2 = pyo.Var(
             initialize=4.94e-7,
