@@ -232,7 +232,10 @@ def test_option_friction_factor_spiral_wound():
     )
 
     assert m.fs.unit.config.friction_factor == FrictionFactor.spiral_wound
-    assert isinstance(m.fs.unit.eq_friction_factor_spiral_wound, Constraint)
+    assert isinstance(m.fs.unit.feed_side.eq_friction_factor_spiral_wound, Constraint)
+    assert isinstance(
+        m.fs.unit.permeate_side.eq_friction_factor_spiral_wound, Constraint
+    )
 
 
 class TestOsmoticallyAssistedReverseOsmosis:
