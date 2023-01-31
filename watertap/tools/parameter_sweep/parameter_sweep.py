@@ -124,6 +124,7 @@ class _ParameterSweepBase(ABC):
             h5_results_file_name=self.config.h5_results_file_name,
             debugging_data_dir=self.config.debugging_data_dir,
             interpolate_nan_outputs=self.config.interpolate_nan_outputs,
+            h5_parent_group_name=self.config.h5_parent_group_name,
         )
 
     def _build_combinations(self, d, sampling_type, num_samples):

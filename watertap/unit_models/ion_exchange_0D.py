@@ -1425,7 +1425,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             {
                 "Feed Inlet": self.inlet,
                 "Liquid Outlet": self.outlet,
-                "Waste Outlet": self.waste,
+                "Regen Outlet": self.regen,
             },
             time_point=time_point,
         )
@@ -1442,7 +1442,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Resin Particle Density"] = self.resin_particle_dens
         var_dict["Bed Volume"] = self.bed_vol
         var_dict["Bed Depth"] = self.bed_depth
-        var_dict["Bed Diameter"] = self.bed_diam
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Number Transfer Units"] = self.num_transfer_units
         var_dict["Dimensionless Time"] = self.dimensionless_time
