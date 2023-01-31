@@ -734,7 +734,7 @@ class MembraneChannelMixin:
                 return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
 
         # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
-        if friction_factor == FrictionFactor.spiral_wound:
+        elif friction_factor == FrictionFactor.spiral_wound:
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -743,6 +743,11 @@ class MembraneChannelMixin:
             )
             def eq_friction_factor_spiral_wound(b, t, x):
                 return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
+
+        else:
+            raise ConfigurationError(
+                f"Unrecognized friction_factor type {friction_factor}"
+            )
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
