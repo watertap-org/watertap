@@ -730,19 +730,24 @@ class MembraneChannelMixin:
                 self.length_domain,
                 doc="Darcy friction factor constraint for flat sheet membranes",
             )
-            def eq_friction_factor(b, t, x):
+            def eq_friction_factor_flat_sheet(b, t, x):
                 return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
 
         # Darcy friction factor based on eq. 24 in Mass transfer and pressure loss in spiral wound modules (Schock & Miquel, 1987)
-        if friction_factor == FrictionFactor.spiral_wound:
+        elif friction_factor == FrictionFactor.spiral_wound:
 
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.length_domain,
                 doc="Darcy friction factor constraint for spiral-wound membranes",
             )
-            def eq_friction_factor(b, t, x):
+            def eq_friction_factor_spiral_wound(b, t, x):
                 return b.friction_factor_darcy[t, x] == 6.23 * b.N_Re[t, x] ** -0.3
+
+        else:
+            raise ConfigurationError(
+                f"Unrecognized friction_factor type {friction_factor}"
+            )
 
         ## ==========================================================================
         # Pressure change per unit length due to friction
@@ -988,4 +993,12 @@ def validate_membrane_config_args(unit):
                 unit.config.mass_transfer_coefficient,
                 unit.config.concentration_polarization_type,
             )
+        )
+
+    if (
+        unit.config.pressure_change_type != PressureChangeType.calculated
+        and unit.config.friction_factor != unit.config.get("friction_factor")._default
+    ):
+        raise ConfigurationError(
+            "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
         )
