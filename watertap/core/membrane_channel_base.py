@@ -989,3 +989,11 @@ def validate_membrane_config_args(unit):
                 unit.config.concentration_polarization_type,
             )
         )
+
+    if (
+        unit.config.pressure_change_type != PressureChangeType.calculated
+        and unit.config.friction_factor != unit.config.get("friction_factor")._default
+    ):
+        raise ConfigurationError(
+            "\nChanging the 'friction_factor' will have no effect if the 'pressure_change_type' is not `PressureChangeType.calculated`"
+        )
