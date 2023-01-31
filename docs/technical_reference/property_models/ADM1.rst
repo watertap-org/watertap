@@ -60,6 +60,10 @@ State variables
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
    "Component mass concentrations", ":math:`C_j`", "conc_mass_comp", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Anions in molar concentrations", ":math:`M_a`", "anions", "None", ":math:`\text{kmol/}\text{m}^3`"
+   "Cations in molar concentrations", ":math:`M_c`", "cations", "None", ":math:`\text{kmol/}\text{m}^3`"
+   "Water pressure", ":math:`P_{w,sat}`", "p_w_sat", "None", ":math:`\text{Pa}`"
+   "Component pressure", ":math:`P_{j,sat}`", "p_sat", "[p]", ":math:`\text{Pa}`"
 
 Stoichiometric Parameters
 -------------------------
