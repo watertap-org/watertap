@@ -211,11 +211,11 @@ class ParameterSweepWriter:
             parent_grp = f
         else:
             if os.path.isfile(h5_results_file_name):
-                # Create a new file since none exists and add the parent group
+                # File exists, we only need to add the new parent group
                 f = h5py.File(h5_results_file_name, "a")
                 parent_grp = f.require_group(self.config.h5_parent_group_name)
             else:
-                # File exists, we only need to add the new parent group
+                # Create a new file since none exists and add the parent group
                 f = h5py.File(h5_results_file_name, "w")
                 parent_grp = f.require_group(self.config.h5_parent_group_name)
 
