@@ -108,12 +108,12 @@ Equations and Relationships
    :header: "Description", "Equation"
 
    "Outlet vapor phase pressure", ":math:`P_{vap, out} = P_{wat, sat} + /sum{j} P_{j, sat}`"
-   "Mass transfer rate of H2 gas", ":math:`\rho_{T, H_{2}} = k_{L}a (S_{liq, H_{2}} - 16K_{H, H_{2}})P_{vap, S_{H_{2}}V_{ad, liq}`"
-   "Mass transfer rate of CH4 gas", ":math:`\rho_{T, CH_{4}} = k_{L}a (S_{liq, CH_{4}} - 64K_{H, CH_{4}})P_{vap, S_{CH_{4}}V_{ad, liq}`"
-   "Mass transfer rate of CO2 gas", ":math:`\rho_{T, IC} = k_{L}a (S_{liq, CO_{2}} - K_{H, CO_{2}})P_{vap, S_{CO_{2}}V_{ad, liq}`"
+   "Mass transfer rate of H2 gas", ":math:`\rho_{T, H_{2}} = k_{L}a (S_{liq, H_{2}} - 16K_{H, H_{2}}) P_{vap, S_{H_{2}}} V_{ad, liq}`"
+   "Mass transfer rate of CH4 gas", ":math:`\rho_{T, CH_{4}} = k_{L}a (S_{liq, CH_{4}} - 64K_{H, CH_{4}}) P_{vap, S_{CH_{4}}} V_{ad, liq}`"
+   "Mass transfer rate of CO2 gas", ":math:`\rho_{T, IC} = k_{L}a (S_{liq, CO_{2}} - K_{H, CO_{2}}) P_{vap, S_{CO_{2}}} V_{ad, liq}`"
    "Vapor Flow", ":math:`Q_{vap, out} = k_{p} (P_{vap} - 101325) (\frac{P_{vap}}{101325})`"
    "Total Volume", ":math:`V_{ad} = V_{ad, liq} + V_{ad, vap}`"
-   "Performance equation", ":math:`/xi_{t, r} = V_{ad, liq}R`"
+   "Performance equation", ":math:`ξ_{t, r} = V_{ad, liq}R`"
 
 References
 ----------
