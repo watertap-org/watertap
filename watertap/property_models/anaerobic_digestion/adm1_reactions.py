@@ -525,43 +525,43 @@ class ADM1ReactionParameterData(ReactionParameterBlock):
             initialize=2.08e-14,
             units=(pyo.units.kmol / pyo.units.m**3) ** 2,
             domain=pyo.PositiveReals,
-            doc="KW",
+            doc="Dissociation constant ",
         )
         self.K_a_va = pyo.Var(
             initialize=1.38e-5,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_va",
+            doc="Valerate acid-base equilibrium constant",
         )
         self.K_a_bu = pyo.Var(
             initialize=1.5e-5,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_bu",
+            doc="Butyrate acid-base equilibrium constant",
         )
         self.K_a_pro = pyo.Var(
             initialize=1.32e-5,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_pro",
+            doc="Propionate acid-base equilibrium constant",
         )
         self.K_a_ac = pyo.Var(
             initialize=1.74e-5,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_ac",
+            doc="Propionate acid-base equilibrium constant",
         )
         self.K_a_co2 = pyo.Var(
             initialize=4.94e-7,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_co2",
+            doc="Carbon dioxide acid-base equilibrium constant",
         )
         self.K_a_IN = pyo.Var(
             initialize=1.11e-9,
             units=pyo.units.kmol / pyo.units.m**3,
             domain=pyo.PositiveReals,
-            doc="Ka_IN",
+            doc="Inorganic nitrogen acid-base equilibrium constant",
         )
 
         # Reaction Stoichiometry
