@@ -184,9 +184,10 @@ class ParameterSweepWriter:
         # the metadata of the h5 file in a user readable format.
         txt_fname = self.config["h5_results_file_name"] + ".txt"
 
-        if self.config.h5_parent_group_name is not None and os.path.isfile(txt_fname):
-            return
-        else:
+        if (
+            self.config.h5_parent_group_name is None
+            and os.path.isfile(txt_fname) is False
+        ):
             if txt_options == "metadata":
                 my_dict = copy.deepcopy(output_dict)
                 for key, value in my_dict.items():
