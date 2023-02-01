@@ -13,6 +13,7 @@
 """
 This module contains the base class for all zero order unit models.
 """
+
 from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
@@ -20,7 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import units as pyunits
+import pyomo.environ as pyo
 
 
 # Some more inforation about this module
@@ -292,7 +293,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"{index}) in database."
             )
         try:
-            units = getattr(pyunits, pdata["units"])
+            units = getattr(pyo.units, pdata["units"])
         except KeyError:
             raise KeyError(
                 f"{self.name} - no units provided for {pname} (index: "
@@ -323,3 +324,107 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 var_dict[k] = v
 
         return {"vars": var_dict}
+
+    # -------------------------------------------------------------------------
+    # Unit operation costing methods
+    @staticmethod
+    def _add_cost_factor(blk, factor):
+        if factor == "TPEC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TPEC
+            )
+        elif factor == "TIC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TIC
+            )
+        else:
+            blk.cost_factor = pyo.Expression(expr=1.0)
+        blk.direct_capital_cost = pyo.Expression(
+            expr=blk.capital_cost / blk.cost_factor
+        )
+
+    @staticmethod
+    def _get_unit_cost_method(blk):
+        """
+        Get a specified cost_method if one is defined in the YAML file.
+        This is meant for units with different cost methods between subtypes.
+        """
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+    
+        if "cost_method" not in parameter_dict["capital_cost"]:
+            raise KeyError(
+                f"Costing for {blk.unit_model._tech_type} requires a cost_method argument, however "
+                f"this was not defined for process sub-type {blk.unit_model.config.process_subtype}."
+            )
+    
+        return parameter_dict["capital_cost"]["cost_method"]
+
+    @staticmethod
+    def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
+        """
+        First, need to check to see if a Block with parameters for this technology
+        exists.
+        Second, to handle technology subtypes all parameters need to be indexed by
+        subtype. We will dynamically add subtypes to the indexing set and Vars as
+        required.
+        """
+        # Check to see in parameter Block already exists
+        try:
+            # Try to get parameter Block from costing package
+            pblock = getattr(blk.config.flowsheet_costing_block, blk.unit_model._tech_type)
+        except AttributeError:
+            # Parameter Block for this technology hasn't been added yet. Create it.
+            pblock = pyo.Block()
+    
+            # Add block to FlowsheetCostingBlock
+            blk.config.flowsheet_costing_block.add_component(
+                blk.unit_model._tech_type, pblock
+            )
+    
+            # Add subtype Set to Block
+            pblock.subtype_set = pyo.Set()
+    
+            # Add required Vars
+            for p in param_list:
+                try:
+                    vobj = pyo.Var(
+                        pblock.subtype_set,
+                        units=getattr(
+                            pyo.units, parameter_dict["capital_cost"][p]["units"]
+                        ),
+                    )
+                    pblock.add_component(p, vobj)
+                except KeyError:
+                    raise KeyError(
+                        "Error when trying to retrieve costing parameter "
+                        "for {p}. Please check the YAML "
+                        "file for this technology for errors.".format(p=p)
+                    )
+    
+        # Check to see if required subtype is in subtype_set
+        vlist = []
+        if subtype not in pblock.subtype_set:
+            # Need to add subtype and set Vars
+            pblock.subtype_set.add(subtype)
+    
+            # Set vars
+            for p in param_list:
+                vobj = getattr(pblock, p)
+                vobj[subtype].fix(
+                    float(parameter_dict["capital_cost"][p]["value"])
+                    * getattr(pyo.units, parameter_dict["capital_cost"][p]["units"])
+                )
+                vlist.append(vobj[subtype])
+        else:
+            for p in param_list:
+                vobj = getattr(pblock, p)
+                vlist.append(vobj[subtype])
+    
+        # add conditional for cases where there is only one parameter returned
+        if len(vlist) == 1:
+            return vlist[0]
+        else:
+            return tuple(x for x in vlist)

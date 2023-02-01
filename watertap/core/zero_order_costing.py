@@ -369,8 +369,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Overall electricity intensity",
         )
 
-    # -------------------------------------------------------------------------
-    # Unit operation costing methods
     def cost_power_law_flow(blk, number_of_parallel_units=1):
         """
         General method for costing equipment based on power law form. This is
@@ -390,7 +388,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, state_ref = _get_tech_parameters(
+        A, B, state_ref = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -430,21 +428,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.electricity[t0], "electricity"
         )
 
-    def _add_cost_factor(blk, factor):
-        if factor == "TPEC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TPEC
-            )
-        elif factor == "TIC":
-            blk.cost_factor = pyo.Expression(
-                expr=blk.config.flowsheet_costing_block.TIC
-            )
-        else:
-            blk.cost_factor = pyo.Expression(expr=1.0)
-        blk.direct_capital_cost = pyo.Expression(
-            expr=blk.capital_cost / blk.cost_factor
-        )
-
     def cost_anaerobic_mbr_mec(blk):
         """
         Method for costing anaerobic membrane bioreactor integrated with
@@ -458,7 +441,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        unit_capex, unit_opex = _get_tech_parameters(
+        unit_capex, unit_opex = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -479,7 +462,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -544,7 +527,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             R,
             S,
             T,
-        ) = _get_tech_parameters(
+        ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -635,7 +618,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = reactor_cost + pump_cost + other_cost + solid_filter_cost + heat_cost
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -667,7 +650,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B, C, D = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -708,7 +691,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -749,7 +732,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -788,7 +771,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C = _get_tech_parameters(
+        A, B, C = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -825,7 +808,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -853,7 +836,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D, E, F, G, H = _get_tech_parameters(
+        A, B, C, D, E, F, G, H = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -930,7 +913,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -955,7 +938,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        unit_capex, unit_opex = _get_tech_parameters(
+        unit_capex, unit_opex = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -976,7 +959,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1017,7 +1000,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
         )
         # Get costing parameter sub-block for this technology
-        unit_capex = _get_tech_parameters(
+        unit_capex = blk.unit_model._get_tech_parameters(
             blk, parameter_dict, blk.unit_model.config.process_subtype, ["unit_capex"]
         )
 
@@ -1035,7 +1018,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1060,7 +1043,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C = _get_tech_parameters(
+        A, B, C = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1125,7 +1108,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1146,7 +1129,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1175,7 +1158,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1199,7 +1182,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1292,7 +1275,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Call contactor, adsorbent (GAC) initial charge cost, and other process cost parameters
-        (A0, A1, A2, A3, B0, B1, C0, C1, bed_mass_max_ref) = _get_tech_parameters(
+        (A0, A1, A2, A3, B0, B1, C0, C1, bed_mass_max_ref) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1349,7 +1332,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = contactor_cost + adsorbent_cost + other_process_cost
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1413,7 +1396,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             F0_heater,
             Fnew_heater,
             SE_heater,
-        ) = _get_tech_parameters(
+        ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1541,7 +1524,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             + heater_cost
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
         blk.capital_cost_constraint = pyo.Constraint(
@@ -1570,7 +1553,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1599,7 +1582,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = DCC_reactor + DCC_blower
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1637,7 +1620,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             membrane_specific_size,
             membrane_cost,
             vacuum_cost,
-        ) = _get_tech_parameters(
+        ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1743,7 +1726,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             + blk.DCC_vacuum
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -1801,7 +1784,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 )
             )
             # Get costing parameter sub-block for this technology
-            A, B, C, D = _get_tech_parameters(
+            A, B, C, D = blk.unit_model._get_tech_parameters(
                 blk,
                 parameter_dict,
                 blk.unit_model.config.process_subtype,
@@ -1839,7 +1822,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 to_units=blk.config.flowsheet_costing_block.base_currency,
             )
 
-            ZeroOrderCostingData._add_cost_factor(
+            blk.unit_model._add_cost_factor(
                 blk, parameter_dict["capital_cost"]["cost_factor"]
             )
 
@@ -1866,7 +1849,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 )
             )
             # Get costing parameter sub-block for this technology
-            unit_capex, unit_opex = _get_tech_parameters(
+            unit_capex, unit_opex = blk.unit_model._get_tech_parameters(
                 blk,
                 parameter_dict,
                 blk.unit_model.config.process_subtype,
@@ -1887,7 +1870,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
 
             # Determine if a costing factor is required
-            ZeroOrderCostingData._add_cost_factor(
+            blk.unit_model._add_cost_factor(
                 blk, parameter_dict["capital_cost"]["cost_factor"]
             )
 
@@ -1934,7 +1917,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D, E, F = _get_tech_parameters(
+        A, B, C, D, E, F = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2010,7 +1993,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A = _get_tech_parameters(
+        A = blk.unit_model._get_tech_parameters(
             blk, parameter_dict, blk.unit_model.config.process_subtype, ["pump_cost"]
         )
 
@@ -2028,7 +2011,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2062,7 +2045,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 )
             )
 
-            A, B = _get_tech_parameters(
+            A, B = blk.unit_model._get_tech_parameters(
                 blk,
                 parameter_dict,
                 blk.unit_model.config.process_subtype,
@@ -2086,7 +2069,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
 
             # Get costing parameter sub-block for this technology
-            unit_capex, unit_opex = _get_tech_parameters(
+            unit_capex, unit_opex = blk.unit_model._get_tech_parameters(
                 blk,
                 parameter_dict,
                 blk.unit_model.config.process_subtype,
@@ -2107,7 +2090,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             )
 
             # Determine if a costing factor is required
-            ZeroOrderCostingData._add_cost_factor(
+            blk.unit_model._add_cost_factor(
                 blk, parameter_dict["capital_cost"]["cost_factor"]
             )
 
@@ -2154,7 +2137,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2190,7 +2173,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C = _get_tech_parameters(
+        A, B, C = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2226,7 +2209,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = aeration_basin_cost + other_equipment_cost + control_system_cost
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2253,7 +2236,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, pipe_cost_basis, ref_state = _get_tech_parameters(
+        A, B, pipe_cost_basis, ref_state = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2288,7 +2271,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2314,7 +2297,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B, C, D = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2337,7 +2320,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2363,7 +2346,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D, E, F = _get_tech_parameters(
+        A, B, C, D, E, F = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2413,7 +2396,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B, C, D = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2443,7 +2426,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2477,7 +2460,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2490,7 +2473,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         expr = ZeroOrderCostingData._get_uv_capital_cost(blk, A, B)
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2519,7 +2502,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D = _get_tech_parameters(
+        A, B, C, D = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2535,7 +2518,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         expr += ZeroOrderCostingData._get_aop_capital_cost(blk, C, D)
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2577,7 +2560,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             liner_thickness,
             land_cost,
             land_clearing_cost,
-        ) = _get_tech_parameters(
+        ) = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2645,7 +2628,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2684,7 +2667,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
+        A, B = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2718,7 +2701,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        A, B, pipe_cost_basis = _get_tech_parameters(
+        A, B, pipe_cost_basis = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2748,7 +2731,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             to_units=blk.config.flowsheet_costing_block.base_currency,
         )
 
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2771,7 +2754,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                         number_of_parallel_units parallel units (default: 1)
         """
         # Get cost method for this technology
-        cost_method = _get_unit_cost_method(blk)
+        cost_method = blk.unit_model._get_unit_cost_method(blk)
         valid_methods = ["cost_power_law_flow", "cost_membrane"]
         if cost_method == "cost_power_law_flow":
             ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
@@ -2798,7 +2781,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
         )
         # Get costing parameter sub-block for this technology
-        mem_cost, rep_rate = _get_tech_parameters(
+        mem_cost, rep_rate = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2828,7 +2811,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2859,7 +2842,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        memb_cost = _get_tech_parameters(
+        memb_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2882,7 +2865,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2902,7 +2885,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        size_param, size_cost = _get_tech_parameters(
+        size_param, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2923,7 +2906,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -2948,7 +2931,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        sizing_cost = _get_tech_parameters(
+        sizing_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -2969,7 +2952,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3002,7 +2985,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        unit_capex = _get_tech_parameters(
+        unit_capex = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3023,7 +3006,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3052,7 +3035,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3073,7 +3056,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3101,7 +3084,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        SRT, size_cost = _get_tech_parameters(
+        SRT, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3122,7 +3105,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3147,7 +3130,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3168,7 +3151,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3194,7 +3177,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                         number_of_parallel_units parallel units (default: 1)
         """
         # Get cost method for this technology
-        cost_method = _get_unit_cost_method(blk)
+        cost_method = blk.unit_model._get_unit_cost_method(blk)
         valid_methods = ["cost_power_law_flow", "cost_HRCS_clarifier"]
         if cost_method == "cost_power_law_flow":
             ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
@@ -3221,7 +3204,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3242,7 +3225,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3272,7 +3255,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        sizing_cost = _get_tech_parameters(
+        sizing_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3293,7 +3276,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3321,7 +3304,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        HRT, size_cost = _get_tech_parameters(
+        HRT, size_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3342,7 +3325,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3373,7 +3356,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        sizing_cost = _get_tech_parameters(
+        sizing_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3394,7 +3377,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3419,7 +3402,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Get costing parameter sub-block for this technology
-        memb_cost = _get_tech_parameters(
+        memb_cost = blk.unit_model._get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -3440,7 +3423,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         # Determine if a costing factor is required
-        ZeroOrderCostingData._add_cost_factor(
+        blk.unit_model._add_cost_factor(
             blk, parameter_dict["capital_cost"]["cost_factor"]
         )
 
@@ -3549,7 +3532,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr *= number_of_parallel_units
 
-        ZeroOrderCostingData._add_cost_factor(blk, factor)
+        blk.unit_model._add_cost_factor(blk, factor)
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == blk.cost_factor * expr
@@ -3605,92 +3588,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         CentrifugeZO: cost_centrifuge,
         StruviteClassifierZO: cost_struvite_classifier,
     }
-
-
-def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
-    """
-    First, need to check to see if a Block with parameters for this technology
-    exists.
-    Second, to handle technology subtypes all parameters need to be indexed by
-    subtype. We will dynamically add subtypes to the indexing set and Vars as
-    required.
-    """
-    # Check to see in parameter Block already exists
-    try:
-        # Try to get parameter Block from costing package
-        pblock = getattr(blk.config.flowsheet_costing_block, blk.unit_model._tech_type)
-    except AttributeError:
-        # Parameter Block for this technology hasn't been added yet. Create it.
-        pblock = pyo.Block()
-
-        # Add block to FlowsheetCostingBlock
-        blk.config.flowsheet_costing_block.add_component(
-            blk.unit_model._tech_type, pblock
-        )
-
-        # Add subtype Set to Block
-        pblock.subtype_set = pyo.Set()
-
-        # Add required Vars
-        for p in param_list:
-            try:
-                vobj = pyo.Var(
-                    pblock.subtype_set,
-                    units=getattr(
-                        pyo.units, parameter_dict["capital_cost"][p]["units"]
-                    ),
-                )
-                pblock.add_component(p, vobj)
-            except KeyError:
-                raise KeyError(
-                    "Error when trying to retrieve costing parameter "
-                    "for {p}. Please check the YAML "
-                    "file for this technology for errors.".format(p=p)
-                )
-
-    # Check to see if required subtype is in subtype_set
-    vlist = []
-    if subtype not in pblock.subtype_set:
-        # Need to add subtype and set Vars
-        pblock.subtype_set.add(subtype)
-
-        # Set vars
-        for p in param_list:
-            vobj = getattr(pblock, p)
-            vobj[subtype].fix(
-                float(parameter_dict["capital_cost"][p]["value"])
-                * getattr(pyo.units, parameter_dict["capital_cost"][p]["units"])
-            )
-            vlist.append(vobj[subtype])
-    else:
-        for p in param_list:
-            vobj = getattr(pblock, p)
-            vlist.append(vobj[subtype])
-
-    # add conditional for cases where there is only one parameter returned
-    if len(vlist) == 1:
-        return vlist[0]
-    else:
-        return tuple(x for x in vlist)
-
-
-def _get_unit_cost_method(blk):
-    """
-    Get a specified cost_method if one is defined in the YAML file.
-    This is meant for units with different cost methods between subtypes.
-    """
-    # Get parameter dict from database
-    parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
-        blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
-    )
-
-    if "cost_method" not in parameter_dict["capital_cost"]:
-        raise KeyError(
-            f"Costing for {blk.unit_model._tech_type} requires a cost_method argument, however "
-            f"this was not defined for process sub-type {blk.unit_model.config.process_subtype}."
-        )
-
-    return parameter_dict["capital_cost"]["cost_method"]
 
 
 def _load_case_study_definition(self):
