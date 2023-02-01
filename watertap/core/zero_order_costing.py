@@ -419,7 +419,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
@@ -743,7 +743,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
@@ -1080,7 +1080,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk,
             cost_total,
             C,
@@ -1965,7 +1965,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk,
             cost_total,
             F,
@@ -2056,7 +2056,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             factor = parameter_dict["capital_cost"]["cost_factor"]
 
             # Call general power law costing method
-            ZeroOrderCostingData._general_power_law_form(
+            blk.unit_model._general_power_law_form(
                 blk, A, B, sizing_term, factor, number_of_parallel_units
             )
         else:
@@ -2148,7 +2148,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
@@ -2678,7 +2678,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
         # Call general power law costing method
-        ZeroOrderCostingData._general_power_law_form(
+        blk.unit_model._general_power_law_form(
             blk, A, B, sizing_term, factor, number_of_parallel_units
         )
 
@@ -3503,40 +3503,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         )
 
         return expr
-
-    def _general_power_law_form(
-        blk, A, B, sizing_term, factor=None, number_of_parallel_units=1
-    ):
-        """
-        General method for building power law costing expressions.
-        Args:
-            number_of_parallel_units (int, optional) - cost this unit as
-                        number_of_parallel_units parallel units (default: 1)
-        """
-        blk.capital_cost = pyo.Var(
-            initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
-            bounds=(0, None),
-            doc="Capital cost of unit operation",
-        )
-
-        expr = pyo.units.convert(
-            A
-            * (
-                pyo.units.convert(sizing_term, to_units=pyo.units.dimensionless)
-                / number_of_parallel_units
-            )
-            ** B,
-            to_units=blk.config.flowsheet_costing_block.base_currency,
-        )
-
-        expr *= number_of_parallel_units
-
-        blk.unit_model._add_cost_factor(blk, factor)
-
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == blk.cost_factor * expr
-        )
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes

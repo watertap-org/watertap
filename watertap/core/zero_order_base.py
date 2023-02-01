@@ -428,3 +428,38 @@ class ZeroOrderBaseData(UnitModelBlockData):
             return vlist[0]
         else:
             return tuple(x for x in vlist)
+
+    @staticmethod
+    def _general_power_law_form(
+        blk, A, B, sizing_term, factor=None, number_of_parallel_units=1
+    ):
+        """
+        General method for building power law costing expressions.
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            A
+            * (
+                pyo.units.convert(sizing_term, to_units=pyo.units.dimensionless)
+                / number_of_parallel_units
+            )
+            ** B,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr *= number_of_parallel_units
+
+        blk.unit_model._add_cost_factor(blk, factor)
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
