@@ -463,3 +463,68 @@ class ZeroOrderBaseData(UnitModelBlockData):
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == blk.cost_factor * expr
         )
+
+    #@property
+    #def default_costing_method(self):
+    #    return self.cost_power_law_flow
+
+    @staticmethod
+    def cost_power_law_flow(blk, number_of_parallel_units=1):
+        """
+        General method for costing equipment based on power law form. This is
+        the most common costing form for zero-order models.
+        CapCost = A*(F/Fref)**B
+        This method also registers electricity demand as a costed flow (if
+        present in the unit operation model).
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, state_ref = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter", "reference_state"],
+        )
+
+        # Get state block for flow bases
+        basis = parameter_dict["capital_cost"]["basis"]
+        try:
+            sblock = blk.unit_model.properties_in[t0]
+        except AttributeError:
+            # Pass-through case
+            sblock = blk.unit_model.properties[t0]
+
+        if basis == "flow_vol":
+            state = sblock.flow_vol
+            sizing_term = state / state_ref
+        elif basis == "flow_mass":
+            state = sum(sblock.flow_mass_comp[j] for j in sblock.component_list)
+            sizing_term = state / state_ref
+        else:
+            raise ValueError(
+                f"{blk.name} - unrecognized basis in parameter "
+                f"declaration: {basis}."
+            )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        blk.unit_model._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+

@@ -27,7 +27,7 @@ from idaes.core.base.costing_base import (
 )
 from idaes.core.util.math import smooth_min
 
-from watertap.core.zero_order_base import ZeroOrderBase
+from watertap.core.zero_order_base import ZeroOrderBase, ZeroOrderBaseData
 from watertap.unit_models.zero_order import (
     AnaerobicMBRMECZO,
     ATHTLZO,
@@ -369,64 +369,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Overall electricity intensity",
         )
 
-    def cost_power_law_flow(blk, number_of_parallel_units=1):
+    def _get_costing_method_for(self, unit_model):
         """
-        General method for costing equipment based on power law form. This is
-        the most common costing form for zero-order models.
-        CapCost = A*(F/Fref)**B
-        This method also registers electricity demand as a costed flow (if
-        present in the unit operation model).
-        Args:
-            number_of_parallel_units (int, optional) - cost this unit as
-                        number_of_parallel_units parallel units (default: 1)
+        Allow the unit model to register its default costing method,
+        either through an attribute named "default_costing_method"
+        or by naming the default costing method "default_costing_method"
         """
-        t0 = blk.flowsheet().time.first()
-
-        # Get parameter dict from database
-        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
-            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
-        )
-
-        # Get costing parameter sub-block for this technology
-        A, B, state_ref = blk.unit_model._get_tech_parameters(
-            blk,
-            parameter_dict,
-            blk.unit_model.config.process_subtype,
-            ["capital_a_parameter", "capital_b_parameter", "reference_state"],
-        )
-
-        # Get state block for flow bases
-        basis = parameter_dict["capital_cost"]["basis"]
-        try:
-            sblock = blk.unit_model.properties_in[t0]
-        except AttributeError:
-            # Pass-through case
-            sblock = blk.unit_model.properties[t0]
-
-        if basis == "flow_vol":
-            state = sblock.flow_vol
-            sizing_term = state / state_ref
-        elif basis == "flow_mass":
-            state = sum(sblock.flow_mass_comp[j] for j in sblock.component_list)
-            sizing_term = state / state_ref
-        else:
-            raise ValueError(
-                f"{blk.name} - unrecognized basis in parameter "
-                f"declaration: {basis}."
-            )
-
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        # Call general power law costing method
-        blk.unit_model._general_power_law_form(
-            blk, A, B, sizing_term, factor, number_of_parallel_units
-        )
-
-        # Register flows
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.electricity[t0], "electricity"
-        )
+        if hasattr(unit_model, "default_costing_method"):
+            return unit_model.default_costing_method
+        return super()._get_costing_method_for(unit_model)
 
     def cost_anaerobic_mbr_mec(blk):
         """
@@ -1214,7 +1165,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         t0 = blk.flowsheet().time.first()
 
-        ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
+        blk.unit_model.cost_power_law_flow(blk, number_of_parallel_units)
 
         # Register flows - electricity already done by cost_power_law_flow
         blk.config.flowsheet_costing_block.cost_flow(
@@ -2757,7 +2708,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         cost_method = blk.unit_model._get_unit_cost_method(blk)
         valid_methods = ["cost_power_law_flow", "cost_membrane"]
         if cost_method == "cost_power_law_flow":
-            ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
+            blk.unit_model.cost_power_law_flow(blk, number_of_parallel_units)
         elif cost_method == "cost_membrane":
             # NOTE: number of units does not matter for cost_membrane
             #       as its a linear function of membrane area
@@ -3180,7 +3131,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         cost_method = blk.unit_model._get_unit_cost_method(blk)
         valid_methods = ["cost_power_law_flow", "cost_HRCS_clarifier"]
         if cost_method == "cost_power_law_flow":
-            ZeroOrderCostingData.cost_power_law_flow(blk, number_of_parallel_units)
+            blk.unit_model.cost_power_law_flow(blk, number_of_parallel_units)
         elif cost_method == "cost_HRCS_clarifier":
             # NOTE: number of units does not matter for cost_HRCS_clarifier
             #       as its a linear function of membrane area
@@ -3507,7 +3458,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
     unit_mapping = {
-        ZeroOrderBase: cost_power_law_flow,
+        ZeroOrderBase: ZeroOrderBaseData.cost_power_law_flow,
         AnaerobicMBRMECZO: cost_anaerobic_mbr_mec,
         ATHTLZO: cost_autothermal_hydrothermal_liquefaction,
         BrineConcentratorZO: cost_brine_concentrator,
