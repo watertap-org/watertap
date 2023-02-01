@@ -37,7 +37,6 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     CONFIG_Template,
     ConcentrationPolarizationType,
-    SherwoodNumberEq,
 )
 
 
