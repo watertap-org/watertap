@@ -353,13 +353,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
         parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
             blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
         )
-    
+
         if "cost_method" not in parameter_dict["capital_cost"]:
             raise KeyError(
                 f"Costing for {blk.unit_model._tech_type} requires a cost_method argument, however "
                 f"this was not defined for process sub-type {blk.unit_model.config.process_subtype}."
             )
-    
+
         return parameter_dict["capital_cost"]["cost_method"]
 
     @staticmethod
@@ -374,19 +374,21 @@ class ZeroOrderBaseData(UnitModelBlockData):
         # Check to see in parameter Block already exists
         try:
             # Try to get parameter Block from costing package
-            pblock = getattr(blk.config.flowsheet_costing_block, blk.unit_model._tech_type)
+            pblock = getattr(
+                blk.config.flowsheet_costing_block, blk.unit_model._tech_type
+            )
         except AttributeError:
             # Parameter Block for this technology hasn't been added yet. Create it.
             pblock = pyo.Block()
-    
+
             # Add block to FlowsheetCostingBlock
             blk.config.flowsheet_costing_block.add_component(
                 blk.unit_model._tech_type, pblock
             )
-    
+
             # Add subtype Set to Block
             pblock.subtype_set = pyo.Set()
-    
+
             # Add required Vars
             for p in param_list:
                 try:
@@ -403,13 +405,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
                         "for {p}. Please check the YAML "
                         "file for this technology for errors.".format(p=p)
                     )
-    
+
         # Check to see if required subtype is in subtype_set
         vlist = []
         if subtype not in pblock.subtype_set:
             # Need to add subtype and set Vars
             pblock.subtype_set.add(subtype)
-    
+
             # Set vars
             for p in param_list:
                 vobj = getattr(pblock, p)
@@ -422,7 +424,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
             for p in param_list:
                 vobj = getattr(pblock, p)
                 vlist.append(vobj[subtype])
-    
+
         # add conditional for cases where there is only one parameter returned
         if len(vlist) == 1:
             return vlist[0]
@@ -464,9 +466,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
             expr=blk.capital_cost == blk.cost_factor * expr
         )
 
-    #@property
-    #def default_costing_method(self):
-    #    return self.cost_power_law_flow
+    @property
+    def default_costing_method(self):
+        return self.cost_power_law_flow
 
     @staticmethod
     def cost_power_law_flow(blk, number_of_parallel_units=1):
@@ -527,4 +529,3 @@ class ZeroOrderBaseData(UnitModelBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity"
         )
-

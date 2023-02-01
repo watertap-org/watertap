@@ -47,10 +47,12 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import ChemicalAdditionZO, NanofiltrationZO
 
+
 @declare_process_block_class("DerivedZOBase")
 class DerivedZOBaseData(ZeroOrderBaseData):
     def build(self):
         super().build()
+
 
 solver = get_solver()
 

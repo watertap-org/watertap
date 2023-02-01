@@ -15,6 +15,7 @@ This module contains a zero-order representation of an ion exchange unit
 operation.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, pump_electricity, ZeroOrderBaseData
@@ -131,3 +132,145 @@ class IonExchangeZOData(ZeroOrderBaseData):
                 raise KeyError(
                     "ammonium_as_nitrogen should be defined in solute_list for this subtype."
                 )
+
+    @property
+    def default_costing_method(self):
+        return self.cost_ion_exchange
+
+    @staticmethod
+    def cost_ion_exchange(blk):
+        """
+        Two methods for costing ion exchange:
+        (1) General method for costing ion exchange units. Capital cost is based on
+        the both inlet flow and TDS.
+        This method also registers the NaCl demand, resin replacement and
+        electricity demand as costed flows.
+        (2) General method using unit capex and unit opex cost parameters, tailored for AMO
+        wastewater resource recovery (process subtype: clinoptilolite)
+        """
+        t0 = blk.flowsheet().time.first()
+
+        if blk.unit_model.config.process_subtype != "clinoptilolite":
+            # Get parameter dict from database
+            parameter_dict = (
+                blk.unit_model.config.database.get_unit_operation_parameters(
+                    blk.unit_model._tech_type,
+                    subtype=blk.unit_model.config.process_subtype,
+                )
+            )
+            # Get costing parameter sub-block for this technology
+            A, B, C, D = blk.unit_model._get_tech_parameters(
+                blk,
+                parameter_dict,
+                blk.unit_model.config.process_subtype,
+                [
+                    "capital_a_parameter",
+                    "capital_b_parameter",
+                    "capital_c_parameter",
+                    "capital_d_parameter",
+                ],
+            )
+
+            # Add cost variable and constraint
+            blk.capital_cost = pyo.Var(
+                initialize=1,
+                units=blk.config.flowsheet_costing_block.base_currency,
+                bounds=(0, None),
+                doc="Capital cost of unit operation",
+            )
+
+            ln_Q = pyo.log(
+                pyo.units.convert(
+                    blk.unit_model.properties_in[t0].flow_vol
+                    / (pyo.units.m**3 / pyo.units.hour),
+                    to_units=pyo.units.dimensionless,
+                )
+            )
+            T = pyo.units.convert(
+                blk.unit_model.properties_in[t0].conc_mass_comp["tds"]
+                / (pyo.units.mg / pyo.units.liter),
+                to_units=pyo.units.dimensionless,
+            )
+
+            expr = pyo.units.convert(
+                pyo.exp(A + B * ln_Q + C * T + D * ln_Q * T) * pyo.units.USD_2017,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+
+            blk.unit_model._add_cost_factor(
+                blk, parameter_dict["capital_cost"]["cost_factor"]
+            )
+
+            blk.capital_cost_constraint = pyo.Constraint(
+                expr=blk.capital_cost == blk.cost_factor * expr
+            )
+
+            # Register flows
+            blk.config.flowsheet_costing_block.cost_flow(
+                blk.unit_model.electricity[t0], "electricity"
+            )
+            blk.config.flowsheet_costing_block.cost_flow(
+                blk.unit_model.NaCl_flowrate[t0], "sodium_chloride"
+            )
+            blk.config.flowsheet_costing_block.cost_flow(
+                blk.unit_model.resin_demand[t0], "ion_exchange_resin"
+            )
+        else:
+            # Get parameter dict from database
+            parameter_dict = (
+                blk.unit_model.config.database.get_unit_operation_parameters(
+                    blk.unit_model._tech_type,
+                    subtype=blk.unit_model.config.process_subtype,
+                )
+            )
+            # Get costing parameter sub-block for this technology
+            unit_capex, unit_opex = blk.unit_model._get_tech_parameters(
+                blk,
+                parameter_dict,
+                blk.unit_model.config.process_subtype,
+                ["unit_capex", "unit_opex"],
+            )
+
+            # Add cost variable and constraint
+            blk.capital_cost = pyo.Var(
+                initialize=1,
+                units=blk.config.flowsheet_costing_block.base_currency,
+                bounds=(0, None),
+                doc="Capital cost of unit operation",
+            )
+
+            capex_expr = pyo.units.convert(
+                blk.unit_model.properties_in[t0].flow_vol * unit_capex,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+
+            # Determine if a costing factor is required
+            blk.unit_model._add_cost_factor(
+                blk, parameter_dict["capital_cost"]["cost_factor"]
+            )
+
+            blk.capital_cost_constraint = pyo.Constraint(
+                expr=blk.capital_cost == blk.cost_factor * capex_expr
+            )
+
+            # Add fixed operating cost variable and constraint
+            blk.fixed_operating_cost = pyo.Var(
+                initialize=1,
+                units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
+                bounds=(0, None),
+                doc="Fixed operating cost of unit",
+            )
+            blk.fixed_operating_cost_constraint = pyo.Constraint(
+                expr=blk.fixed_operating_cost
+                == pyo.units.convert(
+                    blk.unit_model.properties_in[t0].flow_vol * unit_opex,
+                    to_units=blk.config.flowsheet_costing_block.base_currency
+                    / blk.config.flowsheet_costing_block.base_period,
+                )
+            )
+
+            # Register flows
+            blk.config.flowsheet_costing_block.cost_flow(
+                blk.unit_model.electricity[t0], "electricity"
+            )

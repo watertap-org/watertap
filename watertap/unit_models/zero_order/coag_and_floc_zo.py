@@ -15,6 +15,7 @@ This module contains a zero-order representation of a coagulation/flocculation u
 operation.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
@@ -266,3 +267,112 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         @self.Constraint(self.flowsheet().time, doc="Total power consumption")
         def electricity_constraint(b, t):
             return b.electricity[t] == b.power_floc[t] + b.power_rapid_mix[t]
+
+    @property
+    def default_costing_method(self):
+        return self.cost_coag_and_floc
+
+    @staticmethod
+    def cost_coag_and_floc(blk):
+        """
+        General method for costing coagulation/flocculation processes. Capital cost
+        is based on the alum flowrate and the polymer flowrate of the incoming stream.
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D, E, F, G, H = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "capital_mix_a_parameter",
+                "capital_mix_b_parameter",
+                "capital_floc_a_parameter",
+                "capital_floc_b_parameter",
+                "capital_coag_inj_a_parameter",
+                "capital_coag_inj_b_parameter",
+                "capital_floc_inj_a_parameter",
+                "capital_floc_inj_b_parameter",
+            ],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        cost_rapid_mix = (
+            A
+            * pyo.units.convert(
+                blk.unit_model.rapid_mix_basin_vol, to_units=pyo.units.gallons
+            )
+            + B
+        ) * blk.unit_model.num_rapid_mix_processes
+
+        cost_floc = (
+            C
+            * pyo.units.convert(
+                blk.unit_model.floc_basin_vol, to_units=pyo.units.Mgallons
+            )
+            + D
+        ) * blk.unit_model.num_floc_processes
+
+        cost_coag_inj = (
+            E
+            * pyo.units.convert(
+                blk.unit_model.chemical_flow_mass[t0, "alum"],
+                to_units=(pyo.units.lb / pyo.units.hr),
+            )
+            + F
+        ) * blk.unit_model.num_coag_processes
+
+        cost_floc_inj = (
+            G
+            * pyo.units.convert(
+                blk.unit_model.chemical_flow_mass[t0, "polymer"],
+                to_units=(pyo.units.lb / pyo.units.day),
+            )
+            + H
+        ) * blk.unit_model.num_floc_injection_processes
+
+        expr = (
+            pyo.units.convert(
+                cost_rapid_mix,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+            + pyo.units.convert(
+                cost_floc, to_units=blk.config.flowsheet_costing_block.base_currency
+            )
+            + pyo.units.convert(
+                cost_coag_inj, to_units=blk.config.flowsheet_costing_block.base_currency
+            )
+            + pyo.units.convert(
+                cost_floc_inj, to_units=blk.config.flowsheet_costing_block.base_currency
+            )
+        )
+
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
