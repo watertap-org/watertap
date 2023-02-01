@@ -37,6 +37,7 @@ from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     CONFIG_Template,
     ConcentrationPolarizationType,
+    SherwoodNumberEq,
 )
 
 
@@ -110,6 +111,7 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
         self.feed_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+            sherwood_number_eq=self.config.sherwood_number_eq,
         )
 
         self.feed_side.apply_transformation()

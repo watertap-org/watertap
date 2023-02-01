@@ -570,12 +570,12 @@ class MembraneChannelMixin:
                 self.config.property_package.solute_set,
                 doc="Sherwood number",
             )
-            def eq_N_Sh_comp(b, t, x, j):
+            def eq_N_Sh_comp_length_dependent(b, t, x, j):
                 return b.N_Sh_comp[t, x, j] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
                 ) * ((b.length / b.dh) ** -0.279)
 
-        if sherwood_number_eq == SherwoodNumberEq.length_independent:
+        elif sherwood_number_eq == SherwoodNumberEq.length_independent:
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -583,11 +583,16 @@ class MembraneChannelMixin:
                 self.config.property_package.solute_set,
                 doc="Sherwood number",
             )
-            def eq_N_Sh_comp(b, t, x, j):
+            def eq_N_Sh_comp_length_independent(b, t, x, j):
                 return (
                     b.N_Sh_comp[t, x, j]
                     == 0.46 * (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.36
                 )
+
+        else:
+            raise ConfigurationError(
+                f"Unrecognized sherwood number equation {sherwood_number_eq}"
+            )
 
         @self.Constraint(
             self.flowsheet().config.time,

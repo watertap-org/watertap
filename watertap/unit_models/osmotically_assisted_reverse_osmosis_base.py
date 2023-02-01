@@ -36,6 +36,7 @@ import idaes.logger as idaeslog
 from watertap.core.membrane_channel_base import (
     validate_membrane_config_args,
     ConcentrationPolarizationType,
+    SherwoodNumberEq,
 )
 
 from watertap.core import InitializationMixin
@@ -127,6 +128,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         self.feed_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+            sherwood_number_eq=self.config.sherwood_number_eq,
         )
 
         # Pass in 0D, applied in 1D
@@ -167,6 +169,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         self.permeate_side.add_concentration_polarization(
             concentration_polarization_type=self.config.concentration_polarization_type,
             mass_transfer_coefficient=self.config.mass_transfer_coefficient,
+            sherwood_number_eq=self.config.sherwood_number_eq,
         )
 
         # Pass in 0D, applied in 1D
