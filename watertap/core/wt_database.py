@@ -27,10 +27,13 @@ class Database:
     associated with zero-order models in WaterTap.
 
     Args:
-        dbpath - (optional) path to database folder containing yaml files
+        dbpath - (optional) Path to a user provided YAML database file. For
+        example, the path could be ~/Desktop/myproject/mydata.yaml on a Mac.
+        If a path is not provided, then a default YAML database file is used
+        for the associated zero-order model.
 
     Returns:
-        an instance of a Database object linked to the provided database
+        An instance of a Database object linked to the provided database.
     """
 
     def __init__(self, dbpath=None):
@@ -44,7 +47,8 @@ class Database:
                 "techno_economic",
             )
         else:
-            self._dbpath = dbpath
+            self._dbpath = os.path.dirname(dbpath)
+            self._filename = os.path.basename(dbpath).split(".")[0]
 
             # Confirm valid path
             if not os.path.isdir(self._dbpath):
@@ -196,7 +200,10 @@ class Database:
             # If data is already in cached files, return
             return self._cached_files[technology]
         else:
-            # Else load data from required file
+            # If user provided a YAML file, use the filename as the technology
+            if hasattr(self, "_filename"):
+                technology = self._filename
+            # Load from database YAML file or from user provided YAML file
             try:
                 with open(os.path.join(self._dbpath, technology + ".yaml"), "r") as f:
                     lines = f.read()
