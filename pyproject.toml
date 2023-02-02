@@ -6,5 +6,5 @@ disable = "all"
 # see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
 # for a list of all messages
 enable = [
-    # "unnecessary-pass",
+    "unnecessary-pass",
 ]
