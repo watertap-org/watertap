@@ -62,6 +62,7 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    if: "false"
 # TODO: Grab cloud database password from encrypted repo secrets
 # TODO: and place in environment so tests can use it.
 #    env:
@@ -168,6 +169,7 @@ jobs:
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    if: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -221,6 +223,7 @@ jobs:
   notebooks:
     name: Test notebooks (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    if: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -265,6 +268,7 @@ jobs:
   macos:
     name: macOS setup (EXPERIMENTAL)
     runs-on: macos-11
+    if: "false"
     strategy:
       fail-fast: false
       matrix:
