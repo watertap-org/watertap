@@ -38,10 +38,9 @@ def test_default_path():
 def test_invalid_path():
     with pytest.raises(
         OSError,
-        match="Could not find requested path foo. Please "
-        "check that this path exists.",
+        match="Could not find requested path . Please " "check that this path exists.",
     ):
-        Database(dbpath="foo")
+        Database(dbpath="foo.yaml")
 
 
 @pytest.mark.unit
@@ -54,7 +53,7 @@ def test_custom_path():
     )
 
     assert db._dbpath == os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "..", "core"
+        os.path.dirname(os.path.abspath(__file__)), "..", ".."
     )
 
 

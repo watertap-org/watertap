@@ -48,7 +48,7 @@ from watertap.core.zero_order_sido_reactive import (
 
 solver = get_solver()
 
-local_path = os.path.dirname(os.path.abspath(__file__))
+local_path = os.path.dirname(os.path.abspath(__file__)) + "/test_sidor_data.yaml"
 
 
 @declare_process_block_class("DerivedSIDOR")
