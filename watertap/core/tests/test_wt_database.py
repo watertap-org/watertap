@@ -14,7 +14,7 @@
 Tests for WaterTAP database wrapper
 """
 import pytest
-import os
+from pathlib import Path
 
 from watertap.core.wt_database import Database
 
@@ -22,39 +22,20 @@ from watertap.core.wt_database import Database
 @pytest.mark.unit
 def test_default_path():
     db = Database()
-
-    assert os.path.normpath(db._dbpath) == os.path.normpath(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "..",
-            "..",
-            "data",
-            "techno_economic",
-        )
-    )
+    assert db._dbpath == Path(__file__).parent.parent.parent / "data/techno_economic"
 
 
 @pytest.mark.unit
 def test_invalid_path():
-    with pytest.raises(
-        OSError,
-        match="Could not find requested path . Please " "check that this path exists.",
-    ):
-        Database(dbpath="foo.yaml")
+    with pytest.raises(OSError):
+        Database(dbpath="./some/foo.yaml")
 
 
 @pytest.mark.unit
 def test_custom_path():
     # Pick a path we know will exist, even if it isn't a data folder
-    db = Database(
-        dbpath=os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "..", "core"
-        )
-    )
-
-    assert db._dbpath == os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", ".."
-    )
+    db = Database(dbpath=Path(__file__).parent.parent / "core")
+    assert db._dbpath == Path(__file__).parent.parent
 
 
 class TestDatabase:

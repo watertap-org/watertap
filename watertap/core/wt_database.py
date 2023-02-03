@@ -14,9 +14,9 @@
 This module contains the base class for interacting with WaterTAP data files
 with zero-order model parameter data.
 """
-import os
 import yaml
 from copy import deepcopy
+from pathlib import Path
 
 
 class Database:
@@ -40,18 +40,14 @@ class Database:
         self._cached_files = {}
 
         if dbpath is None:
-            self._dbpath = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "data",
-                "techno_economic",
-            )
+            self._dbpath = Path(__file__).parent.parent / "data/techno_economic"
         else:
-            self._dbpath = os.path.dirname(dbpath)
-            self._filename = os.path.basename(dbpath).split(".")[0]
+            path = Path(dbpath)
+            self._dbpath = path.parent
+            self._filename = path.stem
 
             # Confirm valid path
-            if not os.path.isdir(self._dbpath):
+            if not self._dbpath.is_dir():
                 raise OSError(
                     f"Could not find requested path {self._dbpath}. Please "
                     f"check that this path exists."
@@ -80,9 +76,7 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, "water_sources.yaml"), "r") as f:
-                    lines = f.read()
-                    f.close()
+                lines = (self._dbpath / "water_sources.yaml").read_text()
             except OSError:
                 raise KeyError("Could not find water_sources.yaml in database.")
 
@@ -205,9 +199,7 @@ class Database:
                 technology = self._filename
             # Load from database YAML file or from user provided YAML file
             try:
-                with open(os.path.join(self._dbpath, technology + ".yaml"), "r") as f:
-                    lines = f.read()
-                    f.close()
+                lines = (self._dbpath / technology).with_suffix(".yaml").read_text()
             except OSError:
                 raise KeyError(f"Could not find entry for {technology} in database.")
 
@@ -226,9 +218,7 @@ class Database:
             None
         """
         try:
-            with open(os.path.join(self._dbpath, "component_list.yaml"), "r") as f:
-                lines = f.read()
-                f.close()
+            lines = (self._dbpath / "component_list.yaml").read_text()
         except OSError:
             raise KeyError("Could not find component_list.yaml in database.")
 
