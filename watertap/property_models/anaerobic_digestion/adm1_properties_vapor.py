@@ -143,19 +143,15 @@ class _ADM1_vaporStateBlock(StateBlock):
         Initialization routine for property package.
 
         Keyword Arguments:
-        state_args : Dictionary with initial guesses for the state vars
-                     chosen. Note that if this method is triggered
-                     through the control volume, and if initial guesses
-                     were not provided at the unit model level, the
-                     control volume passes the inlet values as initial
-                     guess.The keys for the state_args dictionary are:
-
-                     flow_mol_comp : value at which to initialize component
-                                     flows (default=None)
-                     pressure : value at which to initialize pressure
-                                (default=None)
-                     temperature : value at which to initialize temperature
-                                  (default=None)
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provided at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+            flow_mol_comp : value at which to initialize component flows (default=None)
+            pressure : value at which to initialize pressure (default=None)
+            temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
