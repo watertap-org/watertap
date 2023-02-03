@@ -734,7 +734,7 @@ class DataWrapper:
             BadConfiguration: If the configuration can't be transformed into the EDB form due
                               to missing/invalid fields.
         """
-        pass  # subclasses need to define this, using helper functions in this class
+        # subclasses need to define this, using helper functions in this class
 
     @classmethod
     def _method_to_str(
