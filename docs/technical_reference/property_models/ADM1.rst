@@ -222,41 +222,31 @@ Classes
     :members:
     :noindex:
 
+
 .. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties_vapor
 
 .. autoclass:: ADM1_vaporParameterBlock
     :members:
-    :noindex:
 
 .. autoclass:: ADM1_vaporParameterData
     :members:
-    :noindex:
 
 .. autoclass:: _ADM1_vaporStateBlock
     :members:
-    :noindex:
 
 .. autoclass:: ADM1_vaporStateBlockData
     :members:
-    :noindex:
+
 
 .. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_reactions
 
 .. autoclass:: ADM1ReactionParameterBlock
-    :members:
-    :noindex:
 
 .. autoclass:: ADM1ReactionParameterData
-    :members:
-    :noindex:
 
 .. autoclass:: _ADM1ReactionBlock
-    :members:
-    :noindex:
 
 .. autoclass:: ADM1ReactionBlockData
-    :members:
-    :noindex:
 
 References
 ----------
