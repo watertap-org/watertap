@@ -202,6 +202,62 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
+Classes
+-------
+.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties
+
+.. autoclass:: ADM1ParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1ParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ADM1StateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1StateBlockData
+    :members:
+    :noindex:
+
+.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties_vapor
+
+.. autoclass:: ADM1_vaporParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1_vaporParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ADM1_vaporStateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1_vaporStateBlockData
+    :members:
+    :noindex:
+
+.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_reactions
+
+.. autoclass:: ADM1ReactionParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1ReactionParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ADM1ReactionBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1ReactionBlockData
+    :members:
+    :noindex:
+
 References
 ----------
 [1] Batstone, D.J., Keller, J., Angelidaki, I., Kalyuzhnyi, S.V., Pavlostathis, S.G., Rozzi, A., Sanders, W.T.M., Siegrist, H.A. and Vavilin, V.A., 2002.
