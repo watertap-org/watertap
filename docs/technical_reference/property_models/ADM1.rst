@@ -205,6 +205,24 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
 
 Classes
 -------
+.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties
+
+.. autoclass:: ADM1ParameterBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1ParameterData
+    :members:
+    :noindex:
+
+.. autoclass:: _ADM1StateBlock
+    :members:
+    :noindex:
+
+.. autoclass:: ADM1StateBlockData
+    :members:
+    :noindex:
+
 .. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_reactions
 
 .. autoclass:: ADM1ReactionParameterBlock
