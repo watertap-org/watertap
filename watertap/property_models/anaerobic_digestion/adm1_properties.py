@@ -180,11 +180,11 @@ class _ADM1StateBlock(StateBlock):
             temperature : value at which to initialize temperature (default=None)
             outlvl : sets output level of initialization routine
             state_vars_fixed: Flag to denote if state vars have already been fixed.
-                              - True - states have already been fixed and
-                                       initialization does not need to worry
-                                       about fixing and unfixing variables.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
+                              True - states have already been fixed and
+                              initialization does not need to worry
+                              about fixing and unfixing variables.
+                              False - states have not been fixed. The state
+                              block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None, use
                      default solver options)
             solver : str indicating which solver to use during
@@ -192,13 +192,11 @@ class _ADM1StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states variables are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 release_state method
+                         True - states variables are not unfixed, and
+                         a dict of returned containing flags for
+                         which states were fixed during initialization.
+                         False - state variables are unfixed after
+                         initialization by calling the release_state method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for
