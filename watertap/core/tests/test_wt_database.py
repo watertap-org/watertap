@@ -27,8 +27,12 @@ def test_default_path():
 
 @pytest.mark.unit
 def test_invalid_path():
-    with pytest.raises(OSError):
+    with pytest.raises(OSError) as excinfo:
         Database(dbpath="./some/foo.yaml")
+    assert (
+        "Could not find requested path some. Please check that this path exists."
+        in str(excinfo.value)
+    )
 
 
 @pytest.mark.unit
