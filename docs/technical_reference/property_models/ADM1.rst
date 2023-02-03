@@ -202,68 +202,9 @@ The rules for pH inhibition of amino-acid-utilizing microorganisms (:math:`I_{pH
          1 & \text{for } pH > pH_{UL,h2}
        \end{cases}
 
-Classes1
---------
-.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties
 
-.. autoclass:: ADM1ParameterBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ADM1ParameterData
-    :members:
-    :noindex:
-
-.. autoclass:: _ADM1StateBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ADM1StateBlockData
-    :members:
-    :noindex:
-
-Classes2
---------
-.. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_properties_vapor
-
-.. autoclass:: ADM1_vaporParameterBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ADM1_vaporParameterData
-    :members:
-    :noindex:
-
-.. autoclass:: _ADM1_vaporStateBlock
-    :members:
-    :noindex:
-
-.. autoclass:: ADM1_vaporStateBlockData
-    :members:
-    :noindex:
-
-ClassesMCAS
------------
-.. currentmodule:: watertap.property_models.multicomp_aq_sol_prop_pack
-
-.. autoclass:: MCASParameterBlock
-    :members:
-    :noindex:
-
-.. autoclass:: MCASParameterData
-    :members:
-    :noindex:
-
-.. autoclass:: _MCASStateBlock
-    :members:
-    :noindex:
-
-.. autoclass:: MCASStateBlockData
-    :members:
-    :noindex:
-
-Classes3
---------
+Classes
+-------
 .. currentmodule:: watertap.property_models.anaerobic_digestion.adm1_reactions
 
 .. autoclass:: ADM1ReactionParameterBlock
@@ -274,11 +215,11 @@ Classes3
     :members:
     :noindex:
 
-.. autoclass:: _ADM1ReactionStateBlock
+.. autoclass:: _ADM1ReactionBlock
     :members:
     :noindex:
 
-.. autoclass:: ADM1ReactionStateBlockData
+.. autoclass:: ADM1ReactionBlockData
     :members:
     :noindex:
 
