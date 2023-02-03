@@ -47,23 +47,17 @@ class PropertyAttributeError(AttributeError):
     WaterTAP exception for generic attribute errors arising from property package testing.
     """
 
-    pass
-
 
 class PropertyValueError(ValueError):
     """
     WaterTAP exception for generic value errors arising from property package testing.
     """
 
-    pass
-
 
 class PropertyRuntimeError(RuntimeError):
     """
     WaterTAP exception for generic runtime errors arising from property package testing.
     """
-
-    pass
 
 
 class PropertyTestHarness:
@@ -98,7 +92,6 @@ class PropertyTestHarness:
         default_solution: dictionary of property values at default initialized state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.fixture(scope="class")
     def frame_stateblock(self):
@@ -480,7 +473,6 @@ class PropertyRegressionTest:
         regression_solution: dictionary of property values for the specified state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.mark.component
     def test_property_regression(self):
@@ -578,7 +570,6 @@ class PropertyCalculateStateTest:
         state_solution: dictionary of the values for the state variables
             keys = (string name of variable, tuple index), values = value
         """
-        pass
 
     @pytest.mark.component
     def test_calculate_state(self):
