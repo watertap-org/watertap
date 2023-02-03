@@ -132,7 +132,7 @@ def set_operating_conditions(m):
     # Magprex reactor
     m.fs.magprex.load_parameters_from_database(use_default_removal=True)
 
-    # clarifier
+    # centrifuge
     m.fs.centrifuge.load_parameters_from_database(use_default_removal=True)
 
     # struvite classifier
