@@ -190,24 +190,25 @@ class Database:
         return self._component_list
 
     def _get_technology(self, technology):
+        # If data is already in cached files, then return that data
         if technology in self._cached_files:
-            # If data is already in cached files, return
             return self._cached_files[technology]
-        else:
-            # If user provided a YAML file, use the filename as the technology
-            if hasattr(self, "_filename"):
-                technology = self._filename
-            # Load from database YAML file or from user provided YAML file
-            try:
-                lines = (self._dbpath / technology).with_suffix(".yaml").read_text()
-            except OSError:
-                raise KeyError(f"Could not find entry for {technology} in database.")
 
-            fdata = yaml.load(lines, yaml.Loader)
+        # If user provided a YAML file, use the filename as the technology
+        if hasattr(self, "_filename"):
+            technology = self._filename
 
-            # Store data in cache and return
-            self._cached_files[technology] = fdata
-            return fdata
+        # Load from database YAML file or from user provided YAML file
+        try:
+            lines = (self._dbpath / technology).with_suffix(".yaml").read_text()
+        except OSError:
+            raise KeyError(f"Could not find entry for {technology} in database.")
+
+        fdata = yaml.load(lines, yaml.Loader)
+
+        # Store data in cache and return
+        self._cached_files[technology] = fdata
+        return fdata
 
     def _load_component_list(self):
         """
