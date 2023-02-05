@@ -2,7 +2,20 @@
 py-version = "3.8"
 
 [tool.pylint."messages control"]
-disable = "E,W,R,C"
+disable = """W,R,C,
+    no-self-argument,
+    undefined-variable,
+    no-name-in-module,
+    no-member,
+    invalid-unary-operand-type,
+    function-redefined,
+    not-callable,
+    unsupported-binary-operation,
+    unsubscriptable-object,
+    no-value-for-parameter,
+    misplaced-bare-raise,
+    unexpected-keyword-arg,
+"""
 # see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
 # for a list of all messages
 enable = [
