@@ -26,6 +26,7 @@ def parameter_sweep(
     outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
+    h5_parent_group_name=None,
     optimize_function=None,
     optimize_kwargs=None,
     reinitialize_function=None,
@@ -71,6 +72,9 @@ def parameter_sweep(
                                           does not write a file.
                                           Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                                           which contains the variable names contained within the H5 file.
+
+        h5_parent_group_name (optional) : Parent h5 groups for the parameter sweep inputs and outputs to be embedded in.
+                                          The default is `None` and it accepts a string for the h5 group.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
@@ -135,6 +139,8 @@ def parameter_sweep(
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
         kwargs["h5_results_file_name"] = h5_results_file_name
+    if h5_parent_group_name is not None:
+        kwargs["h5_parent_group_name"] = h5_parent_group_name
     if optimize_function is not None:
         kwargs["optimize_function"] = optimize_function
     if optimize_kwargs is not None:
@@ -164,6 +170,7 @@ def recursive_parameter_sweep(
     outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
+    h5_parent_group_name=None,
     optimize_function=None,
     optimize_kwargs=None,
     reinitialize_function=None,
@@ -207,6 +214,9 @@ def recursive_parameter_sweep(
                                           does not write a file.
                                           Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                                           which contains the variable names contained within the H5 file.
+
+        h5_parent_group_name (optional) : Parent h5 groups for the parameter sweep inputs and outputs to be embedded in.
+                                          The default is `None` and it accepts a string for the h5 group.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
@@ -272,6 +282,8 @@ def recursive_parameter_sweep(
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
         kwargs["h5_results_file_name"] = h5_results_file_name
+    if h5_parent_group_name is not None:
+        kwargs["h5_parent_group_name"] = h5_parent_group_name
     if optimize_function is not None:
         kwargs["optimize_function"] = optimize_function
     if optimize_kwargs is not None:
@@ -302,6 +314,7 @@ def differential_parameter_sweep(
     outputs=None,
     csv_results_file_name=None,
     h5_results_file_name=None,
+    h5_parent_group_name=None,
     optimize_function=None,
     optimize_kwargs=None,
     reinitialize_function=None,
@@ -371,6 +384,9 @@ def differential_parameter_sweep(
                                           Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                                           which contains the variable names contained within the H5 file.
 
+        h5_parent_group_name (optional) : Parent h5 groups for the parameter sweep inputs and outputs to be embedded in.
+                                          The default is `None` and it accepts a string for the h5 group.
+
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
                                        argument of this function is ``model``. The default uses the
@@ -439,6 +455,8 @@ def differential_parameter_sweep(
         kwargs["csv_results_file_name"] = csv_results_file_name
     if h5_results_file_name is not None:
         kwargs["h5_results_file_name"] = h5_results_file_name
+    if h5_parent_group_name is not None:
+        kwargs["h5_parent_group_name"] = h5_parent_group_name
     if optimize_function is not None:
         kwargs["optimize_function"] = optimize_function
     if optimize_kwargs is not None:
