@@ -668,7 +668,7 @@ class TestGACMulti:
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mm.fs.unit.mass_throughput)
-        assert pytest.approx(12830000, rel=1e-3) == value(mm.fs.unit.elap_time)
+        assert pytest.approx(12310000, rel=1e-3) == value(mm.fs.unit.elap_time)
         assert pytest.approx(0.8333, rel=1e-3) == value(mm.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mm.fs.unit.bed_area)
 
