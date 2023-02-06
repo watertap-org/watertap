@@ -27,7 +27,6 @@ Assumptions:
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
     Reference,
-    Block,
     Var,
     value,
     Constraint,
@@ -35,7 +34,6 @@ from pyomo.environ import (
     units as pyunits,
     check_optimal_termination,
 )
-from pyomo.common.deprecation import deprecated
 
 
 # Import IDAES cores
