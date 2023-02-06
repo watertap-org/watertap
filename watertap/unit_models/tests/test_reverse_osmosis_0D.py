@@ -32,7 +32,6 @@ from watertap.unit_models.reverse_osmosis_0D import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    FrictionFactor,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -50,7 +49,10 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 
-from watertap.core import MembraneChannel0DBlock
+from watertap.core import (
+    MembraneChannel0DBlock,
+    FrictionFactor,
+)
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
