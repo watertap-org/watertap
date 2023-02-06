@@ -55,8 +55,8 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    FrictionFactor,
 )
-from watertap.core.membrane_channel_base import FrictionFactor
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
