@@ -25,11 +25,9 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Var,
     assert_optimal_termination,
 )
-from pyomo.util.check_units import assert_units_consistent
-from pyomo.network import Port
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -66,7 +64,6 @@ from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 
-import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 # -----------------------------------------------------------------------------

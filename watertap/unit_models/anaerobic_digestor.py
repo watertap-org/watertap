@@ -33,15 +33,14 @@ Department of Industrial Electrical Engineering and Automation, Lund University,
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import (
     Reference,
-    Block,
     Var,
     value,
     Constraint,
     Param,
     units as pyunits,
     check_optimal_termination,
-    exp,
 )
+
 
 # Import IDAES cores
 from idaes.core import (
@@ -64,7 +63,6 @@ from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.constants import Constants
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
