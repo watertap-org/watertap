@@ -39,6 +39,7 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     check_optimal_termination,
+    exp,
 )
 
 
@@ -62,6 +63,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
