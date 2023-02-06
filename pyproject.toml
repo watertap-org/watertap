@@ -14,7 +14,6 @@ disable = """W,R,C,
     unsubscriptable-object,
     no-value-for-parameter,
     misplaced-bare-raise,
-    unexpected-keyword-arg,
 """
 # see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
 # for a list of all messages

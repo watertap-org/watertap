@@ -432,9 +432,9 @@ def optimize_set_up(m):
     assert_degrees_of_freedom(m, 2)
 
 
-def optimize(m, solver=None, check_termination=True):
+def optimize(m, solver=None):
     # --solve---
-    return solve(m, solver=solver, check_termination=check_termination)
+    return solve(m, solver=solver)
 
 
 def display_system(m):
