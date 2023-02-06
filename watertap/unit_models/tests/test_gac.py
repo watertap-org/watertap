@@ -241,7 +241,7 @@ class TestGACRobust:
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
         mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
-        mr.fs.properties.dens_mass_const = 997
+        mr.fs.properties.dens_mass_const = 1000
 
         mr.fs.unit = GAC(
             property_package=mr.fs.properties,
@@ -407,6 +407,7 @@ class TestGACRobust:
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mr.fs.unit.elap_time)
+        assert pytest.approx(0.8333, rel=1e-3) == value(mr.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mr.fs.unit.bed_area)
 
     @pytest.mark.component
