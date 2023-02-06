@@ -43,6 +43,7 @@ from idaes.core import UnitModelCostingBlock
 
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
+    DiffusivityCalculation,
 )
 from watertap.unit_models.gac import (
     GAC,
@@ -140,9 +141,12 @@ class TestGACSimplified:
             == SurfaceDiffusionCoefficientType.fixed
         )
 
+        # check properties
+        assert ms.fs.unit.config.property_package is ms.fs.properties
         assert ms.fs.unit.config.property_package is ms.fs.properties
         assert len(ms.fs.unit.config.property_package.solute_set) == 1
         assert len(ms.fs.unit.config.property_package.solvent_set) == 1
+        assert ms.fs.properties.config.diffus_calculation == DiffusivityCalculation.none
 
     @pytest.mark.unit
     def test_simplified_build(self, gac_frame_simplified):
@@ -231,8 +235,13 @@ class TestGACRobust:
         mr.fs = FlowsheetBlock(dynamic=False)
 
         mr.fs.properties = MCASParameterBlock(
-            solute_list=["TCE"], mw_data={"H2O": 0.018, "TCE": 0.1314}
+            solute_list=["TCE"],
+            mw_data={"H2O": 0.018, "TCE": 0.1314},
+            diffus_calculation=DiffusivityCalculation.hayduklaudie,
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
+        mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+        mr.fs.properties.dens_mass_const = 997
 
         mr.fs.unit = GAC(
             property_package=mr.fs.properties,
@@ -279,7 +288,6 @@ class TestGACRobust:
         mr.fs.unit.conc_ratio_replace.fix(0.80)
 
         # parameters
-        mr.fs.unit.molal_volume.fix(9.81e-5)
         mr.fs.unit.tort.fix(1)
         mr.fs.unit.spdfr.fix(1)
         mr.fs.unit.sphericity.fix(1.5)
@@ -315,9 +323,14 @@ class TestGACRobust:
             == SurfaceDiffusionCoefficientType.calculated
         )
 
+        # check properties
         assert mr.fs.unit.config.property_package is mr.fs.properties
         assert len(mr.fs.unit.config.property_package.solute_set) == 1
         assert len(mr.fs.unit.config.property_package.solvent_set) == 1
+        assert (
+            mr.fs.properties.config.diffus_calculation
+            == DiffusivityCalculation.hayduklaudie
+        )
 
     @pytest.mark.unit
     def test_robust_build(self, gac_frame_robust):
@@ -334,7 +347,7 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 89
+        assert number_variables(mr) == 88
         assert number_total_constraints(mr) == 54
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
@@ -524,6 +537,7 @@ class TestGACMulti:
                 "BGAN": 0.1,
             },
             charge={"BGCAT": 1, "BGAN": -2},
+            molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
 
         # testing target_species arg
@@ -573,7 +587,6 @@ class TestGACMulti:
         mm.fs.unit.particle_dens_app.fix(803.4)
         mm.fs.unit.particle_dia.fix(0.001026)
         mm.fs.unit.velocity_sup.fix(5 / 3600)
-        mm.fs.unit.molal_volume.fix(9.81e-5)
         mm.fs.unit.tort.fix(1)
         mm.fs.unit.spdfr.fix(1)
         mm.fs.unit.sphericity.fix(1.5)
