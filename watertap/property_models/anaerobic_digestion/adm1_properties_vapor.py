@@ -29,7 +29,6 @@ from idaes.core import (
     VaporPhase,
     Component,
     Solute,
-    Solvent,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
@@ -316,13 +315,27 @@ class ADM1_vaporStateBlockData(StateBlockData):
                 )
 
         self._p_sat = pyo.Constraint(
-            self.params.solute_set, rule=p_sat_rule, doc="P for not solutes"
+            self.params.solute_set,
+            rule=p_sat_rule,
+            doc="Saturation pressure for components",
         )
 
-        def p_w_sat_rule(b):
-            return self.p_w_sat == 0.0557 * 101325 * pyo.units.Pa
+        def p_w_sat_rule(b, t):
+            return (
+                self.p_w_sat
+                == 0.0313
+                * pyo.exp(
+                    5290
+                    * pyo.units.K
+                    * ((1 / self.params.temperature_ref) - (1 / self.temperature[t]))
+                )
+                * 101325
+                * pyo.units.Pa
+            )
 
-        self._p_w_sat = pyo.Constraint(rule=p_w_sat_rule, doc="P for not solutes")
+        self._p_w_sat = pyo.Constraint(
+            rule=p_w_sat_rule, doc="Saturation pressure for water"
+        )
 
         def material_flow_expression(self, j):
             if j == "H2O":

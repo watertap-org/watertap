@@ -21,6 +21,12 @@ Assumptions:
      * Liquid phase property package has a single phase named Liq
      * Vapor phase property package has a single phase named Vap
      * Liquid and vapor phase properties need not have the same component lists
+
+Model formulated from:
+
+Rosen, C. and Jeppsson, U., 2006.
+Aspects on ADM1 Implementation within the BSM2 Framework.
+Department of Industrial Electrical Engineering and Automation, Lund University, Lund, Sweden, pp.1-35.
 """
 
 # Import Pyomo libraries
@@ -34,9 +40,8 @@ from pyomo.environ import (
     Param,
     units as pyunits,
     check_optimal_termination,
+    exp,
 )
-from pyomo.common.deprecation import deprecated
-
 
 # Import IDAES cores
 from idaes.core import (
@@ -59,6 +64,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.constants import Constants
 
 __author__ = "Alejandro Garciadiego, Andrew Lee"
 
@@ -429,22 +435,22 @@ see reaction package for documentation.}""",
             doc="friction parameter",
         )
 
-        self.KH_co2 = Param(
+        self.KH_co2 = Var(
+            self.flowsheet().time,
             initialize=0.02715,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="CO2 Henry's law coefficient",
         )
-        self.KH_ch4 = Param(
+        self.KH_ch4 = Var(
+            self.flowsheet().time,
             initialize=0.00116,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="CH4 Henry's law coefficient",
         )
-        self.KH_h2 = Param(
+        self.KH_h2 = Var(
+            self.flowsheet().time,
             initialize=7.38e-4,
             units=pyunits.kmol / pyunits.m**3 * pyunits.bar**-1,
-            mutable=True,
             doc="H2 Henry's law coefficient",
         )
         self.K_La = Param(
@@ -452,6 +458,87 @@ see reaction package for documentation.}""",
             units=pyunits.day**-1,
             mutable=True,
             doc="Gas-liquid transfer coefficient",
+        )
+
+        def CO2_Henrys_law_rule(self, t):
+            return (
+                self.KH_co2[t]
+                == (
+                    0.035
+                    * exp(
+                        -19410
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.CO2_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=CO2_Henrys_law_rule,
+            doc="CO2 Henry's law coefficient constraint",
+        )
+
+        def Ch4_Henrys_law_rule(self, t):
+            return (
+                self.KH_ch4[t]
+                == (
+                    0.0014
+                    * exp(
+                        -14240
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.Ch4_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=Ch4_Henrys_law_rule,
+            doc="Ch4 Henry's law coefficient constraint",
+        )
+
+        def H2_Henrys_law_rule(self, t):
+            return (
+                self.KH_h2[t]
+                == (
+                    7.8e-4
+                    * exp(
+                        -4180
+                        / pyunits.mole
+                        * pyunits.joule
+                        / (Constants.gas_constant)
+                        * (
+                            (1 / self.config.vapor_property_package.temperature_ref)
+                            - (1 / self.vapor_phase[t].temperature)
+                        )
+                    )
+                )
+                * pyunits.kilomole
+                / pyunits.bar
+                / pyunits.meter**3
+            )
+
+        self.H2_Henrys_law = Constraint(
+            self.flowsheet().time,
+            rule=H2_Henrys_law_rule,
+            doc="H2 Henry's law coefficient constraint",
         )
 
         def outlet_P_rule(self, t):
@@ -507,7 +594,7 @@ see reaction package for documentation.}""",
                     * pyunits.kg
                     / pyunits.kmol
                     * pyunits.convert(
-                        self.KH_h2,
+                        self.KH_h2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
                     * self.vapor_phase[t].p_sat["S_h2"]
@@ -530,7 +617,7 @@ see reaction package for documentation.}""",
                     * pyunits.kg
                     / pyunits.kmol
                     * pyunits.convert(
-                        self.KH_ch4,
+                        self.KH_ch4[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
                     * self.vapor_phase[t].p_sat["S_ch4"]
@@ -547,10 +634,10 @@ see reaction package for documentation.}""",
         def Sco2_conc_rule(self, t):
             return self.liquid_phase.mass_transfer_term[t, "Liq", "S_IC"] == -1 * (
                 pyunits.convert(self.K_La, to_units=1 / pyunits.s)
-                * (  # 0.0099 * pyunits.kmol / pyunits.m**3
+                * (
                     self.liquid_phase.reactions[t].conc_mol_co2
                     - pyunits.convert(
-                        self.KH_co2,
+                        self.KH_co2[t],
                         to_units=pyunits.kmol / pyunits.m**3 * pyunits.Pa**-1,
                     )
                     * self.vapor_phase[t].p_sat["S_co2"]
@@ -665,6 +752,9 @@ see reaction package for documentation.}""",
         iscale.set_scaling_factor(self.liquid_phase.rate_reaction_extent, 1e2)
         iscale.set_scaling_factor(self.liquid_phase.enthalpy_transfer, 1e-4)
         iscale.set_scaling_factor(self.liquid_phase.volume, 1e-2)
+        iscale.set_scaling_factor(self.KH_co2, 1e2)
+        iscale.set_scaling_factor(self.KH_ch4, 1e3)
+        iscale.set_scaling_factor(self.KH_h2, 1e4)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume_AD[time_point]}

@@ -47,13 +47,10 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
-    unused_variables_set,
-    large_residuals_set,
 )
 
 from idaes.core.util.scaling import (
     unscaled_variables_generator,
-    badly_scaled_var_generator,
 )
 
 from idaes.core.util.testing import initialization_tester
@@ -204,8 +201,8 @@ class TestAdm(object):
         assert hasattr(adm.fs.unit, "volume_vapor")
         assert hasattr(adm.fs.unit, "heat_duty")
 
-        assert number_variables(adm) == 262
-        assert number_total_constraints(adm) == 143
+        assert number_variables(adm) == 265
+        assert number_total_constraints(adm) == 149
         assert number_unused_variables(adm) == 0
 
     @pytest.mark.component
@@ -277,6 +274,9 @@ class TestAdm(object):
         assert pytest.approx(0.174485, abs=1e-2) == value(
             adm.fs.unit.vapor_outlet.conc_mass_comp[0, "S_co2"]
         )
+        assert pytest.approx(0.0271, abs=1e-2) == value(adm.fs.unit.KH_co2[0])
+        assert pytest.approx(0.00116, abs=1e-2) == value(adm.fs.unit.KH_ch4[0])
+        assert pytest.approx(7.8e-4, abs=1e-2) == value(adm.fs.unit.KH_h2[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
