@@ -115,6 +115,18 @@ Equations and Relationships
    "Total Volume", ":math:`V_{ad} = V_{ad, liq} + V_{ad, vap}`"
    "Performance equation", ":math:`ξ_{t, r} = V_{ad, liq}R`"
 
+Classes
+-------
+.. currentmodule:: watertap.unit_models.anaerobic_digestor
+
+.. autoclass:: AD
+    :members:
+    :noindex:
+
+.. autoclass:: ADData
+    :members:
+    :noindex:
+
 References
 ----------
 [1] Batstone, D.J., Keller, J., Angelidaki, I., Kalyuzhnyi, S.V., Pavlostathis, S.G., Rozzi, A., Sanders, W.T.M., Siegrist, H.A. and Vavilin, V.A., 2002.

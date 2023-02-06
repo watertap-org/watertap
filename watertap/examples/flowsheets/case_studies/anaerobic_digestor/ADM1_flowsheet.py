@@ -10,11 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""
-
-"""
-
-# Some more information about this module
 __author__ = "Alejandro Garciadiego, Adam Atia"
 
 import pyomo.environ as pyo
@@ -23,14 +18,7 @@ from pyomo.environ import (
 )
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
-from idaes.core.util.tables import (
-    create_stream_table_dataframe,
-    stream_table_dataframe_to_string,
-)
-from pyomo.util.check_units import assert_units_consistent
 from watertap.unit_models.anaerobic_digestor import AD
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
@@ -41,7 +29,6 @@ from watertap.property_models.anaerobic_digestion.adm1_properties_vapor import (
 from watertap.property_models.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
-from idaes.core.util.model_diagnostics import DegeneracyHunter
 
 
 def build_flowsheet():
