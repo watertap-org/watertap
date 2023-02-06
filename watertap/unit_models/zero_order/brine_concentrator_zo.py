@@ -14,6 +14,7 @@
 This module contains a zero-order representation of a brine concentrator unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 
@@ -118,3 +119,78 @@ class BrineConcentratorZOData(ZeroOrderBaseData):
         self._perf_var_dict[
             "Electricity intensity per Inlet Flowrate  (kWh/m3)"
         ] = self.electricity_intensity
+
+    @property
+    def default_costing_method(self):
+        return self.cost_brine_concentrator
+
+    @staticmethod
+    def cost_brine_concentrator(blk):
+        """
+        General method for costing brine concentration processes. Capital cost
+        is based on the volumetirc flowrate and TDS of the incoming stream and
+        the water recovery.
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+        inlet_state = blk.unit_model.properties_in[t0]
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "capital_a_parameter",
+                "capital_b_parameter",
+                "capital_c_parameter",
+                "capital_d_parameter",
+            ],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = (
+            pyo.units.convert(
+                A, to_units=blk.config.flowsheet_costing_block.base_currency
+            )
+            + pyo.units.convert(
+                B * inlet_state.conc_mass_comp["tds"],
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+            + pyo.units.convert(
+                C * blk.unit_model.recovery_frac_mass_H2O[t0],
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+            + pyo.units.convert(
+                D * inlet_state.flow_vol,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )

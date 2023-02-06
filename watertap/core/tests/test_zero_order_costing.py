@@ -29,7 +29,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock, ConfigValue
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, declare_process_block_class
 from idaes.core.solvers import get_solver
 from idaes.core import UnitModelCostingBlock
 from idaes.core.util.model_statistics import (
@@ -41,11 +41,18 @@ from idaes.core.util.misc import add_object_reference
 from watertap.core.zero_order_costing import (
     ZeroOrderCosting,
     _load_case_study_definition,
-    _get_tech_parameters,
 )
+from watertap.core.zero_order_base import ZeroOrderBaseData
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import ChemicalAdditionZO, NanofiltrationZO
+
+
+@declare_process_block_class("DerivedZOBase")
+class DerivedZOBaseData(ZeroOrderBaseData):
+    def build(self):
+        super().build()
+
 
 solver = get_solver()
 
@@ -57,42 +64,44 @@ class TestGeneralMethods:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.frame = ZeroOrderCosting()
+        m.fs.params = WaterParameterBlock(solute_list=["A", "B", "C"])
+
+        m.fs.frame = ZeroOrderCosting()
 
         # Dummy a unit model to use with _get_tech_parameters
-        m.dummy_unit = Block(concrete=True)
-        m.dummy_unit.config = ConfigBlock()
-        m.dummy_unit.config.declare("flowsheet_costing_block", ConfigValue())
-        m.dummy_unit.config.flowsheet_costing_block = m.frame
-        add_object_reference(m.dummy_unit, "unit_model", m.dummy_unit)
-        m.dummy_unit._tech_type = "test_tech"
+        m.fs.dummy_unit = DerivedZOBase(property_package=m.fs.params)
+        m.fs.dummy_unit._tech_type = "test_tech"
+        m.fs.dummy_unit.config.declare("flowsheet_costing_block", ConfigValue())
+        m.fs.dummy_unit.config.flowsheet_costing_block = m.fs.frame
+        add_object_reference(m.fs.dummy_unit, "unit_model", m.fs.dummy_unit)
 
         return m
 
     @pytest.mark.unit
     def test_load_case_study_definition(self, model):
-        assert model.frame.config.case_study_definition is None
+        assert model.fs.frame.config.case_study_definition is None
 
-        def_dict = _load_case_study_definition(model.frame)
+        def_dict = _load_case_study_definition(model.fs.frame)
 
         assert isinstance(def_dict, dict)
 
-        model.frame.config.case_study_definition = "foo"
+        model.fs.frame.config.case_study_definition = "foo"
         with pytest.raises(
             OSError,
             match="Could not find specified case study "
             "definition file. Please check the path provided.",
         ):
-            _load_case_study_definition(model.frame)
+            _load_case_study_definition(model.fs.frame)
 
     @pytest.mark.unit
     def test_build_global_params(self, model):
-        assert model.frame.base_currency == pyunits.MUSD_2018
-        assert model.frame.base_period == pyunits.year
+        assert model.fs.frame.base_currency == pyunits.MUSD_2018
+        assert model.fs.frame.base_period == pyunits.year
 
-        assert len(model.frame.defined_flows) == 21
-        for f in model.frame.defined_flows:
+        assert len(model.fs.frame.defined_flows) == 21
+        for f in model.fs.frame.defined_flows:
             assert f in [
                 "heat",
                 "electricity",
@@ -117,43 +126,43 @@ class TestGeneralMethods:
                 "sulfuric_acid",
             ]
 
-        assert number_unfixed_variables(model.frame) == 0
+        assert number_unfixed_variables(model.fs.frame) == 0
 
-        assert isinstance(model.frame.plant_lifetime, Var)
-        assert value(model.frame.plant_lifetime) == 30
-        assert isinstance(model.frame.utilization_factor, Var)
-        assert value(model.frame.utilization_factor) == 1
+        assert isinstance(model.fs.frame.plant_lifetime, Var)
+        assert value(model.fs.frame.plant_lifetime) == 30
+        assert isinstance(model.fs.frame.utilization_factor, Var)
+        assert value(model.fs.frame.utilization_factor) == 1
 
-        assert isinstance(model.frame.land_cost_percent_FCI, Var)
-        assert value(model.frame.land_cost_percent_FCI) == 0.0015
-        assert isinstance(model.frame.working_capital_percent_FCI, Var)
-        assert value(model.frame.working_capital_percent_FCI) == 0.05
-        assert isinstance(model.frame.salaries_percent_FCI, Var)
-        assert value(model.frame.salaries_percent_FCI) == 0.001
-        assert isinstance(model.frame.benefit_percent_of_salary, Var)
-        assert value(model.frame.benefit_percent_of_salary) == 0.9
-        assert isinstance(model.frame.maintenance_costs_percent_FCI, Var)
-        assert value(model.frame.maintenance_costs_percent_FCI) == 0.008
-        assert isinstance(model.frame.laboratory_fees_percent_FCI, Var)
-        assert value(model.frame.laboratory_fees_percent_FCI) == 0.003
-        assert isinstance(model.frame.insurance_and_taxes_percent_FCI, Var)
-        assert value(model.frame.insurance_and_taxes_percent_FCI) == 0.002
+        assert isinstance(model.fs.frame.land_cost_percent_FCI, Var)
+        assert value(model.fs.frame.land_cost_percent_FCI) == 0.0015
+        assert isinstance(model.fs.frame.working_capital_percent_FCI, Var)
+        assert value(model.fs.frame.working_capital_percent_FCI) == 0.05
+        assert isinstance(model.fs.frame.salaries_percent_FCI, Var)
+        assert value(model.fs.frame.salaries_percent_FCI) == 0.001
+        assert isinstance(model.fs.frame.benefit_percent_of_salary, Var)
+        assert value(model.fs.frame.benefit_percent_of_salary) == 0.9
+        assert isinstance(model.fs.frame.maintenance_costs_percent_FCI, Var)
+        assert value(model.fs.frame.maintenance_costs_percent_FCI) == 0.008
+        assert isinstance(model.fs.frame.laboratory_fees_percent_FCI, Var)
+        assert value(model.fs.frame.laboratory_fees_percent_FCI) == 0.003
+        assert isinstance(model.fs.frame.insurance_and_taxes_percent_FCI, Var)
+        assert value(model.fs.frame.insurance_and_taxes_percent_FCI) == 0.002
 
-        assert isinstance(model.frame.wacc, Var)
-        assert value(model.frame.wacc) == 0.05
-        assert isinstance(model.frame.capital_recovery_factor, Expression)
-        assert value(model.frame.capital_recovery_factor) == pytest.approx(
+        assert isinstance(model.fs.frame.wacc, Var)
+        assert value(model.fs.frame.wacc) == 0.05
+        assert isinstance(model.fs.frame.capital_recovery_factor, Expression)
+        assert value(model.fs.frame.capital_recovery_factor) == pytest.approx(
             0.0650514, rel=1e-5
         )
 
-        assert isinstance(model.frame.TPEC, Var)
-        assert value(model.frame.TPEC) == 3.4
-        assert isinstance(model.frame.TIC, Var)
-        assert value(model.frame.TIC) == 1.65
+        assert isinstance(model.fs.frame.TPEC, Var)
+        assert value(model.fs.frame.TPEC) == 3.4
+        assert isinstance(model.fs.frame.TIC, Var)
+        assert value(model.fs.frame.TIC) == 1.65
 
     @pytest.mark.unit
     def test_get_tech_parameters_first_call(self, model):
-        assert not hasattr(model.frame, "test_tech")
+        assert not hasattr(model.fs.frame, "test_tech")
 
         parameters = {
             "capital_cost": {
@@ -163,45 +172,45 @@ class TestGeneralMethods:
             }
         }
 
-        A, B, R = _get_tech_parameters(
-            model.dummy_unit,
+        A, B, R = model.fs.dummy_unit._get_tech_parameters(
+            model.fs.dummy_unit,
             parameters,
             None,
             ["capital_a_parameter", "capital_b_parameter", "reference_state"],
         )
 
-        assert isinstance(model.frame.test_tech, Block)
-        assert isinstance(model.frame.test_tech.subtype_set, Set)
-        assert len(model.frame.test_tech.subtype_set) == 1
-        assert None in model.frame.test_tech.subtype_set
+        assert isinstance(model.fs.frame.test_tech, Block)
+        assert isinstance(model.fs.frame.test_tech.subtype_set, Set)
+        assert len(model.fs.frame.test_tech.subtype_set) == 1
+        assert None in model.fs.frame.test_tech.subtype_set
 
-        assert isinstance(model.frame.test_tech.capital_a_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_a_parameter, Var)
         assert (
-            model.frame.test_tech.capital_a_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_a_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_a_parameter[None]) == 1
-        assert model.frame.test_tech.capital_a_parameter[None].fixed
+        assert value(model.fs.frame.test_tech.capital_a_parameter[None]) == 1
+        assert model.fs.frame.test_tech.capital_a_parameter[None].fixed
 
-        assert isinstance(model.frame.test_tech.capital_b_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_b_parameter, Var)
         assert (
-            model.frame.test_tech.capital_b_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_b_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_b_parameter[None]) == 7
-        assert model.frame.test_tech.capital_b_parameter[None].fixed
+        assert value(model.fs.frame.test_tech.capital_b_parameter[None]) == 7
+        assert model.fs.frame.test_tech.capital_b_parameter[None].fixed
 
-        assert isinstance(model.frame.test_tech.reference_state, Var)
+        assert isinstance(model.fs.frame.test_tech.reference_state, Var)
         assert (
-            model.frame.test_tech.reference_state.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.reference_state.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.reference_state[None]) == 22
-        assert model.frame.test_tech.reference_state[None].fixed
+        assert value(model.fs.frame.test_tech.reference_state[None]) == 22
+        assert model.fs.frame.test_tech.reference_state[None].fixed
 
-        assert A is model.frame.test_tech.capital_a_parameter[None]
-        assert B is model.frame.test_tech.capital_b_parameter[None]
-        assert R is model.frame.test_tech.reference_state[None]
+        assert A is model.fs.frame.test_tech.capital_a_parameter[None]
+        assert B is model.fs.frame.test_tech.capital_b_parameter[None]
+        assert R is model.fs.frame.test_tech.reference_state[None]
 
     @pytest.mark.unit
     def test_get_tech_parameters_second_call(self, model):
@@ -214,45 +223,45 @@ class TestGeneralMethods:
             }
         }
 
-        A, B, R = _get_tech_parameters(
-            model.dummy_unit,
+        A, B, R = model.fs.dummy_unit._get_tech_parameters(
+            model.fs.dummy_unit,
             parameters,
             None,
             ["capital_a_parameter", "capital_b_parameter", "reference_state"],
         )
 
-        assert isinstance(model.frame.test_tech, Block)
-        assert isinstance(model.frame.test_tech.subtype_set, Set)
-        assert len(model.frame.test_tech.subtype_set) == 1
-        assert None in model.frame.test_tech.subtype_set
+        assert isinstance(model.fs.frame.test_tech, Block)
+        assert isinstance(model.fs.frame.test_tech.subtype_set, Set)
+        assert len(model.fs.frame.test_tech.subtype_set) == 1
+        assert None in model.fs.frame.test_tech.subtype_set
 
-        assert isinstance(model.frame.test_tech.capital_a_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_a_parameter, Var)
         assert (
-            model.frame.test_tech.capital_a_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_a_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_a_parameter[None]) == 1
-        assert model.frame.test_tech.capital_a_parameter[None].fixed
+        assert value(model.fs.frame.test_tech.capital_a_parameter[None]) == 1
+        assert model.fs.frame.test_tech.capital_a_parameter[None].fixed
 
-        assert isinstance(model.frame.test_tech.capital_b_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_b_parameter, Var)
         assert (
-            model.frame.test_tech.capital_b_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_b_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_b_parameter[None]) == 7
-        assert model.frame.test_tech.capital_b_parameter[None].fixed
+        assert value(model.fs.frame.test_tech.capital_b_parameter[None]) == 7
+        assert model.fs.frame.test_tech.capital_b_parameter[None].fixed
 
-        assert isinstance(model.frame.test_tech.reference_state, Var)
+        assert isinstance(model.fs.frame.test_tech.reference_state, Var)
         assert (
-            model.frame.test_tech.reference_state.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.reference_state.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.reference_state[None]) == 22
-        assert model.frame.test_tech.reference_state[None].fixed
+        assert value(model.fs.frame.test_tech.reference_state[None]) == 22
+        assert model.fs.frame.test_tech.reference_state[None].fixed
 
-        assert A is model.frame.test_tech.capital_a_parameter[None]
-        assert B is model.frame.test_tech.capital_b_parameter[None]
-        assert R is model.frame.test_tech.reference_state[None]
+        assert A is model.fs.frame.test_tech.capital_a_parameter[None]
+        assert B is model.fs.frame.test_tech.capital_b_parameter[None]
+        assert R is model.fs.frame.test_tech.reference_state[None]
 
     @pytest.mark.unit
     def test_get_tech_parameters_second_subtype(self, model):
@@ -266,45 +275,45 @@ class TestGeneralMethods:
         }
 
         # Provide subtype foo
-        A, B, R = _get_tech_parameters(
-            model.dummy_unit,
+        A, B, R = model.fs.dummy_unit._get_tech_parameters(
+            model.fs.dummy_unit,
             parameters,
             "foo",
             ["capital_a_parameter", "capital_b_parameter", "reference_state"],
         )
 
-        assert isinstance(model.frame.test_tech, Block)
-        assert isinstance(model.frame.test_tech.subtype_set, Set)
-        assert len(model.frame.test_tech.subtype_set) == 2
-        assert "foo" in model.frame.test_tech.subtype_set
+        assert isinstance(model.fs.frame.test_tech, Block)
+        assert isinstance(model.fs.frame.test_tech.subtype_set, Set)
+        assert len(model.fs.frame.test_tech.subtype_set) == 2
+        assert "foo" in model.fs.frame.test_tech.subtype_set
 
-        assert isinstance(model.frame.test_tech.capital_a_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_a_parameter, Var)
         assert (
-            model.frame.test_tech.capital_a_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_a_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_a_parameter["foo"]) == 100
-        assert model.frame.test_tech.capital_a_parameter["foo"].fixed
+        assert value(model.fs.frame.test_tech.capital_a_parameter["foo"]) == 100
+        assert model.fs.frame.test_tech.capital_a_parameter["foo"].fixed
 
-        assert isinstance(model.frame.test_tech.capital_b_parameter, Var)
+        assert isinstance(model.fs.frame.test_tech.capital_b_parameter, Var)
         assert (
-            model.frame.test_tech.capital_b_parameter.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.capital_b_parameter.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.capital_b_parameter["foo"]) == 700
-        assert model.frame.test_tech.capital_b_parameter["foo"].fixed
+        assert value(model.fs.frame.test_tech.capital_b_parameter["foo"]) == 700
+        assert model.fs.frame.test_tech.capital_b_parameter["foo"].fixed
 
-        assert isinstance(model.frame.test_tech.reference_state, Var)
+        assert isinstance(model.fs.frame.test_tech.reference_state, Var)
         assert (
-            model.frame.test_tech.reference_state.index_set()
-            is model.frame.test_tech.subtype_set
+            model.fs.frame.test_tech.reference_state.index_set()
+            is model.fs.frame.test_tech.subtype_set
         )
-        assert value(model.frame.test_tech.reference_state["foo"]) == 2200
-        assert model.frame.test_tech.reference_state["foo"].fixed
+        assert value(model.fs.frame.test_tech.reference_state["foo"]) == 2200
+        assert model.fs.frame.test_tech.reference_state["foo"].fixed
 
-        assert A is model.frame.test_tech.capital_a_parameter["foo"]
-        assert B is model.frame.test_tech.capital_b_parameter["foo"]
-        assert R is model.frame.test_tech.reference_state["foo"]
+        assert A is model.fs.frame.test_tech.capital_a_parameter["foo"]
+        assert B is model.fs.frame.test_tech.capital_b_parameter["foo"]
+        assert R is model.fs.frame.test_tech.reference_state["foo"]
 
 
 class TestWorkflow:
