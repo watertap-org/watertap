@@ -317,13 +317,12 @@ def set_operating_conditions(
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
-        print(
+        raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
             "degrees of freedom rather than 0. This error suggests "
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-        raise
 
 
 def solve(blk, solver=None, tee=True):

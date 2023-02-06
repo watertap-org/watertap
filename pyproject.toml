@@ -13,7 +13,6 @@ disable = """W,R,C,
     unsupported-binary-operation,
     unsubscriptable-object,
     no-value-for-parameter,
-    misplaced-bare-raise,
 """
 # see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
 # for a list of all messages
