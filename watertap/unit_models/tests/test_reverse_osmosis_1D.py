@@ -52,7 +52,7 @@ from idaes.core.util.scaling import (
 )
 
 from watertap.core import (
-    MembraneChannel0DBlock,
+    MembraneChannel1DBlock,
     FrictionFactor,
 )
 import idaes.logger as idaeslog
