@@ -1,0 +1,10 @@
+[tool.pylint.main]
+py-version = "3.8"
+
+[tool.pylint."messages control"]
+disable = "all"
+# see https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html
+# for a list of all messages
+enable = [
+    "unnecessary-pass",
+]
