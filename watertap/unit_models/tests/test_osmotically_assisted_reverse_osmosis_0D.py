@@ -55,8 +55,8 @@ from watertap.core import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
+    SherwoodNumberEq,
 )
-from watertap.core.membrane_channel_base import SherwoodNumberEq
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
