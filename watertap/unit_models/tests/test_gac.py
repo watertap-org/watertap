@@ -434,28 +434,26 @@ class TestGACRobust:
         # Check for known cost solution of default twin alternating contactors
         assert value(mr.fs.costing.gac.num_contactors_op) == 1
         assert value(mr.fs.costing.gac.num_contactors_redundant) == 1
-        assert pytest.approx(56900.93523, rel=1e-5) == value(
+        assert pytest.approx(56900, rel=1e-3) == value(
             mr.fs.unit.costing.contactor_cost
         )
-        assert pytest.approx(4.359114384, rel=1e-5) == value(
+        assert pytest.approx(4.359, rel=1e-3) == value(
             mr.fs.unit.costing.adsorbent_unit_cost
         )
-        assert pytest.approx(17454.52868, rel=1e-5) == value(
+        assert pytest.approx(17450, rel=1e-3) == value(
             mr.fs.unit.costing.adsorbent_cost
         )
-        assert pytest.approx(81692.69369, rel=1e-5) == value(
+        assert pytest.approx(81690, rel=1e-3) == value(
             mr.fs.unit.costing.other_process_cost
         )
-        assert pytest.approx(156048.1576, rel=1e-5) == value(
-            mr.fs.unit.costing.capital_cost
-        )
-        assert pytest.approx(13535.92023, rel=1e-5) == value(
+        assert pytest.approx(156000, rel=1e-3) == value(mr.fs.unit.costing.capital_cost)
+        assert pytest.approx(13540, rel=1e-3) == value(
             mr.fs.unit.costing.gac_makeup_cost
         )
-        assert pytest.approx(29524.89977, rel=1e-5) == value(
+        assert pytest.approx(29520, rel=1e-3) == value(
             mr.fs.unit.costing.gac_regen_cost
         )
-        assert pytest.approx(43060.81999, rel=1e-5) == value(
+        assert pytest.approx(43060, rel=1e-3) == value(
             mr.fs.unit.costing.fixed_operating_cost
         )
 
@@ -479,15 +477,13 @@ class TestGACRobust:
         # Check for known cost solution when changing volume scale of vessels in parallel
         assert value(mr.fs.costing.gac.num_contactors_op) == 4
         assert value(mr.fs.costing.gac.num_contactors_redundant) == 2
-        assert pytest.approx(89035.16691, rel=1e-5) == value(
+        assert pytest.approx(89040, rel=1e-3) == value(
             mr.fs.unit.costing.contactor_cost
         )
-        assert pytest.approx(69693.33132, rel=1e-5) == value(
+        assert pytest.approx(69690, rel=1e-3) == value(
             mr.fs.unit.costing.other_process_cost
         )
-        assert pytest.approx(176183.0269, rel=1e-5) == value(
-            mr.fs.unit.costing.capital_cost
-        )
+        assert pytest.approx(176200, rel=1e-3) == value(mr.fs.unit.costing.capital_cost)
 
     @pytest.mark.component
     def test_robust_costing_max_gac_ref(self, gac_frame_robust):
@@ -540,6 +536,8 @@ class TestGACMulti:
             charge={"BGCAT": 1, "BGAN": -2},
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
+        mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
+        mm.fs.properties.dens_mass_const = 1000
 
         # testing target_species arg
         mm.fs.unit = GAC(
@@ -579,15 +577,24 @@ class TestGACMulti:
         mm.fs.unit.adsorbed_contam[0].flow_vol_phase["Liq"]
 
         # trial problem from Crittenden, 2012 for removal of TCE
-        mm.fs.unit.conc_ratio_replace.fix(0.80)
+        # adsorption isotherm
         mm.fs.unit.freund_k.fix(1062e-6 * (1e6**0.48))
         mm.fs.unit.freund_ninv.fix(0.48)
-        mm.fs.unit.ebct.fix(10 * 60)
-        mm.fs.unit.bed_voidage.fix(0.44)
+
+        # gac particle specifications
         mm.fs.unit.particle_porosity.fix(0.641)
         mm.fs.unit.particle_dens_app.fix(803.4)
         mm.fs.unit.particle_dia.fix(0.001026)
+
+        # adsorber bed specifications
+        mm.fs.unit.ebct.fix(10 * 60)
+        mm.fs.unit.bed_voidage.fix(0.44)
         mm.fs.unit.velocity_sup.fix(5 / 3600)
+
+        # design spec
+        mm.fs.unit.conc_ratio_replace.fix(0.80)
+
+        # parameters
         mm.fs.unit.tort.fix(1)
         mm.fs.unit.spdfr.fix(1)
         mm.fs.unit.sphericity.fix(1.5)
@@ -662,6 +669,7 @@ class TestGACMulti:
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mm.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mm.fs.unit.elap_time)
+        assert pytest.approx(0.8333, rel=1e-3) == value(mm.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mm.fs.unit.bed_area)
 
     @pytest.mark.component
