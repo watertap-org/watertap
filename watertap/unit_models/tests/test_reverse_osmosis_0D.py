@@ -26,7 +26,6 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
-    SherwoodNumberEq,
 )
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
@@ -50,7 +49,10 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 
-from watertap.core import MembraneChannel0DBlock
+from watertap.core import (
+    MembraneChannel0DBlock,
+    SherwoodNumberEq,
+)
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------

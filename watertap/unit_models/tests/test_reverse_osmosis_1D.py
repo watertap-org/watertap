@@ -33,7 +33,6 @@ from watertap.unit_models.reverse_osmosis_1D import (
     ConcentrationPolarizationType,
     MassTransferCoefficient,
     PressureChangeType,
-    SherwoodNumberEq,
 )
 import watertap.property_models.NaCl_prop_pack as props
 
@@ -52,7 +51,10 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
 )
 
-from watertap.core import MembraneChannel1DBlock
+from watertap.core import (
+    MembraneChannel1DBlock,
+    SherwoodNumberEq,
+)
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
