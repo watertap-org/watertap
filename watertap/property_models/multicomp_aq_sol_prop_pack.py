@@ -1247,18 +1247,54 @@ class MCASStateBlockData(StateBlockData):
                 units=pyunits.m**2 * pyunits.s**-1,
                 doc="Molecular diffusivity of nonelectrolytes",
             )
+            self.hl_diffus_cont = Param(
+                mutable=True,
+                default=13.26e-9,
+                initialize=13.26e-9,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie correlation constant",
+            )
+            self.hl_visc_coeff = Param(
+                mutable=True,
+                default=1.14,
+                initialize=1.14,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie viscosity coefficient",
+            )
+            self.hl_molar_volume_coeff = Param(
+                mutable=True,
+                default=0.589,
+                initialize=0.589,
+                units=pyunits.dimensionless,
+                doc="Hayduk Laudie molar volume coefficient",
+            )
 
             def rule_diffus_phase_comp(b, p, j):
                 # (Hayduk & Laudie, 1974)
                 diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
-                visc_solvent_inv_units = pyunits.Pa**-1 * pyunits.s**-1
-                molar_volume_inv_units = pyunits.mol * pyunits.m**-3
+                visc_solvent_inv_units = pyunits.cP**-1
+                molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
                 # (1e# * name_inv_units) indicates unit conversions from H-L equation to base SI
-                return (b.diffus_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units) * (
-                    (b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14
-                ) * (
-                    (b.molar_volume_comp[p, j] * 1e6 * molar_volume_inv_units) ** 0.589
-                ) == 13.26e-5
+                return 1 == b.hl_diffus_cont / (
+                    (
+                        (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units)
+                        * (
+                            pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                            * visc_solvent_inv_units
+                        )
+                        ** b.hl_visc_coeff
+                    )
+                    * (
+                        (
+                            pyunits.convert(
+                                b.molar_volume_comp[p, j],
+                                to_units=pyunits.cm**3 * pyunits.mol**-1,
+                            )
+                            * molar_volume_inv_units
+                        )
+                        ** b.hl_molar_volume_coeff
+                    )
+                )
 
             self.eq_diffus_phase_comp = Constraint(
                 self.params.phase_list,

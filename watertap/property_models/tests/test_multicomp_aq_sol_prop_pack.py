@@ -1354,12 +1354,13 @@ def model7():
         solute_list=["A", "B", "C", "D"],
         diffus_calculation=DiffusivityCalculation.hayduklaudie,
         molar_volume_data={
-            ("Liq", "A"): 50e-6,
-            ("Liq", "B"): 100e-6,
-            ("Liq", "C"): 60e-6,
-            ("Liq", "D"): 200e-6,
+            ("Liq", "A"): 96e-6,  # tested for benzene
+            ("Liq", "B"): 100e-6,  # arbitrary
+            ("Liq", "C"): 60e-6,  # arbitrary
+            ("Liq", "D"): 200e-6,  # arbitrary
         },
     )
+    m_hl.fs.properties.visc_d_phase["Liq"] = 1.0e-3
 
     return m_hl
 
@@ -1386,14 +1387,18 @@ def test_diffus_hl(model7):
     assert_optimal_termination(results)
 
     assert isinstance(m.fs.properties.molar_volume_comp, Param)
-    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 50e-6
+    assert m.fs.properties.molar_volume_comp["Liq", "A"].value == 96e-6
     assert m.fs.properties.molar_volume_comp["Liq", "B"].value == 100e-6
     assert m.fs.properties.molar_volume_comp["Liq", "C"].value == 60e-6
     assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 200e-6
 
     sb = m.fs.sb[0]
+    sb.display()
+    print(sb.diffus_phase_comp["Liq", "A"].value)
 
-    assert sb.diffus_phase_comp["Liq", "A"].value == pytest.approx(1.324e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "A"].value == pytest.approx(
+        9.015e-10, rel=1e-3
+    )  # tested for benzene
     assert sb.diffus_phase_comp["Liq", "B"].value == pytest.approx(8.801e-10, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "C"].value == pytest.approx(1.189e-09, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "D"].value == pytest.approx(5.851e-10, rel=1e-3)
