@@ -16,6 +16,7 @@ This module contains a zero-order representation of a peracetic acid (PAA) water
 disinfection unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import Var, units as pyunits
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBaseData
@@ -171,3 +172,58 @@ class PeraceticAcidDisinfectionData(ZeroOrderBaseData):
                 * b.properties_treated[t].flow_vol,
                 to_units=pyunits.kg / pyunits.s,
             )
+
+    @property
+    def default_costing_method(self):
+        return self.cost_peracetic_acid
+
+    @staticmethod
+    def cost_peracetic_acid(blk):
+        """
+        General method for costing peracetic acid water disinfection.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type,
+            subtype=blk.unit_model.config.process_subtype,
+        )
+
+        # Get costing parameter sub-block for this technology
+        sizing_cost = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["sizing_cost"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * sizing_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.disinfection_solution_flow_vol[t0], "disinfection_solution"
+        )
