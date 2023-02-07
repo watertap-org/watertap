@@ -534,6 +534,7 @@ class TestGACMulti:
                 "BGAN": 0.1,
             },
             charge={"BGCAT": 1, "BGAN": -2},
+            diffus_calculation=DiffusivityCalculation.hayduklaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
         mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
@@ -616,6 +617,10 @@ class TestGACMulti:
         assert len(mm.fs.unit.config.property_package.solute_set) == 2
         assert len(mm.fs.unit.config.property_package.solvent_set) == 1
         assert len(mm.fs.unit.config.property_package.ion_set) == 2
+        assert (
+            mm.fs.properties.config.diffus_calculation
+            == DiffusivityCalculation.hayduklaudie
+        )
 
         assert degrees_of_freedom(mm) == 0
 
@@ -668,7 +673,7 @@ class TestGACMulti:
 
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mm.fs.unit.mass_throughput)
-        assert pytest.approx(12310000, rel=1e-3) == value(mm.fs.unit.elap_time)
+        assert pytest.approx(12830000, rel=1e-3) == value(mm.fs.unit.elap_time)
         assert pytest.approx(0.8333, rel=1e-3) == value(mm.fs.unit.bed_length)
         assert pytest.approx(10.68, rel=1e-3) == value(mm.fs.unit.bed_area)
 
