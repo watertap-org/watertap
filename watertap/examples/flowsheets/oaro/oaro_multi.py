@@ -35,8 +35,8 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (
     solve_indexed_blocks,
-    propagate_state,
-    # propagate_state as _pro_state,
+    # propagate_state,
+    propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.core import UnitModelCostingBlock
@@ -73,10 +73,10 @@ def erd_type_not_found(erd_type):
     )
 
 
-# def propagate_state(arc):
-#     _pro_state(arc)
-#     print(arc.destination.name)
-#     arc.destination.display()
+def propagate_state(arc):
+    _pro_state(arc)
+    print(arc.destination.name)
+    arc.destination.display()
 
 
 def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
@@ -404,7 +404,7 @@ def set_operating_conditions(
 
     # primary pumps
     for idx, pump in m.fs.PrimaryPumps.items():
-        pump.control_volume.properties_out[0].pressure = 65e5 - 10e5 * (idx - 1)
+        pump.control_volume.properties_out[0].pressure = 65e5
         pump.efficiency_pump.fix(0.80)
         pump.control_volume.properties_out[0].pressure.fix()
 
@@ -476,49 +476,44 @@ def set_operating_conditions(
         raise
 
 
-def recycle_pump_initializer(pump, solvent_multiplier, solute_multiplier):
-    for vname in pump.control_volume.properties_in[0].vars:
-        if vname == "flow_mass_phase_comp":
-            for phase, comp in pump.control_volume.properties_in[0].vars[vname]:
-                if comp in pump.config.property_package.solute_set:
-                    pump.control_volume.properties_out[0].vars[vname][
-                        phase, comp
-                    ].value = (
-                        solute_multiplier
-                        * pump.control_volume.properties_out[0]
-                        .vars[vname][phase, comp]
-                        .value
-                    )
-                elif comp in pump.config.property_package.solvent_set:
-                    pump.control_volume.properties_out[0].vars[vname][
-                        phase, comp
-                    ].value = (
-                        solvent_multiplier
-                        * pump.control_volume.properties_in[0]
-                        .vars[vname][phase, comp]
-                        .value
-                    )
-                else:
-                    raise RuntimeError(f"Unknown component {comp}")
-        else:  # copy the state
-            for idx in pump.control_volume.properties_in[0].vars[vname]:
-                pump.control_volume.properties_out[0].vars[vname][idx].value = (
-                    pump.control_volume.properties_in[0].vars[vname][idx].value
-                )
+def recycle_pump_initializer(pump, oaro, solvent_multiplier, solute_multiplier):
+    # for vname in pump.control_volume.properties_in[0].vars:
+    #     if vname == "flow_mass_phase_comp":
+    #         for phase, comp in pump.control_volume.properties_in[0].vars[vname]:
+    #             if comp in pump.config.property_package.solute_set:
+    #                 pump.control_volume.properties_out[0].vars[vname][
+    #                     phase, comp
+    #                 ].value = (
+    #                     solute_multiplier
+    #                     * pump.control_volume.properties_out[0]
+    #                     .vars[vname][phase, comp]
+    #                     .value
+    #                 )
+    #             elif comp in pump.config.property_package.solvent_set:
+    #                 pump.control_volume.properties_out[0].vars[vname][
+    #                     phase, comp
+    #                 ].value = (
+    #                     solvent_multiplier
+    #                     * pump.control_volume.properties_in[0]
+    #                     .vars[vname][phase, comp]
+    #                     .value
+    #                 )
+    #             else:
+    #                 raise RuntimeError(f"Unknown component {comp}")
+    #     else:  # copy the state
+    #         for idx in pump.control_volume.properties_in[0].vars[vname]:
+    #             pump.control_volume.properties_out[0].vars[vname][idx].value = (
+    #                 pump.control_volume.properties_in[0].vars[vname][idx].value
+    #             )
 
-    # feed_temperature = 273.15 + 25
-    # pump.control_volume.properties_out[
-    #     0
-    # ].temperature.value = feed_temperature
-    # permeate_flow_mass = 1 / stage + 0.3
-    # permeate_mass_frac_NaCl = 0.07 / stage
-    # permeate_mass_frac_H2O = 1 - permeate_mass_frac_NaCl
-    # pump.control_volume.properties_out[0].flow_mass_phase_comp[
-    #     "Liq", "H2O"
-    # ].value = (permeate_flow_mass * permeate_mass_frac_H2O)
-    # pump.control_volume.properties_out[0].flow_mass_phase_comp[
-    #     "Liq", "NaCl"
-    # ].value = (permeate_flow_mass * permeate_mass_frac_NaCl)
+    feed_temperature = 273.15 + 25
+    pump.control_volume.properties_out[0].temperature.value = feed_temperature
+    pump.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "H2O"].value = (
+        oaro.feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * solvent_multiplier
+    )
+    pump.control_volume.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].value = (
+        oaro.feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"] * solute_multiplier
+    )
 
 
 def solve(blk, solver=None, tee=True):
@@ -540,9 +535,12 @@ def initialize_loop(m, solver):
         propagate_state(m.fs.pump_to_OARO[stage])
         recycle_pump_initializer(
             m.fs.RecyclePumps[stage + 1],
-            solvent_multiplier=0.5,
-            solute_multiplier=0.2,
+            m.fs.OAROUnits[stage],
+            solvent_multiplier=0.8,
+            solute_multiplier=0.5,
         )
+        # print(m.fs.recyclepump_to_OARO[stage + 1].destination.name)
+        # m.fs.recyclepump_to_OARO[stage + 1].destination.display()
         propagate_state(m.fs.recyclepump_to_OARO[stage + 1])
         m.fs.OAROUnits[stage].initialize()
 
@@ -574,9 +572,12 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.pump_to_OARO[first_stage])
     recycle_pump_initializer(
         m.fs.RecyclePumps[first_stage + 1],
-        solvent_multiplier=0.5,
-        solute_multiplier=0.2,
+        m.fs.OAROUnits[first_stage],
+        solvent_multiplier=0.8,
+        solute_multiplier=0.5,
     )
+    # print(m.fs.recyclepump_to_OARO[first_stage + 1].destination.name)
+    # m.fs.recyclepump_to_OARO[first_stage + 1].destination.display()
     propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
     m.fs.OAROUnits[first_stage].initialize()
 
@@ -861,4 +862,4 @@ def display_state(m):
 
 
 if __name__ == "__main__":
-    m = main(2, erd_type=ERDtype.pump_as_turbine)
+    m = main(5, erd_type=ERDtype.pump_as_turbine)
