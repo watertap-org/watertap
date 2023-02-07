@@ -1383,6 +1383,7 @@ def test_diffus_hl(model7):
 
     # init and solve
     m.fs.sb.initialize()
+    calculate_scaling_factors(m.fs)
     results = solver.solve(m)
     assert_optimal_termination(results)
 
@@ -1393,8 +1394,6 @@ def test_diffus_hl(model7):
     assert m.fs.properties.molar_volume_comp["Liq", "D"].value == 200e-6
 
     sb = m.fs.sb[0]
-    sb.display()
-    print(sb.diffus_phase_comp["Liq", "A"].value)
 
     assert sb.diffus_phase_comp["Liq", "A"].value == pytest.approx(
         9.015e-10, rel=1e-3

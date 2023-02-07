@@ -1274,27 +1274,22 @@ class MCASStateBlockData(StateBlockData):
                 diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                 visc_solvent_inv_units = pyunits.cP**-1
                 molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
-                # (1e# * name_inv_units) indicates unit conversions from H-L equation to base SI
-                return 1 == b.hl_diffus_cont / (
+                return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
                     (
-                        (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units)
-                        * (
-                            pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
-                            * visc_solvent_inv_units
-                        )
-                        ** b.hl_visc_coeff
+                        pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                        * visc_solvent_inv_units
                     )
-                    * (
-                        (
-                            pyunits.convert(
-                                b.molar_volume_comp[p, j],
-                                to_units=pyunits.cm**3 * pyunits.mol**-1,
-                            )
-                            * molar_volume_inv_units
+                    ** b.hl_visc_coeff
+                ) * (
+                    (
+                        pyunits.convert(
+                            b.molar_volume_comp[p, j],
+                            to_units=pyunits.cm**3 * pyunits.mol**-1,
                         )
-                        ** b.hl_molar_volume_coeff
+                        * molar_volume_inv_units
                     )
-                )
+                    ** b.hl_molar_volume_coeff
+                ) == b.hl_diffus_cont
 
             self.eq_diffus_phase_comp = Constraint(
                 self.params.phase_list,
@@ -2089,3 +2084,11 @@ class MCASStateBlockData(StateBlockData):
 
         if self.is_property_constructed("ionic_strength_molal"):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
+
+        if self.is_property_constructed("diffus_phase_comp"):
+            if (
+                self.params.config.diffus_calculation
+                == DiffusivityCalculation.hayduklaudie
+            ):
+                for ind, v in self.eq_diffus_phase_comp.items():
+                    iscale.constraint_scaling_transform(v, 1e9)
