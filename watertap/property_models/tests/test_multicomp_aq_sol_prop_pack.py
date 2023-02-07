@@ -1376,6 +1376,10 @@ def test_diffus_hl(model7):
     m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
     # touch on demand var when hayduklaudie is selected
     m.fs.sb[0].diffus_phase_comp
+
+    check_dof(m, fail_flag=True)
+    assert_units_consistent(m)
+
     # init and solve
     m.fs.sb.initialize()
     results = solver.solve(m)
