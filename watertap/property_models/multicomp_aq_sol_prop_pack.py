@@ -1253,6 +1253,7 @@ class MCASStateBlockData(StateBlockData):
                 diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
                 visc_solvent_inv_units = pyunits.Pa**-1 * pyunits.s**-1
                 molar_volume_inv_units = pyunits.mol * pyunits.m**-3
+                # (1e# * name_inv_units) indicates unit conversions from H-L equation to base SI
                 return (b.diffus_phase_comp[p, j] * 1e4 * diffus_coeff_inv_units) * (
                     (b.visc_d_phase[p] * 1e3 * visc_solvent_inv_units) ** 1.14
                 ) * (
@@ -1264,7 +1265,7 @@ class MCASStateBlockData(StateBlockData):
                 self.params.solute_set,
                 rule=rule_diffus_phase_comp,
             )
-        # TODO: add warning for ionic vs molecular diffusivity when ion+solute set > 1
+        # TODO: add warning for use of ionic vs molecular diffusivity when ion+solute set > 1
 
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
