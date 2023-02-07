@@ -1205,8 +1205,8 @@ class TestReverseOsmosis:
 
         # test statistics
         assert number_variables(m) == 227
-        assert number_total_constraints(m) == 190
-        assert number_unused_variables(m) == 14
+        assert number_total_constraints(m) == 189
+        assert number_unused_variables(m) == 15
 
         assert_units_consistent(m.fs.unit)
 
@@ -1262,14 +1262,14 @@ class TestReverseOsmosis:
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain.at(2)
-        assert pytest.approx(1.452e-3, rel=1e-3) == value(
+        assert pytest.approx(1.800e-3, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "H2O"]
         )
-        assert pytest.approx(1.960e-6, rel=1e-3) == value(
+        assert pytest.approx(1.927e-6, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, x_interface_in, "Liq", "NaCl"]
         )
-        assert pytest.approx(431.93, rel=1e-3) == value(m.fs.unit.area)
-        assert pytest.approx(4.422e-4, rel=1e-3) == value(
+        assert pytest.approx(368.01, rel=1e-3) == value(m.fs.unit.area)
+        assert pytest.approx(4.670e-4, rel=1e-3) == value(
             m.fs.unit.flux_mass_phase_comp[0, 1, "Liq", "H2O"]
         )
         assert pytest.approx(2.047e-6, rel=1e-3) == value(
@@ -1278,7 +1278,7 @@ class TestReverseOsmosis:
         assert pytest.approx(0.3895, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "H2O"]
         )
-        assert pytest.approx(8.675e-4, rel=1e-3) == value(
+        assert pytest.approx(7.339e-4, rel=1e-3) == value(
             m.fs.unit.mixed_permeate[0].flow_mass_phase_comp["Liq", "NaCl"]
         )
 

@@ -554,8 +554,17 @@ class MembraneChannelMixin:
             doc="Mass transfer coefficient in membrane channel",
         )
         def eq_K(b, t, x, j):
-            if b._skip_element(x):
+            if sherwood_number_eq == SherwoodNumberEq.length_dependent:
+                if b._flow_direction == FlowDirection.forward:
+                    x_ = x
+                else:
+                    x_ = 1 - x
+                if x_ == 0:
+                    return Constraint.Skip
+
+            elif b._skip_element(x):
                 return Constraint.Skip
+
             return (
                 b.K[t, x, j] * b.dh
                 # TODO: add diff coefficient to SW prop and consider multi-components
@@ -579,7 +588,7 @@ class MembraneChannelMixin:
                     return Constraint.Skip
                 return b.N_Sh_comp[t, x, j] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
-                ) * (((x_ / b.length) / b.dh) ** -0.279)
+                ) * (((x_ * b.length) / b.dh) ** -0.279)
 
         elif sherwood_number_eq == SherwoodNumberEq.length_independent:
 

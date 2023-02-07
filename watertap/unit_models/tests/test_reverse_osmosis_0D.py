@@ -918,11 +918,13 @@ class TestReverseOsmosis:
         m.fs.unit.feed_side.length.fix(10)
         m.fs.unit.feed_side.spacer_porosity.fix(0.75)
         m.fs.unit.length.fix(length)
+        # m.fs.unit.length_domain.at(1)
+        # m.fs.unit.feed_side.length_domain.fix(1)
 
         # test statistics
         assert number_variables(m) == 134
-        assert number_total_constraints(m) == 109
-        assert number_unused_variables(m) == 1  # vars from property package parameters
+        assert number_total_constraints(m) == 107
+        assert number_unused_variables(m) == 2  # vars from property package parameters
 
         # Test units
         assert_units_consistent(m.fs.unit)

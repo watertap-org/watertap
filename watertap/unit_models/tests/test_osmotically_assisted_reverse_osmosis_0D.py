@@ -1267,8 +1267,8 @@ class TestOsmoticallyAssistedReverseOsmosis:
 
         # test statistics
         assert number_variables(m) == 163
-        assert number_total_constraints(m) == 131
-        assert number_unused_variables(m) == 1
+        assert number_total_constraints(m) == 127
+        assert number_unused_variables(m) == 3
 
         # Test units
         assert_units_consistent(m.fs.unit)
