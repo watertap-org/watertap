@@ -571,9 +571,15 @@ class MembraneChannelMixin:
                 doc="Sherwood number",
             )
             def eq_N_Sh_comp_length_dependent(b, t, x, j):
+                if b._flow_direction == FlowDirection.forward:
+                    x_ = x
+                else:
+                    x_ = 1 - x
+                if x_ == 0:
+                    return Constraint.Skip
                 return b.N_Sh_comp[t, x, j] == 2.401 * (
                     (b.N_Re[t, x] * b.N_Sc_comp[t, x, j]) ** 0.297
-                ) * ((b.length / b.dh) ** -0.279)
+                ) * (((x_ / b.length) / b.dh) ** -0.279)
 
         elif sherwood_number_eq == SherwoodNumberEq.length_independent:
 
