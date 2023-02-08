@@ -370,12 +370,12 @@ class MCASParameterData(PhysicalParameterBlock):
                 default=1e-9,
                 initialize=self.config.diffusivity_data,
                 units=pyunits.m**2 * pyunits.s**-1,
-                doc="Bulk diffusivity of ion",
+                doc="Bulk diffusivity of solute components",
             )
         elif self.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie:
-            hl_ind = self.params.config.molar_volume_data.keys()
-            nonhl_ind = self.params.config.diffusivity_data.keys()
-            if not hl_ind | nonhl_ind == self.ion_set | self.solute_set:
+            hl_ind = [i[1] for i in self.config.molar_volume_data.keys()]
+            nonhl_ind = [i[1] for i in self.config.diffusivity_data.keys()]
+            if not (hl_ind + nonhl_ind) == self.ion_set | self.solute_set:
                 raise ConfigurationError(
                     "Insufficient data is provided to determine diffusivity of all solute components. "
                     "Check the molar_volume_data and diffusivity_data configuration."
@@ -387,7 +387,7 @@ class MCASParameterData(PhysicalParameterBlock):
                 default=1e-9,
                 initialize=self.config.diffusivity_data,
                 units=pyunits.m**2 * pyunits.s**-1,
-                doc="Bulk diffusivity of ion",
+                doc="Bulk diffusivity of ions",
             )
         self.molar_volume_comp = Param(
             ["Liq"],
@@ -1257,14 +1257,12 @@ class MCASStateBlockData(StateBlockData):
         elif (
             self.params.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie
         ):
-            add_object_reference(
-                self, "diffus_phase_comp", self.params.diffus_phase_comp_nonhl
-            )
-            hl_ind = self.params.config.molar_volume_data.keys()
+            hl_ind = [i[1] for i in self.params.config.molar_volume_data.keys()]
+            nonhl_ind = [i[1] for i in self.params.config.diffusivity_data.keys()]
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
-                hl_ind,
-                initialize=1e-9,
+                self.params.solute_set | self.params.ion_set,
+                initialize=self.params.config.diffusivity_data,
                 units=pyunits.m**2 * pyunits.s**-1,
                 doc="mass diffusivity of neutral and ionic speices",
             )
@@ -1291,32 +1289,40 @@ class MCASStateBlockData(StateBlockData):
             )
 
             def rule_diffus_phase_comp(b, p, j):
-                # (Hayduk & Laudie, 1974)
-                diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
-                visc_solvent_inv_units = pyunits.cP**-1
-                molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
-                return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
-                    (
-                        pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
-                        * visc_solvent_inv_units
-                    )
-                    ** b.hl_visc_coeff
-                ) * (
-                    (
-                        pyunits.convert(
-                            b.molar_volume_comp[p, j],
-                            to_units=pyunits.cm**3 * pyunits.mol**-1,
+                if j in hl_ind:
+                    # (Hayduk & Laudie, 1974)
+                    diffus_coeff_inv_units = pyunits.s * pyunits.m**-2
+                    visc_solvent_inv_units = pyunits.cP**-1
+                    molar_volume_inv_units = pyunits.mol * pyunits.cm**-3
+                    return (b.diffus_phase_comp[p, j] * diffus_coeff_inv_units) * (
+                        (
+                            pyunits.convert(b.visc_d_phase[p], to_units=pyunits.cP)
+                            * visc_solvent_inv_units
                         )
-                        * molar_volume_inv_units
+                        ** b.hl_visc_coeff
+                    ) * (
+                        (
+                            pyunits.convert(
+                                b.molar_volume_comp[p, j],
+                                to_units=pyunits.cm**3 * pyunits.mol**-1,
+                            )
+                            * molar_volume_inv_units
+                        )
+                        ** b.hl_molar_volume_coeff
+                    ) == b.hl_diffus_cont
+                elif j in nonhl_ind:
+                    return (
+                        b.diffus_phase_comp[p, j]
+                        == self.params.diffus_phase_comp_nonhl[p, j]
                     )
-                    ** b.hl_molar_volume_coeff
-                ) == b.hl_diffus_cont
 
             self.eq_diffus_phase_comp = Constraint(
                 self.params.phase_list,
-                hl_ind,
+                self.params.solute_set | self.params.ion_set,
                 rule=rule_diffus_phase_comp,
             )
+
+            # .add(self.params.diffus_phase_comp_nonhl)
         # TODO: add warning for use of ionic vs molecular diffusivity when ion+solute set > 1
 
     def _visc_d_phase(self):
