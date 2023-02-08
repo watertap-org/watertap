@@ -81,15 +81,15 @@ class OsmoticallyAssistedReverseOsmosis1DData(
 
         # Build membrane channel control volume
         channel_kwargs = {
-           "dynamic":self.config.dynamic,
-           "has_holdup":self.config.has_holdup,
-           "area_definition":self.config.area_definition,
-           "property_package":self.config.property_package,
-           "property_package_args":self.config.property_package_args,
-           "transformation_method":self.config.transformation_method,
-           "transformation_scheme":self.config.transformation_scheme,
-           "finite_elements":self.config.finite_elements,
-           "collocation_points":self.config.collocation_points,
+            "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
+            "area_definition": self.config.area_definition,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args,
+            "transformation_method": self.config.transformation_method,
+            "transformation_scheme": self.config.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points,
         }
 
         self.feed_side = MembraneChannel1DBlock(**channel_kwargs)
@@ -97,8 +97,8 @@ class OsmoticallyAssistedReverseOsmosis1DData(
 
         self._add_length_and_width()
         add_geometry_kwargs = {
-            "length_var":self.length,
-            "width_var":self.width,
+            "length_var": self.length,
+            "width_var": self.width,
         }
         self.feed_side.add_geometry(
             flow_direction=FlowDirection.forward, **add_geometry_kwargs
