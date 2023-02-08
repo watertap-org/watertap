@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+from .control_volume_isothermal import ControlVolume0DBlock, ControlVolume1DBlock
 from .initialization_mixin import InitializationMixin
 from .membrane_channel_base import (
     ConcentrationPolarizationType,

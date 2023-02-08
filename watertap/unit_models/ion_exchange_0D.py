@@ -1169,7 +1169,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             state_args=state_args,
             hold_state=True,
         )
-        init_log.info("Initialization Step 1 Complete.")
+        init_log.info("Initialization Step 1a Complete.")
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
@@ -1199,6 +1199,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             solver=solver,
             state_args=state_args_out,
         )
+        init_log.info("Initialization Step 1b Complete.")
 
         state_args_regen = deepcopy(state_args)
 
@@ -1226,17 +1227,18 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         blk.state_args_out = state_args_out
         blk.state_args_regen = state_args_regen
 
-        init_log.info("Initialization Step 2 Complete.")
-        # ---------------------------------------------------------------------
+        init_log.info("Initialization Step 1c Complete.")
+
+        # Solve unit with coupling constraints deactivated
+        blk.eq_flow_conservation.deactivate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        blk.eq_flow_conservation.activate()
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {blk.name}, trying one more time"
-                )
-                res = opt.solve(blk, tee=slc.tee)
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
@@ -1313,6 +1315,8 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(self.HTU, 1e3)
 
+        iscale.set_scaling_factor(self.lh, 1)
+
         iscale.set_scaling_factor(self.service_flow_rate, 1)
 
         iscale.set_scaling_factor(self.c_norm, 1)
@@ -1384,8 +1388,10 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.separation_factor)
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_ss_effluent.items():
-            sf = iscale.get_scaling_factor(self.t_breakthru)
+        for j, c in self.eq_ss_effluent.items():
+            sf = iscale.get_scaling_factor(
+                self.properties_out[0].conc_equiv_phase_comp["Liq", j]
+            )
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_fluid_mass_transfer_coeff.items():
@@ -1419,7 +1425,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             {
                 "Feed Inlet": self.inlet,
                 "Liquid Outlet": self.outlet,
-                "Waste Outlet": self.waste,
+                "Regen Outlet": self.regen,
             },
             time_point=time_point,
         )
@@ -1436,7 +1442,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Resin Particle Density"] = self.resin_particle_dens
         var_dict["Bed Volume"] = self.bed_vol
         var_dict["Bed Depth"] = self.bed_depth
-        var_dict["Bed Diameter"] = self.bed_diam
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Number Transfer Units"] = self.num_transfer_units
         var_dict["Dimensionless Time"] = self.dimensionless_time

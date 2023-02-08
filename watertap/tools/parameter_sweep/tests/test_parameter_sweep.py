@@ -196,9 +196,9 @@ class TestParallelManager:
         range_C = [10.0, 20.0]
 
         param_dict = dict()
-        param_dict["var_A"] = UniformSample(A_param, range_A[0], range_A[1])
-        param_dict["var_B"] = UniformSample(B_param, range_B[0], range_B[1])
-        param_dict["var_C"] = UniformSample(C_param, range_C[0], range_C[1])
+        param_dict["var_A"] = UniformSample(A_param, range_A[0], range_A[1], nn)
+        param_dict["var_B"] = UniformSample(B_param, range_B[0], range_B[1], nn)
+        param_dict["var_C"] = UniformSample(C_param, range_C[0], range_C[1], nn)
 
         global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 
@@ -223,9 +223,9 @@ class TestParallelManager:
         range_C = [1000.0, 0.0]
 
         param_dict = dict()
-        param_dict["var_A"] = NormalSample(A_param, range_A[0], range_A[1])
-        param_dict["var_B"] = NormalSample(B_param, range_B[0], range_B[1])
-        param_dict["var_C"] = NormalSample(C_param, range_C[0], range_C[1])
+        param_dict["var_A"] = NormalSample(A_param, range_A[0], range_A[1], nn)
+        param_dict["var_B"] = NormalSample(B_param, range_B[0], range_B[1], nn)
+        param_dict["var_C"] = NormalSample(C_param, range_C[0], range_C[1], nn)
 
         global_combo_array = ps._build_combinations(param_dict, SamplingType.RANDOM, nn)
 
@@ -469,9 +469,10 @@ class TestParallelManager:
         m.fs.slack_penalty = 1000.0
         m.fs.slack.setub(0)
 
+        global_num_cases = 2 * ps.num_procs
         sweep_params = {
-            "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9),
-            "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5),
+            "input_a": NormalSample(m.fs.input["a"], 0.1, 0.9, global_num_cases),
+            "input_b": NormalSample(m.fs.input["b"], 0.0, 0.5, global_num_cases),
         }
         outputs = {
             "output_c": m.fs.output["c"],
@@ -480,8 +481,8 @@ class TestParallelManager:
         }
 
         sweep_params, sampling_type = ps._process_sweep_params(sweep_params)
+
         # Get the globale sweep param values
-        global_num_cases = 2 * ps.num_procs
         global_values = ps._build_combinations(
             sweep_params, sampling_type, global_num_cases
         )
@@ -1597,6 +1598,8 @@ def _bad_test_function(m):
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
 
+    assert truth_dict.keys() == test_dict.keys()
+
     for key, item in truth_dict.items():
         if key != "solve_successful":
             for subkey, subitem in item.items():
@@ -1648,9 +1651,14 @@ def _build_header_list_from_csv(csv_filename):
     return csv_header
 
 
-def _read_output_h5(filepath):
+def _read_output_h5(filevar):
 
-    f = h5py.File(filepath, "r")
+    if isinstance(filevar, str):
+        f = h5py.File(filevar, "r")
+    elif isinstance(filevar, h5py.Group):
+        f = filevar
+    else:
+        raise RuntimeError(f"Unrecognized type for filepath {type(filevar)}")
 
     l1_keys = list(f.keys())
     output_dict = {}
@@ -1671,6 +1679,7 @@ def _read_output_h5(filepath):
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
 
-    f.close()
+    if isinstance(filevar, str):
+        f.close()
 
     return output_dict

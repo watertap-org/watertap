@@ -15,16 +15,18 @@ This module contains a zero-order representation of a UV-AOP unit
 operation.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.unit_models.zero_order.uv_zo import UVZOData
+from watertap.unit_models.zero_order.aop_addition_zo import AOPAdditionMixin
 
 # Some more information about this module
 __author__ = "Adam Atia"
 
 
 @declare_process_block_class("UVAOPZO")
-class UVAOPZOData(UVZOData):
+class UVAOPZOData(UVZOData, AOPAdditionMixin):
     """
     Zero-Order model for a UV-AOP unit operation.
     """
@@ -58,3 +60,59 @@ class UVAOPZOData(UVZOData):
 
         self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
         self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
+
+    @property
+    def default_costing_method(self):
+        return self.cost_uv_aop
+
+    @staticmethod
+    def cost_uv_aop(blk):
+        t0 = blk.flowsheet().time.first()
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "reactor_cost",
+                "lamp_cost",
+                "aop_capital_a_parameter",
+                "aop_capital_b_parameter",
+            ],
+        )
+
+        expr = blk.unit_model._get_uv_capital_cost(blk, A, B)
+        expr += blk.unit_model._get_aop_capital_cost(blk, C, D)
+
+        # Determine if a costing factor is required
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
+        # TODO: Check whether chemical flow cost was accounted for originally
+        # and if should be in case study verification
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide"
+        )
