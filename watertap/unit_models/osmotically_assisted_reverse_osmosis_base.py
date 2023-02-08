@@ -306,6 +306,9 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
     def _add_mass_transfer(self):
         raise NotImplementedError()
 
+    def _add_membrane_channels_and_geometry(self):
+        raise NotImplementedError()
+
     def _add_length_and_width(self):
         units_meta = self.config.property_package.get_metadata().get_derived_units
         self.length = Var(
