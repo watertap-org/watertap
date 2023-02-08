@@ -1251,11 +1251,6 @@ def model6():
             ("Liq", "N"): 1.5e-9,
         }
     }
-    dic_elec_mob = {
-        "elec_mobility_data": {"Na_+": 5.19e-8, "Cl_-": 7.92e-8},
-    }
-    dic_transnum = {"trans_num_data": {("Liq", "Na_+"): 0.4, ("Liq", "Cl_-"): 0.6}}
-    dic_equivcond = {"equiv_conductivity_phase_data": {"Liq": 0.01}}
     dic_config = {
         "elec_mobility_calculation": ElectricalMobilityCalculation.EinsteinRelation,
         "equiv_conductivity_calculation": EquivalentConductivityCalculation.none,
@@ -1362,6 +1357,10 @@ def model7():
         },
         diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
     )
+    # build state block
+    m_hl.fs.sb = m_hl.fs.properties.build_state_block([0], defined_state=True)
+    # touch on demand var when hayduklaudie is selected
+    m_hl.fs.sb[0].diffus_phase_comp
     m_hl.fs.properties.visc_d_phase["Liq"] = 1.0e-3
 
     return m_hl
@@ -1374,11 +1373,6 @@ def test_diffus_hl(model7):
     assert (
         m.fs.properties.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie
     )
-
-    # build state block
-    m.fs.sb = m.fs.properties.build_state_block([0], defined_state=True)
-    # touch on demand var when hayduklaudie is selected
-    m.fs.sb[0].diffus_phase_comp
 
     check_dof(m, fail_flag=True)
     assert_units_consistent(m)
@@ -1405,3 +1399,27 @@ def test_diffus_hl(model7):
     assert sb.diffus_phase_comp["Liq", "D"].value == pytest.approx(5.851e-10, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "E"].value == pytest.approx(1.33e-09, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "F"].value == pytest.approx(2.03e-09, rel=1e-3)
+
+
+@pytest.mark.unit
+def test_diffus_properties_errormsg():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match=(
+            "Insufficient data is provided to determine diffusivity of all solute components. "
+            "Check the molar_volume_data and diffusivity_data configuration."
+        ),
+    ):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["A", "B", "C", "D", "E", "F"],
+            charge={"E": 1, "F": -1},
+            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
+            molar_volume_data={
+                ("Liq", "A"): 96e-6,  # tested for benzene
+                ("Liq", "B"): 100e-6,  # arbitrary
+                ("Liq", "C"): 60e-6,  # arbitrary
+                ("Liq", "D"): 200e-6,  # arbitrary
+            },
+        )
