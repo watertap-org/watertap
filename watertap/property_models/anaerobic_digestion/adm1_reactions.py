@@ -1185,6 +1185,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
         add_object_reference(self, "conc_mass_comp_ref", self.state_ref.conc_mass_comp)
         add_object_reference(self, "temperature", self.state_ref.temperature)
 
+        # Initial values of rates of reaction [2]
         self.rates = {
             "R1": 1.786e-06,
             "R2": 3.235e-06,
@@ -1220,7 +1221,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             initialize=2.08e-14,
             units=(pyo.units.kmol / pyo.units.m**3) ** 2,
             domain=pyo.PositiveReals,
-            doc="Dissociation constant",
+            doc="Dissociation water constant",
         )
         self.K_a_co2 = pyo.Var(
             initialize=4.94e-7,
@@ -1295,6 +1296,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
+        # Equation from [2]
         def Dissociation_rule(self, t):
             return (
                 self.KW
@@ -1317,6 +1319,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Dissociation constant constraint",
         )
 
+        # Equation from [2]
         def CO2_acid_base_equilibrium_rule(self, t):
             return (
                 self.K_a_co2
@@ -1339,6 +1342,7 @@ class ADM1ReactionBlockData(ReactionBlockDataBase):
             doc="Carbon dioxide acid-base equilibrium constraint",
         )
 
+        # Equation from [2]
         def IN_acid_base_equilibrium_rule(self, t):
             return (
                 self.K_a_IN
