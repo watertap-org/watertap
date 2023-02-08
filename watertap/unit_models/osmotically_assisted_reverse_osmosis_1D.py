@@ -56,6 +56,7 @@ class OsmoticallyAssistedReverseOsmosis1DData(
     _add_has_full_reporting(CONFIG)
 
     def _process_config(self):
+        super()._process_config()
         if self.config.transformation_method is useDefault:
             _log.warning(
                 "Discretization method was "
@@ -79,9 +80,6 @@ class OsmoticallyAssistedReverseOsmosis1DData(
     def _add_membrane_channel_and_geometry(
         self, side="feed_side", flow_direction=FlowDirection.forward
     ):
-        # Check configuration errors
-        self._process_config()
-
         if not isinstance(side, str):
             raise TypeError(
                 f"{side} is not a string. Please provide a string for the side argument."
@@ -105,21 +103,13 @@ class OsmoticallyAssistedReverseOsmosis1DData(
         )
         mem_side = getattr(self, side)
 
-        # if (self.config.pressure_change_type != PressureChangeType.fixed_per_stage) or (
-        #     self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
-        # ):
-        if not hasattr(self, "length") and not hasattr(self, "width"):
-            self._add_length_and_width()
+        self._add_length_and_width()
         mem_side.add_geometry(
             length_var=self.length,
             width_var=self.width,
             flow_direction=flow_direction,
         )
-        if not hasattr(self, "eq_area"):
-            add_eq_area = True
-        else:
-            add_eq_area = False
-        self._add_area(include_constraint=add_eq_area)
+        self._add_area(include_constraint=True)
 
     def _add_deltaP(self, side="feed_side"):
         if not isinstance(side, str):
@@ -228,11 +218,6 @@ class OsmoticallyAssistedReverseOsmosis1DData(
             )
 
     def calculate_scaling_factors(self):
-        if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(
-                self.feed_side.properties[0, 0].dens_mass_phase["Liq"]
-            )
-            iscale.set_scaling_factor(self.dens_solvent, sf)
 
         super().calculate_scaling_factors()
 
@@ -248,11 +233,3 @@ class OsmoticallyAssistedReverseOsmosis1DData(
             v = self.permeate_side.mass_transfer_term[t, x, p, j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, "length"):
-            if iscale.get_scaling_factor(self.length) is None:
-                iscale.set_scaling_factor(self.length, 1)
-
-        if hasattr(self, "width"):
-            if iscale.get_scaling_factor(self.width) is None:
-                iscale.set_scaling_factor(self.width, 1)

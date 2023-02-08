@@ -24,7 +24,7 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
-from idaes.core import UnitModelBlockData, FlowDirection
+from idaes.core import UnitModelBlockData
 from idaes.core.solvers import get_solver
 from idaes.core.util import scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -66,12 +66,7 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
     """
 
-    def build(self):
-        """
-        Common variables and constraints for an OARO unit model
-
-        """
-        super().build()
+    def _process_config(self):
 
         if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError(
@@ -91,14 +86,22 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
                 )
             )
 
+    def build(self):
+        """
+        Common variables and constraints for an OARO unit model
+
+        """
+        super().build()
+
+        # Check configuration errors
+        self._process_config()
+
         # Raise exception if any of configuration arguments are provided incorrectly
         validate_membrane_config_args(self)
 
         # --------------------------------------------------------------
-        # Add feed side MembraneChannel Control Volume and setup
-        self._add_membrane_channel_and_geometry(
-            side="feed_side", flow_direction=FlowDirection.forward
-        )
+        # Add feed side and permeate side MembraneChannel Control Volume and setup
+        self._add_membrane_channels_and_geometry()
 
         self.feed_side.add_state_blocks(has_phase_equilibrium=False)
 
@@ -136,10 +139,6 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
 
         # --------------------------------------------------------------
         # Add permeate side MembraneChannel Control Volume and setup
-        self._add_membrane_channel_and_geometry(
-            side="permeate_side", flow_direction=FlowDirection.backward
-        )
-
         self.permeate_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.permeate_side.add_material_balances(
@@ -819,6 +818,14 @@ class OsmoticallyAssistedReverseOsmosisBaseData(
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, "length"):
+            if iscale.get_scaling_factor(self.length) is None:
+                iscale.set_scaling_factor(self.length, 1)
+
+        if hasattr(self, "width"):
+            if iscale.get_scaling_factor(self.width) is None:
+                iscale.set_scaling_factor(self.width, 1)
 
         if hasattr(self, "structural_parameter"):
             if iscale.get_scaling_factor(self.structural_parameter) is None:
