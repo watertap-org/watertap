@@ -1351,14 +1351,16 @@ def model7():
     m_hl.fs = FlowsheetBlock(dynamic=False)
 
     m_hl.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D"],
-        diffus_calculation=DiffusivityCalculation.hayduklaudie,
+        solute_list=["A", "B", "C", "D", "E", "F"],
+        charge={"E": 1, "F": -1},
+        diffus_calculation=DiffusivityCalculation.HaydukLaudie,
         molar_volume_data={
             ("Liq", "A"): 96e-6,  # tested for benzene
             ("Liq", "B"): 100e-6,  # arbitrary
             ("Liq", "C"): 60e-6,  # arbitrary
             ("Liq", "D"): 200e-6,  # arbitrary
         },
+        diffusivity_data={("Liq", "E"): 1.33e-9, ("Liq", "F"): 2.03e-9},
     )
     m_hl.fs.properties.visc_d_phase["Liq"] = 1.0e-3
 
@@ -1370,7 +1372,7 @@ def test_diffus_hl(model7):
     m = model7
 
     assert (
-        m.fs.properties.config.diffus_calculation == DiffusivityCalculation.hayduklaudie
+        m.fs.properties.config.diffus_calculation == DiffusivityCalculation.HaydukLaudie
     )
 
     # build state block
@@ -1401,3 +1403,5 @@ def test_diffus_hl(model7):
     assert sb.diffus_phase_comp["Liq", "B"].value == pytest.approx(8.801e-10, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "C"].value == pytest.approx(1.189e-09, rel=1e-3)
     assert sb.diffus_phase_comp["Liq", "D"].value == pytest.approx(5.851e-10, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "E"].value == pytest.approx(1.33e-09, rel=1e-3)
+    assert sb.diffus_phase_comp["Liq", "F"].value == pytest.approx(2.03e-09, rel=1e-3)
