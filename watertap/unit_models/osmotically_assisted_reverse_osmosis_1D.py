@@ -77,41 +77,38 @@ class OsmoticallyAssistedReverseOsmosis1DData(
             )
             self.config.transformation_scheme = "BACKWARD"
 
-    def _add_membrane_channel_and_geometry(
-        self, side="feed_side", flow_direction=FlowDirection.forward
-    ):
-        if not isinstance(side, str):
-            raise TypeError(
-                f"{side} is not a string. Please provide a string for the side argument."
-            )
+    def _add_membrane_channels_and_geometry(self):
 
         # Build membrane channel control volume
-        setattr(
-            self,
-            side,
-            MembraneChannel1DBlock(
-                dynamic=self.config.dynamic,
-                has_holdup=self.config.has_holdup,
-                area_definition=self.config.area_definition,
-                property_package=self.config.property_package,
-                property_package_args=self.config.property_package_args,
-                transformation_method=self.config.transformation_method,
-                transformation_scheme=self.config.transformation_scheme,
-                finite_elements=self.config.finite_elements,
-                collocation_points=self.config.collocation_points,
-            ),
-        )
-        mem_side = getattr(self, side)
+        channel_kwargs = {
+           "dynamic":self.config.dynamic,
+           "has_holdup":self.config.has_holdup,
+           "area_definition":self.config.area_definition,
+           "property_package":self.config.property_package,
+           "property_package_args":self.config.property_package_args,
+           "transformation_method":self.config.transformation_method,
+           "transformation_scheme":self.config.transformation_scheme,
+           "finite_elements":self.config.finite_elements,
+           "collocation_points":self.config.collocation_points,
+        }
+
+        self.feed_side = MembraneChannel1DBlock(**channel_kwargs)
+        self.permeate_side = MembraneChannel1DBlock(**channel_kwargs)
 
         self._add_length_and_width()
-        mem_side.add_geometry(
-            length_var=self.length,
-            width_var=self.width,
-            flow_direction=flow_direction,
+        add_geometry_kwargs = {
+            "length_var":self.length,
+            "width_var":self.width,
+        }
+        self.feed_side.add_geometry(
+            flow_direction=FlowDirection.forward, **add_geometry_kwargs
+        )
+        self.permeate_side.add_geometry(
+            flow_direction=FlowDirection.backward, **add_geometry_kwargs
         )
         self._add_area(include_constraint=True)
 
-    def _add_deltaP(self, side="feed_side"):
+    def _add_deltaP(self, side):
         if not isinstance(side, str):
             raise TypeError(
                 f"{side} is not a string. Please provide a string for the side argument."
