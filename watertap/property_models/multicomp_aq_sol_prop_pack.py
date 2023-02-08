@@ -1322,9 +1322,6 @@ class MCASStateBlockData(StateBlockData):
                 rule=rule_diffus_phase_comp,
             )
 
-            # .add(self.params.diffus_phase_comp_nonhl)
-        # TODO: add warning for use of ionic vs molecular diffusivity when ion+solute set > 1
-
     def _visc_d_phase(self):
         add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
 
