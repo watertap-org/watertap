@@ -175,11 +175,11 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
     assert isinstance(m.fs.unit.feed_side.spacer_porosity, Var)
     assert isinstance(m.fs.unit.permeate_side.dh, Var)
     assert isinstance(m.fs.unit.permeate_side.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sc, Var)
-    assert isinstance(m.fs.unit.feed_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sc_comp, Var)
+    assert isinstance(m.fs.unit.feed_side.N_Sh_comp, Var)
     assert isinstance(m.fs.unit.feed_side.N_Re, Var)
-    assert isinstance(m.fs.unit.permeate_side.N_Sc, Var)
-    assert isinstance(m.fs.unit.permeate_side.N_Sh, Var)
+    assert isinstance(m.fs.unit.permeate_side.N_Sc_comp, Var)
+    assert isinstance(m.fs.unit.permeate_side.N_Sh_comp, Var)
     assert isinstance(m.fs.unit.permeate_side.N_Re, Var)
 
 
@@ -1120,62 +1120,3 @@ class TestOsmoticallyAssistedReverseOsmosis:
         calculate_scaling_factors(RO_frame)
         for _ in badly_scaled_var_generator(RO_frame):
             assert False
-
-    @pytest.mark.unit
-    def test_exception_add_membrane_channel_and_geometry(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.properties = props.NaClParameterBlock()
-
-        m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
-            property_package=m.fs.properties,
-            has_pressure_change=True,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            pressure_change_type=PressureChangeType.calculated,
-        )
-
-        with pytest.raises(
-            TypeError,
-            match="0 is not a string. Please provide a string for the side argument.",
-        ):
-            m.fs.unit._add_membrane_channel_and_geometry(
-                side=0, flow_direction=FlowDirection.backward
-            )
-
-    # @pytest.mark.unit
-    # def test_add_membrane_channel_and_geometry(self):
-    #     m = ConcreteModel()
-    #     m.fs = FlowsheetBlock(dynamic=False)
-    #
-    #     m.fs.properties = props.NaClParameterBlock()
-    #
-    #     m.fs.unit = OsmoticallyAssistedReverseOsmosis1D(
-    #         property_package=m.fs.properties,
-    #         has_pressure_change=True,
-    #         concentration_polarization_type=ConcentrationPolarizationType.calculated,
-    #         mass_transfer_coefficient=MassTransferCoefficient.calculated,
-    #         pressure_change_type=PressureChangeType.calculated,
-    #     )
-    #
-    #     m.fs.unit._add_membrane_channel_and_geometry(
-    #         side="foo", flow_direction=FlowDirection.backward
-    #     )
-    #
-    #     assert hasattr(m.fs.unit, "foo")
-    #     assert isinstance(m.fs.unit.foo, MembraneChannel1DBlock)
-    #
-    #     m.fs.unit.foo.add_state_blocks(has_phase_equilibrium=False)
-    #
-    #     m.fs.unit.foo.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"].fix(0)
-    #     m.fs.unit.foo.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"].fix(1)
-    #
-    #     assert (
-    #         m.fs.unit.foo.properties[0, 1].flow_mass_phase_comp["Liq", "NaCl"]
-    #         == m.fs.unit.foo.properties_in[0].flow_mass_phase_comp["Liq", "NaCl"]
-    #     )
-    #     assert (
-    #         m.fs.unit.foo.properties[0, 0].flow_mass_phase_comp["Liq", "NaCl"]
-    #         == m.fs.unit.foo.properties_out[0].flow_mass_phase_comp["Liq", "NaCl"]
-    #     )
