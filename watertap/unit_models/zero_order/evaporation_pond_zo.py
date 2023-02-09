@@ -15,6 +15,7 @@ This module contains a zero-order representation of an evaporation pond unit
 model.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var, value
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
@@ -174,3 +175,74 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         self._perf_var_dict["Evaporation rate (mm/d)"] = self.evaporation_rate_pure
         self._perf_var_dict["Pond area (acres)"] = self.adj_area
         self._perf_var_dict["Pond dike height (ft)"] = self.dike_height
+
+    @property
+    def default_costing_method(self):
+        return self.cost_evaporation_pond
+
+    @staticmethod
+    def cost_evaporation_pond(blk):
+        """
+        General method for costing evaporation pond. Capital cost is based on the pond area and
+        other pond construction parameters.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        (
+            A,
+            B,
+            C,
+            D,
+            E,
+            liner_thickness,
+            land_cost,
+            land_clearing_cost,
+        ) = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "cost_per_acre_a_parameter",
+                "cost_per_acre_b_parameter",
+                "cost_per_acre_c_parameter",
+                "cost_per_acre_d_parameter",
+                "cost_per_acre_e_parameter",
+                "liner_thickness",
+                "land_cost",
+                "land_clearing_cost",
+            ],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            blk.unit_model.adj_area[t0]
+            * (
+                A
+                + B * liner_thickness
+                + C * land_cost
+                + D * land_clearing_cost
+                + E * blk.unit_model.dike_height[t0]
+            ),
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )

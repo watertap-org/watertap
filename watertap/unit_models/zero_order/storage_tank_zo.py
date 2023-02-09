@@ -14,6 +14,7 @@
 This module contains a zero-order representation of a storage tank unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
@@ -66,3 +67,45 @@ class StorageTankZOData(ZeroOrderBaseData):
         self._perf_var_dict["Storage Time (hr)"] = self.storage_time
         self._perf_var_dict["Surge Capacity (%)"] = self.surge_capacity
         self._perf_var_dict["Tank Volume (m3)"] = self.tank_volume
+
+    @property
+    def default_costing_method(self):
+        return self.cost_storage_tank
+
+    @staticmethod
+    def cost_storage_tank(blk, number_of_parallel_units=1):
+        """
+        General method for costing storage tanks. Capital cost is based on the
+        volume of the tank.
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        t0 = blk.flowsheet().time.first()
+        sizing_term = blk.unit_model.tank_volume[t0] / pyo.units.m**3
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter"],
+        )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        blk.unit_model._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
