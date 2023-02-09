@@ -290,13 +290,13 @@ class ADM1StateBlockData(StateBlockData):
         self.anions = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=0.02,
-            doc="Ions in molar concentration",
+            doc="Anions in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
         self.cations = pyo.Var(
             domain=pyo.NonNegativeReals,
             initialize=0.04,
-            doc="Ions in molar concentration",
+            doc="Cations in molar concentration",
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
