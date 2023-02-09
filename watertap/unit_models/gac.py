@@ -860,7 +860,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             return b.bed_length == b.velocity_sup * b.ebct
 
         @self.Constraint(doc="Bed volumes treated")
-        def eq_bvt(b):
+        def eq_bed_volumes_treated(b):
             return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
 
         @self.Constraint(
