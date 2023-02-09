@@ -396,7 +396,7 @@ class MCASParameterData(PhysicalParameterBlock):
             default=1e-5,
             initialize=self.config.molar_volume_data,
             units=pyunits.m**3 / pyunits.mol,
-            doc="pure component density of solutes",
+            doc="molar volume of solutes",
         )
         self.visc_d_phase = Param(
             self.phase_list,
