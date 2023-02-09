@@ -1371,8 +1371,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         if iscale.get_scaling_factor(self.elap_time) is None:
             iscale.set_scaling_factor(self.elap_time, 1e-6)
 
-        if iscale.get_scaling_factor(self.bvt) is None:
-            iscale.set_scaling_factor(self.bvt, 1e-5)
+        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
+            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
 
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)

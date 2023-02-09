@@ -395,7 +395,7 @@ class TestGACRobust:
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mr.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-3) == value(mr.fs.unit.bed_area)
-        assert pytest.approx(21390, rel=1e-3) == value(mr.fs.unit.bvt)
+        assert pytest.approx(21390, rel=1e-3) == value(mr.fs.unit.bed_volumes_treated)
 
     @pytest.mark.component
     def test_reporting_robust(self, gac_frame_robust):
