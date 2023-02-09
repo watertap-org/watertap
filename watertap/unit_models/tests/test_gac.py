@@ -237,7 +237,7 @@ class TestGACRobust:
         mr.fs.properties = MCASParameterBlock(
             solute_list=["TCE"],
             mw_data={"H2O": 0.018, "TCE": 0.1314},
-            diffus_calculation=DiffusivityCalculation.hayduklaudie,
+            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
         )
         mr.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
@@ -329,7 +329,7 @@ class TestGACRobust:
         assert len(mr.fs.unit.config.property_package.solvent_set) == 1
         assert (
             mr.fs.properties.config.diffus_calculation
-            == DiffusivityCalculation.hayduklaudie
+            == DiffusivityCalculation.HaydukLaudie
         )
 
     @pytest.mark.unit
@@ -524,6 +524,7 @@ class TestGACMulti:
         mm.fs = FlowsheetBlock(dynamic=False)
 
         # inserting arbitrary BackGround Solutes, Cations, and Anions to check handling
+        # arbitrary diffusivity data for non-target species
         mm.fs.properties = MCASParameterBlock(
             solute_list=["TCE", "BGSOL", "BGCAT", "BGAN"],
             mw_data={
@@ -534,8 +535,13 @@ class TestGACMulti:
                 "BGAN": 0.1,
             },
             charge={"BGCAT": 1, "BGAN": -2},
-            diffus_calculation=DiffusivityCalculation.hayduklaudie,
+            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
             molar_volume_data={("Liq", "TCE"): 9.81e-5},
+            diffusivity_data={
+                ("Liq", "BGSOL"): 1e-5,
+                ("Liq", "BGCAT"): 1e-5,
+                ("Liq", "BGAN"): 1e-5,
+            },
         )
         mm.fs.properties.visc_d_phase["Liq"] = 1.3097e-3
         mm.fs.properties.dens_mass_const = 1000
@@ -619,7 +625,7 @@ class TestGACMulti:
         assert len(mm.fs.unit.config.property_package.ion_set) == 2
         assert (
             mm.fs.properties.config.diffus_calculation
-            == DiffusivityCalculation.hayduklaudie
+            == DiffusivityCalculation.HaydukLaudie
         )
 
         assert degrees_of_freedom(mm) == 0
