@@ -131,7 +131,7 @@ variables in the model.
    "Mass throughput ratio", ":math:`T`", "mass_throughput", "None", ":math:`\text{dimensionless}`"
    "Residence time", ":math:`\tau`", "res_time", "None", ":math:`\text{s}`"
    "Elapsed operation time", ":math:`t_{op}`", "elap_time", "None", ":math:`\text{s}`"
-   "Bed volumes treated", ":math:`BVT`", "bvt", "None", ":math:`\text{dimensionless}`"
+   "Bed volumes treated", ":math:`BVT`", "bed_volumes_treated", "None", ":math:`\text{dimensionless}`"
    "Steady state GAC replacement rate", ":math:`\dot{m}_{GAC}`", "gac_mass_replace_rate", "None", ":math:`\text{m/s}`"
    "Liquid phase film transfer coefficient", ":math:`k_f`", "kf", "None", ":math:`\text{m/s}`"
    "Surface diffusion coefficient", ":math:`D_s`", "ds", "None", ":math:`\text{m}^2\text{/s}`"

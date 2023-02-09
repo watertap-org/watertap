@@ -546,7 +546,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="Elapsed time between GAC replacement in adsorber bed in operation",
         )
 
-        self.bvt = Var(
+        self.bed_volumes_treated = Var(
             initialize=10000,
             bounds=(0, None),
             domain=NonNegativeReals,
@@ -861,7 +861,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         @self.Constraint(doc="Bed volumes treated")
         def eq_bvt(b):
-            return b.bvt * b.res_time == b.elap_time * b.bed_voidage
+            return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
 
         @self.Constraint(
             target_species,
