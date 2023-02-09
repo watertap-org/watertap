@@ -1264,7 +1264,7 @@ class MCASStateBlockData(StateBlockData):
                 self.params.solute_set | self.params.ion_set,
                 initialize=self.params.config.diffusivity_data,
                 units=pyunits.m**2 * pyunits.s**-1,
-                doc="mass diffusivity of neutral and ionic speices",
+                doc="mass diffusivity of neutral and ionic species",
             )
             self.hl_diffus_cont = Param(
                 mutable=True,
