@@ -32,11 +32,11 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, fixed_variables_set
 from idaes.core.util.initialization import (
     solve_indexed_blocks,
-    # propagate_state,
-    propagate_state as _pro_state,
+    propagate_state,
+    # propagate_state as _pro_state,
 )
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.core import UnitModelCostingBlock
@@ -73,10 +73,10 @@ def erd_type_not_found(erd_type):
     )
 
 
-def propagate_state(arc):
-    _pro_state(arc)
-    print(arc.destination.name)
-    arc.destination.display()
+# def propagate_state(arc):
+#     _pro_state(arc)
+#     print(arc.destination.name)
+#     arc.destination.display()
 
 
 def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
@@ -105,7 +105,7 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     return m
 
 
-def build(number_of_stages=3, erd_type=ERDtype.pump_as_turbine):
+def build(number_of_stages, erd_type=ERDtype.pump_as_turbine):
 
     # flowsheet set up
     m = ConcreteModel()
@@ -386,6 +386,7 @@ def set_operating_conditions(
     # ---specifications---
     # feed
     # state variables
+    print(f"DOF before set: {degrees_of_freedom(m)}")
     pressure_atmospheric = 101325
     feed_temperature = 273.15 + 25
     m.fs.feed.properties[0].pressure.fix(pressure_atmospheric)  # feed pressure [Pa]
@@ -465,6 +466,8 @@ def set_operating_conditions(
     else:
         erd_type_not_found(m.fs.erd_type)
 
+    print(f"DOF after set: {degrees_of_freedom(m)}")
+
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
         print(
@@ -533,14 +536,27 @@ def initialize_loop(m, solver):
 
         # ---initialize loop---
         propagate_state(m.fs.pump_to_OARO[stage])
-        recycle_pump_initializer(
-            m.fs.RecyclePumps[stage + 1],
-            m.fs.OAROUnits[stage],
-            solvent_multiplier=0.8,
-            solute_multiplier=0.5,
+        # recycle_pump_initializer(
+        #     m.fs.RecyclePumps[stage + 1],
+        #     m.fs.OAROUnits[stage],
+        #     solvent_multiplier=0.8,
+        #     solute_multiplier=0.5,
+        # )
+        feed_temperature = 273.15 + 25
+        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
+            0
+        ].temperature.value = feed_temperature
+        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
+            0
+        ].flow_mass_phase_comp["Liq", "H2O"].value = (
+            m.fs.OAROUnits[stage].feed_inlet.flow_mass_phase_comp[0, "Liq", "H2O"] * 0.8
         )
-        # print(m.fs.recyclepump_to_OARO[stage + 1].destination.name)
-        # m.fs.recyclepump_to_OARO[stage + 1].destination.display()
+        m.fs.RecyclePumps[stage + 1].control_volume.properties_out[
+            0
+        ].flow_mass_phase_comp["Liq", "NaCl"].value = (
+            m.fs.OAROUnits[stage].feed_inlet.flow_mass_phase_comp[0, "Liq", "NaCl"]
+            * 0.5
+        )
         propagate_state(m.fs.recyclepump_to_OARO[stage + 1])
         m.fs.OAROUnits[stage].initialize()
 
@@ -581,14 +597,20 @@ def initialize_system(m, solver=None, verbose=True):
     propagate_state(m.fs.recyclepump_to_OARO[first_stage + 1])
     m.fs.OAROUnits[first_stage].initialize()
 
+    print(f"DOF before loop: {degrees_of_freedom(m)}")
     initialize_loop(m, solver)
+    print(f"DOF after loop: {degrees_of_freedom(m)}")
 
     # ---initialize RO loop---
     propagate_state(m.fs.OARO_to_pump[last_stage - 1])
     m.fs.PrimaryPumps[last_stage].initialize()
 
     propagate_state(m.fs.pump_to_ro)
+    print(f"DOF after prop_state to RO: {degrees_of_freedom(m)}")
+    print(f"fixed variables set after prop_state to RO: {fixed_variables_set(m.fs.RO)}")
     m.fs.RO.initialize()
+    print(f"fixed variables set after RO: {fixed_variables_set(m.fs.RO)}")
+    print(f"DOF after RO: {degrees_of_freedom(m)}")
 
     propagate_state(m.fs.ro_to_ERD)
     m.fs.EnergyRecoveryDevices[last_stage].initialize()
