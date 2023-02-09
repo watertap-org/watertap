@@ -159,8 +159,8 @@ class TestGACSimplified:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(ms) == 78
-        assert number_total_constraints(ms) == 45
+        assert number_variables(ms) == 79
+        assert number_total_constraints(ms) == 46
         assert number_unused_variables(ms) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -334,8 +334,8 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 89
-        assert number_total_constraints(mr) == 54
+        assert number_variables(mr) == 90
+        assert number_total_constraints(mr) == 55
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 
     @pytest.mark.unit
@@ -390,11 +390,12 @@ class TestGACRobust:
     @pytest.mark.component
     def test_solution_robust(self, gac_frame_robust):
         mr = gac_frame_robust
-
+        mr.fs.unit.display()
         # values calculated independently and near to those reported in Crittenden, 2012
         assert pytest.approx(1.139, rel=1e-3) == value(mr.fs.unit.mass_throughput)
         assert pytest.approx(12830000, rel=1e-3) == value(mr.fs.unit.elap_time)
         assert pytest.approx(10.68, rel=1e-3) == value(mr.fs.unit.bed_area)
+        assert pytest.approx(21390, rel=1e-3) == value(mr.fs.unit.bvt)
 
     @pytest.mark.component
     def test_reporting_robust(self, gac_frame_robust):
