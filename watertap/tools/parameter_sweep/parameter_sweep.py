@@ -106,6 +106,23 @@ class _ParameterSweepBase(ABC):
         ),
     )
 
+    CONFIG.declare(
+        "custom_do_param_sweep",
+        ConfigValue(
+            default=None,
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses."
+        )
+    )
+
+    CONFIG.declare(
+        "custom_do_param_sweep_kwargs",
+        ConfigValue(
+            default=dict(),
+            domain=dict,
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses."
+        )
+    )
+
     def __init__(
         self,
         **options,
@@ -583,12 +600,21 @@ class ParameterSweep(_ParameterSweepBase):
         local_num_cases = np.shape(local_values)[0]
 
         # Do the Loop
-        local_results_dict = self._do_param_sweep(
-            model,
-            sweep_params,
-            outputs,
-            local_values,
-        )
+        if self.config.custom_do_param_sweep is None:
+            local_results_dict = self._do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+            )
+        else:
+            local_results_dict = self.config.custom_do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+                **self.config.custom_do_param_sweep_kwargs,
+            )
 
         # Aggregate results on Master
         global_results_dict, global_results_arr = self._aggregate_local_results(
@@ -732,12 +758,21 @@ class RecursiveParameterSweep(_ParameterSweepBase):
             if loop_ctr == 0:
                 true_local_num_cases = local_num_cases
 
-            local_output_collection[loop_ctr] = self._do_param_sweep(
-                model,
-                sweep_params,
-                outputs,
-                local_values,
-            )
+            if self.config.custom_do_param_sweep is None:
+                local_output_collection[loop_ctr] = self._do_param_sweep(
+                    model,
+                    sweep_params,
+                    outputs,
+                    local_values,
+                )
+            else:
+                local_output_collection[loop_ctr] = self.self.config.custom_do_param_sweep(
+                    model,
+                    sweep_params,
+                    outputs,
+                    local_values,
+                    **self.config.custom_do_param_sweep_kwargs,
+                )
 
             # Get the number of successful solves on this proc (sum of boolean flags)
             success_count = sum(local_output_collection[loop_ctr]["solve_successful"])

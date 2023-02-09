@@ -314,12 +314,21 @@ class DifferentialParameterSweep(_ParameterSweepBase):
         self.diff_ps_dict = {}
 
         # Do the Loop
-        local_results_dict = self._do_param_sweep(
-            model,
-            sweep_params,
-            outputs,
-            local_values,
-        )
+        if self.config.custom_do_param_sweep is None:
+            local_results_dict = self._do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+            )
+        else:
+            local_results_dict = self.config.custom_do_param_sweep(
+                model,
+                sweep_params,
+                outputs,
+                local_values,
+                **self.config.custom_do_param_sweep_kwargs,
+            )
 
         # re-writing local_values
         local_values = self._collect_local_inputs(local_results_dict)
