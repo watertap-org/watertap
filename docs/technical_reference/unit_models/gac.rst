@@ -205,7 +205,7 @@ Equations
    "Velocity relationship", ":math:`v_i=\frac{v_s}{\epsilon}`"
    "Adsorbed bed area", ":math:`A=\frac{Q}{v_s}`"
    "Adsorbed bed length", ":math:`EBCT=\frac{L}{v_s}`"
-   "Bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{tau}\`"
+   "Bed volumes treated", ":math:`BVT=\frac{t_{op}\epsilon}{tau}`"
    "Mass of solute adsorbed if the bed was fully saturated", ":math:`M_{solute\text{,}e}=q_eM_{GAC}`"
    "Saturation fraction of the bed at the time of replacement", ":math:`\frac{\bar{q}}{q_{e}}\bigg{|}_{t=t_{op}}=\frac{M_{solute}}{M_{solute\text{,}e}}`"
    "Mass throughput ratio of the upstream edge of the MTZ", ":math:`T\big{|}_{Upstream\,MTZ\,edge}=b_0+b_1\left( \frac{C}{C_0}\bigg|_{Upstream\,MTZ\,edge} \right)^{b_2}+\frac{b_3}{1.01-\left( \frac{C}{C_0}\Big|_{Upstream\,MTZ\,edge} \right)^{b_4}}`"
