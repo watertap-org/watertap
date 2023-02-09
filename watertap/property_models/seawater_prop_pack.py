@@ -53,7 +53,10 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_unfixed_variables,
+)
 from idaes.core.util.exceptions import (
     ConfigurationError,
     InitializationError,
@@ -845,26 +848,31 @@ class _SeawaterStateBlock(StateBlock):
                 )
 
         # ---------------------------------------------------------------------
-        # Initialize properties
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-        init_log.info(
-            "Property initialization: {}.".format(idaeslog.condition(results))
-        )
+        skip_solve = True  # skip solve if only state variables are present
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
+                skip_solve = False
 
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
+        if not skip_solve:
+            # Initialize properties
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            init_log.info_high(
+                "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
