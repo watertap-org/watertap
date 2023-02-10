@@ -342,22 +342,6 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list, self.params.component_list, rule=rule_flow_vol_phase_comp
         )
 
-    # TODO get rid of dens_mass_phase, replace it with dens_mass_comp, and have it be fixed for oil and water
-    # TODO also add flow_vol_comp, and use that to calculate vol_frac_phase_comp
-    def _dens_mass_phase(self):
-        self.dens_mass_phase = Var(
-            self.params.phase_list,
-            initialize=1e3,
-            bounds=(5e2, 2e3),
-            units=pyunits.kg * pyunits.m**-3,
-            doc="Mass density",
-        )
-
-        def rule_dens_mass_phase(b):
-            return b.dens_mass_phase["Liq"] == 1000.0 * pyunits.kg * pyunits.m**-3
-
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
-
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
             self.params.phase_list,
@@ -370,13 +354,43 @@ class SopStateBlockData(StateBlockData):
         def rule_flow_vol_phase(b):
             return (
                 b.flow_vol_phase["Liq"]
-                == sum(
-                    b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list
-                )
-                / b.dens_mass_phase["Liq"]
-            )
+                == sum(b.flow_vol_phase_comp["Liq", j] for j in b.params.component_list))
 
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+
+    def _dens_mass_phase(self):
+        self.dens_mass_phase = Var(
+            self.params.phase_list,
+            initialize=1e3,
+            bounds=(1e2, 2e3),
+            units=pyunits.kg * pyunits.m**-3,
+            doc="Mass density",
+        )
+
+        def rule_dens_mass_phase(b):
+            return (b.dens_mass_phase["Liq"] ==
+                    sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                    / b.flow_vol_phase["Liq"])
+
+        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+
+    def _vol_frac_phase_comp(self):
+        self.vol_frac_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=0.1,
+            bounds=(1e-8, None),
+            units=pyunits.dimensionless,
+            doc="Volumetric fraction",
+        )
+
+        def rule_vol_frac_phase_comp(b, j):
+            return (b.vol_frac_phase_comp["Liq", j] ==
+                    b.flow_vol_phase_comp["Liq", j] / b.flow_vol_phase["Liq"])
+
+        self.eq_vol_frac_phase_comp = Constraint(
+            self.params.component_list, rule=rule_vol_frac_phase_comp
+        )
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -500,6 +514,32 @@ class SopStateBlockData(StateBlockData):
             ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
             iscale.set_scaling_factor(self.flow_vol_phase, sf)
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase, sf)
+
+        if self.is_property_constructed("vol_frac_phase_comp"):
+            for j in self.params.component_list:
+                if (
+                    iscale.get_scaling_factor(self.vol_frac_phase_comp["Liq", j])
+                    is None
+                ):
+                    if j == "H2O":
+                        iscale.set_scaling_factor(
+                            self.vol_frac_phase_comp["Liq", j], 1
+                        )
+                    else:  # j == "oil"
+                        sf = iscale.get_scaling_factor(
+                            self.flow_vol_phase_comp["Liq", j]
+                        ) / iscale.get_scaling_factor(
+                            self.flow_vol_phase_comp["Liq", "H2O"]
+                        )
+                        iscale.set_scaling_factor(
+                            self.vol_frac_phase_comp["Liq", j], sf
+                        )
+
+            for j, c in self.eq_mass_frac_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.mass_frac_phase_comp["Liq", j], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf)
 
         if self.is_property_constructed("conc_mass_phase_comp"):
             for j in self.params.component_list:

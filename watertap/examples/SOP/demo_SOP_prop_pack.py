@@ -37,14 +37,14 @@ def main():
     m.fs.stream[0].temperature.fix(298.15)
     m.fs.stream[0].pressure.fix(101325)
     m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
-    m.fs.stream[0].flow_mass_phase_comp["Liq", "oil"].fix(1)
+    m.fs.stream[0].flow_mass_phase_comp["Liq", "oil"].fix(1e-2)
 
     # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "oil")
+        "flow_mass_phase_comp", 1e2, index=("Liq", "oil")
     )
     iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
 
@@ -62,13 +62,11 @@ def main():
     print("\n---third display---")
     m.fs.stream[0].display()
 
-    assert False
-
     # try unfixing some variables, and fix some different ones, and then resolve
     m.fs.stream[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
     m.fs.stream[0].flow_mass_phase_comp["Liq", "oil"].unfix()
-    m.fs.stream[0].flow_vol_phase["Liq"].fix(1e-4)
-    m.fs.stream[0].mass_frac_phase_comp["Liq", "oil"].fix(0.5)
+    m.fs.stream[0].flow_vol_phase_comp["Liq", "H2O"].fix(1e-4)
+    m.fs.stream[0].flow_vol_phase_comp["Liq", "oil"].fix(1e-4)
     assert_units_consistent(m)  # check that units are consistent
     assert (
         degrees_of_freedom(m) == 0
@@ -76,6 +74,17 @@ def main():
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
 
+    badly_scaled_var_list = list(
+        iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8)
+    )
+    if len(badly_scaled_var_list) != 0:
+        lst = []
+        for (var, val) in badly_scaled_var_list:
+            lst.append((var.name, val))
+        print("badly scaled variables:", lst)
+        assert False
+
+    m.fs.stream[0].scaling_factor.display()
     # display resolved results
     print("\n---fourth display---")
     m.fs.stream[0].display()
