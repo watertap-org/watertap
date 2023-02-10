@@ -1671,7 +1671,7 @@ def _read_output_h5(filevar):
                 l3_keys = list(f[key][subkey].keys())
                 for subsubkey in l3_keys:  # variable metadata
                     output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
-                    if subsubkey == "units":
+                    if subsubkey == "units" or subsubkey == "full_name":
                         # The strings are recovered in bytes. we choose to convert it to utf-8
                         output_dict[key][subkey][subsubkey] = output_dict[key][subkey][
                             subsubkey
