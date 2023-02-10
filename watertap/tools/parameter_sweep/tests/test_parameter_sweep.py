@@ -1562,6 +1562,43 @@ class TestParallelManager:
             read_txt_dict = ast.literal_eval(f_contents)
             assert read_txt_dict == truth_txt_dict
 
+    @pytest.mark.unit
+    def test_parameter_sweep_custom_do_param_sweep(self, model, tmp_path):
+        def custom_do_param_sweep(model, sweep_params, outputs, local_values, **kwargs):
+            return kwargs
+
+        comm = MPI.COMM_WORLD
+
+        custom_kwargs = {"val1": 2.0}
+        ps = ParameterSweep(
+            custom_do_param_sweep=custom_do_param_sweep,
+            custom_do_param_sweep_kwargs=custom_kwargs,
+        )
+
+        m = model
+        m.fs.slack_penalty = 1000.0
+        m.fs.slack.setub(0)
+
+        A = m.fs.input["a"]
+        B = m.fs.input["b"]
+        sweep_params = {A.name: (A, 0.1, 0.9, 3), B.name: (B, 0.0, 0.5, 3)}
+        outputs = {
+            "output_c": m.fs.output["c"],
+            "output_d": m.fs.output["d"],
+            "performance": m.fs.performance,
+            "objective": m.objective,
+        }
+
+        assert ps.config.custom_do_param_sweep is not None
+        return_dict = ps.config.custom_do_param_sweep(
+            model,
+            sweep_params,
+            outputs,
+            0.0,
+            val1=2.0,
+        )
+        assert return_dict == custom_kwargs
+
 
 def _optimization(m, relax_feasibility=False):
     if relax_feasibility:
