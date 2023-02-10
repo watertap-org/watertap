@@ -44,6 +44,14 @@ def main():
     print("DOF after specifying:", degrees_of_freedom(m.fs))
     # TODO
 
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    m.fs.properties.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "oil")
+    )
+    iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
+
     return m
 
 

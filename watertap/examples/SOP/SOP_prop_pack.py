@@ -511,7 +511,7 @@ class SopStateBlockData(StateBlockData):
         if self.is_property_constructed("flow_vol_phase"):
             sf = iscale.get_scaling_factor(
                 self.flow_mass_phase_comp["Liq", "H2O"]
-            ) / iscale.get_scaling_factor(self.dens_mass_phase["Liq"])
+            ) / iscale.get_scaling_factor(self.dens_mass_phase_comp["Liq", "H2O"])
             iscale.set_scaling_factor(self.flow_vol_phase, sf)
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase, sf)
 
