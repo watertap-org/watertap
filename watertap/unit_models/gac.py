@@ -546,6 +546,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="Elapsed time between GAC replacement in adsorber bed in operation",
         )
 
+        self.bed_volumes_treated = Var(
+            initialize=10000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Bed volumes treated",
+        )
+
         self.gac_mass_replace_rate = Var(
             initialize=1e-2,
             bounds=(0, None),
@@ -850,6 +858,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         @self.Constraint(doc="Adsorber bed length")
         def eq_length_bed(b):
             return b.bed_length == b.velocity_sup * b.ebct
+
+        @self.Constraint(doc="Bed volumes treated")
+        def eq_bed_volumes_treated(b):
+            return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
 
         @self.Constraint(
             target_species,
@@ -1358,6 +1370,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.elap_time) is None:
             iscale.set_scaling_factor(self.elap_time, 1e-6)
+
+        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
+            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
 
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)
