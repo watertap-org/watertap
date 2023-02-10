@@ -1,7 +1,7 @@
 How to run a zero-order model
 -----------------------------
 
-The example below runs the dual media filtration zero-order model. This example uses the default parameters defined in the watertap YAML database.
+The example below runs the dual media filtration zero-order model. This example uses the default parameters defined in the watertap YAML database. The output from running the example is also shown below.
 
 .. testcode::
 
@@ -39,8 +39,6 @@ The example below runs the dual media filtration zero-order model. This example 
 
    if __name__ == "__main__":
        main()
-
-The output from running this example is shown below.
 
 .. testoutput::
 
