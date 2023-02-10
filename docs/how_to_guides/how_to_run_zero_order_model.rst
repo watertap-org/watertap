@@ -40,7 +40,7 @@ The example below runs the dual media filtration zero-order model. This example 
    if __name__ == "__main__":
        main()
 
-.. testoutput::
+.. code-block:: text
 
    ====================================================================================
    Unit : fs.unit                                                             Time: 0.0
