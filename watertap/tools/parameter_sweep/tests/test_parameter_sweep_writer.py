@@ -184,9 +184,6 @@ class TestParallelWriterManager:
         tmp_path = _get_rank0_path(ps.comm, tmp_path)
         h5_fname = "h5_test_{0}.h5".format(ps.rank)
         h5_parent_groups = ["loop1", "loop2"]
-        # h5_parent_groups = {"loop1" : {},
-        #                     "loop2" : {},
-        #                     }
 
         embedded_dict = {
             "outputs": {

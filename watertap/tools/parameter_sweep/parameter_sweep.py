@@ -334,25 +334,35 @@ class _ParameterSweepBase(ABC):
 
         # Add information to this output that WILL NOT be written as part
         # of the file saving step.
-        comp_dict["_pyo_obj"] = component
+        # comp_dict["_pyo_obj"] = component
+        comp_dict["full_name"] = component.name
 
         return comp_dict
 
     def _update_local_output_dict(
-        self, sweep_params, case_number, run_successful, output_dict
+        self, model, sweep_params, case_number, run_successful, output_dict
     ):
 
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
-        for key, item in sweep_params.items():
-            var_name = item.pyomo_object.name
-            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+        # for key, item in sweep_params.items():
+        #     var_name = item.pyomo_object.name
+        #     op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
+        for key in sweep_params.keys():
+            # var_name = item.pyomo_object.name
+            pyo_obj = model.find_component(key)
+            op_ps_dict[key]["value"][case_number] = pyo_obj.value
 
         # Get the outputs from model
+        print("run_successful = ", run_successful)
         if run_successful:
-            for label, val in output_dict["outputs"].items():
-                output_dict["outputs"][label]["value"][case_number] = pyo.value(
-                    val["_pyo_obj"]
+            print("here!")
+            for var_name, specs in output_dict["outputs"].items():
+                pyo_obj = model.find_component(specs["full_name"])
+                print("var_name = ", var_name)
+                print("pyo_obj.name = ", pyo_obj.name)
+                output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
+                    pyo_obj
                 )
 
         else:
@@ -505,6 +515,7 @@ class _ParameterSweepBase(ABC):
 
         # Update the loop based on the reinitialization
         self._update_local_output_dict(
+            model,
             sweep_params,
             k,
             run_successful,
