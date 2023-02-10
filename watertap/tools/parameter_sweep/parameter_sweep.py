@@ -110,8 +110,8 @@ class _ParameterSweepBase(ABC):
         "custom_do_param_sweep",
         ConfigValue(
             default=None,
-            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses."
-        )
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses.",
+        ),
     )
 
     CONFIG.declare(
@@ -119,8 +119,8 @@ class _ParameterSweepBase(ABC):
         ConfigValue(
             default=dict(),
             domain=dict,
-            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses."
-        )
+            description="Alternative implementation of the parameter sweep function in case the user is doing unique analyses.",
+        ),
     )
 
     def __init__(
@@ -345,22 +345,14 @@ class _ParameterSweepBase(ABC):
 
         # Get the inputs
         op_ps_dict = output_dict["sweep_params"]
-        # for key, item in sweep_params.items():
-        #     var_name = item.pyomo_object.name
-        #     op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
-        for key in sweep_params.keys():
-            # var_name = item.pyomo_object.name
-            pyo_obj = model.find_component(key)
-            op_ps_dict[key]["value"][case_number] = pyo_obj.value
+        for key, item in sweep_params.items():
+            var_name = item.pyomo_object.name
+            op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
 
         # Get the outputs from model
-        print("run_successful = ", run_successful)
         if run_successful:
-            print("here!")
             for var_name, specs in output_dict["outputs"].items():
                 pyo_obj = model.find_component(specs["full_name"])
-                print("var_name = ", var_name)
-                print("pyo_obj.name = ", pyo_obj.name)
                 output_dict["outputs"][var_name]["value"][case_number] = pyo.value(
                     pyo_obj
                 )
@@ -370,14 +362,6 @@ class _ParameterSweepBase(ABC):
                 output_dict["outputs"][label]["value"][case_number] = np.nan
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
-
-        # # Before we can create the global dictionary, we need to delete the pyomo
-        # # object contained within the dictionary
-        # for key, val in local_output_dict.items():
-        #     if key != "solve_successful":
-        #         for subval in val.values():
-        #             if "_pyo_obj" in subval:
-        #                 del subval["_pyo_obj"]
 
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
@@ -777,7 +761,9 @@ class RecursiveParameterSweep(_ParameterSweepBase):
                     local_values,
                 )
             else:
-                local_output_collection[loop_ctr] = self.self.config.custom_do_param_sweep(
+                local_output_collection[
+                    loop_ctr
+                ] = self.self.config.custom_do_param_sweep(
                     model,
                     sweep_params,
                     outputs,
