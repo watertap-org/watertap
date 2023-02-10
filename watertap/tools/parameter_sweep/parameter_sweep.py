@@ -371,13 +371,13 @@ class _ParameterSweepBase(ABC):
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
 
-        # Before we can create the global dictionary, we need to delete the pyomo
-        # object contained within the dictionary
-        for key, val in local_output_dict.items():
-            if key != "solve_successful":
-                for subval in val.values():
-                    if "_pyo_obj" in subval:
-                        del subval["_pyo_obj"]
+        # # Before we can create the global dictionary, we need to delete the pyomo
+        # # object contained within the dictionary
+        # for key, val in local_output_dict.items():
+        #     if key != "solve_successful":
+        #         for subval in val.values():
+        #             if "_pyo_obj" in subval:
+        #                 del subval["_pyo_obj"]
 
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
