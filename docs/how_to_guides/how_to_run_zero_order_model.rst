@@ -69,13 +69,13 @@ The output from running this example is shown below.
        Mass Concentration tss              kilogram / meter ** 3   76.923   2.6019    659.86
    ====================================================================================
 
-To use a local YAML database file, define the folder path to the file using the `dbpath` parameter for the `Database` class. The line below defines the current working directory as the path for the YAML file.
+To use a local YAML database file, define the folder path to the file using the :code:`dbpath` parameter for the :code:`Database()` class. The line below defines the current working directory as the path for the YAML file.
 
 .. code-block::
 
    model.db = Database(dbpath=".")
 
-When using a local YAML file, the file name must be the same as the model name without the ZO letters. It must also use snake case style; for example, a YAML file for the `DualMediaFiltrationZO` model must be named `dual_media_filtration.yaml`. See below for the contents of this YAML file.
+When using a local YAML file, the file name must be the same as the model name without the ZO letters. It must also use snake case style; for example, a YAML file for the :code:`DualMediaFiltrationZO()` model must be named :code:`dual_media_filtration.yaml`. See below for the contents of this YAML file.
 
 .. code-block:: yaml
 
