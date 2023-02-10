@@ -176,3 +176,120 @@ class TestParallelWriterManager:
 
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
+
+    @pytest.mark.unit
+    def test_h5_parents(self, tmp_path):
+        ps = ParameterSweep()
+
+        tmp_path = _get_rank0_path(ps.comm, tmp_path)
+        h5_fname = "h5_test_{0}.h5".format(ps.rank)
+        h5_parent_groups = ["loop1", "loop2"]
+        # h5_parent_groups = {"loop1" : {},
+        #                     "loop2" : {},
+        #                     }
+
+        embedded_dict = {
+            "outputs": {
+                "fs.input[a]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.input[b]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[c]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.2, 0.2, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.output[d]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.75, 0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[ab_slack]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.slack[cd_slack]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+                },
+            },
+            "solve_successful": [True] * 9,
+            "sweep_params": {
+                "fs.input[a]": {
+                    "lower bound": None,
+                    "units": "None",
+                    "upper bound": None,
+                    "value": np.array([0.1, 0.1, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0]),
+                },
+                "fs.input[b]": {
+                    "lower bound": 0,
+                    "units": "None",
+                    "upper bound": 1,
+                    "value": np.array([0.0, 0.25, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0]),
+                },
+            },
+        }
+
+        ps_writer_dict = dict()
+        reference_dict = dict()
+        for h5_parent_group in h5_parent_groups:
+            ps_writer_dict[h5_parent_group] = ParameterSweepWriter(
+                ps.comm,
+                csv_results_file_name=None,
+                h5_results_file_name=h5_fname,
+                h5_parent_group_name=h5_parent_group,
+                debugging_data_dir=None,
+                interpolate_nan_outputs=True,
+            )
+
+            reference_dict[h5_parent_group] = embedded_dict
+            reference_dict[h5_parent_group]["sweep_params"]["fs.input[a]"][
+                "lower bound"
+            ] = np.finfo("d").min
+            reference_dict[h5_parent_group]["sweep_params"]["fs.input[a]"][
+                "upper bound"
+            ] = np.finfo("d").max
+
+            ps_writer_dict[h5_parent_group]._write_output_to_h5(
+                embedded_dict, os.path.join(tmp_path, h5_fname)
+            )
+
+        # Now read the dictionary
+        read_dictionary = _read_loop_h5(
+            os.path.join(tmp_path, h5_fname), h5_parent_groups
+        )
+        _assert_loop_correctness(reference_dict, read_dictionary)
+
+
+def _read_loop_h5(filepath, parent_list):
+
+    f = h5py.File(filepath, "r")
+
+    output_dict = {}
+    for parent in parent_list:
+        output_dict[parent] = _read_output_h5(f[parent])
+
+    f.close()
+
+    return output_dict
+
+
+def _assert_loop_correctness(truth_dict, test_dict):
+    assert truth_dict.keys() == test_dict.keys()
+
+    for key, item in truth_dict.items():
+        _assert_dictionary_correctness(item, test_dict[key])
