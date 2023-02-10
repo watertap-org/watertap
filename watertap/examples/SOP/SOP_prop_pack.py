@@ -285,6 +285,7 @@ class SopStateBlockData(StateBlockData):
         self.visc_d_phase_comp["Liq", "H2O"].fix(1e-3)
         self.visc_d_phase_comp["Liq", "oil"].fix(5e-3)
 
+    # TODO the constraint needs to be indexed by the same index sets as the variable, and then the transform_property_constraints function can be used to scale all the constraints at once. See the seawater property package for an example.
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -306,6 +307,8 @@ class SopStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_mass_frac_phase_comp
         )
 
+    # TODO get rid of dens_mass_phase, replace it with dens_mass_comp, and have it be fixed for oil and water
+    # TODO also add flow_vol_comp, and use that to calculate vol_frac_phase_comp
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
             self.params.phase_list,
@@ -347,7 +350,7 @@ class SopStateBlockData(StateBlockData):
             initialize=1,
             bounds=(1e-8, None),
             units=pyunits.kg / pyunits.m**3,
-            doc="Molar flowrate",
+            doc="Mass concentration",
         )
 
         def rule_conc_mass_phase_comp(b, j):

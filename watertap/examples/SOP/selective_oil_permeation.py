@@ -184,7 +184,10 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # TODO approach - volumentric flowrates for oil and water, add them to get the total volumetric flowrate, overall density is calculated based on total volumetric and mass flowrates (density of oil and water components is assumed)
+
         # Add unit parameters
+        # TODO can remove this from the unit model since it's in property model
         self.dens_oil = Param(
             initialize=1000,
             units=units_meta("mass") * units_meta("length") ** -3,
@@ -216,6 +219,15 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Volumetric-based oil recovery",
         )
 
+        self.mass_transfer_oil = Var(
+            self.flowsheet().config.time,
+            initialize=1,
+            bounds=(0.0, 1e6),
+            domain=NonNegativeReals,
+            units=units_meta("mass") * units_meta("time") ** -1,
+            doc="Mass transfer of oil to permeate",
+        )
+
         self.area = Var(
             initialize=1,
             bounds=(0.0, 1e6),
@@ -223,6 +235,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             units=units_meta("length") ** 2,
             doc="Membrane area",
         )
+
+        self.pressure_transmemb = Var(
+            # TODO
+        )
+
+        # TODO The user needs to fix the pressure for the feed inlet, and assume the permeate is atmospheric pressure
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(
@@ -269,18 +287,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         ):
             self.deltaP = Reference(self.feed_side.deltaP)
 
-        # mass transfer
-        self.mass_transfer_oil = Var(
-            self.flowsheet().config.time,
-            initialize=1,
-            bounds=(0.0, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta("mass") * units_meta("time") ** -1,
-            doc="Mass transfer of oil to permeate",
-        )
-
-        # TODO why can't I get rid of the time indexes from everything without causing errors?
-
+        # TODO index this over component and phase as well
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Mass transfer term",
@@ -291,9 +298,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
             )
 
-        self.feed_side.mass_transfer_term[0, "Liq", "H2O"].fix(
-            0
-        )  # TODO is it okay to just put 0 here for the time index? Or is there a better way to do it?
+        self.feed_side.mass_transfer_term[:, "Liq", "H2O"].fix(0)
 
         # SOP performance equations
         @self.Constraint(
@@ -348,81 +353,80 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.properties_permeate[t].temperature
             )
 
-    # TODO are any changes needed for this function? Is this function needed at all?
-    # def initialize_build(
-    #     blk,
-    #     state_args=None,
-    #     outlvl=idaeslog.NOTSET,
-    #     solver=None,
-    #     optarg=None,
-    # ):
-    #     """
-    #     General wrapper for pressure changer initialization routines
+    def initialize_build(
+        blk,
+        state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
+        General wrapper for pressure changer initialization routines
 
-    #     Keyword Arguments:
-    #         state_args : a dict of arguments to be passed to the property
-    #                      package(s) to provide an initial state for
-    #                      initialization (see documentation of the specific
-    #                      property package) (default = {}).
-    #         outlvl : sets output level of initialization routine
-    #         optarg : solver options dictionary object (default=None)
-    #         solver : str indicating which solver to use during
-    #                  initialization (default = None)
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
 
-    #     Returns: None
-    #     """
-    #     init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-    #     solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-    #     opt = get_solver(solver, optarg)
+        opt = get_solver(solver, optarg)
 
-    #     # ---------------------------------------------------------------------
-    #     # Initialize holdup block
-    #     flags = blk.feed_side.initialize(
-    #         outlvl=outlvl,
-    #         optarg=optarg,
-    #         solver=solver,
-    #         state_args=state_args,
-    #     )
-    #     init_log.info_high("Initialization Step 1 Complete.")
-    #     # ---------------------------------------------------------------------
-    #     # Initialize permeate
-    #     # Set state_args from inlet state
-    #     if state_args is None:
-    #         state_args = {}
-    #         state_dict = blk.feed_side.properties_in[
-    #             blk.flowsheet().config.time.first()
-    #         ].define_port_members()
+        # ---------------------------------------------------------------------
+        # Initialize holdup block
+        flags = blk.feed_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize permeate
+        # Set state_args from inlet state
+        if state_args is None:
+            state_args = {}
+            state_dict = blk.feed_side.properties_in[
+                blk.flowsheet().config.time.first()
+            ].define_port_members()
 
-    #         for k in state_dict.keys():
-    #             if state_dict[k].is_indexed():
-    #                 state_args[k] = {}
-    #                 for m in state_dict[k].keys():
-    #                     state_args[k][m] = state_dict[k][m].value
-    #             else:
-    #                 state_args[k] = state_dict[k].value
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
 
-    #     blk.properties_permeate.initialize(
-    #         outlvl=outlvl,
-    #         optarg=optarg,
-    #         solver=solver,
-    #         state_args=state_args,
-    #     )
-    #     init_log.info_high("Initialization Step 2 Complete.")
+        blk.properties_permeate.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 2 Complete.")
 
-    #     # ---------------------------------------------------------------------
-    #     # Solve unit
-    #     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-    #         res = opt.solve(blk, tee=slc.tee)
-    #     init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-    #     # ---------------------------------------------------------------------
-    #     # Release Inlet state
-    #     blk.feed_side.release_state(flags, outlvl + 1)
-    #     init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.feed_side.release_state(flags, outlvl + 1)
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-    #     if not check_optimal_termination(res):
-    #         raise InitializationError(f"Unit model {blk.name} failed to initialize")
+        if not check_optimal_termination(res):
+            raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
     # TODO is this function needed? At the very least I should get rid of references to molar quantities
     # def _get_performance_contents(self, time_point=0):
@@ -510,8 +514,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     #     )
 
     # TODO are scaling factors needed?
-    # def calculate_scaling_factors(self):
-    #     super().calculate_scaling_factors()
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
 
     #     for k in ("ion_set", "solute_set"):
     #         if hasattr(self.config.property_package, k):

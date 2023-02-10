@@ -17,15 +17,31 @@ def main():
     # attach property package
     m.fs.properties = props.SopParameterBlock()
     # build the unit model
-    m.fs.SOP = SelectiveOilPermeation(property_package=m.fs.properties)
+    m.fs.SOP = SelectiveOilPermeation(
+        property_package=m.fs.properties, has_pressure_change=True
+    )
 
     # display model
-    print("first display")
+    print(
+        "--------------------------------- first display ---------------------------------"
+    )
     m.fs.SOP.display()
 
-    # now specify the model
+    # print DOF before specifying
     print("DOF before specifying:", degrees_of_freedom(m.fs))
 
+    # now specify the model
+    # fix vairables
+    m.fs.SOP.feed_side.properties_in[0].temperature.fix(273.15 + 25)
+
+    # display model
+    print(
+        "--------------------------------- second display ---------------------------------"
+    )
+    m.fs.SOP.display()
+
+    # print DOF after specifying
+    print("DOF after specifying:", degrees_of_freedom(m.fs))
     # TODO
 
     return m
