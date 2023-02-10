@@ -561,33 +561,3 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     #             sf = 10
     #         if iscale.get_scaling_factor(v) is None:
     #             iscale.set_scaling_factor(v, sf)
-
-    #     # transforming constraints
-
-    #     for ind, c in self.eq_mass_transfer_term.items():
-    #         sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for ind, c in self.eq_solvent_transfer.items():
-    #         sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for ind, c in self.eq_permeate_production.items():
-    #         sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for ind, c in self.eq_rejection_phase_comp.items():
-    #         sf = iscale.get_scaling_factor(self.rejection_phase_comp[ind])
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for t, c in self.eq_permeate_isothermal.items():
-    #         sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for t, c in self.eq_recovery_vol_phase.items():
-    #         sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, "Liq"])
-    #         iscale.constraint_scaling_transform(c, sf)
-
-    #     for (t, j), c in self.eq_recovery_mass_phase_comp.items():
-    #         sf = iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, "Liq", j])
-    #         iscale.constraint_scaling_transform(c, sf)
