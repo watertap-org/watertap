@@ -122,12 +122,6 @@ def test_parameter_block(model):
     assert model.fs.properties.mw_comp["D"].value == 125e-3
     assert model.fs.properties.mw_comp["H2O"].value == 18e-3
 
-    assert isinstance(model.fs.properties.diffus_phase_comp, Param)
-    assert model.fs.properties.diffus_phase_comp["Liq", "A"].value == 1e-9
-    assert model.fs.properties.diffus_phase_comp["Liq", "B"].value == 1e-10
-    assert model.fs.properties.diffus_phase_comp["Liq", "C"].value == 1e-7
-    assert model.fs.properties.diffus_phase_comp["Liq", "D"].value == 1e-11
-
     assert isinstance(model.fs.properties.radius_stokes_comp, Param)
     assert model.fs.properties.radius_stokes_comp["A"].value == 1e-9
     assert model.fs.properties.radius_stokes_comp["B"].value == 1e-9
@@ -156,11 +150,10 @@ def test_property_ions(model):
     m.fs.stream[0].assert_electroneutrality(defined_state=True)
 
     m.fs.stream[0].mole_frac_phase_comp
-
     m.fs.stream[0].flow_mass_phase_comp
-
     m.fs.stream[0].molality_phase_comp
     m.fs.stream[0].pressure_osm_phase
+    m.fs.stream[0].diffus_phase_comp
     m.fs.stream[0].elec_cond_phase
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
@@ -178,6 +171,10 @@ def test_property_ions(model):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "A"].value == 1e-9
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "B"].value == 1e-10
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "C"].value == 1e-7
+    assert model.fs.stream[0].diffus_phase_comp["Liq", "D"].value == 1e-11
     assert value(m.fs.stream[0].conc_mass_phase_comp["Liq", "A"]) == pytest.approx(
         2.1206e-1, rel=1e-3
     )
@@ -226,11 +223,12 @@ def test_property_ions_2(model2):
     stream[0].flow_mol_phase_comp["Liq", "H2O"].fix(0.99046)
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
-
+    """
     stream[0].diffus_phase_comp["Liq", "A"] = 1e-9
     stream[0].diffus_phase_comp["Liq", "B"] = 1e-10
     stream[0].diffus_phase_comp["Liq", "C"] = 1e-7
     stream[0].diffus_phase_comp["Liq", "D"] = 1e-11
+    """
 
     stream[0].mw_comp["H2O"] = 18e-3
     stream[0].mw_comp["A"] = 10e-3
@@ -353,7 +351,7 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], "eq_" + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 87
+    assert number_variables(m) == 92
     assert number_total_constraints(m) == 69
     [print(i) for i in unused_variables_set(m)]
     assert number_unused_variables(m) == 6
@@ -1346,7 +1344,7 @@ def model7():
     m_hl.fs = FlowsheetBlock(dynamic=False)
 
     m_hl.fs.properties = MCASParameterBlock(
-        solute_list=["A", "B", "C", "D", "E", "F"],
+        solute_list=["A", "B", "C", "D", "E", "F", "G"],
         charge={"E": 1, "F": -1},
         diffus_calculation=DiffusivityCalculation.HaydukLaudie,
         molar_volume_data={
@@ -1402,24 +1400,10 @@ def test_diffus_hl(model7):
 
 
 @pytest.mark.unit
-def test_diffus_properties_errormsg():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+def test_diffus_properties_errormsg(model7):
+    m = model7
     with pytest.raises(
-        ConfigurationError,
-        match=(
-            "Insufficient data is provided to determine diffusivity of all solute components. "
-            "Check the molar_volume_data and diffusivity_data configuration."
-        ),
+        KeyError,
+        match=("Index"),
     ):
-        m.fs.properties = MCASParameterBlock(
-            solute_list=["A", "B", "C", "D", "E", "F"],
-            charge={"E": 1, "F": -1},
-            diffus_calculation=DiffusivityCalculation.HaydukLaudie,
-            molar_volume_data={
-                ("Liq", "A"): 96e-6,  # tested for benzene
-                ("Liq", "B"): 100e-6,  # arbitrary
-                ("Liq", "C"): 60e-6,  # arbitrary
-                ("Liq", "D"): 200e-6,  # arbitrary
-            },
-        )
+        m.fs.sb[0].diffus_phase_comp["Liq", "G"]
