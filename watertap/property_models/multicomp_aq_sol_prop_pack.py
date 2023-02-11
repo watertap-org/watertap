@@ -1223,6 +1223,7 @@ class MCASStateBlockData(StateBlockData):
         add_object_reference(self, "molar_volume_comp", self.params.molar_volume_comp)
 
     def _diffus_phase_comp(self):
+        # Retrieve two components sets from the molar_volume_data and diffusivity_data configurations
         self.mv_dt_ind = Set(
             initialize=[i[1] for i in self.params.config.molar_volume_data.keys()]
         )
@@ -1240,7 +1241,7 @@ class MCASStateBlockData(StateBlockData):
                     "Diffusivity data is not provided for {}.".format(
                         missing_diffus_ind
                     )
-                )
+                )  # warning for components with no diffusivity_data entry.
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 self.diffus_dt_ind,
@@ -1262,7 +1263,7 @@ class MCASStateBlockData(StateBlockData):
                     "there will be no diffus_phase_comp properties for these components.".format(
                         missing_diffus_ind
                     )
-                )
+                )  # warning for components with neither diffusivity_data nor molar_volume_data entry.
             common_ind = [i for i in self.mv_dt_ind if i in self.diffus_dt_ind]
             _log.warning(
                 "Both diffusivity_data and molar_volume_data are provided for {}; "
@@ -1270,7 +1271,7 @@ class MCASStateBlockData(StateBlockData):
                 "for these components becuase the HaydukLadie method is selected.".format(
                     common_ind
                 )
-            )
+            )  # warning for components whose diffusivity_data will be overriden by the HaydukLaudie method.
             self.diffus_phase_comp = Var(
                 self.params.phase_list,
                 self.mv_dt_ind | self.diffus_dt_ind,
