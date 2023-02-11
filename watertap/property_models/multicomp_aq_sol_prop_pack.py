@@ -369,7 +369,7 @@ class MCASParameterData(PhysicalParameterBlock):
             default=1e-5,
             initialize=self.config.molar_volume_data,
             units=pyunits.m**3 / pyunits.mol,
-            doc="pure component molarcular volume of solutes",
+            doc="molar volume of solutes",
         )
         self.visc_d_phase = Param(
             self.phase_list,
@@ -754,28 +754,28 @@ class _MCASStateBlock(StateBlock):
         skip_solve = True  # skip solve if only state variables are present
         for k in self.keys():
             if number_unfixed_variables(self[k]) != 0:
-
                 skip_solve = False
 
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not check_optimal_termination(results):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization."
-                    )
             init_log.info_high(
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
