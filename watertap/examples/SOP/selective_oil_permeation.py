@@ -195,20 +195,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Oil volumetric flux",
         )
 
-        self.recovery_mass_oil = Var(
+        self.recovery_oil = Var(
             self.flowsheet().config.time,
             initialize=0.5,
             bounds=(0, 1),
             units=pyunits.dimensionless,
-            doc="Mass-based oil recovery",
-        )
-
-        self.recovery_vol_oil = Var(
-            self.flowsheet().config.time,
-            initialize=0.5,
-            bounds=(0, 1),
-            units=pyunits.dimensionless,
-            doc="Volumetric-based oil recovery",
+            doc="Oil recovery",
         )
 
         self.mass_transfer_oil = Var(
@@ -284,17 +276,17 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         ):
             self.deltaP = Reference(self.feed_side.deltaP)
 
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Transmembrane pressure",
-        # )
-        # def eq_pressure_transmemb(b, t):
-        #     return (
-        #         b.pressure_transmemb[t] ==
-        #         (b.feed_side.properties_in[t].pressure
-        #          + b.feed_side.properties_out[t].pressure) / 2
-        #         - b.properties_permeate[t].pressure
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Transmembrane pressure",
+        )
+        def eq_pressure_transmemb(b, t):
+            return (
+                b.pressure_transmemb[t] ==
+                (b.feed_side.properties_in[t].pressure
+                 + b.feed_side.properties_out[t].pressure) / 2
+                - b.properties_permeate[t].pressure
+            )
 
         # TODO index this over component and phase as well
         @self.Constraint(
@@ -322,16 +314,25 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         #         == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
         #     )
         #
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.component_list,
-        #     doc="Permeate production",
-        # )
-        # def eq_permeate_production(b, t, j):
-        #     return (
-        #         b.properties_permeate[t].get_material_flow_terms("Liq", j)
-        #         == -b.feed_side.mass_transfer_term[t, "Liq", j]
-        #     )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.config.property_package.component_list,
+            doc="Permeate production",
+        )
+        def eq_permeate_production(b, t, j):
+            return (
+                b.properties_permeate[t].get_material_flow_terms("Liq", j)
+                == -b.feed_side.mass_transfer_term[t, "Liq", j]
+            )
+
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Isothermal assumption for permeate"
+        )
+        def eq_permeate_isothermal(b, t):
+            return (
+                b.feed_side.properties_in[t].temperature
+                == b.properties_permeate[t].temperature
+            )
 
         # @self.Constraint(
         #     self.flowsheet().config.time,
@@ -343,36 +344,18 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         #     )
 
 
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Recovery fraction of oil, mass basis",
-        # )
-        # def eq_recovery_mass_oil(b, t):
-        #     return (
-        #         b.recovery_mass_oil[t]
-        #         == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
-        #         / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
-        #     )
-        #
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Recovery fraction of oil, volumetric basis",
-        # )
-        # def eq_recovery_vol_oil(b, t):
-        #     return (
-        #         b.recovery_vol_oil[t]
-        #         == b.properties_permeate[t].flow_vol_phase["Liq"]
-        #         / b.feed_side.properties_in[t].flow_vol_phase["Liq"]
-        #     )
-
         @self.Constraint(
-            self.flowsheet().config.time, doc="Isothermal assumption for permeate"
+            self.flowsheet().config.time,
+            doc="Recovery fraction of oil, mass basis",
         )
-        def eq_permeate_isothermal(b, t):
+        def eq_recovery_oil(b, t):
             return (
-                b.feed_side.properties_in[t].temperature
-                == b.properties_permeate[t].temperature
+                b.recovery_oil[t]
+                == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
+                / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
             )
+
+
 
     def initialize_build(
         blk,
@@ -452,6 +435,8 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
         expr_dict = {}
+        var_dict["Oil recovery"] = self.recovery_oil[time_point]
+        var_dict["Avg. transmembr. pressure"] = self.pressure_transmemb[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
@@ -471,8 +456,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         iscale.set_scaling_factor(self.area, 1e-1)
 
         iscale.set_scaling_factor(self.flux_vol_oil, 1e6)
-        iscale.set_scaling_factor(self.recovery_mass_oil, 1)
-        iscale.set_scaling_factor(self.recovery_vol_oil, 1)
+        iscale.set_scaling_factor(self.recovery_oil, 1)
 
         iscale.set_scaling_factor(
             self.pressure_transmemb,

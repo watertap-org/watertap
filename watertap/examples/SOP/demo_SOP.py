@@ -21,6 +21,11 @@ def main():
         property_package=m.fs.properties, has_pressure_change=True
     )
 
+    # TODO: temporary
+    # touch
+    m.fs.SOP.feed_side.properties_in[0].flow_vol_phase_comp["Liq", "oil"]
+    m.fs.SOP.properties_permeate[0].flow_vol_phase_comp["Liq", "oil"]
+
     # scale model
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
@@ -40,7 +45,7 @@ def main():
     m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
     m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(1e-2)
     # unit model
-    m.fs.SOP.mass_transfer_oil.fix(0.5e-2)
+    m.fs.SOP.mass_transfer_oil.fix(0.7e-2)
     # m.fs.SOP.area.fix(10)
     m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
     m.fs.SOP.deltaP.fix(-0.5 * units.bar)
@@ -55,9 +60,12 @@ def main():
             degrees_of_freedom(m) == 0
     )  # check that the degrees of freedom are what we expect
 
+    # m.fs.SOP.eq_recovery_vol_oil.deactivate()
+    m.fs.SOP.initialize()
     solver = get_solver()
     results = solver.solve(m, tee=True)
     assert_optimal_termination(results)
+    # m.fs.SOP.eq_recovery_vol_oil.display()
 
     m.fs.SOP.report()
 

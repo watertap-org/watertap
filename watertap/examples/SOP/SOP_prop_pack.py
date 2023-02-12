@@ -249,7 +249,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=initial_mass_flow_dict,
-            bounds=(1e-8, 100),
+            bounds=(1e-15, 100),
             domain=NonNegativeReals,
             units=pyunits.kg / pyunits.s,
             doc="Mass flow rate",
@@ -280,7 +280,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1e-3,
-            bounds=(1e-8, None),
+            bounds=(None, None),
             units=pyunits.kg * pyunits.m**-1 * pyunits.s**-1,
             doc="Dynamic viscosity",
         )
@@ -292,8 +292,8 @@ class SopStateBlockData(StateBlockData):
         self.dens_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=1e-3,
-            bounds=(1e-8, None),
+            initialize=1e3,
+            bounds=(1e2, 2e3),
             units=pyunits.kg * pyunits.m**-3,
             doc="Component mass density",
         )
@@ -307,17 +307,15 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(1e-15, None),
             units=pyunits.dimensionless,
             doc="Mass fraction",
         )
 
         def rule_mass_frac_phase_comp(b, j):
-            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
-                "Liq", j
-            ] / sum(
-                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
-            )
+            return (b.mass_frac_phase_comp["Liq", j]
+                    * sum(b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list)
+                    == b.flow_mass_phase_comp["Liq", j])
 
         self.eq_mass_frac_phase_comp = Constraint(
             self.params.component_list, rule=rule_mass_frac_phase_comp
@@ -327,16 +325,16 @@ class SopStateBlockData(StateBlockData):
         self.flow_vol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=0.1,
-            bounds=(1e-8, None),
+            initialize=1e-3,
+            bounds=(None, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Component volumetric flowrate",
         )
 
         def rule_flow_vol_phase_comp(b, p, j):
-            return (
-                    b.flow_vol_phase_comp[p, j]
-                    == b.flow_mass_phase_comp[p, j] / b.dens_mass_phase_comp[p, j])
+            return (b.flow_vol_phase_comp[p, j]
+                    * b.dens_mass_phase_comp[p, j]
+                    == b.flow_mass_phase_comp[p, j])
 
         self.eq_flow_vol_phase_comp = Constraint(
             self.params.phase_list, self.params.component_list, rule=rule_flow_vol_phase_comp
@@ -346,7 +344,7 @@ class SopStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1e-3,
-            bounds=(1e-8, None),
+            bounds=(None, None),
             units=pyunits.m**3 / pyunits.s,
             doc="Volumetric flow rate",
         )
@@ -368,9 +366,9 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_dens_mass_phase(b):
-            return (b.dens_mass_phase["Liq"] ==
-                    sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
-                    / b.flow_vol_phase["Liq"])
+            return (b.dens_mass_phase["Liq"]
+                    * b.flow_vol_phase["Liq"]
+                    == sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list))
 
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
@@ -379,7 +377,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, None),
+            bounds=(None, None),
             units=pyunits.dimensionless,
             doc="Volumetric fraction",
         )
@@ -397,7 +395,7 @@ class SopStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(None, None),
             units=pyunits.kg / pyunits.m**3,
             doc="Mass concentration",
         )
