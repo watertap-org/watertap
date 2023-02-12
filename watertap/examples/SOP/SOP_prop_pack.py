@@ -305,7 +305,6 @@ class SopStateBlockData(StateBlockData):
         self.dens_mass_phase_comp["Liq", "H2O"] = 1e3
         self.dens_mass_phase_comp["Liq", "oil"] = 700  # TODO: update density for oil
 
-    # TODO the constraint needs to be indexed by the same index sets as the variable, and then the transform_property_constraints function can be used to scale all the constraints at once. See the seawater property package for an example.
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.params.phase_list,
@@ -481,22 +480,8 @@ class SopStateBlockData(StateBlockData):
         ):
             iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "oil"], 1e1)
 
-        # TODO: clean up scaling, once all constraints have same index as variables use the utility for transformation
-        # TODO: consider getting rid of hard coded indicies
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        # {
-        #     "flow_mass_phase_comp": {"method": None},
-        #     "temperature": {"method": None},
-        #     "pressure": {"method": None},
-        #     "visc_d_phase_comp": {"method": "_visc_d_phase_comp"},
-        #     "dens_mass_phase_comp": {"method": "_dens_mass_phase_comp"},
-        #     "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-        #     "flow_vol_phase_comp": {"method": "_flow_vol_phase_comp"},
-        #     "dens_mass_phase": {"method": "_dens_mass_phase"},
-        #     "flow_vol_phase": {"method": "_flow_vol_phase"},
-        #     "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
-        # }
         if self.is_property_constructed("mass_frac_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
