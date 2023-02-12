@@ -14,6 +14,7 @@
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    Constraint,
     check_optimal_termination,
     Param,
     Suffix,
@@ -229,8 +230,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
             doc="Average transmembrane pressure",
         )
 
-        # TODO The user needs to fix the pressure for the feed inlet, and assume the permeate is atmospheric pressure
-
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(
             dynamic=False,
@@ -288,32 +287,34 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 - b.properties_permeate[t].pressure
             )
 
-        # TODO index this over component and phase as well
         @self.Constraint(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
             doc="Mass transfer term",
         )
-        def eq_mass_transfer_term(b, t):
+        def eq_mass_transfer_term(b, t, p, j):
+            if j == "H2O":
+                self.feed_side.mass_transfer_term[t, p, j].fix(0)  # no water transfer
+                return Constraint.Skip
+            elif j == "oil":
+                return (
+                    b.mass_transfer_oil[t]
+                    == -b.feed_side.mass_transfer_term[t, p, j]
+                )
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Oil mass transfer",
+        )
+        def eq_oil_transfer(b, t):
             return (
-                b.mass_transfer_oil[t]
+                b.flux_vol_oil[t]
+                * b.feed_side.properties_in[0].dens_mass_phase_comp["Liq", "oil"]
+                * b.area
                 == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
             )
 
-        self.feed_side.mass_transfer_term[:, "Liq", "H2O"].fix(0)
-
-        # SOP performance equations
-        # @self.Constraint(
-        #     self.flowsheet().config.time,
-        #     doc="Oil mass transfer",
-        # )
-        # def eq_oil_transfer(b, t):
-        #     return (
-        #         b.flux_vol_oil[t]
-        #         * b.feed_side.properties_in[0].dens_mass_phase_comp["Liq", "oil"]
-        #         * b.area
-        #         == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
-        #     )
-        #
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.component_list,
@@ -334,6 +335,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.properties_permeate[t].temperature
             )
 
+        # TODO add flux relationship
         # @self.Constraint(
         #     self.flowsheet().config.time,
         #     doc="Volumetric oil flux",
@@ -354,8 +356,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
                 / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
             )
-
-
 
     def initialize_build(
         blk,
@@ -435,8 +435,11 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
         expr_dict = {}
-        var_dict["Oil recovery"] = self.recovery_oil[time_point]
+        var_dict["Membrane area"] = self.area
         var_dict["Avg. transmembr. pressure"] = self.pressure_transmemb[time_point]
+        var_dict["Pressure drop"] = self.deltaP[time_point]
+        var_dict["Oil volumetric flux"] = self.flux_vol_oil[time_point]
+        var_dict["Oil recovery"] = self.recovery_oil[time_point]
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
@@ -452,9 +455,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-    #     # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         iscale.set_scaling_factor(self.area, 1e-1)
-
         iscale.set_scaling_factor(self.flux_vol_oil, 1e6)
         iscale.set_scaling_factor(self.recovery_oil, 1)
 
@@ -473,7 +474,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
     #     # these variables do not typically require user input,
     #     # will not override if the user does provide the scaling factor
-    #     # TODO: this default scaling assumes SI units rather than being based on the property package
     #     if iscale.get_scaling_factor(self.dens_solvent) is None:
     #         iscale.set_scaling_factor(self.dens_solvent, 1e-3)
 
