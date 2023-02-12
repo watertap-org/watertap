@@ -284,17 +284,17 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         ):
             self.deltaP = Reference(self.feed_side.deltaP)
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Transmembrane pressure",
-        )
-        def eq_pressure_transmemb(b, t):
-            return (
-                b.pressure_transmemb[t] ==
-                (b.feed_side.properties_in[t].pressure
-                 + b.feed_side.properties_out[t].pressure) / 2
-                - b.properties_permeate[t].pressure
-            )
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     doc="Transmembrane pressure",
+        # )
+        # def eq_pressure_transmemb(b, t):
+        #     return (
+        #         b.pressure_transmemb[t] ==
+        #         (b.feed_side.properties_in[t].pressure
+        #          + b.feed_side.properties_out[t].pressure) / 2
+        #         - b.properties_permeate[t].pressure
+        #     )
 
         # TODO index this over component and phase as well
         @self.Constraint(
@@ -310,28 +310,28 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         self.feed_side.mass_transfer_term[:, "Liq", "H2O"].fix(0)
 
         # SOP performance equations
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Oil mass transfer",
-        )
-        def eq_oil_transfer(b, t):
-            return (
-                b.flux_vol_oil[t]
-                * b.feed_side.properties_in[0].dens_mass_phase_comp["Liq", "oil"]
-                * b.area
-                == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.config.property_package.component_list,
-            doc="Permeate production",
-        )
-        def eq_permeate_production(b, t, j):
-            return (
-                b.properties_permeate[t].get_material_flow_terms("Liq", j)
-                == -b.feed_side.mass_transfer_term[t, "Liq", j]
-            )
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     doc="Oil mass transfer",
+        # )
+        # def eq_oil_transfer(b, t):
+        #     return (
+        #         b.flux_vol_oil[t]
+        #         * b.feed_side.properties_in[0].dens_mass_phase_comp["Liq", "oil"]
+        #         * b.area
+        #         == -b.feed_side.mass_transfer_term[t, "Liq", "oil"]
+        #     )
+        #
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     self.config.property_package.component_list,
+        #     doc="Permeate production",
+        # )
+        # def eq_permeate_production(b, t, j):
+        #     return (
+        #         b.properties_permeate[t].get_material_flow_terms("Liq", j)
+        #         == -b.feed_side.mass_transfer_term[t, "Liq", j]
+        #     )
 
         # @self.Constraint(
         #     self.flowsheet().config.time,
@@ -343,27 +343,27 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         #     )
 
 
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Recovery fraction of oil, mass basis",
-        )
-        def eq_recovery_mass_oil(b, t):
-            return (
-                b.recovery_mass_oil[t]
-                == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
-                / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
-            )
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Recovery fraction of oil, volumetric basis",
-        )
-        def eq_recovery_vol_oil(b, t):
-            return (
-                b.recovery_vol_oil[t]
-                == b.properties_permeate[t].flow_vol_phase["Liq"]
-                / b.feed_side.properties_in[t].flow_vol_phase["Liq"]
-            )
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     doc="Recovery fraction of oil, mass basis",
+        # )
+        # def eq_recovery_mass_oil(b, t):
+        #     return (
+        #         b.recovery_mass_oil[t]
+        #         == b.properties_permeate[t].flow_mass_phase_comp["Liq", "oil"]
+        #         / b.feed_side.properties_in[t].flow_mass_phase_comp["Liq", "oil"]
+        #     )
+        #
+        # @self.Constraint(
+        #     self.flowsheet().config.time,
+        #     doc="Recovery fraction of oil, volumetric basis",
+        # )
+        # def eq_recovery_vol_oil(b, t):
+        #     return (
+        #         b.recovery_vol_oil[t]
+        #         == b.properties_permeate[t].flow_vol_phase["Liq"]
+        #         / b.feed_side.properties_in[t].flow_vol_phase["Liq"]
+        #     )
 
         @self.Constraint(
             self.flowsheet().config.time, doc="Isothermal assumption for permeate"
@@ -449,92 +449,21 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         if not check_optimal_termination(res):
             raise InitializationError(f"Unit model {blk.name} failed to initialize")
 
-    # TODO is this function needed? At the very least I should get rid of references to molar quantities
-    # def _get_performance_contents(self, time_point=0):
-    #     for k in ("ion_set", "solute_set"):
-    #         if hasattr(self.config.property_package, k):
-    #             solute_set = getattr(self.config.property_package, k)
-    #             break
-    #     var_dict = {}
-    #     expr_dict = {}
-    #     var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[
-    #         time_point, "Liq"
-    #     ]
-    #     var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[
-    #         time_point, "Liq", "H2O"
-    #     ]
-    #     var_dict["Membrane Area"] = self.area
-    #     if hasattr(self, "deltaP"):
-    #         var_dict["Pressure Change"] = self.deltaP[time_point]
-    #     if self.feed_side.properties_in[time_point].is_property_constructed("flow_vol"):
-    #         if self.feed_side.properties_in[time_point].flow_vol.is_variable_type():
-    #             obj_dict = var_dict
-    #         elif self.feed_side.properties_in[
-    #             time_point
-    #         ].flow_vol.is_named_expression_type():
-    #             obj_dict = expr_dict
-    #         else:
-    #             raise Exception(
-    #                 f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression"
-    #             )
-    #         obj_dict["Volumetric Flowrate @Inlet"] = self.feed_side.properties_in[
-    #             time_point
-    #         ].flow_vol
-    #     if self.feed_side.properties_out[time_point].is_property_constructed(
-    #         "flow_vol"
-    #     ):
-    #         if self.feed_side.properties_out[time_point].flow_vol.is_variable_type():
-    #             obj_dict = var_dict
-    #         elif self.feed_side.properties_out[
-    #             time_point
-    #         ].flow_vol.is_named_expression_type():
-    #             obj_dict = expr_dict
-    #         else:
-    #             raise Exception(
-    #                 f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression"
-    #             )
-    #         obj_dict["Volumetric Flowrate @Outlet"] = self.feed_side.properties_out[
-    #             time_point
-    #         ].flow_vol
-    #     var_dict["Solvent Volumetric Flux"] = self.flux_vol_solvent[time_point, "H2O"]
-    #     for j in solute_set:
-    #         var_dict[f"{j} Rejection"] = self.rejection_phase_comp[time_point, "Liq", j]
-    #         if (
-    #             self.feed_side.properties_in[time_point]
-    #             .conc_mol_phase_comp["Liq", j]
-    #             .is_expression_type()
-    #         ):
-    #             obj_dict = expr_dict
-    #         elif (
-    #             self.feed_side.properties_in[time_point]
-    #             .conc_mol_phase_comp["Liq", j]
-    #             .is_variable_type()
-    #         ):
-    #             obj_dict = var_dict
-    #         obj_dict[f"{j} Molar Concentration @Inlet"] = self.feed_side.properties_in[
-    #             time_point
-    #         ].conc_mol_phase_comp["Liq", j]
-    #         obj_dict[
-    #             f"{j} Molar Concentration @Outlet"
-    #         ] = self.feed_side.properties_out[time_point].conc_mol_phase_comp["Liq", j]
-    #         obj_dict[f"{j} Molar Concentration @Permeate"] = self.properties_permeate[
-    #             time_point
-    #         ].conc_mol_phase_comp["Liq", j]
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        expr_dict = {}
+        return {"vars": var_dict, "exprs": expr_dict}
 
-    #     return {"vars": var_dict, "exprs": expr_dict}
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
-    # TODO is this function needed?
-    # def _get_stream_table_contents(self, time_point=0):
-    #     return create_stream_table_dataframe(
-    #         {
-    #             "Feed Inlet": self.inlet,
-    #             "Feed Outlet": self.retentate,
-    #             "Permeate Outlet": self.permeate,
-    #         },
-    #         time_point=time_point,
-    #     )
-
-    # TODO are scaling factors needed?
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 

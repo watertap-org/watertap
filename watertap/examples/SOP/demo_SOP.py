@@ -1,4 +1,4 @@
-from pyomo.environ import ConcreteModel, assert_optimal_termination
+from pyomo.environ import ConcreteModel, assert_optimal_termination, units
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -21,36 +21,45 @@ def main():
         property_package=m.fs.properties, has_pressure_change=True
     )
 
-    # display model
-    print(
-        "--------------------------------- first display ---------------------------------"
-    )
-    m.fs.SOP.display()
-
-    # print DOF before specifying
-    print("DOF before specifying:", degrees_of_freedom(m.fs))
-
-    # now specify the model
-    # fix vairables
-    m.fs.SOP.feed_side.properties_in[0].temperature.fix(273.15 + 25)
-
-    # display model
-    print(
-        "--------------------------------- second display ---------------------------------"
-    )
-    m.fs.SOP.display()
-
-    # print DOF after specifying
-    print("DOF after specifying:", degrees_of_freedom(m.fs))
-    # TODO
-
+    # scale model
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1, index=("Liq", "H2O")
     )
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "oil")
     )
-    iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
+    iscale.calculate_scaling_factors(m.fs)
+
+    # print DOF before specifying
+    print("DOF before specifying:", degrees_of_freedom(m.fs))
+
+    # specify model
+    # feed
+    m.fs.SOP.feed_side.properties_in[0].temperature.fix(298.15)
+    m.fs.SOP.feed_side.properties_in[0].pressure.fix(2 * units.bar)
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"].fix(1)
+    m.fs.SOP.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"].fix(1e-2)
+    # unit model
+    m.fs.SOP.mass_transfer_oil.fix(0.5e-2)
+    # m.fs.SOP.area.fix(10)
+    m.fs.SOP.properties_permeate[0].pressure.fix(1 * units.bar)
+    m.fs.SOP.deltaP.fix(-0.5 * units.bar)
+
+
+    print("DOF after specifying:", degrees_of_freedom(m.fs))
+
+
+    # solve model
+    assert_units_consistent(m)  # check that units are consistent
+    assert (
+            degrees_of_freedom(m) == 0
+    )  # check that the degrees of freedom are what we expect
+
+    solver = get_solver()
+    results = solver.solve(m, tee=True)
+    assert_optimal_termination(results)
+
+    m.fs.SOP.report()
 
     return m
 
