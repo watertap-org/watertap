@@ -300,7 +300,7 @@ class _ParameterSweepBase(ABC):
         if outputs is None:
             # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
             for pyo_obj in model.component_data_objects(
-                (pyo.Var, pyo.Expression, pyo.Objective), active=True
+                (pyo.Var, pyo.Expression, pyo.Objective, pyo.Param), active=True
             ):
                 # Only need to save this variable if it isn't one of the value in sweep_params
                 if pyo_obj not in sweep_param_objs:

@@ -872,7 +872,7 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
+            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10., 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
@@ -1012,7 +1012,7 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
+            truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
@@ -1170,7 +1170,7 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 2.0]
+            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10., 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
