@@ -158,7 +158,7 @@ class _WaterStateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -212,17 +212,17 @@ class _WaterStateBlock(StateBlock):
         """
         # For now, there are no constraints in the property package, so only
         # fix state variables if required
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         init_log.info("Initialization Complete.")
 
         if hold_state is True:
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
             return flags
         else:
             return
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -233,13 +233,13 @@ class _WaterStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
 
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -264,11 +264,11 @@ class WaterStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Other properties
     def _conc_mass_comp(self):
-        def rule_cmc(blk, j):
+        def rule_cmc(self, j):
             return (
-                blk.flow_mass_comp[j]
+                self.flow_mass_comp[j]
                 / sum(self.flow_mass_comp[k] for k in self.component_list)
-                * blk.dens_mass
+                * self.dens_mass
             )
 
         self.conc_mass_comp = Expression(self.component_list, rule=rule_cmc)
@@ -295,16 +295,16 @@ class WaterStateBlockData(StateBlockData):
             doc="Dynamic viscosity of solution",
         )
 
-    def get_material_flow_terms(blk, p, j):
-        return blk.flow_mass_comp[j]
+    def get_material_flow_terms(self, p, j):
+        return self.flow_mass_comp[j]
 
-    def get_enthalpy_flow_terms(blk, p):
+    def get_enthalpy_flow_terms(self, p):
         raise NotImplementedError
 
-    def get_material_density_terms(blk, p, j):
-        return blk.conc_mass_comp[j]
+    def get_material_density_terms(self, p, j):
+        return self.conc_mass_comp[j]
 
-    def get_energy_density_terms(blk, p):
+    def get_energy_density_terms(self, p):
         raise NotImplementedError
 
     def default_material_balance_type(self):
@@ -313,16 +313,16 @@ class WaterStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.none
 
-    def define_state_vars(blk):
-        return {"flow_mass_comp": blk.flow_mass_comp}
+    def define_state_vars(self):
+        return {"flow_mass_comp": self.flow_mass_comp}
 
-    def define_display_vars(blk):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": blk.flow_vol,
-            "Mass Concentration": blk.conc_mass_comp,
+            "Volumetric Flowrate": self.flow_vol,
+            "Mass Concentration": self.conc_mass_comp,
         }
 
-    def get_material_flow_basis(blk):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
