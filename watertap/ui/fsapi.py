@@ -75,6 +75,7 @@ class ModelExport(BaseModel):
         arbitrary_types_allowed = True
 
     @validator("obj", always=True, pre=True)
+    @classmethod
     def ensure_obj_is_supported(cls, v):
         if v is not None:
             cls._ensure_supported_type(v)
@@ -112,6 +113,7 @@ class ModelExport(BaseModel):
 
     # Get value from object
     @validator("value", always=True)
+    @classmethod
     def validate_value(cls, v, values):
         if values.get("obj", None) is None:
             return v
@@ -120,6 +122,7 @@ class ModelExport(BaseModel):
 
     # Derive display_units from ui_units
     @validator("display_units", always=True)
+    @classmethod
     def validate_units(cls, v, values):
         if not v:
             u = values.get("ui_units", pyo.units.dimensionless)
@@ -128,6 +131,7 @@ class ModelExport(BaseModel):
 
     # set name dynamically from object
     @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
             obj = cls._get_supported_obj(values, allow_none=False)
@@ -138,6 +142,7 @@ class ModelExport(BaseModel):
         return v
 
     @validator("is_readonly", always=True, pre=True)
+    @classmethod
     def set_readonly_default(cls, v, values):
         if v is None:
             v = True
@@ -147,6 +152,7 @@ class ModelExport(BaseModel):
         return v
 
     @validator("obj_key", always=True, pre=True)
+    @classmethod
     def set_obj_key_default(cls, v, values):
         if v is None:
             obj = cls._get_supported_obj(values, allow_none=False)
@@ -166,6 +172,7 @@ class FlowsheetExport(BaseModel):
 
     # set name dynamically from object
     @validator("name", always=True)
+    @classmethod
     def validate_name(cls, v, values):
         if not v:
             try:
@@ -177,6 +184,7 @@ class FlowsheetExport(BaseModel):
         return v
 
     @validator("description", always=True)
+    @classmethod
     def validate_description(cls, v, values):
         if not v:
             try:
