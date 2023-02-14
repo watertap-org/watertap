@@ -872,78 +872,14 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10., 2.0]
+            truth_data = [0.9, 0.5, -11.0, 0.9, 0.5, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
             truth_dict = {
                 "outputs": {
-                    "fs.output[c]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.2, 0.2, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-                        ),
-                    },
-                    "fs.output[d]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [
-                                0.0,
-                                0.75,
-                                1.0,
-                                9.77756334e-09,
-                                0.75,
-                                1.0,
-                                9.98605188e-09,
-                                0.75,
-                                1.0,
-                            ]
-                        ),
-                    },
-                    "fs.performance": {
-                        "value": np.array(
-                            [0.2, 0.95, 1.2, 1.0, 1.75, 2.0, 1.0, 1.75, 2.0]
-                        )
-                    },
-                    "fs.slack[ab_slack]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 0,
-                        "value": np.array(
-                            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8, 0.8, 0.8]
-                        ),
-                    },
-                    "fs.slack[cd_slack]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 0,
-                        "value": np.array(
-                            [0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5]
-                        ),
-                    },
-                    "objective": {
-                        "value": np.array(
-                            [
-                                0.2,
-                                0.95,
-                                -3.79999989,
-                                1.0,
-                                1.75,
-                                -3.0,
-                                -6.99999989,
-                                -6.24999989,
-                                -11.0,
-                            ]
-                        )
-                    },
-                },
-                "solve_successful": [True] * 9,
-                "sweep_params": {
                     "fs.input[a]": {
+                        "full_name": "fs.input[a]",
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,
@@ -952,6 +888,153 @@ class TestParallelManager:
                         ),
                     },
                     "fs.input[b]": {
+                        "full_name": "fs.input[b]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
+                        ),
+                    },
+                    "fs.output[c]": {
+                        "full_name": "fs.output[c]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.2,
+                                0.20000001,
+                                1.00000001,
+                                1.00000001,
+                                1.00000001,
+                                1.00000001,
+                                1.00000001,
+                                1.00000001,
+                            ]
+                        ),
+                    },
+                    "fs.output[d]": {
+                        "full_name": "fs.output[d]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [
+                                0.00000000e00,
+                                7.50000000e-01,
+                                1.00000001e00,
+                                9.77756334e-09,
+                                7.50000010e-01,
+                                1.00000001e00,
+                                9.98605188e-09,
+                                7.50000010e-01,
+                                1.00000001e00,
+                            ]
+                        ),
+                    },
+                    "fs.performance": {
+                        "full_name": "fs.performance",
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.95,
+                                1.20000002,
+                                1.00000002,
+                                1.75000002,
+                                2.00000002,
+                                1.00000002,
+                                1.75000002,
+                                2.00000002,
+                            ]
+                        ),
+                    },
+                    "fs.slack[ab_slack]": {
+                        "full_name": "fs.slack[ab_slack]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 0,
+                        "value": np.array(
+                            [
+                                0.00000000e00,
+                                0.00000000e00,
+                                -9.77208577e-09,
+                                -9.54438119e-09,
+                                -9.54432513e-09,
+                                -9.54432505e-09,
+                                7.99999990e-01,
+                                7.99999990e-01,
+                                7.99999990e-01,
+                            ]
+                        ),
+                    },
+                    "fs.slack[cd_slack]": {
+                        "full_name": "fs.slack[cd_slack]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 0,
+                        "value": np.array(
+                            [
+                                0.00000000e00,
+                                0.00000000e00,
+                                4.99999990e-01,
+                                -9.77756334e-09,
+                                -9.77226571e-09,
+                                4.99999990e-01,
+                                -9.98605188e-09,
+                                -9.77226571e-09,
+                                4.99999990e-01,
+                            ]
+                        ),
+                    },
+                    "fs.slack_penalty": {
+                        "full_name": "fs.slack_penalty",
+                        "units": "None",
+                        "value": np.array(
+                            [1000.0, 1000.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+                        ),
+                    },
+                    "objective": {
+                        "full_name": "objective",
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.95,
+                                -3.79999979,
+                                1.00000021,
+                                1.75000021,
+                                -2.99999979,
+                                -6.99999978,
+                                -6.24999979,
+                                -10.99999979,
+                            ]
+                        ),
+                    },
+                },
+                "solve_successful": [
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                ],
+                "sweep_params": {
+                    "fs.input[a]": {
+                        "full_name": "fs.input[a]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
+                        ),
+                    },
+                    "fs.input[b]": {
+                        "full_name": "fs.input[b]",
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,
@@ -1012,7 +1095,19 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
+            truth_data = [
+                0.9,
+                0.5,
+                np.nan,
+                0.9,
+                0.5,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+            ]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
@@ -1170,78 +1265,14 @@ class TestParallelManager:
             data = np.genfromtxt(csv_results_file_name, skip_header=1, delimiter=",")
 
             # Compare the last row of the imported data to truth
-            truth_data = [0.9, 0.5, -11.0, 1.0, 1.0, 0.8, 0.5, 10., 2.0]
+            truth_data = [0.9, 0.5, -11.0, 0.9, 0.5, 1.0, 1.0, 0.8, 0.5, 10.0, 2.0]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
             # H5 dictionary test
             truth_dict = {
                 "outputs": {
-                    "fs.output[c]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [0.2, 0.2, 0.2, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-                        ),
-                    },
-                    "fs.output[d]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 1,
-                        "value": np.array(
-                            [
-                                0.0,
-                                0.75,
-                                1.0,
-                                9.77756334e-09,
-                                0.75,
-                                1.0,
-                                9.98605188e-09,
-                                0.75,
-                                1.0,
-                            ]
-                        ),
-                    },
-                    "fs.performance": {
-                        "value": np.array(
-                            [0.2, 0.95, 1.2, 1.0, 1.75, 2.0, 1.0, 1.75, 2.0]
-                        )
-                    },
-                    "fs.slack[ab_slack]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 0,
-                        "value": np.array(
-                            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8, 0.8, 0.8]
-                        ),
-                    },
-                    "fs.slack[cd_slack]": {
-                        "lower bound": 0,
-                        "units": "None",
-                        "upper bound": 0,
-                        "value": np.array(
-                            [0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5]
-                        ),
-                    },
-                    "objective": {
-                        "value": np.array(
-                            [
-                                0.2,
-                                0.95,
-                                -3.79999989,
-                                1.0,
-                                1.75,
-                                -3.0,
-                                -6.99999989,
-                                -6.24999989,
-                                -11.0,
-                            ]
-                        )
-                    },
-                },
-                "solve_successful": [True] * 9,
-                "sweep_params": {
                     "fs.input[a]": {
+                        "full_name": "fs.input[a]",
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,
@@ -1250,6 +1281,153 @@ class TestParallelManager:
                         ),
                     },
                     "fs.input[b]": {
+                        "full_name": "fs.input[b]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.0, 0.25, 0.5, 0.0, 0.25, 0.5, 0.0, 0.25, 0.5]
+                        ),
+                    },
+                    "fs.output[c]": {
+                        "full_name": "fs.output[c]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.2,
+                                0.2,
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0,
+                            ]
+                        ),
+                    },
+                    "fs.output[d]": {
+                        "full_name": "fs.output[d]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [
+                                9.77899282e-09,
+                                7.50000010e-01,
+                                1.00000001e00,
+                                9.77868510e-09,
+                                7.50000010e-01,
+                                1.00000001e00,
+                                9.90100346e-09,
+                                7.50000010e-01,
+                                1.00000001e00,
+                            ]
+                        ),
+                    },
+                    "fs.performance": {
+                        "full_name": "fs.performance",
+                        "value": np.array(
+                            [
+                                0.2,
+                                0.95,
+                                1.2,
+                                1.00,
+                                1.75,
+                                2.,
+                                1.,
+                                1.75,
+                                2.,
+                            ]
+                        ),
+                    },
+                    "fs.slack[ab_slack]": {
+                        "full_name": "fs.slack[ab_slack]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 0,
+                        "value": np.array(
+                            [
+                                -9.77219059e-09,
+                                -9.77208576e-09,
+                                -9.77208577e-09,
+                                -9.54438113e-09,
+                                -9.54432509e-09,
+                                -9.54432508e-09,
+                                7.99999990e-01,
+                                7.99999990e-01,
+                                7.99999990e-01,
+                            ]
+                        ),
+                    },
+                    "fs.slack[cd_slack]": {
+                        "full_name": "fs.slack[cd_slack]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 0,
+                        "value": np.array(
+                            [
+                                -9.77899282e-09,
+                                -9.77226572e-09,
+                                4.99999990e-01,
+                                -9.77868510e-09,
+                                -9.77226572e-09,
+                                4.99999990e-01,
+                                -9.90100346e-09,
+                                -9.77226572e-09,
+                                4.99999990e-01,
+                            ]
+                        ),
+                    },
+                    "fs.slack_penalty": {
+                        "full_name": "fs.slack_penalty",
+                        "units": "None",
+                        "value": np.array(
+                            [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+                        ),
+                    },
+                    "objective": {
+                        "full_name": "objective",
+                        "value": np.array(
+                            [
+                                0.20000022,
+                                0.95000021,
+                                -3.79999979,
+                                1.00000021,
+                                1.75000021,
+                                -2.99999979,
+                                -6.99999978,
+                                -6.24999979,
+                                -10.99999979,
+                            ]
+                        ),
+                    },
+                },
+                "solve_successful": [
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                ],
+                "sweep_params": {
+                    "fs.input[a]": {
+                        "full_name": "fs.input[a]",
+                        "lower bound": 0,
+                        "units": "None",
+                        "upper bound": 1,
+                        "value": np.array(
+                            [0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]
+                        ),
+                    },
+                    "fs.input[b]": {
+                        "full_name": "fs.input[b]",
                         "lower bound": 0,
                         "units": "None",
                         "upper bound": 1,

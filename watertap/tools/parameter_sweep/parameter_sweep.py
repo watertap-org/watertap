@@ -302,11 +302,9 @@ class _ParameterSweepBase(ABC):
             for pyo_obj in model.component_data_objects(
                 (pyo.Var, pyo.Expression, pyo.Objective, pyo.Param), active=True
             ):
-                # Only need to save this variable if it isn't one of the value in sweep_params
-                if pyo_obj not in sweep_param_objs:
-                    output_dict["outputs"][
-                        pyo_obj.name
-                    ] = self._create_component_output_skeleton(pyo_obj, num_samples)
+                output_dict["outputs"][
+                    pyo_obj.name
+                ] = self._create_component_output_skeleton(pyo_obj, num_samples)
 
         else:
             # Save only the outputs specified in the outputs dictionary
@@ -334,7 +332,6 @@ class _ParameterSweepBase(ABC):
 
         # Add information to this output that WILL NOT be written as part
         # of the file saving step.
-        # comp_dict["_pyo_obj"] = component
         comp_dict["full_name"] = component.name
 
         return comp_dict
@@ -358,8 +355,12 @@ class _ParameterSweepBase(ABC):
                 )
 
         else:
-            for label in output_dict["outputs"].keys():
-                output_dict["outputs"][label]["value"][case_number] = np.nan
+            for label, specs in output_dict["outputs"].items():
+                pyo_obj = model.find_component(specs["full_name"])
+                if pyo_obj.name in sweep_params.keys():
+                    output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
+                else:
+                    output_dict["outputs"][label]["value"][case_number] = np.nan
 
     def _create_global_output(self, local_output_dict, req_num_samples=None):
 

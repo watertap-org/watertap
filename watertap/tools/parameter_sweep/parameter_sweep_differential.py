@@ -141,38 +141,55 @@ class DifferentialParameterSweep(_ParameterSweepBase):
     def _append_differential_results(self, local_output_dict, diff_results_dict):
 
         for idx, diff_sol in diff_results_dict.items():
+            print("idx = ", idx)
             for key, item in diff_sol.items():
                 # Solve status
                 if key == "solve_successful":
                     local_output_dict["solve_successful"].extend(item)
                 else:
+                    # print("key = ", key)
+                    # print("local_output_dict['sweep_params'].keys() = ", local_output_dict["sweep_params"].keys())
+                    # print("diff_sol['sweep_params'].keys() = ", diff_sol["sweep_params"].keys())
                     for subkey, subitem in item.items():
-                        if subkey in local_output_dict["sweep_params"].keys():
-                            local_output_dict["sweep_params"][subkey][
-                                "value"
-                            ] = np.concatenate(
-                                (
-                                    local_output_dict["sweep_params"][subkey]["value"],
-                                    subitem["value"],
-                                )
-                            )
-                        else:
-                            local_output_dict[key][subkey]["value"] = np.concatenate(
+                        print(f"key = {key}, subkey = {subkey}")
+                        local_output_dict[key][subkey]["value"] = np.concatenate(
                                 (
                                     local_output_dict[key][subkey]["value"],
                                     subitem["value"],
                                 )
                             )
 
+                        # if subkey in local_output_dict["sweep_params"].keys():
+                        #     local_output_dict["sweep_params"][subkey][
+                        #         "value"
+                        #     ] = np.concatenate(
+                        #         (
+                        #             local_output_dict["sweep_params"][subkey]["value"],
+                        #             subitem["value"],
+                        #         )
+                        #     )
+                        # elif subkey in local_output_dict["outputs"].keys():
+                        #     print("here!")
+                        #     local_output_dict["outputs"][subkey]["value"] = np.concatenate(
+                        #         (
+                        #             local_output_dict[key][subkey]["value"],
+                        #             subitem["value"],
+                        #         )
+                        #     )
+                        # else:
+                        #     raise KeyError(f"{subkey} not found in 'sweep_params' or 'outputs'.")
+
     def _collect_local_inputs(self, local_results_dict):
 
         num_local_samples = len(local_results_dict["solve_successful"])
+        print(f"num_local_samples = {num_local_samples}")
         local_inputs = np.zeros(
             (num_local_samples, len(local_results_dict["sweep_params"])),
             dtype=float,
         )
 
         for i, (key, item) in enumerate(local_results_dict["sweep_params"].items()):
+            print(f"i = {i}, key = {key}")
             local_inputs[:, i] = item["value"]
 
         return local_inputs
@@ -329,6 +346,10 @@ class DifferentialParameterSweep(_ParameterSweepBase):
                 local_values,
                 **self.config.custom_do_param_sweep_kwargs,
             )
+
+        import pprint
+        print("\nlocal_results_dict")
+        pprint.pprint(local_results_dict)
 
         # re-writing local_values
         local_values = self._collect_local_inputs(local_results_dict)
