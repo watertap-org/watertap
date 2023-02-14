@@ -358,7 +358,9 @@ class _ParameterSweepBase(ABC):
             for label, specs in output_dict["outputs"].items():
                 pyo_obj = model.find_component(specs["full_name"])
                 if pyo_obj.name in sweep_params.keys():
-                    output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
+                    output_dict["outputs"][label]["value"][case_number] = pyo.value(
+                        pyo_obj
+                    )
                 else:
                     output_dict["outputs"][label]["value"][case_number] = np.nan
 
