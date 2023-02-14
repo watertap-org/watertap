@@ -40,9 +40,7 @@ def main():
     m.fs.stream[0].flow_mass_phase_comp["Liq", "oil"].fix(1e-2)
 
     # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-    )
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     m.fs.properties.set_default_scaling(
         "flow_mass_phase_comp", 1e2, index=("Liq", "oil")
     )

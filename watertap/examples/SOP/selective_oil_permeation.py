@@ -281,9 +281,12 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         )
         def eq_pressure_transmemb(b, t):
             return (
-                b.pressure_transmemb[t] ==
-                (b.feed_side.properties_in[t].pressure
-                 + b.feed_side.properties_out[t].pressure) / 2
+                b.pressure_transmemb[t]
+                == (
+                    b.feed_side.properties_in[t].pressure
+                    + b.feed_side.properties_out[t].pressure
+                )
+                / 2
                 - b.properties_permeate[t].pressure
             )
 
@@ -299,8 +302,7 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
                 return Constraint.Skip
             elif j == "oil":
                 return (
-                    b.mass_transfer_oil[t]
-                    == -b.feed_side.mass_transfer_term[t, p, j]
+                    b.mass_transfer_oil[t] == -b.feed_side.mass_transfer_term[t, p, j]
                 )
 
         @self.Constraint(
@@ -344,7 +346,6 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
         #     return (
         #         b.flux_vol_oil[t] == b.pressure_transmemb[t]
         #     )
-
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -461,10 +462,14 @@ class SelectiveOilPermeationData(InitializationMixin, UnitModelBlockData):
 
         iscale.set_scaling_factor(
             self.pressure_transmemb,
-            iscale.get_scaling_factor(self.feed_side.properties_in[0].pressure))
+            iscale.get_scaling_factor(self.feed_side.properties_in[0].pressure),
+        )
         iscale.set_scaling_factor(
             self.mass_transfer_oil,
-            iscale.get_scaling_factor(self.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"]))
+            iscale.get_scaling_factor(
+                self.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "oil"]
+            ),
+        )
 
     #     # setting scaling factors for variables
     #     # these variables should have user input, if not there will be a warning

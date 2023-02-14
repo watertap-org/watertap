@@ -316,14 +316,16 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_mass_frac_phase_comp(b, p, j):
-            return (b.mass_frac_phase_comp[p, j]
-                    * sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
-                    == b.flow_mass_phase_comp[p, j])
+            return (
+                b.mass_frac_phase_comp[p, j]
+                * sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                == b.flow_mass_phase_comp[p, j]
+            )
 
         self.eq_mass_frac_phase_comp = Constraint(
             self.params.phase_list,
             self.params.component_list,
-            rule=rule_mass_frac_phase_comp
+            rule=rule_mass_frac_phase_comp,
         )
 
     def _flow_vol_phase_comp(self):
@@ -337,14 +339,15 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_flow_vol_phase_comp(b, p, j):
-            return (b.flow_vol_phase_comp[p, j]
-                    * b.dens_mass_phase_comp[p, j]
-                    == b.flow_mass_phase_comp[p, j])
+            return (
+                b.flow_vol_phase_comp[p, j] * b.dens_mass_phase_comp[p, j]
+                == b.flow_mass_phase_comp[p, j]
+            )
 
         self.eq_flow_vol_phase_comp = Constraint(
             self.params.phase_list,
             self.params.component_list,
-            rule=rule_flow_vol_phase_comp
+            rule=rule_flow_vol_phase_comp,
         )
 
     def _flow_vol_phase(self):
@@ -357,13 +360,13 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_flow_vol_phase(b, p):
-            return (
-                b.flow_vol_phase[p]
-                == sum(b.flow_vol_phase_comp[p, j] for j in b.params.component_list))
+            return b.flow_vol_phase[p] == sum(
+                b.flow_vol_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_flow_vol_phase = Constraint(
-            self.params.phase_list,
-            rule=rule_flow_vol_phase)
+            self.params.phase_list, rule=rule_flow_vol_phase
+        )
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
@@ -375,13 +378,13 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_dens_mass_phase(b, p):
-            return (b.dens_mass_phase[p]
-                    * b.flow_vol_phase[p]
-                    == sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list))
+            return b.dens_mass_phase[p] * b.flow_vol_phase[p] == sum(
+                b.flow_mass_phase_comp[p, j] for j in b.params.component_list
+            )
 
         self.eq_dens_mass_phase = Constraint(
-            self.params.phase_list,
-            rule=rule_dens_mass_phase)
+            self.params.phase_list, rule=rule_dens_mass_phase
+        )
 
     def _vol_frac_phase_comp(self):
         self.vol_frac_phase_comp = Var(
@@ -394,14 +397,15 @@ class SopStateBlockData(StateBlockData):
         )
 
         def rule_vol_frac_phase_comp(b, p, j):
-            return (b.vol_frac_phase_comp[p, j]
-                    * b.flow_vol_phase[p] ==
-                    b.flow_vol_phase_comp[p, j])
+            return (
+                b.vol_frac_phase_comp[p, j] * b.flow_vol_phase[p]
+                == b.flow_vol_phase_comp[p, j]
+            )
 
         self.eq_vol_frac_phase_comp = Constraint(
             self.params.phase_list,
             self.params.component_list,
-            rule=rule_vol_frac_phase_comp
+            rule=rule_vol_frac_phase_comp,
         )
 
     def _conc_mass_phase_comp(self):
@@ -417,14 +421,13 @@ class SopStateBlockData(StateBlockData):
         def rule_conc_mass_phase_comp(b, p, j):
             return (
                 b.conc_mass_phase_comp[p, j]
-                == b.mass_frac_phase_comp[p, j]
-                * b.dens_mass_phase[p]
+                == b.mass_frac_phase_comp[p, j] * b.dens_mass_phase[p]
             )
 
         self.eq_conc_mass_phase_comp = Constraint(
             self.params.phase_list,
             self.params.component_list,
-            rule=rule_conc_mass_phase_comp
+            rule=rule_conc_mass_phase_comp,
         )
 
     # -----------------------------------------------------------------------------
@@ -517,12 +520,10 @@ class SopStateBlockData(StateBlockData):
 
         if self.is_property_constructed("flow_vol_phase"):
             for p in self.params.phase_list:
-                if (
-                    iscale.get_scaling_factor(self.flow_vol_phase[p])
-                    is None
-                ):
-                    sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
-                          / iscale.get_scaling_factor(self.dens_mass_phase[p]))
+                if iscale.get_scaling_factor(self.flow_vol_phase[p]) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp[p, "H2O"]
+                    ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
                     iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed("vol_frac_phase_comp"):

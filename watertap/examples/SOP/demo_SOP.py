@@ -22,12 +22,8 @@ def main():
     )
 
     # scale model
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
-    )
-    m.fs.properties.set_default_scaling(
-        "flow_mass_phase_comp", 1, index=("Liq", "oil")
-    )
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "oil"))
     iscale.calculate_scaling_factors(m.fs)
 
     # print DOF before specifying
@@ -50,7 +46,7 @@ def main():
     # solve model
     assert_units_consistent(m)  # check that units are consistent
     assert (
-            degrees_of_freedom(m) == 0
+        degrees_of_freedom(m) == 0
     )  # check that the degrees of freedom are what we expect
 
     m.fs.SOP.initialize()
