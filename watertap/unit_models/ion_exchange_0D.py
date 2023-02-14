@@ -1135,7 +1135,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             return b.number_columns * b.col_vol_per
 
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1156,13 +1156,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        flags = blk.properties_in.initialize(
+        flags = self.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1174,9 +1174,9 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         # Initialize other state blocks
         # Set state_args from inlet state
         if state_args is None:
-            blk.state_args = state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().config.time.first()
+            self.state_args = state_args = {}
+            state_dict = self.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -1187,13 +1187,13 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
         state_args_out = deepcopy(state_args)
-        for p, j in blk.properties_out.phase_component_set:
-            if j == blk.config.target_ion:
+        for p, j in self.properties_out.phase_component_set:
+            if j == self.config.target_ion:
                 state_args_out["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-5
                 )
 
-        blk.properties_out.initialize(
+        self.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1203,50 +1203,50 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
 
         state_args_regen = deepcopy(state_args)
 
-        for p, j in blk.properties_regen.phase_component_set:
+        for p, j in self.properties_regen.phase_component_set:
             if j == "H2O":
                 state_args_regen["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 0.01
                 )
-            elif j != blk.config.target_ion:
+            elif j != self.config.target_ion:
                 state_args_regen["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e-8
                 )
-            elif j == blk.config.target_ion:
+            elif j == self.config.target_ion:
                 state_args_regen["flow_mol_phase_comp"][(p, j)] = (
                     state_args["flow_mol_phase_comp"][(p, j)] * 1e3
                 )
 
-        blk.properties_regen.initialize(
+        self.properties_regen.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_regen,
         )
 
-        blk.state_args_out = state_args_out
-        blk.state_args_regen = state_args_regen
+        self.state_args_out = state_args_out
+        self.state_args_regen = state_args_regen
 
         init_log.info("Initialization Step 1c Complete.")
 
         # Solve unit with coupling constraints deactivated
-        blk.eq_flow_conservation.deactivate()
+        self.eq_flow_conservation.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        blk.eq_flow_conservation.activate()
+        self.eq_flow_conservation.activate()
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl=outlvl)
+        self.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1425,7 +1425,7 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
             {
                 "Feed Inlet": self.inlet,
                 "Liquid Outlet": self.outlet,
-                "Waste Outlet": self.waste,
+                "Regen Outlet": self.regen,
             },
             time_point=time_point,
         )
@@ -1442,7 +1442,6 @@ class IonExchangeODData(InitializationMixin, UnitModelBlockData):
         var_dict["Resin Particle Density"] = self.resin_particle_dens
         var_dict["Bed Volume"] = self.bed_vol
         var_dict["Bed Depth"] = self.bed_depth
-        var_dict["Bed Diameter"] = self.bed_diam
         var_dict["Bed Porosity"] = self.bed_porosity
         var_dict["Number Transfer Units"] = self.num_transfer_units
         var_dict["Dimensionless Time"] = self.dimensionless_time

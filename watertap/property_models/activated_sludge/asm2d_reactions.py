@@ -1006,7 +1006,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
+    def initialize(self, outlvl=idaeslog.NOTSET, **kwargs):
         """
         Initialization routine for reaction package.
 
@@ -1016,7 +1016,7 @@ class _ASM2dReactionBlock(ReactionBlockBase):
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         init_log.info("Initialization Complete.")
 
 
@@ -1529,7 +1529,7 @@ class ASM2dReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.rate_expression)
             raise
 
-    def get_reaction_rate_basis(b):
+    def get_reaction_rate_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):

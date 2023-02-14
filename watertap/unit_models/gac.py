@@ -546,6 +546,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
             doc="Elapsed time between GAC replacement in adsorber bed in operation",
         )
 
+        self.bed_volumes_treated = Var(
+            initialize=10000,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Bed volumes treated",
+        )
+
         self.gac_mass_replace_rate = Var(
             initialize=1e-2,
             bounds=(0, None),
@@ -851,6 +859,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         def eq_length_bed(b):
             return b.bed_length == b.velocity_sup * b.ebct
 
+        @self.Constraint(doc="Bed volumes treated")
+        def eq_bed_volumes_treated(b):
+            return b.bed_volumes_treated * b.res_time == b.elap_time * b.bed_voidage
+
         @self.Constraint(
             target_species,
             doc="Total mass adsorbed in the elapsed time",
@@ -1032,7 +1044,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
     # ---------------------------------------------------------------------
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1053,8 +1065,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
@@ -1062,8 +1074,8 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.process_flow.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.process_flow.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -1077,14 +1089,14 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # specify conditions to solve at a feasible point during initialization
         # necessary to invert user provided scaling factor due to
         # low values creating infeasible initialization conditions
-        for j in blk.config.property_package.component_list:
+        for j in self.config.property_package.component_list:
             temp_scale = iscale.get_scaling_factor(
-                blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+                self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
             )
             state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
 
         # Initialize control volume
-        flags = blk.process_flow.initialize(
+        flags = self.process_flow.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1094,10 +1106,10 @@ class GACData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize adsorbed_contam port
-        for j in blk.config.property_package.component_list:
-            if j in blk.config.target_species:
+        for j in self.config.property_package.component_list:
+            if j in self.config.target_species:
                 temp_scale = iscale.get_scaling_factor(
-                    blk.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
+                    self.process_flow.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
                 state_args["flow_mol_phase_comp"][("Liq", j)] = temp_scale**-1
             else:
@@ -1105,7 +1117,7 @@ class GACData(InitializationMixin, UnitModelBlockData):
                     ("Liq", j)
                 ] = 0  # all non-adsorbed species initialized to 0
 
-        blk.adsorbed_contam.initialize(
+        self.adsorbed_contam.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1116,15 +1128,15 @@ class GACData(InitializationMixin, UnitModelBlockData):
         # --------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.process_flow.release_state(flags, outlvl + 1)
+        self.process_flow.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     # ---------------------------------------------------------------------
 
@@ -1358,6 +1370,9 @@ class GACData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.elap_time) is None:
             iscale.set_scaling_factor(self.elap_time, 1e-6)
+
+        if iscale.get_scaling_factor(self.bed_volumes_treated) is None:
+            iscale.set_scaling_factor(self.bed_volumes_treated, 1e-5)
 
         if iscale.get_scaling_factor(self.kf) is None:
             iscale.set_scaling_factor(self.kf, 1e5)

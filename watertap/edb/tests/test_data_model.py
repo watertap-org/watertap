@@ -188,7 +188,7 @@ def test_base(starting_value):
     # also required: elements, parameter_data
     c = Component({"name": "a", "elements": ["H +"], "parameter_data": {}})
     b.add(c)
-    assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
+    assert b.idaes_config[mk0]["foo"] == foo_value
     # Add a non-empty component
     name = "baz"
     component_data = {
