@@ -400,7 +400,7 @@ class PropStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

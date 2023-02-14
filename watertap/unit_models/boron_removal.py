@@ -717,7 +717,7 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -738,14 +738,14 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.control_volume.initialize(
+        flags = self.control_volume.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -754,51 +754,51 @@ class BoronRemovalData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Apply guess for unit model vars
-        for t in blk.flowsheet().config.time:
+        for t in self.flowsheet().config.time:
             # Naive guess (pH = 7)
-            blk.conc_mol_H[t].set_value(1e-4)
-            blk.conc_mol_OH[t].set_value(10**-14 * 1000 / blk.conc_mol_H[t].value)
+            self.conc_mol_H[t].set_value(1e-4)
+            self.conc_mol_OH[t].set_value(10**-14 * 1000 / self.conc_mol_H[t].value)
             TB = value(
-                blk.control_volume.properties_in[t].conc_mol_phase_comp[
-                    "Liq", blk.boron_name_id
+                self.control_volume.properties_in[t].conc_mol_phase_comp[
+                    "Liq", self.boron_name_id
                 ]
             ) + value(
-                blk.control_volume.properties_in[t].conc_mol_phase_comp[
-                    "Liq", blk.borate_name_id
+                self.control_volume.properties_in[t].conc_mol_phase_comp[
+                    "Liq", self.borate_name_id
                 ]
             )
-            Ratio = 10**-9.21 * 1000 / blk.conc_mol_H[t].value
-            blk.conc_mol_Boron[t].set_value(TB / (1 + Ratio))
-            blk.conc_mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
+            Ratio = 10**-9.21 * 1000 / self.conc_mol_H[t].value
+            self.conc_mol_Boron[t].set_value(TB / (1 + Ratio))
+            self.conc_mol_Borate[t].set_value(TB * Ratio / (1 + Ratio))
         # ---------------------------------------------------------------------
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl + 1)
+        self.control_volume.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
         # Rescale internal variables
-        for t in blk.flowsheet().config.time:
+        for t in self.flowsheet().config.time:
             iscale.set_scaling_factor(
-                blk.conc_mol_OH[t], max(100 / blk.conc_mol_OH[t].value, 100)
+                self.conc_mol_OH[t], max(100 / self.conc_mol_OH[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_H[t], max(100 / blk.conc_mol_H[t].value, 100)
+                self.conc_mol_H[t], max(100 / self.conc_mol_H[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_Boron[t], max(100 / blk.conc_mol_Boron[t].value, 100)
+                self.conc_mol_Boron[t], max(100 / self.conc_mol_Boron[t].value, 100)
             )
             iscale.set_scaling_factor(
-                blk.conc_mol_Borate[t], max(100 / blk.conc_mol_Borate[t].value, 100)
+                self.conc_mol_Borate[t], max(100 / self.conc_mol_Borate[t].value, 100)
             )
 
     def outlet_pH(self, time=0):

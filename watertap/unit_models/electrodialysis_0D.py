@@ -1549,7 +1549,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1570,35 +1570,35 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
 
         # Set the outlet has the same intial condition of the inlet.
-        for k in blk.keys():
-            for j in blk[k].config.property_package.component_list:
-                blk[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
-                    blk[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
+        for k in self.keys():
+            for j in self[k].config.property_package.component_list:
+                self[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
+                    self[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-                blk[k].concentrate.properties_out[0].flow_mol_phase_comp[
+                self[k].concentrate.properties_out[0].flow_mol_phase_comp[
                     "Liq", j
                 ] = value(
-                    blk[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
+                    self[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-        if hasattr(blk[k], "conc_mem_surf_mol_ioa"):
-            for mem in blk[k].membrane_set:
-                for side in blk[k].electrode_side:
-                    for j in blk[k].ion_set:
-                        blk[k].conc_mem_surf_mol_ioa[mem, side, 0, j].set_value(
-                            blk[k]
+        if hasattr(self[k], "conc_mem_surf_mol_ioa"):
+            for mem in self[k].membrane_set:
+                for side in self[k].electrode_side:
+                    for j in self[k].ion_set:
+                        self[k].conc_mem_surf_mol_ioa[mem, side, 0, j].set_value(
+                            self[k]
                             .concentrate.properties_in[0]
                             .conc_mol_phase_comp["Liq", j]
                         )
         # Initialize diluate block
-        flags_diluate = blk.diluate.initialize(
+        flags_diluate = self.diluate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1608,7 +1608,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize concentrate_side block
-        flags_concentrate = blk.concentrate.initialize(
+        flags_concentrate = self.concentrate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1619,17 +1619,17 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release state
-        blk.diluate.release_state(flags_diluate, outlvl)
+        self.diluate.release_state(flags_diluate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        blk.concentrate.release_state(flags_concentrate, outlvl)
+        self.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
