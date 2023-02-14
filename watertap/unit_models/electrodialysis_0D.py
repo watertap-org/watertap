@@ -1817,7 +1817,9 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                         96485**-1
                         * sum(
                             iscale.get_scaling_factor(
-                                self.diluate.properties_in[0].diffus_phase_comp["Liq", j]
+                                self.diluate.properties_in[0].diffus_phase_comp[
+                                    "Liq", j
+                                ]
                             )
                             ** -2
                             for j in self.ion_set
