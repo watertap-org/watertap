@@ -15,6 +15,7 @@ This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
+from types import MethodType
 from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
@@ -44,8 +45,8 @@ def build_pt(self):
     the inlet volumetric flow rate.
     """
     self._has_recovery_removal = False
-    self._initialize = initialize_pt
-    self._scaling = calculate_scaling_factors_pt
+    self._initialize = MethodType(initialize_pt, self)
+    self._scaling = MethodType(calculate_scaling_factors_pt, self)
 
     # Create state blocks for inlet and outlet
     tmp_dict = dict(**self.config.property_package_args)
@@ -62,7 +63,7 @@ def build_pt(self):
 
     self._stream_table_dict = {"Inlet": self.inlet, "Outlet": self.outlet}
 
-    self._get_Q = _get_Q_pt
+    self._get_Q = MethodType(_get_Q_pt, self)
 
 
 def initialize_pt(
