@@ -15,6 +15,7 @@ Tests for general zero-order property package
 """
 import pytest
 
+from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -49,7 +50,7 @@ class DerivedZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._get_Q = get_Q
+        self._get_Q = MethodType(get_Q, self)
 
 
 class TestConstantIntensity:
