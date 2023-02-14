@@ -164,7 +164,7 @@ class _ASM2dStateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -216,16 +216,16 @@ class _ASM2dStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in self.keys():
+                if degrees_of_freedom(self[k]) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -236,11 +236,11 @@ class _ASM2dStateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
         init_log.info("Initialization Complete.")
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to relase state variables fixed during initialization.
 
@@ -251,12 +251,12 @@ class _ASM2dStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -308,37 +308,39 @@ class ASM2dStateBlockData(StateBlockData):
             units=pyo.units.kmol / pyo.units.m**3,
         )
 
-    def get_material_flow_terms(b, p, j):
+    def get_material_flow_terms(self, p, j):
         if j == "H2O":
-            return b.flow_vol * b.params.dens_mass
+            return self.flow_vol * self.params.dens_mass
         elif j == "S_ALK":
             # Convert moles of alkalinity to mass assuming all is HCO3-
-            return b.flow_vol * b.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
+            return (
+                self.flow_vol * self.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
+            )
         else:
-            return b.flow_vol * b.conc_mass_comp[j]
+            return self.flow_vol * self.conc_mass_comp[j]
 
-    def get_enthalpy_flow_terms(b, p):
+    def get_enthalpy_flow_terms(self, p):
         return (
-            b.flow_vol
-            * b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+            self.flow_vol
+            * self.params.dens_mass
+            * self.params.cp_mass
+            * (self.temperature - self.params.temperature_ref)
         )
 
-    def get_material_density_terms(b, p, j):
+    def get_material_density_terms(self, p, j):
         if j == "H2O":
-            return b.params.dens_mass
+            return self.params.dens_mass
         elif j == "S_ALK":
             # Convert moles of alkalinity to mass assuming all is HCO3-
-            return b.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
+            return self.alkalinity * (61 * pyo.units.kg / pyo.units.kmol)
         else:
-            return b.conc_mass_comp[j]
+            return self.conc_mass_comp[j]
 
-    def get_energy_density_terms(b, p):
+    def get_energy_density_terms(self, p):
         return (
-            b.params.dens_mass
-            * b.params.cp_mass
-            * (b.temperature - b.params.temperature_ref)
+            self.params.dens_mass
+            * self.params.cp_mass
+            * (self.temperature - self.params.temperature_ref)
         )
 
     def default_material_balance_type(self):
@@ -347,23 +349,23 @@ class ASM2dStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def define_state_vars(b):
+    def define_state_vars(self):
         return {
-            "flow_vol": b.flow_vol,
-            "alkalinity": b.alkalinity,
-            "conc_mass_comp": b.conc_mass_comp,
-            "temperature": b.temperature,
-            "pressure": b.pressure,
+            "flow_vol": self.flow_vol,
+            "alkalinity": self.alkalinity,
+            "conc_mass_comp": self.conc_mass_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
         }
 
-    def define_display_vars(b):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": b.flow_vol,
-            "Molar Alkalinity": b.alkalinity,
-            "Mass Concentration": b.conc_mass_comp,
-            "Temperature": b.temperature,
-            "Pressure": b.pressure,
+            "Volumetric Flowrate": self.flow_vol,
+            "Molar Alkalinity": self.alkalinity,
+            "Mass Concentration": self.conc_mass_comp,
+            "Temperature": self.temperature,
+            "Pressure": self.pressure,
         }
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
