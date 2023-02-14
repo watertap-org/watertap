@@ -347,7 +347,7 @@ class TestGACRobust:
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(mr) == 90
+        assert number_variables(mr) == 89
         assert number_total_constraints(mr) == 55
         assert number_unused_variables(mr) == 10  # dens parameters from properties
 

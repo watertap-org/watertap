@@ -389,6 +389,14 @@ class MCASParameterData(PhysicalParameterBlock):
             units=pyunits.dimensionless,
             doc="Ion charge",
         )
+        self.diffus_phase_comp_param = Param(
+                self.config.diffusivity_data.keys(),
+                mutable=True,
+                default=1e-9,
+                initialize=self.config.diffusivity_data,
+                units=pyunits.m**2 * pyunits.s**-1,
+                doc="Bulk diffusivity of solute components",
+            )
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
@@ -2135,9 +2143,5 @@ class MCASStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(self.eq_ionic_strength_molal, 1)
 
         if self.is_property_constructed("diffus_phase_comp"):
-            if (
-                self.params.config.diffus_calculation
-                == DiffusivityCalculation.HaydukLaudie
-            ):
-                for ind, v in self.eq_diffus_phase_comp.items():
-                    iscale.constraint_scaling_transform(v, 1e9)
+            for ind, v in self.eq_diffus_phase_comp.items():
+                iscale.constraint_scaling_transform(v, 1e9)

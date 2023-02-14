@@ -77,6 +77,13 @@ def test_config_with_CP():
     m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        diffusivity_data={
+            ("Liq", "Ca_2+"): 9.2e-10,
+            ("Liq", "SO4_2-"): 1.06e-09,
+            ("Liq", "Mg_2+"): 7.06e-10,
+            ("Liq", "Na_+"): 1.33e-09,
+            ("Liq", "Cl_-"): 2.03e-09,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(property_package=m.fs.properties)
 
@@ -120,6 +127,13 @@ def test_config_without_CP():
     m.fs.properties = MCASParameterBlock(
         solute_list=["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
         charge={"Ca_2+": 2, "SO4_2-": -2, "Na_+": 1, "Cl_-": -1, "Mg_2+": 2},
+        diffusivity_data={
+            ("Liq", "Ca_2+"): 9.2e-10,
+            ("Liq", "SO4_2-"): 1.06e-09,
+            ("Liq", "Mg_2+"): 7.06e-10,
+            ("Liq", "Na_+"): 1.33e-09,
+            ("Liq", "Cl_-"): 2.03e-09,
+        },
     )
     m.fs.unit = NanofiltrationDSPMDE0D(
         property_package=m.fs.properties,
@@ -298,7 +312,7 @@ class TestNanoFiltration_with_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 561
+        assert number_variables(m) == 581
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 
@@ -557,7 +571,7 @@ class TestNanoFiltration_without_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 527
+        assert number_variables(m) == 532
         assert number_total_constraints(m) == 494
         assert number_unused_variables(m) == 11
 
@@ -792,7 +806,7 @@ class TestNanoFiltration_with_CP_2ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 318
+        assert number_variables(m) == 326
         assert number_total_constraints(m) == 286
         assert number_unused_variables(m) == 11
 
@@ -1023,7 +1037,7 @@ class TestNanoFiltration_without_CP_2ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 302
+        assert number_variables(m) == 304
         assert number_total_constraints(m) == 272
         assert number_unused_variables(m) == 11
 
@@ -1265,7 +1279,7 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        assert number_variables(m) == 561
+        assert number_variables(m) == 581
         assert number_total_constraints(m) == 526
         assert number_unused_variables(m) == 11
 

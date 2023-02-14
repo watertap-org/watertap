@@ -1432,7 +1432,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                             2
                             * self.channel_height
                             * self.velocity[t, x]
-                            / self.config.property_package.diffus_phase_comp["Liq", j]
+                            / self.config.property_package.diffus_phase_comp_param["Liq", j]
                         )
                     )
                 if not self.Kf_comp[t, x, j].is_fixed():
@@ -1446,7 +1446,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                             ** 0.5
                             * (
                                 2
-                                * self.config.property_package.diffus_phase_comp[
+                                * self.config.property_package.diffus_phase_comp_param[
                                     "Liq", j
                                 ]
                                 / self.channel_height
