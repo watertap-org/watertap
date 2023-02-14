@@ -40,6 +40,7 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
             units=pyunits.cm,
             doc="Distance between the electrodes",
         )
+
         self.solution_conductivity = Var(
             units=pyunits.S / pyunits.cm,
             doc="Electrical conductivity of solution",
@@ -47,7 +48,7 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
 
         self.ohmic_resistance = Var(
             self.flowsheet().config.time,
-            units=pyunits.cm**2 * pyunits.ohm,
+            units=pyunits.ohm * pyunits.cm**2,
             doc="Ohmic resistance in an EC reactor",
         )
 
@@ -55,21 +56,27 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
             self.flowsheet().config.time, doc="Ohmic resistance in an EC reactor"
         )
         def ohmic_resistance_constraint(b, t):
-            return (
-                b.ohmic_resistance[t] == b.electrode_spacing / b.solution_conductivity
-            )
+            ohmic_resist = b.electrode_spacing / b.solution_conductivity
+            return b.ohmic_resistance[t] == ohmic_resist
 
-        self.power_density_k_1 = Var(
+        self.power_density_k1 = Var(
             units=pyunits.dimensionless,
-            doc="Constant 1 in power density equation",
-        )
-        self.power_density_k_2 = Var(
-            units=pyunits.dimensionless,
-            doc="Constant 2 in power density equation",
+            doc="Constant k1 in power density equation",
         )
 
-        self._fixed_perf_vars.append(self.power_density_k_1)
-        self._fixed_perf_vars.append(self.power_density_k_2)
+        self.power_density_k2 = Var(
+            units=pyunits.dimensionless,
+            doc="Constant k2 in power density equation",
+        )
+
+        self.z_valence = Var(
+            units=pyunits.dimensionless,
+            doc="Valence of dissolving metal ion for energy consumption equation"
+        )
+
+        self._fixed_perf_vars.append(self.power_density_k1)
+        self._fixed_perf_vars.append(self.power_density_k2)
+        self._fixed_perf_vars.append(self.z_value)
 
         self.energy_consumption = Var(
             self.flowsheet().config.time,
@@ -87,10 +94,9 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
             )
             return b.energy_consumption[t] == (
                 current_density_in * b.ohmic_resistance
-                + b.power_density_k_1 * log(b.current_density[t])
-                + b.power_density_k_2
-            ) * (self.z * Constants.faraday_constant / (3600 * 10**6))
+                + b.power_density_k1 * log(b.current_density[t])
+                + b.power_density_k2
+            ) * (b.z_valence * Constants.faraday_constant / (3600 * 10**6))
 
-        self._perf_var_dict[
-            "Energy Consumption (kWh/m3/Mole)"
-        ] = self.energy_consumption
+        energy_consumption = self.energy_consumption
+        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = energy_consumption

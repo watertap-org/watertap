@@ -1,4 +1,7 @@
 default:
+  current_density:
+    value: 8
+      unit: mA/cm^2
   electrode_spacing:
     value: 99
     units: cm
@@ -8,12 +11,28 @@ default:
   ohmic_resistance:
     value: 99
     units: ohm*cm^2
-  power_density_k_1:
-    value: 99
-    units: dimensionless
-  power_density_k_2:
-    value: 99
-    units: dimensionless
   energy_consumption:
     value: 99
     units: kWh/m^3/mol
+
+aluminum_electrodes:
+  power_density_k1:
+    value: 430
+    units: dimensionless
+  power_density_k2:
+    value: 1000
+    units: dimensionless
+  z_parameter:
+    value: 1.64
+    units: dimensionless
+
+iron_electrodes:
+  power_density_k1:
+    value: 75
+    units: dimensionless
+  power_density_k2:
+    value: 600
+    units: dimensionless
+  z_valence:
+    value: 2
+    units: dimensionless
