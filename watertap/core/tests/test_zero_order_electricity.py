@@ -87,9 +87,13 @@ class TestConstantIntensity:
         assert model.fs.unit._fixed_perf_vars == [
             model.fs.unit.energy_electric_flow_vol_inlet
         ]
-        assert model.fs.unit._initialize is None
-        assert model.fs.unit._scaling is None
-        assert model.fs.unit._get_Q is get_Q
+        assert model.fs.unit._initialize == MethodType(
+            ZeroOrderBaseData._initialize, model.fs.unit
+        )
+        assert model.fs.unit._scaling == MethodType(
+            ZeroOrderBaseData._scaling, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(get_Q, model.fs.unit)
         assert model.fs.unit._perf_var_dict == {
             "Electricity Demand": model.fs.unit.electricity,
             "Electricity Intensity": model.fs.unit.energy_electric_flow_vol_inlet,
@@ -157,9 +161,13 @@ class TestPumpElectricity:
     def test_private_attributes(self, model):
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is False
-        assert model.fs.unit._initialize is None
-        assert model.fs.unit._scaling is None
-        assert model.fs.unit._get_Q is get_Q
+        assert model.fs.unit._initialize == MethodType(
+            ZeroOrderBaseData._initialize, model.fs.unit
+        )
+        assert model.fs.unit._scaling == MethodType(
+            ZeroOrderBaseData._scaling, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(get_Q, model.fs.unit)
         assert model.fs.unit._perf_var_dict == {
             "Electricity Demand": model.fs.unit.electricity
         }
