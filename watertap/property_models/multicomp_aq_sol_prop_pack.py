@@ -390,13 +390,13 @@ class MCASParameterData(PhysicalParameterBlock):
             doc="Ion charge",
         )
         self.diffus_phase_comp_param = Param(
-                self.config.diffusivity_data.keys(),
-                mutable=True,
-                default=1e-9,
-                initialize=self.config.diffusivity_data,
-                units=pyunits.m**2 * pyunits.s**-1,
-                doc="Bulk diffusivity of solute components",
-            )
+            self.config.diffusivity_data.keys(),
+            mutable=True,
+            default=1e-9,
+            initialize=self.config.diffusivity_data,
+            units=pyunits.m**2 * pyunits.s**-1,
+            doc="Bulk diffusivity of solute components",
+        )
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
