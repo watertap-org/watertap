@@ -16,7 +16,6 @@ from pyomo.environ import (
     Var,
     Constraint,
     check_optimal_termination,
-    Param,
     Suffix,
     NonNegativeReals,
     Reference,

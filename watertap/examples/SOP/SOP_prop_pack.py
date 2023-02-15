@@ -19,8 +19,6 @@ from pyomo.environ import (
     Constraint,
     Var,
     Param,
-    Expression,
-    Reals,
     NonNegativeReals,
     Suffix,
 )
