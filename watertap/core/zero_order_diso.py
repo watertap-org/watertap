@@ -15,6 +15,7 @@ This module contains the methods for constructing the material balances for
 zero-order double-input/single-output (DISO) unit models (i.e. units with two inlets and single
 outlet where composition changes, such as a generic bioreactor).
 """
+from types import MethodType
 
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -58,8 +59,8 @@ def build_diso(self):
     the inlet volumetric flow rate.
     """
     self._has_recovery_removal = True
-    self._initialize = initialize_diso
-    self._scaling = calculate_scaling_factors_diso
+    self._initialize = MethodType(initialize_diso, self)
+    self._scaling = MethodType(calculate_scaling_factors_diso, self)
 
     # Create state blocks for inlet and outlets
     tmp_dict = dict(**self.config.property_package_args)
@@ -136,7 +137,7 @@ def build_diso(self):
     self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
 
-    self._get_Q = _get_Q_diso
+    self._get_Q = MethodType(_get_Q_diso, self)
 
 
 def initialize_diso(

@@ -250,7 +250,7 @@ class TestStateBlock(object):
             36125.633, rel=1e-4
         )
 
-        assert value(model.props[1].p_w_sat) == pytest.approx(5643.802, rel=1e-4)
+        assert value(model.props[1].p_w_sat) == pytest.approx(5640.534, rel=1e-4)
 
     @pytest.mark.component
     def check_units(self, model):

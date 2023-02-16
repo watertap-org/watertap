@@ -15,6 +15,7 @@ This module contains methods for constructing the material balances for
 zero-order single inlet-double outlet (SIDO) unit models with chemical
 reactions.
 """
+from types import MethodType
 
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
@@ -62,8 +63,8 @@ def build_sido_reactive(self):
     the inlet volumetric flow rate.
     """
     self._has_recovery_removal = True
-    self._initialize = initialize_sidor
-    self._scaling = calculate_scaling_factors_sidor
+    self._initialize = MethodType(initialize_sidor, self)
+    self._scaling = MethodType(calculate_scaling_factors_sidor, self)
 
     # Create state blocks for inlet and outlets
     tmp_dict = dict(**self.config.property_package_args)
@@ -326,7 +327,7 @@ def build_sido_reactive(self):
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
     self._perf_var_dict["Reaction Extent"] = self.extent_of_reaction
 
-    self._get_Q = _get_Q_sidor
+    self._get_Q = MethodType(_get_Q_sidor, self)
 
 
 def initialize_sidor(
