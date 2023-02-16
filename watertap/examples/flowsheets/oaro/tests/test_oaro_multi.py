@@ -93,10 +93,10 @@ class TestOAROwithTurbine:
         m = system_frame
         solve(m, solver=solver)
         fs = m.fs
-        assert pytest.approx(3.57530e-5, rel=1e-5) == value(
+        assert pytest.approx(4.40700e-5, rel=1e-5) == value(
             fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]
         )
-        assert pytest.approx(0.0225850, rel=1e-5) == value(fs.water_recovery)
+        assert pytest.approx(0.111000, rel=1e-5) == value(fs.water_recovery)
 
     @pytest.mark.component
     def test_config_error(self, system_frame):

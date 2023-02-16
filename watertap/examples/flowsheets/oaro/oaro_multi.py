@@ -91,7 +91,7 @@ def main(number_of_stages, erd_type=ERDtype.pump_as_turbine):
     # print_close_to_bounds(m)
     # print_infeasible_constraints(m)
 
-    # optimize_set_up(m)
+    # optimize_set_up(m, water_recovery=0.3)
     solve(m, solver=solver)
 
     print("\n***---Simulation results---***")
@@ -641,7 +641,10 @@ def initialize_system(m, solver=None, verbose=True):
     m.fs.costing.initialize()
 
 
-def optimize_set_up(m):
+def optimize_set_up(
+    m,
+    water_recovery=None,
+):
     # add objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -714,6 +717,9 @@ def optimize_set_up(m):
     )  # minimum water flux [kg/m2-s]
 
     # additional constraints
+    if water_recovery is not None:
+        # product mass flow rate fraction of feed [-]
+        m.fs.water_recovery.fix(water_recovery)
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
         <= m.fs.product_salinity
