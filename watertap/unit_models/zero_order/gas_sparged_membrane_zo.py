@@ -13,6 +13,7 @@
 """
 This module contains a zero-order representation of a gas-sparged membrane unit.
 """
+from types import MethodType
 from idaes.core import declare_process_block_class
 
 from watertap.core import pump_electricity, ZeroOrderBaseData
@@ -65,8 +66,8 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._tech_type = "gas_sparged_membrane"
 
         self._has_recovery_removal = True
-        self._initialize = initialize_sido
-        self._scaling = calculate_scaling_factors_gas_extraction
+        self._initialize = MethodType(initialize_sido, self)
+        self._scaling = MethodType(calculate_scaling_factors_gas_extraction, self)
 
         # Create state blocks for inlet and outlets
         tmp_dict = dict(**self.config.property_package_args)
@@ -205,7 +206,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
         self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_comp
 
-        self._get_Q = _get_Q_gas_extraction
+        self._get_Q = MethodType(_get_Q_gas_extraction, self)
 
         self._Q = Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)

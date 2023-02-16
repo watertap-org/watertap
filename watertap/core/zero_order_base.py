@@ -106,11 +106,6 @@ class ZeroOrderBaseData(UnitModelBlockData):
         self._has_recovery_removal = False
         self._fixed_perf_vars = []
 
-        # Place holders for assigning methods
-        self._initialize = None  # used to link to initization routine
-        self._scaling = None  # used to link to scaling routine
-        self._get_Q = None  # used to provide inlet volumetric flow
-
         # Attributed for storing contents of reporting output
         self._stream_table_dict = {}
         self._perf_var_dict = {}
@@ -146,6 +141,19 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"other species as Solutes."
             )
 
+    # Place holders for assigning methods
+    # used to link to initization routine
+    def _initialize(self, state_args, outlvl, solver, optarg):
+        raise NotImplementedError()
+
+    # used to link to scaling routine
+    def _scaling(self):
+        raise NotImplementedError()
+
+    # used to provide inlet volumetric flow
+    def _get_Q(self, t):
+        raise NotImplementedError()
+
     def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
@@ -153,21 +161,16 @@ class ZeroOrderBaseData(UnitModelBlockData):
         Passthrough initialization routine, raises NotImplementedError if
         the unit model does not have an `_initialize` function.
         """
-        if self._initialize is None or not callable(self._initialize):
-            raise NotImplementedError()
-        else:
-            self._initialize(
-                self, state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
-            )
+        self._initialize(
+            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
+        )
 
     def calculate_scaling_factors(self):
         """
         Placeholder scaling routine, should be overloaded by derived classes
         """
         super().calculate_scaling_factors()
-
-        if callable(self._scaling):
-            self._scaling(self)
+        self._scaling()
 
     def load_parameters_from_database(self, use_default_removal=False):
         """
@@ -304,7 +307,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
 
     def get_inlet_flow(self, t):
-        return self._get_Q(self, t)
+        return self._get_Q(t)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
