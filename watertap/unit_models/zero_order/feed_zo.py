@@ -151,7 +151,7 @@ class FeedZOData(InitializationMixin, FeedData):
             )
 
     def initialize_build(
-        blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+        self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
         """
         This method calls the initialization method of the Feed state block.
@@ -171,8 +171,8 @@ class FeedZOData(InitializationMixin, FeedData):
             None
         """
         # ---------------------------------------------------------------------
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         if optarg is None:
             optarg = {}
@@ -183,16 +183,16 @@ class FeedZOData(InitializationMixin, FeedData):
             state_args = {}
 
         # Initialize state block
-        blk.properties.initialize(
+        self.properties.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
         )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization complete: {}.".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
             raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
+                f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information."
             )

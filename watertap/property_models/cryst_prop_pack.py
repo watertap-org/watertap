@@ -957,19 +957,18 @@ class _NaClStateBlock(StateBlock):
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-            if not check_optimal_termination(results):
-                raise InitializationError(
-                    f"{self.name} failed to initialize successfully. Please "
-                    f"check the output logs for more information."
-                )
-
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -1860,7 +1859,7 @@ class NaClStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

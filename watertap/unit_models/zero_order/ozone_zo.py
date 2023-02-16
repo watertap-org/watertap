@@ -14,6 +14,7 @@
 This module contains a zero-order representation of a Ozone reactor unit.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
@@ -131,3 +132,83 @@ class OzoneZOData(ZeroOrderBaseData):
         ] = self.mass_transfer_efficiency
         self._perf_var_dict["Ozone Mass Flow (lb/hr)"] = self.ozone_flow_mass
         self._perf_var_dict["Ozone Unit Power Demand (kW)"] = self.electricity
+
+    @property
+    def default_costing_method(self):
+        return self.cost_ozonation
+
+    @staticmethod
+    def cost_ozonation(blk):
+        """
+        General method for costing ozone addition. Capital cost is
+        based on the inlet flowrate and dosage of ozone.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "ozone_capital_a_parameter",
+                "ozone_capital_b_parameter",
+                "ozone_capital_c_parameter",
+                "ozone_capital_d_parameter",
+            ],
+        )
+        # Get costing term for ozone addition
+        expr = blk.unit_model._get_ozone_capital_cost(blk, A, B, C, D)
+
+        # Add cost variable
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        # Determine if a costing factor is required
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
+    @staticmethod
+    def _get_ozone_capital_cost(blk, A, B, C, D):
+        """
+        Generate expressions for capital cost of ozonation system.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        ln_Q = pyo.log(
+            pyo.units.convert(
+                blk.unit_model.properties_in[t0].flow_vol
+                / (pyo.units.m**3 / pyo.units.hour),
+                to_units=pyo.units.dimensionless,
+            )
+        )
+        dosage = pyo.units.convert(
+            blk.unit_model.ozone_consumption[t0] / (pyo.units.mg / pyo.units.liter),
+            to_units=pyo.units.dimensionless,
+        )
+
+        expr = pyo.units.convert(
+            A + B * dosage + C * ln_Q + D * dosage * ln_Q,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        return expr

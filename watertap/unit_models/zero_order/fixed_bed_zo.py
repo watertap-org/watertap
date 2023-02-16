@@ -15,6 +15,7 @@ This module contains a zero-order representation of a fixed bed unit
 operation.
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
@@ -243,3 +244,45 @@ class FixedBedZOData(ZeroOrderBaseData):
                 * b.properties_in[t].flow_vol,
                 to_units=pyunits.kg / pyunits.hr,
             )
+
+    @property
+    def default_costing_method(self):
+        return self.cost_fixed_bed
+
+    @staticmethod
+    def cost_fixed_bed(blk, number_of_parallel_units=1):
+        """
+        General method for costing fixed bed units. This primarily calls the
+        cost_power_law_flow method.
+        This method also registers demand for a number of additional material
+        flows.
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        t0 = blk.flowsheet().time.first()
+
+        blk.unit_model.cost_power_law_flow(blk, number_of_parallel_units)
+
+        # Register flows - electricity already done by cost_power_law_flow
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.acetic_acid_demand[t0], "acetic_acid"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.phosphoric_acid_demand[t0], "phosphoric_acid"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.activated_carbon_demand[t0], "activated_carbon"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.sand_demand[t0], "sand"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.anthracite_demand[t0], "anthracite"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer"
+        )
