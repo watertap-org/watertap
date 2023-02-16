@@ -43,13 +43,13 @@ class MagprexZOData(ZeroOrderBaseData):
         self.magnesium_chloride_dosage = Var(
             units=pyunits.dimensionless,
             bounds=(0, None),
-            doc="Dosage of magnesium chloride per sludge",
+            doc="Dosage of magnesium chloride per phosphates",
         )
 
         self._fixed_perf_vars.append(self.magnesium_chloride_dosage)
 
         self._perf_var_dict[
-            "Dosage of magnesium chloride per sludge"
+            "Dosage of magnesium chloride per phosphates"
         ] = self.magnesium_chloride_dosage
 
         self.MgCl2_flowrate = Var(
