@@ -58,8 +58,8 @@ class TestElectroNPFlowsheet:
             m.fs.feed.properties[0].flow_mass_comp["phosphorus"]
         ) == pytest.approx(0.00752736, rel=1e-5)
         assert value(
-            m.fs.feed.properties[0].flow_mass_comp["struvite"]
-        ) == pytest.approx(0, abs=1e-10)
+            m.fs.feed.properties[0].flow_mass_comp["calcium"]
+        ) == pytest.approx(0.0017055, rel=1e-5)
 
     @pytest.mark.component
     def test_solve(self, system_frame):
@@ -67,21 +67,21 @@ class TestElectroNPFlowsheet:
         results = solve(m)
         assert_optimal_termination(results)
 
-        # check two struvite product flow
+        # check two salt product flow
         assert value(
-            m.fs.product_struvite.properties[0].flow_mass_comp["struvite"]
-        ) == pytest.approx(0.006247, rel=1e-3)
+            m.fs.product_salt.properties[0].flow_mass_comp["calcium"]
+        ) == pytest.approx(0.000426375, rel=1e-3)
         assert value(
-            m.fs.product_struvite.properties[0].flow_mass_comp["phosphorus"]
-        ) == pytest.approx(0, abs=1e-6)
+            m.fs.product_salt.properties[0].flow_mass_comp["phosphorus"]
+        ) == pytest.approx(0.0073768, rel=1e-3)
 
         # check two water product flow
         assert value(
             m.fs.product_H2O.properties[0].flow_mass_comp["H2O"]
-        ) == pytest.approx(10.475, rel=1e-3)
+        ) == pytest.approx(10.511, rel=1e-3)
         assert value(
-            m.fs.product_H2O.properties[0].flow_mass_comp["struvite"]
-        ) == pytest.approx(0, abs=1e-6)
+            m.fs.product_H2O.properties[0].flow_mass_comp["phosphorus"]
+        ) == pytest.approx(0.00015055, rel=1e-3)
 
     @pytest.mark.component
     def test_costing(self, system_frame):
@@ -95,9 +95,9 @@ class TestElectroNPFlowsheet:
 
         # check costing
         assert value(m.fs.costing.LCOW) == pytest.approx(
-            0.01447466, rel=1e-3
+            0.0108682, rel=1e-3
         )  # in $/m**3
-        assert value(m.fs.costing.LCOS) == pytest.approx(0.0243907, rel=1e-3)
+        assert value(m.fs.costing.LCOS) == pytest.approx(0.0155105, rel=1e-3)
 
     @pytest.mark.component
     def test_display(self, system_frame):

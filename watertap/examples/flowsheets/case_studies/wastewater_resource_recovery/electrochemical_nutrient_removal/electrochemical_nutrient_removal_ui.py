@@ -62,12 +62,12 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "struvite"],
-        name="Struvite concentration",
+        obj=fs.feed.conc_mass_comp[0, "calcium"],
+        name="Calcium concentration",
         ui_units=pyunits.g / pyunits.L,
         display_units="g/L",
         rounding=2,
-        description="Inlet struvite concentration",
+        description="Inlet calcium concentration",
         is_input=True,
         input_category="Feed",
         is_output=True,
@@ -160,9 +160,9 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.electroNP.energy_electric_flow_mass,
         name="Specific energy",
         ui_units=pyunits.kWh / pyunits.kg,
-        display_units="kWh/kg of struvite",
+        display_units="kWh/kg of phosphorus removal",
         rounding=2,
-        description="ElectroNP specific energy relating the energy to the mass of struvite product",
+        description="ElectroNP specific energy relating the energy to the mass of phosphorus removal",
         is_input=True,
         input_category="ElectroNP",
         is_output=False,
@@ -171,9 +171,9 @@ def export_variables(flowsheet=None, exports=None):
         obj=fs.electroNP.magnesium_chloride_dosage,
         name="MgCl2 Dosage",
         ui_units=pyunits.dimensionless,
-        display_units="g MgCl2/g struvite",
+        display_units="g MgCl2/g P",
         rounding=2,
-        description="MgCl2 dosage per g of struvite product",
+        description="MgCl2 dosage per g of P removal",
         is_input=True,
         input_category="ElectroNP",
         is_output=False,
@@ -282,17 +282,6 @@ def export_variables(flowsheet=None, exports=None):
         input_category="System costing",
         is_output=False,
     )
-    exports.add(
-        obj=fs.costing.struvite_product_cost,
-        name="Struvite cost",
-        ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg",
-        rounding=3,
-        description="Struvite cost is negative because it is sold",
-        is_input=True,
-        input_category="System costing",
-        is_output=False,
-    )
 
     # Outlets
     exports.add(
@@ -328,17 +317,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Outlets",
     )
-    exports.add(
-        obj=fs.product_struvite.properties[0].flow_mass_comp["struvite"],
-        name="Product struvite flow rate",
-        ui_units=pyunits.kg / pyunits.hr,
-        display_units="kg-struvite/h",
-        rounding=3,
-        description="Outlet product struvite flow rate",
-        is_input=False,
-        is_output=True,
-        output_category="Outlets",
-    )
 
     # System metrics
     exports.add(
@@ -358,7 +336,7 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of feed",
         rounding=3,
-        description="Levelized cost of treatment including revenue of struvite and consumption costs for MgCl2",
+        description="Levelized cost of treatment including consumption costs for MgCl2",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -380,18 +358,18 @@ def export_variables(flowsheet=None, exports=None):
         ui_units=fs.costing.base_currency / pyunits.m**3,
         display_units="$/m3 of centrate",
         rounding=3,
-        description="Levelized cost of water including revenue of struvite and consumption costs for MgCl2",
+        description="Levelized cost of water including consumption costs for MgCl2",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
     )
     exports.add(
         obj=fs.costing.LCOS,
-        name="Levelized cost of struvite",
+        name="Levelized cost of phosphorus recovery",
         ui_units=fs.costing.base_currency / pyunits.kg,
-        display_units="$/kg-struvite",
+        display_units="$/kg-P",
         rounding=3,
-        description="Levelized cost of struvite including operating and capital costs",
+        description="Levelized cost of phosphorus recovery including operating and capital costs",
         is_input=False,
         is_output=True,
         output_category="Levelized cost metrics",
@@ -489,21 +467,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=True,
         output_category="Normalized performance metrics",
     )
-    struvite_production = (
-        fs.product_struvite.properties[0].flow_mass_comp["struvite"]
-        / fs.feed.properties[0].flow_vol
-    )
-    exports.add(
-        obj=struvite_production,
-        name="Struvite production",
-        ui_units=pyunits.kg / pyunits.m**3,
-        display_units="kg-struvite/m3 of feed",
-        rounding=3,
-        description="Struvite production [Struvite product flow rate/feed flow rate]",
-        is_input=False,
-        is_output=True,
-        output_category="Normalized performance metrics",
-    )
 
     # Capital costs
     exports.add(
@@ -577,29 +540,16 @@ def export_variables(flowsheet=None, exports=None):
         output_category="Operating costs",
     )
 
-    # Revenue
-    total_revenue = -(
-        fs.costing.aggregate_flow_costs["struvite_product"]
-        + fs.costing.aggregate_flow_costs["magnesium_chloride"]
-    )
+    # Cost
+    total_revenue = -fs.costing.aggregate_flow_costs["magnesium_chloride"]
+
     exports.add(
         obj=total_revenue,
         name="Total",
         ui_units=fs.costing.base_currency / pyunits.year,
         display_units="$/year",
         rounding=0,
-        description="Total revenue - only includes the purchase of MgCl2 (not struvite revenue)",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
-    exports.add(
-        obj=-fs.costing.aggregate_flow_costs["struvite_product"],
-        name="Struvite",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Revenue from selling struvite",
+        description="Total revenue - only includes the purchase of MgCl2",
         is_input=False,
         is_output=True,
         output_category="Revenue",
