@@ -15,6 +15,7 @@ This module contains a zero-order representation of a METAB bioreactor with simp
 (i.e., conversion fractions for key reagents and conversion ratios for other reactive species).
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido_reactive, ZeroOrderBaseData
@@ -127,3 +128,176 @@ class MetabZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Electricity Demand"] = self.electricity
         self._perf_var_dict["Thermal Energy Demand"] = self.heat
+
+    @property
+    def default_costing_method(self):
+        return self.cost_metab
+
+    @staticmethod
+    def cost_metab(blk):
+        """
+        General method for costing the metab reactor. Capital cost
+        is based on the cost of reactor, mixer, METAB beads, membrane,
+        and vacuum pump.
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        (
+            reactor_cost,
+            mixer_cost,
+            bead_bulk_density,
+            bead_cost,
+            bead_replacement_factor,
+            membrane_sidestream_fraction,
+            membrane_specific_size,
+            membrane_cost,
+            vacuum_cost,
+        ) = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            [
+                "reactor_cost",
+                "mixer_cost",
+                "bead_bulk_density",
+                "bead_cost",
+                "bead_replacement_factor",
+                "membrane_sidestream_fraction",
+                "membrane_specific_size",
+                "membrane_cost",
+                "vacuum_cost",
+            ],
+        )
+
+        # Add capital cost variables and constraints
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+        blk.DCC_reactor = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of reactor",
+        )
+        blk.DCC_mixer = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of mixer",
+        )
+        blk.DCC_bead = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of beads",
+        )
+        blk.DCC_membrane = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of membrane",
+        )
+        blk.DCC_vacuum = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Direct capital cost of vacuum pump",
+        )
+        blk.eq_DCC_reactor = pyo.Constraint(
+            expr=blk.DCC_reactor
+            == pyo.units.convert(
+                blk.unit_model.volume * reactor_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_mixer = pyo.Constraint(
+            expr=blk.DCC_mixer
+            == pyo.units.convert(
+                blk.unit_model.energy_electric_mixer_vol
+                * blk.unit_model.volume
+                * mixer_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_bead = pyo.Constraint(
+            expr=blk.DCC_bead
+            == pyo.units.convert(
+                blk.unit_model.volume * bead_bulk_density * bead_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_membrane = pyo.Constraint(
+            expr=blk.DCC_membrane
+            == pyo.units.convert(
+                blk.unit_model.get_inlet_flow(t0)
+                * membrane_sidestream_fraction
+                * membrane_specific_size
+                * membrane_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+        blk.eq_DCC_vacuum = pyo.Constraint(
+            expr=blk.DCC_vacuum
+            == pyo.units.convert(
+                blk.unit_model.properties_byproduct[t0].flow_mass_comp[
+                    blk.unit_model._gas_comp
+                ]
+                * vacuum_cost,
+                to_units=blk.config.flowsheet_costing_block.base_currency,
+            )
+        )
+
+        expr = (
+            blk.DCC_reactor
+            + blk.DCC_mixer
+            + blk.DCC_bead
+            + blk.DCC_membrane
+            + blk.DCC_vacuum
+        )
+
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+        # Add fixed operating cost variable and constraint
+        blk.fixed_operating_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency
+            / blk.config.flowsheet_costing_block.base_period,
+            bounds=(0, None),
+            doc="Fixed operating cost of unit",
+        )
+        blk.fixed_operating_cost_constraint = pyo.Constraint(
+            expr=blk.fixed_operating_cost
+            == pyo.units.convert(
+                blk.DCC_bead * bead_replacement_factor,
+                to_units=blk.config.flowsheet_costing_block.base_currency
+                / blk.config.flowsheet_costing_block.base_period,
+            )
+        )
+
+        # Register operating cost flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+        blk.config.flowsheet_costing_block.cost_flow(blk.unit_model.heat[t0], "heat")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.properties_byproduct[t0].flow_mass_comp[
+                blk.unit_model._gas_comp
+            ],
+            blk.unit_model._gas_comp + "_product",
+        )

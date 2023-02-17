@@ -15,6 +15,7 @@ This module contains a zero-order representation of a general unit that recovers
 volatile fatty acids (VFAs).
 """
 
+import pyomo.environ as pyo
 from pyomo.environ import Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_sido, pump_electricity, ZeroOrderBaseData
@@ -71,3 +72,58 @@ class VFARecoveryZOData(ZeroOrderBaseData):
             )
 
         self._perf_var_dict["Heat consumption"] = self.heat_consumption
+
+    @property
+    def default_costing_method(self):
+        return self.cost_vfa_recovery
+
+    @staticmethod
+    def cost_vfa_recovery(blk):
+        """
+        Method for costing VFA recovery unit.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        unit_capex = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["unit_capex"],
+        )
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        capex_expr = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol * unit_capex,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        # Determine if a costing factor is required
+        blk.unit_model._add_cost_factor(
+            blk, parameter_dict["capital_cost"]["cost_factor"]
+        )
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * capex_expr
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )
+
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.heat_consumption[t0], "heat"
+        )

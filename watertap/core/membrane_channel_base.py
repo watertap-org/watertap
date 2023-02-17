@@ -455,7 +455,7 @@ class MembraneChannelMixin:
             solute_set,
             doc="Concentration polarization modulus",
         )
-        def eq_cp_modulus(b, t, x, j):
+        def eq_cp_modulus(b, t, x, j):  # pylint: disable=function-redefined
             if b._skip_element(x):
                 return Constraint.Skip
             return (

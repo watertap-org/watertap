@@ -66,5 +66,8 @@ def test_lists_match():
     rst_list = generate_model_list(rst_path, ".rst", ("index.rst",))
     py_list = generate_model_list(py_path, ".py", ("__init__.py",))
 
+    # remove the AOPMixin
+    py_list.remove("aop_addition_zo")
+
     # Run pytest -vv to see how the lists are different
     assert sorted(py_list) == sorted(rst_list)

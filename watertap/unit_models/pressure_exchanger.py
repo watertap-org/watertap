@@ -287,7 +287,7 @@ class PressureExchangerData(InitializationMixin, UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Work transferred to low pressure side fluid",
         )
-        def work(b, t):
+        def work(b, t):  # pylint: disable=function-redefined
             return b.properties_in[t].flow_vol * b.deltaP[t]
 
         # Add Ports

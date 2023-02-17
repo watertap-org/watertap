@@ -40,7 +40,7 @@ from idaes.core import MaterialFlowBasis
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.property_models.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
@@ -108,8 +108,7 @@ class TestParamBlock(object):
             ("R1", "Liq", "X_pr"): 0.20,
             ("R1", "Liq", "X_li"): 0.30,
             ("R1", "Liq", "X_I"): 0.2,
-            ("R1", "Liq", "S_IC"): 1.46907e-5 * mw_c,  # Todo delete
-            # ("R1", "Liq", "S_IN"): -4.70e-7  * mw_n,
+            ("R1", "Liq", "S_IC"): 1.46907e-5 * mw_c,
             ("R1", "Liq", "S_IN"): -1e-18 * mw_n,
             # R2: Hydrolysis of carbohydrates
             ("R2", "Liq", "S_su"): 1,
@@ -121,8 +120,8 @@ class TestParamBlock(object):
             ("R4", "Liq", "S_su"): 0.05,
             ("R4", "Liq", "S_fa"): 0.95,
             ("R4", "Liq", "X_li"): -1,
-            ("R4", "Liq", "S_IN"): 0,  # Todo delete
-            ("R4", "Liq", "S_IC"): -0.00023192 * mw_c,  # Todo delete
+            ("R4", "Liq", "S_IN"): 0,
+            ("R4", "Liq", "S_IC"): -0.00023192 * mw_c,
             # R5:  Uptake of sugars
             ("R5", "Liq", "S_su"): -1,
             ("R5", "Liq", "S_bu"): 0.1170,
@@ -385,8 +384,6 @@ class TestParamBlock(object):
         assert isinstance(model.rparams.k_dec_X_h2, Var)
         assert value(model.rparams.k_dec_X_h2) == 0.02
 
-        assert isinstance(model.rparams.KW, Var)
-        assert value(model.rparams.KW) == 2.08e-14
         assert isinstance(model.rparams.K_a_va, Var)
         assert value(model.rparams.K_a_va) == 1.38e-5
         assert isinstance(model.rparams.K_a_bu, Var)
@@ -395,10 +392,6 @@ class TestParamBlock(object):
         assert value(model.rparams.K_a_pro) == 1.32e-5
         assert isinstance(model.rparams.K_a_ac, Var)
         assert value(model.rparams.K_a_ac) == 1.74e-5
-        assert isinstance(model.rparams.K_a_co2, Var)
-        assert value(model.rparams.K_a_co2) == 4.94e-7
-        assert isinstance(model.rparams.K_a_IN, Var)
-        assert value(model.rparams.K_a_IN) == 1.11e-9
 
 
 class TestReactionBlock(object):
@@ -519,11 +512,16 @@ class TestReactor:
         for _ in iscale.badly_scaled_var_generator(m):
             assert False
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        model.fs.unit.initialize(optarg={"bound_push": 1e-8})
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-
-        model.fs.unit.initialize(outlvl=idaeslog.INFO_HIGH, optarg={"bound_push": 1e-8})
-
         solver = get_solver(options={"bound_push": 1e-8})
         results = solver.solve(model, tee=True)
 
@@ -651,3 +649,12 @@ class TestReactor:
         assert value(model.fs.unit.liquid_phase.reactions[0].S_OH) == pytest.approx(
             5.570e-7, rel=1e-2
         )
+        assert value(model.fs.unit.liquid_phase.reactions[0].KW, Var) == pytest.approx(
+            2.08e-14, rel=1e-2
+        )
+        assert value(
+            model.fs.unit.liquid_phase.reactions[0].K_a_co2, Var
+        ) == pytest.approx(4.94e-7, rel=1e-2)
+        assert value(
+            model.fs.unit.liquid_phase.reactions[0].K_a_IN, Var
+        ) == pytest.approx(1.11e-9, rel=1e-2)

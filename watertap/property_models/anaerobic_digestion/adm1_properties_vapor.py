@@ -29,7 +29,6 @@ from idaes.core import (
     VaporPhase,
     Component,
     Solute,
-    Solvent,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants
@@ -131,7 +130,7 @@ class _ADM1_vaporStateBlock(StateBlock):
     """
 
     def initialize(
-        blk,
+        self,
         state_args=None,
         state_vars_fixed=False,
         hold_state=False,
@@ -177,16 +176,16 @@ class _ADM1_vaporStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            flags = fix_state_vars(blk, state_args)
+            flags = fix_state_vars(self, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in self.keys():
+                if degrees_of_freedom(self[k]) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -197,11 +196,11 @@ class _ADM1_vaporStateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
         init_log.info("Initialization Complete.")
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
 
@@ -212,12 +211,12 @@ class _ADM1_vaporStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
 
         if flags is None:
             return
         # Unfix state variables
-        revert_state_vars(blk, flags)
+        revert_state_vars(self, flags)
         init_log.info("State Released.")
 
 
@@ -310,13 +309,27 @@ class ADM1_vaporStateBlockData(StateBlockData):
                 )
 
         self._p_sat = pyo.Constraint(
-            self.params.solute_set, rule=p_sat_rule, doc="P for not solutes"
+            self.params.solute_set,
+            rule=p_sat_rule,
+            doc="Saturation pressure for components",
         )
 
-        def p_w_sat_rule(b):
-            return self.p_w_sat == 0.0557 * 101325 * pyo.units.Pa
+        def p_w_sat_rule(b, t):
+            return (
+                self.p_w_sat
+                == 0.0313
+                * pyo.exp(
+                    5290
+                    * pyo.units.K
+                    * ((1 / self.params.temperature_ref) - (1 / self.temperature[t]))
+                )
+                * 101325
+                * pyo.units.Pa
+            )
 
-        self._p_w_sat = pyo.Constraint(rule=p_w_sat_rule, doc="P for not solutes")
+        self._p_w_sat = pyo.Constraint(
+            rule=p_w_sat_rule, doc="Saturation pressure for water"
+        )
 
         def material_flow_expression(self, j):
             if j == "H2O":
@@ -392,23 +405,23 @@ class ADM1_vaporStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def define_state_vars(b):
+    def define_state_vars(self):
         return {
-            "flow_vol": b.flow_vol,
-            "conc_mass_comp": b.conc_mass_comp,
-            "temperature": b.temperature,
-            "pressure": b.pressure,
+            "flow_vol": self.flow_vol,
+            "conc_mass_comp": self.conc_mass_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
         }
 
-    def define_display_vars(b):
+    def define_display_vars(self):
         return {
-            "Volumetric Flowrate": b.flow_vol,
-            "Mass Concentration": b.conc_mass_comp,
-            "Temperature": b.temperature,
-            "Pressure": b.pressure,
+            "Volumetric Flowrate": self.flow_vol,
+            "Mass Concentration": self.conc_mass_comp,
+            "Temperature": self.temperature,
+            "Pressure": self.pressure,
         }
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def calculate_scaling_factors(self):
