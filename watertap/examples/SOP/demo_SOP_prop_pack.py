@@ -7,6 +7,9 @@ from idaes.core.solvers import get_solver
 
 import watertap.examples.SOP.SOP_prop_pack as props
 
+# TODO need to add vol_frac_phase_comp in here?
+# TODO include flow_mass_phase in here?
+
 
 def main():
     # create model, flowsheet
@@ -25,11 +28,6 @@ def main():
     metadata = m.fs.properties.get_metadata().properties
     for v_name in metadata:
         getattr(m.fs.stream[0], v_name)
-    # m.fs.stream[0].visc_d_phase_comp
-    # m.fs.stream[0].mass_frac_phase_comp
-    # m.fs.stream[0].dens_mass_phase
-    # m.fs.stream[0].flow_vol_phase
-    # m.fs.stream[0].conc_mass_phase_comp
     print("\n---second display---")
     m.fs.stream[0].display()
 
