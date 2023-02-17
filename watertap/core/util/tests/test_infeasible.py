@@ -108,7 +108,7 @@ abcon near LB of 0
         assert (
             captured.out
             == """VAR a: 20 </= UB 10
-VAR b: -20 >/= LB -10
+VAR b: LB -10 </= -20
 """
         )
 

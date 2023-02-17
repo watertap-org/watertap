@@ -233,7 +233,7 @@ def build(erd_type=None):
     )
 
     @m.fs.tb_desal_psttrt.Constraint(["H2O", "TDS"])
-    def eq_flow_mass_comp(blk, j):
+    def eq_flow_mass_comp(blk, j):  # pylint: disable=function-redefined
         if j == "TDS":
             jj = "tds"
         else:

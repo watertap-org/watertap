@@ -558,8 +558,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 a + b + ((a - b) ** 2 + eps**2) ** 0.5
             )
 
-    def initialize(
-        blk,
+    def initialize_build(
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -580,14 +580,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.properties_in.initialize(
+        flags = self.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -600,8 +600,8 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -612,7 +612,7 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.properties_out.initialize(
+        self.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -620,14 +620,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         )
 
         state_args_solids = deepcopy(state_args)
-        for p, j in blk.properties_solids.phase_component_set:
+        for p, j in self.properties_solids.phase_component_set:
             if p == "Sol":
                 state_args_solids["flow_mass_phase_comp"][p, j] = state_args[
                     "flow_mass_phase_comp"
                 ]["Liq", j]
             elif p == "Liq" or p == "Vap":
                 state_args_solids["flow_mass_phase_comp"][p, j] = 1e-8
-        blk.properties_solids.initialize(
+        self.properties_solids.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -635,14 +635,14 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         )
 
         state_args_vapor = deepcopy(state_args)
-        for p, j in blk.properties_vapor.phase_component_set:
+        for p, j in self.properties_vapor.phase_component_set:
             if p == "Vap":
                 state_args_vapor["flow_mass_phase_comp"][p, j] = state_args[
                     "flow_mass_phase_comp"
                 ]["Liq", j]
             elif p == "Liq" or p == "Sol":
                 state_args_vapor["flow_mass_phase_comp"][p, j] = 1e-8
-        blk.properties_vapor.initialize(
+        self.properties_vapor.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -652,15 +652,15 @@ class CrystallizationData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl=outlvl)
+        self.properties_in.release_state(flags, outlvl=outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
