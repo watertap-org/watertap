@@ -248,8 +248,8 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
             hasattr(self.config.property_package, "ion_set")
             and len(self.config.property_package.ion_set) == 0
         ) and (
-            hasattr(self.config.property_package, "solute_set")
-            and len(self.config.property_package.solute_set) == 0
+            hasattr(self.config.property_package, "neutral_set")
+            and len(self.config.property_package.neutral_set) == 0
         ):
             raise ConfigurationError(
                 "This NF model was expecting ions/solutes and did not receive any."
@@ -291,16 +291,16 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         # These two sets should always be present
         #   and their union is the full set of dissolved species
         if hasattr(self.config.property_package, "ion_set") and hasattr(
-            self.config.property_package, "solute_set"
+            self.config.property_package, "neutral_set"
         ):
             self.solute_set = solute_set = (
                 self.config.property_package.ion_set
-                | self.config.property_package.solute_set
+                | self.config.property_package.neutral_set
             )
         else:
             raise ConfigurationError(
                 "This NF model was expecting an "
-                "ion_set and solute_set and did not them."
+                "ion_set and neutral_set and did not them."
             )
 
         solvent_set = self.config.property_package.solvent_set
@@ -1710,7 +1710,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 ] = self.permeate_side[time_point, x].conc_mol_phase_comp["Liq", j]
 
         for j in (
-            self.config.property_package.solute_set
+            self.config.property_package.neutral_set
             | self.config.property_package.ion_set
         ):
             expr_dict[f"Stokes radius of {j}"] = self.feed_side.properties_in[
@@ -1893,7 +1893,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
                 "solvent_recovery"
             ]
         for j in (
-            self.config.property_package.solute_set
+            self.config.property_package.neutral_set
             | self.config.property_package.ion_set
         ):
             state_args_retentate["flow_mol_phase_comp"][("Liq", j)] *= (
@@ -1907,7 +1907,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         state_args_interface_out = deepcopy(state_args_retentate)
 
         for j in (
-            self.config.property_package.solute_set
+            self.config.property_package.neutral_set
             | self.config.property_package.ion_set
         ):
             state_args_interface_in["flow_mol_phase_comp"][
@@ -2018,7 +2018,7 @@ class NanofiltrationData(InitializationMixin, UnitModelBlockData):
         for j in self.config.property_package.component_list:
             if (
                 j
-                in self.config.property_package.solute_set
+                in self.config.property_package.neutral_set
                 | self.config.property_package.ion_set
             ):
                 iscale.set_scaling_factor(
