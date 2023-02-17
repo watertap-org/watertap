@@ -155,15 +155,9 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
 
 
 def display_results(m):
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("++++++++++++++++++++ DISPLAY RESULTS ++++++++++++++++++++")
-    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
     unit_list = ["feed", "magprex", "centrifuge", "classifier"]
     for u in unit_list:
         m.fs.component(u).report()
-
-    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
 def add_costing(m):

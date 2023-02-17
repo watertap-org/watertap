@@ -194,7 +194,7 @@ class MCASParameterData(PhysicalParameterBlock):
        .. csv-table::
            :header: "Configuration Options", "Description"
 
-           "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
+           "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3 by default in dens_mass_const parameter"
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """,
@@ -373,7 +373,17 @@ class MCASParameterData(PhysicalParameterBlock):
             doc="Debye Huckel constant b",
         )
 
-        # Mass density parameters, eq. 8 in Sharqawy et al. (2010)
+        # Mass density
+        # For constant density
+        self.dens_mass_const = Param(
+            mutable=True,
+            default=1000,
+            initialize=1000,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Mass density used in DensityCalculation.constant",
+        )
+
+        # Parameters for seawater density, eq. 8 in Sharqawy et al. (2010)
         dens_units = pyunits.kg / pyunits.m**3
         t_inv_units = pyunits.K**-1
 
@@ -711,28 +721,28 @@ class _MCASStateBlock(StateBlock):
         skip_solve = True  # skip solve if only state variables are present
         for k in self.keys():
             if number_unfixed_variables(self[k]) != 0:
-
                 skip_solve = False
 
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not check_optimal_termination(results):
-                    raise InitializationError(
-                        "The property package failed to solve during initialization."
-                    )
             init_log.info_high(
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -932,7 +942,10 @@ class MCASStateBlockData(StateBlockData):
         # TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b, p):
             if b.params.config.density_calculation == DensityCalculation.constant:
-                return b.dens_mass_phase[p] == 1000 * pyunits.kg * pyunits.m**-3
+                add_object_reference(
+                    self, "dens_mass_const", self.params.dens_mass_const
+                )
+                return b.dens_mass_phase[p] == self.dens_mass_const
             elif b.params.config.density_calculation == DensityCalculation.seawater:
                 # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
                 t = b.temperature - 273.15 * pyunits.K

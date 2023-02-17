@@ -49,72 +49,72 @@ _log = idaeslog.getLogger(__name__)
 
 
 class VolMolH2O:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=18e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolNaCl:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=58.44e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolNa2SO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=142.04e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolCaCl2:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=110.98e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolCaSO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=136.14e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolMgCl2:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=95.21e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 
 class VolMolMgSO4:
-    def build_parameters(b):
-        b.vol_mol_pure = Param(
+    def build_parameters(self):
+        self.vol_mol_pure = Param(
             initialize=120.37e-6, units=pyunits.m**3 / pyunits.mol, mutable=True
         )
 
-    def return_expression(b, cobj, T):
+    def return_expression(self, cobj, T):
         return cobj.vol_mol_pure
 
 

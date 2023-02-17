@@ -15,6 +15,7 @@ Tests for general zero-order property package
 """
 import pytest
 
+from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -78,9 +79,11 @@ class TestSIDO:
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is True
         assert model.fs.unit._fixed_perf_vars == []
-        assert model.fs.unit._initialize is initialize_sido
-        assert model.fs.unit._scaling is calculate_scaling_factors_sido
-        assert model.fs.unit._get_Q is _get_Q_sido
+        assert model.fs.unit._initialize == MethodType(initialize_sido, model.fs.unit)
+        assert model.fs.unit._scaling == MethodType(
+            calculate_scaling_factors_sido, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(_get_Q_sido, model.fs.unit)
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,

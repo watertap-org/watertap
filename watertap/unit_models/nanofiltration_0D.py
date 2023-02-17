@@ -36,6 +36,7 @@ from idaes.core import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -532,7 +533,7 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
             )
 
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -553,14 +554,14 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.feed_side.initialize(
+        flags = self.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -572,8 +573,8 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.feed_side.properties_in[
-                blk.flowsheet().config.time.first()
+            state_dict = self.feed_side.properties_in[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -584,7 +585,7 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.properties_permeate.initialize(
+        self.properties_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -595,16 +596,16 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        self.feed_side.release_state(flags, outlvl + 1)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         # TODO: make a unit specific stream table
@@ -613,6 +614,16 @@ class NanoFiltrationData(InitializationMixin, UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

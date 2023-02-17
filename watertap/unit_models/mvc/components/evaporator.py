@@ -355,7 +355,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
             return self.heat_transfer == -condenser_blk.control_volume.heat[t]
 
     def initialize_build(
-        blk,
+        self,
         delta_temperature_in=None,
         delta_temperature_out=None,
         state_args=None,
@@ -380,17 +380,17 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
-        if hasattr(blk, "connection_to_condenser"):
-            blk.connection_to_condenser.deactivate()
+        if hasattr(self, "connection_to_condenser"):
+            self.connection_to_condenser.deactivate()
 
         # ---------------------------------------------------------------------
         # Initialize feed side
-        flags_feed = blk.properties_feed.initialize(
+        flags_feed = self.properties_feed.initialize(
             solver=solver, optarg=optarg, hold_state=True
         )
         init_log.info_high("Initialization Step 1 Complete.")
@@ -399,8 +399,8 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_feed[
-                blk.flowsheet().config.time.first()
+            state_dict = self.properties_feed[
+                self.flowsheet().config.time.first()
             ].define_port_members()
 
             for k in state_dict.keys():
@@ -411,7 +411,7 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
-        blk.properties_brine.initialize(
+        self.properties_brine.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args
         )
 
@@ -419,13 +419,13 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         state_args_vapor["pressure"] = 0.5 * state_args["pressure"]
         state_args_vapor["temperature"] = state_args["temperature"]
         state_args_vapor["flow_mass_phase_comp"] = {
-            ("Liq", "H2O"): blk.properties_vapor[0]
+            ("Liq", "H2O"): self.properties_vapor[0]
             .flow_mass_phase_comp["Liq", "H2O"]
             .lb,
             ("Vap", "H2O"): state_args["flow_mass_phase_comp"][("Liq", "H2O")],
         }
 
-        blk.properties_vapor.initialize(
+        self.properties_vapor.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -437,45 +437,45 @@ class EvaporatorData(InitializationMixin, UnitModelBlockData):
         # incorporate guessed temperature differences
         has_guessed_delta_temperature_in = False
         if delta_temperature_in is not None:
-            if blk.delta_temperature_in.is_fixed():
+            if self.delta_temperature_in.is_fixed():
                 raise RuntimeError(
                     "A guess was provided for the delta_temperature_in variable in the "
                     "initialization, but it is already fixed. Either do not "
                     "provide a guess for or unfix delta_temperature_in"
                 )
-            blk.delta_temperature_in.fix(delta_temperature_in)
+            self.delta_temperature_in.fix(delta_temperature_in)
             has_guessed_delta_temperature_in = True
 
         has_guessed_delta_temperature_out = False
         if delta_temperature_out is not None:
-            if blk.delta_temperature_out.is_fixed():
+            if self.delta_temperature_out.is_fixed():
                 raise RuntimeError(
                     "A guess was provided for the delta_temperature_out variable in the "
                     "initialization, but it is already fixed. Either do not "
                     "provide a guess for or unfix delta_temperature_out"
                 )
-            blk.delta_temperature_out.fix(delta_temperature_out)
+            self.delta_temperature_out.fix(delta_temperature_out)
             has_guessed_delta_temperature_out = True
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states and release delta_temperature
-        blk.properties_feed.release_state(flags_feed, outlvl=outlvl)
+        self.properties_feed.release_state(flags_feed, outlvl=outlvl)
         if has_guessed_delta_temperature_in:
-            blk.delta_temperature_in.unfix()
+            self.delta_temperature_in.unfix()
         if has_guessed_delta_temperature_out:
-            blk.delta_temperature_out.unfix()
-        if hasattr(blk, "connection_to_condenser"):
-            blk.connection_to_condenser.activate()
+            self.delta_temperature_out.unfix()
+        if hasattr(self, "connection_to_condenser"):
+            self.connection_to_condenser.activate()
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
