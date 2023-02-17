@@ -15,6 +15,7 @@ Tests for zero-order DISO unit model
 """
 import pytest
 
+from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
@@ -83,9 +84,11 @@ class TestDISO:
         assert model.fs.unit._tech_type is None
         assert model.fs.unit._has_recovery_removal is True
         assert model.fs.unit._fixed_perf_vars == []
-        assert model.fs.unit._initialize is initialize_diso
-        assert model.fs.unit._scaling is calculate_scaling_factors_diso
-        assert model.fs.unit._get_Q is _get_Q_diso
+        assert model.fs.unit._initialize == MethodType(initialize_diso, model.fs.unit)
+        assert model.fs.unit._scaling == MethodType(
+            calculate_scaling_factors_diso, model.fs.unit
+        )
+        assert model.fs.unit._get_Q == MethodType(_get_Q_diso, model.fs.unit)
         assert model.fs.unit._stream_table_dict == {
             "Inlet 1": model.fs.unit.inlet1,
             "Inlet 2": model.fs.unit.inlet2,

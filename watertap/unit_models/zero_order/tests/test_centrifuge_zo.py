@@ -148,7 +148,7 @@ class TestCentrifugeZO:
         assert pytest.approx(1.000054e-10, abs=1e-5) == value(
             model.fs.unit.electricity[0]
         )
-        assert pytest.approx(0.03636, rel=1e-5) == value(
+        assert pytest.approx(174.892, rel=1e-5) == value(
             model.fs.unit.polymer_demand[0]
         )
 

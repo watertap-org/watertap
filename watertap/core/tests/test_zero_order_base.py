@@ -15,6 +15,7 @@ Tests for general zero-order base class
 """
 import pytest
 
+from types import MethodType
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from pyomo.environ import ConcreteModel, Var, units as pyunits
@@ -41,9 +42,9 @@ def test_private_attributes():
     assert m.fs.unit._tech_type is None
     assert m.fs.unit._has_recovery_removal is False
     assert m.fs.unit._fixed_perf_vars == []
-    assert m.fs.unit._initialize is None
-    assert m.fs.unit._scaling is None
-    assert m.fs.unit._get_Q is None
+    assert m.fs.unit._initialize == MethodType(ZeroOrderBaseData._initialize, m.fs.unit)
+    assert m.fs.unit._scaling == MethodType(ZeroOrderBaseData._scaling, m.fs.unit)
+    assert m.fs.unit._get_Q == MethodType(ZeroOrderBaseData._get_Q, m.fs.unit)
     assert m.fs.unit._stream_table_dict == {}
     assert m.fs.unit._perf_var_dict == {}
 
