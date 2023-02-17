@@ -1,13 +1,19 @@
 default:
   current_density:
-    value: 8
-      unit: mA/cm^2
+    value: 8.0
+    unit: mA/cm^2
   electrode_spacing:
     value: 5.4
     units: cm
   solution_conductivity:
     value: 0.00115
     units: S/cm
+  ohmic_resistance:
+    value: 4700
+    units: ohm*cm^2
+  recovery_frac_mass_H2O:
+    value: 0.99
+    units: dimensionless
 
 aluminum_electrodes:
   power_density_k1:
@@ -16,9 +22,16 @@ aluminum_electrodes:
   power_density_k2:
     value: 1000
     units: dimensionless
-  z_parameter:
+  z_valence:
     value: 1.64
     units: dimensionless
+  removal_frac_mass_comp:
+    toc:
+      value: 0.77
+      units: dimensionless
+    tss:
+      value: 0.72
+      units: dimensionless
 
 iron_electrodes:
   power_density_k1:
@@ -30,3 +43,10 @@ iron_electrodes:
   z_valence:
     value: 2
     units: dimensionless
+  removal_frac_mass_comp:
+    toc:
+      value: 0.68
+      units: dimensionless
+    tss:
+      value: 0.72
+      units: dimensionless

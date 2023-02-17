@@ -36,6 +36,13 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         build_sido(self)
 
+        self.current_density = Var(
+            self.flowsheet().time,
+            units=pyunits.mA / pyunits.cm**2,
+            bounds=(1, 9),
+            doc="Current density"
+        )
+
         self.electrode_spacing = Var(
             units=pyunits.cm,
             doc="Distance between the electrodes",
@@ -47,17 +54,9 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         )
 
         self.ohmic_resistance = Var(
-            self.flowsheet().config.time,
             units=pyunits.ohm * pyunits.cm**2,
             doc="Ohmic resistance in an EC reactor",
         )
-
-        @self.Constraint(
-            self.flowsheet().config.time, doc="Ohmic resistance in an EC reactor"
-        )
-        def ohmic_resistance_constraint(b, t):
-            ohmic_resist = b.electrode_spacing / b.solution_conductivity
-            return b.ohmic_resistance[t] == ohmic_resist
 
         self.power_density_k1 = Var(
             units=pyunits.dimensionless,
@@ -79,22 +78,22 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.z_valence)
 
         self.energy_consumption = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             units=pyunits.kWh / pyunits.m**3 / pyunits.mol,
             doc="Energy required for treating a given volume",
         )
 
         @self.Constraint(
-            self.flowsheet().config.time, doc="Energy requirement constraint"
+            self.flowsheet().time, doc="Energy requirement constraint"
         )
         def energy_consumption_constraint(b, t):
             current_density_in = pyunits.convert(
-                b.properties_in[t].current_density,
-                to_units=pyunits.Amp / pyunits.cm**2,
+                b.current_density[t],
+                to_units=pyunits.A / pyunits.cm**2,
             )
             return b.energy_consumption[t] == (
                 current_density_in * b.ohmic_resistance
-                + b.power_density_k1 * log(b.current_density[t])
+                + b.power_density_k1 * log(current_density_in)
                 + b.power_density_k2
             ) * (b.z_valence * Constants.faraday_constant / (3600 * 10**6))
 
