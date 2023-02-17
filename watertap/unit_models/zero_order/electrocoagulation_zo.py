@@ -21,8 +21,8 @@ from watertap.core import build_sido, ZeroOrderBaseData
 from idaes.core.util.constants import Constants
 
 
-@declare_process_block_class("ElectroCoagulationZO")
-class ElectroCoagulationZOData(ZeroOrderBaseData):
+@declare_process_block_class("ElectrocoagulationZO")
+class ElectrocoagulationZOData(ZeroOrderBaseData):
     """
     Zero-Order model for an electro coagulation unit operation.
     """
@@ -32,7 +32,7 @@ class ElectroCoagulationZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "electro_coagulation"
+        self._tech_type = "electrocoagulation"
 
         build_sido(self)
 
