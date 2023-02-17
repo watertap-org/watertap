@@ -76,7 +76,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.power_density_k1)
         self._fixed_perf_vars.append(self.power_density_k2)
-        self._fixed_perf_vars.append(self.z_value)
+        self._fixed_perf_vars.append(self.z_valence)
 
         self.energy_consumption = Var(
             self.flowsheet().config.time,
@@ -98,5 +98,5 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
                 + b.power_density_k2
             ) * (b.z_valence * Constants.faraday_constant / (3600 * 10**6))
 
-        energy_consumption = self.energy_consumption
-        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = energy_consumption
+        enrg_consump = self.energy_consumption
+        self._perf_var_dict["Energy Consumption (kWh/m3/Mole)"] = enrg_consump

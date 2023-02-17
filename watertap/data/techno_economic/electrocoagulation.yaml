@@ -3,17 +3,11 @@ default:
     value: 8
       unit: mA/cm^2
   electrode_spacing:
-    value: 99
+    value: 5.4
     units: cm
   solution_conductivity:
-    value: 99
+    value: 0.00115
     units: S/cm
-  ohmic_resistance:
-    value: 99
-    units: ohm*cm^2
-  energy_consumption:
-    value: 99
-    units: kWh/m^3/mol
 
 aluminum_electrodes:
   power_density_k1:
