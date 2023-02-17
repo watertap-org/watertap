@@ -474,105 +474,70 @@ class SopStateBlockData(StateBlockData):
         # idaes.core.property_base.calculate_scaling_factors()
 
         # these variables should have user input
-        if (
-            iscale.get_scaling_factor(
-                self.flow_mass_phase_comp["Liq", "H2O"], warning=True
-            )
-            is None
-        ):
-            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"], 1)
+        for p in self.params.phase_list:
+            if (
+                iscale.get_scaling_factor(
+                    self.flow_mass_phase_comp[p, "H2O"], warning=True
+                )
+                is None
+            ):
+                iscale.set_scaling_factor(self.flow_mass_phase_comp[p, "H2O"], 1)
 
-        if (
-            iscale.get_scaling_factor(
-                self.flow_mass_phase_comp["Liq", "oil"], warning=True
-            )
-            is None
-        ):
-            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "oil"], 1e1)
+            if (
+                iscale.get_scaling_factor(
+                    self.flow_mass_phase_comp[p, "oil"], warning=True
+                )
+                is None
+            ):
+                iscale.set_scaling_factor(self.flow_mass_phase_comp[p, "oil"], 1e1)
 
-        # these variables do not typically require user input,
-        # will not override if the user does provide the scaling factor
+        # these variables do not typically require user input
+        if self.is_property_constructed("flow_mass_phase"):
+            for p in self.params.phase_list:
+                sf = 1 / (
+                    1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "H2O"])
+                    + 1 / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
+                )
+                iscale.set_scaling_factor(self.flow_mass_phase[p], sf)
+
         if self.is_property_constructed("mass_frac_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    if (
-                        iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j])
-                        is None
-                    ):
-                        if j == "H2O":
-                            iscale.set_scaling_factor(
-                                self.mass_frac_phase_comp[p, j], 1
-                            )
-                        else:  # j == "oil"
-                            sf = iscale.get_scaling_factor(
-                                self.flow_mass_phase_comp[p, j]
-                            ) / iscale.get_scaling_factor(
-                                self.flow_mass_phase_comp[p, "H2O"]
-                            )
-                            iscale.set_scaling_factor(
-                                self.mass_frac_phase_comp[p, j], sf
-                            )
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp[p, j]
+                    ) / iscale.get_scaling_factor(self.flow_mass_phase[p])
+                    iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
 
         if self.is_property_constructed("flow_vol_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    if (
-                        iscale.get_scaling_factor(self.flow_vol_phase_comp[p, j])
-                        is None
-                    ):
-                        sf = iscale.get_scaling_factor(
-                            self.flow_mass_phase_comp[p, j]
-                        ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
-                        iscale.set_scaling_factor(self.flow_vol_phase_comp[p, j], sf)
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp[p, j]
+                    ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
+                    iscale.set_scaling_factor(self.flow_vol_phase_comp[p, j], sf)
 
         if self.is_property_constructed("flow_vol_phase"):
             for p in self.params.phase_list:
-                if iscale.get_scaling_factor(self.flow_vol_phase[p]) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.flow_mass_phase_comp[p, "H2O"]
-                    ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
-                    iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
-
-        if self.is_property_constructed("flow_mass_phase"):
-            for p in self.params.phase_list:
-                if iscale.get_scaling_factor(self.flow_mass_phase[p]) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.flow_mass_phase_comp[p, "H2O"]
-                    ) + iscale.get_scaling_factor(self.flow_mass_phase_comp[p, "oil"])
-                    iscale.set_scaling_factor(self.flow_mass_phase[p], sf)
+                sf = iscale.get_scaling_factor(
+                    self.flow_mass_phase[p]
+                ) / iscale.get_scaling_factor(self.dens_mass_phase[p])
+                iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed("vol_frac_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    if (
-                        iscale.get_scaling_factor(self.vol_frac_phase_comp[p, j])
-                        is None
-                    ):
-                        if j == "H2O":
-                            iscale.set_scaling_factor(
-                                self.vol_frac_phase_comp["Liq", j], 1
-                            )
-                        else:  # j == "oil"
-                            sf = iscale.get_scaling_factor(
-                                self.flow_vol_phase_comp["Liq", j]
-                            ) / iscale.get_scaling_factor(
-                                self.flow_vol_phase_comp["Liq", "H2O"]
-                            )
-                            iscale.set_scaling_factor(
-                                self.vol_frac_phase_comp["Liq", j], sf
-                            )
+                    sf = iscale.get_scaling_factor(
+                        self.flow_vol_phase_comp[p, j]
+                    ) / iscale.get_scaling_factor(self.flow_vol_phase[p])
+                    iscale.set_scaling_factor(self.vol_frac_phase_comp[p, j], sf)
 
         if self.is_property_constructed("conc_mass_phase_comp"):
             for p in self.params.phase_list:
                 for j in self.params.component_list:
-                    if (
-                        iscale.get_scaling_factor(self.conc_mass_phase_comp[p, j])
-                        is None
-                    ):
-                        sf = iscale.get_scaling_factor(
-                            self.mass_frac_phase_comp[p, j]
-                        ) * iscale.get_scaling_factor(self.dens_mass_phase[p])
-                        iscale.set_scaling_factor(self.conc_mass_phase_comp[p, j], sf)
+                    sf = iscale.get_scaling_factor(
+                        self.mass_frac_phase_comp[p, j]
+                    ) * iscale.get_scaling_factor(self.dens_mass_phase[p])
+                    iscale.set_scaling_factor(self.conc_mass_phase_comp[p, j], sf)
 
         # transform property constraints
         transform_property_constraints(self)
