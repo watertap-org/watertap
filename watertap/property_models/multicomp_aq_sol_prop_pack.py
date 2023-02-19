@@ -272,16 +272,16 @@ class MCASParameterData(PhysicalParameterBlock):
         self.Liq = AqueousPhase()
 
         # list to hold all species (including water)
-        self.component_list = Set()
+        self.component_list = Set(dimen=1)
 
         # components
         self.H2O = Solvent()
 
         # Other component sets
-        self.solute_set = Set()  # All components except Solvent() ("H2O")
-        self.cation_set = Set()  # Components with charge >0
-        self.anion_set = Set()  # Components with charge <0
-        self.neutral_set = Set()  # Components with charge =0
+        self.solute_set = Set(dimen=1)  # All components except Solvent() ("H2O")
+        self.cation_set = Set(dimen=1)  # Components with charge >0
+        self.anion_set = Set(dimen=1)  # Components with charge <0
+        self.neutral_set = Set(dimen=1)  # Components with charge =0
 
         # Group components into different sets
         for j in self.config.solute_list:
