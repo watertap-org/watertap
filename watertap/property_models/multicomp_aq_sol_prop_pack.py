@@ -315,7 +315,7 @@ class MCASParameterData(PhysicalParameterBlock):
                     self.ion_set.add(j)
             else:
                 self.neutral_set.add(j)
-                
+
         # reference
         # Todo: enter any relevant references
 
