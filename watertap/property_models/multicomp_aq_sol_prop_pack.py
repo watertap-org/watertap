@@ -282,6 +282,7 @@ class MCASParameterData(PhysicalParameterBlock):
         self.cation_set = Set(dimen=1)  # Components with charge >0
         self.anion_set = Set(dimen=1)  # Components with charge <0
         self.neutral_set = Set(dimen=1)  # Components with charge =0
+        self.ion_set = Set(dimen=1)  # All Ion Components (cations + anions)
 
         # Group components into different sets
         for j in self.config.solute_list:
@@ -304,17 +305,17 @@ class MCASParameterData(PhysicalParameterBlock):
                         j,
                         Cation(charge=self.config.charge[j], _electrolyte=True),
                     )
+                    self.ion_set.add(j)
                 else:
                     self.del_component(j)
                     self.add_component(
                         j,
                         Anion(charge=self.config.charge[j], _electrolyte=True),
                     )
+                    self.ion_set.add(j)
             else:
                 self.neutral_set.add(j)
-        self.ion_set = (
-            self.cation_set | self.anion_set
-        )  # All Ion Components (cations + anions)
+                
         # reference
         # Todo: enter any relevant references
 
