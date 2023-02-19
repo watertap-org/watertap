@@ -41,8 +41,8 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.stateblock_statistics = {
             "number_variables": 26,
             "number_total_constraints": 22,
-            "number_unused_variables": 1,  # pressure is unused
-            "default_degrees_of_freedom": 3,
+            "number_unused_variables": 0,
+            "default_degrees_of_freedom": 4,
         }  # 4 state vars, but pressure is not active
         self.default_solution = {
             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.965,
@@ -60,7 +60,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 9.588e-4,
             ("osm_coeff", None): 0.9068,
             ("pressure_osm_phase", "Liq"): 2.588e6,
-            ("enth_mass_phase", "Liq"): 9.9765e4,
+            ("enth_mass_phase", "Liq"): 9.896e4,
             ("pressure_sat", None): 3111,
             ("cp_mass_phase", "Liq"): 4001,
             ("therm_cond_phase", "Liq"): 0.6086,
@@ -105,7 +105,7 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 5.596e-4,
             ("osm_coeff", None): 0.9029,
             ("pressure_osm_phase", "Liq"): 7.710e5,
-            ("enth_mass_phase", "Liq"): 2.066e5,
+            ("enth_mass_phase", "Liq"): 2.057e5,
             ("pressure_sat", None): 1.229e4,
             ("cp_mass_phase", "Liq"): 4.130e3,
             ("therm_cond_phase", "Liq"): 0.6400,
@@ -150,7 +150,7 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 1.443e-3,
             ("osm_coeff", None): 0.9106,
             ("pressure_osm_phase", "Liq"): 3.591e6,
-            ("enth_mass_phase", "Liq"): 3.897e4,
+            ("enth_mass_phase", "Liq"): 4.783e4,
             ("pressure_sat", None): 1.194e3,
             ("cp_mass_phase", "Liq"): 3.916e3,
             ("therm_cond_phase", "Liq"): 0.5854,
@@ -158,6 +158,50 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
             ("boiling_point_elevation_phase", "Liq"): 0.4069,
         }
+
+
+# @pytest.mark.component
+# class TestSeawaterPropertySolution_3(PropertyRegressionTest):
+#     def configure(self):
+#         self.prop_pack = props.SeawaterParameterBlock
+#         self.param_args = {}
+#
+#         self.solver = "ipopt"
+#         self.optarg = {"nlp_scaling_method": "user-scaling"}
+#
+#         self.scaling_args = {
+#             ("flow_vol_phase", "Liq"): 1,
+#         }
+#         self.state_args = {
+#             ("flow_vol_phase", "Liq"): 10,
+#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
+#             ("temperature", None): 273.15 + 10,
+#             ("pressure", None): 2e6,
+#         }
+#         self.regression_solution = {
+#             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.96,
+#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
+#             ("dens_mass_phase", "Liq"): 1.039e3,
+#             ("dens_mass_solvent", None): 999.5,
+#             ("flow_vol_phase", "Liq"): 9.628e-4,
+#             ("conc_mass_phase_comp", ("Liq", "H2O")): 986.8,
+#             ("conc_mass_phase_comp", ("Liq", "TDS")): 51.93,
+#             ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
+#             ("flow_mol_phase_comp", ("Liq", "TDS")): 1.592,
+#             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9707,
+#             ("mole_frac_phase_comp", ("Liq", "TDS")): 2.931e-2,
+#             ("molality_phase_comp", ("Liq", "TDS")): 1.676,
+#             ("visc_d_phase", "Liq"): 1.443e-3,
+#             ("osm_coeff", None): 0.9106,
+#             ("pressure_osm_phase", "Liq"): 3.591e6,
+#             ("enth_mass_phase", "Liq"): 4.783e4,
+#             ("pressure_sat", None): 1.194e3,
+#             ("cp_mass_phase", "Liq"): 3.916e3,
+#             ("therm_cond_phase", "Liq"): 0.5854,
+#             ("dh_vap_mass", None): 2.353e6,
+#             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
+#             ("boiling_point_elevation_phase", "Liq"): 0.4069,
+#         }
 
 
 @pytest.mark.component
@@ -233,4 +277,58 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
             ("flow_mass_phase_comp", ("Liq", "H2O")): 0.9605,
             ("flow_mass_phase_comp", ("Liq", "TDS")): 0.0613,
             ("temperature", None): 343.05,
+        }
+
+
+@pytest.mark.component
+class TestSeawaterCalculateState_4(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.SeawaterParameterBlock
+        self.param_args = {}
+
+        self.solver = "ipopt"
+        self.optarg = {"nlp_scaling_method": "user-scaling"}
+
+        self.scaling_args = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 1e-4,
+            ("flow_mass_phase_comp", ("Liq", "TDS")): 1e1,
+            ("enth_mass_phase", ("Liq", "TDS")): 1e-4,
+        }
+        self.var_args = {
+            ("flow_vol_phase", "Liq"): 10,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 1e-5,
+            ("temperature", None): 273.15 + 10,
+            ("pressure", None): 2e6,
+        }
+        self.state_solution = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 9995.07,
+            ("flow_mass_phase_comp", ("Liq", "TDS")): 0.09995,
+            ("enth_mass_phase", "Liq"): 4.3945e4,
+        }
+
+
+@pytest.mark.component
+class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.SeawaterParameterBlock
+        self.param_args = {}
+
+        self.solver = "ipopt"
+        self.optarg = {"nlp_scaling_method": "user-scaling"}
+
+        self.scaling_args = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 1e-3,
+            ("flow_mass_phase_comp", ("Liq", "TDS")): 1e-3,
+            ("enth_mass_phase", ("Liq", "TDS")): 1e-5,
+        }
+        self.var_args = {
+            ("flow_vol_phase", "Liq"): 10,
+            ("mass_frac_phase_comp", ("Liq", "TDS")): 0.12,
+            ("temperature", None): 273.15 + 120,
+            ("pressure", None): 1.2e7,
+        }
+        self.state_solution = {
+            ("flow_mass_phase_comp", ("Liq", "H2O")): 9091.08,
+            ("flow_mass_phase_comp", ("Liq", "TDS")): 1239.69,
+            ("enth_mass_phase", "Liq"): 3.8562e5,
         }

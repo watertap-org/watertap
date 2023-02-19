@@ -1651,9 +1651,14 @@ def _build_header_list_from_csv(csv_filename):
     return csv_header
 
 
-def _read_output_h5(filepath):
+def _read_output_h5(filevar):
 
-    f = h5py.File(filepath, "r")
+    if isinstance(filevar, str):
+        f = h5py.File(filevar, "r")
+    elif isinstance(filevar, h5py.Group):
+        f = filevar
+    else:
+        raise RuntimeError(f"Unrecognized type for filepath {type(filevar)}")
 
     l1_keys = list(f.keys())
     output_dict = {}
@@ -1674,6 +1679,7 @@ def _read_output_h5(filepath):
         elif key == "solve_successful":
             output_dict[key] = list(f[key]["solve_successful"][()])
 
-    f.close()
+    if isinstance(filevar, str):
+        f.close()
 
     return output_dict

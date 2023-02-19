@@ -233,7 +233,7 @@ def build(erd_type=None):
     )
 
     @m.fs.tb_desal_psttrt.Constraint(["H2O", "TDS"])
-    def eq_flow_mass_comp(blk, j):
+    def eq_flow_mass_comp(blk, j):  # pylint: disable=function-redefined
         if j == "TDS":
             jj = "tds"
         else:
@@ -704,7 +704,7 @@ def add_costing(m):
             pyunits.convert(
                 m.fs.zo_costing.total_capital_cost, to_units=pyunits.USD_2018
             )
-            + m.fs.ro_costing.total_investment_cost
+            + m.fs.ro_costing.total_capital_cost
         )
 
     @m.Expression()

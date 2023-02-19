@@ -13,6 +13,7 @@
 """
 This module contains the base class for all zero order unit models.
 """
+
 from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
@@ -20,7 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import units as pyunits
+import pyomo.environ as pyo
 
 
 # Some more inforation about this module
@@ -105,11 +106,6 @@ class ZeroOrderBaseData(UnitModelBlockData):
         self._has_recovery_removal = False
         self._fixed_perf_vars = []
 
-        # Place holders for assigning methods
-        self._initialize = None  # used to link to initization routine
-        self._scaling = None  # used to link to scaling routine
-        self._get_Q = None  # used to provide inlet volumetric flow
-
         # Attributed for storing contents of reporting output
         self._stream_table_dict = {}
         self._perf_var_dict = {}
@@ -145,6 +141,19 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"other species as Solutes."
             )
 
+    # Place holders for assigning methods
+    # used to link to initization routine
+    def _initialize(self, state_args, outlvl, solver, optarg):
+        raise NotImplementedError()
+
+    # used to link to scaling routine
+    def _scaling(self):
+        raise NotImplementedError()
+
+    # used to provide inlet volumetric flow
+    def _get_Q(self, t):
+        raise NotImplementedError()
+
     def initialize_build(
         self, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
     ):
@@ -152,21 +161,16 @@ class ZeroOrderBaseData(UnitModelBlockData):
         Passthrough initialization routine, raises NotImplementedError if
         the unit model does not have an `_initialize` function.
         """
-        if self._initialize is None or not callable(self._initialize):
-            raise NotImplementedError()
-        else:
-            self._initialize(
-                self, state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
-            )
+        self._initialize(
+            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
+        )
 
     def calculate_scaling_factors(self):
         """
         Placeholder scaling routine, should be overloaded by derived classes
         """
         super().calculate_scaling_factors()
-
-        if callable(self._scaling):
-            self._scaling(self)
+        self._scaling()
 
     def load_parameters_from_database(self, use_default_removal=False):
         """
@@ -292,7 +296,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"{index}) in database."
             )
         try:
-            units = getattr(pyunits, pdata["units"])
+            units = getattr(pyo.units, pdata["units"])
         except KeyError:
             raise KeyError(
                 f"{self.name} - no units provided for {pname} (index: "
@@ -303,7 +307,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
 
     def get_inlet_flow(self, t):
-        return self._get_Q(self, t)
+        return self._get_Q(t)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -323,3 +327,208 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 var_dict[k] = v
 
         return {"vars": var_dict}
+
+    # -------------------------------------------------------------------------
+    # Unit operation costing methods
+    @staticmethod
+    def _add_cost_factor(blk, factor):
+        if factor == "TPEC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TPEC
+            )
+        elif factor == "TIC":
+            blk.cost_factor = pyo.Expression(
+                expr=blk.config.flowsheet_costing_block.TIC
+            )
+        else:
+            blk.cost_factor = pyo.Expression(expr=1.0)
+        blk.direct_capital_cost = pyo.Expression(
+            expr=blk.capital_cost / blk.cost_factor
+        )
+
+    @staticmethod
+    def _get_unit_cost_method(blk):
+        """
+        Get a specified cost_method if one is defined in the YAML file.
+        This is meant for units with different cost methods between subtypes.
+        """
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        if "cost_method" not in parameter_dict["capital_cost"]:
+            raise KeyError(
+                f"Costing for {blk.unit_model._tech_type} requires a cost_method argument, however "
+                f"this was not defined for process sub-type {blk.unit_model.config.process_subtype}."
+            )
+
+        return parameter_dict["capital_cost"]["cost_method"]
+
+    @staticmethod
+    def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
+        """
+        First, need to check to see if a Block with parameters for this technology
+        exists.
+        Second, to handle technology subtypes all parameters need to be indexed by
+        subtype. We will dynamically add subtypes to the indexing set and Vars as
+        required.
+        """
+        # Check to see in parameter Block already exists
+        try:
+            # Try to get parameter Block from costing package
+            pblock = getattr(
+                blk.config.flowsheet_costing_block, blk.unit_model._tech_type
+            )
+        except AttributeError:
+            # Parameter Block for this technology hasn't been added yet. Create it.
+            pblock = pyo.Block()
+
+            # Add block to FlowsheetCostingBlock
+            blk.config.flowsheet_costing_block.add_component(
+                blk.unit_model._tech_type, pblock
+            )
+
+            # Add subtype Set to Block
+            pblock.subtype_set = pyo.Set()
+
+            # Add required Vars
+            for p in param_list:
+                try:
+                    vobj = pyo.Var(
+                        pblock.subtype_set,
+                        units=getattr(
+                            pyo.units, parameter_dict["capital_cost"][p]["units"]
+                        ),
+                    )
+                    pblock.add_component(p, vobj)
+                except KeyError:
+                    raise KeyError(
+                        "Error when trying to retrieve costing parameter "
+                        "for {p}. Please check the YAML "
+                        "file for this technology for errors.".format(p=p)
+                    )
+
+        # Check to see if required subtype is in subtype_set
+        vlist = []
+        if subtype not in pblock.subtype_set:
+            # Need to add subtype and set Vars
+            pblock.subtype_set.add(subtype)
+
+            # Set vars
+            for p in param_list:
+                vobj = getattr(pblock, p)
+                vobj[subtype].fix(
+                    float(parameter_dict["capital_cost"][p]["value"])
+                    * getattr(pyo.units, parameter_dict["capital_cost"][p]["units"])
+                )
+                vlist.append(vobj[subtype])
+        else:
+            for p in param_list:
+                vobj = getattr(pblock, p)
+                vlist.append(vobj[subtype])
+
+        # add conditional for cases where there is only one parameter returned
+        if len(vlist) == 1:
+            return vlist[0]
+        else:
+            return tuple(x for x in vlist)
+
+    @staticmethod
+    def _general_power_law_form(
+        blk, A, B, sizing_term, factor=None, number_of_parallel_units=1
+    ):
+        """
+        General method for building power law costing expressions.
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation",
+        )
+
+        expr = pyo.units.convert(
+            A
+            * (
+                pyo.units.convert(sizing_term, to_units=pyo.units.dimensionless)
+                / number_of_parallel_units
+            )
+            ** B,
+            to_units=blk.config.flowsheet_costing_block.base_currency,
+        )
+
+        expr *= number_of_parallel_units
+
+        blk.unit_model._add_cost_factor(blk, factor)
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == blk.cost_factor * expr
+        )
+
+    @property
+    def default_costing_method(self):
+        return self.cost_power_law_flow
+
+    @staticmethod
+    def cost_power_law_flow(blk, number_of_parallel_units=1):
+        """
+        General method for costing equipment based on power law form. This is
+        the most common costing form for zero-order models.
+        CapCost = A*(F/Fref)**B
+        This method also registers electricity demand as a costed flow (if
+        present in the unit operation model).
+        Args:
+            number_of_parallel_units (int, optional) - cost this unit as
+                        number_of_parallel_units parallel units (default: 1)
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type, subtype=blk.unit_model.config.process_subtype
+        )
+
+        # Get costing parameter sub-block for this technology
+        A, B, state_ref = blk.unit_model._get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter", "reference_state"],
+        )
+
+        # Get state block for flow bases
+        basis = parameter_dict["capital_cost"]["basis"]
+        try:
+            sblock = blk.unit_model.properties_in[t0]
+        except AttributeError:
+            # Pass-through case
+            sblock = blk.unit_model.properties[t0]
+
+        if basis == "flow_vol":
+            state = sblock.flow_vol
+            sizing_term = state / state_ref
+        elif basis == "flow_mass":
+            state = sum(sblock.flow_mass_comp[j] for j in sblock.component_list)
+            sizing_term = state / state_ref
+        else:
+            raise ValueError(
+                f"{blk.name} - unrecognized basis in parameter "
+                f"declaration: {basis}."
+            )
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        blk.unit_model._general_power_law_form(
+            blk, A, B, sizing_term, factor, number_of_parallel_units
+        )
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity"
+        )

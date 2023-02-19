@@ -148,42 +148,11 @@ class NaClParameterData(PhysicalParameterBlock):
         )
 
         # TODO: update for NaCl solution, relationship from Sharqawy is for seawater
-        # specific enthalpy parameters, eq. 55 and 43 in Sharqawy (2010)
-        self.enth_mass_param_A1 = Var(
+        self.cp_w = Var(
             within=Reals,
-            initialize=124.790,
-            units=pyunits.J / pyunits.kg,
-            doc="Specific enthalpy parameter A1",
-        )
-        self.enth_mass_param_A2 = Var(
-            within=Reals,
-            initialize=4203.075,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-1,
-            doc="Specific enthalpy parameter A2",
-        )
-        self.enth_mass_param_A3 = Var(
-            within=Reals,
-            initialize=-0.552,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-2,
-            doc="Specific enthalpy parameter A3",
-        )
-        self.enth_mass_param_A4 = Var(
-            within=Reals,
-            initialize=0.004,
-            units=(pyunits.J / pyunits.kg) * pyunits.K**-3,
-            doc="Specific enthalpy parameter A4",
-        )
-        self.enth_mass_param_B1 = Var(
-            within=Reals,
-            initialize=27062.623,
-            units=pyunits.dimensionless,
-            doc="Specific enthalpy parameter B1",
-        )
-        self.enth_mass_param_B2 = Var(
-            within=Reals,
-            initialize=4835.675,
-            units=pyunits.dimensionless,
-            doc="Specific enthalpy parameter B2",
+            initialize=4182,  # Assume the heat capacity of NaCl solution is equal to that of water at STP
+            units=pyunits.J / (pyunits.kg * pyunits.K),
+            doc="Specific heat capacity of water",
         )
 
         # traditional parameters are the only Vars currently on the block and should be fixed
@@ -329,19 +298,18 @@ class _NaClStateBlock(StateBlock):
                 "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-            if not check_optimal_termination(results):
-                raise InitializationError(
-                    f"{self.name} failed to initialize successfully. Please "
-                    f"check the output logs for more information."
-                )
-
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -761,28 +729,14 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_enth_mass_phase(
             b, p
-        ):  # specific enthalpy, eq. 55 and 43 in Sharqawy  # TODO: remove enthalpy when all units can be isothermal
+        ):  # specific enthalpy, H' = Cp(T-Tref) + (P-Pref)/rho  # TODO: remove enthalpy when all units can be isothermal
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp[p, "NaCl"]
-            h_w = (
-                b.params.enth_mass_param_A1
-                + b.params.enth_mass_param_A2 * t
-                + b.params.enth_mass_param_A3 * t**2
-                + b.params.enth_mass_param_A4 * t**3
-            )
-            # relationship requires dimensionless calculation and units added at end
-            h_sw = (
-                h_w
-                - (
-                    S * (b.params.enth_mass_param_B1 + S)
-                    + S * (b.params.enth_mass_param_B2 + S) * t / pyunits.K
-                )
-                * pyunits.J
-                / pyunits.kg
-            )
-            return b.enth_mass_phase[p] == h_sw
+            P = b.pressure - 101325 * pyunits.Pa
+            h_w = b.params.cp_w * t + P / self.dens_mass_phase[p]
+
+            return b.enth_mass_phase[p] == h_w
 
         self.eq_enth_mass_phase = Constraint(
             self.params.phase_list, rule=rule_enth_mass_phase
@@ -828,7 +782,7 @@ class NaClStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

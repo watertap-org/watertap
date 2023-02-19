@@ -10,7 +10,7 @@ This seawater property package:
    * estimates molar basis properties based on an average molecular weight of sea salt
    * does not support dynamics
    * properties do not incorporate validity ranges for temperature and salinity
-   * pressure-dependencies for property relationships are not incorporated
+   * pressure-dependency of specific enthalpy is incorporated
    * assumes diffusivity of NaCl based on `Bartholomew & Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_
 
 Sets
@@ -37,7 +37,7 @@ Properties
 
    "Component mass fraction", ":math:`x_j`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
    "Mass density of seawater", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass density of pure water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Mass density of pure water", ":math:`\rho_w`", "dens_mass_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Phase volumetric flowrate", ":math:`Q_p`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{/s}`"
    "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
    "Mass concentration", ":math:`C_j`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg/}\text{m}^3`"
@@ -46,10 +46,10 @@ Properties
    "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
    "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
    "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
-   "Specific heat capacity", ":math:`c_p`", "cp_phase", "[p]", ":math:`\text{J/kg/K}`"
+   "Specific heat capacity", ":math:`c_p`", "cp_mass_phase", "[p]", ":math:`\text{J/kg/K}`"
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
-   "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
-   "Diffusivity", ":math:`D`", "diffus_phase", "[p]", ":math:`\text{m}^2\text{/s}`"
+   "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap_mass", "None", ":math:`\text{J/kg}`"
+   "Diffusivity", ":math:`D`", "diffus_phase_comp", "[p]", ":math:`\text{m}^2\text{/s}`"
    "Boiling point elevation", ":math:`BPE`", "boiling_point_elevation_phase", "[p]", ":math:`\text{K}`"
 
 
@@ -60,8 +60,8 @@ Properties
 
    "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
    "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
-   "Molality", ":math:`Cm`", "molality_comp", "['TDS']", ":math:`\text{mole/kg}`"
-   "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
+   "Molality", ":math:`Cm`", "molality_phase_comp", "['TDS']", ":math:`\text{mole/kg}`"
+   "Osmotic pressure", ":math:`\pi`", "pressure_osm_phase", "None", ":math:`\text{Pa}`"
 
 Relationships
 -------------
@@ -74,7 +74,7 @@ Relationships
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
    "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
    "Osmotic coefficient", "Equation 49 in Sharqawy et al. (2010)"
-   "Specific enthalpy", "Equations 43 and 55 in Sharqawy et al. (2010)"
+   "Specific enthalpy", "Equations 25-27 in Nayar et al. (2016)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
    "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
    "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
@@ -137,12 +137,12 @@ The default scaling factors are as follows:
 
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
-Reference
----------
+References
+----------
 
-K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
+K.G. Nayar, M.H. Sharqawy, L.D. Banchik, and J.H. Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016. https://doi.org/10.1016/j.desal.2016.02.024
 
-M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater )
+M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater)
 
 F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
 

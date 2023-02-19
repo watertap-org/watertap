@@ -76,13 +76,8 @@ def main(erd_type=ERDtype.pump_as_turbine, raise_on_failure=False):
     set_operating_conditions(m)
     initialize_system(m, solver=solver)
 
-    results = solve(m, solver=solver)
-    if not check_optimal_termination(results):
-        msg = "Simulation did not converge"
-        if raise_on_failure:
-            raise RuntimeError(msg)
-        else:
-            print(f"WARNING: {msg}")
+    optimize_set_up(m)
+    solve(m, solver=solver)
 
     print("\n***---Simulation results---***")
     display_system(m)
@@ -102,7 +97,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.erd_type = erd_type
     m.fs.properties = props.NaClParameterBlock()
-    # m.fs.costing = WaterTAPCosting()
+    m.fs.costing = WaterTAPCosting()
 
     # Control volume flow blocks
     m.fs.feed = Feed(property_package=m.fs.properties)
@@ -111,13 +106,13 @@ def build(erd_type=ERDtype.pump_as_turbine):
 
     # --- Main pump ---
     m.fs.P1 = Pump(property_package=m.fs.properties)
-    # m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P2 = Pump(property_package=m.fs.properties)
-    # m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     m.fs.P3 = Pump(property_package=m.fs.properties)
-    # m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.P3.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Reverse Osmosis Block ---
     m.fs.RO = ReverseOsmosis0D(
@@ -128,7 +123,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    # m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- Osmotically Assisted Reverse Osmosis Block ---
     m.fs.OARO = OsmoticallyAssistedReverseOsmosis0D(
@@ -139,7 +134,7 @@ def build(erd_type=ERDtype.pump_as_turbine):
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
         has_full_reporting=True,
     )
-    # m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.OARO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # --- ERD blocks ---
     if erd_type == ERDtype.pump_as_turbine:
@@ -147,19 +142,19 @@ def build(erd_type=ERDtype.pump_as_turbine):
         m.fs.ERD1 = EnergyRecoveryDevice(property_package=m.fs.properties)
         m.fs.ERD2 = EnergyRecoveryDevice(property_package=m.fs.properties)
         # add costing for ERD config
-        # m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        # m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.ERD1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        m.fs.ERD2.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         erd_type_not_found(erd_type)
 
     # process costing and add system level metrics
-    # m.fs.costing.cost_process()
-    # m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
-    # m.fs.costing.add_specific_electrical_carbon_intensity(
-    #     m.fs.product.properties[0].flow_vol
-    # )
+    m.fs.costing.cost_process()
+    m.fs.costing.add_annual_water_production(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_electrical_carbon_intensity(
+        m.fs.product.properties[0].flow_vol
+    )
 
     # system water recovery
     m.fs.volumetric_recovery = Var(
@@ -322,13 +317,12 @@ def set_operating_conditions(
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
-        print(
+        raise RuntimeError(
             "The set_operating_conditions function resulted in {} "
             "degrees of freedom rather than 0. This error suggests "
             "that too many or not enough variables are fixed for a "
             "simulation.".format(degrees_of_freedom(m))
         )
-        raise
 
 
 def solve(blk, solver=None, tee=True):
@@ -394,6 +388,53 @@ def initialize_system(m, solver=None, verbose=True):
 
     print(f"DOF: {degrees_of_freedom(m)}")
 
+    m.fs.costing.initialize()
+
+
+def optimize_set_up(m):
+    # add objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    # unfix decision variables and add bounds
+    # pump 1
+    m.fs.P1.control_volume.properties_out[0].pressure.unfix()
+    m.fs.P1.control_volume.properties_out[0].pressure.setlb(10e5)
+    m.fs.P1.control_volume.properties_out[0].pressure.setub(80e5)
+    m.fs.P1.deltaP.setlb(0)
+
+    # RO
+    m.fs.RO.area.unfix()
+    m.fs.RO.area.setlb(1)
+    m.fs.RO.area.setub(150)
+
+    # additional specifications
+    m.fs.product_salinity = Param(
+        initialize=500e-6, mutable=True
+    )  # product NaCl mass fraction [-]
+    m.fs.minimum_water_flux = Param(
+        initialize=1.0 / 3600.0, mutable=True
+    )  # minimum water flux [kg/m2-s]
+
+    # additional constraints
+    m.fs.eq_product_quality = Constraint(
+        expr=m.fs.product.properties[0].mass_frac_phase_comp["Liq", "NaCl"]
+        <= m.fs.product_salinity
+    )
+    iscale.constraint_scaling_transform(
+        m.fs.eq_product_quality, 1e3
+    )  # scaling constraint
+    m.fs.eq_minimum_water_flux = Constraint(
+        expr=m.fs.RO.flux_mass_phase_comp[0, 1, "Liq", "H2O"] >= m.fs.minimum_water_flux
+    )
+
+    # ---checking model---
+    assert_degrees_of_freedom(m, 2)
+
+
+def optimize(m, solver=None):
+    # --solve---
+    return solve(m, solver=solver)
+
 
 def display_system(m):
     print("---system metrics---")
@@ -416,12 +457,11 @@ def display_system(m):
     print("Volumetric recovery: %.1f%%" % (value(m.fs.volumetric_recovery) * 100))
     print("Water recovery: %.1f%%" % (value(m.fs.water_recovery) * 100))
 
-    # TODO: add costing display once costing is added
-    # print(
-    #     "Energy Consumption: %.1f kWh/m3"
-    #     % value(m.fs.costing.specific_energy_consumption)
-    # )
-    # print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
+    print(
+        "Energy Consumption: %.1f kWh/m3"
+        % value(m.fs.costing.specific_energy_consumption)
+    )
+    print("Levelized cost of water: %.2f $/m3" % value(m.fs.costing.LCOW))
 
 
 def display_design(m):

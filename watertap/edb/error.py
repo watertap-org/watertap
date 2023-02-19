@@ -10,19 +10,13 @@ from pprint import pformat
 class Error(Exception):
     """Abstract base class for all EDB errors."""
 
-    pass
-
 
 class ConfigGeneratorError(Error):
     """Base class of errors for ConfigGenerator actions and effects."""
 
-    pass
-
 
 class DataWrapperError(Error):
     """ "Base class of errors for DataWrapper actions and effects."""
-
-    pass
 
 
 class BadConfiguration(DataWrapperError):

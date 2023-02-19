@@ -124,6 +124,7 @@ class _ParameterSweepBase(ABC):
             h5_results_file_name=self.config.h5_results_file_name,
             debugging_data_dir=self.config.debugging_data_dir,
             interpolate_nan_outputs=self.config.interpolate_nan_outputs,
+            h5_parent_group_name=self.config.h5_parent_group_name,
         )
 
     def _build_combinations(self, d, sampling_type, num_samples):
@@ -189,7 +190,7 @@ class _ParameterSweepBase(ABC):
             nx = int(nx)
 
             # Allocate memory to hold the Bcast array
-            global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
+            global_combo_array = np.zeros((nx, num_var_params), dtype=float)
 
         ### Broadcast the array to all processes
         if self.num_procs > 1:
@@ -229,7 +230,7 @@ class _ParameterSweepBase(ABC):
     def _aggregate_results_arr(self, global_results_dict, num_cases):
 
         global_results = np.zeros(
-            (num_cases, len(global_results_dict["outputs"])), dtype=np.float64
+            (num_cases, len(global_results_dict["outputs"])), dtype=float
         )
 
         if self.rank == 0:
@@ -302,7 +303,7 @@ class _ParameterSweepBase(ABC):
     def _create_component_output_skeleton(self, component, num_samples):
 
         comp_dict = {}
-        comp_dict["value"] = np.zeros(num_samples, dtype=np.float64)
+        comp_dict["value"] = np.zeros(num_samples, dtype=float)
         if hasattr(component, "lb"):
             comp_dict["lower bound"] = component.lb
         if hasattr(component, "ub"):
@@ -369,7 +370,7 @@ class _ParameterSweepBase(ABC):
             for key, item in global_output_dict.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
+                        subitem["value"] = np.zeros(num_total_samples, dtype=float)
 
         else:
             global_output_dict = local_output_dict
@@ -393,12 +394,10 @@ class _ParameterSweepBase(ABC):
                     ]["value"][0:req_num_samples]
 
             elif key == "solve_successful":
-                local_solve_successful = np.fromiter(
-                    item, dtype=np.bool, count=len(item)
-                )
+                local_solve_successful = np.fromiter(item, dtype=bool, count=len(item))
 
                 if self.rank == 0:
-                    global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
+                    global_solve_successful = np.empty(num_total_samples, dtype=bool)
                 else:
                     global_solve_successful = None
 
@@ -661,7 +660,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
         global_filtered_values = np.zeros(
             (req_num_samples, len(global_filtered_dict["sweep_params"])),
-            dtype=np.float64,
+            dtype=float,
         )
 
         if self.rank == 0:
@@ -746,13 +745,13 @@ class RecursiveParameterSweep(_ParameterSweepBase):
 
             # Get the global number of successful solves and update the number of remaining samples
             if self.num_procs > 1:  # pragma: no cover
-                global_success_count = np.zeros(1, dtype=np.float64)
-                global_failure_count = np.zeros(1, dtype=np.float64)
+                global_success_count = np.zeros(1, dtype=float)
+                global_failure_count = np.zeros(1, dtype=float)
                 self.comm.Allreduce(
-                    np.array(success_count, dtype=np.float64), global_success_count
+                    np.array(success_count, dtype=float), global_success_count
                 )
                 self.comm.Allreduce(
-                    np.array(failure_count, dtype=np.float64), global_failure_count
+                    np.array(failure_count, dtype=float), global_failure_count
                 )
             else:
                 global_success_count = success_count
@@ -783,7 +782,7 @@ class RecursiveParameterSweep(_ParameterSweepBase):
         if self.writer.config["debugging_data_dir"] is not None:
             local_filtered_values = np.zeros(
                 (local_n_successful, len(local_filtered_dict["sweep_params"])),
-                dtype=np.float64,
+                dtype=float,
             )
             for i, (key, item) in enumerate(
                 local_filtered_dict["sweep_params"].items()

@@ -24,9 +24,9 @@ copyright = "2021, NAWI"
 author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = "0.7.0dev"
+release = "0.8.dev0"
 # The short X.Y version
-version = "0.7.0dev"
+version = "0.8.dev0"
 # -- General configuration ---------------------------------------------------
 
 

@@ -53,7 +53,10 @@ from idaes.core.util.initialization import (
     solve_indexed_blocks,
 )
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_unfixed_variables,
+)
 from idaes.core.util.exceptions import (
     ConfigurationError,
     InitializationError,
@@ -323,92 +326,141 @@ class SeawaterParameterData(PhysicalParameterBlock):
             doc="Osmotic coefficient parameter 10",
         )
 
-        # specific enthalpy parameters, eq. 55 and 43 in Sharqawy et al. (2010)
+        # specific enthalpy parameters, Table 9 in Nayar et al. (2016)
         enth_mass_units = pyunits.J / pyunits.kg
+        P_inv_units = pyunits.MPa**-1
 
         self.enth_mass_param_A1 = Var(
             within=Reals,
-            initialize=141.355,
-            units=enth_mass_units,
+            initialize=996.7767,
+            units=enth_mass_units * P_inv_units,
             doc="Specific enthalpy parameter A1",
         )
         self.enth_mass_param_A2 = Var(
             within=Reals,
-            initialize=4202.07,
-            units=enth_mass_units * t_inv_units,
+            initialize=-3.2406,
+            units=enth_mass_units * P_inv_units * t_inv_units,
             doc="Specific enthalpy parameter A2",
         )
         self.enth_mass_param_A3 = Var(
             within=Reals,
-            initialize=-0.535,
-            units=enth_mass_units * t_inv_units**2,
+            initialize=0.0127,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
             doc="Specific enthalpy parameter A3",
         )
         self.enth_mass_param_A4 = Var(
             within=Reals,
-            initialize=0.004,
-            units=enth_mass_units * t_inv_units**3,
+            initialize=-4.7723e-5,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
             doc="Specific enthalpy parameter A4",
+        )
+        self.enth_mass_param_A5 = Var(
+            within=Reals,
+            initialize=-1.1748,
+            units=enth_mass_units * P_inv_units,
+            doc="Specific enthalpy parameter A5",
+        )
+        self.enth_mass_param_A6 = Var(
+            within=Reals,
+            initialize=0.01169,
+            units=enth_mass_units * P_inv_units * t_inv_units,
+            doc="Specific enthalpy parameter A6",
+        )
+        self.enth_mass_param_A7 = Var(
+            within=Reals,
+            initialize=-2.6185e-5,
+            units=enth_mass_units * P_inv_units * t_inv_units**2,
+            doc="Specific enthalpy parameter A7",
+        )
+        self.enth_mass_param_A8 = Var(
+            within=Reals,
+            initialize=7.0661e-8,
+            units=enth_mass_units * P_inv_units * t_inv_units**3,
+            doc="Specific enthalpy parameter A8",
         )
         self.enth_mass_param_B1 = Var(
             within=Reals,
-            initialize=-2.348e4,
+            initialize=-2.34825e4,
             units=enth_mass_units,
             doc="Specific enthalpy parameter B1",
         )
         self.enth_mass_param_B2 = Var(
             within=Reals,
-            initialize=3.152e5,
+            initialize=3.15183e5,
             units=enth_mass_units,
             doc="Specific enthalpy parameter B2",
         )
         self.enth_mass_param_B3 = Var(
             within=Reals,
-            initialize=2.803e6,
+            initialize=2.80269e6,
             units=enth_mass_units,
             doc="Specific enthalpy parameter B3",
         )
         self.enth_mass_param_B4 = Var(
             within=Reals,
-            initialize=-1.446e7,
+            initialize=-1.44606e7,
             units=enth_mass_units,
             doc="Specific enthalpy parameter B4",
         )
         self.enth_mass_param_B5 = Var(
             within=Reals,
-            initialize=7.826e3,
+            initialize=7.82607e3,
             units=enth_mass_units * t_inv_units,
             doc="Specific enthalpy parameter B5",
         )
         self.enth_mass_param_B6 = Var(
             within=Reals,
-            initialize=-4.417e1,
+            initialize=-4.41733,
             units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter B6",
         )
         self.enth_mass_param_B7 = Var(
             within=Reals,
-            initialize=2.139e-1,
+            initialize=2.1394e-1,
             units=enth_mass_units * t_inv_units**3,
             doc="Specific enthalpy parameter B7",
         )
         self.enth_mass_param_B8 = Var(
             within=Reals,
-            initialize=-1.991e4,
+            initialize=-1.99108e4,
             units=enth_mass_units * t_inv_units,
             doc="Specific enthalpy parameter B8",
         )
         self.enth_mass_param_B9 = Var(
             within=Reals,
-            initialize=2.778e4,
+            initialize=2.77846e4,
             units=enth_mass_units * t_inv_units,
             doc="Specific enthalpy parameter B9",
         )
         self.enth_mass_param_B10 = Var(
             within=Reals,
-            initialize=9.728e1,
+            initialize=9.72801,
             units=enth_mass_units * t_inv_units**2,
             doc="Specific enthalpy parameter B10",
+        )
+        self.enth_mass_param_C1 = Var(
+            within=Reals,
+            initialize=141.355,
+            units=enth_mass_units,
+            doc="Specific enthalpy parameter C1",
+        )
+        self.enth_mass_param_C2 = Var(
+            within=Reals,
+            initialize=4202.07,
+            units=enth_mass_units * t_inv_units,
+            doc="Specific enthalpy parameter C2",
+        )
+        self.enth_mass_param_C3 = Var(
+            within=Reals,
+            initialize=-0.535,
+            units=enth_mass_units * t_inv_units**2,
+            doc="Specific enthalpy parameter C3",
+        )
+        self.enth_mass_param_C4 = Var(
+            within=Reals,
+            initialize=0.004,
+            units=enth_mass_units * t_inv_units**3,
+            doc="Specific enthalpy parameter C4",
         )
 
         # vapor pressure parameters,  eq. 5 and 6 in Nayar et al.(2016)
@@ -796,26 +848,31 @@ class _SeawaterStateBlock(StateBlock):
                 )
 
         # ---------------------------------------------------------------------
-        # Initialize properties
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-        init_log.info(
-            "Property initialization: {}.".format(idaeslog.condition(results))
-        )
+        skip_solve = True  # skip solve if only state variables are present
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
+                skip_solve = False
 
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information."
+        if not skip_solve:
+            # Initialize properties
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            init_log.info_high(
+                "Property initialization: {}.".format(idaeslog.condition(results))
             )
 
-        # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 self.release_state(flags)
+
+        if (not skip_solve) and (not check_optimal_termination(results)):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please "
+                f"check the output logs for more information."
+            )
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
@@ -1290,28 +1347,47 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Specific enthalpy",
         )
 
-        def rule_enth_mass_phase(b, p):  # specific enthalpy, eq. 55 and 43 in Sharqawy
+        def rule_enth_mass_phase(
+            b, p
+        ):  # specific enthalpy, eq. 25 and 26 in Nayar et al. (2016)
             t = (
                 b.temperature - 273.15 * pyunits.K
             )  # temperature in degC, but pyunits in K
-            S = b.mass_frac_phase_comp[p, "TDS"]
+            S_kg_kg = b.mass_frac_phase_comp[p, "TDS"]
+            S_g_kg = S_kg_kg * 1000
+            P = b.pressure - 101325 * pyunits.Pa
+            P_MPa = pyunits.convert(P, to_units=pyunits.MPa)
+
             h_w = (
+                b.params.enth_mass_param_C1
+                + b.params.enth_mass_param_C2 * t
+                + b.params.enth_mass_param_C3 * t**2
+                + b.params.enth_mass_param_C4 * t**3
+            )
+            h_sw0 = h_w - S_kg_kg * (
+                b.params.enth_mass_param_B1
+                + b.params.enth_mass_param_B2 * S_kg_kg
+                + b.params.enth_mass_param_B3 * S_kg_kg**2
+                + b.params.enth_mass_param_B4 * S_kg_kg**3
+                + b.params.enth_mass_param_B5 * t
+                + b.params.enth_mass_param_B6 * t**2
+                + b.params.enth_mass_param_B7 * t**3
+                + b.params.enth_mass_param_B8 * S_kg_kg * t
+                + b.params.enth_mass_param_B9 * S_kg_kg**2 * t
+                + b.params.enth_mass_param_B10 * S_kg_kg * t**2
+            )
+            h_sw = h_sw0 + P_MPa * (
                 b.params.enth_mass_param_A1
                 + b.params.enth_mass_param_A2 * t
                 + b.params.enth_mass_param_A3 * t**2
                 + b.params.enth_mass_param_A4 * t**3
-            )
-            h_sw = h_w - S * (
-                b.params.enth_mass_param_B1
-                + b.params.enth_mass_param_B2 * S
-                + b.params.enth_mass_param_B3 * S**2
-                + b.params.enth_mass_param_B4 * S**3
-                + b.params.enth_mass_param_B5 * t
-                + b.params.enth_mass_param_B6 * t**2
-                + b.params.enth_mass_param_B7 * t**3
-                + b.params.enth_mass_param_B8 * S * t
-                + b.params.enth_mass_param_B9 * S**2 * t
-                + b.params.enth_mass_param_B10 * S * t**2
+                + S_g_kg
+                * (
+                    +b.params.enth_mass_param_A5
+                    + b.params.enth_mass_param_A6 * t
+                    + b.params.enth_mass_param_A7 * t**2
+                    + b.params.enth_mass_param_A8 * t**3
+                )
             )
             return b.enth_mass_phase[p] == h_sw
 
@@ -1514,7 +1590,7 @@ class SeawaterStateBlockData(StateBlockData):
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
     def define_state_vars(self):

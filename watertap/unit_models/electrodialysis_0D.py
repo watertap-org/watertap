@@ -24,13 +24,13 @@ from pyomo.environ import (
     Constraint,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    EnergyBalanceType,
     MomentumBalanceType,
     UnitModelBlockData,
     useDefault,
@@ -48,7 +48,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.constants import Constants
 from enum import Enum
 
-from watertap.core import InitializationMixin
+from watertap.core import ControlVolume0DBlock, InitializationMixin
 
 __author__ = " Xiangyu Bi, Austin Ladshaw,"
 
@@ -173,14 +173,24 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
-    # # TODO: Consider adding the EnergyBalanceType config using the following code
-    '''
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.none,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
+    CONFIG.declare(
+        "is_isothermal",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="""Assume isothermal conditions for control volume(s); energy_balance_type must be EnergyBalanceType.none,
+    **default** - True.""",
+        ),
+    )
+
+    CONFIG.declare(
+        "energy_balance_type",
+        ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.none.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
@@ -188,8 +198,9 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
     **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    '''
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}""",
+        ),
+    )
 
     CONFIG.declare(
         "momentum_balance_type",
@@ -235,12 +246,24 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         ),
     )
 
+    def _validate_config(self):
+        if (
+            self.config.is_isothermal
+            and self.config.energy_balance_type != EnergyBalanceType.none
+        ):
+            raise ConfigurationError(
+                "If the isothermal assumption is used then the energy balance type must be none"
+            )
+
     def build(self):
         # build always starts by calling super().build()
         # This triggers a lot of boilerplate in the background for you
         super().build()
         # this creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        # Check configs for errors
+        self._validate_config()
 
         # Create essential sets.
         self.membrane_set = Set(initialize=["cem", "aem"])
@@ -447,10 +470,16 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         self.diluate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.diluate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.diluate.add_isothermal_assumption()
         self.diluate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
-        # # TODO: Consider adding energy balances
 
         # Build control volume for the concentrate channel
         self.concentrate = ControlVolume0DBlock(
@@ -463,6 +492,13 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         self.concentrate.add_material_balances(
             balance_type=self.config.material_balance_type, has_mass_transfer=True
         )
+        self.concentrate.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_enthalpy_transfer=False,
+        )
+
+        if self.config.is_isothermal:
+            self.concentrate.add_isothermal_assumption()
         self.concentrate.add_momentum_balances(
             balance_type=self.config.momentum_balance_type, has_pressure_change=False
         )
@@ -842,27 +878,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
                 )
                 * (self.cell_width * self.cell_length)
                 * self.cell_pair_num
-            )
-
-        # Add isothermal condition
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Isothermal condition for the diluate channel",
-        )
-        def eq_isothermal_diluate(self, t):
-            return (
-                self.diluate.properties_in[t].temperature
-                == self.diluate.properties_out[t].temperature
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Isothermal condition for the concentrate channel",
-        )
-        def eq_isothermal_concentrate(self, t):
-            return (
-                self.concentrate.properties_in[t].temperature
-                == self.concentrate.properties_out[t].temperature
             )
 
         @self.Constraint(
@@ -1534,7 +1549,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
     # initialize method
     def initialize_build(
-        blk,
+        self,
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
@@ -1555,35 +1570,35 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
 
         Returns: None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
 
         # Set the outlet has the same intial condition of the inlet.
-        for k in blk.keys():
-            for j in blk[k].config.property_package.component_list:
-                blk[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
-                    blk[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
+        for k in self.keys():
+            for j in self[k].config.property_package.component_list:
+                self[k].diluate.properties_out[0].flow_mol_phase_comp["Liq", j] = value(
+                    self[k].diluate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-                blk[k].concentrate.properties_out[0].flow_mol_phase_comp[
+                self[k].concentrate.properties_out[0].flow_mol_phase_comp[
                     "Liq", j
                 ] = value(
-                    blk[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
+                    self[k].concentrate.properties_in[0].flow_mol_phase_comp["Liq", j]
                 )
-        if hasattr(blk[k], "conc_mem_surf_mol_ioa"):
-            for mem in blk[k].membrane_set:
-                for side in blk[k].electrode_side:
-                    for j in blk[k].ion_set:
-                        blk[k].conc_mem_surf_mol_ioa[mem, side, 0, j].set_value(
-                            blk[k]
+        if hasattr(self[k], "conc_mem_surf_mol_ioa"):
+            for mem in self[k].membrane_set:
+                for side in self[k].electrode_side:
+                    for j in self[k].ion_set:
+                        self[k].conc_mem_surf_mol_ioa[mem, side, 0, j].set_value(
+                            self[k]
                             .concentrate.properties_in[0]
                             .conc_mol_phase_comp["Liq", j]
                         )
         # Initialize diluate block
-        flags_diluate = blk.diluate.initialize(
+        flags_diluate = self.diluate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1593,7 +1608,7 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize concentrate_side block
-        flags_concentrate = blk.concentrate.initialize(
+        flags_concentrate = self.concentrate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1604,17 +1619,17 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release state
-        blk.diluate.release_state(flags_diluate, outlvl)
+        self.diluate.release_state(flags_diluate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
-        blk.concentrate.release_state(flags_concentrate, outlvl)
+        self.concentrate.release_state(flags_concentrate, outlvl)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         if not check_optimal_termination(res):
-            raise InitializationError(f"Unit model {blk.name} failed to initialize")
+            raise InitializationError(f"Unit model {self.name} failed to initialize")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1929,15 +1944,6 @@ class Electrodialysis0DData(InitializationMixin, UnitModelBlockData):
         for ind, c in self.eq_current_efficiency.items():
             iscale.constraint_scaling_transform(
                 c, iscale.get_scaling_factor(self.current[ind])
-            )
-
-        for ind, c in self.eq_isothermal_diluate.items():
-            iscale.constraint_scaling_transform(
-                c, self.diluate.properties_in[ind].temperature
-            )
-        for ind, c in self.eq_isothermal_concentrate.items():
-            iscale.constraint_scaling_transform(
-                c, self.concentrate.properties_in[ind].temperature
             )
 
     def _get_stream_table_contents(self, time_point=0):
