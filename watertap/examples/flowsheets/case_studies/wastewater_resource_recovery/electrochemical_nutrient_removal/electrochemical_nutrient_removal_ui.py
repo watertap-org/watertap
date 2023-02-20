@@ -146,17 +146,6 @@ def export_variables(flowsheet=None, exports=None):
         is_output=False,
     )
     exports.add(
-        obj=fs.electroNP.reaction_conversion[0, "extract_N_P"],
-        name="Phosphorus conversion",
-        ui_units=pyunits.dimensionless,
-        display_units="fraction",  # we should change to %
-        rounding=2,
-        description="Phosphorus conversion [g-P reacted/g-P inlet]",
-        is_input=True,
-        input_category="ElectroNP",
-        is_output=False,
-    )
-    exports.add(
         obj=fs.electroNP.energy_electric_flow_mass,
         name="Specific energy",
         ui_units=pyunits.kWh / pyunits.kg,
@@ -541,19 +530,6 @@ def export_variables(flowsheet=None, exports=None):
     )
 
     # Cost
-    total_revenue = -fs.costing.aggregate_flow_costs["magnesium_chloride"]
-
-    exports.add(
-        obj=total_revenue,
-        name="Total",
-        ui_units=fs.costing.base_currency / pyunits.year,
-        display_units="$/year",
-        rounding=0,
-        description="Total revenue - only includes the purchase of MgCl2",
-        is_input=False,
-        is_output=True,
-        output_category="Revenue",
-    )
     exports.add(
         obj=-fs.costing.aggregate_flow_costs["magnesium_chloride"],
         name="Magnesium chloride",
