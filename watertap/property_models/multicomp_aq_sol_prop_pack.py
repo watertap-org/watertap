@@ -290,10 +290,9 @@ class MCASParameterData(PhysicalParameterBlock):
                 raise ConfigurationError(
                     "'H2O'is reserved as the default solvent and cannot be a solute."
                 )
+            # Add valid members of solute_list into IDAES's Solute() class.
+            # This triggers the addition of j into component_list and solute_set.
             self.add_component(j, Solute())
-            # This triggers the addition of j into component_list and solute_set
-            # by idaes.core.base.components, although a "del_component" for j will
-            # be called if it goes to cation_ or anion_set (below).
             if j in self.config.charge:
                 if self.config.charge[j] == 0:
                     raise ConfigurationError(
@@ -302,6 +301,9 @@ class MCASParameterData(PhysicalParameterBlock):
                         )
                     )
                 if self.config.charge[j] > 0:
+                    # Run a "del_component" and "add_component" to move ion j from IDAES's Solute to Cation class.
+                    # Ion j has to be added into Solute to be registered in the compolist and solute_set.
+                    # Reference to idaes.core.base.components.
                     self.del_component(j)
                     self.add_component(
                         j,
@@ -309,6 +311,7 @@ class MCASParameterData(PhysicalParameterBlock):
                     )
                     self.ion_set.add(j)
                 else:
+                    # The same to the notes above goes for anions.
                     self.del_component(j)
                     self.add_component(
                         j,
