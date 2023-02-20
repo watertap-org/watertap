@@ -1127,6 +1127,7 @@ def test_parameter_block_comparison(model4):
     assert isinstance(m_generic.fs.properties.solute_set, Set)
     for j in m_ion.fs.properties.solute_set:
         assert j in ["A", "B", "C", "D", "E"]
+        assert m_ion.fs.properties.get_component(j).is_solute()
 
     assert m_ion.fs.properties.charge_comp["B"].value == -2
     # NOTE: Below is how you grab charge from the generic package
@@ -1342,3 +1343,18 @@ def test_elec_properties_errormsg(model6):
         match="""Missing a valid trans_num_data configuration to build "trans_num_phase_comp" """,
     ):
         m[2].fs.stream[0].trans_num_phase_comp
+
+
+@pytest.mark.unit
+def test_solute_list_errormsg():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    with pytest.raises(
+        ConfigurationError,
+        match="'H2O'is reserved as the default solvent and cannot be a solute.",
+    ):
+        m.fs.properties = MCASParameterBlock(
+            solute_list=["H2O", "Na_+", "Cl_-", "N"],
+            mw_data={"H2O": 0.018, "Na_+": 0.023, "Cl_-": 0.0355, "N": 0.01},
+            charge={"Na_+": 1, "Cl_-": -1},
+        )

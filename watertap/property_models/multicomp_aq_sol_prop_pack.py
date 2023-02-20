@@ -298,7 +298,6 @@ class MCASParameterData(PhysicalParameterBlock):
                             j
                         )
                     )
-                self.del_component(j)
                 if self.config.charge[j] > 0:
                     self.del_component(j)
                     self.add_component(
