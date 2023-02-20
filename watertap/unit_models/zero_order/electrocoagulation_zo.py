@@ -63,6 +63,8 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
             doc="Valence of dissolving metal ion for energy consumption equation"
         )
 
+        self._fixed_perf_vars.append(self.electrode_spacing)
+        self._fixed_perf_vars.append(self.solution_conductivity)
         self._fixed_perf_vars.append(self.power_density_k1)
         self._fixed_perf_vars.append(self.power_density_k2)
         self._fixed_perf_vars.append(self.z_valence)
@@ -86,6 +88,7 @@ class ElectrocoagulationZOData(ZeroOrderBaseData):
         def energy_consumption_constraint(b, t):
             current_density_in = pyunits.convert(b.current_density[t], to_units=pyunits.A / pyunits.cm**2)
             ohmic_resistance = self.electrode_spacing / self.solution_conductivity
+            breakpoint()
             return b.energy_consumption[t] == (
                 current_density_in * ohmic_resistance
                 + b.power_density_k1 * log(current_density_in)
